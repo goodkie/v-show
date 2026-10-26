@@ -92,7 +92,7 @@
         }
     }
 
-    // [P0-C Fix] Exclude Extension/Tool/Translation Overlays from Form Discovery
+    // [RC3.60 P0] Exclude Browser-Extension Injected Translation Overlays, Toolbars & Modals
     function isExcludedOverlayElement(el) {
         if (!el) return false;
         try {
@@ -101,21 +101,37 @@
                 const id = (cur.id || '').toLowerCase();
                 const cls = (typeof cur.className === 'string' ? cur.className : (cur.getAttribute?.('class') || '')).toLowerCase();
                 const role = (cur.getAttribute ? (cur.getAttribute('role') || '') : '').toLowerCase();
+                const tag = (cur.tagName || '').toLowerCase();
+                const combined = `${id} ${cls} ${role} ${tag}`;
 
-                if (id.startsWith('xpider-') || cls.includes('xpider-')) return true;
+                // Internal Xpider UI
+                if (id.startsWith('xpider-') || cls.includes('xpider-') || id.includes('xpider') || cls.includes('xpider')) return true;
 
-                if (id.includes('translate') || cls.includes('translate') || id.includes('goog-te') || cls.includes('goog-te')) {
-                    if (/translate-tab|translate-input|translate-output|goog-te|google-translate|trans-popup/i.test(`${id} ${cls}`)) {
-                        return true;
-                    }
-                    if (id.includes('translate') && (id.includes('input') || id.includes('output') || id.includes('tab') || id.includes('btn') || id.includes('button'))) {
-                        return true;
-                    }
+                // Browser extension translation overlays (e.g. default-translate-modal, bigTranslateModal, immersive-translate)
+                if (/translate|trans-popup|trans-modal|trans-bubble|trans-container|goog-te|notranslate|skiptranslate|deepl|immersive|kiss-trans/i.test(combined)) {
+                    return true;
                 }
 
+                // Extension dictionary search / single-word lookup widgets
+                if (/singlewordsearch|wordsearch|dictsearch|dictionary|vocab/i.test(combined)) {
+                    return true;
+                }
+
+                // Third-party browser extension injected toolbars (Grammarly, LastPass, 1Password, Bitwarden, Sider, Monica, Harpa, etc.)
+                if (/grammarly|lastpass|1password|bitwarden|sider|monica|harpa|chatgpt-ext|__ext_|chrome-extension|edge-extension|moz-extension/i.test(combined)) {
+                    return true;
+                }
+
+                // General non-page search drawers / quick-search modals
                 if (role === 'search' || cls.includes('search-modal') || cls.includes('search-drawer') || id.includes('site-search')) {
                     return true;
                 }
+
+                // Custom element extension roots (e.g. <immersive-translate-container>, <translate-modal>)
+                if (tag.includes('-') && (tag.includes('translate') || tag.includes('modal') || tag.includes('ext'))) {
+                    return true;
+                }
+
                 cur = cur.parentElement;
             }
         } catch (_) {}

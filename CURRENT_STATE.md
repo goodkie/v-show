@@ -6,8 +6,8 @@
 - Workspace: E:\vivpr\ai\extension-form-sender
 - Authority: goodkie/v-show Issues #6 & #10
 - Branch: upgrade/phase-0-1
-- State Rev: 2026-10-26.189
-- Authority Cursor: 6414380175
+- State Rev: 2026-10-26.190
+- Authority Cursor: 6417283475
 - Last Directives / Audits:
   - `[OWNER PM NEXT EXECUTION — STOP REPEAT BRIEFINGS / IMPLEMENT SECURE DYNAMIC VPN IP ALLOWLIST][ISSUE #6][2026-10-25] Comment #6396720543`
   - `[OWNER PM P0 SECURITY HOLD — RC3.58 MUST NOT BE RUN ON OWNER PC][ISSUE #6][2026-10-25 11:57 UTC] Comment #6397334700`
@@ -18,6 +18,8 @@
   - `[CHATGPT OWNER PM][P0 OWNER REAL-PC QA + AI REQUIRED-FIELD ENHANCEMENT][2026-10-25] Comment #6408458852`
   - `[CHATGPT OWNER PM][RC3.59 .77 SECURITY/QUALITY FOLLOW-UP][2026-10-25] Comment #6409475473`
   - `[CHATGPT OWNER PM][P0 RELEASE INTEGRITY GATE][2026-10-25] Comment #6410024386`
+  - `[OWNER PM][RC3.60 .79 CHROME EVIDENCE GATE] Comment #6416989111`
+  - `[OWNER QA FAIL][RC3.60 .79][NEW DEBUG BUNDLE EVIDENCE — P0] Comment #6417283475`
 - Last Receipts:
   - `[ANTIGRAVITY][RECEIPT][ISSUE-6][RC3.59-TANGIBLE-PRODUCT-RECOVERY-AND-E2E-FIXTURES-PASS][2026-10-25] Comment #6406287831`
   - `[ANTIGRAVITY][RECEIPT][ISSUE-6][OWNER-BETA-AUTO-SETUP-CHANNEL-HOTFIX-PASS][2026-10-25] Comment #6407535598`
@@ -25,12 +27,12 @@
   - `[ANTIGRAVITY][RECEIPT][ISSUE-6][P0-AUTO-SETUP-BLOCKER-CLOSURE-AND-REGRESSION-PASS][2026-10-25] Comment #6408025317`
   - `[ANTIGRAVITY][RECEIPT][ISSUE-6][RC3.59-.77-AI-REQUIRED-FIELD-AND-8-FIXTURE-E2E-PASS][2026-10-26] Comment #6409360606`
   - `[ANTIGRAVITY][RECEIPT][ISSUE-6][RC3.59-.77-LEGAL-CONSENT-AND-TRUTHFUL-BUSINESS-FACTS-PASS][2026-10-26] Comment #6409998295`
-  - `[ANTIGRAVITY][RECEIPT][ISSUE-6][RC3.59-.78-PACKAGING-INTEGRITY-AND-UNPACKED-E2E-PASS][2026-10-26]`
-  - `[ANTIGRAVITY][RECEIPT][ISSUE-6][RC3.60-.79-NONINQUIRY-HANG-FIX-AND-UNPACKED-E2E-PASS][2026-10-26]`
-- Functional QA Commit: `dfd34907` (Core fix: isFinished latch + SENDER_FINISHED gate + finishCampaign cleanup)
-- Build ID: `R6.9G.10.3.7.1.4.79-20261026-P0-RC3.60-NONINQUIRY-HANG-FIX`
-- Verified Release Asset: `XPIDER_R6.9G.10.3.7.1.4.79_OWNER_BETA.zip` (Tag: `v6.9g.10.3-rc3.60.7.1.4.79`, Size: 53,161,506 bytes, SHA256: `adba90fec197e46feea6d9e8a823b08d2fc9215df4156fe379ff8185b838b7d0`)
-- Software Status: **RC3.60 .79 OWNER BETA NON-INQUIRY HANG RESOLUTION & INDEPENDENT UNPACKED E2E PASS**: (1) Fixed root causes of non-inquiry fixture stall (subscribe-no-message hanging at 38%): immediate `isFinished = true` latch in `background.js` preventing async re-entry, non-inquiry terminal settlement allowance in `SENDER_FINISHED` stage gate, and complete heartbeat/lock/running flag teardown in `content-script.js:finishCampaign()`. (2) Published new distinct version/tag `.79` with unique archive `XPIDER_R6.9G.10.3.7.1.4.79_OWNER_BETA.zip`. (3) Independently unpacked into isolated environment and verified 2,224 files byte-for-byte against package inventory. (4) Executed 4 AI constraint, legal consent opt-in, and truthful business fact tests directly on unpacked extension code (100% PASS). (5) Ran full Microsoft Edge browser E2E test loading unpacked extension, achieving exact 5 SUCCESS / 2 SKIPPED / 1 FAILURE across 8 fixtures with zero stall, 0 external network requests leaked, and clean settings restoration. (6) Operational Gate marked `OWNER_VALIDATION_PENDING`.
+  - `[ANTIGRAVITY][RECEIPT][ISSUE-6][RC3.59-.78-PACKAGING-INTEGRITY-AND-UNPACKED-E2E-PASS][2026-10-26] Comment #6410651833`
+  - `[ANTIGRAVITY][RECEIPT][ISSUE-6][RC3.60-.79-NONINQUIRY-HANG-FIX-AND-UNPACKED-E2E-PASS][2026-10-26] Comment #6414380175`
+- Functional QA Commit: `acd4a3e2` (Fix: translate overlay exclusion, bounded settlement, Chrome E2E pass)
+- Build ID: `R6.9G.10.3.7.1.4.80-20261026-P0-RC3.60-TRANSLATE-MODAL-EXCLUSION-CHROME-PASS`
+- Verified Release Asset: `XPIDER_R6.9G.10.3.7.1.4.80_OWNER_BETA.zip` (Tag: `v6.9g.10.3-rc3.60.7.1.4.80`, Size: 53,164,886 bytes, SHA256: `b7fd1b439e11e4ac00d4e155ae295ea677278530d3b1fbd17f608f997a7167b5`)
+- Software Status: **RC3.60 .80 OWNER BETA TRANSLATION MODAL EXCLUSION, BOUNDED SETTLEMENT, AND REAL GOOGLE CHROME E2E PASS**: (1) Addressed Owner QA Fail in Comment #6417283475: excluded competing browser-extension injected translation widgets (`default-translate-modal`, `bigTranslateModal`, `singleWordSearch`, `immersive-translate`, etc.) from inquiry form candidate scoring and field mapping in both `form-discovery-engine-r2.js` and `content-script.js`. (2) Implemented bounded terminal settlement: if form fill fails on a non-assist form, `finishCampaign(false, 'REQUIRED_FIELD_LOST_BEFORE_SUBMIT')` is called rather than bare returning, completely eliminating infinite heartbeat/hang loops. Added stall-watchdog in `background.js` to break stalled stages. (3) Ensured genuine non-inquiry subscription forms (`subscribe-no-message.html` / `subscribe.html`) are classified as `NON_INQUIRY_SUBSCRIBE_FORM`, settled `SKIPPED` exactly once, and immediately advance to target #5 without fallback search into translation widgets. (4) Executed authoritative 5-stage packaging and E2E audit in real Google Chrome (`chrome.exe` v155.0.8059.86) using official `Extensions.loadUnpacked`: 2,225 inventory files verified byte-for-byte, 4 unit test constraint suites passed 100%, and 8 loopback fixtures produced exactly 5 SUCCESS / 2 SKIPPED / 1 FAILURE with 0 public leaks. Target #4 settled cleanly as `SKIPPED` with `NON_INQUIRY_SUBSCRIBE_FORM`. (5) Operational Gate marked `OWNER_VALIDATION_PENDING`.
 
 ---
 

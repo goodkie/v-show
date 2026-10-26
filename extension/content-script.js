@@ -850,7 +850,7 @@
         return false;
     }
 
-    // [P0-C Fix] Exclude Extension/Tool/Translation Overlays from Form Engine
+    // [RC3.60 P0] Exclude Browser-Extension Injected Translation Overlays, Toolbars & Modals
     function isExcludedOverlayElement(el) {
         if (!el) return false;
         try {
@@ -859,21 +859,37 @@
                 const id = (cur.id || '').toLowerCase();
                 const cls = (typeof cur.className === 'string' ? cur.className : (cur.getAttribute?.('class') || '')).toLowerCase();
                 const role = (cur.getAttribute ? (cur.getAttribute('role') || '') : '').toLowerCase();
+                const tag = (cur.tagName || '').toLowerCase();
+                const combined = `${id} ${cls} ${role} ${tag}`;
 
-                if (id.startsWith('xpider-') || cls.includes('xpider-')) return true;
+                // Internal Xpider UI
+                if (id.startsWith('xpider-') || cls.includes('xpider-') || id.includes('xpider') || cls.includes('xpider')) return true;
 
-                if (id.includes('translate') || cls.includes('translate') || id.includes('goog-te') || cls.includes('goog-te')) {
-                    if (/translate-tab|translate-input|translate-output|goog-te|google-translate|trans-popup/i.test(`${id} ${cls}`)) {
-                        return true;
-                    }
-                    if (id.includes('translate') && (id.includes('input') || id.includes('output') || id.includes('tab') || id.includes('btn') || id.includes('button'))) {
-                        return true;
-                    }
+                // Browser extension translation overlays (e.g. default-translate-modal, bigTranslateModal, immersive-translate)
+                if (/translate|trans-popup|trans-modal|trans-bubble|trans-container|goog-te|notranslate|skiptranslate|deepl|immersive|kiss-trans/i.test(combined)) {
+                    return true;
                 }
 
+                // Extension dictionary search / single-word lookup widgets
+                if (/singlewordsearch|wordsearch|dictsearch|dictionary|vocab/i.test(combined)) {
+                    return true;
+                }
+
+                // Third-party browser extension injected toolbars (Grammarly, LastPass, 1Password, Bitwarden, Sider, Monica, Harpa, etc.)
+                if (/grammarly|lastpass|1password|bitwarden|sider|monica|harpa|chatgpt-ext|__ext_|chrome-extension|edge-extension|moz-extension/i.test(combined)) {
+                    return true;
+                }
+
+                // General non-page search drawers / quick-search modals
                 if (role === 'search' || cls.includes('search-modal') || cls.includes('search-drawer') || id.includes('site-search')) {
                     return true;
                 }
+
+                // Custom element extension roots (e.g. <immersive-translate-container>, <translate-modal>)
+                if (tag.includes('-') && (tag.includes('translate') || tag.includes('modal') || tag.includes('ext'))) {
+                    return true;
+                }
+
                 cur = cur.parentElement;
             }
         } catch (_) {}
@@ -1272,8 +1288,12 @@
                                 const settleReason = (classification.reason && classification.reason.startsWith('NON_INQUIRY'))
                                     ? classification.reason
                                     : `NON_INQUIRY_${classification.intent}_FORM`;
+                                const lowerUrl = currentUrl.toLowerCase();
+                                const isTargetSpecificNonInquiry = lowerUrl.includes('subscribe') || lowerUrl.includes('newsletter') ||
+                                    lowerUrl.includes('reservation') || lowerUrl.includes('booking') || lowerUrl.includes('login') || lowerUrl.includes('signin');
                                 const bestLink = typeof findBestContactLink === 'function' ? findBestContactLink() : null;
-                                if (settleReason === 'NON_INQUIRY_LOGIN_FORM' || settleReason === 'NON_INQUIRY_COMMENT_FORM' || !bestLink) {
+                                if (isTargetSpecificNonInquiry || settleReason === 'NON_INQUIRY_LOGIN_FORM' || settleReason === 'NON_INQUIRY_COMMENT_FORM' ||
+                                    settleReason === 'NON_INQUIRY_SUBSCRIBE_FORM' || settleReason === 'NON_INQUIRY_RESERVATION_FORM' || !bestLink) {
                                     logDev(`[FORM_GATE] eligible=false reason=${settleReason}`);
                                     logDev(`❌ [ContactGate] Page rejected: non-inquiry form (${settleReason})`, "error");
                                     currentTargetLifecycleState = TargetLifecycleState.SETTLING;
@@ -1344,10 +1364,11 @@
                         logDev("[LIFECYCLE] Target in submit/settling recovery. Aborting fallback discovery.", "info");
                         return;
                     }
-                    // [P0-B Fix] If current page already has a committed form or is confirmed contact page,
-                    // do NOT escape to 404 alias merely because autofill/assist was handled or paused!
+                    // [RC3.60 P0] If fillAndSubmit failed and target has not settled, settle bounded terminal failure immediately!
                     if (currentForm && document.contains(currentForm)) {
-                        logDev("🔒 [CommittedForm] Current page has committed form. Remaining bound to form identity. Suppressing alias discovery.", "info");
+                        logDev("❌ [CommittedForm] Form fill/submit failed for committed form. Settling bounded failure outcome.", "error");
+                        currentTargetLifecycleState = TargetLifecycleState.SETTLING;
+                        finishCampaign(false, 'REQUIRED_FIELD_LOST_BEFORE_SUBMIT', 'FORM_FILL_FAILED');
                         return;
                     }
                     logDev("⚠️ [Engine] Mapping incomplete or form hidden. Retrying alternative discovery...", "warning");
@@ -1888,6 +1909,9 @@
                 if (assistHandled) {
                     return fillAndSubmit(form, template, speed);
                 }
+                // [RC3.60 P0] Terminal settlement on unhandled autofill failure — never hang in RUNNING
+                logDev(`❌ [Engine] Autofill failure terminal settlement: ${failReason}`, "error");
+                finishCampaign(false, failReason, 'REQUIRED_FIELD_LOST_BEFORE_SUBMIT');
                 return false;
             }
             logDev("[FILL] messageBodyFilled=true", "success");
@@ -2686,16 +2710,17 @@
         let maxScore = -999; 
         
         // Define broad candidate types including content areas
-        const candidates = queryAllDeep('form, fieldset, .form-wrapper, .sqs-block-form, #contact-form, [id*="contact-form"], [class*="contact-form"], main, section, article');
+        const candidates = queryAllDeep('form, fieldset, .form-wrapper, .sqs-block-form, #contact-form, [id*="contact-form"], [class*="contact-form"], main, section, article')
+            .filter(c => !isExcludedOverlayElement(c));
         
         // If few candidates, add potential clusters as candidates
         const allPotentialInputs = queryAllInputs();
         if (candidates.length < 5 && allPotentialInputs.length > 2) {
             allPotentialInputs.forEach(inp => {
                 const parent = inp.parentElement;
-                if (parent && !candidates.includes(parent)) candidates.push(parent);
+                if (parent && !candidates.includes(parent) && !isExcludedOverlayElement(parent)) candidates.push(parent);
                 const grandparent = parent?.parentElement;
-                if (grandparent && !candidates.includes(grandparent)) candidates.push(grandparent);
+                if (grandparent && !candidates.includes(grandparent) && !isExcludedOverlayElement(grandparent)) candidates.push(grandparent);
             });
         }
 
@@ -2731,8 +2756,7 @@
 
             elements.forEach((el) => {
                 if (!el || !el.tagName) return; // [v17.3.0] Element Safety: Skip document/shadowRoot headers
-
-                // [RC3.42] Containers without any input can never reach the threshold; skip before costly work.
+                if (isExcludedOverlayElement(el)) return; // [RC3.60 P0] Exclude extension/translation modals from evaluation
                 if (queryAllInputs(el).length < 1) return;
 
                 // [HARD ELIGIBILITY GATE] Body-field gate comes BEFORE numeric form scoring

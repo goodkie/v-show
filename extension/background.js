@@ -5038,6 +5038,8 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
                 if (request.submitState) campaignState.currentSubmitState = request.submitState;
 
                 if (request.stage) {
+                    campaignState.stageStallCount = 0;
+                    campaignState.timeoutStallCount = 0;
                     // [R6.9G.7 P0-3] Sticky CAPTCHA_PENDING_OWNER: generic stage updates must not overwrite it
                     if (campaignState.currentTargetStage !== 'CAPTCHA_PENDING_OWNER') {
                         campaignState.currentTargetStage = request.stage;
@@ -7793,11 +7795,17 @@ if (chrome.alarms) {
         // [Issue #6 R6.5 Section 9] Session timeout must not settle active submission
         const activeStages = ['ACTIVE_FORM', 'FILLING', 'CAPTCHA', 'FINAL_AUDIT', 'SUBMIT_ATTEMPT_STARTED', 'SUBMITTING', 'SUBMIT_TRIGGERED', 'VERIFYING'];
 
-        // [v18.12.0] Enhanced Emergency Dispatch: Force-check for stalls even if lock is held
+        // [v18.12.0 / RC3.60 P0] Enhanced Emergency Dispatch & Progress-Based Stall Break
         if (alarm.name.startsWith("xpider_watchdog_") || alarm.name === "xpider_next_target_failsafe") {
-            if (activeStages.includes(campaignState.currentTargetStage)) {
-                logBg(null, `[TIMEOUT_GUARD] Active submit in progress (stage=${campaignState.currentTargetStage}). Extending watchdog deadline...`, "info");
-                return;
+            const curStage = campaignState.currentTargetStage;
+            if (activeStages.includes(curStage)) {
+                campaignState.stageStallCount = (campaignState.stageStallCount || 0) + 1;
+                if (campaignState.stageStallCount < 2) {
+                    logBg(null, `[TIMEOUT_GUARD] Active submit in progress (stage=${curStage}). Extending watchdog deadline (stallCount=${campaignState.stageStallCount})...`, "info");
+                    return;
+                }
+                logBg(null, `⚠️ [WATCHDOG_BREAK] Target stalled in stage=${curStage} for >= 2 cycles without progression. Forcing terminal settlement and advancing.`, "warning");
+                campaignState.stageStallCount = 0;
             }
             processNextCampaignTarget();
             return;
@@ -7813,12 +7821,18 @@ if (chrome.alarms) {
                 return;
             }
 
-            if (activeStages.includes(campaignState.currentTargetStage)) {
-                logBg(null, `[TIMEOUT_GUARD] Active form submit in progress (stage=${campaignState.currentTargetStage}). Extending global session timeout...`, "info");
-                if (chrome.alarms) {
-                    chrome.alarms.create(`xpider_timeout_${session}`, { delayInMinutes: 1 });
+            const curStage = campaignState.currentTargetStage;
+            if (activeStages.includes(curStage)) {
+                campaignState.timeoutStallCount = (campaignState.timeoutStallCount || 0) + 1;
+                if (campaignState.timeoutStallCount < 2) {
+                    logBg(null, `[TIMEOUT_GUARD] Active form submit in progress (stage=${curStage}). Extending global session timeout (stallCount=${campaignState.timeoutStallCount})...`, "info");
+                    if (chrome.alarms) {
+                        chrome.alarms.create(`xpider_timeout_${session}`, { delayInMinutes: 1 });
+                    }
+                    return;
                 }
-                return;
+                logBg(null, `⚠️ [TIMEOUT_BREAK] Session timeout forced after >= 2 extensions in stage=${curStage}. Advancing...`, "warning");
+                campaignState.timeoutStallCount = 0;
             }
 
             logBg(null, `⚠️ [Protection] Global Session Timeout triggered. Advancing...`, "warning");
