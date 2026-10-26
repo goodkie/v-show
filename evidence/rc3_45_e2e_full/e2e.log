@@ -1,0 +1,29 @@
+[2026-10-23T10:50:29.938Z] Fixture server up (owned, loopback)
+[2026-10-23T10:50:31.261Z] Build: {"branch":"upgrade/phase-0-1","channel":"OWNER_BETA_PRIVATE_EGRESS_RC3.44.2","testOnly":true,"implementationHead":"5cc89d9ee72fbfda03c20c02568771aa130fc2f1","implementationHeadShort":"5cc89d9e","head":"5cc89d9ee72fbfda03c20c02568771aa130fc2f1","headShort":"5cc89d9e","rollbackBase":"3cc1be6b436b1d68f948927df88a2c73c1ae5011","previousFunctionalRestorePoint":"3cc1be6b436b1d68f948927df88a2c73c1ae5011","manifestVersion":3,"buildId":"R6.9G.10.3.7.1.4.60-20261023-P0-PATCH-RC3.44.2","builtAt":"2026-10-23T08:45:00.000Z","provenanceSchema":2,"modules":{"backgroundSha":"26b1f824e3763ddef81d12eb07dcf86daac3e37ce0bb49d82879500958093f28","contentScriptSha":"7eb9532e135eb81c370b648911743327ff7c7884ca4ed77c333ad1f83cc028ff","popupSha":"ef259ffabadd18fb2d4830918d3df8be0bbd6133ae2ad879b116ef5ddf678b29","solverContentSha":"6a1ff7154efaeb6dbd5946ac4f9be1ce5b5ff43bce2db06d0dca32950edd3bdb","solverCoreSha":"ab4dee5c8213d7c2fd47942951a2bc40732c1c8c55a5742d493db617150bf95f","emailCollectorSha":"3f1147a379e159e7777158f2caa74cc8d40b2a0b0eb2c244f440af379cb5c9c9","historyStoreSha":"8e3eb9bd325f772704c4b84f9e7e872e260f10d47d86a134da5802d013f17db8","contactGateSha":"9007adceec8b4e8ec7f7a14ee8a7d21af460a01ed043c578e1e3c2579cfae88e","visionSubmitSha":"6b89eab8fd132798fbb157e179bdeee64da1aa9867222fdb656e3fcf4fcc9311","privacyGatewaySha":"cc5c8cc9c83adf3b985aa4bab74b04189c00fdba4f3ac3a555bd00e38fc79993"}}
+[2026-10-23T10:50:31.286Z] isTestOnlyBuild=true
+[2026-10-23T10:50:34.063Z] START_CAMPAIGN response: {"success":true,"status":"acknowledged","queueCount":6,"campaignRunId":"run_1792752634037_sdqg5"}
+[2026-10-23T10:50:38.083Z] poll: serverSubmissions=0 campaignActive=true attemptsRecorded=0
+[2026-10-23T10:50:42.098Z] poll: serverSubmissions=0 campaignActive=true attemptsRecorded=0
+[2026-10-23T10:50:46.114Z] poll: serverSubmissions=0 campaignActive=true attemptsRecorded=0
+[2026-10-23T10:50:50.120Z] poll: serverSubmissions=1 campaignActive=true attemptsRecorded=0
+[2026-10-23T10:50:54.138Z] poll: serverSubmissions=1 campaignActive=true attemptsRecorded=1
+[2026-10-23T10:50:58.148Z] poll: serverSubmissions=1 campaignActive=true attemptsRecorded=1
+[2026-10-23T10:51:02.166Z] poll: serverSubmissions=1 campaignActive=true attemptsRecorded=1
+[2026-10-23T10:51:06.188Z] poll: serverSubmissions=1 campaignActive=true attemptsRecorded=1
+[2026-10-23T10:51:10.196Z] poll: serverSubmissions=1 campaignActive=true attemptsRecorded=2
+[2026-10-23T10:51:14.209Z] poll: serverSubmissions=1 campaignActive=true attemptsRecorded=2
+[2026-10-23T10:51:18.218Z] poll: serverSubmissions=1 campaignActive=true attemptsRecorded=2
+[2026-10-23T10:51:22.231Z] poll: serverSubmissions=1 campaignActive=true attemptsRecorded=2
+[2026-10-23T10:51:26.240Z] poll: serverSubmissions=1 campaignActive=true attemptsRecorded=2
+[2026-10-23T10:51:30.247Z] poll: serverSubmissions=1 campaignActive=true attemptsRecorded=3
+[2026-10-23T10:51:34.258Z] poll: serverSubmissions=1 campaignActive=true attemptsRecorded=3
+[2026-10-23T10:51:38.263Z] poll: serverSubmissions=1 campaignActive=true attemptsRecorded=3
+[2026-10-23T10:51:42.273Z] poll: serverSubmissions=1 campaignActive=true attemptsRecorded=4
+[2026-10-23T10:51:46.293Z] poll: serverSubmissions=1 campaignActive=true attemptsRecorded=4
+[2026-10-23T10:51:50.314Z] poll: serverSubmissions=1 campaignActive=true attemptsRecorded=4
+[2026-10-23T10:51:54.349Z] poll: serverSubmissions=1 campaignActive=true attemptsRecorded=5
+[2026-10-23T10:51:58.361Z] poll: serverSubmissions=1 campaignActive=true attemptsRecorded=5
+[2026-10-23T10:52:02.381Z] poll: serverSubmissions=1 campaignActive=true attemptsRecorded=5
+[2026-10-23T10:52:06.401Z] poll: serverSubmissions=1 campaignActive=true attemptsRecorded=6
+[2026-10-23T10:52:06.401Z] all targets settled
+[2026-10-23T10:52:06.431Z] VERDICT=SUBMISSIONS_RECORDED_NO_DUPLICATES count=1 dups=0

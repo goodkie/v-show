@@ -1,0 +1,81 @@
+{
+  "started": "2026-10-23T03:22:44.025Z",
+  "extDir": "E:\\vivpr\\ai\\extension-form-sender\\extension",
+  "build": "R6.9G.10.3.7.1.4.58-20261022-P0-FIX-RC3.44",
+  "extId": "ldlijlaccfeelfdhgnjbibniocefckjj",
+  "matrix": [
+    {
+      "target": "T1",
+      "host": "www.otmartialarts.com",
+      "status": "TIMEOUT_LOCAL",
+      "reason": "TIMEOUT_LOCAL",
+      "FIRST_FAIL_STAGE": "MANUAL_FALLBACK",
+      "stagesSeen": [
+        "START/PREFLIGHT",
+        "EGRESS",
+        "CONTACT_DISCOVERY",
+        "FORM_CLASSIFICATION",
+        "FIELD_MAPPING",
+        "AUTOFILL",
+        "CAPTCHA_DETECT",
+        "PROVIDER_REQUEST/TERMINAL",
+        "SUBMIT",
+        "OUTCOME",
+        "LEDGER"
+      ],
+      "stageTimestamps": {
+        "START/PREFLIGHT": "2026-10-23T03:23:06.571Z",
+        "EGRESS": "2026-10-23T03:22:52.676Z",
+        "CONTACT_DISCOVERY": "2026-10-23T03:22:47.014Z",
+        "FORM_CLASSIFICATION": "2026-10-23T03:22:52.814Z",
+        "FIELD_MAPPING": "2026-10-23T03:22:52.789Z",
+        "AUTOFILL": "2026-10-23T03:22:52.772Z",
+        "CAPTCHA_DETECT": "2026-10-23T03:22:52.707Z",
+        "PROVIDER_REQUEST/TERMINAL": "2026-10-23T03:22:52.828Z",
+        "SUBMIT": "2026-10-23T03:23:06.305Z",
+        "OUTCOME": "2026-10-23T03:23:06.580Z",
+        "LEDGER": "2026-10-23T03:22:46.919Z"
+      }
+    },
+    {
+      "target": "T2",
+      "host": "martialarts.dedhamhealth.com",
+      "status": "PREPARING",
+      "reason": "PREPARING",
+      "FIRST_FAIL_STAGE": "FORM_CLASSIFICATION",
+      "stagesSeen": [
+        "START/PREFLIGHT",
+        "EGRESS",
+        "CONTACT_DISCOVERY",
+        "CAPTCHA_DETECT",
+        "LEDGER"
+      ],
+      "stageTimestamps": {
+        "START/PREFLIGHT": "2026-10-23T03:22:46.911Z",
+        "EGRESS": "2026-10-23T03:23:42.206Z",
+        "CONTACT_DISCOVERY": "2026-10-23T03:23:42.275Z",
+        "CAPTCHA_DETECT": "2026-10-23T03:23:42.237Z",
+        "LEDGER": "2026-10-23T03:22:46.919Z"
+      }
+    }
+  ],
+  "stats": {
+    "scope": "currentRun",
+    "campaignRunId": "run_1792725766960_r2fvy",
+    "totalStarted": 2,
+    "totalImportRows": 3,
+    "pending": 1,
+    "invalid": 0,
+    "success": 0,
+    "failure": 0,
+    "unknown": 0,
+    "timeout": 1,
+    "timeoutLocal": 1,
+    "timeoutGlobal": 0,
+    "skipped": 0,
+    "paused": 0,
+    "completed": 1,
+    "failureBreakdown": {},
+    "logStr": "[LEDGER_STATS] scope=currentRun success=0 failure=0 unknown=0 timeout=1 skipped=0"
+  }
+}

@@ -1,29 +1,29 @@
-[2026-10-24T11:30:12.558Z] ========================================================================
-[2026-10-24T11:30:12.567Z]   XPIDER FAILURE PATHS, PERSISTENCE & RELAY RESUMPTION AUDIT            
-[2026-10-24T11:30:12.574Z] ========================================================================
+[2026-10-26T06:39:08.045Z] ========================================================================
+[2026-10-26T06:39:08.054Z]   XPIDER FAILURE PATHS, PERSISTENCE & RELAY RESUMPTION AUDIT            
+[2026-10-26T06:39:08.063Z] ========================================================================
 
-[2026-10-24T11:30:12.581Z] >>> CASE 1: Auditing Submitted Receipt Verification & False-Positive Elimination...
-[2026-10-24T11:30:12.588Z]    ✅ 1a PASS: HTTP 500 correctly rejected as FAILED (zero false positive).
-[2026-10-24T11:30:12.596Z]    ✅ 1b PASS: HTTP 404 correctly rejected as FAILED.
-[2026-10-24T11:30:12.602Z]    ✅ 1c PASS: HTTP 200 HTML without valid JSON receipt rejected as FAILED.
-[2026-10-24T11:30:12.609Z]    ✅ 1d PASS: HTTP 200 missing receiptId rejected as FAILED.
-[2026-10-24T11:30:12.617Z]    ✅ 1e PASS: Authentic receipt accepted and verified: XPIDER-RECEIPT-20261024-C9A81F04
+[2026-10-26T06:39:08.070Z] >>> CASE 1: Auditing Submitted Receipt Verification & False-Positive Elimination...
+[2026-10-26T06:39:08.078Z]    ✅ 1a PASS: HTTP 500 correctly rejected as FAILED (zero false positive).
+[2026-10-26T06:39:08.085Z]    ✅ 1b PASS: HTTP 404 correctly rejected as FAILED.
+[2026-10-26T06:39:08.093Z]    ✅ 1c PASS: HTTP 200 HTML without valid JSON receipt rejected as FAILED.
+[2026-10-26T06:39:08.100Z]    ✅ 1d PASS: HTTP 200 missing receiptId rejected as FAILED.
+[2026-10-26T06:39:08.107Z]    ✅ 1e PASS: Authentic receipt accepted and verified: XPIDER-RECEIPT-20261024-C9A81F04
 
-[2026-10-24T11:30:12.623Z] >>> CASE 2: Auditing Extension State Persistence Across Service Worker Restart...
-[2026-10-24T11:30:12.631Z] Populated active campaign state into storage prior to restart.
-[2026-10-24T11:30:12.638Z] Simulated Service Worker termination (in-memory context wiped).
-[2026-10-24T11:30:12.645Z] ✅ CASE 2 PASS: State and ledger successfully restored byte-for-byte upon worker wake-up.
+[2026-10-26T06:39:08.115Z] >>> CASE 2: Auditing Extension State Persistence Across Service Worker Restart...
+[2026-10-26T06:39:08.122Z] Populated active campaign state into storage prior to restart.
+[2026-10-26T06:39:08.131Z] Simulated Service Worker termination (in-memory context wiped).
+[2026-10-26T06:39:08.139Z] ✅ CASE 2 PASS: State and ledger successfully restored byte-for-byte upon worker wake-up.
 
-[2026-10-24T11:30:12.652Z] >>> CASE 3: Auditing Startup Relay Absent & Autonomous Resumption After Recovery...
-[2026-10-24T11:30:12.659Z] Phase 3a: Extension starting up while companion service is ABSENT...
-[2026-10-24T11:30:12.666Z]    Extension State: WAITING_FOR_COMPANION, sendAllowed: false (Fail-closed enforced)
-[2026-10-24T11:30:12.673Z]    ✅ 3a PASS: Transmission safely refused while companion is absent (0 bytes leaked).
-[2026-10-24T11:30:12.684Z] 
+[2026-10-26T06:39:08.146Z] >>> CASE 3: Auditing Startup Relay Absent & Autonomous Resumption After Recovery...
+[2026-10-26T06:39:08.154Z] Phase 3a: Extension starting up while companion service is ABSENT...
+[2026-10-26T06:39:08.164Z]    Extension State: WAITING_FOR_COMPANION, sendAllowed: false (Fail-closed enforced)
+[2026-10-26T06:39:08.177Z]    ✅ 3a PASS: Transmission safely refused while companion is absent (0 bytes leaked).
+[2026-10-26T06:39:08.184Z] 
 Phase 3b: Companion service starting up and recovering...
-[2026-10-24T11:30:12.691Z]    Extension State: READY, sendAllowed: true, Egress: 143.198.40.33
-[2026-10-24T11:30:12.699Z]    ✅ 3b PASS: Extension seamlessly unblocked and resumed over verified egress node.
+[2026-10-26T06:39:08.191Z]    Extension State: READY, sendAllowed: true, Egress: 143.198.40.33
+[2026-10-26T06:39:08.200Z]    ✅ 3b PASS: Extension seamlessly unblocked and resumed over verified egress node.
 
-[2026-10-24T11:30:12.713Z] ========================================================================
-[2026-10-24T11:30:12.720Z]   XPIDER FAILURE-PATH MATRIX: 100% PASS                                 
-[2026-10-24T11:30:12.727Z] ========================================================================
+[2026-10-26T06:39:08.215Z] ========================================================================
+[2026-10-26T06:39:08.222Z]   XPIDER FAILURE-PATH MATRIX: 100% PASS                                 
+[2026-10-26T06:39:08.230Z] ========================================================================
 

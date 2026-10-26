@@ -1,0 +1,128 @@
+[2026-10-23T08:28:18.512Z] ================ START RC3.44.1 PACKAGED ARTIFACT AUDIT ================
+[2026-10-23T08:28:18.521Z] Unpacked extension dir: E:\vivpr\ai\extension-form-sender\scratch\rc344_1_unpacked\extension
+[2026-10-23T08:28:18.529Z] Isolated test profile: C:\Users\oPus\AppData\Local\Temp\xpider-audit-rc3441-9PqDAb
+[2026-10-23T08:28:19.388Z] Extension ID: ldlijlaccfeelfdhgnjbibniocefckjj
+[2026-10-23T08:28:19.845Z] Packaged BuildProvenance: {"branch":"upgrade/phase-0-1","channel":"OWNER_BETA_PRIVATE_EGRESS_RC3.44.1","testOnly":true,"implementationHead":"21af2adf3ca34662d15cd8e91913180e8f0a5278","implementationHeadShort":"21af2adf","head":"21af2adf3ca34662d15cd8e91913180e8f0a5278","headShort":"21af2adf","rollbackBase":"3cc1be6b436b1d68f948927df88a2c73c1ae5011","previousFunctionalRestorePoint":"3cc1be6b436b1d68f948927df88a2c73c1ae5011","manifestVersion":3,"buildId":"R6.9G.10.3.7.1.4.59-20261023-P0-PATCH-RC3.44.1","builtAt":"2026-10-23T05:55:00.000Z","provenanceSchema":2,"modules":{"backgroundSha":"26b1f824e3763ddef81d12eb07dcf86daac3e37ce0bb49d82879500958093f28","contentScriptSha":"7eb9532e135eb81c370b648911743327ff7c7884ca4ed77c333ad1f83cc028ff","popupSha":"ef259ffabadd18fb2d4830918d3df8be0bbd6133ae2ad879b116ef5ddf678b29","solverContentSha":"6a1ff7154efaeb6dbd5946ac4f9be1ce5b5ff43bce2db06d0dca32950edd3bdb","solverCoreSha":"ab4dee5c8213d7c2fd47942951a2bc40732c1c8c55a5742d493db617150bf95f","emailCollectorSha":"3f1147a379e159e7777158f2caa74cc8d40b2a0b0eb2c244f440af379cb5c9c9","historyStoreSha":"8e3eb9bd325f772704c4b84f9e7e872e260f10d47d86a134da5802d013f17db8","contactGateSha":"a455d6dd41f0eb31c8db9a7cb709a7a27eed73395dd553e908723475470e61b8","visionSubmitSha":"6b89eab8fd132798fbb157e179bdeee64da1aa9867222fdb656e3fcf4fcc9311","privacyGatewaySha":"cc5c8cc9c83adf3b985aa4bab74b04189c00fdba4f3ac3a555bd00e38fc79993"}}
+[2026-10-23T08:28:19.854Z] ✅ Provenance check PASS: Packaged artifact matches RC3.44.1
+[2026-10-23T08:28:21.430Z] 
+--- AUDITING TARGET 1: https://liveyourtoplife.com/ ---
+[2026-10-23T08:28:21.443Z] Opening T1 tab via chrome.tabs.create...
+[2026-10-23T08:28:21.549Z] T1 tab created with ID: 434191925
+[2026-10-23T08:28:39.421Z] Invoking autofill on T1 in real browser...
+[2026-10-23T08:28:39.434Z] T1 Form ID: mm-custom-form-home1405609604
+[2026-10-23T08:28:39.617Z] T1 Audited Fields (5):
+[
+  {
+    "tag": "INPUT",
+    "type": "text",
+    "name": "full_name",
+    "id": "form-full-name",
+    "placeholder": "Full Name",
+    "value": "John Doe",
+    "required": true
+  },
+  {
+    "tag": "INPUT",
+    "type": "text",
+    "name": "email",
+    "id": "form-email-address",
+    "placeholder": "Email address for info",
+    "value": "johndoe.inquiry.test@gmail.com",
+    "required": true
+  },
+  {
+    "tag": "INPUT",
+    "type": "tel",
+    "name": "phone",
+    "id": "form-phone-number",
+    "placeholder": "Mobile # for info via text",
+    "value": "203-555-0199",
+    "required": true
+  },
+  {
+    "tag": "SELECT",
+    "type": "select-one",
+    "name": "program",
+    "id": "form-program",
+    "value": "217",
+    "required": true
+  },
+  {
+    "tag": "INPUT",
+    "type": "checkbox",
+    "name": "contact_me_by_phone",
+    "id": "",
+    "placeholder": "",
+    "value": "203-555-0199",
+    "required": false
+  }
+]
+[2026-10-23T08:28:39.629Z] ✅ T1 Real-Browser Field Audit: 100% PASS
+[2026-10-23T08:28:39.639Z] 
+--- AUDITING TARGET 3: https://www.otmartialarts.com/contact ---
+[2026-10-23T08:28:39.649Z] Opening T3 tab via chrome.tabs.create...
+[2026-10-23T08:28:39.733Z] T3 tab created with ID: 434192944
+[2026-10-23T08:28:47.861Z] T3 Form Action: https://www.otmartialarts.com/contact
+[2026-10-23T08:28:47.868Z] T3 Audited Fields (5):
+[
+  {
+    "tag": "INPUT",
+    "type": "text",
+    "name": "name-*",
+    "id": "input_comp-kf4g4axe",
+    "placeholder": "NAME *",
+    "value": "John Doe"
+  },
+  {
+    "tag": "INPUT",
+    "type": "email",
+    "name": "email",
+    "id": "input_comp-kf4g4axr",
+    "placeholder": "EMAIL *",
+    "value": "johndoe.inquiry.test@gmail.com"
+  },
+  {
+    "tag": "INPUT",
+    "type": "tel",
+    "name": "phone",
+    "id": "input_comp-kf4g4ay2",
+    "placeholder": "PHONE#",
+    "value": "203-555-0199"
+  },
+  {
+    "tag": "INPUT",
+    "type": "text",
+    "name": "title",
+    "id": "input_comp-kf4g4ay7",
+    "placeholder": "TITLE",
+    "value": ""
+  },
+  {
+    "tag": "TEXTAREA",
+    "type": "textarea",
+    "name": "",
+    "id": "textarea_comp-kf4g4ayd",
+    "placeholder": "MESSAGES",
+    "value": "Hello, I am interested in your"
+  }
+]
+[2026-10-23T08:28:47.875Z] ✅ T3 Real-Browser Field Audit: PASS
+[2026-10-23T08:28:47.886Z] 
+--- VERIFYING SAFE_STOP / TIMEOUT_LOCAL ANTI-MISLABELING ---
+[2026-10-23T08:28:47.951Z] Ledger check result: {"status":"TIMEOUT_LOCAL","isSuccess":false,"statsSuccess":0,"statsTimeout":0}
+[2026-10-23T08:28:47.962Z] ✅ Anti-Mislabeling Guard PASS: TIMEOUT_LOCAL cannot be labeled as SUCCESS
+[2026-10-23T08:28:47.975Z] 
+--- VERIFYING START / STOP CONTROL ---
+[2026-10-23T08:28:47.995Z] Start/Stop check: activeBefore=true, activeAfter=false
+[2026-10-23T08:28:48.009Z] ✅ Start/Stop Control PASS
+[2026-10-23T08:28:48.028Z] 
+--- VERIFYING BOUNDED MANUAL ASSIST TIMER ---
+[2026-10-23T08:28:48.698Z] Bounded timer check: created=true, firedAndCleared=true
+[2026-10-23T08:28:48.706Z] ✅ Bounded Manual Assist Timer PASS
+[2026-10-23T08:28:48.714Z] 
+--- VERIFYING SERVICE WORKER RESTART RESILIENCE ---
+[2026-10-23T08:28:49.737Z] Storage readback after SW restart: OK_PERSISTED
+[2026-10-23T08:28:49.744Z] ✅ Service Worker Restart Resilience PASS
+[2026-10-23T08:28:49.752Z] 
+================ ALL AUDIT GATES PASSED ================
+[2026-10-23T08:28:49.767Z] Summary written to: E:\vivpr\ai\extension-form-sender\evidence\rc3_44_1_audit\audit_summary.json

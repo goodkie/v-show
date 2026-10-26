@@ -15,9 +15,9 @@
 
     const BUILD_INFO = {
         branch: 'upgrade/phase-0-1',
-        channel: 'OWNER_BETA_PRIVATE_EGRESS_RC3.59',
+        channel: 'OWNER_BETA_PRIVATE_EGRESS_RC3.60',
         testOnly: false,
-        // [R6.9G.10.3.7.1.4.77] AI Required Field Completion & Constraint Inference + Turnstile 5/5 Settlement Accounting
+        // [RC3.60 P0] Non-inquiry hang fix: finishCampaign heartbeat/lock/running cleanup + isFinished latch + SENDER_FINISHED NON_INQUIRY gate passthrough
         implementationHead: '741dfe44536031dff13ac6d8e310d4f72fbca42b',
         implementationHeadShort: '741dfe44',
         head: '741dfe44536031dff13ac6d8e310d4f72fbca42b',
@@ -25,12 +25,12 @@
         rollbackBase: '55cd543be5ebe7a4553cac0cbfcf933a00e4c8a5',
         previousFunctionalRestorePoint: 'b2af1c9bf614b9f572acec910265d8132d2043aa',
         manifestVersion: 3,
-        buildId: 'R6.9G.10.3.7.1.4.78-20261026-P0-RC3.59-AI-REQUIRED-FIELDS',
-        builtAt: '2026-10-26T06:50:25.922Z',
+        buildId: 'R6.9G.10.3.7.1.4.79-20261026-P0-RC3.60-NONINQUIRY-HANG-FIX',
+        builtAt: '2026-10-26T10:42:31.464Z',
         provenanceSchema: 2,
         modules: {
-            backgroundSha: '7dcfe61f2508ed6cec2d496c7e24a79f965ae6f93f10370776692bc8975d4c8c',
-            contentScriptSha: 'c154d4d4693a26a6810fdde9b6ecb47d14be511e498e101edac74791335e0aea',
+            backgroundSha: '1a67666fac900792de2b2e3a3d4787837ce5acba5a88edea0446c2bf008be02c',
+            contentScriptSha: '3c4410218aab3fd3631ee186895bee8a62c2ab75916aaf95314a3a5461b8b3f0',
             popupSha: '4e8361d169a4ad447977a9a4521a7eedc2066364179aed632b3a029d2570d651',
             solverContentSha: '6a1ff7154efaeb6dbd5946ac4f9be1ce5b5ff43bce2db06d0dca32950edd3bdb',
             solverCoreSha: 'ab4dee5c8213d7c2fd47942951a2bc40732c1c8c55a5742d493db617150bf95f',

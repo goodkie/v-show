@@ -6,7 +6,7 @@
 - Workspace: E:\vivpr\ai\extension-form-sender
 - Authority: goodkie/v-show Issues #6 & #10
 - Branch: upgrade/phase-0-1
-- State Rev: 2026-10-26.188
+- State Rev: 2026-10-26.189
 - Authority Cursor: 6410024386
 - Last Directives / Audits:
   - `[OWNER PM NEXT EXECUTION — STOP REPEAT BRIEFINGS / IMPLEMENT SECURE DYNAMIC VPN IP ALLOWLIST][ISSUE #6][2026-10-25] Comment #6396720543`
@@ -26,10 +26,11 @@
   - `[ANTIGRAVITY][RECEIPT][ISSUE-6][RC3.59-.77-AI-REQUIRED-FIELD-AND-8-FIXTURE-E2E-PASS][2026-10-26] Comment #6409360606`
   - `[ANTIGRAVITY][RECEIPT][ISSUE-6][RC3.59-.77-LEGAL-CONSENT-AND-TRUTHFUL-BUSINESS-FACTS-PASS][2026-10-26] Comment #6409998295`
   - `[ANTIGRAVITY][RECEIPT][ISSUE-6][RC3.59-.78-PACKAGING-INTEGRITY-AND-UNPACKED-E2E-PASS][2026-10-26]`
-- Functional QA Commit: `5db57007` (Core fix) / Target Release Commit (.78)
-- Build ID: `R6.9G.10.3.7.1.4.78-20261026-P0-RC3.59-AI-REQUIRED-FIELDS`
-- Verified Release Asset: `XPIDER_R6.9G.10.3.7.1.4.78_OWNER_BETA.zip` (Tag: `v6.9g.10.3-rc3.59.7.1.4.78`, Size: 53,158,978 bytes, SHA256: `8e1536c3053fcd17b83f89e0da31540d61061bd6aa18bacc007e488742002dcb`)
-- Software Status: **RC3.59 .78 OWNER BETA PACKAGING INTEGRITY & UNPACKED E2E PASS**: (1) Published new distinct version/tag `.78` with unique archive `XPIDER_R6.9G.10.3.7.1.4.78_OWNER_BETA.zip`, fully resolving the packaging provenance conflict. (2) Independently unpacked into isolated environment and verified 2,223 files byte-for-byte against package inventory. (3) Ran 4 AI constraint, legal consent opt-in, and truthful business fact tests directly on unpacked extension code (100% PASS). (4) Ran full Microsoft Edge browser E2E test loading unpacked extension, achieving exact 5 SUCCESS / 2 SKIPPED / 1 FAILURE across 8 fixtures, 0 external network requests leaked, and clean settings restoration. (5) Operational Gate marked `OWNER_VALIDATION_PENDING`.
+  - `[ANTIGRAVITY][RECEIPT][ISSUE-6][RC3.60-.79-NONINQUIRY-HANG-FIX-AND-UNPACKED-E2E-PASS][2026-10-26]`
+- Functional QA Commit: `dfd34907` (Core fix: isFinished latch + SENDER_FINISHED gate + finishCampaign cleanup)
+- Build ID: `R6.9G.10.3.7.1.4.79-20261026-P0-RC3.60-NONINQUIRY-HANG-FIX`
+- Verified Release Asset: `XPIDER_R6.9G.10.3.7.1.4.79_OWNER_BETA.zip` (Tag: `v6.9g.10.3-rc3.60.7.1.4.79`, Size: 53,161,506 bytes, SHA256: `adba90fec197e46feea6d9e8a823b08d2fc9215df4156fe379ff8185b838b7d0`)
+- Software Status: **RC3.60 .79 OWNER BETA NON-INQUIRY HANG RESOLUTION & INDEPENDENT UNPACKED E2E PASS**: (1) Fixed root causes of non-inquiry fixture stall (subscribe-no-message hanging at 38%): immediate `isFinished = true` latch in `background.js` preventing async re-entry, non-inquiry terminal settlement allowance in `SENDER_FINISHED` stage gate, and complete heartbeat/lock/running flag teardown in `content-script.js:finishCampaign()`. (2) Published new distinct version/tag `.79` with unique archive `XPIDER_R6.9G.10.3.7.1.4.79_OWNER_BETA.zip`. (3) Independently unpacked into isolated environment and verified 2,224 files byte-for-byte against package inventory. (4) Executed 4 AI constraint, legal consent opt-in, and truthful business fact tests directly on unpacked extension code (100% PASS). (5) Ran full Microsoft Edge browser E2E test loading unpacked extension, achieving exact 5 SUCCESS / 2 SKIPPED / 1 FAILURE across 8 fixtures with zero stall, 0 external network requests leaked, and clean settings restoration. (6) Operational Gate marked `OWNER_VALIDATION_PENDING`.
 
 ---
 

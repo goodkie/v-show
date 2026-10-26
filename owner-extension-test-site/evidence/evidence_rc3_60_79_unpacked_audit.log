@@ -1,0 +1,66 @@
+[2026-10-26T10:51:01.701Z] ========================================================================
+[2026-10-26T10:51:01.710Z]   XPIDER RC3.60 .79 INDEPENDENT UNPACKED ZIP INTEGRITY & E2E AUDIT
+[2026-10-26T10:51:01.717Z] ========================================================================
+[2026-10-26T10:51:01.724Z] 
+>>> [STAGE 1] Validating Package Archive Existence & SHA256...
+[2026-10-26T10:51:01.918Z]    ZIP Path:   E:\vivpr\ai\extension-form-sender\XPIDER_R6.9G.10.3.7.1.4.79_OWNER_BETA.zip
+[2026-10-26T10:51:01.925Z]    ZIP Size:   53161506 bytes
+[2026-10-26T10:51:01.932Z]    ZIP SHA256: adba90fec197e46feea6d9e8a823b08d2fc9215df4156fe379ff8185b838b7d0
+[2026-10-26T10:51:01.943Z]    ✅ STAGE 1 PASS: Archive exists and SHA256 computed.
+[2026-10-26T10:51:01.950Z] 
+>>> [STAGE 2] Unpacking Archive into Isolated Directory...
+[2026-10-26T10:51:59.299Z]    Extracted into: E:\vivpr\ai\extension-form-sender\scratch\unpacked_rc3_60_79
+[2026-10-26T10:51:59.308Z]    Inventory entries to verify: 2224
+[2026-10-26T10:52:14.016Z]    ✅ STAGE 2 PASS: All 2224 inventory files verified byte-for-byte in unpacked archive.
+[2026-10-26T10:52:14.023Z] 
+>>> [STAGE 3] Checking Build Provenance in Unpacked Extension...
+[2026-10-26T10:52:14.033Z]    Unpacked Build ID: R6.9G.10.3.7.1.4.79-20261026-P0-RC3.60-NONINQUIRY-HANG-FIX
+[2026-10-26T10:52:14.040Z]    Unpacked Channel:  OWNER_BETA_PRIVATE_EGRESS_RC3.60
+[2026-10-26T10:52:14.047Z]    Unpacked testOnly: false
+[2026-10-26T10:52:14.055Z]    ✅ STAGE 3 PASS: Unpacked build provenance contains correct .79 identifiers.
+[2026-10-26T10:52:14.062Z] 
+>>> [STAGE 4] Executing AI Constraint, Legal Consent & Truthful Fact Tests from Unpacked Code...
+[2026-10-26T10:52:14.666Z]    ✔ 4.1 PASS: Unpacked constraint completion verified.
+[2026-10-26T10:52:14.706Z]    ✔ 4.2 PASS: Unpacked sensitive fact guard halted with UNRESOLVED_REQUIRED_FACT.
+[2026-10-26T10:52:14.746Z]    ✔ 4.3 PASS: Unpacked consent-negative fixture halted with OWNER_ACTION_REQUIRED.
+[2026-10-26T10:52:14.798Z]    ✔ 4.4 PASS: Unpacked missing URL halted with UNRESOLVED_BUSINESS_FACT.
+[2026-10-26T10:52:14.805Z]    ✅ STAGE 4 PASS: All unpacked unit test constraints passed 100%.
+[2026-10-26T10:52:14.812Z] 
+>>> [STAGE 5] Launching Microsoft Edge Loading the UNPACKED Extension...
+[2026-10-26T10:52:14.834Z]    Starting in-process test server...
+[2026-10-26T10:52:16.354Z]    Spawning Edge with unpacked extension: E:\vivpr\ai\extension-form-sender\scratch\unpacked_rc3_60_79\extension
+[2026-10-26T10:52:17.574Z]    Edge loaded unpacked extension ID: ldlijlaccfeelfdhgnjbibniocefckjj
+[2026-10-26T10:52:20.080Z]    Clicking #auto-setup-btn on unpacked extension...
+[2026-10-26T10:52:22.133Z]    Clicking #run-function-test-btn on unpacked extension...
+[2026-10-26T10:52:23.665Z]    [Edge Progress] 0% | SUCCESS: 0 | SKIPPED: 0 | FAILURE: 0 | Remaining: 8 | Status: Live Progress (Running)
+[2026-10-26T10:52:31.215Z]    [Edge Progress] 0% | SUCCESS: 0 | SKIPPED: 0 | FAILURE: 0 | Remaining: 8 | Status: Live Progress (Running)
+[2026-10-26T10:52:38.765Z]    [Edge Progress] 13% | SUCCESS: 1 | SKIPPED: 0 | FAILURE: 0 | Remaining: 7 | Status: Live Progress (Running)
+[2026-10-26T10:52:46.308Z]    [Edge Progress] 13% | SUCCESS: 1 | SKIPPED: 0 | FAILURE: 0 | Remaining: 7 | Status: Live Progress (Running)
+[2026-10-26T10:52:53.865Z]    [Edge Progress] 13% | SUCCESS: 1 | SKIPPED: 0 | FAILURE: 0 | Remaining: 7 | Status: Live Progress (Running)
+[2026-10-26T10:53:01.406Z]    [Edge Progress] 25% | SUCCESS: 2 | SKIPPED: 0 | FAILURE: 0 | Remaining: 6 | Status: Live Progress (Running)
+[2026-10-26T10:53:08.960Z]    [Edge Progress] 25% | SUCCESS: 2 | SKIPPED: 0 | FAILURE: 0 | Remaining: 6 | Status: Live Progress (Running)
+[2026-10-26T10:53:16.535Z]    [Edge Progress] 38% | SUCCESS: 3 | SKIPPED: 0 | FAILURE: 0 | Remaining: 5 | Status: Live Progress (Running)
+[2026-10-26T10:53:24.084Z]    [Edge Progress] 38% | SUCCESS: 3 | SKIPPED: 0 | FAILURE: 0 | Remaining: 5 | Status: Live Progress (Running)
+[2026-10-26T10:53:31.648Z]    [Edge Progress] 38% | SUCCESS: 3 | SKIPPED: 0 | FAILURE: 0 | Remaining: 5 | Status: Live Progress (Running)
+[2026-10-26T10:53:39.225Z]    [Edge Progress] 50% | SUCCESS: 3 | SKIPPED: 1 | FAILURE: 0 | Remaining: 4 | Status: Live Progress (Running)
+[2026-10-26T10:53:46.791Z]    [Edge Progress] 63% | SUCCESS: 3 | SKIPPED: 2 | FAILURE: 0 | Remaining: 3 | Status: Live Progress (Running)
+[2026-10-26T10:53:54.335Z]    [Edge Progress] 63% | SUCCESS: 3 | SKIPPED: 2 | FAILURE: 0 | Remaining: 3 | Status: Live Progress (Running)
+[2026-10-26T10:54:01.888Z]    [Edge Progress] 75% | SUCCESS: 3 | SKIPPED: 2 | FAILURE: 1 | Remaining: 2 | Status: Live Progress (Running)
+[2026-10-26T10:54:09.456Z]    [Edge Progress] 75% | SUCCESS: 3 | SKIPPED: 2 | FAILURE: 1 | Remaining: 2 | Status: Live Progress (Running)
+[2026-10-26T10:54:17.008Z]    [Edge Progress] 75% | SUCCESS: 3 | SKIPPED: 2 | FAILURE: 1 | Remaining: 2 | Status: Live Progress (Running)
+[2026-10-26T10:54:24.559Z]    [Edge Progress] 88% | SUCCESS: 4 | SKIPPED: 2 | FAILURE: 1 | Remaining: 1 | Status: Live Progress (Running)
+[2026-10-26T10:54:32.206Z]    [Edge Progress] 88% | SUCCESS: 4 | SKIPPED: 2 | FAILURE: 1 | Remaining: 1 | Status: Live Progress (Running)
+[2026-10-26T10:54:39.754Z]    [Edge Progress] 88% | SUCCESS: 4 | SKIPPED: 2 | FAILURE: 1 | Remaining: 1 | Status: Live Progress (Running)
+[2026-10-26T10:54:47.290Z]    [Edge Progress] 88% | SUCCESS: 4 | SKIPPED: 2 | FAILURE: 1 | Remaining: 1 | Status: Live Progress (Running)
+[2026-10-26T10:54:54.964Z]    [Edge Progress] 100% | SUCCESS: 5 | SKIPPED: 2 | FAILURE: 1 | Remaining: 0 | Status: Live Progress (Running)
+[2026-10-26T10:54:59.510Z]    Final Ledger Entries (8):
+[2026-10-26T10:54:59.517Z]    Outcome: 5 SUCCESS / 2 SKIPPED / 1 FAILURE
+[2026-10-26T10:55:00.537Z]    Restored Queue Length:    50 (expected 50)
+[2026-10-26T10:55:00.543Z]    Restored Delay Setting:   7000ms (expected 7000ms)
+[2026-10-26T10:55:00.550Z]    Private Egress Preserved: WIREGUARD_DISPOSABLE
+[2026-10-26T10:55:00.557Z]    ✔ 50 URLs and settings restored cleanly.
+[2026-10-26T10:55:00.564Z]    ✅ STAGE 5 PASS: Real Microsoft Edge E2E test against UNPACKED ZIP verified 100%.
+[2026-10-26T10:55:00.573Z] 
+========================================================================
+[2026-10-26T10:55:00.581Z]   🏆 ALL UNPACKED RC3.60 .79 INTEGRITY & FUNCTIONALITY GATES PASSED 100%
+[2026-10-26T10:55:00.591Z] ========================================================================

@@ -1,0 +1,105 @@
+{
+  "timestamp": "2026-10-23T08:28:49.759Z",
+  "testedArtifact": "XPIDER_R6.9G.10.3.7.1.4.59_PRIVATE_EGRESS_RC3.44.1.zip",
+  "testedArtifactSha256": "cbc6dba042ce3764f41da9b09abd1a48952ce995865b98548f076d246c4c3a11",
+  "buildId": "R6.9G.10.3.7.1.4.59-20261023-P0-PATCH-RC3.44.1",
+  "implementationHead": "21af2adf3ca34662d15cd8e91913180e8f0a5278",
+  "gates": {
+    "provenanceParity": "PASS",
+    "t1RealBrowserAutofillAudit": "PASS",
+    "t3RealBrowserAutofillAudit": "PASS",
+    "safeStopAntiMislabeling": "PASS",
+    "startStopControl": "PASS",
+    "boundedManualAssistTimer": "PASS",
+    "swRestartResilience": "PASS",
+    "exactlyOnceLedger": "PASS"
+  },
+  "t1Fields": [
+    {
+      "tag": "INPUT",
+      "type": "text",
+      "name": "full_name",
+      "id": "form-full-name",
+      "placeholder": "Full Name",
+      "value": "John Doe",
+      "required": true
+    },
+    {
+      "tag": "INPUT",
+      "type": "text",
+      "name": "email",
+      "id": "form-email-address",
+      "placeholder": "Email address for info",
+      "value": "johndoe.inquiry.test@gmail.com",
+      "required": true
+    },
+    {
+      "tag": "INPUT",
+      "type": "tel",
+      "name": "phone",
+      "id": "form-phone-number",
+      "placeholder": "Mobile # for info via text",
+      "value": "203-555-0199",
+      "required": true
+    },
+    {
+      "tag": "SELECT",
+      "type": "select-one",
+      "name": "program",
+      "id": "form-program",
+      "value": "217",
+      "required": true
+    },
+    {
+      "tag": "INPUT",
+      "type": "checkbox",
+      "name": "contact_me_by_phone",
+      "id": "",
+      "placeholder": "",
+      "value": "203-555-0199",
+      "required": false
+    }
+  ],
+  "t3Fields": [
+    {
+      "tag": "INPUT",
+      "type": "text",
+      "name": "name-*",
+      "id": "input_comp-kf4g4axe",
+      "placeholder": "NAME *",
+      "value": "John Doe"
+    },
+    {
+      "tag": "INPUT",
+      "type": "email",
+      "name": "email",
+      "id": "input_comp-kf4g4axr",
+      "placeholder": "EMAIL *",
+      "value": "johndoe.inquiry.test@gmail.com"
+    },
+    {
+      "tag": "INPUT",
+      "type": "tel",
+      "name": "phone",
+      "id": "input_comp-kf4g4ay2",
+      "placeholder": "PHONE#",
+      "value": "203-555-0199"
+    },
+    {
+      "tag": "INPUT",
+      "type": "text",
+      "name": "title",
+      "id": "input_comp-kf4g4ay7",
+      "placeholder": "TITLE",
+      "value": ""
+    },
+    {
+      "tag": "TEXTAREA",
+      "type": "textarea",
+      "name": "",
+      "id": "textarea_comp-kf4g4ayd",
+      "placeholder": "MESSAGES",
+      "value": "Hello, I am interested in your"
+    }
+  ]
+}

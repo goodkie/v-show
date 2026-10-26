@@ -1,0 +1,79 @@
+[2026-10-23T04:23:04.263Z] ===== RC3.44 DIAG CAPTURE: liveyourtoplife.com =====
+[2026-10-23T04:23:04.275Z] Profile: C:\Users\oPus\AppData\Local\Temp\xpider-rc344-diag-EGzNTe
+[2026-10-23T04:23:05.085Z] extId=ldlijlaccfeelfdhgnjbibniocefckjj
+[2026-10-23T04:23:07.991Z] START_CAMPAIGN: {"success":true,"status":"acknowledged","queueCount":1,"campaignRunId":"run_1792729387974_vxi15"}
+[2026-10-23T04:23:08.215Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] [TARGET 1/1][liveyourtoplife.com] START
+[2026-10-23T04:23:08.228Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] [TARGET_START] buildId=R6.9G.[REDACTED_IP].[REDACTED_PHONE]-P0-FIX-RC3.44 campaignRunId=run_[REDACTED_PHONE]_vxi15 attemptId=att_init targetIndex=1/1 targetUrl=https://liveyourtoplife.com/
+[2026-10-23T04:23:11.007Z] poll a=true st=null c=0
+[2026-10-23T04:23:12.602Z] [POPUP_CONSOLE] [XPIDER_DIAG] [TARGET_PAGE] url=https://liveyourtoplife.com/ domGeneration=[REDACTED_PHONE] attemptId=att_[REDACTED_PHONE]_zik6n
+[2026-10-23T04:23:12.618Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] [CONTENT_EVENT][tabId=[REDACTED_PHONE]][attemptId=att_[REDACTED_PHONE]_zik6n][url=https://liveyourtoplife.com/] [TARGET_PAGE] url=https://liveyourtoplife.com/ domGeneration=[REDACTED_PHONE] attemptId=att_[REDACTED_PHONE]_zik6n
+[2026-10-23T04:23:12.646Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] [TARGET][liveyourtoplife.com] emailsFoundCurrentPage=1 emailsNewGlobal=1 totalEmailsGlobal=1
+[2026-10-23T04:23:12.666Z] [POPUP_CONSOLE] [XPIDER_DIAG] [TARGET_PAGE] url=https://liveyourtoplife.com/ recursion=0
+[2026-10-23T04:23:12.676Z] [POPUP_CONSOLE] [XPIDER_DIAG] 🔍 [Discovery] URL: https://liveyourtoplife.com/ | Recursion: 0
+[2026-10-23T04:23:12.685Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] [CONTENT_EVENT][tabId=[REDACTED_PHONE]][attemptId=att_[REDACTED_PHONE]_zik6n][url=https://liveyourtoplife.com/] [TARGET_PAGE] url=https://liveyourtoplife.com/ recursion=0
+[2026-10-23T04:23:12.696Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] [CONTENT_EVENT][tabId=[REDACTED_PHONE]][attemptId=att_[REDACTED_PHONE]_zik6n][url=https://liveyourtoplife.com/] 🔍 [Discovery] URL: https://liveyourtoplife.com/ | Recursion: 0
+[2026-10-23T04:23:12.705Z] [POPUP_CONSOLE] [XPIDER_DIAG] 🧐 [Discovery] Polling attempt 1/3... | URL: https://liveyourtoplife.com/ | Recursion: 0
+[2026-10-23T04:23:12.713Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] [CONTENT_EVENT][tabId=[REDACTED_PHONE]][attemptId=att_[REDACTED_PHONE]_zik6n][url=https://liveyourtoplife.com/] 🧐 [Discovery] Polling attempt 1/3... | URL: https://liveyourtoplife.com/ | Recursion: 0
+[2026-10-23T04:23:14.075Z] poll a=true st=null c=0
+[2026-10-23T04:23:17.101Z] poll a=true st=null c=0
+[2026-10-23T04:23:17.530Z] [POPUP_CONSOLE] [XPIDER_DIAG] [TARGET_PAGE] url=https://liveyourtoplife.com/location/shelton-ct/ domGeneration=[REDACTED_PHONE] attemptId=att_[REDACTED_PHONE]_zik6n
+[2026-10-23T04:23:17.540Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] [CONTENT_EVENT][tabId=[REDACTED_PHONE]][attemptId=att_[REDACTED_PHONE]_zik6n][url=https://liveyourtoplife.com/location/shelton-ct/] [TARGET_PAGE] url=https://liveyourtoplife.com/location/shelton-ct/ domGeneration=[REDACTED_PHONE] attemptId=att_[REDACTED_PHONE]_zik6n
+[2026-10-23T04:23:17.556Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] [TARGET][liveyourtoplife.com] emailsFoundCurrentPage=1 emailsNewGlobal=0 totalEmailsGlobal=1
+[2026-10-23T04:23:17.575Z] [POPUP_CONSOLE] [XPIDER_DIAG] [TARGET_PAGE] url=https://liveyourtoplife.com/location/shelton-ct/ recursion=0
+[2026-10-23T04:23:17.589Z] [POPUP_CONSOLE] [XPIDER_DIAG] 🔍 [Discovery] URL: https://liveyourtoplife.com/location/shelton-ct/ | Recursion: 0
+[2026-10-23T04:23:17.599Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] [CONTENT_EVENT][tabId=[REDACTED_PHONE]][attemptId=att_[REDACTED_PHONE]_zik6n][url=https://liveyourtoplife.com/location/shelton-ct/] [TARGET_PAGE] url=https://liveyourtoplife.com/location/shelton-ct/ recursion=0
+[2026-10-23T04:23:17.611Z] [POPUP_CONSOLE] [XPIDER_DIAG] 🧐 [Discovery] Polling attempt 1/3... | URL: https://liveyourtoplife.com/location/shelton-ct/ | Recursion: 0
+[2026-10-23T04:23:17.618Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] [CONTENT_EVENT][tabId=[REDACTED_PHONE]][attemptId=att_[REDACTED_PHONE]_zik6n][url=https://liveyourtoplife.com/location/shelton-ct/] 🔍 [Discovery] URL: https://liveyourtoplife.com/location/shelton-ct/ | Recursion: 0
+[2026-10-23T04:23:17.628Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] [CONTENT_EVENT][tabId=[REDACTED_PHONE]][attemptId=att_[REDACTED_PHONE]_zik6n][url=https://liveyourtoplife.com/location/shelton-ct/] 🧐 [Discovery] Polling attempt 1/3... | URL: https://liveyourtoplife.com/location/shelton-ct/ | Recursion: 0
+[2026-10-23T04:23:19.455Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1234346025][attemptId=att_1792729388033_zik6n][url=https://liveyourtoplife.com/location/shelton-ct/] 🕵️ [Supreme-Scan 5.0] Pre-scanning labels and context...
+[2026-10-23T04:23:19.464Z] [SW_CONSOLE] [BG_LOG][tab=1234346025] [CONTENT_EVENT][tabId=1234346025][attemptId=att_1792729388033_zik6n][url=https://liveyourtoplife.com/location/shelton-ct/] 🕵️ [Supreme-Scan 5.0] Pre-scanning labels and context...
+[2026-10-23T04:23:19.475Z] [POPUP_CONSOLE] [XPIDER_DIAG] 🕵️ [Supreme-Scan 5.0] Pre-scanning labels and context...
+[2026-10-23T04:23:19.485Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1234346025][attemptId=att_1792729388033_zik6n][url=https://liveyourtoplife.com/location/shelton-ct/] 🔍 [Scan] Scanned 179 elements. Highest score: -999
+[2026-10-23T04:23:19.495Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] [CONTENT_EVENT][tabId=[REDACTED_PHONE]][attemptId=att_[REDACTED_PHONE]_zik6n][url=https://liveyourtoplife.com/location/shelton-ct/] 🕵️ [Supreme-Scan 5.0] Pre-scanning labels and context...
+[2026-10-23T04:23:19.504Z] [SW_CONSOLE] [BG_LOG][tab=1234346025] [CONTENT_EVENT][tabId=1234346025][attemptId=att_1792729388033_zik6n][url=https://liveyourtoplife.com/location/shelton-ct/] 🔍 [Scan] Scanned 179 elements. Highest score: -999
+[2026-10-23T04:23:19.514Z] [POPUP_CONSOLE] [XPIDER_DIAG] 🔍 [Scan] Scanned 179 elements. Highest score: -999
+[2026-10-23T04:23:19.525Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] [CONTENT_EVENT][tabId=[REDACTED_PHONE]][attemptId=att_[REDACTED_PHONE]_zik6n][url=https://liveyourtoplife.com/location/shelton-ct/] 🔍 [Scan] Scanned 179 elements. Highest score: -999
+[2026-10-23T04:23:20.119Z] poll a=true st=null c=0
+[2026-10-23T04:23:23.134Z] poll a=true st=null c=0
+[2026-10-23T04:23:26.156Z] poll a=true st=null c=0
+[2026-10-23T04:23:29.169Z] poll a=true st=null c=0
+[2026-10-23T04:23:32.178Z] poll a=true st=null c=0
+[2026-10-23T04:23:35.198Z] poll a=true st=null c=0
+[2026-10-23T04:23:38.212Z] poll a=true st=null c=0
+[2026-10-23T04:23:41.233Z] poll a=true st=null c=0
+[2026-10-23T04:23:44.241Z] poll a=true st=null c=0
+[2026-10-23T04:23:47.330Z] poll a=true st=null c=0
+[2026-10-23T04:23:50.339Z] poll a=true st=null c=0
+[2026-10-23T04:23:53.363Z] poll a=true st=null c=0
+[2026-10-23T04:23:56.375Z] poll a=true st=null c=0
+[2026-10-23T04:23:59.392Z] poll a=true st=null c=0
+[2026-10-23T04:24:02.415Z] poll a=true st=null c=0
+[2026-10-23T04:24:05.438Z] poll a=true st=null c=0
+[2026-10-23T04:24:08.581Z] poll a=true st=null c=0
+[2026-10-23T04:24:11.675Z] poll a=true st=null c=0
+[2026-10-23T04:24:14.698Z] poll a=true st=null c=0
+[2026-10-23T04:24:17.719Z] poll a=true st=null c=0
+[2026-10-23T04:24:19.921Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] [TIMEOUT_GUARD] Campaign paused for network recovery (CHECKPOINTED). Suppressing timeouts.
+[2026-10-23T04:24:20.740Z] poll a=true st=null c=0
+[2026-10-23T04:24:23.760Z] poll a=true st=null c=0
+[2026-10-23T04:24:26.780Z] poll a=true st=null c=0
+[2026-10-23T04:24:29.799Z] poll a=true st=null c=0
+[2026-10-23T04:24:32.840Z] poll a=true st=null c=0
+[2026-10-23T04:24:35.862Z] poll a=true st=null c=0
+[2026-10-23T04:24:38.296Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] [FINAL_CANONICAL] status=TIMEOUT_LOCAL reason=TIMEOUT_LOCAL attemptId=att_[REDACTED_PHONE]_zik6n
+[2026-10-23T04:24:38.305Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] [TARGET][liveyourtoplife.com] FINAL status=TIMEOUT_LOCAL reason=TIMEOUT_LOCAL
+[2026-10-23T04:24:38.879Z] poll a=true st=null c=1
+[2026-10-23T04:24:41.896Z] poll a=false st=null c=1
+[2026-10-23T04:24:41.903Z] Campaign done.
+[2026-10-23T04:24:41.910Z] --- CAPTURED 138 popup logs, 167 sw logs ---
+[2026-10-23T04:24:41.917Z] GATE LINES:
+[2026-10-23T04:24:41.925Z] SCORE LINES:
+[2026-10-23T04:24:41.931Z] [CONTENT_EVENT][tabId=1234346025][attemptId=att_1792729388033_zik6n][url=https://liveyourtoplife.com/location/shelton-ct/] 🔍 [Scan] Scanned 179 elements. Highest score: -999
+[2026-10-23T04:24:41.939Z] [BG_LOG][tab=1234346025] [CONTENT_EVENT][tabId=1234346025][attemptId=att_1792729388033_zik6n][url=https://liveyourtoplife.com/location/shelton-ct/] 🔍 [Scan] Scanned 179 elements. Highest score: -999
+[2026-10-23T04:24:41.946Z] [CONTENT_EVENT][tabId=1234346025][attemptId=att_1792729388033_zik6n][url=https://liveyourtoplife.com/location/shelton-ct/] ⚠️ [Scan] No valid forms reached threshold score (Target Score: 35)
+[2026-10-23T04:24:41.953Z] [BG_LOG][tab=1234346025] [CONTENT_EVENT][tabId=1234346025][attemptId=att_1792729388033_zik6n][url=https://liveyourtoplife.com/location/shelton-ct/] ⚠️ [Scan] No valid forms reached threshold score (Target Score: 35)
+[2026-10-23T04:24:41.962Z] [XPIDER_DIAG] 🔍 [Scan] Scanned 179 elements. Highest score: -999
+[2026-10-23T04:24:41.969Z] [XPIDER_DIAG] ⚠️ [Scan] No valid forms reached threshold score (Target Score: 35)
+[2026-10-23T04:24:41.976Z] [XPIDER_DIAG] [System] [CONTENT_EVENT][tabId=[REDACTED_PHONE]][attemptId=att_[REDACTED_PHONE]_zik6n][url=https://liveyourtoplife.com/location/shelton-ct/] 🔍 [Scan] Scanned 179 elements. Highest score: -999
+[2026-10-23T04:24:41.983Z] [XPIDER_DIAG] [System] [CONTENT_EVENT][tabId=[REDACTED_PHONE]][attemptId=att_[REDACTED_PHONE]_zik6n][url=https://liveyourtoplife.com/location/shelton-ct/] ⚠️ [Scan] No valid forms reached threshold score (Target Score: 35)
+[2026-10-23T04:24:41.994Z] ===== DONE =====

@@ -1,0 +1,12 @@
+[2026-10-24T05:47:23.229Z] ========================================================================
+[2026-10-24T05:47:23.239Z]    XPIDER RC3.48 SHIPPED ZIP ACCEPTANCE & CAPTCHA AUDIT MATRIX (EDGE)   
+[2026-10-24T05:47:23.247Z] ========================================================================
+
+[2026-10-24T05:47:23.406Z] Target ZIP SHA256: 8fa8efeb19bb1906ba9c700c4b79366b32ac77ae1b1a48de5869ead0fa1b6afa
+[2026-10-24T05:47:23.413Z] 
+>>> STAGE 0: Verifying Test Server on 127.0.0.1:8088
+[2026-10-24T05:47:23.458Z] Starting test server...
+[2026-10-24T05:47:25.516Z] ✅ Test server started and healthy
+[2026-10-24T05:47:25.524Z] 
+>>> STAGE 1: Launching Edge with Published RC3.48 Extension...
+[2026-10-24T05:47:25.823Z] Spawning Edge: C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe

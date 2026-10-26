@@ -1,0 +1,11 @@
+[2026-10-24T06:54:06.738Z] ========================================================================
+[2026-10-24T06:54:06.747Z]    XPIDER RC3.48 PACKAGED CAPTCHA MODAL NEGATIVE/FAILURE TEST MATRIX    
+[2026-10-24T06:54:06.754Z] ========================================================================
+
+[2026-10-24T06:54:06.760Z] Checking local test fixture server on 127.0.0.1:8088
+[2026-10-24T06:54:08.824Z] ✅ Test server started
+[2026-10-24T06:54:08.831Z] Launching Edge with packaged RC3.48 extension...
+[2026-10-24T06:54:16.560Z] Fetch retry 0 error: fetch failed
+[2026-10-24T06:54:20.477Z] Fetch retry 5 error: fetch failed
+[2026-10-24T06:54:23.369Z] Fetch retry 10 error: fetch failed
+[2026-10-24T06:54:27.869Z] Fetch retry 15 error: fetch failed
