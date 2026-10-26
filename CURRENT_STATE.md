@@ -6,23 +6,25 @@
 - Workspace: E:\vivpr\ai\extension-form-sender
 - Authority: goodkie/v-show Issues #6 & #10
 - Branch: upgrade/phase-0-1
-- State Rev: 2026-10-25.183
-- Authority Cursor: 6407535598
+- State Rev: 2026-10-25.184
+- Authority Cursor: 6407945352
 - Last Directives / Audits:
   - `[OWNER PM NEXT EXECUTION — STOP REPEAT BRIEFINGS / IMPLEMENT SECURE DYNAMIC VPN IP ALLOWLIST][ISSUE #6][2026-10-25] Comment #6396720543`
   - `[OWNER PM P0 SECURITY HOLD — RC3.58 MUST NOT BE RUN ON OWNER PC][ISSUE #6][2026-10-25 11:57 UTC] Comment #6397334700`
   - `[CHATGPT OWNER PM][NEXT EXECUTION ORDER][ISSUE-6][2026-10-25] Comment #6404329438`
   - `[XPIDER — URGENT HOTFIX / OWNER BETA R6.9G.10.3.7.1.4.73]`
+  - `[CHATGPT][AUDIT DIRECTIVE][ISSUE-6][OWNER-BETA-HOTFIX-.76][2026-10-25] Comment #6407816025`
 - Last Receipts:
   - `[ANTIGRAVITY][RECEIPT][ISSUE-6][RC3.59-TANGIBLE-PRODUCT-RECOVERY-AND-E2E-FIXTURES-PASS][2026-10-25] Comment #6406287831`
   - `[ANTIGRAVITY][RECEIPT][ISSUE-6][OWNER-BETA-AUTO-SETUP-CHANNEL-HOTFIX-PASS][2026-10-25] Comment #6407535598`
+  - `[ANTIGRAVITY][RECEIPT][ISSUE-6][OWNER-BETA-HOTFIX-76-INDEPENDENT-AUDIT-PASS][2026-10-25] Comment #6407945352`
 - Functional QA Commit: `759ecb9d5ad6399038a020e782992b1668c9dbda`
-- Active Git Commit (Release): `759ecb9d5ad6399038a020e782992b1668c9dbda`
+- Active Git Commit (Release): `4b5766de48a0ddfca06cb750d8a572a12906b3fa`
 - Previous Functional Restore Point: `9277952a5a58579d4b4a3c20059b027d76f0cb3c`
 - Rollback Anchor: `55cd543be5ebe7a4553cac0cbfcf933a00e4c8a5`
 - Build ID: `R6.9G.10.3.7.1.4.76-20261025-P0-RC3.59-HOTFIX`
 - Verified Release Asset: `XPIDER_R6.9G.10.3.7.1.4.76_OWNER_BETA_HOTFIX.zip` (Tag: `v6.9g.10.3-rc3.59.7.1.4.76`, Size: 52,483,181 bytes, SHA256: `5e99c9a6cb1b9dfa2b13bec5b3caa979fb535a7a88cdfbe22af85ffd2701dc59`)
-- Software Status: **OWNER BETA AUTO SETUP HOTFIX PASS (100% REGRESSION VERIFIED)**: Resolved channel authorization blocker `AUTO SETUP FAILED — Runtime build is not authorized for TEST_ONLY channel.` in Private Owner Beta builds. Permitted isolated local tests under `OWNER_BETA` channels while strictly enforcing DeclarativeNetRequest network guard (priority 1 block all HTTP/WS, priority 2 allow loopback; 0 external sends). Preserved 50 public URLs and custom delay/Private Egress settings in reversible backup snapshot (`xpider_owner_backup_snapshot`). Real Microsoft Edge regression test (`test/run_edge_owner_beta_auto_setup_hotfix.js`) verified: (1) AUTO SETUP succeeds with status READY, (2) all 7 local fixtures execute autonomously with exact 4 SUCCESS / 2 SKIPPED / 1 FAILURE outcome (7/7 executed), (3) 0 external leaks, (4) RESTORE restores all 50 public URLs and original settings cleanly.
+- Software Status: **OWNER BETA AUTO SETUP HOTFIX PASS & INDEPENDENT AUDIT 100% PASS**: (1) Validated packaged .76 ZIP bitwise against commit 759ecb9d (49/49 files 100% substantive match). (2) Validated real Microsoft Edge browser E2E against pristine unpacked .76 ZIP: AUTO SETUP succeeds, all 7 fixtures execute autonomously with exact 4 SUCCESS / 2 SKIPPED / 1 FAILURE (7/7 executed), 0 external sends, and RESTORE restores 50 public URLs and custom settings. (3) Broadened `isTestOnlyBuild()` safety audit confirms loopback isolation: mock captcha, lab auto-drive, and skip-attempted bypass are strictly unreachable from public/non-loopback URLs. (4) Operational Gate marked `OWNER_VALIDATION_PENDING` with minimal smoke instructions.
 
 ---
 
