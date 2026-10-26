@@ -27,7 +27,9 @@ const { spawn } = require('child_process');
 
 const TEST_SERVER_PORT = 8088;
 const CDP_PORT = 9388;
-const EXT_DIR = path.resolve(__dirname, '../extension');
+const EXT_DIR = fs.existsSync(path.resolve(__dirname, '../scratch/unpacked_rc3_59_76_hotfix/extension'))
+    ? path.resolve(__dirname, '../scratch/unpacked_rc3_59_76_hotfix/extension')
+    : path.resolve(__dirname, '../extension');
 const EVIDENCE_DIR = path.resolve(__dirname, '../owner-extension-test-site/evidence');
 const LOG_FILE = path.join(EVIDENCE_DIR, 'evidence_owner_beta_hotfix_regression.log');
 
@@ -390,6 +392,7 @@ async function runHotfixAudit() {
     log('  - Actual External Sends: 0 (DNR Network Guard Enforced)');
     log('  - Snapshot & User Settings Restoration: PASS');
     log('========================================================================\n');
+    process.exit(0);
 }
 
 runHotfixAudit().catch(err => {
