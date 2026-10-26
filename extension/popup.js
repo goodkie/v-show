@@ -7410,6 +7410,9 @@ async function launchCampaign(options = {}) {
             if (msgEl) msgEl.value = activeMsg;
         }
 
+        const consentStorage = await chrome.storage.local.get(['xpider_owner_authorized_consent']);
+        const ownerAuthorizedConsent = Boolean(isOwnerTest || consentStorage.xpider_owner_authorized_consent);
+
         currentTpl = {
             firstName: document.getElementById('tpl-first-name')?.value || (isOwnerTest ? 'John' : ''),
             lastName: document.getElementById('tpl-last-name')?.value || (isOwnerTest ? 'Doe' : ''),
@@ -7417,7 +7420,9 @@ async function launchCampaign(options = {}) {
             email: document.getElementById('tpl-email')?.value || (isOwnerTest ? 'test.operator@example.com' : ''),
             phone: document.getElementById('tpl-phone')?.value || (isOwnerTest ? '555-0199' : ''),
             subject: document.getElementById('tpl-subject')?.value || (isOwnerTest ? 'Software Functional Test' : ''),
-            message: activeMsg
+            message: activeMsg,
+            website: isOwnerTest ? 'http://127.0.0.1:8088' : (document.getElementById('tpl-website')?.value || ''),
+            ownerAuthorizedConsent: ownerAuthorizedConsent
         };
 
         if (!currentTpl.message || !currentTpl.message.trim()) {

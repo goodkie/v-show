@@ -2023,8 +2023,12 @@
                 try {
                     const engine = new _FinalFormCompletionEngine({
                         logger: (msg) => logDev(msg, "info"),
-                        checkboxResolver: _CheckboxResolverR2 ? new _CheckboxResolverR2() : null,
-                        selectResolver: _SelectResolverR2 ? new _SelectResolverR2() : null
+                        checkboxResolver: _CheckboxResolverR2 ? new _CheckboxResolverR2({
+                            logger: logDev,
+                            ownerAuthorizedConsent: Boolean(template && (template.ownerAuthorizedConsent || template.allowAutoConsent))
+                        }) : null,
+                        selectResolver: _SelectResolverR2 ? new _SelectResolverR2() : null,
+                        ownerAuthorizedConsent: Boolean(template && (template.ownerAuthorizedConsent || template.allowAutoConsent))
                     });
                     const pageCtx = { url: (typeof window !== 'undefined' && window.location) ? window.location.href : '' };
                     auditResult = await engine.run(form, template, pageCtx);
@@ -2032,6 +2036,13 @@
                     // [R6.1 FINAL REQUIRED AUDIT - HARD GATE]
                     if (!auditResult.pass) {
                         logDev(`❌ [FinalAudit] Submission blocked by Hard Gate: ${auditResult.reason}`, "error");
+                        if (auditResult.reason === 'OWNER_ACTION_REQUIRED' ||
+                            auditResult.reason === 'UNRESOLVED_REQUIRED_FACT' ||
+                            auditResult.reason === 'UNRESOLVED_BUSINESS_FACT' ||
+                            auditResult.reason === 'UNRESOLVED_BUSINESS_CHOICE') {
+                            finishCampaign(false, auditResult.reason, auditResult.context || auditResult.reason, { audit: auditResult });
+                            return false;
+                        }
                         const unres = auditResult.unresolvedFields || [auditResult.reason];
                         const assistReason = (auditResult.unresolvedRequired > 0 || auditResult.reason === 'REQUIRED_FIELDS_UNRESOLVED' || !auditResult.reason) ? 'REQUIRED_FIELDS_UNRESOLVED' : auditResult.reason;
                         const assistHandled = await requestManualFormAssist(assistReason, '', unres);
@@ -3665,7 +3676,7 @@
 
             // 2.5 URL & 날짜/시간 필드 판정
             if (type === 'url' || /website|url|homepage|홈페이지/i.test(c)) {
-                return (tpl && (tpl.website || tpl.url)) || 'https://example.com';
+                return (tpl && (tpl.website || tpl.url || tpl.homepage)) || '';
             }
             if (type === 'date') {
                 const now = new Date();
@@ -3804,14 +3815,21 @@
         // ── 4단계: 체크박스 전수 처리 (CheckboxResolverR2: 10-카테고리, Boston BJJ 그룹, 약관/동의 필수 체크) ──
         logDev("🎯 [HyperEngine v4.0] Phase 3 - 체크박스 CheckboxResolverR2 전수 처리...");
         let checkboxStability = { stable: true };
+        const isConsentAuthorized = Boolean(tpl && (tpl.ownerAuthorizedConsent || tpl.allowAutoConsent));
         if (_CheckboxResolverR2) {
             try {
-                const checkboxResolver = new _CheckboxResolverR2({ logger: logDev });
-                const cbRes = await checkboxResolver.resolveAllInForm(form);
+                const checkboxResolver = new _CheckboxResolverR2({
+                    logger: logDev,
+                    ownerAuthorizedConsent: isConsentAuthorized
+                });
+                const cbRes = await checkboxResolver.resolveAllInForm(form, {
+                    ownerAuthorizedConsent: isConsentAuthorized
+                });
                 if (cbRes && cbRes.handledCount > 0) filledFields += cbRes.handledCount;
                 if (cbRes && !cbRes.stable) {
                     checkboxStability.stable = false;
-                    checkboxStability.reasonCode = 'REQUIRED_CHECKBOX_UNSTABLE';
+                    const authRequired = cbRes.results && cbRes.results.find(r => r.reason === 'OWNER_ACTION_REQUIRED');
+                    checkboxStability.reasonCode = authRequired ? 'OWNER_ACTION_REQUIRED' : 'REQUIRED_CHECKBOX_UNSTABLE';
                 }
             } catch (cbErr) {
                 logDev(`⚠️ [CheckboxResolverR2] Error: ${cbErr.message}`, 'warning');
@@ -3828,9 +3846,12 @@
                         '동의', '규정', '약관', '개인정보', '수집', '이용',
                         'gdpr', 'einwilligung', 'datenschutz', 'consentement', 'aceptar'
                     ];
-                    if (termsKeywords.some(k => combined.includes(k))) {
+                    if (isConsentAuthorized && termsKeywords.some(k => combined.includes(k))) {
                         await applyCheckbox(el);
                         filledFields++;
+                    } else if (!isConsentAuthorized && (el.required || el.getAttribute('aria-required') === 'true') && termsKeywords.some(k => combined.includes(k))) {
+                        checkboxStability.stable = false;
+                        checkboxStability.reasonCode = 'OWNER_ACTION_REQUIRED';
                     }
                 }
             }
@@ -3965,7 +3986,7 @@
                 else if (hint.includes('city') || hint.includes('도시') || hint.includes('시/군/구')) val = 'Seoul';
                 else if (hint.includes('state') || hint.includes('province') || hint.includes('시/도')) val = 'Seoul';
                 else if (hint.includes('country') || hint.includes('국가')) val = 'Korea';
-                else if (tp === 'url' || hint.includes('website') || hint.includes('url') || hint.includes('homepage') || hint.includes('홈페이지')) val = (tpl && (tpl.website || tpl.url)) || 'https://example.com';
+                else if (tp === 'url' || hint.includes('website') || hint.includes('url') || hint.includes('homepage') || hint.includes('홈페이지')) val = (tpl && (tpl.website || tpl.url || tpl.homepage)) || '';
                 else if (tp === 'date') val = new Date().toISOString().split('T')[0];
                 else if (tp === 'time') val = '10:00';
                 else if (tp === 'number' || tp === 'range') {

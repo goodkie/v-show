@@ -41,6 +41,20 @@
         'ethnicity', 'race', 'religion', 'sexual orientation', 'gender identity'
     ];
 
+    function matchesSensitiveFact(ctx) {
+        if (!ctx) return false;
+        const normalized = ctx.toLowerCase();
+        for (const kw of SENSITIVE_FACT_KEYWORDS) {
+            if (kw.length <= 4) {
+                const rx = new RegExp(`(^|[^a-z0-9])${kw}([^a-z0-9]|$)`, 'i');
+                if (rx.test(normalized)) return true;
+            } else {
+                if (normalized.includes(kw)) return true;
+            }
+        }
+        return false;
+    }
+
     const NAME_KEYWORDS = ['name', 'full name', 'first name', 'last name', 'fname', 'lname', '이름', '성함', '성명', '성', '주문자'];
     const EMAIL_KEYWORDS = ['email', 'e-mail', 'mail', '이메일', '메일'];
     const PHONE_KEYWORDS = ['phone', 'tel', 'mobile', 'cell', 'telephone', '전화', '연락처', '휴대폰', '핸드폰'];
@@ -251,6 +265,37 @@
                 return { category: 'honeypot', isSensitive: false, isHoneypot: true };
             }
 
+            // Checkbox takes precedence over general sensitive text matching
+            if (type === 'checkbox' || role === 'checkbox' || role === 'switch') {
+                let cat = 'inquiry_checkbox';
+                if (this.checkboxResolver) {
+                    if (typeof this.checkboxResolver.classify === 'function') {
+                        cat = this.checkboxResolver.classify(el);
+                    } else if (typeof this.checkboxResolver.classifyCheckbox === 'function') {
+                        const cInfo = this.checkboxResolver.classifyCheckbox(el);
+                        cat = typeof cInfo === 'string' ? cInfo : (cInfo.category || 'inquiry_checkbox');
+                    }
+                } else if (/terms|privacy|policy|agree|consent|동의/i.test(ctx)) {
+                    cat = 'terms_privacy_checkbox';
+                } else if (/newsletter|subscribe|marketing|sms|promo|광고/i.test(ctx)) {
+                    cat = 'marketing_newsletter_checkbox';
+                }
+                return { category: cat, subcategory: cat, isSensitive: false, isHoneypot: false };
+            }
+
+            // Radio takes precedence over general sensitive text matching
+            if (type === 'radio' || role === 'radio') {
+                return { category: 'inquiry_radio', isSensitive: false, isHoneypot: false };
+            }
+
+            // Dropdown / Select
+            if (tag === 'select' || role === 'combobox' || role === 'listbox' || /ant-select|muiselect/i.test(el.className || '')) {
+                if (/program|service|experience|interest|topic|regarding|inquiry/i.test(ctx)) {
+                    return { category: 'inquiry_dropdown', isSensitive: false, isHoneypot: false };
+                }
+                return { category: 'safe_dropdown', isSensitive: false, isHoneypot: false };
+            }
+
             // Structural semantics take precedence over math captcha (CAP-02 contamination fix)
             if (tag === 'input' && type === 'email') return { category: 'email', isSensitive: false, isHoneypot: false };
             if (tag === 'input' && type === 'tel') return { category: 'phone', isSensitive: false, isHoneypot: false };
@@ -265,36 +310,8 @@
             }
 
             // Sensitive Factual Guard
-            if (SENSITIVE_FACT_KEYWORDS.some(kw => ctx.includes(kw))) {
+            if (matchesSensitiveFact(ctx)) {
                 return { category: 'sensitive_factual', isSensitive: true, isHoneypot: false };
-            }
-
-            // Checkbox
-            if (type === 'checkbox' || role === 'checkbox' || role === 'switch') {
-                if (this.checkboxResolver && typeof this.checkboxResolver.classifyCheckbox === 'function') {
-                    const cInfo = this.checkboxResolver.classifyCheckbox(el);
-                    return { category: cInfo.category, subcategory: cInfo.category, isSensitive: false, isHoneypot: false };
-                }
-                if (/terms|privacy|policy|agree|consent|동의/i.test(ctx)) {
-                    return { category: 'terms_privacy_checkbox', isSensitive: false, isHoneypot: false };
-                }
-                if (/newsletter|subscribe|marketing|sms|promo|광고/i.test(ctx)) {
-                    return { category: 'marketing_newsletter_checkbox', isSensitive: false, isHoneypot: false };
-                }
-                return { category: 'inquiry_checkbox', isSensitive: false, isHoneypot: false };
-            }
-
-            // Radio
-            if (type === 'radio' || role === 'radio') {
-                return { category: 'inquiry_radio', isSensitive: false, isHoneypot: false };
-            }
-
-            // Dropdown / Select
-            if (tag === 'select' || role === 'combobox' || role === 'listbox' || /ant-select|muiselect/i.test(el.className || '')) {
-                if (/program|service|experience|interest|topic|regarding|inquiry/i.test(ctx)) {
-                    return { category: 'inquiry_dropdown', isSensitive: false, isHoneypot: false };
-                }
-                return { category: 'safe_dropdown', isSensitive: false, isHoneypot: false };
             }
 
             // Text / Textarea
@@ -460,8 +477,23 @@
                         // Checkbox
                         if (type === 'checkbox' || el.getAttribute && el.getAttribute('role') === 'checkbox') {
                             if (classification.category === 'terms_privacy_checkbox' || classification.category === 'privacy_required' || classification.category === 'terms_required' || classification.category === 'response_consent_required') {
-                                setNativeChecked(el, true);
-                                checkboxResolved++;
+                                const isConsentAuthorized = Boolean(
+                                    this.options.ownerAuthorizedConsent ||
+                                    template.ownerAuthorizedConsent ||
+                                    template.allowAutoConsent
+                                );
+                                if (isConsentAuthorized) {
+                                    setNativeChecked(el, true);
+                                    checkboxResolved++;
+                                } else {
+                                    this.logger(`[LEGAL_CONSENT_GUARD] type=checkbox label="${getElementContextText(el)}" reason=OWNER_ACTION_REQUIRED`);
+                                    return {
+                                        pass: false,
+                                        reason: 'OWNER_ACTION_REQUIRED',
+                                        unresolvedField: el,
+                                        context: getElementContextText(el)
+                                    };
+                                }
                             } else if (classification.category === 'marketing_newsletter_checkbox' || classification.category === 'marketing_optional' || classification.category === 'newsletter_optional' || classification.category === 'sms_marketing_optional') {
                                 // Strictly remain unchecked
                             } else if (classification.category === 'inquiry_choice' || classification.category === 'inquiry_checkbox' || classification.category === 'unknown') {
@@ -480,18 +512,47 @@
 
                         // Radio Group
                         else if (type === 'radio' || el.getAttribute && el.getAttribute('role') === 'radio') {
-                            const groupKey = domainKey + '_radio_' + (el.name || 'radio');
                             const allRadios = el.form ? Array.from(el.form.querySelectorAll(`input[type="radio"][name="${el.name}"]`)) : [el];
                             let radios = allRadios.filter(r => !r.disabled && isElementVisible(r));
                             if (radios.length === 0) radios = allRadios.filter(r => !r.disabled);
                             if (radios.length === 0) radios = [el];
                             
-                            if (radios.length > 0) {
-                                // Prefer General / Other / Inquiry
-                                let chosen = radios.find(r => /general|other|inquiry|none|기타|일반/i.test(getElementContextText(r)));
-                                if (!chosen) chosen = radios[0]; // Stable first option
+                            // 1. Template match
+                            const tplKeywords = [
+                                template.priority, template.service, template.topic, template.category
+                            ].filter(Boolean).map(s => String(s).toLowerCase());
+
+                            let chosen = null;
+                            if (tplKeywords.length > 0) {
+                                chosen = radios.find(r => {
+                                    const rCtx = getElementContextText(r).toLowerCase();
+                                    const rVal = (r.value || '').toLowerCase();
+                                    return tplKeywords.some(kw => rCtx.includes(kw) || rVal.includes(kw));
+                                });
+                            }
+
+                            // 2. Neutral / Safe Inquiry Choice (Standard / Normal / General / Other / Inquiry)
+                            if (!chosen) {
+                                chosen = radios.find(r => {
+                                    const rCtx = getElementContextText(r);
+                                    const rVal = r.value || '';
+                                    return /standard|normal|general|other|inquiry|none|기본|일반|보통|기타|문의/i.test(rCtx) ||
+                                           /standard|normal|general|other|inquiry|none|기본|일반|보통|기타|문의/i.test(rVal);
+                                });
+                            }
+
+                            if (chosen) {
                                 setNativeChecked(chosen, true);
                                 radioResolved++;
+                            } else if (isElementRequired(el)) {
+                                // P0 Truthfulness Guard: Do not fabricate an ungrounded business fact
+                                this.logger(`[BUSINESS_CHOICE_GUARD] type=radio name="${el.name}" reason=UNRESOLVED_BUSINESS_CHOICE`);
+                                return {
+                                    pass: false,
+                                    reason: 'UNRESOLVED_BUSINESS_CHOICE',
+                                    unresolvedField: el,
+                                    context: getElementContextText(el)
+                                };
                             }
                         }
 
@@ -499,23 +560,61 @@
                         else if (tag === 'select') {
                             let resolvedSel = false;
                             if (this.selectResolver && typeof this.selectResolver.resolveNativeSelect === 'function') {
-                                const res = this.selectResolver.resolveNativeSelect(el, getElementContextText(el));
+                                const res = await this.selectResolver.resolveNativeSelect(el, { template });
                                 if (res && res.applied) resolvedSel = true;
                             }
                             if (!resolvedSel && el.options && el.options.length > 1) {
-                                for (let i = 1; i < el.options.length; i++) {
-                                    const opt = el.options[i];
-                                    const optVal = (opt.value || '').trim();
-                                    const optText = (opt.text || '').trim();
-                                    if (!opt.disabled && (optVal || optText) && !/^(select|choose|--|please select|선택)/i.test(optText)) {
-                                        el.selectedIndex = i;
-                                        setNativeValue(el, optVal || optText);
-                                        resolvedSel = true;
-                                        break;
+                                const tplKeywords = [
+                                    template.service, template.department, template.category,
+                                    template.topic, template.inquiryType, template.subject
+                                ].filter(Boolean).map(s => String(s).toLowerCase());
+
+                                let matchedOpt = null;
+                                // 1. Look for option matching owner template
+                                if (tplKeywords.length > 0) {
+                                    for (let i = 1; i < el.options.length; i++) {
+                                        const opt = el.options[i];
+                                        if (opt.disabled) continue;
+                                        const optText = (opt.text || '').toLowerCase();
+                                        const optVal = (opt.value || '').toLowerCase();
+                                        if (tplKeywords.some(kw => optText.includes(kw) || optVal.includes(kw))) {
+                                            matchedOpt = { index: i, val: opt.value || opt.text };
+                                            break;
+                                        }
                                     }
                                 }
+
+                                // 2. Look for neutral / safe inquiry options
+                                if (!matchedOpt) {
+                                    for (let i = 1; i < el.options.length; i++) {
+                                        const opt = el.options[i];
+                                        if (opt.disabled) continue;
+                                        const optText = (opt.text || '').toLowerCase();
+                                        const optVal = (opt.value || '').toLowerCase();
+                                        if (/general|inquiry|other|contact|support|consulting|일반|문의|기타|상담/i.test(optText) ||
+                                            /general|inquiry|other|contact|support|consulting|일반|문의|기타|상담/i.test(optVal)) {
+                                            matchedOpt = { index: i, val: opt.value || opt.text };
+                                            break;
+                                        }
+                                    }
+                                }
+
+                                if (matchedOpt) {
+                                    el.selectedIndex = matchedOpt.index;
+                                    setNativeValue(el, matchedOpt.val);
+                                    resolvedSel = true;
+                                    selectResolved++;
+                                } else if (isElementRequired(el)) {
+                                    // P0 Truthfulness Guard: Do not blindly pick options[1] if no truthful/neutral match
+                                    this.logger(`[BUSINESS_CHOICE_GUARD] type=select label="${getElementContextText(el)}" reason=UNRESOLVED_BUSINESS_CHOICE`);
+                                    return {
+                                        pass: false,
+                                        reason: 'UNRESOLVED_BUSINESS_CHOICE',
+                                        unresolvedField: el,
+                                        context: getElementContextText(el)
+                                    };
+                                }
                             }
-                            if (resolvedSel) selectResolved++;
                         }
 
                         // Constraint-aware, template-grounded required input / textarea completion
@@ -575,7 +674,19 @@
                             }
                             // 3. Specialized Web Form Types (URL, Email, Tel)
                             else if (type === 'url' || /\b(website|homepage|site|url)\b/i.test(ctx)) {
-                                answer = template.website || template.url || 'https://example.com';
+                                const truthfulUrl = (template.website || template.url || template.homepage || template.siteUrl || '').trim();
+                                if (truthfulUrl) {
+                                    answer = truthfulUrl;
+                                } else {
+                                    // P0 Truthfulness Guard: Do not fabricate https://example.com as an ungrounded business fact
+                                    this.logger(`[BUSINESS_FACT_GUARD] type=url label="${ctx}" reason=UNRESOLVED_BUSINESS_FACT`);
+                                    return {
+                                        pass: false,
+                                        reason: 'UNRESOLVED_BUSINESS_FACT',
+                                        unresolvedField: el,
+                                        context: ctx
+                                    };
+                                }
                             }
                             else if (type === 'email' || /\b(email|mail)\b/i.test(ctx)) {
                                 answer = template.email || 'inquiry@example.com';

@@ -192,8 +192,28 @@
                 case 'privacy_required':
                 case 'terms_required':
                 case 'response_consent_required':
-                    // Auto-check required terms/consent
-                    shouldCheck = true;
+                    // P0 Security / Legal Guard: Auto-check required terms/consent ONLY if explicitly authorized by Owner
+                    const isConsentAuthorized = Boolean(
+                        (options && (options.ownerAuthorizedConsent || options.allowAutoConsent)) ||
+                        (this.options && (this.options.ownerAuthorizedConsent || this.options.allowAutoConsent))
+                    );
+                    if (isConsentAuthorized) {
+                        shouldCheck = true;
+                    } else {
+                        // NEVER auto-consent without explicit owner authorization
+                        shouldCheck = false;
+                        if (isRequired) {
+                            if (this.logger) this.logger(`[LEGAL_CONSENT_GUARD] type=checkbox category=${category} action=require_owner_authorization`);
+                            return {
+                                handled: false,
+                                category,
+                                action: 'require_owner_authorization',
+                                reason: 'OWNER_ACTION_REQUIRED',
+                                stable: false,
+                                required: true
+                            };
+                        }
+                    }
                     break;
 
                 case 'marketing_optional':

@@ -1,163 +1,162 @@
-[2026-10-26T05:50:52.974Z] ========================================================================
-[2026-10-26T05:50:52.985Z]   XPIDER OWNER BETA RC3.59 .77 E2E AUDIT (MICROSOFT EDGE)
-[2026-10-26T05:50:52.992Z]   AI Required Field Completion + Turnstile Accounting + Local Fixtures
-[2026-10-26T05:50:52.999Z] ========================================================================
-[2026-10-26T05:50:53.006Z] 
+[2026-10-26T06:39:20.697Z] ========================================================================
+[2026-10-26T06:39:20.706Z]   XPIDER OWNER BETA RC3.59 .77 E2E AUDIT (MICROSOFT EDGE)
+[2026-10-26T06:39:20.714Z]   AI Required Field Completion + Turnstile Accounting + Local Fixtures
+[2026-10-26T06:39:20.721Z] ========================================================================
+[2026-10-26T06:39:20.728Z] 
 >>> [STEP 1] Validating BuildProvenance Configuration in Source...
-[2026-10-26T05:50:53.015Z]    Channel:        OWNER_BETA_PRIVATE_EGRESS_RC3.59
-[2026-10-26T05:50:53.022Z]    testOnly:       false
-[2026-10-26T05:50:53.029Z]    Build ID:       R6.9G.10.3.7.1.4.77-20261026-P0-RC3.59-AI-REQUIRED-FIELDS
-[2026-10-26T05:50:53.036Z]    isTestOnlyBuild(): true
-[2026-10-26T05:50:53.044Z]    ✅ STEP 1 PASS: Provenance authorizes Owner Functional Test Mode for OWNER_BETA.
-[2026-10-26T05:50:53.051Z] 
+[2026-10-26T06:39:20.739Z]    Channel:        OWNER_BETA_PRIVATE_EGRESS_RC3.59
+[2026-10-26T06:39:20.749Z]    testOnly:       false
+[2026-10-26T06:39:20.756Z]    Build ID:       R6.9G.10.3.7.1.4.77-20261026-P0-RC3.59-AI-REQUIRED-FIELDS
+[2026-10-26T06:39:20.763Z]    isTestOnlyBuild(): true
+[2026-10-26T06:39:20.771Z]    ✅ STEP 1 PASS: Provenance authorizes Owner Functional Test Mode for OWNER_BETA.
+[2026-10-26T06:39:20.780Z] 
 >>> [STEP 2] Ensuring Local Controlled Test Server on port 8088...
-[2026-10-26T05:50:53.104Z]    Starting in-process test server...
-[2026-10-26T05:50:54.151Z]    ✅ STEP 2 PASS: Test server verified on port 8088 (service=XPIDER_OWNER_TEST_SERVER, PID=23796).
-[2026-10-26T05:50:54.158Z] 
+[2026-10-26T06:39:20.848Z]    Starting in-process test server...
+[2026-10-26T06:39:21.908Z]    ✅ STEP 2 PASS: Test server verified on port 8088 (service=XPIDER_OWNER_TEST_SERVER, PID=21712).
+[2026-10-26T06:39:21.916Z] 
 >>> [STEP 3] Launching Microsoft Edge via DevTools Protocol...
-[2026-10-26T05:50:54.168Z]    Spawning Edge: "C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
-[2026-10-26T05:50:54.878Z]    Connected to Microsoft Edge: Edg/156.0.4314.42
-[2026-10-26T05:50:54.998Z]    Extension ID: ldlijlaccfeelfdhgnjbibniocefckjj
-[2026-10-26T05:50:55.420Z]    Opened Popup UI: 72D5FA045AA44D4BDA66E9BF42866FF7
-[2026-10-26T05:50:56.360Z] 
+[2026-10-26T06:39:21.927Z]    Spawning Edge: "C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
+[2026-10-26T06:39:22.651Z]    Connected to Microsoft Edge: Edg/156.0.4314.42
+[2026-10-26T06:39:22.802Z]    Extension ID: ldlijlaccfeelfdhgnjbibniocefckjj
+[2026-10-26T06:39:23.312Z]    Opened Popup UI: 19819706D152303EAA19C2F05182210F
+[2026-10-26T06:39:24.531Z] 
 >>> [STEP 4] Seeding Pre-existing Owner Data (Preservation Target)...
-[2026-10-26T05:50:58.012Z]    Initial Owner Queue in Popup: 50 public URLs
-[2026-10-26T05:50:58.504Z] 📸 Screenshot saved: 01_rc3_59_77_initial_public_state.png (119991 bytes)
-[2026-10-26T05:50:58.516Z]    ✅ STEP 4 PASS: Pre-existing Owner public queue & Private Egress settings established.
-[2026-10-26T05:50:58.532Z] 
+[2026-10-26T06:39:26.112Z]    Initial Owner Queue in Popup: 50 public URLs
+[2026-10-26T06:39:26.329Z] 📸 Screenshot saved: 01_rc3_59_77_initial_public_state.png (119991 bytes)
+[2026-10-26T06:39:26.341Z]    ✅ STEP 4 PASS: Pre-existing Owner public queue & Private Egress settings established.
+[2026-10-26T06:39:26.350Z] 
 >>> [STEP 5] Clicking #auto-setup-btn (✨ AUTO SETUP) in Owner Beta...
-[2026-10-26T05:51:00.562Z]    Auto Setup Status Pill: "READY — LOCAL TEST SERVER VERIFIED"
-[2026-10-26T05:51:00.574Z]    Auto Setup Feedback:    "READY FOR LOCAL FUNCTION TEST
+[2026-10-26T06:39:28.395Z]    Auto Setup Status Pill: "READY — LOCAL TEST SERVER VERIFIED"
+[2026-10-26T06:39:28.402Z]    Auto Setup Feedback:    "READY FOR LOCAL FUNCTION TEST
 7 local fixtures loaded | Local test server verified (127.0.0.1:8088) | DNR rules 990001-990005 verified | Preserved 50 public URLs in restore point"
-[2026-10-26T05:51:00.583Z]    Queue Length:           8
-[2026-10-26T05:51:00.592Z]    DNR Session Rules Active: [990001, 990002, 990003, 990004, 990005]
-[2026-10-26T05:51:00.810Z] 📸 Screenshot saved: 02_rc3_59_77_auto_setup_ready.png (188630 bytes)
-[2026-10-26T05:51:00.822Z]    ✅ STEP 5 PASS: AUTO SETUP succeeded cleanly in OWNER BETA. 8 fixtures armed (incl. AI required fields).
-[2026-10-26T05:51:00.832Z] 
+[2026-10-26T06:39:28.411Z]    Queue Length:           8
+[2026-10-26T06:39:28.420Z]    DNR Session Rules Active: [990001, 990002, 990003, 990004, 990005]
+[2026-10-26T06:39:28.706Z] 📸 Screenshot saved: 02_rc3_59_77_auto_setup_ready.png (188630 bytes)
+[2026-10-26T06:39:28.720Z]    ✅ STEP 5 PASS: AUTO SETUP succeeded cleanly in OWNER BETA. 8 fixtures armed (incl. AI required fields).
+[2026-10-26T06:39:28.732Z] 
 >>> [STEP 6] Executing Local Functional Test via #run-function-test-btn...
-[2026-10-26T05:51:01.158Z]    Clicking #run-function-test-btn...
-[2026-10-26T05:51:02.685Z]    [Progress] 0% | SUCCESS: 0 | SKIPPED: 0 | FAILURE: 0 | Remaining: 8 | Status: Live Progress (Running)
-[2026-10-26T05:51:04.198Z]    [Progress] 0% | SUCCESS: 0 | SKIPPED: 0 | FAILURE: 0 | Remaining: 8 | Status: Live Progress (Running)
-[2026-10-26T05:51:05.718Z]    [Progress] 0% | SUCCESS: 0 | SKIPPED: 0 | FAILURE: 0 | Remaining: 8 | Status: Live Progress (Running)
-[2026-10-26T05:51:07.235Z]    [Progress] 0% | SUCCESS: 0 | SKIPPED: 0 | FAILURE: 0 | Remaining: 8 | Status: Live Progress (Running)
-[2026-10-26T05:51:08.746Z]    [Progress] 0% | SUCCESS: 0 | SKIPPED: 0 | FAILURE: 0 | Remaining: 8 | Status: Live Progress (Running)
-[2026-10-26T05:51:10.257Z]    [Progress] 0% | SUCCESS: 0 | SKIPPED: 0 | FAILURE: 0 | Remaining: 8 | Status: Live Progress (Running)
-[2026-10-26T05:51:11.779Z]    [Progress] 0% | SUCCESS: 0 | SKIPPED: 0 | FAILURE: 0 | Remaining: 8 | Status: Live Progress (Running)
-[2026-10-26T05:51:13.287Z]    [Progress] 0% | SUCCESS: 0 | SKIPPED: 0 | FAILURE: 0 | Remaining: 8 | Status: Live Progress (Running)
-[2026-10-26T05:51:14.798Z]    [Progress] 0% | SUCCESS: 0 | SKIPPED: 0 | FAILURE: 0 | Remaining: 8 | Status: Live Progress (Running)
-[2026-10-26T05:51:16.319Z]    [Progress] 0% | SUCCESS: 0 | SKIPPED: 0 | FAILURE: 0 | Remaining: 8 | Status: Live Progress (Running)
-[2026-10-26T05:51:17.841Z]    [Progress] 13% | SUCCESS: 1 | SKIPPED: 0 | FAILURE: 0 | Remaining: 7 | Status: Live Progress (Running)
-[2026-10-26T05:51:19.351Z]    [Progress] 13% | SUCCESS: 1 | SKIPPED: 0 | FAILURE: 0 | Remaining: 7 | Status: Live Progress (Running)
-[2026-10-26T05:51:20.861Z]    [Progress] 13% | SUCCESS: 1 | SKIPPED: 0 | FAILURE: 0 | Remaining: 7 | Status: Live Progress (Running)
-[2026-10-26T05:51:22.388Z]    [Progress] 13% | SUCCESS: 1 | SKIPPED: 0 | FAILURE: 0 | Remaining: 7 | Status: Live Progress (Running)
-[2026-10-26T05:51:23.922Z]    [Progress] 13% | SUCCESS: 1 | SKIPPED: 0 | FAILURE: 0 | Remaining: 7 | Status: Live Progress (Running)
-[2026-10-26T05:51:25.435Z]    [Progress] 13% | SUCCESS: 1 | SKIPPED: 0 | FAILURE: 0 | Remaining: 7 | Status: Live Progress (Running)
-[2026-10-26T05:51:26.955Z]    [Progress] 13% | SUCCESS: 1 | SKIPPED: 0 | FAILURE: 0 | Remaining: 7 | Status: Live Progress (Running)
-[2026-10-26T05:51:28.467Z]    [Progress] 13% | SUCCESS: 1 | SKIPPED: 0 | FAILURE: 0 | Remaining: 7 | Status: Live Progress (Running)
-[2026-10-26T05:51:29.984Z]    [Progress] 13% | SUCCESS: 1 | SKIPPED: 0 | FAILURE: 0 | Remaining: 7 | Status: Live Progress (Running)
-[2026-10-26T05:51:31.494Z]    [Progress] 13% | SUCCESS: 1 | SKIPPED: 0 | FAILURE: 0 | Remaining: 7 | Status: Live Progress (Running)
-[2026-10-26T05:51:33.016Z]    [Progress] 13% | SUCCESS: 1 | SKIPPED: 0 | FAILURE: 0 | Remaining: 7 | Status: Live Progress (Running)
-[2026-10-26T05:51:34.536Z]    [Progress] 13% | SUCCESS: 1 | SKIPPED: 0 | FAILURE: 0 | Remaining: 7 | Status: Live Progress (Running)
-[2026-10-26T05:51:36.056Z]    [Progress] 25% | SUCCESS: 2 | SKIPPED: 0 | FAILURE: 0 | Remaining: 6 | Status: Live Progress (Running)
-[2026-10-26T05:51:37.566Z]    [Progress] 25% | SUCCESS: 2 | SKIPPED: 0 | FAILURE: 0 | Remaining: 6 | Status: Live Progress (Running)
-[2026-10-26T05:51:39.075Z]    [Progress] 25% | SUCCESS: 2 | SKIPPED: 0 | FAILURE: 0 | Remaining: 6 | Status: Live Progress (Running)
-[2026-10-26T05:51:40.594Z]    [Progress] 25% | SUCCESS: 2 | SKIPPED: 0 | FAILURE: 0 | Remaining: 6 | Status: Live Progress (Running)
-[2026-10-26T05:51:42.123Z]    [Progress] 25% | SUCCESS: 2 | SKIPPED: 0 | FAILURE: 0 | Remaining: 6 | Status: Live Progress (Running)
-[2026-10-26T05:51:43.640Z]    [Progress] 25% | SUCCESS: 2 | SKIPPED: 0 | FAILURE: 0 | Remaining: 6 | Status: Live Progress (Running)
-[2026-10-26T05:51:45.160Z]    [Progress] 25% | SUCCESS: 2 | SKIPPED: 0 | FAILURE: 0 | Remaining: 6 | Status: Live Progress (Running)
-[2026-10-26T05:51:46.681Z]    [Progress] 25% | SUCCESS: 2 | SKIPPED: 0 | FAILURE: 0 | Remaining: 6 | Status: Live Progress (Running)
-[2026-10-26T05:51:48.200Z]    [Progress] 25% | SUCCESS: 2 | SKIPPED: 0 | FAILURE: 0 | Remaining: 6 | Status: Live Progress (Running)
-[2026-10-26T05:51:49.715Z]    [Progress] 25% | SUCCESS: 2 | SKIPPED: 0 | FAILURE: 0 | Remaining: 6 | Status: Live Progress (Running)
-[2026-10-26T05:51:51.236Z]    [Progress] 25% | SUCCESS: 2 | SKIPPED: 0 | FAILURE: 0 | Remaining: 6 | Status: Live Progress (Running)
-[2026-10-26T05:51:52.753Z]    [Progress] 25% | SUCCESS: 2 | SKIPPED: 0 | FAILURE: 0 | Remaining: 6 | Status: Live Progress (Running)
-[2026-10-26T05:51:54.270Z]    [Progress] 25% | SUCCESS: 2 | SKIPPED: 0 | FAILURE: 0 | Remaining: 6 | Status: Live Progress (Running)
-[2026-10-26T05:51:55.782Z]    [Progress] 25% | SUCCESS: 2 | SKIPPED: 0 | FAILURE: 0 | Remaining: 6 | Status: Live Progress (Running)
-[2026-10-26T05:51:57.295Z]    [Progress] 38% | SUCCESS: 3 | SKIPPED: 0 | FAILURE: 0 | Remaining: 5 | Status: Live Progress (Running)
-[2026-10-26T05:51:58.817Z]    [Progress] 38% | SUCCESS: 3 | SKIPPED: 0 | FAILURE: 0 | Remaining: 5 | Status: Live Progress (Running)
-[2026-10-26T05:52:00.328Z]    [Progress] 38% | SUCCESS: 3 | SKIPPED: 0 | FAILURE: 0 | Remaining: 5 | Status: Live Progress (Running)
-[2026-10-26T05:52:01.851Z]    [Progress] 38% | SUCCESS: 3 | SKIPPED: 0 | FAILURE: 0 | Remaining: 5 | Status: Live Progress (Running)
-[2026-10-26T05:52:03.377Z]    [Progress] 38% | SUCCESS: 3 | SKIPPED: 0 | FAILURE: 0 | Remaining: 5 | Status: Live Progress (Running)
-[2026-10-26T05:52:04.894Z]    [Progress] 38% | SUCCESS: 3 | SKIPPED: 0 | FAILURE: 0 | Remaining: 5 | Status: Live Progress (Running)
-[2026-10-26T05:52:06.402Z]    [Progress] 38% | SUCCESS: 3 | SKIPPED: 0 | FAILURE: 0 | Remaining: 5 | Status: Live Progress (Running)
-[2026-10-26T05:52:07.928Z]    [Progress] 38% | SUCCESS: 3 | SKIPPED: 0 | FAILURE: 0 | Remaining: 5 | Status: Live Progress (Running)
-[2026-10-26T05:52:09.451Z]    [Progress] 38% | SUCCESS: 3 | SKIPPED: 0 | FAILURE: 0 | Remaining: 5 | Status: Live Progress (Running)
-[2026-10-26T05:52:10.967Z]    [Progress] 38% | SUCCESS: 3 | SKIPPED: 0 | FAILURE: 0 | Remaining: 5 | Status: Live Progress (Running)
-[2026-10-26T05:52:12.505Z]    [Progress] 50% | SUCCESS: 3 | SKIPPED: 1 | FAILURE: 0 | Remaining: 4 | Status: Live Progress (Running)
-[2026-10-26T05:52:14.027Z]    [Progress] 50% | SUCCESS: 3 | SKIPPED: 1 | FAILURE: 0 | Remaining: 4 | Status: Live Progress (Running)
-[2026-10-26T05:52:15.542Z]    [Progress] 50% | SUCCESS: 3 | SKIPPED: 1 | FAILURE: 0 | Remaining: 4 | Status: Live Progress (Running)
-[2026-10-26T05:52:17.059Z]    [Progress] 50% | SUCCESS: 3 | SKIPPED: 1 | FAILURE: 0 | Remaining: 4 | Status: Live Progress (Running)
-[2026-10-26T05:52:18.573Z]    [Progress] 50% | SUCCESS: 3 | SKIPPED: 1 | FAILURE: 0 | Remaining: 4 | Status: Live Progress (Running)
-[2026-10-26T05:52:20.095Z]    [Progress] 50% | SUCCESS: 3 | SKIPPED: 1 | FAILURE: 0 | Remaining: 4 | Status: Live Progress (Running)
-[2026-10-26T05:52:21.612Z]    [Progress] 50% | SUCCESS: 3 | SKIPPED: 1 | FAILURE: 0 | Remaining: 4 | Status: Live Progress (Running)
-[2026-10-26T05:52:23.132Z]    [Progress] 50% | SUCCESS: 3 | SKIPPED: 1 | FAILURE: 0 | Remaining: 4 | Status: Live Progress (Running)
-[2026-10-26T05:52:24.644Z]    [Progress] 50% | SUCCESS: 3 | SKIPPED: 1 | FAILURE: 0 | Remaining: 4 | Status: Live Progress (Running)
-[2026-10-26T05:52:26.161Z]    [Progress] 63% | SUCCESS: 3 | SKIPPED: 2 | FAILURE: 0 | Remaining: 3 | Status: Live Progress (Running)
-[2026-10-26T05:52:27.676Z]    [Progress] 63% | SUCCESS: 3 | SKIPPED: 2 | FAILURE: 0 | Remaining: 3 | Status: Live Progress (Running)
-[2026-10-26T05:52:29.195Z]    [Progress] 63% | SUCCESS: 3 | SKIPPED: 2 | FAILURE: 0 | Remaining: 3 | Status: Live Progress (Running)
-[2026-10-26T05:52:30.707Z]    [Progress] 63% | SUCCESS: 3 | SKIPPED: 2 | FAILURE: 0 | Remaining: 3 | Status: Live Progress (Running)
-[2026-10-26T05:52:32.225Z]    [Progress] 63% | SUCCESS: 3 | SKIPPED: 2 | FAILURE: 0 | Remaining: 3 | Status: Live Progress (Running)
-[2026-10-26T05:52:33.748Z]    [Progress] 63% | SUCCESS: 3 | SKIPPED: 2 | FAILURE: 0 | Remaining: 3 | Status: Live Progress (Running)
-[2026-10-26T05:52:35.270Z]    [Progress] 63% | SUCCESS: 3 | SKIPPED: 2 | FAILURE: 0 | Remaining: 3 | Status: Live Progress (Running)
-[2026-10-26T05:52:36.785Z]    [Progress] 63% | SUCCESS: 3 | SKIPPED: 2 | FAILURE: 0 | Remaining: 3 | Status: Live Progress (Running)
-[2026-10-26T05:52:38.299Z]    [Progress] 63% | SUCCESS: 3 | SKIPPED: 2 | FAILURE: 0 | Remaining: 3 | Status: Live Progress (Running)
-[2026-10-26T05:52:39.848Z]    [Progress] 63% | SUCCESS: 3 | SKIPPED: 2 | FAILURE: 0 | Remaining: 3 | Status: Live Progress (Running)
-[2026-10-26T05:52:41.362Z]    [Progress] 75% | SUCCESS: 3 | SKIPPED: 2 | FAILURE: 1 | Remaining: 2 | Status: Live Progress (Running)
-[2026-10-26T05:52:42.882Z]    [Progress] 75% | SUCCESS: 3 | SKIPPED: 2 | FAILURE: 1 | Remaining: 2 | Status: Live Progress (Running)
-[2026-10-26T05:52:44.391Z]    [Progress] 75% | SUCCESS: 3 | SKIPPED: 2 | FAILURE: 1 | Remaining: 2 | Status: Live Progress (Running)
-[2026-10-26T05:52:45.925Z]    [Progress] 75% | SUCCESS: 3 | SKIPPED: 2 | FAILURE: 1 | Remaining: 2 | Status: Live Progress (Running)
-[2026-10-26T05:52:47.441Z]    [Progress] 75% | SUCCESS: 3 | SKIPPED: 2 | FAILURE: 1 | Remaining: 2 | Status: Live Progress (Running)
-[2026-10-26T05:52:48.962Z]    [Progress] 75% | SUCCESS: 3 | SKIPPED: 2 | FAILURE: 1 | Remaining: 2 | Status: Live Progress (Running)
-[2026-10-26T05:52:50.471Z]    [Progress] 75% | SUCCESS: 3 | SKIPPED: 2 | FAILURE: 1 | Remaining: 2 | Status: Live Progress (Running)
-[2026-10-26T05:52:51.992Z]    [Progress] 75% | SUCCESS: 3 | SKIPPED: 2 | FAILURE: 1 | Remaining: 2 | Status: Live Progress (Running)
-[2026-10-26T05:52:53.502Z]    [Progress] 75% | SUCCESS: 3 | SKIPPED: 2 | FAILURE: 1 | Remaining: 2 | Status: Live Progress (Running)
-[2026-10-26T05:52:55.016Z]    [Progress] 75% | SUCCESS: 3 | SKIPPED: 2 | FAILURE: 1 | Remaining: 2 | Status: Live Progress (Running)
-[2026-10-26T05:52:56.531Z]    [Progress] 75% | SUCCESS: 3 | SKIPPED: 2 | FAILURE: 1 | Remaining: 2 | Status: Live Progress (Running)
-[2026-10-26T05:52:58.053Z]    [Progress] 75% | SUCCESS: 3 | SKIPPED: 2 | FAILURE: 1 | Remaining: 2 | Status: Live Progress (Running)
-[2026-10-26T05:52:59.571Z]    [Progress] 75% | SUCCESS: 3 | SKIPPED: 2 | FAILURE: 1 | Remaining: 2 | Status: Live Progress (Running)
-[2026-10-26T05:53:01.085Z]    [Progress] 75% | SUCCESS: 3 | SKIPPED: 2 | FAILURE: 1 | Remaining: 2 | Status: Live Progress (Running)
-[2026-10-26T05:53:02.605Z]    [Progress] 88% | SUCCESS: 4 | SKIPPED: 2 | FAILURE: 1 | Remaining: 1 | Status: Live Progress (Running)
-[2026-10-26T05:53:04.127Z]    [Progress] 88% | SUCCESS: 4 | SKIPPED: 2 | FAILURE: 1 | Remaining: 1 | Status: Live Progress (Running)
-[2026-10-26T05:53:05.641Z]    [Progress] 88% | SUCCESS: 4 | SKIPPED: 2 | FAILURE: 1 | Remaining: 1 | Status: Live Progress (Running)
-[2026-10-26T05:53:07.161Z]    [Progress] 88% | SUCCESS: 4 | SKIPPED: 2 | FAILURE: 1 | Remaining: 1 | Status: Live Progress (Running)
-[2026-10-26T05:53:08.839Z]    [Progress] 88% | SUCCESS: 4 | SKIPPED: 2 | FAILURE: 1 | Remaining: 1 | Status: Live Progress (Running)
-[2026-10-26T05:53:10.363Z]    [Progress] 88% | SUCCESS: 4 | SKIPPED: 2 | FAILURE: 1 | Remaining: 1 | Status: Live Progress (Running)
-[2026-10-26T05:53:11.884Z]    [Progress] 88% | SUCCESS: 4 | SKIPPED: 2 | FAILURE: 1 | Remaining: 1 | Status: Live Progress (Running)
-[2026-10-26T05:53:13.396Z]    [Progress] 88% | SUCCESS: 4 | SKIPPED: 2 | FAILURE: 1 | Remaining: 1 | Status: Live Progress (Running)
-[2026-10-26T05:53:14.916Z]    [Progress] 88% | SUCCESS: 4 | SKIPPED: 2 | FAILURE: 1 | Remaining: 1 | Status: Live Progress (Running)
-[2026-10-26T05:53:16.429Z]    [Progress] 88% | SUCCESS: 4 | SKIPPED: 2 | FAILURE: 1 | Remaining: 1 | Status: Live Progress (Running)
-[2026-10-26T05:53:17.941Z]    [Progress] 88% | SUCCESS: 4 | SKIPPED: 2 | FAILURE: 1 | Remaining: 1 | Status: Live Progress (Running)
-[2026-10-26T05:53:19.461Z]    [Progress] 88% | SUCCESS: 4 | SKIPPED: 2 | FAILURE: 1 | Remaining: 1 | Status: Live Progress (Running)
-[2026-10-26T05:53:20.986Z]    [Progress] 88% | SUCCESS: 4 | SKIPPED: 2 | FAILURE: 1 | Remaining: 1 | Status: Live Progress (Running)
-[2026-10-26T05:53:22.504Z]    [Progress] 88% | SUCCESS: 4 | SKIPPED: 2 | FAILURE: 1 | Remaining: 1 | Status: Live Progress (Running)
-[2026-10-26T05:53:24.017Z]    [Progress] 88% | SUCCESS: 4 | SKIPPED: 2 | FAILURE: 1 | Remaining: 1 | Status: Live Progress (Running)
-[2026-10-26T05:53:25.532Z]    [Progress] 88% | SUCCESS: 4 | SKIPPED: 2 | FAILURE: 1 | Remaining: 1 | Status: Live Progress (Running)
-[2026-10-26T05:53:27.049Z]    [Progress] 88% | SUCCESS: 4 | SKIPPED: 2 | FAILURE: 1 | Remaining: 1 | Status: Live Progress (Running)
-[2026-10-26T05:53:28.566Z]    [Progress] 88% | SUCCESS: 4 | SKIPPED: 2 | FAILURE: 1 | Remaining: 1 | Status: Live Progress (Running)
-[2026-10-26T05:53:30.083Z]    [Progress] 88% | SUCCESS: 4 | SKIPPED: 2 | FAILURE: 1 | Remaining: 1 | Status: Live Progress (Running)
-[2026-10-26T05:53:31.603Z]    [Progress] 100% | SUCCESS: 5 | SKIPPED: 2 | FAILURE: 1 | Remaining: 0 | Status: Live Progress (Running)
-[2026-10-26T05:53:33.113Z]    [Progress] 100% | SUCCESS: 5 | SKIPPED: 2 | FAILURE: 1 | Remaining: 0 | Status: Live Progress (Running)
-[2026-10-26T05:53:34.623Z]    [Progress] 100% | SUCCESS: 5 | SKIPPED: 2 | FAILURE: 1 | Remaining: 0 | Status: Live Progress (Running)
-[2026-10-26T05:53:36.147Z]    [Progress] 100% | SUCCESS: 5 | SKIPPED: 2 | FAILURE: 1 | Remaining: 0 | Status: Live Progress (Running)
-[2026-10-26T05:53:37.658Z]    [Progress] 100% | SUCCESS: 5 | SKIPPED: 2 | FAILURE: 1 | Remaining: 0 | Status: Live Progress (Finished)
-[2026-10-26T05:53:38.674Z]    Ledger Entries (8):
+[2026-10-26T06:39:29.047Z]    Clicking #run-function-test-btn...
+[2026-10-26T06:39:30.576Z]    [Progress] 0% | SUCCESS: 0 | SKIPPED: 0 | FAILURE: 0 | Remaining: 8 | Status: Live Progress (Running)
+[2026-10-26T06:39:32.099Z]    [Progress] 0% | SUCCESS: 0 | SKIPPED: 0 | FAILURE: 0 | Remaining: 8 | Status: Live Progress (Running)
+[2026-10-26T06:39:33.608Z]    [Progress] 0% | SUCCESS: 0 | SKIPPED: 0 | FAILURE: 0 | Remaining: 8 | Status: Live Progress (Running)
+[2026-10-26T06:39:35.127Z]    [Progress] 0% | SUCCESS: 0 | SKIPPED: 0 | FAILURE: 0 | Remaining: 8 | Status: Live Progress (Running)
+[2026-10-26T06:39:36.646Z]    [Progress] 0% | SUCCESS: 0 | SKIPPED: 0 | FAILURE: 0 | Remaining: 8 | Status: Live Progress (Running)
+[2026-10-26T06:39:38.158Z]    [Progress] 0% | SUCCESS: 0 | SKIPPED: 0 | FAILURE: 0 | Remaining: 8 | Status: Live Progress (Running)
+[2026-10-26T06:39:39.683Z]    [Progress] 0% | SUCCESS: 0 | SKIPPED: 0 | FAILURE: 0 | Remaining: 8 | Status: Live Progress (Running)
+[2026-10-26T06:39:41.328Z]    [Progress] 0% | SUCCESS: 0 | SKIPPED: 0 | FAILURE: 0 | Remaining: 8 | Status: Live Progress (Running)
+[2026-10-26T06:39:42.849Z]    [Progress] 0% | SUCCESS: 0 | SKIPPED: 0 | FAILURE: 0 | Remaining: 8 | Status: Live Progress (Running)
+[2026-10-26T06:39:44.363Z]    [Progress] 0% | SUCCESS: 0 | SKIPPED: 0 | FAILURE: 0 | Remaining: 8 | Status: Live Progress (Running)
+[2026-10-26T06:39:45.880Z]    [Progress] 13% | SUCCESS: 1 | SKIPPED: 0 | FAILURE: 0 | Remaining: 7 | Status: Live Progress (Running)
+[2026-10-26T06:39:47.399Z]    [Progress] 13% | SUCCESS: 1 | SKIPPED: 0 | FAILURE: 0 | Remaining: 7 | Status: Live Progress (Running)
+[2026-10-26T06:39:48.909Z]    [Progress] 13% | SUCCESS: 1 | SKIPPED: 0 | FAILURE: 0 | Remaining: 7 | Status: Live Progress (Running)
+[2026-10-26T06:39:50.431Z]    [Progress] 13% | SUCCESS: 1 | SKIPPED: 0 | FAILURE: 0 | Remaining: 7 | Status: Live Progress (Running)
+[2026-10-26T06:39:51.943Z]    [Progress] 13% | SUCCESS: 1 | SKIPPED: 0 | FAILURE: 0 | Remaining: 7 | Status: Live Progress (Running)
+[2026-10-26T06:39:53.460Z]    [Progress] 13% | SUCCESS: 1 | SKIPPED: 0 | FAILURE: 0 | Remaining: 7 | Status: Live Progress (Running)
+[2026-10-26T06:39:54.983Z]    [Progress] 13% | SUCCESS: 1 | SKIPPED: 0 | FAILURE: 0 | Remaining: 7 | Status: Live Progress (Running)
+[2026-10-26T06:39:56.502Z]    [Progress] 13% | SUCCESS: 1 | SKIPPED: 0 | FAILURE: 0 | Remaining: 7 | Status: Live Progress (Running)
+[2026-10-26T06:39:58.022Z]    [Progress] 13% | SUCCESS: 1 | SKIPPED: 0 | FAILURE: 0 | Remaining: 7 | Status: Live Progress (Running)
+[2026-10-26T06:39:59.545Z]    [Progress] 13% | SUCCESS: 1 | SKIPPED: 0 | FAILURE: 0 | Remaining: 7 | Status: Live Progress (Running)
+[2026-10-26T06:40:01.065Z]    [Progress] 13% | SUCCESS: 1 | SKIPPED: 0 | FAILURE: 0 | Remaining: 7 | Status: Live Progress (Running)
+[2026-10-26T06:40:02.588Z]    [Progress] 13% | SUCCESS: 1 | SKIPPED: 0 | FAILURE: 0 | Remaining: 7 | Status: Live Progress (Running)
+[2026-10-26T06:40:04.106Z]    [Progress] 25% | SUCCESS: 2 | SKIPPED: 0 | FAILURE: 0 | Remaining: 6 | Status: Live Progress (Running)
+[2026-10-26T06:40:05.631Z]    [Progress] 25% | SUCCESS: 2 | SKIPPED: 0 | FAILURE: 0 | Remaining: 6 | Status: Live Progress (Running)
+[2026-10-26T06:40:07.151Z]    [Progress] 25% | SUCCESS: 2 | SKIPPED: 0 | FAILURE: 0 | Remaining: 6 | Status: Live Progress (Running)
+[2026-10-26T06:40:08.673Z]    [Progress] 25% | SUCCESS: 2 | SKIPPED: 0 | FAILURE: 0 | Remaining: 6 | Status: Live Progress (Running)
+[2026-10-26T06:40:10.226Z]    [Progress] 25% | SUCCESS: 2 | SKIPPED: 0 | FAILURE: 0 | Remaining: 6 | Status: Live Progress (Running)
+[2026-10-26T06:40:11.741Z]    [Progress] 25% | SUCCESS: 2 | SKIPPED: 0 | FAILURE: 0 | Remaining: 6 | Status: Live Progress (Running)
+[2026-10-26T06:40:13.257Z]    [Progress] 25% | SUCCESS: 2 | SKIPPED: 0 | FAILURE: 0 | Remaining: 6 | Status: Live Progress (Running)
+[2026-10-26T06:40:14.777Z]    [Progress] 25% | SUCCESS: 2 | SKIPPED: 0 | FAILURE: 0 | Remaining: 6 | Status: Live Progress (Running)
+[2026-10-26T06:40:16.295Z]    [Progress] 25% | SUCCESS: 2 | SKIPPED: 0 | FAILURE: 0 | Remaining: 6 | Status: Live Progress (Running)
+[2026-10-26T06:40:17.816Z]    [Progress] 25% | SUCCESS: 2 | SKIPPED: 0 | FAILURE: 0 | Remaining: 6 | Status: Live Progress (Running)
+[2026-10-26T06:40:19.336Z]    [Progress] 25% | SUCCESS: 2 | SKIPPED: 0 | FAILURE: 0 | Remaining: 6 | Status: Live Progress (Running)
+[2026-10-26T06:40:20.860Z]    [Progress] 25% | SUCCESS: 2 | SKIPPED: 0 | FAILURE: 0 | Remaining: 6 | Status: Live Progress (Running)
+[2026-10-26T06:40:22.383Z]    [Progress] 25% | SUCCESS: 2 | SKIPPED: 0 | FAILURE: 0 | Remaining: 6 | Status: Live Progress (Running)
+[2026-10-26T06:40:23.901Z]    [Progress] 25% | SUCCESS: 2 | SKIPPED: 0 | FAILURE: 0 | Remaining: 6 | Status: Live Progress (Running)
+[2026-10-26T06:40:25.421Z]    [Progress] 38% | SUCCESS: 3 | SKIPPED: 0 | FAILURE: 0 | Remaining: 5 | Status: Live Progress (Running)
+[2026-10-26T06:40:26.943Z]    [Progress] 38% | SUCCESS: 3 | SKIPPED: 0 | FAILURE: 0 | Remaining: 5 | Status: Live Progress (Running)
+[2026-10-26T06:40:28.460Z]    [Progress] 38% | SUCCESS: 3 | SKIPPED: 0 | FAILURE: 0 | Remaining: 5 | Status: Live Progress (Running)
+[2026-10-26T06:40:29.977Z]    [Progress] 38% | SUCCESS: 3 | SKIPPED: 0 | FAILURE: 0 | Remaining: 5 | Status: Live Progress (Running)
+[2026-10-26T06:40:31.498Z]    [Progress] 38% | SUCCESS: 3 | SKIPPED: 0 | FAILURE: 0 | Remaining: 5 | Status: Live Progress (Running)
+[2026-10-26T06:40:33.012Z]    [Progress] 38% | SUCCESS: 3 | SKIPPED: 0 | FAILURE: 0 | Remaining: 5 | Status: Live Progress (Running)
+[2026-10-26T06:40:34.533Z]    [Progress] 38% | SUCCESS: 3 | SKIPPED: 0 | FAILURE: 0 | Remaining: 5 | Status: Live Progress (Running)
+[2026-10-26T06:40:36.052Z]    [Progress] 38% | SUCCESS: 3 | SKIPPED: 0 | FAILURE: 0 | Remaining: 5 | Status: Live Progress (Running)
+[2026-10-26T06:40:37.565Z]    [Progress] 38% | SUCCESS: 3 | SKIPPED: 0 | FAILURE: 0 | Remaining: 5 | Status: Live Progress (Running)
+[2026-10-26T06:40:39.085Z]    [Progress] 38% | SUCCESS: 3 | SKIPPED: 0 | FAILURE: 0 | Remaining: 5 | Status: Live Progress (Running)
+[2026-10-26T06:40:40.606Z]    [Progress] 50% | SUCCESS: 3 | SKIPPED: 1 | FAILURE: 0 | Remaining: 4 | Status: Live Progress (Running)
+[2026-10-26T06:40:42.119Z]    [Progress] 50% | SUCCESS: 3 | SKIPPED: 1 | FAILURE: 0 | Remaining: 4 | Status: Live Progress (Running)
+[2026-10-26T06:40:43.638Z]    [Progress] 50% | SUCCESS: 3 | SKIPPED: 1 | FAILURE: 0 | Remaining: 4 | Status: Live Progress (Running)
+[2026-10-26T06:40:45.153Z]    [Progress] 50% | SUCCESS: 3 | SKIPPED: 1 | FAILURE: 0 | Remaining: 4 | Status: Live Progress (Running)
+[2026-10-26T06:40:46.665Z]    [Progress] 50% | SUCCESS: 3 | SKIPPED: 1 | FAILURE: 0 | Remaining: 4 | Status: Live Progress (Running)
+[2026-10-26T06:40:48.174Z]    [Progress] 50% | SUCCESS: 3 | SKIPPED: 1 | FAILURE: 0 | Remaining: 4 | Status: Live Progress (Running)
+[2026-10-26T06:40:49.693Z]    [Progress] 50% | SUCCESS: 3 | SKIPPED: 1 | FAILURE: 0 | Remaining: 4 | Status: Live Progress (Running)
+[2026-10-26T06:40:51.204Z]    [Progress] 50% | SUCCESS: 3 | SKIPPED: 1 | FAILURE: 0 | Remaining: 4 | Status: Live Progress (Running)
+[2026-10-26T06:40:52.712Z]    [Progress] 50% | SUCCESS: 3 | SKIPPED: 1 | FAILURE: 0 | Remaining: 4 | Status: Live Progress (Running)
+[2026-10-26T06:40:54.233Z]    [Progress] 63% | SUCCESS: 3 | SKIPPED: 2 | FAILURE: 0 | Remaining: 3 | Status: Live Progress (Running)
+[2026-10-26T06:40:55.743Z]    [Progress] 63% | SUCCESS: 3 | SKIPPED: 2 | FAILURE: 0 | Remaining: 3 | Status: Live Progress (Running)
+[2026-10-26T06:40:57.261Z]    [Progress] 63% | SUCCESS: 3 | SKIPPED: 2 | FAILURE: 0 | Remaining: 3 | Status: Live Progress (Running)
+[2026-10-26T06:40:58.781Z]    [Progress] 63% | SUCCESS: 3 | SKIPPED: 2 | FAILURE: 0 | Remaining: 3 | Status: Live Progress (Running)
+[2026-10-26T06:41:00.304Z]    [Progress] 63% | SUCCESS: 3 | SKIPPED: 2 | FAILURE: 0 | Remaining: 3 | Status: Live Progress (Running)
+[2026-10-26T06:41:01.824Z]    [Progress] 63% | SUCCESS: 3 | SKIPPED: 2 | FAILURE: 0 | Remaining: 3 | Status: Live Progress (Running)
+[2026-10-26T06:41:03.347Z]    [Progress] 63% | SUCCESS: 3 | SKIPPED: 2 | FAILURE: 0 | Remaining: 3 | Status: Live Progress (Running)
+[2026-10-26T06:41:04.861Z]    [Progress] 63% | SUCCESS: 3 | SKIPPED: 2 | FAILURE: 0 | Remaining: 3 | Status: Live Progress (Running)
+[2026-10-26T06:41:06.383Z]    [Progress] 63% | SUCCESS: 3 | SKIPPED: 2 | FAILURE: 0 | Remaining: 3 | Status: Live Progress (Running)
+[2026-10-26T06:41:07.900Z]    [Progress] 75% | SUCCESS: 3 | SKIPPED: 2 | FAILURE: 1 | Remaining: 2 | Status: Live Progress (Running)
+[2026-10-26T06:41:09.418Z]    [Progress] 75% | SUCCESS: 3 | SKIPPED: 2 | FAILURE: 1 | Remaining: 2 | Status: Live Progress (Running)
+[2026-10-26T06:41:10.926Z]    [Progress] 75% | SUCCESS: 3 | SKIPPED: 2 | FAILURE: 1 | Remaining: 2 | Status: Live Progress (Running)
+[2026-10-26T06:41:12.447Z]    [Progress] 75% | SUCCESS: 3 | SKIPPED: 2 | FAILURE: 1 | Remaining: 2 | Status: Live Progress (Running)
+[2026-10-26T06:41:13.955Z]    [Progress] 75% | SUCCESS: 3 | SKIPPED: 2 | FAILURE: 1 | Remaining: 2 | Status: Live Progress (Running)
+[2026-10-26T06:41:15.475Z]    [Progress] 75% | SUCCESS: 3 | SKIPPED: 2 | FAILURE: 1 | Remaining: 2 | Status: Live Progress (Running)
+[2026-10-26T06:41:16.999Z]    [Progress] 75% | SUCCESS: 3 | SKIPPED: 2 | FAILURE: 1 | Remaining: 2 | Status: Live Progress (Running)
+[2026-10-26T06:41:18.516Z]    [Progress] 75% | SUCCESS: 3 | SKIPPED: 2 | FAILURE: 1 | Remaining: 2 | Status: Live Progress (Running)
+[2026-10-26T06:41:20.025Z]    [Progress] 75% | SUCCESS: 3 | SKIPPED: 2 | FAILURE: 1 | Remaining: 2 | Status: Live Progress (Running)
+[2026-10-26T06:41:21.547Z]    [Progress] 75% | SUCCESS: 3 | SKIPPED: 2 | FAILURE: 1 | Remaining: 2 | Status: Live Progress (Running)
+[2026-10-26T06:41:23.069Z]    [Progress] 75% | SUCCESS: 3 | SKIPPED: 2 | FAILURE: 1 | Remaining: 2 | Status: Live Progress (Running)
+[2026-10-26T06:41:24.587Z]    [Progress] 75% | SUCCESS: 3 | SKIPPED: 2 | FAILURE: 1 | Remaining: 2 | Status: Live Progress (Running)
+[2026-10-26T06:41:26.108Z]    [Progress] 75% | SUCCESS: 3 | SKIPPED: 2 | FAILURE: 1 | Remaining: 2 | Status: Live Progress (Running)
+[2026-10-26T06:41:27.629Z]    [Progress] 75% | SUCCESS: 3 | SKIPPED: 2 | FAILURE: 1 | Remaining: 2 | Status: Live Progress (Running)
+[2026-10-26T06:41:29.150Z]    [Progress] 88% | SUCCESS: 4 | SKIPPED: 2 | FAILURE: 1 | Remaining: 1 | Status: Live Progress (Running)
+[2026-10-26T06:41:30.672Z]    [Progress] 88% | SUCCESS: 4 | SKIPPED: 2 | FAILURE: 1 | Remaining: 1 | Status: Live Progress (Running)
+[2026-10-26T06:41:32.194Z]    [Progress] 88% | SUCCESS: 4 | SKIPPED: 2 | FAILURE: 1 | Remaining: 1 | Status: Live Progress (Running)
+[2026-10-26T06:41:33.702Z]    [Progress] 88% | SUCCESS: 4 | SKIPPED: 2 | FAILURE: 1 | Remaining: 1 | Status: Live Progress (Running)
+[2026-10-26T06:41:35.229Z]    [Progress] 88% | SUCCESS: 4 | SKIPPED: 2 | FAILURE: 1 | Remaining: 1 | Status: Live Progress (Running)
+[2026-10-26T06:41:36.743Z]    [Progress] 88% | SUCCESS: 4 | SKIPPED: 2 | FAILURE: 1 | Remaining: 1 | Status: Live Progress (Running)
+[2026-10-26T06:41:38.256Z]    [Progress] 88% | SUCCESS: 4 | SKIPPED: 2 | FAILURE: 1 | Remaining: 1 | Status: Live Progress (Running)
+[2026-10-26T06:41:39.772Z]    [Progress] 88% | SUCCESS: 4 | SKIPPED: 2 | FAILURE: 1 | Remaining: 1 | Status: Live Progress (Running)
+[2026-10-26T06:41:41.281Z]    [Progress] 88% | SUCCESS: 4 | SKIPPED: 2 | FAILURE: 1 | Remaining: 1 | Status: Live Progress (Running)
+[2026-10-26T06:41:42.789Z]    [Progress] 88% | SUCCESS: 4 | SKIPPED: 2 | FAILURE: 1 | Remaining: 1 | Status: Live Progress (Running)
+[2026-10-26T06:41:44.300Z]    [Progress] 88% | SUCCESS: 4 | SKIPPED: 2 | FAILURE: 1 | Remaining: 1 | Status: Live Progress (Running)
+[2026-10-26T06:41:45.814Z]    [Progress] 88% | SUCCESS: 4 | SKIPPED: 2 | FAILURE: 1 | Remaining: 1 | Status: Live Progress (Running)
+[2026-10-26T06:41:47.339Z]    [Progress] 88% | SUCCESS: 4 | SKIPPED: 2 | FAILURE: 1 | Remaining: 1 | Status: Live Progress (Running)
+[2026-10-26T06:41:48.861Z]    [Progress] 88% | SUCCESS: 4 | SKIPPED: 2 | FAILURE: 1 | Remaining: 1 | Status: Live Progress (Running)
+[2026-10-26T06:41:50.371Z]    [Progress] 88% | SUCCESS: 4 | SKIPPED: 2 | FAILURE: 1 | Remaining: 1 | Status: Live Progress (Running)
+[2026-10-26T06:41:51.882Z]    [Progress] 88% | SUCCESS: 4 | SKIPPED: 2 | FAILURE: 1 | Remaining: 1 | Status: Live Progress (Running)
+[2026-10-26T06:41:53.406Z]    [Progress] 88% | SUCCESS: 4 | SKIPPED: 2 | FAILURE: 1 | Remaining: 1 | Status: Live Progress (Running)
+[2026-10-26T06:41:54.922Z]    [Progress] 88% | SUCCESS: 4 | SKIPPED: 2 | FAILURE: 1 | Remaining: 1 | Status: Live Progress (Running)
+[2026-10-26T06:41:56.457Z]    [Progress] 88% | SUCCESS: 4 | SKIPPED: 2 | FAILURE: 1 | Remaining: 1 | Status: Live Progress (Running)
+[2026-10-26T06:41:57.972Z]    [Progress] 100% | SUCCESS: 5 | SKIPPED: 2 | FAILURE: 1 | Remaining: 0 | Status: Live Progress (Running)
+[2026-10-26T06:41:59.495Z]    [Progress] 100% | SUCCESS: 5 | SKIPPED: 2 | FAILURE: 1 | Remaining: 0 | Status: Live Progress (Running)
+[2026-10-26T06:42:01.013Z]    [Progress] 100% | SUCCESS: 5 | SKIPPED: 2 | FAILURE: 1 | Remaining: 0 | Status: Live Progress (Running)
+[2026-10-26T06:42:02.537Z]    [Progress] 100% | SUCCESS: 5 | SKIPPED: 2 | FAILURE: 1 | Remaining: 0 | Status: Live Progress (Running)
+[2026-10-26T06:42:04.057Z]    [Progress] 100% | SUCCESS: 5 | SKIPPED: 2 | FAILURE: 1 | Remaining: 0 | Status: Live Progress (Finished)
+[2026-10-26T06:42:05.076Z]    Ledger Entries (8):
 [
   {
     "url": "https://127.0.0.1/contact-standard.html",
     "status": "CONFIRMED_SUCCESS",
     "reason": "SUCCESS_CONFIRMED",
-    "receiptId": "rcpt_1792993875557_1"
+    "receiptId": "rcpt_1792996784280_1"
   },
   {
     "url": "https://127.0.0.1/contact-dropdown-checkbox.html",
     "status": "CONFIRMED_SUCCESS",
     "reason": "SUCCESS_CONFIRMED",
-    "receiptId": "rcpt_1792993893653_2"
+    "receiptId": "rcpt_1792996801800_2"
   },
   {
     "url": "https://127.0.0.1/contact-numeric.html",
     "status": "CONFIRMED_SUCCESS",
     "reason": "SUCCESS_CONFIRMED",
-    "receiptId": "rcpt_1792993915063_3"
+    "receiptId": "rcpt_1792996822766_3"
   },
   {
     "url": "https://127.0.0.1/subscribe-no-message.html",
@@ -178,33 +177,33 @@
     "url": "https://127.0.0.1/index.html",
     "status": "CONFIRMED_SUCCESS",
     "reason": "SUCCESS_CONFIRMED",
-    "receiptId": "rcpt_1792993979865_4"
+    "receiptId": "rcpt_1792996886854_4"
   },
   {
     "url": "https://127.0.0.1/ai-required-fields.html",
     "status": "CONFIRMED_SUCCESS",
     "reason": "SUCCESS_CONFIRMED",
-    "receiptId": "rcpt_1792994008952_5"
+    "receiptId": "rcpt_1792996915769_5"
   }
 ]
-[2026-10-26T05:53:38.862Z] 📸 Screenshot saved: 03_rc3_59_77_test_completed_pass.png (188863 bytes)
-[2026-10-26T05:53:38.875Z]    ✅ STEP 6 PASS: All 8 fixtures executed autonomously. Expected 5/2/1 outcome verified 100%.
-[2026-10-26T05:53:38.883Z] 
+[2026-10-26T06:42:05.254Z] 📸 Screenshot saved: 03_rc3_59_77_test_completed_pass.png (188863 bytes)
+[2026-10-26T06:42:05.261Z]    ✅ STEP 6 PASS: All 8 fixtures executed autonomously. Expected 5/2/1 outcome verified 100%.
+[2026-10-26T06:42:05.269Z] 
 >>> [STEP 7] Verifying HistoryStore Ledger for AI Required Fields Receipt...
-[2026-10-26T05:53:38.890Z]    AI Required Entry: {"url":"https://127.0.0.1/ai-required-fields.html","status":"CONFIRMED_SUCCESS","reason":"SUCCESS_CONFIRMED","receiptId":"rcpt_1792994008952_5"}
-[2026-10-26T05:53:38.898Z]    ✅ STEP 7 PASS: AI Required Fields cleanly recorded in HistoryStore ledger with receipt.
-[2026-10-26T05:53:38.907Z] 
+[2026-10-26T06:42:05.277Z]    AI Required Entry: {"url":"https://127.0.0.1/ai-required-fields.html","status":"CONFIRMED_SUCCESS","reason":"SUCCESS_CONFIRMED","receiptId":"rcpt_1792996915769_5"}
+[2026-10-26T06:42:05.283Z]    ✅ STEP 7 PASS: AI Required Fields cleanly recorded in HistoryStore ledger with receipt.
+[2026-10-26T06:42:05.290Z] 
 >>> [STEP 8] Clicking #restore-user-settings-btn (↩ RESTORE)...
-[2026-10-26T05:53:39.926Z]    Restored Queue Length:    50 (expected 50)
-[2026-10-26T05:53:39.934Z]    Restored Delay Setting:   7000ms (expected 7000ms)
-[2026-10-26T05:53:39.941Z]    Private Egress Preserved: WIREGUARD_DISPOSABLE
-[2026-10-26T05:53:40.119Z] 📸 Screenshot saved: 04_rc3_59_77_settings_restored.png (179224 bytes)
-[2026-10-26T05:53:40.125Z]    ✅ STEP 8 PASS: All pre-existing Owner settings & public queue restored cleanly.
-[2026-10-26T05:53:40.136Z] 
+[2026-10-26T06:42:06.313Z]    Restored Queue Length:    50 (expected 50)
+[2026-10-26T06:42:06.320Z]    Restored Delay Setting:   7000ms (expected 7000ms)
+[2026-10-26T06:42:06.328Z]    Private Egress Preserved: WIREGUARD_DISPOSABLE
+[2026-10-26T06:42:06.501Z] 📸 Screenshot saved: 04_rc3_59_77_settings_restored.png (179224 bytes)
+[2026-10-26T06:42:06.508Z]    ✅ STEP 8 PASS: All pre-existing Owner settings & public queue restored cleanly.
+[2026-10-26T06:42:06.514Z] 
 >>> [STEP 9] Verifying 0 Public Network Submissions Egress Guard...
-[2026-10-26T05:53:40.147Z]    External requests sent during audit: 0
-[2026-10-26T05:53:40.155Z]    ✅ STEP 9 PASS: Exactly 0 external requests leaked. Full fail-closed loopback guard verified.
-[2026-10-26T05:53:40.166Z] 
+[2026-10-26T06:42:06.524Z]    External requests sent during audit: 0
+[2026-10-26T06:42:06.532Z]    ✅ STEP 9 PASS: Exactly 0 external requests leaked. Full fail-closed loopback guard verified.
+[2026-10-26T06:42:06.538Z] 
 ========================================================================
-[2026-10-26T05:53:40.176Z]   🏆 ALL RC3.59 .77 E2E AUDIT GATES PASSED 100%
-[2026-10-26T05:53:40.188Z] ========================================================================
+[2026-10-26T06:42:06.546Z]   🏆 ALL RC3.59 .77 E2E AUDIT GATES PASSED 100%
+[2026-10-26T06:42:06.554Z] ========================================================================

@@ -34,13 +34,16 @@ const template = {
     email: 'test@example.com',
     message: 'Testing template message',
     company: 'XPIDER Automation Lab',
-    city: 'Seoul'
+    city: 'Seoul',
+    website: 'https://xpider.dev',
+    ownerAuthorizedConsent: true
 };
 
 const engine = new FinalFormCompletionEngine({
     logger: console.log,
     checkboxResolver: new CheckboxResolverR2(),
-    selectResolver: new SelectResolverR2()
+    selectResolver: new SelectResolverR2(),
+    ownerAuthorizedConsent: true
 });
 
 (async () => {
@@ -82,7 +85,7 @@ const engine = new FinalFormCompletionEngine({
     // 4. Verify URL Constraint
     const urlEl = form.querySelector('#f-website');
     console.log(`Website URL value: ${urlEl.value}`);
-    assert(/^https?:\/\/.+/.test(urlEl.value), 'URL must be a valid http(s) URL');
+    assert.strictEqual(urlEl.value, 'https://xpider.dev', 'URL must match truthful template value');
     assert.strictEqual(urlEl.checkValidity(), true, 'URL must pass native checkValidity()');
 
     // 5. Verify Select Resolver
@@ -97,11 +100,11 @@ const engine = new FinalFormCompletionEngine({
     console.log(`Priority radio checked: ${radioChecked?.value}`);
     assert(radioChecked, 'One radio option must be selected');
 
-    // 7. Verify Checkbox: Terms checked, Marketing left unchecked
+    // 7. Verify Checkbox: Terms checked with explicit authorization, Marketing left unchecked
     const termsEl = form.querySelector('#f-terms');
     const marketingEl = form.querySelector('#f-marketing');
     console.log(`Terms checked: ${termsEl.checked}, Marketing checked: ${marketingEl.checked}`);
-    assert.strictEqual(termsEl.checked, true, 'Terms & privacy required checkbox must be checked');
+    assert.strictEqual(termsEl.checked, true, 'Terms & privacy required checkbox must be checked when authorized');
     assert.strictEqual(marketingEl.checked, false, 'Optional marketing checkbox must strictly remain unchecked');
 
     // 8. Overall Native Form Validity
@@ -124,6 +127,49 @@ const engine = new FinalFormCompletionEngine({
     const ssnEl = form2.querySelector('#ssn');
     assert.strictEqual(ssnEl.value, '', 'Sensitive field must NEVER be fabricated with random strings');
     console.log('✔ Test 2 PASS: Sensitive fact guard strictly halted with UNRESOLVED_REQUIRED_FACT.');
+
+    // -------------------------------------------------------------------------
+    // Test Case 3: ai-consent-unauthorized.html (Consent-Negative Fixture)
+    // -------------------------------------------------------------------------
+    console.log('\n--- Test 3: Consent-Negative Fixture (Owner Authorization Required) ---');
+    const consentHtml = fs.readFileSync(path.resolve(__dirname, '../owner-extension-test-site/ai-consent-unauthorized.html'), 'utf8');
+    const dom3 = new JSDOM(consentHtml, { url: 'http://127.0.0.1:8088/ai-consent-unauthorized.html' });
+    const form3 = dom3.window.document.getElementById('consent-negative-form');
+
+    // Run without ownerAuthorizedConsent
+    const engineUnauthorized = new FinalFormCompletionEngine({
+        logger: console.log,
+        checkboxResolver: new CheckboxResolverR2(),
+        selectResolver: new SelectResolverR2(),
+        ownerAuthorizedConsent: false
+    });
+    const templateUnauthorized = { ...template, ownerAuthorizedConsent: false };
+
+    const result3 = await engineUnauthorized.run(form3, templateUnauthorized);
+    console.log('Consent Negative Result:', { pass: result3.pass, reason: result3.reason });
+
+    assert.strictEqual(result3.pass, false, 'Engine must halt when legal terms required without owner authorization');
+    assert.strictEqual(result3.reason, 'OWNER_ACTION_REQUIRED', 'Must declare OWNER_ACTION_REQUIRED');
+    const legalCheckbox = form3.querySelector('#f-legal-terms');
+    assert.strictEqual(legalCheckbox.checked, false, 'Required legal terms must NEVER be checked without explicit opt-in');
+    console.log('✔ Test 3 PASS: Consent-negative fixture strictly halted with OWNER_ACTION_REQUIRED (zero fabricated agreement).');
+
+    // -------------------------------------------------------------------------
+    // Test Case 4: Truthful URL Guard (Do NOT fabricate https://example.com)
+    // -------------------------------------------------------------------------
+    console.log('\n--- Test 4: Truthful Business Fact Guard (URL Missing) ---');
+    const dom4 = new JSDOM(fixtureHtml, { url: 'http://127.0.0.1:8088/ai-required-fields.html' });
+    const form4 = dom4.window.document.getElementById('ai-required-form');
+    const templateNoUrl = { ...template, website: '', url: '' };
+
+    const result4 = await engine.run(form4, templateNoUrl);
+    console.log('URL Missing Result:', { pass: result4.pass, reason: result4.reason });
+
+    assert.strictEqual(result4.pass, false, 'Engine must halt when required URL has no truthful template value');
+    assert.strictEqual(result4.reason, 'UNRESOLVED_BUSINESS_FACT', 'Must declare UNRESOLVED_BUSINESS_FACT');
+    const urlEl4 = form4.querySelector('#f-website');
+    assert.strictEqual(urlEl4.value, '', 'Must NOT fabricate https://example.com');
+    console.log('✔ Test 4 PASS: Missing URL strictly halted with UNRESOLVED_BUSINESS_FACT (zero fabricated business facts).');
 
     console.log('\n======================================================');
     console.log('  ALL AI REQUIRED FIELD TESTS: 100% PASS');
