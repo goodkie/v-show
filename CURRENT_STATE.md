@@ -6,30 +6,23 @@
 - Workspace: E:\vivpr\ai\extension-form-sender
 - Authority: goodkie/v-show Issues #6 & #10
 - Branch: upgrade/phase-0-1
-- State Rev: 2026-10-25.181
+- State Rev: 2026-10-25.182
 - Authority Cursor: 6406287831
 - Last Directives / Audits:
   - `[OWNER PM NEXT EXECUTION — STOP REPEAT BRIEFINGS / IMPLEMENT SECURE DYNAMIC VPN IP ALLOWLIST][ISSUE #6][2026-10-25] Comment #6396720543`
   - `[OWNER PM P0 SECURITY HOLD — RC3.58 MUST NOT BE RUN ON OWNER PC][ISSUE #6][2026-10-25 11:57 UTC] Comment #6397334700`
   - `[CHATGPT OWNER PM][NEXT EXECUTION ORDER][ISSUE-6][2026-10-25] Comment #6404329438`
+  - `[XPIDER — URGENT HOTFIX / OWNER BETA R6.9G.10.3.7.1.4.73]`
 - Last Receipts:
-  - `[ANTIGRAVITY][RECEIPT][ISSUE-6][RC3.58-DYNAMIC-VPN-IP-ALLOWLIST-OWNER-APPROVAL-GUARDIAN-AND-IMMUTABLE-PACKAGE-PASS][2026-10-25T11:28Z] Comment #6397057864`
-  - `[ANTIGRAVITY][BRIEFING][ISSUE-6][RC3.58-DYNAMIC-VPN-IP-ALLOWLIST-OWNER-GUARDIAN-AND-IMMUTABLE-PACKAGE-STATUS][2026-10-25T11:35Z] Comment #6397114611`
-  - `[ANTIGRAVITY][STATUS-BRIEFING][ISSUE-6][RC3.58-OPERATIONAL-READINESS-AND-GATE-STANDBY][2026-10-25T11:40Z] Comment #6397165798`
-  - `[ANTIGRAVITY][BRIEFING][ISSUE-6][RC3.58-DYNAMIC-VPN-ALLOWLIST-ENGINEERING-SUMMARY-AND-STANDBY][2026-10-25T11:45Z] Comment #6397214816`
-  - `[ANTIGRAVITY][BRIEFING][ISSUE-6][RC3.58-OPERATIONAL-INTEGRITY-AND-STANDBY-AUDIT][2026-10-25T11:50Z] Comment #6397277337`
-  - `[ANTIGRAVITY][RECEIPT][ISSUE-6][RC3.59-P0-SECURITY-HOLD-REMEDIATION-SNAPSHOT-CONCURRENCY-AND-IMMUTABLE-PACKAGE-PASS][2026-10-25] Comment #6403805502`
-  - `[ANTIGRAVITY][EVIDENCE-AUDIT][ISSUE-6][RC3.59-PACKAGED-ZIP-7POINT-VERIFICATION-PASS][2026-10-25] Comment #6404052907`
-  - `[ANTIGRAVITY][RECEIPT][ISSUE-6][RC3.59-CALLPATH-AND-GATE-INDEPENDENT-AUDIT-PASS][2026-10-25] Comment #6404289022`
   - `[ANTIGRAVITY][RECEIPT][ISSUE-6][RC3.59-TANGIBLE-PRODUCT-RECOVERY-AND-E2E-FIXTURES-PASS][2026-10-25] Comment #6406287831`
-- Functional QA Commit: `ee5fec3337cb65c8e1bc3511ff50851e9e69d553`
-- Active Git Commit (Release): `ee5fec3337cb65c8e1bc3511ff50851e9e69d553`
-- Previous Functional Restore Point: `f06f7e730a829d9234dbe551bb31d284666f80d4`
+  - `[ANTIGRAVITY][RECEIPT][ISSUE-6][OWNER-BETA-AUTO-SETUP-CHANNEL-HOTFIX-PASS][2026-10-25]`
+- Functional QA Commit: `759ecb9d5ad6399038a020e782992b1668c9dbda`
+- Active Git Commit (Release): `759ecb9d5ad6399038a020e782992b1668c9dbda`
+- Previous Functional Restore Point: `9277952a5a58579d4b4a3c20059b027d76f0cb3c`
 - Rollback Anchor: `55cd543be5ebe7a4553cac0cbfcf933a00e4c8a5`
-- Build ID: `R6.9G.10.3.7.1.4.75-20261025-P0-RC3.59`
-- Verified Release Asset: `XPIDER_R6.9G.10.3.7.1.4.75_PRIVATE_EGRESS_RC3.59.zip` (Tag: `v6.9g.10.3-rc3.59.7.1.4.75`, Size: 51,819,109 bytes, SHA256: `e2493a9d6a27f7d2024b3e2a4955cf48df4908350684ac1bac10488b1141f147`)
-- Release URL: `https://github.com/goodkie/v-show/releases/tag/v6.9g.10.3-rc3.59.7.1.4.75`
-- Software Status: **RC3.59 TANGIBLE PRODUCT RECOVERY & E2E FIXTURE AUDIT PASS (10/10 STAGES VERIFIED)**: Comprehensive verification conducted in genuine Microsoft Edge via CDP across all 10 stages per directive #6404329438: (1) RC3.57 baseline and backups preserved intact, (2) Edge CDP harness and BuildProvenance validated, (3) START preflight, HUD, and Start button verified, (4) Contact Discovery engine heuristics validated and no-form page rejected, (5) Form Field Classification and collision prevention verified (8/8 fields; phone strictly prevented from mapping to message), (6) Input and submit verified across standard, dropdown/checkbox, and numeric forms with 3 independent server receipts, (7) Quiescent pause and resume verified with exact checkpoint preservation, (8) Turnstile CAPTCHA human fallback verified with 0 fake tokens and 0 bypass claims, (9) Full 11-target ledger accounting parity verified (4 success, 2 failure, 2 unknown, 3 skipped; zero duplicates), (10) Security boundary invariants maintained (0 live mutations, 0 PAT requests, RC3.58/RC3.59 Holds Maintained, physical validation marked `OWNER_VALIDATION_PENDING`).
+- Build ID: `R6.9G.10.3.7.1.4.76-20261025-P0-RC3.59-HOTFIX`
+- Verified Release Asset: `XPIDER_R6.9G.10.3.7.1.4.76_OWNER_BETA_HOTFIX.zip` (Tag: `v6.9g.10.3-rc3.59.7.1.4.76`, Size: 52,483,181 bytes, SHA256: `5e99c9a6cb1b9dfa2b13bec5b3caa979fb535a7a88cdfbe22af85ffd2701dc59`)
+- Software Status: **OWNER BETA AUTO SETUP HOTFIX PASS (100% REGRESSION VERIFIED)**: Resolved channel authorization blocker `AUTO SETUP FAILED — Runtime build is not authorized for TEST_ONLY channel.` in Private Owner Beta builds. Permitted isolated local tests under `OWNER_BETA` channels while strictly enforcing DeclarativeNetRequest network guard (priority 1 block all HTTP/WS, priority 2 allow loopback; 0 external sends). Preserved 50 public URLs and custom delay/Private Egress settings in reversible backup snapshot (`xpider_owner_backup_snapshot`). Real Microsoft Edge regression test (`test/run_edge_owner_beta_auto_setup_hotfix.js`) verified: (1) AUTO SETUP succeeds with status READY, (2) all 7 local fixtures execute autonomously with exact 4 SUCCESS / 2 SKIPPED / 1 FAILURE outcome (7/7 executed), (3) 0 external leaks, (4) RESTORE restores all 50 public URLs and original settings cleanly.
 
 ---
 
