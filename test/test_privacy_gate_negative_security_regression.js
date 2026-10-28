@@ -351,8 +351,249 @@ console.log('===================================================================
         console.log('✅ SCENARIO 7 PASS: Post-restore fail-closed and healthy recovery verified.\n');
     }
 
+    // ─────────────────────────────────────────────────────────────────────────────
+    // SCENARIO 8: Post-READY Chrome Proxy Tampered to DIRECT (Proxyless Canary 200)
+    // ─────────────────────────────────────────────────────────────────────────────
+    console.log('>>> [SCENARIO 8] Post-READY proxy tampered to DIRECT with proxyless canary returning 200...');
+    {
+        const pg = new PrivacyGatewayEngine();
+        pg.ephemeralRelayToken = 'valid-test-token-rc3-60';
+
+        let proxyMode = 'fixed_servers';
+        let tabsCreated = 0;
+        let tabsUpdated = 0;
+        let formsSubmitted = 0;
+
+        global.chrome.tabs = {
+            create: (opts) => { tabsCreated++; return Promise.resolve({ id: 1001, url: opts.url }); },
+            update: (tabId, opts) => { tabsUpdated++; return Promise.resolve({ id: tabId, url: opts.url }); }
+        };
+
+        global.chrome.proxy = {
+            settings: {
+                get: (opts, cb) => {
+                    if (proxyMode === 'fixed_servers') {
+                        cb({ value: { mode: 'fixed_servers', rules: { singleProxy: { host: '127.0.0.1', port: 18988 }, bypassList: ['127.0.0.1:18989'] } }, levelOfControl: 'controlled_by_this_extension' });
+                    } else {
+                        cb({ value: { mode: 'direct' }, levelOfControl: 'controlled_by_this_extension' });
+                    }
+                },
+                set: (opts, cb) => cb && cb(),
+                onChange: { addListener: (fn) => { global.__proxyChangeListener = fn; } }
+            }
+        };
+
+        // Canary returns 200 always (simulating direct unproxied internet access)
+        pg._mockFetch = async (url) => {
+            if (url.includes('18989/status')) {
+                return {
+                    ok: true,
+                    status: 200,
+                    json: async () => ({
+                        relayReady: true,
+                        lifecycleState: 'READY',
+                        totalNodes: 1,
+                        selectedEgressId: 'do-egress-tor1-611293905',
+                        egressFingerprint: '05b6b53daead49e7'
+                    })
+                };
+            }
+            // In direct mode or proxy mode, public canary returns HTTP 200
+            return { ok: true, status: 200, text: async () => 'ip=159.26.98.240\n' };
+        };
+
+        await pg.init();
+
+        // 8.1 Achieve verified live READY state
+        const initialPf = await pg.runPreflight({ autoStart: false });
+        assert.strictEqual(initialPf.ready, true, 'Initial preflight must pass');
+        assert.strictEqual(pg.isPrivacyGateReady(), true, 'Gate must be ready');
+        console.log('   ✔ Sub-step 8.1: Confirmed initial live READY state.');
+
+        // 8.2 Tamper Chrome proxy to DIRECT externally
+        proxyMode = 'direct';
+        if (global.__proxyChangeListener) {
+            global.__proxyChangeListener({ value: { mode: 'direct' } });
+        }
+
+        // 8.3 Verify continuity check detects tampered proxy and fails closed
+        const contCheck = await pg.checkEgressContinuity();
+        assert.strictEqual(contCheck.pass, false, 'Continuity check must fail when proxy is switched to DIRECT');
+        assert(contCheck.reason.includes('TAMPERED') || contCheck.reason.includes('DIRECT'), `Reason must indicate tampered proxy: ${contCheck.reason}`);
+        console.log('   ✔ Sub-step 8.2: checkEgressContinuity() rejected tampered direct proxy.');
+
+        // 8.4 Verify contemporaneous verifier rejects public-target navigation and submission
+        const liveVerifier = await pg.verifyAuthoritativeEgressEnforcement('PUBLIC_TARGET_NAVIGATION');
+        assert.strictEqual(liveVerifier.ready, false, 'Live verifier must fail-closed on tampered proxy');
+        assert.strictEqual(pg.isPrivacyGateReady(), false, 'isPrivacyGateReady() must be false');
+        console.log('   ✔ Sub-step 8.3: verifyAuthoritativeEgressEnforcement() rejected tampered direct proxy.');
+
+        // 8.5 Attempt navigation and submission actions while blocked
+        const targetUrl = 'https://example-public-site.com/contact';
+        const isReadyForNav = await pg.verifyAuthoritativeEgressEnforcement('TARGET_TAB_CREATION');
+        if (isReadyForNav.ready) {
+            await global.chrome.tabs.create({ url: targetUrl });
+            await global.chrome.tabs.update(1001, { url: targetUrl });
+            formsSubmitted++;
+        }
+
+        assert.strictEqual(tabsCreated, 0, 'ZERO external tabs must be created under tampered direct proxy');
+        assert.strictEqual(tabsUpdated, 0, 'ZERO external tabs must be updated under tampered direct proxy');
+        assert.strictEqual(formsSubmitted, 0, 'ZERO form submissions must occur under tampered direct proxy');
+        console.log('   ✔ Sub-step 8.4: Spies confirmed 0 tabs created, 0 updated, 0 forms submitted.');
+        console.log('✅ SCENARIO 8 PASS: Post-READY direct proxy tamper strictly blocked with zero public actions.\n');
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────────
+    // SCENARIO 9: Post-READY Live Companion 401 Unauthorized / Relay Drop
+    // ─────────────────────────────────────────────────────────────────────────────
+    console.log('>>> [SCENARIO 9] Post-READY live companion returns 401 or drops connection...');
+    {
+        const pg = new PrivacyGatewayEngine();
+        pg.ephemeralRelayToken = 'valid-test-token-rc3-60';
+
+        let companionState = 'healthy';
+        pg._mockFetch = async (url) => {
+            if (url.includes('18989/status')) {
+                if (companionState === '401') {
+                    return { ok: false, status: 401, json: async () => ({ error: 'UNAUTHORIZED' }) };
+                }
+                if (companionState === 'dropped') {
+                    throw new Error('connect ECONNREFUSED 127.0.0.1:18989');
+                }
+                return {
+                    ok: true,
+                    status: 200,
+                    json: async () => ({
+                        relayReady: true,
+                        lifecycleState: 'READY',
+                        totalNodes: 1,
+                        selectedEgressId: 'do-egress-tor1-611293905',
+                        egressFingerprint: '05b6b53daead49e7'
+                    })
+                };
+            }
+            return { ok: true, status: 200, text: async () => 'ip=143.198.40.33\n' };
+        };
+
+        global.chrome.proxy = {
+            settings: {
+                get: (opts, cb) => cb({ value: { mode: 'fixed_servers', rules: { singleProxy: { host: '127.0.0.1', port: 18988 }, bypassList: ['127.0.0.1:18989'] } }, levelOfControl: 'controlled_by_this_extension' }),
+                set: (opts, cb) => cb && cb()
+            }
+        };
+
+        await pg.init();
+        const initialPf = await pg.runPreflight({ autoStart: false });
+        assert.strictEqual(initialPf.ready, true, 'Preflight must pass initially');
+
+        // Companion returns 401
+        companionState = '401';
+        const v401 = await pg.verifyAuthoritativeEgressEnforcement('SUBMIT_BARRIER');
+        assert.strictEqual(v401.ready, false, 'Verifier must fail on companion 401');
+        assert.strictEqual(v401.reason, 'PRIVACY_RELAY_UNAUTHORIZED', `Must be PRIVACY_RELAY_UNAUTHORIZED: got ${v401.reason}`);
+        assert.strictEqual(pg.isPrivacyGateReady(), false, 'Gate must be invalidated on 401');
+        console.log('   ✔ Sub-step 9.1: Live companion 401 strictly blocks submit barrier.');
+
+        // Companion drops completely
+        companionState = 'dropped';
+        const vDrop = await pg.verifyAuthoritativeEgressEnforcement('SUBMIT_BARRIER');
+        assert.strictEqual(vDrop.ready, false, 'Verifier must fail on companion drop');
+        assert.strictEqual(pg.isPrivacyGateReady(), false, 'Gate must remain false on drop');
+        console.log('   ✔ Sub-step 9.2: Live companion connection drop strictly blocks submit barrier.');
+        console.log('✅ SCENARIO 9 PASS: Live companion 401/drop fail-closed enforcement verified.\n');
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────────
+    // SCENARIO 10: ensureEnforcedPrivacyForStart Updates Authoritative Preflight Coherently
+    // ─────────────────────────────────────────────────────────────────────────────
+    console.log('>>> [SCENARIO 10] ensureEnforcedPrivacyForStart updates authoritative preflight coherently...');
+    {
+        const pg = new PrivacyGatewayEngine();
+        pg.ephemeralRelayToken = 'valid-test-token-rc3-60';
+
+        pg._mockFetch = async (url) => {
+            if (url.includes('18989/status')) {
+                return {
+                    ok: true,
+                    status: 200,
+                    json: async () => ({
+                        relayReady: true,
+                        lifecycleState: 'READY',
+                        totalNodes: 1,
+                        selectedEgressId: 'do-egress-tor1-611293905',
+                        egressFingerprint: '05b6b53daead49e7'
+                    })
+                };
+            }
+            return { ok: true, status: 200, text: async () => 'ip=143.198.40.33\n' };
+        };
+
+        global.chrome.proxy = {
+            settings: {
+                get: (opts, cb) => cb({ value: { mode: 'fixed_servers', rules: { singleProxy: { host: '127.0.0.1', port: 18988 }, bypassList: ['127.0.0.1:18989'] } }, levelOfControl: 'controlled_by_this_extension' }),
+                set: (opts, cb) => cb && cb()
+            }
+        };
+
+        await pg.init();
+        assert.strictEqual(pg.isPrivacyGateReady(), false, 'Gate must not be ready before start prep');
+
+        // Run ensureEnforcedPrivacyForStart directly (without running separate runPreflight first)
+        const startRes = await pg.ensureEnforcedPrivacyForStart({ autoStart: true });
+        assert.strictEqual(startRes.ready, true, 'ensureEnforcedPrivacyForStart must succeed');
+        assert(pg.lastPreflightResult !== null, 'lastPreflightResult must be set');
+        assert.strictEqual(pg.lastPreflightResult.ready, true, 'lastPreflightResult.ready must be true');
+        assert.strictEqual(pg.lastPreflightResult.provisional, false, 'lastPreflightResult.provisional must be false');
+        assert.strictEqual(pg.isPrivacyGateReady(), true, 'isPrivacyGateReady() must return true without deadlock');
+        console.log('   ✔ Sub-step 10.1: ensureEnforcedPrivacyForStart synchronized lastPreflightResult and isPrivacyGateReady().');
+        console.log('✅ SCENARIO 10 PASS: ensureEnforcedPrivacyForStart coherence verified.\n');
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────────
+    // SCENARIO 11: MV3 Service Worker Restart with Cached READY and Disconnected Relay
+    // ─────────────────────────────────────────────────────────────────────────────
+    console.log('>>> [SCENARIO 11] MV3 SW restart with cached READY and disconnected relay...');
+    {
+        const mockStorage = {
+            xpider_privacy_config: {
+                enabled: true,
+                failClosed: true,
+                transportMode: 'PRIVACY_RELAY',
+                selectedEgressId: 'do-egress-tor1-611293905'
+            },
+            xpider_last_privacy_preflight: makeRecentSnapshot()
+        };
+
+        global.chrome.storage.local.get = (keys) => Promise.resolve(mockStorage);
+        global.chrome.proxy = {
+            settings: {
+                get: (opts, cb) => cb({ value: { mode: 'fixed_servers', rules: { singleProxy: { host: '127.0.0.1', port: 18988 }, bypassList: ['127.0.0.1:18989'] } }, levelOfControl: 'controlled_by_this_extension' }),
+                set: (opts, cb) => cb && cb()
+            }
+        };
+
+        // Fresh instance simulates worker restart
+        const freshPg = new PrivacyGatewayEngine();
+        freshPg._mockFetch = async (url) => {
+            throw new Error('connect ECONNREFUSED 127.0.0.1:18989');
+        };
+
+        await freshPg.init();
+
+        assert.strictEqual(freshPg.isGateReady, false, 'Fresh SW MUST NOT have isGateReady=true from cache');
+        assert.strictEqual(freshPg.isPrivacyGateReady(), false, 'isPrivacyGateReady() MUST return false');
+        assert.strictEqual(freshPg.lastPreflightResult.provisional, true, 'Snapshot must be provisional');
+
+        const liveCheck = await freshPg.verifyAuthoritativeEgressEnforcement('CAMPAIGN_START');
+        assert.strictEqual(liveCheck.ready, false, 'Live check must fail closed when relay is disconnected');
+        assert.strictEqual(freshPg.isPrivacyGateReady(), false, 'Gate must remain false');
+        console.log('   ✔ Sub-step 11.1: Fresh MV3 worker strictly blocks cached READY without live relay.');
+        console.log('✅ SCENARIO 11 PASS: MV3 restart fail-closed behavior verified.\n');
+    }
+
     console.log('========================================================================');
-    console.log('  🏆 ALL 7 NEGATIVE SECURITY REGRESSION SCENARIOS PASSED 100%');
+    console.log('  🏆 ALL 11 NEGATIVE SECURITY REGRESSION SCENARIOS PASSED 100%');
     console.log('========================================================================');
 })().catch(err => {
     console.error(`❌ REGRESSION SUITE FAILED: ${err.message}\n${err.stack}`);

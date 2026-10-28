@@ -25,11 +25,11 @@
         rollbackBase: '55cd543be5ebe7a4553cac0cbfcf933a00e4c8a5',
         previousFunctionalRestorePoint: 'b2af1c9bf614b9f572acec910265d8132d2043aa',
         manifestVersion: 3,
-        buildId: 'R6.9G.10.3.7.1.4.84-20261028-P0-RC3.60-PRIVACY-GATE-LIVE-AUTHORITY-PASS',
-        builtAt: '2026-10-28T07:24:27.552Z',
+        buildId: 'R6.9G.10.3.7.1.4.85-20261028-P0-RC3.60-PUBLIC-TARGET-SECURE-ENTRY-PASS',
+        builtAt: '2026-10-28T09:15:57.199Z',
         provenanceSchema: 2,
         modules: {
-            backgroundSha: '8aba446a77930cb4a02f4d091f71b97116b5bbed9188b842f780a077abaccb0e',
+            backgroundSha: '3fa87879ab0a26e7f28cf14e4197070af93ec0ffe50ac6b6cb5a65499dd7b12f',
             contentScriptSha: '8d0751813ac15671dbf397cecd87555a62d58eb4565ccd1484563930dd2620bd',
             popupSha: '5af98da1eef7325b7bd2a2b115315288c6b6a8db67cb2eca10fbea675bfea30b',
             solverContentSha: '6a1ff7154efaeb6dbd5946ac4f9be1ce5b5ff43bce2db06d0dca32950edd3bdb',
@@ -38,7 +38,7 @@
             historyStoreSha: '2b34f9c8c1a4c62d07dd406e0e304f179ac68b6d8fbf4bb0614038770fbc4138',
             contactGateSha: '9007adceec8b4e8ec7f7a14ee8a7d21af460a01ed043c578e1e3c2579cfae88e',
             visionSubmitSha: '6b89eab8fd132798fbb157e179bdeee64da1aa9867222fdb656e3fcf4fcc9311',
-            privacyGatewaySha: '4e617fd87cd61b0da16dc0bc89957c0e1ca0a35cddefc36f00d2e720446c9c44'
+            privacyGatewaySha: '952f3a5de921563b7b4df73817eabbdbc46446629c264432c32ff5838ffec090'
         }
     };
 

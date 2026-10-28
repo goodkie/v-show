@@ -2129,19 +2129,17 @@ async function assertPrivacyTransportReady(context = 'GENERAL') {
         return { ready: true };
     }
 
-    if (!pg.isPrivacyGateReady() && !pg.failureReason) {
-        // Fresh service worker (flag reset, no concrete failure): re-run the fail-closed preflight
-        // instead of deadlocking. A genuine failure still sets failureReason and blocks below.
-        const nowTs = Date.now();
-        if (!assertPrivacyTransportReady._lastHeal || nowTs - assertPrivacyTransportReady._lastHeal > 5000) {
-            assertPrivacyTransportReady._lastHeal = nowTs;
-            try {
-                logBg(null, `[PRIVACY_GATE_SELF_HEAL] context=${context} gateFlag=false reason=NONE action=RUN_PREFLIGHT`, 'info');
-                await pg.runPreflight({});
-            } catch (healErr) {
-                logBg(null, `[PRIVACY_GATE_SELF_HEAL] preflight threw: ${healErr && healErr.message}`, 'warning');
-            }
+    // [RC3.60 .85 Strict Contemporaneous Egress Enforcement]
+    // Await authoritative fresh verifier before ANY target tab creation, navigation, or submit.
+    // Strictly enforces chrome.proxy readback, companion authenticated readiness, and tunneled egress canary.
+    if (typeof pg.verifyAuthoritativeEgressEnforcement === 'function') {
+        const liveCheck = await pg.verifyAuthoritativeEgressEnforcement(context);
+        if (!liveCheck.ready) {
+            const blkReason = liveCheck.reason || pg.failureReason || 'PRIVACY_GATE_NOT_READY';
+            logBg(null, `[PRIVACY_GATE_BLOCK] context=${context} reason=${blkReason}`, 'error');
+            return { ready: false, reason: blkReason };
         }
+        return { ready: true, mode: liveCheck.mode };
     }
 
     if (!pg.isPrivacyGateReady()) {
@@ -5247,6 +5245,7 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
             return true;
 
         // [R6.9G.10.3.5.1 Section 3] Authoritative Fail-Closed SUBMIT Privacy Transport Barrier
+        case 'CHECK_PRIVACY_TRANSPORT_READY':
         case 'ASSERT_PRIVACY_TRANSPORT_READY':
             (async () => {
                 try {
@@ -8117,6 +8116,15 @@ async function ensureCampaignTab(existingTabId, candidateUrl, forceRecreate = fa
             }
         } catch (_) {}
     }
+    const pgEngine = (typeof PrivacyGateway !== 'undefined' && PrivacyGateway.getInstance) ? PrivacyGateway.getInstance() : null;
+    const isLoopbackCandidate = pgEngine && typeof pgEngine.isLoopbackTestUrl === 'function' ? pgEngine.isLoopbackTestUrl(candidateUrl) : false;
+    if (!campaignState.ownerFunctionTestMode && !isLoopbackCandidate) {
+        const privCheck = await assertPrivacyTransportReady('CAMPAIGN_TAB_RECOVERY');
+        if (!privCheck.ready) {
+            logBg(null, `[TAB_RECOVERY_BLOCKED] reason=${privCheck.reason} candidateUrl=${candidateUrl}`, 'error');
+            throw new Error(`PRIVACY_GATE_BLOCKED: ${privCheck.reason}`);
+        }
+    }
     logBg(null, `[TAB_RECOVERY] Campaign tab ${existingTabId} missing/mismatched. Recreating active campaign tab for ${candidateUrl}`, "warning");
     if (existingTabId) {
         await closeOwnedTabVerified(existingTabId, 'TAB_RECOVERY_STALE');
@@ -8176,6 +8184,15 @@ async function navigateToValidatedCandidate(tabId, rawCandidate, baseUrl, contex
     if (!rel.allowed && context.enforceSourceRelation !== false) {
         logBg(tabId, `🚫 [NavigationGuard] Candidate ${check.url} has no relationship to source ${baseUrl} (${rel.relation}). Skipping.`, 'warning');
         return { success: false, reasonCode: 'UNRELATED_DOMAIN_CANDIDATE', detail: rel.relation };
+    }
+    const pgEngineNav = (typeof PrivacyGateway !== 'undefined' && PrivacyGateway.getInstance) ? PrivacyGateway.getInstance() : null;
+    const isLoopbackNav = pgEngineNav && typeof pgEngineNav.isLoopbackTestUrl === 'function' ? pgEngineNav.isLoopbackTestUrl(check.url) : false;
+    if (!campaignState.ownerFunctionTestMode && !isLoopbackNav) {
+        const privCheck = await assertPrivacyTransportReady('CANDIDATE_NAV_VALIDATED');
+        if (!privCheck.ready) {
+            logBg(tabId, `🚫 [NavigationGuard] Candidate navigation blocked by privacy assertion: ${privCheck.reason}`, 'error');
+            return { success: false, reasonCode: 'PRIVACY_GATEWAY_BLOCKED', error: privCheck.reason };
+        }
     }
     const sourceHost = context.sourceHost || (baseUrl ? new URL(baseUrl).hostname : check.hostname);
     logBg(tabId, `[TARGET_NAV] sourceHost=${sourceHost} candidate=${check.url} relation=${rel.relation}`, 'info');

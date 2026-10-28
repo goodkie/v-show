@@ -81,9 +81,47 @@
             this.ephemeralEgressFingerprint = null; // Truncated hash only, never raw IP
             this.ephemeralProxyPassword = null; // Memory-only password if rememberPassword is false
             this.ephemeralRelayToken = null; // Ephemeral relay token from Native Messaging
+            this._proxyChangeListenerBound = false;
+            this._setupProxyChangeListener();
+        }
+
+        _setupProxyChangeListener() {
+            if (this._proxyChangeListenerBound) return;
+            if (typeof chrome !== 'undefined' && chrome.proxy && chrome.proxy.settings && chrome.proxy.settings.onChange && typeof chrome.proxy.settings.onChange.addListener === 'function') {
+                this._proxyChangeListenerBound = true;
+                try {
+                    chrome.proxy.settings.onChange.addListener((details) => {
+                        if (this.config && this.config.enabled && this.config.transportMode === PRIVACY_MODES.PRIVACY_RELAY) {
+                            const val = details && details.value;
+                            const mode = val && val.mode;
+                            const sp = val && val.rules && val.rules.singleProxy;
+                            const expHost = this.config.relayHost || '127.0.0.1';
+                            const expPort = Number(this.config.relayProxyPort || 18988);
+                            if (mode !== 'fixed_servers' || !sp || sp.host !== expHost || Number(sp.port) !== expPort) {
+                                console.warn('[PRIVACY_GATE] chrome.proxy.settings.onChange detected invalid/tampered settings:', details);
+                                this.invalidateGateReadiness('PROXY_SETTINGS_TAMPERED_ONCHANGE');
+                            }
+                        }
+                    });
+                } catch (e) {
+                    console.warn('[PRIVACY_GATE] Failed to attach chrome.proxy.settings.onChange listener:', e);
+                }
+            }
+        }
+
+        invalidateGateReadiness(reason = 'PRIVACY_GATE_INVALIDATED') {
+            this.isGateReady = false;
+            this.isGateActive = false;
+            this.failureReason = reason;
+            if (this.lastPreflightResult) {
+                this.lastPreflightResult.ready = false;
+                this.lastPreflightResult.provisional = true;
+                this.lastPreflightResult.failureReason = reason;
+            }
         }
 
         async init(customConfig = {}) {
+            this._setupProxyChangeListener();
             if (customConfig.proxyPassword !== undefined) {
                 this.ephemeralProxyPassword = customConfig.proxyPassword;
             }
@@ -1337,6 +1375,29 @@
 
             // [R6.9G.10] Companion Privacy Relay Continuity Check
             if (this.config.transportMode === PRIVACY_MODES.PRIVACY_RELAY) {
+                // [RC3.60 .85 Strict Egress Continuity: Read back Chrome proxy settings first]
+                // Prevent fail-open leak where Chrome proxy was switched to DIRECT but ordinary fetch canary still succeeds
+                if (typeof chrome !== 'undefined' && chrome.proxy && chrome.proxy.settings) {
+                    let pDetails = null;
+                    try {
+                        pDetails = await new Promise((resolve) => {
+                            chrome.proxy.settings.get({ incognito: false }, (details) => {
+                                if (chrome.runtime && chrome.runtime.lastError) return resolve({ error: chrome.runtime.lastError.message });
+                                resolve(details);
+                            });
+                        });
+                    } catch (e) {
+                        pDetails = { error: e.message };
+                    }
+                    const pVal = pDetails && pDetails.value;
+                    const expHost = this.config.relayHost || '127.0.0.1';
+                    const expPort = Number(this.config.relayProxyPort || 18988);
+                    if (!pVal || pVal.mode !== 'fixed_servers' || !pVal.rules || !pVal.rules.singleProxy || pVal.rules.singleProxy.host !== expHost || Number(pVal.rules.singleProxy.port) !== expPort) {
+                        this.invalidateGateReadiness('PROXY_SETTINGS_TAMPERED_DIRECT');
+                        return { pass: false, reason: 'PROXY_SETTINGS_TAMPERED_DIRECT' };
+                    }
+                }
+
                 if (!this.isGateActive || !this.isGateReady) {
                     return { pass: false, reason: this.failureReason || 'PRIVACY_RELAY_NOT_READY' };
                 }
@@ -2237,6 +2298,14 @@
                 this.isGateReady = true;
                 this.isGateActive = true;
                 this.failureReason = null;
+                this.lastPreflightResult = {
+                    ready: true,
+                    provisional: false,
+                    mode: PRIVACY_MODES.DIRECT,
+                    ownerFunctionTestMode: true,
+                    lastCheck: new Date().toISOString(),
+                    failureReason: null
+                };
                 return {
                     ready: true,
                     mode: PRIVACY_MODES.DIRECT,
@@ -2364,6 +2433,15 @@
                         this.failureReason = null;
                         this.ephemeralEgressFingerprint = relayStatus.egressFingerprint || null;
                         this.config.selectedEgressId = relayStatus.selectedEgressId || null;
+                        this.lastPreflightResult = {
+                            ready: true,
+                            provisional: false,
+                            mode: PRIVACY_MODES.PRIVACY_RELAY,
+                            lastCheck: new Date().toISOString(),
+                            selectedEgressId: this.config.selectedEgressId,
+                            egressFingerprint: this.ephemeralEgressFingerprint,
+                            failureReason: null
+                        };
                         console.log('[PRIVACY_START_READY] mode=PRIVACY_RELAY');
                         return { ready: true, mode: PRIVACY_MODES.PRIVACY_RELAY };
                     } else {
@@ -2396,6 +2474,13 @@
                         this.isGateActive = true;
                         this.failureReason = null;
                         this.ephemeralEgressFingerprint = await this._hashString(`${this.config.proxyHost}:${this.config.proxyPort}`);
+                        this.lastPreflightResult = {
+                            ready: true,
+                            provisional: false,
+                            mode: proxyCandidate,
+                            lastCheck: new Date().toISOString(),
+                            failureReason: null
+                        };
                         console.log(`[PRIVACY_START_READY] mode=${proxyCandidate}`);
                         return { ready: true, mode: proxyCandidate };
                     } else {
@@ -2439,6 +2524,169 @@
                 userMessage: userMsg,
                 actionSection: actionSection
             };
+        }
+
+        /**
+         * [Issue #6 RC3.60 .85 Authoritative Egress Verifier]
+         * Invoked synchronously/awaited before EVERY external target tab open/navigation and form submit.
+         * Enforces live fail-closed checks:
+         * 1. Contemporaneous chrome.proxy.settings.get({incognito:false}) must return fixed_servers to 127.0.0.1:18988.
+         * 2. Companion control plane query must return HTTP 200 with relayReady: true, non-expired health, and valid selectedEgressId.
+         * 3. Outbound tunneled egress canary probe must return HTTP 200/PASS through enforced proxy.
+         * On ANY failure, mismatch, timeout, 401, or proxy tampering: strictly invalidates gate and fails closed.
+         */
+        async verifyAuthoritativeEgressEnforcement(context = 'GENERAL') {
+            if (context === 'OWNER_FUNCTION_TEST' || (typeof campaignState !== 'undefined' && campaignState.ownerFunctionTestMode)) {
+                return { ready: true, mode: PRIVACY_MODES.DIRECT, ownerFunctionTestMode: true };
+            }
+            if (!this.config || !this.config.enabled) {
+                if (this.config && this.config.failClosed) {
+                    this.invalidateGateReadiness('PRIVACY_GATEWAY_DISABLED_WHILE_FAIL_CLOSED');
+                    return { ready: false, reason: 'PRIVACY_GATEWAY_DISABLED_WHILE_FAIL_CLOSED' };
+                }
+                return { ready: true, mode: PRIVACY_MODES.DIRECT };
+            }
+
+            if (this.config.physicalGateEnabled) {
+                const physRes = await this.assertPhysicalGateReady();
+                if (!physRes || !physRes.ready) {
+                    this.invalidateGateReadiness(physRes ? physRes.reason : 'PHYSICAL_GATE_NOT_READY');
+                    return { ready: false, reason: physRes ? physRes.reason : 'PHYSICAL_GATE_NOT_READY' };
+                }
+            }
+
+            if (this.config.transportMode === PRIVACY_MODES.PRIVACY_RELAY) {
+                const expectedHost = this.config.relayHost || '127.0.0.1';
+                const expectedPort = Number(this.config.relayProxyPort || 18988);
+                const expectedCtrlPort = Number(this.config.relayControlPort || 18989);
+
+                // 1. Contemporaneous Chrome Proxy Settings Readback
+                if (typeof chrome !== 'undefined' && chrome.proxy && chrome.proxy.settings) {
+                    let proxyDetails = null;
+                    try {
+                        proxyDetails = await new Promise((resolve) => {
+                            chrome.proxy.settings.get({ incognito: false }, (details) => {
+                                if (chrome.runtime && chrome.runtime.lastError) {
+                                    return resolve({ error: chrome.runtime.lastError.message });
+                                }
+                                resolve(details);
+                            });
+                        });
+                    } catch (e) {
+                        proxyDetails = { error: e.message };
+                    }
+
+                    if (!proxyDetails || proxyDetails.error) {
+                        const r = 'PROXY_SETTINGS_READ_ERROR';
+                        this.invalidateGateReadiness(r);
+                        return { ready: false, reason: r, details: proxyDetails?.error };
+                    }
+
+                    if (proxyDetails.levelOfControl === 'not_controllable') {
+                        const r = 'PROXY_SETTINGS_NOT_CONTROLLABLE';
+                        this.invalidateGateReadiness(r);
+                        return { ready: false, reason: r };
+                    }
+
+                    const pVal = proxyDetails.value;
+                    if (!pVal || pVal.mode !== 'fixed_servers') {
+                        const tamperedMode = pVal ? pVal.mode : 'undefined';
+                        const r = 'PROXY_SETTINGS_TAMPERED';
+                        this.invalidateGateReadiness(r);
+                        return { ready: false, reason: r, mode: tamperedMode };
+                    }
+
+                    const sp = pVal.rules && pVal.rules.singleProxy;
+                    if (!sp || sp.host !== expectedHost || Number(sp.port) !== expectedPort) {
+                        const r = 'PROXY_SETTINGS_MISMATCH';
+                        this.invalidateGateReadiness(r);
+                        return { ready: false, reason: r };
+                    }
+
+                    const bypassList = (pVal.rules && pVal.rules.bypassList) || [];
+                    const hasCtrlBypass = bypassList.some(b => b.includes(`${expectedCtrlPort}`));
+                    if (!hasCtrlBypass && bypassList.length > 0 && !bypassList.includes('<local>')) {
+                        const r = 'PROXY_BYPASS_POLICY_INVALID';
+                        this.invalidateGateReadiness(r);
+                        return { ready: false, reason: r };
+                    }
+                }
+
+                // 2. Query Companion Control Plane & Authenticated Readiness
+                const statusRes = await this.queryRelayStatus();
+                if (!statusRes.success || !statusRes.status) {
+                    const failReason = statusRes.reason === 'HTTP_401' ? 'PRIVACY_RELAY_UNAUTHORIZED' : (statusRes.reason || 'PRIVACY_RELAY_OFFLINE');
+                    this.invalidateGateReadiness(failReason);
+                    return { ready: false, reason: failReason };
+                }
+
+                const rStatus = statusRes.status;
+                if (!rStatus.relayReady || rStatus.health === 'EXPIRED' || rStatus.health === 'NO_NODES') {
+                    const failReason = rStatus.health === 'EXPIRED' ? 'PRIVACY_RELAY_HEALTH_EXPIRED' : 'PRIVACY_RELAY_NOT_READY';
+                    this.invalidateGateReadiness(failReason);
+                    return { ready: false, reason: failReason };
+                }
+
+                if (!rStatus.selectedEgressId) {
+                    const failReason = 'PRIVACY_RELAY_NO_SELECTED_EGRESS';
+                    this.invalidateGateReadiness(failReason);
+                    return { ready: false, reason: failReason };
+                }
+
+                // 3. Canary Probe Verification (Tunneled Egress Canary)
+                const canaryRes = await this.probeProxyCanary(this.config.canaryUrl || null, 5000);
+                if (!canaryRes.success) {
+                    const failReason = `PRIVACY_RELAY_DROPPED: ${canaryRes.reason}`;
+                    this.invalidateGateReadiness(failReason);
+                    return { ready: false, reason: failReason };
+                }
+
+                this.isGateReady = true;
+                this.isGateActive = true;
+                this.failureReason = null;
+                this.ephemeralEgressFingerprint = rStatus.egressFingerprint || this.ephemeralEgressFingerprint;
+                this.config.selectedEgressId = rStatus.selectedEgressId;
+                this.lastPreflightResult = {
+                    ready: true,
+                    provisional: false,
+                    mode: PRIVACY_MODES.PRIVACY_RELAY,
+                    lastCheck: new Date().toISOString(),
+                    selectedEgressId: rStatus.selectedEgressId,
+                    egressFingerprint: this.ephemeralEgressFingerprint,
+                    failureReason: null
+                };
+
+                return { ready: true, mode: PRIVACY_MODES.PRIVACY_RELAY, egressId: rStatus.selectedEgressId };
+            }
+
+            if (this.config.transportMode === PRIVACY_MODES.SOCKS5 || this.config.transportMode === PRIVACY_MODES.HTTPS_PROXY) {
+                const expHost = this.config.proxyHost;
+                const expPort = Number(this.config.proxyPort);
+                if (typeof chrome !== 'undefined' && chrome.proxy && chrome.proxy.settings) {
+                    const pDetails = await new Promise((res) => chrome.proxy.settings.get({ incognito: false }, res));
+                    const pVal = pDetails && pDetails.value;
+                    if (!pVal || pVal.mode !== 'fixed_servers') {
+                        this.invalidateGateReadiness('PROXY_SETTINGS_TAMPERED');
+                        return { ready: false, reason: 'PROXY_SETTINGS_TAMPERED' };
+                    }
+                    const sp = pVal.rules && pVal.rules.singleProxy;
+                    if (!sp || sp.host !== expHost || Number(sp.port) !== expPort) {
+                        this.invalidateGateReadiness('PROXY_SETTINGS_MISMATCH');
+                        return { ready: false, reason: 'PROXY_SETTINGS_MISMATCH' };
+                    }
+                }
+                const canaryRes = await this.probeProxyCanary(this.config.canaryUrl || null, 3000);
+                if (!canaryRes.success) {
+                    this.invalidateGateReadiness('MANAGED_PROXY_DROPPED');
+                    return { ready: false, reason: 'MANAGED_PROXY_DROPPED' };
+                }
+                this.isGateReady = true;
+                this.isGateActive = true;
+                this.failureReason = null;
+                return { ready: true, mode: this.config.transportMode };
+            }
+
+            return { ready: true, mode: this.config.transportMode };
         }
 
         /**
@@ -2571,6 +2819,8 @@
         PRIVACY_MODES,
         getInstance: () => instance,
         isPrivacyGateReady: () => instance.isPrivacyGateReady(),
+        verifyAuthoritativeEgressEnforcement: (context) => instance.verifyAuthoritativeEgressEnforcement(context),
+        invalidateGateReadiness: (reason) => instance.invalidateGateReadiness(reason),
         ensureEnforcedPrivacyForStart: (options) => instance.ensureEnforcedPrivacyForStart(options),
         redactSensitivePrivacyInfo: PrivacyGatewayEngine.redactSensitivePrivacyInfo,
         isLoopbackTestUrl: PrivacyGatewayEngine.isLoopbackTestUrl
