@@ -7,8 +7,9 @@
  * for the Companion Privacy Relay without requiring the Owner to open terminal windows.
  */
 
-const { exec, spawn } = require('child_process');
+const { exec, execSync, spawn } = require('child_process');
 const http = require('http');
+const net = require('net');
 const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
@@ -19,7 +20,7 @@ const SILENT_RUNNER_VBS = path.join(RELAY_DIR, 'start_relay_silent.vbs');
 const RELAY_SCRIPT = path.join(RELAY_DIR, 'privacy-relay-service.js');
 const TOKEN_FILE = path.join(RELAY_DIR, '.control_token');
 const EXPOSED_RC3_6_TOKEN_SHA256 = '597a70b99c11c7f4d13a075204ac240bb08a7a1d6c08c78268328e0bb59daeda';
-const COMPANION_BUILD_ID = 'R6.9G.10.3.7.1.4.81-20261026-P0-RC3.60-FIXTURE8-UPGRADE-CHROME-PASS';
+const COMPANION_BUILD_ID = 'R6.9G.10.3.7.1.4.82-20261028-P0-RC3.60-LEGACY-TEST-SERVER-UPGRADE-PASS';
 const CONTROL_PORT = 18989;
 const PROXY_PORT = 18988;
 
@@ -584,16 +585,83 @@ function probeOwnerTestServerHealth(timeoutMs = 1500) {
   });
 }
 
+function isPort8088Free(timeoutMs = 300) {
+  return new Promise((resolve) => {
+    const s = new net.Socket();
+    s.setTimeout(timeoutMs);
+    s.on('connect', () => {
+      s.destroy();
+      resolve(false);
+    });
+    s.on('error', () => {
+      s.destroy();
+      resolve(true);
+    });
+    s.on('timeout', () => {
+      s.destroy();
+      resolve(true);
+    });
+    s.connect(TEST_SERVER_PORT, '127.0.0.1');
+  });
+}
+
+function probeAiFixtureStatus(timeoutMs = 1200) {
+  return new Promise((resolve) => {
+    const req = http.request({
+      hostname: '127.0.0.1',
+      port: TEST_SERVER_PORT,
+      path: '/ai-required-fields.html',
+      method: 'HEAD',
+      headers: { 'Cache-Control': 'no-cache' }
+    }, (res) => {
+      resolve(res.statusCode);
+    });
+    req.on('error', () => resolve(0));
+    req.setTimeout(timeoutMs, () => {
+      req.destroy();
+      resolve(0);
+    });
+    req.end();
+  });
+}
+
+function verifyOwnerTestServerPid(pid) {
+  if (!pid || typeof pid !== 'number' || pid <= 0) return false;
+  if (process.platform === 'win32') {
+    try {
+      const out = execSync(`powershell -NoProfile -Command "(Get-CimInstance Win32_Process -Filter 'ProcessId = ${pid}').CommandLine"`, { timeout: 2000 }).toString();
+      const lower = out.toLowerCase();
+      return lower.includes('server.js') || lower.includes('owner-extension-test-site');
+    } catch (_) {
+      try {
+        const out = execSync(`wmic process where "ProcessId=${pid}" get CommandLine /format:list`, { timeout: 2000 }).toString();
+        const lower = out.toLowerCase();
+        return lower.includes('server.js') || lower.includes('owner-extension-test-site');
+      } catch (_) {
+        return false;
+      }
+    }
+  } else {
+    try {
+      const out = execSync(`ps -p ${pid} -o args=`, { timeout: 2000 }).toString();
+      const lower = out.toLowerCase();
+      return lower.includes('server.js') || lower.includes('owner-extension-test-site');
+    } catch (_) {
+      return false;
+    }
+  }
+}
+
 async function startOwnerTestServer() {
-  // 1. Check if already running
+  // 1. Check if already running and healthy
   const currentHealth = await probeOwnerTestServerHealth(1000);
   if (currentHealth.ok) {
-    if (currentHealth.health && currentHealth.health.fixtureSet !== 'OWNER_8_V1') {
-      try {
-        await stopOwnerTestServer();
-        await new Promise(r => setTimeout(r, 400));
-      } catch (_) {}
-    } else {
+    const is8Set = currentHealth.health && (currentHealth.health.fixtureSet === 'OWNER_8_V1' || currentHealth.health.hasAiRequiredFields === true);
+    let aiStatus = 0;
+    if (is8Set) {
+      aiStatus = await probeAiFixtureStatus(800);
+    }
+    if (is8Set && aiStatus === 200) {
       return {
         success: true,
         message: 'ALREADY_RUNNING',
@@ -603,8 +671,17 @@ async function startOwnerTestServer() {
         health: currentHealth.health
       };
     }
-  }
-  if (currentHealth.running && currentHealth.error === 'OWNER_TEST_PORT_COLLISION') {
+    // Stale server on 8088 (e.g. OWNER_7_V1 or missing AI fixture) -> stop and free port first
+    console.log('[NATIVE_HOST] Stale test server detected on 8088. Stopping prior to upgrade...');
+    const stopRes = await stopOwnerTestServer();
+    if (!stopRes.success) {
+      return {
+        success: false,
+        error: stopRes.error || 'STALE_SERVER_UPGRADE_FAILED',
+        message: 'Could not terminate stale test server on port 8088: ' + (stopRes.message || '')
+      };
+    }
+  } else if (currentHealth.running && currentHealth.error === 'OWNER_TEST_PORT_COLLISION') {
     return {
       success: false,
       error: 'OWNER_TEST_PORT_COLLISION',
@@ -645,22 +722,26 @@ async function startOwnerTestServer() {
     }
   }
 
-  // 4. Poll /__xpider_health until verified
-  for (let i = 0; i < 20; i++) {
+  // 4. Poll /__xpider_health AND verify /ai-required-fields.html until verified
+  for (let i = 0; i < 25; i++) {
     await new Promise(r => setTimeout(r, 200));
     const h = await probeOwnerTestServerHealth(800);
-    if (h.ok) {
-      if (h.health && h.health.pid) {
-        spawnedOwnerTestServerPid = h.health.pid;
+    if (h.ok && h.health) {
+      const is8Set = (h.health.fixtureSet === 'OWNER_8_V1' || h.health.hasAiRequiredFields === true);
+      if (is8Set) {
+        const aiStatus = await probeAiFixtureStatus(800);
+        if (aiStatus === 200) {
+          if (h.health.pid) spawnedOwnerTestServerPid = h.health.pid;
+          return {
+            success: true,
+            serverReady: true,
+            pid: spawnedOwnerTestServerPid,
+            port: TEST_SERVER_PORT,
+            fixtureSet: 'OWNER_8_V1',
+            health: h.health
+          };
+        }
       }
-      return {
-        success: true,
-        serverReady: true,
-        pid: spawnedOwnerTestServerPid,
-        port: TEST_SERVER_PORT,
-        fixtureSet: 'OWNER_8_V1',
-        health: h.health
-      };
     }
     if (h.running && h.error === 'OWNER_TEST_PORT_COLLISION') {
       return {
@@ -674,7 +755,7 @@ async function startOwnerTestServer() {
   return {
     success: false,
     error: 'START_TIMEOUT',
-    message: 'Test server failed to respond on 127.0.0.1:8088 within 3s.'
+    message: 'Test server failed to respond with verified 8-fixture suite on 127.0.0.1:8088 within 5s.'
   };
 }
 
@@ -684,38 +765,78 @@ async function stopOwnerTestServer() {
     spawnedOwnerTestServerPid = null;
     return { success: true, message: 'ALREADY_STOPPED' };
   }
-  // Only stop if verified as XPIDER_OWNER_TEST_SERVER
+  // Strictly enforce security boundary: Only stop if verified as XPIDER_OWNER_TEST_SERVER
   if (!currentHealth.ok) {
     return { success: false, error: 'REFUSED_FOREIGN_KILL', message: 'Will not kill foreign process on port 8088.' };
   }
 
-  return new Promise((resolve) => {
-    const req = http.request({
-      hostname: '127.0.0.1',
-      port: TEST_SERVER_PORT,
-      path: '/__xpider_shutdown',
-      method: 'POST'
-    }, (res) => {
-      spawnedOwnerTestServerPid = null;
-      resolve({ success: true, message: 'SHUTDOWN_REQUESTED' });
+  const serverPid = currentHealth.health?.pid || spawnedOwnerTestServerPid;
+
+  // 1. Try graceful shutdown via POST /__xpider_shutdown
+  try {
+    await new Promise((resolve) => {
+      const req = http.request({
+        hostname: '127.0.0.1',
+        port: TEST_SERVER_PORT,
+        path: '/__xpider_shutdown',
+        method: 'POST'
+      }, (res) => {
+        resolve(res.statusCode === 200);
+      });
+      req.on('error', () => resolve(false));
+      req.setTimeout(1500, () => {
+        req.destroy();
+        resolve(false);
+      });
+      req.end();
     });
-    req.on('error', () => {
-      if (spawnedOwnerTestServerPid) {
-        try { process.kill(spawnedOwnerTestServerPid); } catch (_) {}
+  } catch (_) {}
+
+  // Poll for port to become free (up to 15 * 100ms = 1.5s)
+  for (let i = 0; i < 15; i++) {
+    await new Promise(r => setTimeout(r, 100));
+    const free = await isPort8088Free(200);
+    if (free) {
+      spawnedOwnerTestServerPid = null;
+      return { success: true, message: 'PORT_FREED_GRACEFUL' };
+    }
+  }
+
+  // 2. If port is still occupied, or /__xpider_shutdown was not supported (e.g. legacy server):
+  // Perform controlled PID command-line verification
+  if (serverPid) {
+    const isVerifiedXpider = verifyOwnerTestServerPid(serverPid);
+    if (isVerifiedXpider) {
+      console.log(`[NATIVE_HOST] Terminating verified legacy XPIDER test server PID ${serverPid}...`);
+      try {
+        if (process.platform === 'win32') {
+          execSync(`taskkill /F /PID ${serverPid}`, { stdio: 'ignore' });
+        } else {
+          process.kill(serverPid, 'SIGKILL');
+        }
+      } catch (_) {}
+
+      // Wait for port to free
+      for (let i = 0; i < 15; i++) {
+        await new Promise(r => setTimeout(r, 100));
+        const free = await isPort8088Free(200);
+        if (free) {
+          spawnedOwnerTestServerPid = null;
+          return { success: true, message: 'PORT_FREED_PID_TERMINATION' };
+        }
       }
-      spawnedOwnerTestServerPid = null;
-      resolve({ success: true, message: 'STOPPED' });
-    });
-    req.setTimeout(1500, () => {
-      req.destroy();
-      if (spawnedOwnerTestServerPid) {
-        try { process.kill(spawnedOwnerTestServerPid); } catch (_) {}
-      }
-      spawnedOwnerTestServerPid = null;
-      resolve({ success: true, message: 'TERMINATED' });
-    });
-    req.end();
-  });
+    } else {
+      return { success: false, error: 'REFUSED_UNVERIFIED_PID', message: `PID ${serverPid} command line did not match XPIDER test server.` };
+    }
+  }
+
+  const finalFree = await isPort8088Free(300);
+  if (finalFree) {
+    spawnedOwnerTestServerPid = null;
+    return { success: true, message: 'PORT_FREED' };
+  }
+
+  return { success: false, error: 'PORT_RELEASE_FAILED', message: 'Could not free port 8088.' };
 }
 
 // Native messaging stdio frame parser

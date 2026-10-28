@@ -5825,8 +5825,13 @@ async function probeAndEnsureOwnerTestServer() {
         showAutoSetupFeedback('🔄 Upgrading local test fixture runtime to 8-fixture suite...', 'info');
         try {
             await fetch('http://127.0.0.1:8088/__xpider_shutdown', { method: 'POST' });
-            await new Promise(r => setTimeout(r, 400));
         } catch (_) {}
+        // Poll for port 8088 to free
+        for (let i = 0; i < 15; i++) {
+            await new Promise(r => setTimeout(r, 100));
+            const ph = await probeHealth(300);
+            if (!ph.ok && ph.error === 'UNAVAILABLE') break;
+        }
     }
     if (health.error === 'PORT_COLLISION') {
         updateAutoSetupUI('COLLISION');
@@ -5869,13 +5874,15 @@ async function probeAndEnsureOwnerTestServer() {
 
     if (!nativeResp || !nativeResp.success) {
         updateAutoSetupUI('INSTALL_REQUIRED');
-        showAutoSetupFeedback(
-            '⚠️ ONE-TIME TEST RUNTIME INSTALL REQUIRED\n' +
-            'Local test server could not be started automatically because the native host is not installed.\n' +
-            'Please run XPIDER_AUTO_SETUP.bat once in the extension directory to register the native host.',
-            'error'
-        );
-        return { success: false, error: 'ONE_TIME_INSTALL_REQUIRED', details: nativeResp };
+        const isStaleHost = nativeResp && nativeResp.fixtureSet && nativeResp.fixtureSet !== 'OWNER_8_V1';
+        const msg = isStaleHost
+            ? '⚠️ OLD TEST RUNTIME DETECTED (Registered Native Host returned older 7-fixture suite)\n' +
+              'Please run XPIDER_AUTO_SETUP.bat once in the current extension directory to update registration.'
+            : '⚠️ ONE-TIME TEST RUNTIME INSTALL REQUIRED\n' +
+              'Local test server could not be started automatically because the native host is not installed.\n' +
+              'Please run XPIDER_AUTO_SETUP.bat once in the extension directory to register the native host.';
+        showAutoSetupFeedback(msg, 'error');
+        return { success: false, error: isStaleHost ? 'STALE_NATIVE_HOST_REGISTRATION' : 'ONE_TIME_INSTALL_REQUIRED', details: nativeResp };
     }
 
     if (nativeResp.error === 'OWNER_TEST_PORT_COLLISION') {
@@ -5884,21 +5891,25 @@ async function probeAndEnsureOwnerTestServer() {
         return { success: false, error: 'OWNER_TEST_PORT_COLLISION' };
     }
 
-    // 3. Verify health bounded
+    // 3. Verify health and 8-fixture reachability bounded
     updateAutoSetupUI('VERIFYING');
     showAutoSetupFeedback('⏳ Verifying test server health identity on 127.0.0.1:8088...', 'info');
-    for (let i = 0; i < 15; i++) {
-        await new Promise(r => setTimeout(r, 250));
+    let aiReachable = false;
+    for (let i = 0; i < 25; i++) {
+        await new Promise(r => setTimeout(r, 200));
         health = await probeHealth(800);
-        if (health.ok) {
-            const isAiOk = await verifyAiFixtureReachable();
-            if (isAiOk) break;
+        if (health.ok && health.is8Set) {
+            aiReachable = await verifyAiFixtureReachable();
+            if (aiReachable) break;
         }
     }
 
-    if (!health.ok) {
+    if (!health.ok || !health.is8Set || !aiReachable) {
         updateAutoSetupUI('ERROR');
-        showAutoSetupFeedback('🛑 LOCAL TEST SERVER NOT AVAILABLE\nServer failed to respond with verified identity.', 'error');
+        const reason = (!health.ok)
+            ? 'Server failed to respond with verified identity.'
+            : (!health.is8Set ? 'Server did not return OWNER_8_V1 fixture suite.' : 'Fixture /ai-required-fields.html returned 404.');
+        showAutoSetupFeedback(`🛑 LOCAL TEST SERVER NOT AVAILABLE\n${reason}\nRun XPIDER_AUTO_SETUP.bat once in the current folder to refresh test runtime.`, 'error');
         return { success: false, error: 'SERVER_VERIFICATION_FAILED' };
     }
 
@@ -5913,7 +5924,7 @@ async function probeAndEnsureOwnerTestServer() {
         const aiCheck = await fetch('http://127.0.0.1:8088/ai-required-fields.html', { method: 'HEAD', cache: 'no-store' });
         if (!aiCheck.ok) {
             updateAutoSetupUI('ERROR');
-            showAutoSetupFeedback('🛑 LOCAL TEST SERVER INCOMPLETE\nFixture /ai-required-fields.html returned ' + aiCheck.status, 'error');
+            showAutoSetupFeedback('🛑 LOCAL TEST SERVER INCOMPLETE\nFixture /ai-required-fields.html returned ' + aiCheck.status + '\nRun XPIDER_AUTO_SETUP.bat to refresh test server.', 'error');
             return { success: false, error: 'AI_FIXTURE_NOT_FOUND' };
         }
     } catch (_) {}
@@ -6334,10 +6345,10 @@ function initOwnerAutoSetup() {
                 const backedUpCount = existingSnapshot.queue ? existingSnapshot.queue.length : 0;
                 showAutoSetupFeedback(
                     `READY FOR LOCAL FUNCTION TEST\n` +
-                    `7 local fixtures loaded | Local test server verified (127.0.0.1:8088) | DNR rules 990001-990005 verified | Preserved ${backedUpCount} public URLs in restore point`,
+                    `8 local fixtures loaded | Local test server verified (127.0.0.1:8088) | DNR rules 990001-990005 verified | Preserved ${backedUpCount} public URLs in restore point`,
                     'success'
                 );
-                addLog('✨ [AUTO_SETUP] Local software functional test profile ready (7 fixtures, test server active, DNR guard verified).', 'info');
+                addLog('✨ [AUTO_SETUP] Local software functional test profile ready (8 fixtures, test server active, DNR guard verified).', 'info');
             } catch (err) {
                 console.error('[AUTO_SETUP_EXCEPTION]', err);
                 showAutoSetupFeedback('AUTO SETUP FAILED — ' + err.message, 'error');

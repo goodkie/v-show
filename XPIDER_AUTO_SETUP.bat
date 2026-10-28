@@ -117,21 +117,19 @@ if exist "companion\ensure_companion_service.js" (
 )
 
 echo.
-echo [4/4] Verifying and Starting Local Owner Test Server (127.0.0.1:8088)...
-if exist "owner-extension-test-site\server.js" (
-    "%XPIDER_NODE%" -e "const http = require('http'); const req = http.get('http://127.0.0.1:8088/__xpider_health', res => { let b = ''; res.on('data', d => b += d); res.on('end', () => { try { const j = JSON.parse(b); if (j.ok && j.service === 'XPIDER_OWNER_TEST_SERVER') { console.log('   [OK] Owner Test Server is ALREADY RUNNING and verified healthy.'); process.exit(0); } } catch (_) {} process.exit(1); }); }); req.on('error', () => process.exit(1)); req.setTimeout(800, () => process.exit(1));"
+echo [4/4] Verifying, Upgrading, and Starting Local Owner Test Server (127.0.0.1:8088)...
+if exist "companion\ensure_owner_test_server.js" (
+    "%XPIDER_NODE%" companion\ensure_owner_test_server.js
     if !ERRORLEVEL! NEQ 0 (
-        if exist "owner-extension-test-site\start_test_server_silent.vbs" (
-            wscript.exe owner-extension-test-site\start_test_server_silent.vbs
-        ) else (
-            start "" /b "%XPIDER_NODE%" owner-extension-test-site\server.js
-        )
-        ping 127.0.0.1 -n 3 >nul
-        "%XPIDER_NODE%" -e "const http = require('http'); const req = http.get('http://127.0.0.1:8088/__xpider_health', res => { let b = ''; res.on('data', d => b += d); res.on('end', () => { try { const j = JSON.parse(b); if (j.ok && j.service === 'XPIDER_OWNER_TEST_SERVER') { console.log('   [OK] Owner Test Server started and verified healthy on port 8088.'); process.exit(0); } } catch (_) {} process.exit(1); }); }); req.on('error', () => process.exit(1)); req.setTimeout(1200, () => process.exit(1));"
-        if !ERRORLEVEL! NEQ 0 (
-            echo    [WARNING] Could not verify Owner Test Server immediately. Extension Auto Setup will verify/start it automatically.
-        )
+        echo    [WARNING] Could not verify Owner Test Server immediately. Extension Auto Setup will verify/start it automatically.
     )
+) else if exist "owner-extension-test-site\server.js" (
+    if exist "owner-extension-test-site\start_test_server_silent.vbs" (
+        wscript.exe owner-extension-test-site\start_test_server_silent.vbs
+    ) else (
+        start "" /b "%XPIDER_NODE%" owner-extension-test-site\server.js
+    )
+    ping 127.0.0.1 -n 3 >nul
 ) else (
     echo [INFO] owner-extension-test-site\server.js not found in current folder.
 )
