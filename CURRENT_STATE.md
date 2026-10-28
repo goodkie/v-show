@@ -6,8 +6,8 @@
 - Workspace: E:\vivpr\ai\extension-form-sender
 - Authority: goodkie/v-show Issues #6 & #10
 - Branch: upgrade/phase-0-1
-- State Rev: 2026-10-26.191
-- Authority Cursor: 6418567578
+- State Rev: 2026-10-28.192
+- Authority Cursor: 6461253920
 - Last Directives / Audits:
   - `[OWNER PM NEXT EXECUTION — STOP REPEAT BRIEFINGS / IMPLEMENT SECURE DYNAMIC VPN IP ALLOWLIST][ISSUE #6][2026-10-25] Comment #6396720543`
   - `[OWNER PM P0 SECURITY HOLD — RC3.58 MUST NOT BE RUN ON OWNER PC][ISSUE #6][2026-10-25 11:57 UTC] Comment #6397334700`
@@ -21,6 +21,8 @@
   - `[OWNER PM][RC3.60 .79 CHROME EVIDENCE GATE] Comment #6416989111`
   - `[OWNER QA FAIL][RC3.60 .79][NEW DEBUG BUNDLE EVIDENCE — P0] Comment #6417283475`
   - `[OWNER QA P0 FIX REQUEST — XPIDER RC3.60 .80] Comment #6418567578`
+  - `[OWNER ACTUAL CHROME QA FAILURE — RC3.60 .81 AUTO SETUP STILL FAILS ON STALE 8088 SERVER] Comment #6460972588`
+  - `[OWNER QA RESULT — RC3.60 .81 LOCAL TEST PASS] Comment #6461253920`
 - Last Receipts:
   - `[ANTIGRAVITY][RECEIPT][ISSUE-6][RC3.59-TANGIBLE-PRODUCT-RECOVERY-AND-E2E-FIXTURES-PASS][2026-10-25] Comment #6406287831`
   - `[ANTIGRAVITY][RECEIPT][ISSUE-6][OWNER-BETA-AUTO-SETUP-CHANNEL-HOTFIX-PASS][2026-10-25] Comment #6407535598`
@@ -32,10 +34,11 @@
   - `[ANTIGRAVITY][RECEIPT][ISSUE-6][RC3.60-.79-NONINQUIRY-HANG-FIX-AND-UNPACKED-E2E-PASS][2026-10-26] Comment #6414380175`
   - `[ANTIGRAVITY][RECEIPT][ISSUE-6][RC3.60-.80-TRANSLATE-MODAL-EXCLUSION-AND-CHROME-E2E-PASS][2026-10-26] Comment #6418395211`
   - `[ANTIGRAVITY][RECEIPT][ISSUE-6][RC3.60-.81-TEST-SERVER-PORT-COLLISION-FIX-AND-CHROME-E2E-PASS][2026-10-26]`
-- Functional QA Commit: `912131d6` (Fix: test server collision kill, loopback alias guard, Chrome E2E 5/2/1 pass)
-- Build ID: `R6.9G.10.3.7.1.4.81-20261026-P0-RC3.60-FIXTURE8-UPGRADE-CHROME-PASS`
-- Verified Release Asset: `XPIDER_R6.9G.10.3.7.1.4.81_OWNER_BETA.zip` (Tag: `v6.9g.10.3-rc3.60.7.1.4.81`, Size: 53,167,966 bytes, SHA256: `d428e93254fb734226f245cf0e3421c4110770ba4022c9fe7f48d8c10e17810a`)
-- Software Status: **RC3.60 .81 OWNER BETA TEST SERVER PORT COLLISION AUTO-KILL, LOOPBACK ALIAS GUARD, AND REAL GOOGLE CHROME E2E PASS**: (1) Diagnosed and resolved root cause of Fixture #8 ending with `FAILURE / NO_ACCESSIBLE_INQUIRY_FORM` in Comment #6418567578: a detached legacy background node process on port 8088 lacked `ai-required-fields.html` and responded with 404. (2) Upgraded `popup.js:probeAndEnsureOwnerTestServer()` to explicitly probe `ai-required-fields.html` and verify `fixtureSet === 'OWNER_8_V1'`. If a stale server is detected, it issues `POST /__xpider_shutdown` to terminate the stale process and automatically relaunches the fresh 8-fixture suite. (3) Added loopback fixture guard in `content-script.js` so 404s on local test fixtures do not wander across synthetic alias paths like `/about/contact`, and isolated guessed paths via target-scoped tokens. (4) Executed authoritative 5-stage packaging and E2E audit in real Google Chrome (`chrome.exe` v155.0.8059.86) using official `Extensions.loadUnpacked`: 2,226 inventory files verified byte-for-byte, 4 unit test constraint suites passed 100%, and 8 fixtures produced exactly 5 SUCCESS / 2 SKIPPED / 1 FAILURE (#8 SUCCESS, #4 & #5 SKIPPED, #6 FAILURE) with 0 public leaks. 50 URLs and settings cleanly restored. (5) Operational Gate marked `OWNER_VALIDATION_PENDING`.
+  - `[ANTIGRAVITY][RECEIPT][ISSUE-6][RC3.60-.82-8-FIXTURE-UI-ALIGNMENT-AND-LEGACY-SERVER-UPGRADE-PASS][2026-10-28]`
+- Functional QA Commit: `670cc0a3` (Fix: 8-fixture UI alignment, test server PID verification upgrade, Chrome E2E pass)
+- Build ID: `R6.9G.10.3.7.1.4.82-20261028-P0-RC3.60-LEGACY-TEST-SERVER-UPGRADE-PASS`
+- Verified Release Asset: `XPIDER_R6.9G.10.3.7.1.4.82_OWNER_BETA.zip` (Tag: `v6.9g.10.3-rc3.60.7.1.4.82`, Size: 53,174,263 bytes, SHA256: `b2fc3c48d301dba4612ec700ae8b5091228d00063a638c74ecb7e909d24d7003`)
+- Software Status: **RC3.60 .81 LOCAL TEST PASS SUPERSEDED / RC3.60 .82 DELIVERED AND VERIFIED**: (1) Owner real-PC QA of RC3.60 .81 confirmed local software PASS in Comment #6461253920 (`owner_test_run_1793164071270_y0j6`: all 8 fixtures reached terminal state, 5 SUCCESS / 2 SKIPPED / 1 FAILURE, #4 subscribe SKIPPED without hang, #5 reservation SKIPPED, #8 AI-required-fields CONFIRMED_SUCCESS / FINAL_AUDIT PASS, cleanup recorded). (2) RC3.60 .82 aligns popup description and feedback to '8 verified local fixtures', eliminating remaining cosmetic audit defect. (3) Robust local test server auto-upgrade implemented with controlled PID command-line verification (guaranteeing foreign processes are strictly preserved, while legacy XPIDER test servers without shutdown endpoints are safely upgraded to `OWNER_8_V1`). (4) Standalone `companion/ensure_owner_test_server.js` added and integrated into Step [4/4] of `XPIDER_AUTO_SETUP.bat`. (5) Independent 5-stage packaging and real Google Chrome E2E audit passed 100% across all 8 fixtures, verifying 5 CONFIRMED_SUCCESS / 2 SKIPPED / 1 FAILURE and clean restoration of 50 URLs and user settings. (6) Production live sending remains strictly not approved.
 
 ---
 
