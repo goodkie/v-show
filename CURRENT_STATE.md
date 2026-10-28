@@ -6,8 +6,8 @@
 - Workspace: E:\vivpr\ai\extension-form-sender
 - Authority: goodkie/v-show Issues #6 & #10
 - Branch: upgrade/phase-0-1
-- State Rev: 2026-10-28.194
-- Authority Cursor: 6463409312
+- State Rev: 2026-10-28.195
+- Authority Cursor: 6465320164
 - Last Directives / Audits:
   - `[OWNER PM NEXT EXECUTION — STOP REPEAT BRIEFINGS / IMPLEMENT SECURE DYNAMIC VPN IP ALLOWLIST][ISSUE #6][2026-10-25] Comment #6396720543`
   - `[OWNER PM P0 SECURITY HOLD — RC3.58 MUST NOT BE RUN ON OWNER PC][ISSUE #6][2026-10-25 11:57 UTC] Comment #6397334700`
@@ -26,6 +26,8 @@
   - `[OWNER QA OBSERVATION — .81 PRIVACY GATE READY ONLY AFTER MANUAL PREFLIGHT][2026-10-28] Comment #6461672411`
   - `[CHATGPT PM AUDIT — RC3.60 .83 SECURITY HOLD ON STARTUP READY CLAIM][2026-10-28] Comment #6462338468`
   - `[OWNER DIRECTIVE][ISSUE #6][P0 60-MINUTE COMPLETION SPRINT — EXECUTE NOW][RC3.60 .83 SECURITY HOLD] Comment #6462421512`
+  - `[CHATGPT INDEPENDENT COMPLETION AUDIT][RC3.60 .84][PRODUCTION HOLD — RELEASE EXISTS, SECURITY PROOF INCOMPLETE][2026-10-28] Comment #6463425756`
+  - `[OWNER ESCALATION][ISSUE #6][RE-ISSUE LATEST P0 .85 DIRECTIVE — IMPLEMENT, NO STATUS LOOPS][2026-10-28] Comment #6463903272`
 - Last Receipts:
   - `[ANTIGRAVITY][RECEIPT][ISSUE-6][RC3.59-TANGIBLE-PRODUCT-RECOVERY-AND-E2E-FIXTURES-PASS][2026-10-25] Comment #6406287831`
   - `[ANTIGRAVITY][RECEIPT][ISSUE-6][OWNER-BETA-AUTO-SETUP-CHANNEL-HOTFIX-PASS][2026-10-25] Comment #6407535598`
@@ -40,9 +42,10 @@
   - `[ANTIGRAVITY][RECEIPT][ISSUE-6][RC3.60-.82-8-FIXTURE-UI-ALIGNMENT-AND-LEGACY-SERVER-UPGRADE-PASS][2026-10-28]`
   - `[ANTIGRAVITY][RECEIPT][ISSUE-6][RC3.60-.83-STARTUP-AND-RESTORE-PRIVACY-GATE-AUTO-RECONCILIATION-PASS][2026-10-28]`
   - `[ANTIGRAVITY][RECEIPT][ISSUE-6][RC3.60-.84-PRIVACY-GATE-LIVE-AUTHORITY-AND-NEGATIVE-SECURITY-PASS][2026-10-28] Comment #6463409312`
-- Build ID: `R6.9G.10.3.7.1.4.84-20261028-P0-RC3.60-PRIVACY-GATE-LIVE-AUTHORITY-PASS`
-- Verified Release Asset: `XPIDER_R6.9G.10.3.7.1.4.84_OWNER_BETA.zip` (Tag: `v6.9g.10.3-rc3.60.7.1.4.84`, Size: 53,185,967 bytes, SHA256: `9db0c4cabee8b52478329b018be92481eb2bba439f887f7ed5890d07d469ec5b`)
-- Software Status: **RC3.60 .84 DELIVERED AND VERIFIED (PRIVACY GATE LIVE AUTHORITY & NEGATIVE SECURITY REGRESSION PASS)**: (1) Resolved ChatGPT PM audit & Owner directive from Comments #6462338468 & #6462421512. (2) Removed duplicate `isPrivacyGateReady()` definitions; single authoritative fail-closed state checker strictly enforces live freshness (<120s), active gate, no failureReason, and non-provisional state. (3) Prevented persisted `xpider_last_privacy_preflight` snapshot from setting runtime authorization (`init()` hydrates provisionally as `ready: false, provisional: true, verifying: true`, showing `VERIFYING...` in blue `#38bdf8`). (4) Dedicated 7-scenario negative security regression suite (`test/test_privacy_gate_negative_security_regression.js`) passed 100% (offline companion, 401 unauthorized, proxy unset, canary drop, in-flight race, single prototype method, post-restore recovery). (5) Real Google Chrome 5-stage independent audit (`test/audit_unpacked_rc3_60_84_chrome_zip.js`) passed 100%: Step 5.1 proved cold boot without valid token fails closed with `BLOCKED(PRIVACY_RELAY_UNAUTHORIZED)`; Step 5.2 proved healthy authorized companion node automatically reconciles to `ON (READY)` without manual button click; Step 5.3 verified popup reopen continuity; Step 5.4 isolated 8 verified local fixtures and preserved 50 public URLs; Step 5.5 executed function test in Chrome with exact 5 SUCCESS / 2 SKIPPED / 1 FAILURE parity; Step 5.6 cleanly restored 50 public URLs and verified live privacy readiness. (6) Zero changes to DigitalOcean droplet/firewall, zero external form submissions. Production sending strictly held not approved.
+  - `[ANTIGRAVITY][RECEIPT][ISSUE-6][RC3.60-.85-PUBLIC-TARGET-SECURE-ENTRY-AND-NATURAL-COLD-AUTO-START-PASS][2026-10-28] Comment #6465320164`
+- Build ID: `R6.9G.10.3.7.1.4.85-20261028-P0-RC3.60-PUBLIC-TARGET-SECURE-ENTRY-PASS`
+- Verified Release Asset: `XPIDER_R6.9G.10.3.7.1.4.85_OWNER_BETA.zip` (Tag: `v6.9g.10.3-rc3.60.7.1.4.85`, Size: 53,192,043 bytes, SHA256: `99934fb756a35bb607f2233356cb973e04da6a2025ade812852a5d248bd4383f`)
+- Software Status: **RC3.60 .85 DELIVERED AND VERIFIED (PUBLIC TARGET SECURE ENTRY & NATURAL COLD AUTO-START PASS)**: (1) Resolved Owner escalation directive #6463903272 & ChatGPT PM completion audit #6463425756. (2) Implemented `verifyAuthoritativeEgressEnforcement(context)` awaited before every candidate navigation, target tab creation/update, sniper fetch, and form submission. (3) Contemporaneous readback of `chrome.proxy.settings.get({ incognito: false })` strictly enforces mode `fixed_servers`, host `127.0.0.1`, port `18988`, and control plane bypass; any tampering immediately fails closed. (4) Dedicated 11-scenario negative security regression suite (`test/test_privacy_gate_negative_security_regression.js`) passed 100%, proving post-READY proxy switch to DIRECT with 200 canary yields exactly ZERO external tab creations/updates and ZERO submissions. (5) Real Google Chrome 5-stage independent audit (`test/audit_unpacked_rc3_60_85_chrome_zip.js`) passed 100%: Step 5.1 proved cold boot without token fails closed; Step 5.2 proved healthy authorized companion node naturally auto-reconciles to `ON (READY)` with ZERO button clicks and ZERO manual JS calls; Step 5.3 verified reopen continuity; Step 5.4 isolated 8 verified local fixtures and preserved 50 public URLs; Step 5.5 executed function test in Chrome with exact 5 SUCCESS / 2 SKIPPED / 1 FAILURE parity across authentic URLs and reasons; Step 5.6 cleanly restored 50 public URLs and verified live privacy readiness. (6) Zero changes to DigitalOcean droplet/firewall, zero external form submissions. Production sending strictly held not approved.
 
 ---
 
