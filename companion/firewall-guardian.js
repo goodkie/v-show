@@ -772,6 +772,178 @@ class FirewallGuardian {
       snapshot: computeFirewallSnapshot(verifyFw)
     };
   }
+
+  /**
+   * Pure read-only preview of adding UDP 51820 (WireGuard) scoped to Owner /32 CIDR + existing TCP 8443 allowlist.
+   * Zero mutations are made.
+   */
+  async previewWireGuard(options = {}) {
+    const token = options.token || this._token();
+    const fwId = options.firewallId || this.getConfig().firewallId || DEFAULT_FIREWALL_ID;
+    const netInfo = options.networkInfo || (await this.detectNetwork());
+    const fw = await this.fetchFirewallState(token, fwId);
+    const staticSources = (options.staticSources !== undefined)
+      ? options.staticSources
+      : (this.staticSources && this.staticSources.length > 0 ? this.staticSources : STATIC_ALLOWLIST);
+    const diff = generateWireGuardPreviewDiff(fw, netInfo.ip, staticSources);
+    return {
+      network: netInfo,
+      firewall: {
+        id: fw.id,
+        name: fw.name,
+        droplets: fw.droplet_ids || [],
+        tags: fw.tags || []
+      },
+      diff,
+      snapshot: diff.snapshot
+    };
+  }
+
+  /**
+   * Apply WireGuard UDP 51820 /32 rule ONLY when Owner explicitly confirms (confirmed === true)
+   * and expectedSnapshot matches the live Cloud Firewall state.
+   */
+  async applyWireGuardUpdate(options = {}) {
+    if (options.confirmed !== true) {
+      const err = new Error('CONFIRMATION_REQUIRED: Owner explicit confirmation (confirmed: true) is strictly required to mutate WireGuard firewall rules.');
+      err.code = 'CONFIRMATION_REQUIRED';
+      throw err;
+    }
+    if (!options.expectedSnapshot) {
+      const err = new Error('EXPECTED_SNAPSHOT_REQUIRED: options.expectedSnapshot is strictly required for pre-write concurrency guard.');
+      err.code = 'EXPECTED_SNAPSHOT_REQUIRED';
+      throw err;
+    }
+    const token = options.token || this._token();
+    const fwId = options.firewallId || this.getConfig().firewallId || DEFAULT_FIREWALL_ID;
+    if (!token) {
+      const err = new Error('TOKEN_MISSING: No DigitalOcean API token provided or found in DPAPI storage');
+      err.code = 'TOKEN_MISSING';
+      throw err;
+    }
+    const netInfo = options.networkInfo || (await this.detectNetwork());
+    const targetIp = options.ip || netInfo.ip;
+    if (!isValidPublicIPv4(targetIp)) {
+      const err = new Error(`INVALID_PUBLIC_IPV4: "${targetIp}" is not a valid public IPv4`);
+      err.code = 'INVALID_IP';
+      throw err;
+    }
+    const currentFw = await this.fetchFirewallState(token, fwId);
+    const liveSnapshot = computeFirewallSnapshot(currentFw);
+    if (liveSnapshot !== options.expectedSnapshot) {
+      const err = new Error(`CONCURRENT_MODIFICATION_DETECTED: Live firewall snapshot (${liveSnapshot.slice(0, 12)}) does not match expected snapshot (${options.expectedSnapshot.slice(0, 12)}).`);
+      err.code = 'CONCURRENT_MODIFICATION_DETECTED';
+      throw err;
+    }
+    const staticSources = (options.staticSources !== undefined)
+      ? options.staticSources
+      : (this.staticSources && this.staticSources.length > 0 ? this.staticSources : STATIC_ALLOWLIST);
+    const diff = generateWireGuardPreviewDiff(currentFw, targetIp, staticSources);
+    if (diff.noop) {
+      return {
+        ok: true,
+        status: 'IN_SYNC',
+        ip: targetIp,
+        changed: false,
+        diff,
+        snapshot: liveSnapshot
+      };
+    }
+    const putRes = await this._withRetry(() => this.request(token, 'PUT', `/firewalls/${fwId}`, diff.proposedPayload));
+    if (putRes.status !== 200) {
+      const errMsg = (putRes.json && putRes.json.message) || `HTTP ${putRes.status}`;
+      const err = new Error(`FIREWALL_UPDATE_FAILED: Provider rejected WireGuard rule update (${errMsg})`);
+      err.code = 'FIREWALL_UPDATE_FAILED';
+      err.statusCode = putRes.status;
+      throw err;
+    }
+    const verifyFw = await this.fetchFirewallState(token, fwId);
+    return {
+      ok: true,
+      status: 'UPDATED',
+      ip: targetIp,
+      changed: true,
+      diff,
+      snapshot: computeFirewallSnapshot(verifyFw)
+    };
+  }
+}
+
+const WIREGUARD_PORT = '51820';
+
+function buildDesiredInboundWithWireGuard(existingInbound, ip, staticSources = []) {
+  const baseRules = buildDesiredInbound(existingInbound, ip, staticSources);
+  const targetCidr = `${ip.trim()}/32`;
+  const addrSet = new Set([targetCidr]);
+  for (const s of staticSources) {
+    if (s) addrSet.add(String(s).trim());
+  }
+  for (const r of baseRules) {
+    if (String(r.ports) === PORT && r.protocol === 'tcp' && r.sources && Array.isArray(r.sources.addresses)) {
+      for (const a of r.sources.addresses) addrSet.add(String(a).trim());
+    }
+  }
+  let foundWg = false;
+  for (const rule of baseRules) {
+    if (String(rule.ports) === WIREGUARD_PORT && rule.protocol === 'udp') {
+      foundWg = true;
+      const existingAddrs = (rule.sources && Array.isArray(rule.sources.addresses)) ? rule.sources.addresses : [];
+      for (const a of existingAddrs) addrSet.add(String(a).trim());
+      rule.sources = Object.assign({}, rule.sources, {
+        addresses: Array.from(addrSet).sort()
+      });
+    }
+  }
+  if (!foundWg) {
+    baseRules.push({
+      protocol: 'udp',
+      ports: WIREGUARD_PORT,
+      sources: {
+        addresses: Array.from(addrSet).sort()
+      }
+    });
+  }
+  return baseRules;
+}
+
+function generateWireGuardPreviewDiff(firewall, newIp, staticSources = STATIC_ALLOWLIST) {
+  if (!firewall || typeof firewall !== 'object') {
+    throw new Error('INVALID_FIREWALL_OBJECT');
+  }
+  if (!isValidPublicIPv4(newIp)) {
+    const err = new Error(`INVALID_PUBLIC_IPV4: "${newIp}" is not a valid public IPv4 address`);
+    err.code = 'INVALID_IP';
+    throw err;
+  }
+  const existingInbound = firewall.inbound_rules || [];
+  const desiredInbound = buildDesiredInboundWithWireGuard(existingInbound, newIp, staticSources);
+  const currentWgRules = existingInbound.filter(r => String(r.ports) === WIREGUARD_PORT && r.protocol === 'udp');
+  const currentWgAddresses = Array.from(new Set(currentWgRules.flatMap(r => (r.sources && r.sources.addresses) || []))).sort();
+  const proposedWgRules = desiredInbound.filter(r => String(r.ports) === WIREGUARD_PORT && r.protocol === 'udp');
+  const proposedWgAddresses = Array.from(new Set(proposedWgRules.flatMap(r => (r.sources && r.sources.addresses) || []))).sort();
+  const addedWg = proposedWgAddresses.filter(a => !currentWgAddresses.includes(a));
+  const snapshot = computeFirewallSnapshot(firewall);
+  const proposedPayload = {
+    name: firewall.name,
+    inbound_rules: desiredInbound,
+    outbound_rules: firewall.outbound_rules || [],
+    droplet_ids: firewall.droplet_ids || [],
+    tags: firewall.tags || []
+  };
+  const proposedSnapshot = computeFirewallSnapshot(proposedPayload);
+  return {
+    firewallId: firewall.id,
+    firewallName: firewall.name,
+    wireGuardPort: WIREGUARD_PORT,
+    newIp,
+    targetCidr: `${newIp}/32`,
+    currentWgAddresses,
+    proposedWgAddresses,
+    addedWg,
+    noop: snapshot === proposedSnapshot,
+    snapshot,
+    proposedPayload
+  };
 }
 
 module.exports = {
@@ -783,11 +955,14 @@ module.exports = {
   computeFirewallSnapshot,
   isValidPublicIPv4,
   buildDesiredInbound,
+  buildDesiredInboundWithWireGuard,
   generatePreviewDiff,
+  generateWireGuardPreviewDiff,
   doRequest,
   redactSecrets,
   STATIC_ALLOWLIST,
   PORT,
+  WIREGUARD_PORT,
   DEFAULT_FIREWALL_ID,
   DEFAULT_DROPLET_ID,
   DEFAULT_TRANSACTION_TAG

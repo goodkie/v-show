@@ -75,6 +75,8 @@ class GLInetOpalDriver {
         args.push('-p', String(portNum));
       }
       args.push(
+        '-o', 'HostKeyAlgorithms=+ssh-rsa',
+        '-o', 'PubkeyAcceptedAlgorithms=+ssh-rsa',
         '-o', `StrictHostKeyChecking=${this.strictHostKeyChecking || 'accept-new'}`,
         '-o', 'BatchMode=yes',
         '-o', 'ConnectTimeout=5'

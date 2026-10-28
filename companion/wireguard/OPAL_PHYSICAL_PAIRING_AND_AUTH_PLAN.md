@@ -1,11 +1,11 @@
 # XPIDER Physical Opal Router Pairing & Minimal Owner Authentication Plan
 
 ## 1. Cryptographic Identity & Authoritative Anchors
-- **Release Package**: `XPIDER_R6.9G.10.3.7.1.4.66_PRIVATE_EGRESS_RC3.50.zip`
-- **Build ID**: `R6.9G.10.3.7.1.4.66-20261024-P0-RC3.50`
+- **Release Package**: `XPIDER_R6.9G.10.3.7.1.4.86_OWNER_BETA.zip`
+- **Build ID**: `R6.9G.10.3.7.1.4.86-20261028-P0-RC3.60-PUBLIC-TARGET-SECURE-ENTRY-PASS`
 - **Server Script**: `companion/wireguard/setup_wireguard.sh`
-- **Server Script SHA256**: `7e4eeb91f5c393c7f30babba837c110ca7e5b22f32cdb77d1b29d67fc861826b`
-- **Functional Commit HEAD**: `3b7436fd9d5b327cea7615abfb59dc0e1a8acfed`
+- **Server Script SHA256**: `eeaad799876eeb67dd3237c21a223718de97ef0e9ba8cf38af939368d88bd19f`
+- **Local Protected Opal Client Profile**: `%LOCALAPPDATA%\XPIDER\wireguard\xpider-opal-client.conf` (`10.66.66.2/32` -> `10.66.66.1/24` on `143.198.40.33:51820`)
 
 ---
 

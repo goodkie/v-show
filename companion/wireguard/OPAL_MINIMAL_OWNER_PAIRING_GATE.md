@@ -70,8 +70,8 @@ Pending this physical hardware telemetry, the assertion matrix remains strictly:
 *Notice: This command template is dormant and suspended. Do NOT execute until Section 1 preconditions are formally demonstrated.*
 
 ```bash
-curl -fsSL "https://raw.githubusercontent.com/goodkie/v-show/6a7a786eddf5aba531b8e12f0823875ec277d776/companion/wireguard/setup_wireguard.sh" -o /tmp/setup_wireguard.sh
-echo "7e4eeb91f5c393c7f30babba837c110ca7e5b22f32cdb77d1b29d67fc861826b  /tmp/setup_wireguard.sh" | sha256sum -c -
+curl -fsSL "https://raw.githubusercontent.com/goodkie/v-show/upgrade/phase-0-1/companion/wireguard/setup_wireguard.sh" -o /tmp/setup_wireguard.sh
+echo "eeaad799876eeb67dd3237c21a223718de97ef0e9ba8cf38af939368d88bd19f  /tmp/setup_wireguard.sh" | sha256sum -c -
 bash /tmp/setup_wireguard.sh --install
 ```
 

@@ -22,26 +22,48 @@ const STATUS = Object.freeze({
   LEAK_TEST_FAILED: 'LEAK_TEST_FAILED'
 });
 
+function normalizeProxyType(cfg) {
+  if (!cfg || typeof cfg !== 'object') return null;
+  if (cfg.type === 'HTTP_PROXY' || cfg.type === 'HTTPS_PROXY') return cfg.type;
+  if (typeof cfg.protocol === 'string') {
+    const proto = cfg.protocol.trim().toLowerCase().replace(/:$/, '');
+    if (proto === 'http') return 'HTTP_PROXY';
+    if (proto === 'https') return 'HTTPS_PROXY';
+  }
+  return cfg.type || null;
+}
+
 function validateConfig(cfg) {
   if (!cfg || typeof cfg !== 'object') return { ok: false, reason: 'NO_CONFIG' };
-  const { host, port, type } = cfg;
+  const { host, port } = cfg;
+  const type = normalizeProxyType(cfg);
   if (typeof host !== 'string' || !/^[a-zA-Z0-9.-]{1,253}$/.test(host)) return { ok: false, reason: 'INVALID_HOST' };
   const p = Number(port);
   if (!Number.isInteger(p) || p < 1 || p > 65535) return { ok: false, reason: 'INVALID_PORT' };
   if (type !== 'HTTP_PROXY' && type !== 'HTTPS_PROXY') return { ok: false, reason: 'UNSUPPORTED_TYPE' };
-  return { ok: true };
+  return { ok: true, normalizedType: type };
 }
 
 function connectViaProxy(cfg, password, target, timeoutMs) {
   return new Promise((resolve) => {
-    const done = (r) => { try { sock.destroy(); } catch (_) {} resolve(r); };
-    const opts = { host: cfg.host, port: Number(cfg.port), servername: cfg.host };
+    let settled = false;
+    const done = (r) => {
+      if (settled) return;
+      settled = true;
+      try { sock.destroy(); } catch (_) {}
+      resolve(r);
+    };
+    const proxyType = normalizeProxyType(cfg);
+    const opts = { host: cfg.host, port: Number(cfg.port) };
+    if (!net.isIP(cfg.host)) opts.servername = cfg.host;
     if (cfg.ca) opts.ca = cfg.ca;
     opts.rejectUnauthorized = true; // hardcoded, never relaxed
-    const sock = cfg.type === 'HTTPS_PROXY' ? tls.connect(opts) : net.connect(opts);
+    const sock = proxyType === 'HTTPS_PROXY' ? tls.connect(opts) : net.connect(opts);
     sock.setTimeout(timeoutMs, () => done({ status: STATUS.PROXY_UNREACHABLE, detail: 'TIMEOUT' }));
     sock.on('error', (e) => done({ status: STATUS.PROXY_UNREACHABLE, detail: e.code || 'ERROR' }));
-    sock.once(cfg.type === 'HTTPS_PROXY' ? 'secureConnect' : 'connect', () => {
+    sock.on('close', () => done({ status: STATUS.PROXY_UNREACHABLE, detail: 'CONNECTION_CLOSED' }));
+    sock.on('end', () => done({ status: STATUS.PROXY_UNREACHABLE, detail: 'CONNECTION_CLOSED' }));
+    sock.once(proxyType === 'HTTPS_PROXY' ? 'secureConnect' : 'connect', () => {
       let req = `CONNECT ${target.host}:${target.port} HTTP/1.1\r\nHost: ${target.host}:${target.port}\r\n`;
       if (cfg.username) {
         req += 'Proxy-Authorization: Basic ' + Buffer.from(`${cfg.username}:${password || ''}`).toString('base64') + '\r\n';
@@ -56,7 +78,10 @@ function connectViaProxy(cfg, password, target, timeoutMs) {
       const code = parseInt((buf.split(' ')[1] || ''), 10);
       if (code === 407 || code === 401) return done({ status: STATUS.AUTH_FAILED, detail: `HTTP_${code}` });
       if (code !== 200) return done({ status: STATUS.PROXY_UNREACHABLE, detail: `HTTP_${code || 'BAD'}` });
+      settled = true;
       sock.removeAllListeners('data');
+      sock.removeAllListeners('close');
+      sock.removeAllListeners('end');
       sock.setTimeout(0);
       resolve({ status: STATUS.PROXY_READY, socket: sock });
     });
@@ -64,9 +89,12 @@ function connectViaProxy(cfg, password, target, timeoutMs) {
 }
 
 /** Fetch the observed public IP through an established CONNECT tunnel (Cloudflare trace). */
-function observeIp(tunnel, host, timeoutMs) {
+function observeIp(tunnel, host, timeoutMs, ca) {
   return new Promise((resolve) => {
-    const t = tls.connect({ socket: tunnel, servername: host, rejectUnauthorized: true });
+    const tlsOpts = { socket: tunnel, host, rejectUnauthorized: true };
+    if (!net.isIP(host)) tlsOpts.servername = host;
+    if (ca) tlsOpts.ca = ca;
+    const t = tls.connect(tlsOpts);
     let out = '';
     const fin = (v) => { try { t.destroy(); } catch (_) {} resolve(v); };
     t.setTimeout(timeoutMs, () => fin(null));
@@ -80,7 +108,7 @@ function observeIp(tunnel, host, timeoutMs) {
 /**
  * Probe a configured upstream.
  * @param {object} cfg {host,port,type,username,ca?}
- * @param {object} o {password, directIp, forbiddenIps[], target, observe(fn)->ip, timeoutMs}
+ * @param {object} o {password, directIp, forbiddenIps[], target, targetCa, observe(fn)->ip, timeoutMs}
  */
 async function probe(cfg, o = {}) {
   const v = validateConfig(cfg);
@@ -89,7 +117,7 @@ async function probe(cfg, o = {}) {
   const timeoutMs = o.timeoutMs || 10000;
   const c = await connectViaProxy(cfg, o.password, target, timeoutMs);
   if (c.status !== STATUS.PROXY_READY) return status(c.status, c.detail);
-  const observed = o.observe ? await o.observe(c.socket) : await observeIp(c.socket, target.host, timeoutMs);
+  const observed = o.observe ? await o.observe(c.socket) : await observeIp(c.socket, target.host, timeoutMs, o.targetCa || cfg.targetCa);
   if (!observed) return status(STATUS.PROXY_READY, 'IP_NOT_OBSERVED');
   if (o.directIp && observed === o.directIp) return status(STATUS.LEAK_TEST_FAILED, 'EGRESS_EQUALS_DIRECT_IP', observed);
   if ((o.forbiddenIps || []).includes(observed)) return status(STATUS.LEAK_TEST_FAILED, 'EGRESS_IS_FORBIDDEN_IP', observed);
