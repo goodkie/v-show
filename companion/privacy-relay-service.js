@@ -67,7 +67,7 @@ process.on('unhandledRejection', (reason) => {
 });
 
 // [Defect Q2 Hardening - Issue #6 Comment #6244711545] Authoritative companion build identity & capabilities
-const COMPANION_BUILD_ID = 'R6.9G.10.3.7.1.4.85-20261028-P0-RC3.60-PUBLIC-TARGET-SECURE-ENTRY-PASS';
+const COMPANION_BUILD_ID = 'R6.9G.10.3.7.1.4.86-20261028-P0-RC3.60-PUBLIC-TARGET-SECURE-ENTRY-PASS';
 const COMPANION_IMPLEMENTATION_HEAD = '741dfe44536031dff13ac6d8e310d4f72fbca42b';
 
 function isCompatibleExtensionBuild(extBuildId, companionBuildId) {
@@ -217,6 +217,35 @@ class PrivacyRelayService {
         this.activeNodeIndex = savedIdx;
       }
     }
+
+    // [Stream B Two-Layer Residential Upstream] Restore optional residential upstream config & DPAPI credential
+    this.residentialProxySelected = Boolean(this.pool.residentialProxySelected);
+    this.residentialProxyConfig = this.pool.residentialProxyConfig ? winsec.hydrateNode({
+      ...this.pool.residentialProxyConfig,
+      id: this.pool.residentialProxyConfig.id || 'residential-upstream-primary'
+    }, this.companionDir) : null;
+    this.residentialProxyPassword = this.residentialProxyConfig ? (this.residentialProxyConfig.credentialRef || '') : null;
+    this.residentialProxyState = this.residentialProxyConfig
+      ? {
+          status: 'PROXY_READY',
+          detail: 'VERIFICATION_REQUIRED',
+          observedIpMasked: null,
+          residentialVerified: false,
+          sendAllowed: false,
+          dnsProtection: 'UNKNOWN',
+          ipv6Protection: 'UNKNOWN',
+          checkedAt: null
+        }
+      : {
+          status: 'UNCONFIGURED',
+          detail: 'NO_CONFIG',
+          observedIpMasked: null,
+          residentialVerified: false,
+          sendAllowed: false,
+          dnsProtection: 'UNKNOWN',
+          ipv6Protection: 'UNKNOWN',
+          checkedAt: null
+        };
 
     this.controlServer = null;
     this.proxyServer = null;
@@ -389,6 +418,27 @@ class PrivacyRelayService {
       });
       const active = this.getActiveNode();
       const prodActive = productionNodes.find(n => n.id === (active ? active.id : null)) || productionNodes[0] || null;
+      let sanitizedResidential = null;
+      if (this.residentialProxyConfig && typeof this.residentialProxyConfig === 'object') {
+        const resNode = winsec.sanitizeNodeForSave({
+          ...this.residentialProxyConfig,
+          id: this.residentialProxyConfig.id || 'residential-upstream-primary',
+          credentialRef: this.residentialProxyPassword || this.residentialProxyConfig.credentialRef || ''
+        });
+        if (resNode.credentialRef) {
+          winsec.saveLocalNodeCredential(resNode.id, resNode.credentialRef, compDir);
+        }
+        sanitizedResidential = {
+          id: resNode.id,
+          host: resNode.host,
+          port: resNode.port,
+          type: resNode.type,
+          username: resNode.username || '',
+          ca: resNode.ca || null,
+          credentialRef: '',
+          password: ''
+        };
+      }
       const toSave = {
         version: this.pool.version || '1.0.3',
         rotationMode: this.pool.rotationMode || 'HEALTH_FAILOVER',
@@ -397,6 +447,8 @@ class PrivacyRelayService {
         canaryUrl: this.pool.canaryUrl || 'https://cloudflare.com/cdn-cgi/trace',
         selectedEgressId: prodActive ? prodActive.id : null,
         nodes: configNodes,
+        residentialProxySelected: Boolean(this.residentialProxySelected),
+        residentialProxyConfig: sanitizedResidential,
         physicalGate: {
           enabled: Boolean(this.physicalGate && this.physicalGate.enabled),
           pinnedEgressFingerprint: this.physicalGate?.pinnedEgressFingerprint || this.pool.physicalGate?.pinnedEgressFingerprint || null,
@@ -1208,7 +1260,13 @@ class PrivacyRelayService {
     const healthAgeMs = (active && active.lastVerifiedAt > 0) ? (Date.now() - active.lastVerifiedAt) : null;
     const isExpired = active && active.lastVerifiedAt > 0 && (Date.now() - active.lastVerifiedAt > ttl);
     const physicalGateReady = !this.physicalGate.enabled || Boolean(this.physicalGate.state && this.physicalGate.state.ready);
-    const ready = !this.isPaused && this.relayReady && isHealthValid && physicalGateReady;
+    const residentialUpstreamReady = !this.residentialProxySelected || Boolean(
+      this.residentialProxyConfig &&
+      this.residentialProxyState &&
+      this.residentialProxyState.sendAllowed &&
+      this.residentialProxyState.status === 'EGRESS_VERIFIED'
+    );
+    const ready = !this.isPaused && this.relayReady && isHealthValid && physicalGateReady && residentialUpstreamReady;
 
     const watchdogInfo = this.getWatchdogInfo();
     const runtimeRoot = path.resolve(__dirname, '..');
@@ -1269,12 +1327,15 @@ class PrivacyRelayService {
       nodes: redactedNodes,
       trafficStats: { ...this.trafficStats },
       physicalGate: this.physicalGate.state,
+      residentialProxySelected: Boolean(this.residentialProxySelected),
       residentialProxy: this.residentialProxyState || {
         status: 'UNCONFIGURED',
         detail: 'NO_CONFIG',
         observedIpMasked: null,
         residentialVerified: false,
         sendAllowed: false,
+        dnsProtection: 'UNKNOWN',
+        ipv6Protection: 'UNKNOWN',
         checkedAt: null
       },
       recovery: this.getRecoveryStatus(),
@@ -1494,10 +1555,131 @@ class PrivacyRelayService {
           observedIpMasked: null,
           residentialVerified: false,
           sendAllowed: false,
+          dnsProtection: 'UNKNOWN',
+          ipv6Protection: 'UNKNOWN',
           checkedAt: null
         };
+        const redactedConfig = this.residentialProxyConfig ? {
+          id: this.residentialProxyConfig.id || 'residential-upstream-primary',
+          host: this.residentialProxyConfig.host,
+          port: this.residentialProxyConfig.port,
+          type: this.residentialProxyConfig.type,
+          username: this.residentialProxyConfig.username || '',
+          hasCredentials: Boolean(this.residentialProxyPassword || this.residentialProxyConfig.credentialRef)
+        } : null;
         res.writeHead(200);
-        res.end(JSON.stringify({ success: true, residentialProxy: current }));
+        res.end(JSON.stringify({
+          success: true,
+          residentialProxySelected: Boolean(this.residentialProxySelected),
+          residentialProxyConfig: redactedConfig,
+          residentialProxy: current
+        }));
+        return;
+      }
+
+      // [Lane B] POST /residential-proxy/configure (Authenticated — DPAPI credential persistence + optional probe)
+      if (pathname === '/residential-proxy/configure' && req.method === 'POST') {
+        let body = '';
+        req.on('data', c => body += c);
+        req.on('end', async () => {
+          try {
+            const data = JSON.parse(body || '{}');
+            if (typeof data.selected === 'boolean') {
+              this.residentialProxySelected = data.selected;
+            }
+            if (data.config === null) {
+              this.residentialProxyConfig = null;
+              this.residentialProxyPassword = null;
+              this.residentialProxyState = {
+                status: 'UNCONFIGURED',
+                detail: 'NO_CONFIG',
+                observedIpMasked: null,
+                residentialVerified: false,
+                sendAllowed: false,
+                dnsProtection: 'UNKNOWN',
+                ipv6Protection: 'UNKNOWN',
+                checkedAt: new Date().toISOString()
+              };
+              this.saveConfig();
+              res.writeHead(200);
+              res.end(JSON.stringify({
+                success: true,
+                residentialProxySelected: Boolean(this.residentialProxySelected),
+                residentialProxy: this.residentialProxyState
+              }));
+              return;
+            }
+            if (data.config) {
+              const v = residentialAdapter.validateConfig(data.config);
+              if (!v.ok) {
+                this.residentialProxyState = residentialAdapter.status('UNCONFIGURED', v.reason);
+                res.writeHead(400);
+                res.end(JSON.stringify({
+                  success: false,
+                  reason: v.reason,
+                  residentialProxy: this.residentialProxyState
+                }));
+                return;
+              }
+              const rawPass = data.password || data.config.password || '';
+              let encryptedRef = this.residentialProxyPassword || '';
+              if (rawPass && typeof rawPass === 'string' && rawPass.trim().length > 0) {
+                encryptedRef = rawPass.startsWith('dpapi:') || rawPass.startsWith('ENV:')
+                  ? rawPass.trim()
+                  : winsec.encrypt(rawPass.trim());
+              }
+              this.residentialProxyPassword = encryptedRef;
+              this.residentialProxyConfig = {
+                id: data.config.id || 'residential-upstream-primary',
+                host: data.config.host,
+                port: Number(data.config.port),
+                type: data.config.type,
+                username: data.config.username || '',
+                ca: data.config.ca || null,
+                credentialRef: encryptedRef
+              };
+              this.residentialProxyState = {
+                status: 'PROXY_READY',
+                detail: 'VERIFICATION_REQUIRED',
+                observedIpMasked: null,
+                residentialVerified: false,
+                sendAllowed: false,
+                dnsProtection: 'UNKNOWN',
+                ipv6Protection: 'UNKNOWN',
+                checkedAt: new Date().toISOString()
+              };
+              this.saveConfig();
+            }
+            if (data.runProbe && this.residentialProxyConfig) {
+              const decPass = this.residentialProxyPassword ? winsec.decrypt(this.residentialProxyPassword) : '';
+              const activeNode = this.getActiveNode();
+              const defaultForbidden = [];
+              if (activeNode && activeNode.host && /^\d+\.\d+\.\d+\.\d+$/.test(activeNode.host)) {
+                defaultForbidden.push(activeNode.host);
+              }
+              if (activeNode && activeNode.expectedEgressIp) {
+                defaultForbidden.push(activeNode.expectedEgressIp);
+              }
+              const probeResult = await residentialAdapter.probe(this.residentialProxyConfig, {
+                password: decPass,
+                directIp: data.directIp,
+                forbiddenIps: Array.from(new Set([...defaultForbidden, ...(data.forbiddenIps || [])])),
+                target: data.target,
+                timeoutMs: data.timeoutMs
+              });
+              this.residentialProxyState = probeResult;
+            }
+            res.writeHead(200);
+            res.end(JSON.stringify({
+              success: true,
+              residentialProxySelected: Boolean(this.residentialProxySelected),
+              residentialProxy: this.residentialProxyState
+            }));
+          } catch (e) {
+            res.writeHead(500);
+            res.end(JSON.stringify({ success: false, error: e.message }));
+          }
+        });
         return;
       }
 
@@ -1514,10 +1696,20 @@ class PrivacyRelayService {
               res.end(JSON.stringify({ success: false, reason: 'UNCONFIGURED' }));
               return;
             }
+            const activeNode = this.getActiveNode();
+            const defaultForbidden = [];
+            if (activeNode && activeNode.host && /^\d+\.\d+\.\d+\.\d+$/.test(activeNode.host)) {
+              defaultForbidden.push(activeNode.host);
+            }
+            if (activeNode && activeNode.expectedEgressIp) {
+              defaultForbidden.push(activeNode.expectedEgressIp);
+            }
             const probeResult = await residentialAdapter.probe(targetCfg, {
               password: data.password || (this.residentialProxyPassword ? winsec.decrypt(this.residentialProxyPassword) : null),
               directIp: data.directIp,
-              forbiddenIps: data.forbiddenIps || []
+              forbiddenIps: Array.from(new Set([...defaultForbidden, ...(data.forbiddenIps || [])])),
+              target: data.target,
+              timeoutMs: data.timeoutMs
             });
             this.residentialProxyState = probeResult;
             res.writeHead(200);
@@ -2639,6 +2831,76 @@ class PrivacyRelayService {
         }
       }
 
+      // [Stream B Two-Layer Residential Upstream Forwarding]
+      if (this.residentialProxySelected) {
+        if (!this.residentialProxyConfig) {
+          this.trafficStats.failClosedDrops++;
+          this.log(`[RESIDENTIAL_UPSTREAM_BLOCK] reason=CONFIG_REQUIRED (residentialProxySelected=true but unconfigured)`);
+          res.writeHead(502, { 'Content-Type': 'text/plain' });
+          res.end('RESIDENTIAL_UPSTREAM_FAIL_CLOSED: CONFIG_REQUIRED');
+          return;
+        }
+        if (!this.residentialProxyState || !this.residentialProxyState.sendAllowed || this.residentialProxyState.status !== 'EGRESS_VERIFIED') {
+          this.trafficStats.failClosedDrops++;
+          const st = this.residentialProxyState ? this.residentialProxyState.status : 'UNVERIFIED';
+          this.log(`[RESIDENTIAL_UPSTREAM_BLOCK] reason=RESIDENTIAL_UPSTREAM_NOT_VERIFIED status=${st}`);
+          res.writeHead(502, { 'Content-Type': 'text/plain' });
+          res.end(`RESIDENTIAL_UPSTREAM_FAIL_CLOSED: ${st}`);
+          return;
+        }
+        const resCfg = this.residentialProxyConfig;
+        const resPass = this.residentialProxyPassword ? winsec.decrypt(this.residentialProxyPassword) : '';
+        const isResTls = resCfg.type === 'HTTPS_PROXY';
+        const resOptions = {
+          hostname: resCfg.host,
+          port: Number(resCfg.port),
+          path: req.url,
+          method: req.method,
+          headers: { ...req.headers }
+        };
+        if (resCfg.username) {
+          const auth = Buffer.from(`${resCfg.username}:${resPass}`).toString('base64');
+          resOptions.headers['Proxy-Authorization'] = `Basic ${auth}`;
+        }
+        const resHttpModule = isResTls ? https : http;
+        if (isResTls) {
+          resOptions.rejectUnauthorized = true;
+          resOptions.servername = resCfg.host;
+          if (resCfg.ca) resOptions.ca = resCfg.ca;
+        }
+        const resProxyReq = resHttpModule.request(resOptions, (proxyRes) => {
+          if (proxyRes.statusCode === 407 || proxyRes.statusCode === 401) {
+            this.residentialProxyState = residentialAdapter.status('AUTH_FAILED', `HTTP_${proxyRes.statusCode}`);
+            this.trafficStats.failClosedDrops++;
+            res.writeHead(502, { 'Content-Type': 'text/plain' });
+            res.end(`RESIDENTIAL_UPSTREAM_FAIL_CLOSED: AUTH_FAILED_${proxyRes.statusCode}`);
+            try { proxyRes.destroy(); } catch (_) {}
+            return;
+          }
+          try {
+            res.writeHead(proxyRes.statusCode, proxyRes.headers);
+            proxyRes.pipe(res);
+          } catch (_) {}
+          proxyRes.on('error', () => { try { res.destroy(); } catch (_) {} });
+        });
+        req.on('error', () => { try { resProxyReq.destroy(); } catch (_) {} });
+        res.on('error', () => { try { resProxyReq.destroy(); } catch (_) {} });
+        resProxyReq.on('error', (err) => {
+          this.residentialProxyState = residentialAdapter.status('PROXY_UNREACHABLE', err.code || err.message);
+          this.trafficStats.failClosedDrops++;
+          try {
+            if (!res.headersSent) {
+              res.writeHead(502, { 'Content-Type': 'text/plain' });
+              res.end(`RESIDENTIAL_UPSTREAM_FAIL_CLOSED: ${err.message}`);
+            } else {
+              res.destroy();
+            }
+          } catch (_) {}
+        });
+        req.pipe(resProxyReq);
+        return;
+      }
+
       if (this.isPaused || !this.relayReady) {
         this.trafficStats.failClosedDrops++;
         this.log(`[PRIVACY_RELAY_BLOCK] reason=${this.isPaused ? 'RELAY_PAUSED' : 'RELAY_NOT_VERIFIED'}`);
@@ -2751,6 +3013,119 @@ class PrivacyRelayService {
           } catch (_) {}
           return;
         }
+      }
+
+      // [Stream B Two-Layer Residential Upstream CONNECT Tunnel Forwarding]
+      if (this.residentialProxySelected) {
+        if (!this.residentialProxyConfig) {
+          this.trafficStats.failClosedDrops++;
+          this.log(`[RESIDENTIAL_UPSTREAM_BLOCK] reason=CONFIG_REQUIRED_CONNECT`);
+          try {
+            clientSocket.write('HTTP/1.1 502 Bad Gateway\r\n\r\n');
+            clientSocket.destroy();
+          } catch (_) {}
+          return;
+        }
+        if (!this.residentialProxyState || !this.residentialProxyState.sendAllowed || this.residentialProxyState.status !== 'EGRESS_VERIFIED') {
+          this.trafficStats.failClosedDrops++;
+          const st = this.residentialProxyState ? this.residentialProxyState.status : 'UNVERIFIED';
+          this.log(`[RESIDENTIAL_UPSTREAM_BLOCK] reason=RESIDENTIAL_UPSTREAM_NOT_VERIFIED_CONNECT status=${st}`);
+          try {
+            clientSocket.write('HTTP/1.1 502 Bad Gateway\r\n\r\n');
+            clientSocket.destroy();
+          } catch (_) {}
+          return;
+        }
+        const resCfg = this.residentialProxyConfig;
+        const resPass = this.residentialProxyPassword ? winsec.decrypt(this.residentialProxyPassword) : '';
+        const isResTls = resCfg.type === 'HTTPS_PROXY';
+        let resConnectReq = `CONNECT ${req.url} HTTP/1.1\r\nHost: ${req.url}\r\n`;
+        if (resCfg.username) {
+          const auth = Buffer.from(`${resCfg.username}:${resPass}`).toString('base64');
+          resConnectReq += `Proxy-Authorization: Basic ${auth}\r\n`;
+        }
+        resConnectReq += '\r\n';
+
+        const setupResidentialTunnel = (upstreamSocket) => {
+          try { upstreamSocket.setKeepAlive(true, 10000); } catch (_) {}
+          upstreamSocket.on('error', (err) => {
+            this.residentialProxyState = residentialAdapter.status('PROXY_UNREACHABLE', err.code || err.message);
+            this.log(`[RESIDENTIAL_TUNNEL_SOCKET_ERROR] ${err.code || err.message}`);
+            try { clientSocket.destroy(); } catch (_) {}
+          });
+          clientSocket.on('close', () => { try { upstreamSocket.destroy(); } catch (_) {} });
+          upstreamSocket.on('close', () => { try { clientSocket.destroy(); } catch (_) {} });
+
+          upstreamSocket.write(resConnectReq);
+          upstreamSocket.once('data', (data) => {
+            const responseStr = data.toString('utf8');
+            const firstLine = responseStr.split('\r\n')[0] || '';
+            const statusCode = parseInt((firstLine.split(' ')[1] || ''), 10);
+            if (statusCode === 407 || statusCode === 401) {
+              this.residentialProxyState = residentialAdapter.status('AUTH_FAILED', `HTTP_${statusCode}`);
+              this.trafficStats.failClosedDrops++;
+              this.log(`[RESIDENTIAL_CONNECT_AUTH_FAILED] ${firstLine}`);
+              try {
+                clientSocket.write('HTTP/1.1 502 Bad Gateway\r\n\r\n');
+                clientSocket.destroy();
+              } catch (_) {}
+              try { upstreamSocket.destroy(); } catch (_) {}
+              return;
+            }
+            if (statusCode === 200) {
+              try {
+                clientSocket.write('HTTP/1.1 200 Connection Established\r\n\r\n');
+                if (head && head.length > 0) upstreamSocket.write(head);
+                upstreamSocket.pipe(clientSocket);
+                clientSocket.pipe(upstreamSocket);
+              } catch (_) {
+                try { clientSocket.destroy(); } catch (__) {}
+                try { upstreamSocket.destroy(); } catch (__) {}
+              }
+            } else {
+              this.residentialProxyState = residentialAdapter.status('PROXY_UNREACHABLE', `HTTP_${statusCode || 'BAD'}`);
+              this.trafficStats.failClosedDrops++;
+              this.log(`[RESIDENTIAL_CONNECT_REJECTED] ${firstLine}`);
+              try {
+                clientSocket.write('HTTP/1.1 502 Bad Gateway\r\n\r\n');
+                clientSocket.destroy();
+              } catch (_) {}
+              try { upstreamSocket.destroy(); } catch (_) {}
+            }
+          });
+        };
+
+        if (isResTls) {
+          const tlsOptions = {
+            host: resCfg.host,
+            port: Number(resCfg.port),
+            servername: resCfg.host,
+            rejectUnauthorized: true
+          };
+          if (resCfg.ca) tlsOptions.ca = resCfg.ca;
+          const tlsSocket = tls.connect(tlsOptions, () => setupResidentialTunnel(tlsSocket));
+          tlsSocket.on('error', (err) => {
+            this.residentialProxyState = residentialAdapter.status('PROXY_UNREACHABLE', err.code || err.message);
+            this.trafficStats.failClosedDrops++;
+            this.log(`[RESIDENTIAL_TLS_CONNECT_ERROR] ${err.message}`);
+            try {
+              clientSocket.write('HTTP/1.1 502 Bad Gateway\r\n\r\n');
+              clientSocket.destroy();
+            } catch (_) {}
+          });
+        } else {
+          const upstreamSocket = net.connect(Number(resCfg.port), resCfg.host, () => setupResidentialTunnel(upstreamSocket));
+          upstreamSocket.on('error', (err) => {
+            this.residentialProxyState = residentialAdapter.status('PROXY_UNREACHABLE', err.code || err.message);
+            this.trafficStats.failClosedDrops++;
+            this.log(`[RESIDENTIAL_CONNECT_ERROR] ${err.message}`);
+            try {
+              clientSocket.write('HTTP/1.1 502 Bad Gateway\r\n\r\n');
+              clientSocket.destroy();
+            } catch (_) {}
+          });
+        }
+        return;
       }
 
       if (this.isPaused || !this.relayReady) {

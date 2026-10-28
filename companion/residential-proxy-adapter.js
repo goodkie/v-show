@@ -96,13 +96,15 @@ async function probe(cfg, o = {}) {
   return status(STATUS.EGRESS_VERIFIED, 'OK', observed);
 }
 
-function status(s, detail, observedIp) {
+function status(s, detail, observedIp, extra = {}) {
   return {
     status: s,
     detail,
     observedIpMasked: observedIp ? maskIp(observedIp) : null,
     residentialVerified: false, // adapter cannot prove provenance; owner attestation required
     sendAllowed: s === STATUS.EGRESS_VERIFIED, // fail-closed: only a verified egress permits traffic
+    dnsProtection: extra.dnsProtection || 'UNKNOWN',
+    ipv6Protection: extra.ipv6Protection || 'UNKNOWN',
     checkedAt: new Date().toISOString()
   };
 }
@@ -113,4 +115,4 @@ function maskIp(ip) {
   return `${p[0]}.${p[1]}.*.*`;
 }
 
-module.exports = { STATUS, validateConfig, probe, maskIp };
+module.exports = { STATUS, validateConfig, connectViaProxy, observeIp, probe, maskIp, status };

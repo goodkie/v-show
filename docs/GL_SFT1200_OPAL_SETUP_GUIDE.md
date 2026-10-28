@@ -33,20 +33,20 @@ Save as `xpider-opal-wireguard.conf` (Paste into GL.iNet Web Admin):
 
 ```ini
 [Interface]
-# Assigned VPN client internal IP on the DigitalOcean WireGuard subnet
-Address = 10.8.0.2/24
+# Assigned VPN client internal IP on the DigitalOcean WireGuard subnet (10.66.66.0/24; Server wg0=10.66.66.1/24, Peer AllowedIPs=10.66.66.2/32)
+Address = 10.66.66.2/32
 # Owner-generated client private key (Keep confidential; NEVER commit to git)
 PrivateKey = <OWNER_CLIENT_PRIVATE_KEY>
 # DNS servers enforced inside the secure tunnel
-DNS = 1.1.1.1, 9.9.9.9
+DNS = 1.1.1.1
 
 [Peer]
 # Gateway WireGuard public key from DigitalOcean server
 PublicKey = <DIGITALOCEAN_GATEWAY_PUBLIC_KEY>
 # DigitalOcean gateway public IP and WireGuard listening port
-Endpoint = <DIGITALOCEAN_DROPLET_PUBLIC_IP>:51820
+Endpoint = 143.198.40.33:51820
 # Route all traffic through the secure VPN gateway
-AllowedIPs = 0.0.0.0/0
+AllowedIPs = 0.0.0.0/0, ::/0
 # Keepalive packet every 25 seconds for persistent NAT traversal
 PersistentKeepalive = 25
 ```

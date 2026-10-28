@@ -13,7 +13,7 @@
 ```ini
 [Interface]
 PrivateKey = <GENERATED_OPAL_CLIENT_PRIVATE_KEY>
-Address = 10.66.66.2/24
+Address = 10.66.66.2/32
 DNS = 1.1.1.1
 
 [Peer]

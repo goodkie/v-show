@@ -3697,6 +3697,15 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
         case 'CLEANUP_OWNER_FUNCTIONAL_TEST_RUN': {
             bgOperationQueue.enqueue(async () => {
                 try {
+                    campaignState.isActive = false;
+                    campaignState.ownerFunctionTestMode = false;
+                    if (campaignState.activeTimeoutId) {
+                        clearTimeout(campaignState.activeTimeoutId);
+                        campaignState.activeTimeoutId = null;
+                    }
+                    if (chrome.alarms) {
+                        chrome.alarms.clear('xpider_next_target_failsafe').catch(() => {});
+                    }
                     if (self.__xpiderHistoryStore) {
                         await self.__xpiderHistoryStore.cleanupOwnerTestRun(request.previousRunId);
                     }
@@ -7775,17 +7784,24 @@ async function processNextCampaignTarget(loopSessionId, loopGeneration) {
         logBg(null, `❌ Critical target error: ${e.message}. Skipping...`, "error");
     } finally {
         if (campaignState.isActive) {
-            saveCampaignState();
-            await checkPause();
-            const delay = Math.max(1000, campaignState.delayMs || 10000);
-            logBg(null, `Waiting ${delay}ms before next target...`, "debug");
+            if (!campaignState.queue || campaignState.queue.length === 0) {
+                campaignState.schedulerGeneration = (campaignState.schedulerGeneration || 0) + 1;
+                const finGen = campaignState.schedulerGeneration;
+                if (campaignState.activeTimeoutId) clearTimeout(campaignState.activeTimeoutId);
+                campaignState.activeTimeoutId = setTimeout(() => processNextCampaignTarget(currentSession, finGen), 50);
+            } else {
+                await saveCampaignState();
+                await checkPause();
+                const delay = Math.max(1000, campaignState.delayMs || 10000);
+                logBg(null, `Waiting ${delay}ms before next target...`, "debug");
 
-            if (campaignState.activeTimeoutId) clearTimeout(campaignState.activeTimeoutId);
-            campaignState.schedulerGeneration = (campaignState.schedulerGeneration || 0) + 1;
-            const nextGen = campaignState.schedulerGeneration;
-            campaignState.activeTimeoutId = setTimeout(() => processNextCampaignTarget(currentSession, nextGen), delay);
+                if (campaignState.activeTimeoutId) clearTimeout(campaignState.activeTimeoutId);
+                campaignState.schedulerGeneration = (campaignState.schedulerGeneration || 0) + 1;
+                const nextGen = campaignState.schedulerGeneration;
+                campaignState.activeTimeoutId = setTimeout(() => processNextCampaignTarget(currentSession, nextGen), delay);
 
-            if (chrome.alarms) chrome.alarms.create("xpider_next_target_failsafe", { delayInMinutes: 1 });
+                if (chrome.alarms) chrome.alarms.create("xpider_next_target_failsafe", { delayInMinutes: 1 });
+            }
         }
         campaignState.isLoopRunning = false;
     }
@@ -9336,6 +9352,9 @@ async function saveCampaignState() {
             if (typeof chrome.storage === 'undefined' || !chrome.storage.local) return resolve();
             
             chrome.storage.local.get(['xpider_visited'], (existing) => {
+                if (!campaignState.isActive && (!campaignState.queue || campaignState.queue.length === 0)) {
+                    return resolve();
+                }
                 let mergedVisited = Array.isArray(existing?.xpider_visited) ? [...existing.xpider_visited] : [];
                 if (!campaignState.ownerFunctionTestMode && Array.isArray(campaignState.visitedUrls)) {
                     for (const u of campaignState.visitedUrls) {

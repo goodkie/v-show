@@ -96,9 +96,6 @@ function sleep(ms) {
     log('\n>>> [STAGE 2] Unpacking and verifying byte-for-byte inventory parity...');
     if (fs.existsSync(UNPACK_DIR)) {
         try {
-            execSync('taskkill /F /IM chrome.exe 2>nul || exit 0', { shell: 'cmd.exe' });
-            execSync('taskkill /F /IM node.exe /FI "WINDOWTITLE eq xpider_relay*" 2>nul || exit 0', { shell: 'cmd.exe' });
-            await sleep(500);
             fs.rmSync(UNPACK_DIR, { recursive: true, force: true });
         } catch (_) {}
     }

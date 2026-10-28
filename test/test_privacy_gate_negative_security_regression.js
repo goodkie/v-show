@@ -551,9 +551,10 @@ console.log('===================================================================
     }
 
     // ─────────────────────────────────────────────────────────────────────────────
-    // SCENARIO 11: MV3 Service Worker Restart with Cached READY and Disconnected Relay
+    // SCENARIO 11: Simulated MV3 Service Worker Restart (Fresh PrivacyGatewayEngine Instance) with Cached READY and Disconnected Relay
+    // (Note: Real physical Chrome ServiceWorker.stopWorker termination + wake is additionally verified in test/audit_unpacked_rc3_60_86_chrome_zip.js)
     // ─────────────────────────────────────────────────────────────────────────────
-    console.log('>>> [SCENARIO 11] MV3 SW restart with cached READY and disconnected relay...');
+    console.log('>>> [SCENARIO 11] Simulated MV3 SW restart (fresh PrivacyGatewayEngine instance) with cached READY and disconnected relay...');
     {
         const mockStorage = {
             xpider_privacy_config: {

@@ -63,13 +63,27 @@ function runTest() {
   assert.ok(content.includes('ufw delete allow "${WG_PORT}/udp"'), 'Must delete UFW rule during teardown');
   console.log('   PASS: Clean rollback logic verified.');
 
-  // 6. Checklist Consistency
-  console.log('6. Verifying OPAL_CLIENT_CHECKLIST.md consistency...');
+  // 6. Checklist & Setup Guide Canonical Subnet Consistency (10.66.66.1/24 server, 10.66.66.2/32 client, zero private key echo)
+  console.log('6. Verifying OPAL_CLIENT_CHECKLIST.md & GL_SFT1200_OPAL_SETUP_GUIDE.md canonical consistency...');
   const checklistPath = path.resolve('companion/wireguard/OPAL_CLIENT_CHECKLIST.md');
   assert.ok(fs.existsSync(checklistPath), 'OPAL_CLIENT_CHECKLIST.md must exist');
   const checklistContent = fs.readFileSync(checklistPath, 'utf8');
   assert.ok(checklistContent.includes('UNVERIFIED'), 'Physical checklist must explicitly designate UNVERIFIED status');
-  console.log('   PASS: OPAL_CLIENT_CHECKLIST designations verified.');
+  assert.ok(checklistContent.includes('Address = 10.66.66.2/32'), 'Checklist must specify canonical Address = 10.66.66.2/32');
+  assert.ok(!checklistContent.includes('10.8.0.'), 'Checklist must not contain legacy 10.8.0.x subnet');
+
+  const guidePath = path.resolve('docs/GL_SFT1200_OPAL_SETUP_GUIDE.md');
+  assert.ok(fs.existsSync(guidePath), 'GL_SFT1200_OPAL_SETUP_GUIDE.md must exist');
+  const guideContent = fs.readFileSync(guidePath, 'utf8');
+  assert.ok(guideContent.includes('Address = 10.66.66.2/32'), 'Setup guide must specify canonical Address = 10.66.66.2/32');
+  assert.ok(!guideContent.includes('10.8.0.'), 'Setup guide must not contain legacy 10.8.0.x subnet');
+
+  assert.ok(content.includes('WG_SERVER_ADDR="10.66.66.1/24"'), 'Server address must be 10.66.66.1/24');
+  assert.ok(content.includes('WG_CLIENT_ADDR="10.66.66.2/32"'), 'Client peer AllowedIPs must be 10.66.66.2/32');
+  assert.ok(content.includes('OPAL_PROFILE_FILE="/etc/wireguard/xpider-opal-client.conf"'), 'Must write Opal profile exclusively to protected file');
+  assert.ok(content.includes('chmod 600 "$OPAL_PROFILE_FILE"'), 'Must set mode 0600 on Opal profile file');
+  assert.ok(!content.includes('cat << OPALEOF'), 'Must NOT echo Opal private key to stdout via cat << OPALEOF');
+  console.log('   PASS: Canonical 10.66.66.1/24 & 10.66.66.2/32 and protected file output verified.');
 
   console.log('\n[WG_TEMPLATE_AUDIT] ALL 6 CHECKS PASSED OFFLINE!');
   return {

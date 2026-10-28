@@ -300,14 +300,12 @@ WGEOF
     wg show "$WG_IFACE" 2>/dev/null || true
     echo ""
 
-    # --- Output: GL.iNet Opal Client Config ---
-    echo "============================================================"
-    echo "GL.iNet OPAL CLIENT CONFIG (paste into GL.iNet WireGuard UI)"
-    echo "============================================================"
-    cat << OPALEOF
+    # --- Output: GL.iNet Opal Client Config (written strictly to protected 0600 file; NEVER echo private key to stdout) ---
+    OPAL_PROFILE_FILE="/etc/wireguard/xpider-opal-client.conf"
+    cat > "$OPAL_PROFILE_FILE" << OPALEOF
 [Interface]
 PrivateKey = $OPAL_PRIV
-Address = 10.66.66.2/24
+Address = 10.66.66.2/32
 DNS = 1.1.1.1
 
 [Peer]
@@ -316,6 +314,12 @@ Endpoint = $SERVER_PUB_IP:$WG_PORT
 AllowedIPs = 0.0.0.0/0, ::/0
 PersistentKeepalive = 25
 OPALEOF
+    chmod 600 "$OPAL_PROFILE_FILE"
+    echo "============================================================"
+    echo "GL.iNet OPAL CLIENT CONFIG WRITTEN TO PROTECTED FILE: $OPAL_PROFILE_FILE (mode 0600)"
+    echo "Server Public Key: $SERVER_PUB"
+    echo "Opal Public Key:   $OPAL_PUB"
+    echo "(Client PrivateKey is strictly redacted from stdout/logs)"
     echo "============================================================"
     echo "=== WireGuard server setup template complete ==="
 }
