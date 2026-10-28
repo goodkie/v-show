@@ -13,8 +13,8 @@ LAST_DIRECTIVE: [OWNER QA OBSERVATION — .81 PRIVACY GATE READY ONLY AFTER MANU
 LAST_RECEIPT: [ANTIGRAVITY][RECEIPT][ISSUE-6][RC3.60-.83-STARTUP-AND-RESTORE-PRIVACY-GATE-AUTO-RECONCILIATION-PASS][2026-10-28]
 LAST_BRIEFING: [ANTIGRAVITY][BRIEFING][ISSUE-6][RC3.58-OPERATIONAL-INTEGRITY-AND-STANDBY-AUDIT][2026-10-25T11:50Z] Comment #6397277337
 BUILD_ID: R6.9G.10.3.7.1.4.83-20261028-P0-RC3.60-PRIVACY-GATE-AUTO-RECONCILE-PASS
-FUNCTIONAL_COMMIT: Pending commit
-PROVENANCE_COMMIT: Pending commit
+FUNCTIONAL_COMMIT: fc8cc4be
+PROVENANCE_COMMIT: fc8cc4be
 ROLLBACK_ANCHOR: 55cd543be5ebe7a4553cac0cbfcf933a00e4c8a5
 PREVIOUS_FUNCTIONAL_RESTORE_POINT: 670cc0a3
 NEXT_ACTION: Deliver RC3.60 .83 resolving Comment #6461672411: automatic privacy readiness preflight reconciliation on cold popup start, service worker init hydration from cached snapshot, post-restore auto-reconciliation, safe fail-closed and cooldown guards. Independently verified across 5 stages in real Google Chrome (2,229 files byte parity, AI constraints PASS, 5 SUCCESS / 2 SKIPPED / 1 FAILURE, 50 URLs and settings cleanly restored, privacy ready post-restore). Production sending strictly held not approved until owner's RESTORE and live privacy status verification.
