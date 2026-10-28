@@ -13,8 +13,8 @@ LAST_DIRECTIVE: [OWNER DIRECTIVE][ISSUE #6][P0 60-MINUTE COMPLETION SPRINT — E
 LAST_RECEIPT: [ANTIGRAVITY][RECEIPT][ISSUE-6][RC3.60-.84-PRIVACY-GATE-LIVE-AUTHORITY-AND-NEGATIVE-SECURITY-PASS][2026-10-28]
 LAST_BRIEFING: [ANTIGRAVITY][BRIEFING][ISSUE-6][RC3.58-OPERATIONAL-INTEGRITY-AND-STANDBY-AUDIT][2026-10-25T11:50Z] Comment #6397277337
 BUILD_ID: R6.9G.10.3.7.1.4.84-20261028-P0-RC3.60-PRIVACY-GATE-LIVE-AUTHORITY-PASS
-FUNCTIONAL_COMMIT: 7281f99c
-PROVENANCE_COMMIT: 7281f99c
+FUNCTIONAL_COMMIT: 14e3cf90
+PROVENANCE_COMMIT: 14e3cf90
 ROLLBACK_ANCHOR: 55cd543be5ebe7a4553cac0cbfcf933a00e4c8a5
 PREVIOUS_FUNCTIONAL_RESTORE_POINT: 670cc0a3
 NEXT_ACTION: Deliver RC3.60 .84 resolving Comment #6462421512 & ChatGPT PM Audit #6462338468: single authoritative isPrivacyGateReady() fail-closed method, no persisted cache granting live runtime authority, 7-scenario negative security regression suite PASS, and real Google Chrome independent E2E audit PASS (cold unauthenticated startup fails closed, authorized node auto-reconciles to ON (READY) without manual preflight click, popup reopen continuity, 8-fixture 5 SUCCESS / 2 SKIPPED / 1 FAILURE function test, clean RESTORE). Production sending strictly held on standby.
