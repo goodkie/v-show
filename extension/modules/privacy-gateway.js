@@ -92,7 +92,20 @@
             }
             if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
                 try {
-                    const data = await chrome.storage.local.get(['xpider_privacy_config']);
+                    const data = await chrome.storage.local.get(['xpider_privacy_config', 'xpider_last_privacy_preflight']);
+                    if (data && data.xpider_last_privacy_preflight && !this.lastPreflightResult) {
+                        const storedPf = data.xpider_last_privacy_preflight;
+                        if (storedPf && typeof storedPf === 'object' && storedPf.lastCheck) {
+                            this.lastPreflightResult = storedPf;
+                            const ageMs = Date.now() - new Date(storedPf.lastCheck).getTime();
+                            if (storedPf.ready && ageMs >= 0 && ageMs < 300000) {
+                                this.isGateReady = true;
+                            }
+                            if (storedPf.failureReason) {
+                                this.failureReason = storedPf.failureReason;
+                            }
+                        }
+                    }
                     if (data && data.xpider_privacy_config) {
                         // [R6.9G.10.2 Blocker 4 Sanitization]: Purge any old persisted relayControlToken from storage
                         if (data.xpider_privacy_config.relayControlToken) {
@@ -149,8 +162,13 @@
 
         async saveConfig(newConfig = {}) {
             if (newConfig.transportMode && newConfig.transportMode !== this.config.transportMode) {
-                // If switching away from SYSTEM_VPN or switching to SYSTEM_VPN, invalidate prior confirmation
+                // If switching transport mode, invalidate prior confirmation and preflight snapshot
                 this.ephemeralEgressFingerprint = null;
+                this.lastPreflightResult = null;
+                this.isGateReady = false;
+                if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+                    chrome.storage.local.remove(['xpider_last_privacy_preflight']).catch(() => {});
+                }
                 if (this.config.transportMode === PRIVACY_MODES.SYSTEM_VPN || newConfig.transportMode === PRIVACY_MODES.SYSTEM_VPN) {
                     if (newConfig.systemVpnConfirmed === undefined) {
                         newConfig.systemVpnConfirmed = false;
@@ -2132,8 +2150,28 @@
                 lastCheck: new Date().toISOString()
             };
             this.lastPreflightResult = result;
-            this.isGateReady = result.ready;
-            this.failureReason = result.failureReason;
+            this.isGateReady = Boolean(result.ready);
+            this.failureReason = result.failureReason || null;
+
+            if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+                try {
+                    const snapshot = {
+                        ready: Boolean(result.ready),
+                        mode: result.mode,
+                        failClosed: Boolean(result.failClosed),
+                        webrtcGuard: result.webrtcGuard,
+                        directFallbackBlocked: result.directFallbackBlocked,
+                        egressCheck: result.egressCheck,
+                        lastCheck: result.lastCheck,
+                        failureReason: result.failureReason || null,
+                        selectedEgressId: result.selectedEgressId || this.config.selectedEgressId || null,
+                        egressFingerprint: result.egressFingerprint || this.ephemeralEgressFingerprint || null,
+                        dnsPrivacy: result.dnsPrivacy || 'UNKNOWN',
+                        ipv6Protection: result.ipv6Protection || 'UNKNOWN'
+                    };
+                    chrome.storage.local.set({ xpider_last_privacy_preflight: snapshot }).catch(() => {});
+                } catch (_) {}
+            }
             return result;
         }
 

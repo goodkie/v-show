@@ -4121,6 +4121,9 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
                     const pg = (typeof PrivacyGateway !== 'undefined' && PrivacyGateway.getInstance) ? PrivacyGateway.getInstance() : null;
                     if (!pg) return sendResponse({ success: false, error: 'PrivacyGateway unavailable' });
                     await pg.init();
+                    if (request.reconcile && (!pg.lastPreflightResult || !pg.isPrivacyGateReady())) {
+                        try { await pg.runPreflight({ autoStart: false }); } catch (_) {}
+                    }
                     const isGateReady = typeof pg.isPrivacyGateReady === 'function' ? pg.isPrivacyGateReady() : Boolean(pg.isGateReady);
                     sendResponse({
                         success: true,
@@ -4146,6 +4149,9 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
                     const pg = (typeof PrivacyGateway !== 'undefined' && PrivacyGateway.getInstance) ? PrivacyGateway.getInstance() : null;
                     if (!pg) return sendResponse({ success: false, error: 'PrivacyGateway unavailable' });
                     await pg.init();
+                    if (request.reconcile && (!pg.lastPreflightResult || !pg.isPrivacyGateReady())) {
+                        try { await pg.runPreflight({ autoStart: false }); } catch (_) {}
+                    }
                     sendResponse({
                         success: true,
                         config: pg.config,

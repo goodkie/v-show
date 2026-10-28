@@ -1969,10 +1969,19 @@ async function hydrateSettings(overrideV2Store = null) {
                 if (res && res.success && res.result && res.result.status) {
                     updateRelayStatusUI(res.result.status);
                     onBackgroundMessageSuccess();
+                    if (res.result.status.relayReady && typeof reconcilePrivacyReadiness === 'function') {
+                        const curCard = document.getElementById('priv-card-enabled')?.textContent;
+                        if (!curCard || !curCard.includes('ON (READY)')) {
+                            reconcilePrivacyReadiness({ reason: 'RELAY_READY_TRANSITION' });
+                        }
+                    }
                     if (typeof cb === 'function') cb(res.result.status);
                 } else {
                     const failReason = (res && (res.failureReason || (res.result && res.result.reason))) || 'OFFLINE';
                     updateRelayStatusUI(null, failReason);
+                    if (typeof window.checkAndRefreshPrivacyReadinessHUD === 'function') {
+                        window.checkAndRefreshPrivacyReadinessHUD();
+                    }
                     if (typeof cb === 'function') cb(null);
                 }
             });
@@ -3561,6 +3570,10 @@ async function hydrateSettings(overrideV2Store = null) {
             if (res && res.lastPreflight) {
                 _updatePrivacyCardUI(res.lastPreflight);
             }
+            // [Issue #6 Comment #6461672411] Safe automatic preflight reconciliation on startup
+            if (typeof reconcilePrivacyReadiness === 'function') {
+                reconcilePrivacyReadiness({ reason: 'POPUP_INIT' });
+            }
         });
     } catch (_) {}
 
@@ -3736,6 +3749,95 @@ function _updatePrivacyCardUI(pf) {
         window.checkAndRefreshPrivacyReadinessHUD();
     }
 }
+
+// [Issue #6 Comment #6461672411] Bounded fail-closed automatic PRIVACY_RELAY preflight & readiness reconciliation
+let _isPrivacyReconciling = false;
+let _lastPrivacyReconciliationTs = 0;
+
+async function reconcilePrivacyReadiness(options = {}) {
+    const force = Boolean(options.force);
+    const reason = options.reason || 'AUTO';
+    const now = Date.now();
+
+    if (_isPrivacyReconciling) {
+        console.log(`[PRIVACY_RECONCILE] skipped: already in progress (reason=${reason})`);
+        return;
+    }
+
+    if (!force && (now - _lastPrivacyReconciliationTs < 4000)) {
+        console.log(`[PRIVACY_RECONCILE] skipped: cooldown active (reason=${reason})`);
+        return;
+    }
+
+    _isPrivacyReconciling = true;
+    _lastPrivacyReconciliationTs = now;
+
+    try {
+        const privData = await chrome.storage.local.get(['xpider_privacy_config', 'xpider_strict_privacy']);
+        const privCfg = privData.xpider_privacy_config || {};
+        const isStrict = privData.xpider_strict_privacy !== undefined ? privData.xpider_strict_privacy : (privCfg.failClosed !== false);
+        const transportMode = privCfg.transportMode || 'PRIVACY_RELAY';
+
+        if (privCfg.enabled === false || !isStrict) {
+            if (typeof window.checkAndRefreshPrivacyReadinessHUD === 'function') {
+                window.checkAndRefreshPrivacyReadinessHUD();
+            }
+            return;
+        }
+
+        if (transportMode === 'PRIVACY_RELAY') {
+            console.log(`[PRIVACY_RECONCILE] starting bounded preflight (reason=${reason}, force=${force})`);
+
+            const preflightRes = await Promise.race([
+                new Promise((resolve) => {
+                    chrome.runtime.sendMessage({
+                        action: 'RUN_PRIVACY_PREFLIGHT',
+                        options: { autoStart: false }
+                    }, (res) => {
+                        if (chrome.runtime.lastError) {
+                            return resolve({ success: false, error: chrome.runtime.lastError.message });
+                        }
+                        resolve(res || { success: false, error: 'NO_RESPONSE' });
+                    });
+                }),
+                new Promise((resolve) => setTimeout(() => resolve({ success: false, error: 'PREFLIGHT_TIMEOUT' }), 4000))
+            ]);
+
+            if (preflightRes && preflightRes.success && preflightRes.preflight) {
+                console.log(`[PRIVACY_RECONCILE] preflight success: ready=${preflightRes.preflight.ready}`);
+                _updatePrivacyCardUI(preflightRes.preflight);
+            } else {
+                const failReason = (preflightRes && preflightRes.preflight && preflightRes.preflight.failureReason) ||
+                                   (preflightRes && preflightRes.error) || 'RELAY_NOT_READY';
+                console.warn(`[PRIVACY_RECONCILE] preflight failed/blocked: reason=${failReason}`);
+                if (preflightRes && preflightRes.preflight) {
+                    _updatePrivacyCardUI(preflightRes.preflight);
+                } else {
+                    _updatePrivacyCardUI({
+                        ready: false,
+                        mode: 'PRIVACY_RELAY',
+                        failClosed: true,
+                        webrtcGuard: 'PASS',
+                        directFallbackBlocked: 'BLOCKED',
+                        egressCheck: 'FAIL',
+                        lastCheck: new Date().toISOString(),
+                        failureReason: failReason
+                    });
+                }
+            }
+
+            if (typeof window.checkAndRefreshPrivacyReadinessHUD === 'function') {
+                window.checkAndRefreshPrivacyReadinessHUD();
+            }
+        }
+    } catch (err) {
+        console.warn('[PRIVACY_RECONCILE_ERROR]', err);
+    } finally {
+        _isPrivacyReconciling = false;
+    }
+}
+window.reconcilePrivacyReadiness = reconcilePrivacyReadiness;
+
 
 
 async function hydrateCampaignState() {
@@ -6604,6 +6706,14 @@ async function restoreUserSettings() {
         updateAutoSetupUI('STANDBY');
         showAutoSetupFeedback(`↩ Restored previous list (${campaignQueue.length} URLs) and settings successfully.`, 'info');
         addLog(`↩ [RESTORE] Restored previous ${campaignQueue.length} URLs and settings from snapshot.`, 'info');
+
+        // [Issue #6 Comment #6461672411] Immediate fail-closed privacy readiness reconciliation after RESTORE
+        if (typeof reconcilePrivacyReadiness === 'function') {
+            await reconcilePrivacyReadiness({ force: true, reason: 'POST_RESTORE' });
+        }
+        if (typeof window.checkAndRefreshPrivacyReadinessHUD === 'function') {
+            await window.checkAndRefreshPrivacyReadinessHUD();
+        }
     } catch (err) {
         console.error('[RESTORE_EXCEPTION]', err);
         showAutoSetupFeedback('RESTORE FAILED — ' + err.message, 'error');

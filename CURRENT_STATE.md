@@ -6,8 +6,8 @@
 - Workspace: E:\vivpr\ai\extension-form-sender
 - Authority: goodkie/v-show Issues #6 & #10
 - Branch: upgrade/phase-0-1
-- State Rev: 2026-10-28.192
-- Authority Cursor: 6461430968
+- State Rev: 2026-10-28.193
+- Authority Cursor: 6461672411
 - Last Directives / Audits:
   - `[OWNER PM NEXT EXECUTION — STOP REPEAT BRIEFINGS / IMPLEMENT SECURE DYNAMIC VPN IP ALLOWLIST][ISSUE #6][2026-10-25] Comment #6396720543`
   - `[OWNER PM P0 SECURITY HOLD — RC3.58 MUST NOT BE RUN ON OWNER PC][ISSUE #6][2026-10-25 11:57 UTC] Comment #6397334700`
@@ -23,6 +23,7 @@
   - `[OWNER QA P0 FIX REQUEST — XPIDER RC3.60 .80] Comment #6418567578`
   - `[OWNER ACTUAL CHROME QA FAILURE — RC3.60 .81 AUTO SETUP STILL FAILS ON STALE 8088 SERVER] Comment #6460972588`
   - `[OWNER QA RESULT — RC3.60 .81 LOCAL TEST PASS] Comment #6461253920`
+  - `[OWNER QA OBSERVATION — .81 PRIVACY GATE READY ONLY AFTER MANUAL PREFLIGHT][2026-10-28] Comment #6461672411`
 - Last Receipts:
   - `[ANTIGRAVITY][RECEIPT][ISSUE-6][RC3.59-TANGIBLE-PRODUCT-RECOVERY-AND-E2E-FIXTURES-PASS][2026-10-25] Comment #6406287831`
   - `[ANTIGRAVITY][RECEIPT][ISSUE-6][OWNER-BETA-AUTO-SETUP-CHANNEL-HOTFIX-PASS][2026-10-25] Comment #6407535598`
@@ -35,10 +36,11 @@
   - `[ANTIGRAVITY][RECEIPT][ISSUE-6][RC3.60-.80-TRANSLATE-MODAL-EXCLUSION-AND-CHROME-E2E-PASS][2026-10-26] Comment #6418395211`
   - `[ANTIGRAVITY][RECEIPT][ISSUE-6][RC3.60-.81-TEST-SERVER-PORT-COLLISION-FIX-AND-CHROME-E2E-PASS][2026-10-26]`
   - `[ANTIGRAVITY][RECEIPT][ISSUE-6][RC3.60-.82-8-FIXTURE-UI-ALIGNMENT-AND-LEGACY-SERVER-UPGRADE-PASS][2026-10-28]`
-- Functional QA Commit: `670cc0a3` (Fix: 8-fixture UI alignment, test server PID verification upgrade, Chrome E2E pass)
-- Build ID: `R6.9G.10.3.7.1.4.82-20261028-P0-RC3.60-LEGACY-TEST-SERVER-UPGRADE-PASS`
-- Verified Release Asset: `XPIDER_R6.9G.10.3.7.1.4.82_OWNER_BETA.zip` (Tag: `v6.9g.10.3-rc3.60.7.1.4.82`, Size: 53,174,263 bytes, SHA256: `b2fc3c48d301dba4612ec700ae8b5091228d00063a638c74ecb7e909d24d7003`)
-- Software Status: **RC3.60 .81 LOCAL TEST PASS SUPERSEDED / RC3.60 .82 DELIVERED AND VERIFIED**: (1) Owner real-PC QA of RC3.60 .81 confirmed local software PASS in Comment #6461253920 (`owner_test_run_1793164071270_y0j6`: all 8 fixtures reached terminal state, 5 SUCCESS / 2 SKIPPED / 1 FAILURE, #4 subscribe SKIPPED without hang, #5 reservation SKIPPED, #8 AI-required-fields CONFIRMED_SUCCESS / FINAL_AUDIT PASS, cleanup recorded). (2) RC3.60 .82 aligns popup description and feedback to '8 verified local fixtures', eliminating remaining cosmetic audit defect. (3) Robust local test server auto-upgrade implemented with controlled PID command-line verification (guaranteeing foreign processes are strictly preserved, while legacy XPIDER test servers without shutdown endpoints are safely upgraded to `OWNER_8_V1`). (4) Standalone `companion/ensure_owner_test_server.js` added and integrated into Step [4/4] of `XPIDER_AUTO_SETUP.bat`. (5) Independent 5-stage packaging and real Google Chrome E2E audit passed 100% across all 8 fixtures, verifying 5 CONFIRMED_SUCCESS / 2 SKIPPED / 1 FAILURE and clean restoration of 50 URLs and user settings. (6) Production live sending remains strictly not approved.
+  - `[ANTIGRAVITY][RECEIPT][ISSUE-6][RC3.60-.83-STARTUP-AND-RESTORE-PRIVACY-GATE-AUTO-RECONCILIATION-PASS][2026-10-28]`
+- Functional QA Commit: Pending commit
+- Build ID: `R6.9G.10.3.7.1.4.83-20261028-P0-RC3.60-PRIVACY-GATE-AUTO-RECONCILE-PASS`
+- Verified Release Asset: `XPIDER_R6.9G.10.3.7.1.4.83_OWNER_BETA.zip` (Tag: `v6.9g.10.3-rc3.60.7.1.4.83`, Size: 53,178,420 bytes, SHA256: `918c4c9c234e6cd3d73783f5f7041dd669eafaea29cf8e139df165aefd4a1f94`)
+- Software Status: **RC3.60 .83 DELIVERED AND VERIFIED (PRIVACY GATE AUTO-RECONCILIATION & PERSISTENCE PASS)**: (1) Resolved Owner QA observation from Comment #6461672411 where Privacy Relay initially displayed not ready until manual "Run Privacy Preflight" click. (2) `PrivacyGatewayEngine` now safely persists sanitized preflight snapshot to storage and automatically hydrates `lastPreflightResult` / `isGateReady` on SW init/startup. (3) `popup.js` incorporates bounded (4s) automatic `reconcilePrivacyReadiness()` with fail-closed protection, cooldown protection, and zero watchdog loops. (4) `restoreUserSettings()` immediately reconciles privacy gateway state post-restore without UI desync. (5) `popup.html` replaced hardcoded `SYSTEM_VPN` placeholder with dynamic initialization. (6) Independent 5-stage packaging and real Google Chrome E2E audit passed 100% across all 8 fixtures (5 CONFIRMED_SUCCESS / 2 SKIPPED / 1 FAILURE, cold boot auto-hydration verified, 50 URLs & settings restored). (7) Production live sending remains strictly not approved.
 
 ---
 
