@@ -6,8 +6,8 @@
 - Workspace: E:\vivpr\ai\extension-form-sender
 - Authority: goodkie/v-show Issues #6 & #10
 - Branch: upgrade/phase-0-1
-- State Rev: 2026-10-28.196
-- Authority Cursor: 6467239685
+- State Rev: 2026-10-28.197
+- Authority Cursor: 6468457751
 - Last Directives / Audits:
   - `[OWNER PM NEXT EXECUTION — STOP REPEAT BRIEFINGS / IMPLEMENT SECURE DYNAMIC VPN IP ALLOWLIST][ISSUE #6][2026-10-25] Comment #6396720543`
   - `[OWNER PM P0 SECURITY HOLD — RC3.58 MUST NOT BE RUN ON OWNER PC][ISSUE #6][2026-10-25 11:57 UTC] Comment #6397334700`
@@ -30,6 +30,7 @@
   - `[OWNER ESCALATION][ISSUE #6][RE-ISSUE LATEST P0 .85 DIRECTIVE — IMPLEMENT, NO STATUS LOOPS][2026-10-28] Comment #6463903272`
   - `[OWNER URGENT][ISSUE #6][PARALLEL TWO-LAYER NETWORK + .85 P0 CLOSURE][FINAL 60-MIN TARGET][2026-10-28] Comment #6464950603`
   - `[CHATGPT 60-MIN CHECKPOINT AUDIT][ISSUE #6][.85 REAL PROGRESS; TWO-LAYER NETWORK STILL NOT COMPLETE][2026-10-28 10:07Z] Comment #6466180918`
+  - `[OWNER DIRECTIVE][ISSUE #6][DELEGATE PHYSICAL NETWORK & RESIDENTIAL SETUP][2026-10-28] Comment #6468052374`
 - Last Receipts:
   - `[ANTIGRAVITY][RECEIPT][ISSUE-6][RC3.59-TANGIBLE-PRODUCT-RECOVERY-AND-E2E-FIXTURES-PASS][2026-10-25] Comment #6406287831`
   - `[ANTIGRAVITY][RECEIPT][ISSUE-6][OWNER-BETA-AUTO-SETUP-CHANNEL-HOTFIX-PASS][2026-10-25] Comment #6407535598`
@@ -46,6 +47,7 @@
   - `[ANTIGRAVITY][RECEIPT][ISSUE-6][RC3.60-.84-PRIVACY-GATE-LIVE-AUTHORITY-AND-NEGATIVE-SECURITY-PASS][2026-10-28] Comment #6463409312`
   - `[ANTIGRAVITY][RECEIPT][ISSUE-6][RC3.60-.85-PUBLIC-TARGET-SECURE-ENTRY-AND-NATURAL-COLD-AUTO-START-PASS][2026-10-28] Comment #6465320164`
   - `[ANTIGRAVITY][RECEIPT][ISSUE-6][RC3.60-.86-STREAM-A-DURABLE-LEDGER-AND-STREAM-B-RESIDENTIAL-DATAPLANE][2026-10-28] Comment #6467239685`
+  - `[ANTIGRAVITY][RECEIPT][ISSUE-6][DELEGATED-TWO-LAYER-NETWORK-PRECHECK-OPAL-PROFILE-AND-RESIDENTIAL-DATAPLANE][2026-10-28] Comment #6468457751`
 - Build ID: `R6.9G.10.3.7.1.4.86-20261028-P0-RC3.60-PUBLIC-TARGET-SECURE-ENTRY-PASS`
 - Verified Release Asset: `XPIDER_R6.9G.10.3.7.1.4.86_OWNER_BETA.zip` (Tag: `v6.9g.10.3-rc3.60.7.1.4.86`, Size: 53,199,243 bytes, SHA256: `b42eff8675aff60ffd3a563708e662ce5ee079b6cb0dacc939abe0cdd583b7a7`)
 - Software Status: **RC3.60 .86 DELIVERED AND VERIFIED (STREAM A DURABLE LEDGER CLOSURE + STREAM B RESIDENTIAL UPSTREAM DATA-PLANE & CANONICAL WIREGUARD)**: (1) Addressed Owner Urgent Parallel Directive #6464950603 & ChatGPT 60-Min Checkpoint Audit #6466180918. (2) **Stream A Closure (`.86`)**: Replaced broken `xpider_audit_ledger_v2` lookup with authoritative `xpider_history_attempts` in `test/audit_unpacked_rc3_60_86_chrome_zip.js`, proving unconditional `finalLedger.length === 8` with exact 8 fixture URLs, terminal statuses (`5 CONFIRMED_SUCCESS / 2 SKIPPED / 1 FAILURE`), reason codes, and 5 non-empty `receiptId`s (`rcpt_1793184948714_1` .. `rcpt_1793185078142_5`). Removed all global `taskkill /F /IM chrome.exe` and `node.exe` calls and verified witness Chrome PID (`20780`) survives owned Chrome PID (`20216`) teardown. Added Step 5.1b proving physical Chrome MV3 Service Worker stop (`Target.closeTarget`) + cold wake fails closed (`isGateReady: false, provisional: true`) despite cached `READY` snapshot. Fixed post-8th-fixture RESTORE race in `extension/background.js`. (3) **Stream B Software Completion**: Exported `connectViaProxy`, `observeIp`, and `status` in `companion/residential-proxy-adapter.js` with truthful `dnsProtection: 'UNKNOWN'` and `ipv6Protection: 'UNKNOWN'`. Implemented `POST /residential-proxy/configure` with Windows DPAPI encryption (`dpapi:<base64>`) in `.local_credentials.json` (zero plaintext credentials on disk). Wired live HTTP & HTTPS `CONNECT` data-plane in `companion/privacy-relay-service.js` (`127.0.0.1:18988`) to tunnel through verified residential upstream when selected, failing closed (`502`) on `CONFIG_REQUIRED`, `AUTH_FAILED`, `LEAK_TEST_FAILED` (including DO IP `143.198.40.33` leak), or mid-flight upstream drop. Reconciled canonical WireGuard addressing (`10.66.66.1/24` server, `10.66.66.2/32` Opal client) and file-only key output (`/etc/wireguard/xpider-opal-client.conf`, `chmod 600`) across `setup_wireguard.sh`, `OPAL_CLIENT_CHECKLIST.md`, and `GL_SFT1200_OPAL_SETUP_GUIDE.md`. (4) Zero changes to DigitalOcean droplet/firewall, zero external form submissions. Physical WireGuard tunnel (`PHYSICAL_UNVERIFIED`) and live residential provider verification (`CONFIG_REQUIRED`) remain honestly gated on Owner hardware/credentials.
