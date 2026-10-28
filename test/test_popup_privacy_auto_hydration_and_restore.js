@@ -100,12 +100,14 @@ async function runSuite() {
     assert.strictEqual(engineB.isPrivacyGateReady(), false, 'Fresh engine B in memory before init() is false');
 
     await engineB.init();
-    assert.strictEqual(engineB.isPrivacyGateReady(), true, 'Engine B after init() must be hydrated ready=true from storage snapshot');
-    assert.strictEqual(engineB.lastPreflightResult.ready, true, 'Engine B lastPreflightResult.ready must be true');
-    assert.strictEqual(engineB.lastPreflightResult.selectedEgressId, 'do-egress-tor1-611293905');
+    assert.strictEqual(engineB.isPrivacyGateReady(), false, 'Engine B after init() must NOT grant live authorization without fresh check');
+    assert.strictEqual(engineB.lastPreflightResult.provisional, true, 'Engine B lastPreflightResult must be provisional');
+    assert.strictEqual(engineB.lastPreflightResult.verifying, true, 'Engine B lastPreflightResult must indicate verifying');
+    assert.strictEqual(engineB.lastPreflightResult.ready, false, 'Engine B lastPreflightResult.ready must be false before fresh live check');
+    assert.strictEqual(engineB.cachedPreflightSnapshot.selectedEgressId, 'do-egress-tor1-611293905');
     assert.strictEqual(engineB.failureReason, null);
 
-    console.log('  [PASS] Scenario 3: Fresh Service Worker instance B automatically hydrates preflight snapshot on init().');
+    console.log('  [PASS] Scenario 3: Fresh Service Worker instance B hydrates preflight snapshot as provisional without granting live authority.');
 
     // -------------------------------------------------------------------------
     // 3. Transport Mode Invalidation

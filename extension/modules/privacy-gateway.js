@@ -96,11 +96,19 @@
                     if (data && data.xpider_last_privacy_preflight && !this.lastPreflightResult) {
                         const storedPf = data.xpider_last_privacy_preflight;
                         if (storedPf && typeof storedPf === 'object' && storedPf.lastCheck) {
-                            this.lastPreflightResult = storedPf;
-                            const ageMs = Date.now() - new Date(storedPf.lastCheck).getTime();
-                            if (storedPf.ready && ageMs >= 0 && ageMs < 300000) {
-                                this.isGateReady = true;
-                            }
+                            // [Issue #6 RC3.60 .84 Live Authority Fix]
+                            // Persisted snapshot is strictly for provisional UI diagnostics.
+                            // NEVER grant live gate authorization (isGateReady = true) from storage cache!
+                            this.cachedPreflightSnapshot = storedPf;
+                            this.lastPreflightResult = {
+                                ...storedPf,
+                                ready: false, // Never grant live ready from storage cache
+                                provisional: true,
+                                verifying: true,
+                                statusLabel: 'VERIFYING_FRESH_READINESS'
+                            };
+                            this.isGateReady = false;
+                            this.isGateActive = false;
                             if (storedPf.failureReason) {
                                 this.failureReason = storedPf.failureReason;
                             }
@@ -2145,18 +2153,23 @@
         }
 
         _recordPreflightResult(res) {
+            const isReady = Boolean(res && res.ready);
             const result = {
                 ...res,
+                ready: isReady,
+                provisional: false,
+                verifying: false,
                 lastCheck: new Date().toISOString()
             };
             this.lastPreflightResult = result;
-            this.isGateReady = Boolean(result.ready);
-            this.failureReason = result.failureReason || null;
+            this.isGateReady = isReady;
+            this.isGateActive = isReady;
+            this.failureReason = isReady ? null : (result.failureReason || 'PREFLIGHT_VERIFICATION_FAILED');
 
             if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
                 try {
                     const snapshot = {
-                        ready: Boolean(result.ready),
+                        ready: isReady,
                         mode: result.mode,
                         failClosed: Boolean(result.failClosed),
                         webrtcGuard: result.webrtcGuard,
@@ -2176,16 +2189,16 @@
         }
 
         /**
-         * [Issue #6 Comment #6273652325 FF1] Authoritatively checks whether Privacy Gate is ready
+         * [Issue #6 RC3.60 .84] Clear live readiness immediately on relay drop, token mismatch, or proxy disconnect
          */
-        isPrivacyGateReady() {
-            if (this.config && this.config.enabled === false) {
-                return false;
+        clearLiveReadiness(reason = 'PRIVACY_GATE_CLEARED') {
+            this.isGateReady = false;
+            this.isGateActive = false;
+            this.failureReason = reason;
+            if (this.lastPreflightResult) {
+                this.lastPreflightResult.ready = false;
+                this.lastPreflightResult.failureReason = reason;
             }
-            if (this.lastPreflightResult && typeof this.lastPreflightResult.ready === 'boolean') {
-                return this.lastPreflightResult.ready;
-            }
-            return Boolean(this.isGateReady);
         }
 
 
@@ -2429,12 +2442,17 @@
         }
 
         /**
-         * Mandatory Invariant Check before any target tab navigation:
-         * PRIVACY_GATE_READY === true
+         * [Issue #6 RC3.60 .84 Single Authoritative Privacy Gate Check]
+         * Mandatory Invariant Check before any target tab navigation or submission:
+         * Strictly requires contemporaneous live readiness and active transport enforcement.
+         * NEVER trusts storage cache alone or stale in-memory state.
          */
         isPrivacyGateReady() {
-            if (!this.config.enabled) {
-                return !this.config.failClosed;
+            if (!this.config || !this.config.enabled) {
+                return this.config ? !this.config.failClosed : false;
+            }
+            if (this.failureReason) {
+                return false;
             }
             if (this.config.physicalGateEnabled) {
                 if (!this.lastPhysicalGateStatus || !this.lastPhysicalGateStatus.ready) {
@@ -2445,7 +2463,23 @@
                     return false; // Stale attestation (Blocker 6)
                 }
             }
-            return this.isGateReady === true;
+            // Strict live verification requirements:
+            if (this.isGateReady !== true || this.isGateActive !== true) {
+                return false;
+            }
+            if (!this.lastPreflightResult || typeof this.lastPreflightResult !== 'object') {
+                return false;
+            }
+            if (this.lastPreflightResult.provisional === true || this.lastPreflightResult.ready !== true) {
+                return false;
+            }
+            if (this.lastPreflightResult.lastCheck) {
+                const age = Date.now() - new Date(this.lastPreflightResult.lastCheck).getTime();
+                if (age > 120000) {
+                    return false; // Stale preflight requires fresh live verification
+                }
+            }
+            return true;
         }
 
         /**

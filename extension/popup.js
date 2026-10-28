@@ -1724,6 +1724,9 @@ async function hydrateSettings(overrideV2Store = null) {
                             if (res.state?.isGateReady) {
                                 privPill.textContent = `PRIVACY: READY (${res.state.mode || 'ENFORCED'})`;
                                 privPill.style.color = '#22c55e';
+                            } else if (res.state?.lastPreflight?.verifying || res.state?.lastPreflight?.provisional) {
+                                privPill.textContent = `PRIVACY: VERIFYING...`;
+                                privPill.style.color = '#38bdf8';
                             } else {
                                 const reason = res.state?.failureReason || 'RELAY_OFFLINE';
                                 privPill.textContent = `PRIVACY: BLOCKED — ${reason}`;
@@ -3695,13 +3698,23 @@ function _updatePrivacyCardUI(pf) {
         transportColor = '#94a3b8';
     }
 
+    const isProvisional = Boolean(pf.provisional || pf.verifying);
+
     if (elTr) {
-        elTr.textContent = transportLabel;
-        elTr.style.color = transportColor;
+        if (isProvisional) {
+            elTr.textContent = 'VERIFYING READINESS...';
+            elTr.style.color = '#38bdf8';
+        } else {
+            elTr.textContent = transportLabel;
+            elTr.style.color = transportColor;
+        }
     }
 
     if (elEn) {
-        if (pf.ready) {
+        if (isProvisional) {
+            elEn.textContent = 'VERIFYING...';
+            elEn.style.color = '#38bdf8';
+        } else if (pf.ready) {
             elEn.textContent = 'ON (READY)';
             elEn.style.color = '#4ade80';
         } else if (mode === 'EXTERNAL_VPN_MONITOR' || mode === 'SYSTEM_VPN') {

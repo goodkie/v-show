@@ -3998,7 +3998,7 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
                         await pg.init();
                         // Single authoritative privacy check:
                         // If gate is not ready (e.g. direct call without prior prep), run ensureEnforcedPrivacyForStart as fallback
-                        if (!pg.isGateReady) {
+                        if (!pg.isPrivacyGateReady()) {
                             const prep = await pg.ensureEnforcedPrivacyForStart();
                             if (!prep.ready && pg.config.failClosed) {
                                 logBg(null, `[PRIVACY_GATE_BLOCK] reason=${prep.reason} attemptId=none targetUrl=none`, 'error');
@@ -4124,7 +4124,7 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
                     if (request.reconcile && (!pg.lastPreflightResult || !pg.isPrivacyGateReady())) {
                         try { await pg.runPreflight({ autoStart: false }); } catch (_) {}
                     }
-                    const isGateReady = typeof pg.isPrivacyGateReady === 'function' ? pg.isPrivacyGateReady() : Boolean(pg.isGateReady);
+                    const isGateReady = pg.isPrivacyGateReady();
                     sendResponse({
                         success: true,
                         state: {
@@ -4203,7 +4203,11 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
                     if (!preflight || preflight.ready !== true) {
                         await pg.saveConfig({ systemVpnConfirmed: false });
                         pg.config.systemVpnConfirmed = false;
-                        pg.isGateReady = false;
+                        if (typeof pg.clearLiveReadiness === 'function') {
+                            pg.clearLiveReadiness('SYSTEM_VPN_PREFLIGHT_FAILED');
+                        } else {
+                            pg.isGateReady = false;
+                        }
                         return sendResponse({
                             success: false,
                             preflight,
@@ -7032,7 +7036,7 @@ async function pauseCampaignOrchestrator(saveCheckpoint = true) {
     const pg = (typeof PrivacyGateway !== 'undefined' && PrivacyGateway.getInstance) ? PrivacyGateway.getInstance() : null;
     if (pg) {
         await pg.restoreOriginalSettings({ forceDirect: campaignState.ownerFunctionTestMode === true });
-        const isReady = typeof pg.isPrivacyGateReady === 'function' ? pg.isPrivacyGateReady() : Boolean(pg.isGateReady);
+        const isReady = pg.isPrivacyGateReady();
         const msg = `[PRIVACY_SETTINGS_RESTORED] gateReady=${isReady} transportEnforced=${isReady}`;
         console.log(msg);
         logBg(null, msg, 'info');
@@ -7420,7 +7424,7 @@ async function processNextCampaignTarget(loopSessionId, loopGeneration) {
                 const pg = (typeof PrivacyGateway !== 'undefined' && PrivacyGateway.getInstance) ? PrivacyGateway.getInstance() : null;
                 if (pg) {
                     await pg.restoreOriginalSettings({ forceDirect: campaignState.ownerFunctionTestMode === true });
-                    const isReady = typeof pg.isPrivacyGateReady === 'function' ? pg.isPrivacyGateReady() : Boolean(pg.isGateReady);
+                    const isReady = pg.isPrivacyGateReady();
                     const msg = `[PRIVACY_SETTINGS_RESTORED] gateReady=${isReady} transportEnforced=${isReady}`;
                     console.log(msg);
                     logBg(null, msg, 'info');
