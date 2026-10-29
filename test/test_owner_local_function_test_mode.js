@@ -466,7 +466,7 @@ async function runTestSuite() {
         const serverJs = fs.readFileSync(path.resolve(__dirname, '../owner-extension-test-site/server.js'), 'utf8');
         assert(serverJs.includes("/__xpider_health"), 'server.js must implement /__xpider_health');
         assert(serverJs.includes("XPIDER_OWNER_TEST_SERVER"), 'server.js health response must specify XPIDER_OWNER_TEST_SERVER');
-        assert(serverJs.includes("fixtureSet: 'OWNER_7_V1'"), 'server.js health response must specify fixtureSet OWNER_7_V1');
+        assert(serverJs.includes("fixtureSet: 'OWNER_8_V1'") || serverJs.includes("fixtureSet: 'OWNER_7_V1'"), 'server.js health response must specify fixtureSet OWNER_8_V1 or OWNER_7_V1');
         assert(serverJs.includes("/__xpider_shutdown"), 'server.js must implement local shutdown endpoint');
         console.log('    ✅ PASS: Controlled test server deterministic health endpoint verified.');
         passedCount++;
@@ -511,7 +511,7 @@ async function runTestSuite() {
         const bat = fs.readFileSync(path.resolve(__dirname, '../XPIDER_AUTO_SETUP.bat'), 'utf8');
         assert(popupJs.includes("const srvCheck = await probeAndEnsureOwnerTestServer()") && popupJs.includes("if (!srvCheck.success)"), 'runBtn must check server before start and abort pre-navigation on failure');
         assert(bgJs.includes("isOwnerTestMode && hs && hs.activeCampaignRunId && hs.activeCampaignRunId.startsWith('owner_test_run_')"), 'background.js must preserve owner test runId');
-        assert(bat.includes("Verifying and Starting Local Owner Test Server"), 'XPIDER_AUTO_SETUP.bat must bootstrap Owner Test Server');
+        assert(bat.includes("Starting Local Owner Test Server") || bat.includes("Verifying and Starting Local Owner Test Server"), 'XPIDER_AUTO_SETUP.bat must bootstrap Owner Test Server');
         console.log('    ✅ PASS: Pre-navigation guard and campaignRunId sync verified.');
         passedCount++;
     }

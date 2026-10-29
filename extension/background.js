@@ -4143,9 +4143,26 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
                             mode: pg.config ? pg.config.transportMode : 'PRIVACY_RELAY',
                             failureReason: pg.failureReason || (pg.lastPreflightResult ? pg.lastPreflightResult.failureReason : null),
                             isGateActive: Boolean(pg.isGateActive),
-                            lastPreflight: pg.lastPreflightResult
+                            lastPreflight: pg.lastPreflightResult,
+                            egressMonitor: pg.lastEgressMonitor || null
                         }
                     });
+                } catch (e) {
+                    sendResponse({ success: false, error: e.message });
+                }
+            })();
+            return true;
+        }
+
+        // [RC3.60 .88 Directive #6497395270] Check connection & live egress IP monitor across 5 routes
+        case 'CHECK_LIVE_EGRESS_IP': {
+            (async () => {
+                try {
+                    const pg = (typeof PrivacyGateway !== 'undefined' && PrivacyGateway.getInstance) ? PrivacyGateway.getInstance() : null;
+                    if (!pg) return sendResponse({ success: false, error: 'PrivacyGateway unavailable' });
+                    await pg.init();
+                    const egressMonitor = await pg.checkLiveEgressIp(Boolean(request.force));
+                    sendResponse({ success: true, egressMonitor });
                 } catch (e) {
                     sendResponse({ success: false, error: e.message });
                 }

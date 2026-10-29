@@ -274,6 +274,7 @@ function status(s, detail, observedIp, extra = {}) {
   const res = {
     status: s,
     detail,
+    observedIp: observedIp || null,
     observedIpMasked: observedIp ? maskIp(observedIp) : null,
     residentialVerified: Boolean(extra.residentialVerified), // true only when independent ASN/ISP + RDAP provenance confirms non-datacenter ISP
     sendAllowed: s === STATUS.EGRESS_VERIFIED, // fail-closed: only a verified egress permits traffic

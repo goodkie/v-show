@@ -67,7 +67,7 @@ process.on('unhandledRejection', (reason) => {
 });
 
 // [Defect Q2 Hardening - Issue #6 Comment #6244711545] Authoritative companion build identity & capabilities
-const COMPANION_BUILD_ID = 'R6.9G.10.3.7.1.4.87-20261029-P0-RC3.60-RECONCILE-RESTORE-PASS';
+const COMPANION_BUILD_ID = 'R6.9G.10.3.7.1.4.88-20261029-P0-RC3.60-LIVE-EGRESS-IP-MONITOR-PASS';
 const COMPANION_IMPLEMENTATION_HEAD = '741dfe44536031dff13ac6d8e310d4f72fbca42b';
 
 function isCompatibleExtensionBuild(extBuildId, companionBuildId) {
@@ -1398,9 +1398,89 @@ class PrivacyRelayService {
 
     const lifecycle = this.lifecycleState || (ready ? 'READY' : 'DEGRADED');
 
+    // [R6.9G.10.3.7.1.4.88 LIVE-EGRESS-IP-MONITOR]
+    const maskIpFn = (ip) => {
+      if (!ip || typeof ip !== 'string') return null;
+      if (ip.includes(':')) return ip.split(':').slice(0, 2).join(':') + ':****';
+      const p = ip.split('.');
+      if (p.length === 4) return `${p[0]}.${p[1]}.*.*`;
+      return ip.substring(0, Math.min(ip.length, 6)) + '***';
+    };
+
+    const activeIp = (active && active.observedEgressIp) ? active.observedEgressIp : (this.lastProbeResult ? this.lastProbeResult.observedEgressIp : null);
+    const maskedActiveIp = activeIp ? maskIpFn(activeIp) : null;
+    const respState = this.residentialProxyState;
+    const decodoIp = respState ? (respState.observedIp || null) : null;
+    const decodoMasked = respState ? (respState.observedIpMasked || (decodoIp ? maskIpFn(decodoIp) : null)) : null;
+    const decodoSelected = Boolean(this.residentialProxySelected);
+    const decodoSendAllowed = Boolean(respState && respState.sendAllowed && respState.status === 'EGRESS_VERIFIED');
+    const isDecodoQuota407 = Boolean(respState && (respState.status === 'AUTH_FAILED' || respState.status === 'TRAFFIC_LIMIT_EXHAUSTED') && respState.upstreamError && respState.upstreamError.toLowerCase().includes('traffic limit'));
+    const decodoInUse = decodoSelected && decodoSendAllowed && ((this.trafficStats && this.trafficStats.connectTunnels > 0) || (this.trafficStats && this.trafficStats.requestsProxied > 0));
+    const decodoStatus = !decodoSelected ? 'NOT_SELECTED' : (isDecodoQuota407 ? 'BLOCKED_HTTP_407' : (decodoInUse ? 'IN_USE' : (decodoSendAllowed ? 'CONNECTED / EGRESS_VERIFIED' : (respState ? respState.status : 'UNCONFIGURED'))));
+
+    const opalVpnActive = Boolean(this.physicalGate && this.physicalGate.state && this.physicalGate.state.tunnelPass);
+    let routeClassification = 'UNKNOWN/PARTIALLY VERIFIED';
+    let routeEgressIp = activeIp;
+    let routeEgressIpMasked = maskedActiveIp;
+    if (decodoSelected && decodoSendAllowed) {
+      routeClassification = opalVpnActive ? 'OPAL → DIGITALOCEAN → DECODO' : 'DECODO';
+      routeEgressIp = decodoIp || activeIp;
+      routeEgressIpMasked = decodoMasked || maskedActiveIp;
+    } else if (active && ready) {
+      routeClassification = opalVpnActive ? 'OPAL → DIGITALOCEAN' : 'DIGITALOCEAN';
+      routeEgressIp = activeIp;
+      routeEgressIpMasked = maskedActiveIp;
+    }
+
+    const egressIpMonitor = {
+      companionProbeEgress: {
+        observedIp: activeIp,
+        observedIpMasked: maskedActiveIp,
+        status: ready ? 'COMPANION_PROBE_ONLY' : 'DEGRADED',
+        source: 'COMPANION_PROBE',
+        checkedAt: (active && active.lastVerifiedAt) ? new Date(active.lastVerifiedAt).toISOString() : null,
+        staleAt: (active && active.lastVerifiedAt) ? new Date(active.lastVerifiedAt + ttl).toISOString() : null,
+        confidence: ready ? 'MEDIUM' : 'NONE',
+        error: null
+      },
+      decodoResidential: {
+        observedIp: decodoIp,
+        observedIpMasked: decodoMasked,
+        status: decodoStatus,
+        source: 'DECODO_AUTHENTICATED_UPSTREAM_PROBE',
+        checkedAt: respState ? respState.checkedAt : null,
+        staleAt: respState && respState.checkedAt ? new Date(new Date(respState.checkedAt).getTime() + 120000).toISOString() : null,
+        confidence: decodoSendAllowed ? 'HIGH' : 'NONE',
+        inUse: decodoInUse,
+        error: respState ? respState.upstreamError : null
+      },
+      digitalOcean: {
+        configuredIp: active ? active.host : null,
+        configuredIpMasked: active ? maskIpFn(active.host) : null,
+        status: (active && active.lastHealth === 'HEALTHY') ? 'HEALTHY' : (active ? 'CONFIGURED' : 'NOT_CONFIGURED'),
+        source: 'DIGITALOCEAN_NODE_CONFIG',
+        checkedAt: (active && active.lastVerifiedAt) ? new Date(active.lastVerifiedAt).toISOString() : null
+      },
+      rawIspWan: {
+        observedIp: null,
+        observedIpMasked: null,
+        status: 'UNKNOWN / NOT SAFELY MEASURED',
+        source: 'NONE',
+        note: 'Never bypass protected relay with a new direct public IP probe simply to learn the raw ISP IP'
+      },
+      activeRoute: {
+        route: routeClassification,
+        status: ready ? 'VERIFIED' : 'DEGRADED',
+        egressIp: routeEgressIp,
+        egressIpMasked: routeEgressIpMasked,
+        checkedAt: new Date().toISOString()
+      }
+    };
+
     return {
       service: 'XPIDER Privacy Relay',
       version: this.pool.version || '1.0.3',
+      companionBuildId: COMPANION_BUILD_ID,
       relayReady: ready,
       lifecycleState: lifecycle,
       reconnectAttempt: this.reconnectAttempt || 0,
@@ -1414,6 +1494,9 @@ class PrivacyRelayService {
       rotationMode: this.pool.rotationMode || 'HEALTH_FAILOVER',
       selectedEgressId: active ? active.id : null,
       egressFingerprint: active ? active.observedFingerprint : null,
+      observedEgressIp: activeIp,
+      observedEgressIpMasked: maskedActiveIp,
+      egressIpMonitor,
       transport: active ? active.type : 'NONE',
       health: isExpired ? 'EXPIRED' : (active ? (active.lastHealth || 'UNKNOWN') : 'NO_NODES'),
       healthTtlMs: ttl,
@@ -1662,6 +1745,20 @@ class PrivacyRelayService {
           status: 'APPROVAL_REQUIRED',
           guardian: status,
           note: 'Automatic firewall mutations via HTTP endpoint are strictly prohibited. Interactive owner approval via QUICK_UPDATE_FIREWALL_IP.bat is required.'
+        }));
+        return;
+      }
+
+      // [R6.9G.10.3.7.1.4.88] GET /egress-ip/status (Authenticated)
+      if (pathname === '/egress-ip/status' && req.method === 'GET') {
+        const fullStatus = this.getStatus();
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({
+          success: true,
+          egressIpMonitor: fullStatus.egressIpMonitor,
+          relayReady: fullStatus.relayReady,
+          lifecycleState: fullStatus.lifecycleState,
+          timestamp: new Date().toISOString()
         }));
         return;
       }
