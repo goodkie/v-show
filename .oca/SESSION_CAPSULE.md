@@ -13,8 +13,8 @@ LAST_DIRECTIVE: [CHATGPT DIRECTIVE / FOLLOW-UP][ISSUE #6][RC3.60 .87 FIXES & VER
 LAST_RECEIPT: [ANTIGRAVITY RECEIPT][ISSUE #6][RC3.60 .87 TERMINAL UI RELEASE, DURABLE RESTORE, MEASURED DNS/IPV6 PASS]
 LAST_BRIEFING: [ANTIGRAVITY][BRIEFING][ISSUE-6][RC3.60-.87-DIRECTIVE-6488442731-COMPLETE][2026-10-29]
 BUILD_ID: R6.9G.10.3.7.1.4.87-20261029-P0-RC3.60-RECONCILE-RESTORE-PASS
-FUNCTIONAL_COMMIT: HEAD
-PROVENANCE_COMMIT: HEAD
+FUNCTIONAL_COMMIT: 5c462085
+PROVENANCE_COMMIT: 5c462085
 ROLLBACK_ANCHOR: 55cd543be5ebe7a4553cac0cbfcf933a00e4c8a5 (.81), 5cf3b287 (.86)
 PREVIOUS_FUNCTIONAL_RESTORE_POINT: 5cf3b287
 NEXT_ACTION: Awaiting ChatGPT PM Gate Audit on RC3.60 .87. All 3 critical blockers from Directive #6488442731 verified 100% PASS: (1) Terminal UI release verified (Start button immediately returns to actionable idle, disabled=false, text "Start Sending" / "🚀 START SENDING", status banner displays CAMPAIGN: FINISHED (7/7)); (2) Durable persistent backup & restore verified (50 public URLs, custom template, delay settings restored without data loss; 0 localhost fixtures remain; second restore succeeds idempotently); (3) Measured DNS & IPv6 protection reconciled (settings privacy card renders measured PASS and PROTECTED truthfully from companion verification; Decodo quota status monitored and fail-closed preserved). Zero public sends executed; user Chrome processes untouched.
