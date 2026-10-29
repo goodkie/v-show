@@ -1,0 +1,48 @@
+{
+  "protocol": "OCA-DEV-1.4",
+  "directiveAuthority": "goodkie/v-show Issue #6 Comment #6507119348",
+  "buildId": "R6.9G.10.3.7.1.4.89-20261029-P0-RC3.60-DECODO-LED-TRUTHFULNESS-PASS",
+  "zipName": "XPIDER_R6.9G.10.3.7.1.4.89_OWNER_BETA.zip",
+  "zipSha256": "d7aa322a34316658eb1e74345c7a54a6aa77a53db4bac928fbc1e5e68dbd822a",
+  "zipSizeBytes": 53221538,
+  "checkedAtUtc": "2026-10-29T20:17:55Z",
+  "liveDecodoEndToEnd": "UNVERIFIED_BLOCKED",
+  "blocker": {
+    "reason": "Decodo residential upstream is not configured/selected in the live Companion (residentialProxySelected=false, /residential-proxy/status => UNCONFIGURED / NO_CONFIG). No authorized, selected config exists, so a read-only authenticated Decodo probe and a browser canary through a Decodo route were NOT performed (not invented, not auto-selected).",
+    "configEvidence": {
+      "liveCompanionConfigFile": "companion/egress_pool_config.json has no residentialProxyConfig (last written 2026-10-22)",
+      "globalBackup": "%LOCALAPPDATA%/XPIDER_Privacy_Relay/egress_pool_config.json has no residentialProxyConfig (last written 2026-10-22)",
+      "otherCopiesScanned": 66,
+      "otherCopiesWithResidentialHost": 0,
+      "credentialsStillPresent": "DPAPI credential entries decodo-ip-auth and decodo-us-primary exist in companion/.local_credentials.json (values not read or disclosed)",
+      "priorState": ".86 evidence (artifacts/rc3_60_86_final_two_layer_network_evidence.json) shows residentialProxySelected=true, id=decodo-ip-auth, EGRESS_VERIFIED at 2026-10-29T01:27Z",
+      "causeOfLoss": "NOT PROVEN. Both persisted config files carry a 10-22 mtime although .86 reported a persisted selected config on 10-29; host/port of the original upstream are not recoverable from any local file. No config was altered or re-selected by this session."
+    }
+  },
+  "liveStateMasked": {
+    "companionBuild": ".89",
+    "relayReady": true,
+    "decodo": { "status": "NOT_SELECTED", "fresh": false, "inUse": false },
+    "digitalOcean": { "ip": "143.198.*.*", "status": "HEALTHY", "source": "DIGITALOCEAN_NODE_CONFIG" },
+    "companionProbeEgress": { "ip": "143.198.*.*", "status": "COMPANION_PROBE_ONLY" },
+    "activeRoute": "DIGITALOCEAN",
+    "rawIspWan": "UNKNOWN / NOT SAFELY MEASURED",
+    "opalWireGuardHop": "UNKNOWN (physicalGate disabled in Companion; not independently verified, so OPAL -> DO is not claimed)"
+  },
+  "codeChanges": [
+    "companion/privacy-relay-service.js: Decodo proof is fresh only within 90s; verified-but-stale => STALE_REVERIFY_REQUIRED (confidence NONE, route not claimed as DECODO)",
+    "companion/privacy-relay-service.js: IN_USE now requires a campaign-class CONNECT (non-canary host) within 60s; probe/canary tunnel counters no longer imply IN_USE (previously any connectTunnels>0 did)",
+    "extension/popup.js: companion emits 'CONNECTED / EGRESS_VERIFIED' / 'IN_USE' but UI matched only 'CONNECTED'/'EGRESS_VERIFIED' (never green); fixed. Selected-but-not-fresh Decodo now amber, never green",
+    "extension/modules/privacy-gateway.js: Decodo route detection matched only exact 'CONNECTED'; now CONNECTED* or IN_USE"
+  ],
+  "tests": {
+    "test_decodo_led_truthfulness_rc3_60_89.js": "10/10 PASS (offline)",
+    "test_residential_proxy_relay_endpoints.js": "PASS (11 scenarios)",
+    "test_privacy_gate_negative_security_regression.js": "PASS (11 scenarios)",
+    "liveCompanion89Restart": "PASS (authenticated, build .89, relayReady=true, Decodo NOT_SELECTED honest)"
+  },
+  "notRun": "Real-Chrome UI matrix and live Decodo probe/canary were not re-run on .89: UI rows depend on a selected Decodo config, and the .88 UI/localhost suites are unchanged apart from LED color mapping.",
+  "publicCampaignSendsExecuted": 0,
+  "credentialsExposed": 0,
+  "configAltered": false
+}

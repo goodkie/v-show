@@ -597,7 +597,8 @@
                             activeRoute.status = 'VERIFIED';
                         }
                     } else if (this.config.transportMode === PRIVACY_MODES.PRIVACY_RELAY || relayReady) {
-                        const isDecodo = companionMonitor && companionMonitor.decodoResidential && companionMonitor.decodoResidential.status === 'CONNECTED';
+                        const decStatus = companionMonitor && companionMonitor.decodoResidential ? String(companionMonitor.decodoResidential.status || '') : '';
+                        const isDecodo = decStatus.startsWith('CONNECTED') || decStatus === 'IN_USE';
                         activeRoute.route = isDecodo ? 'DECODO' : 'DIGITALOCEAN';
                         activeRoute.status = bStatus === 'BROWSER_VERIFIED' ? 'VERIFIED' : (relayReady ? 'COMPANION_PROBE_ONLY' : 'DEGRADED');
                         activeRoute.egressIp = bObservedIp || (companionMonitor && companionMonitor.companionProbeEgress && companionMonitor.companionProbeEgress.observedIp) || null;

@@ -1775,11 +1775,19 @@ async function hydrateSettings(overrideV2Store = null) {
             const isRouteVerified = routeStatus === 'VERIFIED' || bExit.status === 'BROWSER_VERIFIED';
             const isDegraded = routeStatus === 'DEGRADED' || bExit.status === 'COMPANION_PROBE_ONLY' || bExit.status === 'CANARY_FAILED';
             const isBlocked = bExit.status === 'BLOCKED_HTTP_407' || decodo.status === 'BLOCKED_HTTP_407' || decodo.status === 'AUTH_FAILED';
-
+            // [RC3.60 .89] Decodo LED truthfulness: companion emits 'CONNECTED / EGRESS_VERIFIED' (fresh upstream proof)
+            // or 'IN_USE' (campaign-correlated CONNECT). Selected-but-not-fresh-verified must never read green.
+            const decodoStatusStr = String(decodo.status || '');
+            const decodoIsGood = decodoStatusStr.startsWith('CONNECTED') || decodoStatusStr === 'IN_USE';
+            const decodoInactive = !decodoStatusStr || ['NOT_SELECTED', 'NOT_CONFIGURED', 'UNCONFIGURED'].includes(decodoStatusStr);
+            const decodoSelectedUnverified = !decodoInactive && !decodoIsGood && !isBlocked;
             if (dot) {
                 if (isBlocked) {
                     dot.style.background = '#ef4444';
                     dot.title = 'Route blocked / 407 error';
+                } else if (decodoSelectedUnverified) {
+                    dot.style.background = '#eab308';
+                    dot.title = 'Decodo selected but upstream not freshly verified (' + decodoStatusStr + ')';
                 } else if (isRouteVerified) {
                     dot.style.background = '#22c55e';
                     dot.title = 'Route verified';
@@ -1837,7 +1845,7 @@ async function hydrateSettings(overrideV2Store = null) {
             const rDecodoSource = document.getElementById('row-decodo-source');
             if (rDecodoStatus) {
                 rDecodoStatus.textContent = decodo.status || 'NOT_CONFIGURED';
-                rDecodoStatus.style.color = (decodo.status === 'CONNECTED' || decodo.status === 'EGRESS_VERIFIED') ? '#22c55e' : (String(decodo.status).includes('407') || decodo.status === 'AUTH_FAILED' ? '#ef4444' : '#94a3b8');
+                rDecodoStatus.style.color = decodoIsGood ? '#22c55e' : (String(decodo.status).includes('407') || decodo.status === 'AUTH_FAILED' ? '#ef4444' : (decodoSelectedUnverified ? '#eab308' : '#94a3b8'));
             }
             if (rDecodoIp) {
                 rDecodoIp.textContent = showExact ? (decodo.observedIp || 'NONE') : (decodo.observedIpMasked || 'NONE');

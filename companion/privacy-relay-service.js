@@ -67,7 +67,7 @@ process.on('unhandledRejection', (reason) => {
 });
 
 // [Defect Q2 Hardening - Issue #6 Comment #6244711545] Authoritative companion build identity & capabilities
-const COMPANION_BUILD_ID = 'R6.9G.10.3.7.1.4.88-20261029-P0-RC3.60-LIVE-EGRESS-IP-MONITOR-PASS';
+const COMPANION_BUILD_ID = 'R6.9G.10.3.7.1.4.89-20261029-P0-RC3.60-DECODO-LED-TRUTHFULNESS-PASS';
 const COMPANION_IMPLEMENTATION_HEAD = '741dfe44536031dff13ac6d8e310d4f72fbca42b';
 
 function isCompatibleExtensionBuild(extBuildId, companionBuildId) {
@@ -1413,10 +1413,24 @@ class PrivacyRelayService {
     const decodoIp = respState ? (respState.observedIp || null) : null;
     const decodoMasked = respState ? (respState.observedIpMasked || (decodoIp ? maskIpFn(decodoIp) : null)) : null;
     const decodoSelected = Boolean(this.residentialProxySelected);
-    const decodoSendAllowed = Boolean(respState && respState.sendAllowed && respState.status === 'EGRESS_VERIFIED');
+    // [RC3.60 .89 DECODO-LED-TRUTHFULNESS] Verified-but-stale upstream proof must never read as CONNECTED,
+    // and IN_USE must come from campaign-class CONNECT traffic only (never probe/canary tunnels).
+    const DECODO_FRESH_MS = 90000;
+    const DECODO_IN_USE_WINDOW_MS = 60000;
+    const decodoCheckedMs = (respState && respState.checkedAt) ? Date.parse(respState.checkedAt) : NaN;
+    const decodoAgeMs = Number.isFinite(decodoCheckedMs) ? (Date.now() - decodoCheckedMs) : null;
+    const decodoFresh = decodoAgeMs !== null && decodoAgeMs >= 0 && decodoAgeMs <= DECODO_FRESH_MS;
+    const decodoVerifiedRaw = Boolean(respState && respState.sendAllowed && respState.status === 'EGRESS_VERIFIED');
+    const decodoSendAllowed = decodoVerifiedRaw && decodoFresh;
     const isDecodoQuota407 = Boolean(respState && (respState.status === 'AUTH_FAILED' || respState.status === 'TRAFFIC_LIMIT_EXHAUSTED') && respState.upstreamError && respState.upstreamError.toLowerCase().includes('traffic limit'));
-    const decodoInUse = decodoSelected && decodoSendAllowed && ((this.trafficStats && this.trafficStats.connectTunnels > 0) || (this.trafficStats && this.trafficStats.requestsProxied > 0));
-    const decodoStatus = !decodoSelected ? 'NOT_SELECTED' : (isDecodoQuota407 ? 'BLOCKED_HTTP_407' : (decodoInUse ? 'IN_USE' : (decodoSendAllowed ? 'CONNECTED / EGRESS_VERIFIED' : (respState ? respState.status : 'UNCONFIGURED'))));
+    const lastCampaignConnectMs = this.lastCampaignConnectAt || 0;
+    const decodoInUse = decodoSelected && decodoSendAllowed && lastCampaignConnectMs > 0 && (Date.now() - lastCampaignConnectMs) <= DECODO_IN_USE_WINDOW_MS;
+    const decodoStatus = !decodoSelected ? 'NOT_SELECTED'
+      : (isDecodoQuota407 ? 'BLOCKED_HTTP_407'
+        : (decodoVerifiedRaw && !decodoFresh ? 'STALE_REVERIFY_REQUIRED'
+          : (decodoInUse ? 'IN_USE'
+            : (decodoSendAllowed ? 'CONNECTED / EGRESS_VERIFIED'
+              : (respState ? respState.status : 'UNCONFIGURED')))));
 
     const opalVpnActive = Boolean(this.physicalGate && this.physicalGate.state && this.physicalGate.state.tunnelPass);
     let routeClassification = 'UNKNOWN/PARTIALLY VERIFIED';
@@ -1449,7 +1463,10 @@ class PrivacyRelayService {
         status: decodoStatus,
         source: 'DECODO_AUTHENTICATED_UPSTREAM_PROBE',
         checkedAt: respState ? respState.checkedAt : null,
-        staleAt: respState && respState.checkedAt ? new Date(new Date(respState.checkedAt).getTime() + 120000).toISOString() : null,
+        staleAt: respState && respState.checkedAt ? new Date(new Date(respState.checkedAt).getTime() + DECODO_FRESH_MS).toISOString() : null,
+        fresh: decodoFresh,
+        ageMs: decodoAgeMs,
+        lastCampaignConnectAt: lastCampaignConnectMs ? new Date(lastCampaignConnectMs).toISOString() : null,
         confidence: decodoSendAllowed ? 'HIGH' : 'NONE',
         inUse: decodoInUse,
         error: respState ? respState.upstreamError : null
@@ -3235,7 +3252,16 @@ class PrivacyRelayService {
     // Handle CONNECT method for HTTPS tunnels
     this.proxyServer.on('connect', (req, clientSocket, head) => {
       this.trafficStats.connectTunnels++;
-
+      // [RC3.60 .89] Campaign-class CONNECT = any target other than the XPIDER canary hosts.
+      // Canary/probe tunnels (cloudflare trace) must never make the Decodo LED read IN_USE.
+      try {
+        const connectHost = String(req.url || '').split(':')[0].toLowerCase();
+        const isCanaryHost = /^(www\.)?cloudflare\.com$/.test(connectHost) || connectHost === '1.1.1.1' || connectHost === 'one.one.one.one';
+        if (!isCanaryHost) {
+          this.lastCampaignConnectAt = Date.now();
+          this.campaignConnectTunnels = (this.campaignConnectTunnels || 0) + 1;
+        }
+      } catch (_) { }
       // Guard client socket against unhandled errors immediately
       clientSocket.on('error', (err) => {
         this.log(`[CLIENT_SOCKET_ERROR] ${err.code || err.message}`);
