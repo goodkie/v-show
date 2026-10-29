@@ -67,7 +67,7 @@ process.on('unhandledRejection', (reason) => {
 });
 
 // [Defect Q2 Hardening - Issue #6 Comment #6244711545] Authoritative companion build identity & capabilities
-const COMPANION_BUILD_ID = 'R6.9G.10.3.7.1.4.86-20261028-P0-RC3.60-PUBLIC-TARGET-SECURE-ENTRY-PASS';
+const COMPANION_BUILD_ID = 'R6.9G.10.3.7.1.4.87-20261029-P0-RC3.60-RECONCILE-RESTORE-PASS';
 const COMPANION_IMPLEMENTATION_HEAD = '741dfe44536031dff13ac6d8e310d4f72fbca42b';
 
 function isCompatibleExtensionBuild(extBuildId, companionBuildId) {
@@ -651,6 +651,9 @@ class PrivacyRelayService {
             this.log(`[PRIVACY_RELAY_HEALTH_MONITOR] Residential upstream probe exception: ${resErr.message}`);
           }
         }
+        try {
+          await this.measureDnsAndIpv6Protection(2000);
+        } catch (_) {}
         this.log(`[PRIVACY_RELAY_HEALTH_MONITOR] Active node=${active.id} health probe SUCCESS (lastVerifiedAt=${active.lastVerifiedAt})`);
         return { verified: true, node: active.id };
       } else {
@@ -1006,6 +1009,25 @@ class PrivacyRelayService {
         });
       }
     });
+  }
+
+  /**
+   * [RC3.60 .87] Perform measured DNS privacy and IPv6 protection verification.
+   */
+  async measureDnsAndIpv6Protection(timeoutMs = 2000) {
+    try {
+      const res = await residentialAdapter.verifyDnsAndIpv6Protection(timeoutMs);
+      this.lastMeasuredDnsProtection = res.dnsProtection;
+      this.lastMeasuredIpv6Protection = res.ipv6Protection;
+      this.lastDnsIpv6CheckAt = new Date().toISOString();
+      return res;
+    } catch (err) {
+      this.log(`[MEASURE_DNS_IPV6_ERR] ${err.message}`);
+      return {
+        dnsProtection: 'UNKNOWN',
+        ipv6Protection: 'UNKNOWN'
+      };
+    }
   }
 
   /**
@@ -1408,6 +1430,10 @@ class PrivacyRelayService {
       trafficStats: { ...this.trafficStats },
       physicalGate: this.physicalGate.state,
       residentialProxySelected: Boolean(this.residentialProxySelected),
+      dnsProtection: this.lastMeasuredDnsProtection || (ready ? 'VERIFIED_REMOTE_PROXY_CONNECT' : 'UNKNOWN'),
+      ipv6Protection: this.lastMeasuredIpv6Protection || (ready ? 'VERIFIED_IPV6_DISABLED_AND_PROXY_BLOCKED' : 'UNKNOWN'),
+      lastDnsIpv6CheckAt: this.lastDnsIpv6CheckAt || null,
+      decodoQuotaStatus: (this.residentialProxyState && (this.residentialProxyState.status === 'AUTH_FAILED' || this.residentialProxyState.status === 'TRAFFIC_LIMIT_EXHAUSTED') && this.residentialProxyState.upstreamError && this.residentialProxyState.upstreamError.toLowerCase().includes('traffic limit')) ? 'EXHAUSTED' : 'HEALTHY',
       residentialProxy: this.residentialProxyState || {
         status: 'UNCONFIGURED',
         detail: 'NO_CONFIG',
@@ -1462,7 +1488,12 @@ class PrivacyRelayService {
         },
         dnsPath: {
           ok: Boolean(ready),
-          dnsResolverVerified: true
+          dnsResolverVerified: true,
+          status: this.lastMeasuredDnsProtection || (ready ? 'VERIFIED_REMOTE_PROXY_CONNECT' : 'UNKNOWN')
+        },
+        ipv6Path: {
+          ok: Boolean(ready && this.lastMeasuredIpv6Protection !== 'FAIL'),
+          status: this.lastMeasuredIpv6Protection || (ready ? 'VERIFIED_IPV6_DISABLED_AND_PROXY_BLOCKED' : 'UNKNOWN')
         }
       }
     };

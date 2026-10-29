@@ -1696,7 +1696,16 @@ async function hydrateSettings(overrideV2Store = null) {
                 const privPill = document.getElementById('privacy-ready-pill');
                 const qLen = Array.isArray(campaignQueue) ? campaignQueue.length : 0;
                 if (campPill) {
-                    if (qLen > 0) {
+                    const cComp = (typeof completedCount !== 'undefined') ? completedCount : 0;
+                    const cRem = (typeof remainingTargets !== 'undefined') ? remainingTargets : 0;
+                    const isRunFinished = (!campaignActive) && (cComp > 0 && cRem === 0);
+                    if (campaignActive) {
+                        campPill.textContent = `CAMPAIGN: RUNNING (${cComp}/${totalTargets || qLen})`;
+                        campPill.style.color = '#38bdf8';
+                    } else if (isRunFinished) {
+                        campPill.textContent = `CAMPAIGN: FINISHED (${cComp}/${totalTargets || qLen})`;
+                        campPill.style.color = '#22c55e';
+                    } else if (qLen > 0) {
                         campPill.textContent = `CAMPAIGN: READY (${qLen} URLs)`;
                         campPill.style.color = '#22c55e';
                     } else {
@@ -3737,12 +3746,16 @@ function _updatePrivacyCardUI(pf) {
         elEg.style.color = pf.egressCheck === 'PASS' ? '#4ade80' : (pf.egressCheck === 'FAIL' ? '#f87171' : '#fde047');
     }
     if (elDn) {
-        elDn.textContent = pf.dnsPrivacy;
-        elDn.style.color = pf.dnsPrivacy === 'PASS' ? '#4ade80' : '#94a3b8';
+        const isPass = pf.dnsPrivacy === 'PASS' || pf.dnsPrivacy === 'VERIFIED_REMOTE_PROXY_CONNECT';
+        elDn.textContent = isPass ? 'PASS' : (pf.dnsPrivacy || 'UNKNOWN');
+        elDn.style.color = isPass ? '#4ade80' : '#94a3b8';
+        elDn.title = isPass ? 'Remote proxy CONNECT verified: 0 local OS DNS lookups' : (pf.dnsPrivacyDetail || 'Awaiting live probe');
     }
     if (elIp) {
-        elIp.textContent = pf.ipv6Protection;
-        elIp.style.color = pf.ipv6Protection === 'PROTECTED' ? '#4ade80' : '#94a3b8';
+        const isProtected = pf.ipv6Protection === 'PROTECTED' || pf.ipv6Protection === 'VERIFIED_IPV6_DISABLED_AND_PROXY_BLOCKED' || pf.ipv6Protection === 'IPV6_ROUTE_ACTIVE_BLOCKED_AT_PROXY';
+        elIp.textContent = isProtected ? 'PROTECTED' : (pf.ipv6Protection || 'UNKNOWN');
+        elIp.style.color = isProtected ? '#4ade80' : '#94a3b8';
+        elIp.title = isProtected ? 'Direct IPv6 unreachable; IPv6 literals blocked at proxy fail-closed' : (pf.ipv6ProtectionDetail || 'Awaiting live probe');
     }
     if (elLc) elLc.textContent = pf.lastCheck ? new Date(pf.lastCheck).toLocaleTimeString() : 'Never';
 
@@ -4218,21 +4231,16 @@ document.addEventListener('DOMContentLoaded', async () => {
                     if (statusTitle) statusTitle.textContent = "Live Progress (Finished)";
                     const statusDetail = document.getElementById('status-detail');
                     if (statusDetail) statusDetail.textContent = "Campaign Complete: All targets finished.";
-                    campaignActive = false;
-                    _isCampaignLaunching = false;
-                    const startBtn = document.getElementById('start-btn');
-                    if (startBtn) startBtn.classList.remove('hidden');
-                    const multiActions = document.getElementById('multi-actions');
-                    if (multiActions) multiActions.classList.add('hidden');
+                    restoreStartButton();
                     const ind = document.getElementById('privacy-override-indicator');
                     if (ind) {
                         ind.style.display = 'none';
                         ind.classList.add('hidden');
                     }
+                    try { onCampaignFinishedOwnerTestCheck(request.counters); } catch (_) {}
                     if (typeof window.checkAndRefreshPrivacyReadinessHUD === 'function') {
                         window.checkAndRefreshPrivacyReadinessHUD();
                     }
-                    try { onCampaignFinishedOwnerTestCheck(request.counters); } catch (_) {}
                 } else if (request.action === 'OWNER_TEST_PRECONDITION_FAILED_ALL_FILTERED') {
                     if (typeof _restoreStartButton === 'function') _restoreStartButton();
                     updateAutoSetupUI('READY');
@@ -6074,7 +6082,8 @@ function showAutoSetupFeedback(msg, type = 'info') {
 
 function onCampaignFinishedOwnerTestCheck(counters) {
     if (typeof chrome === 'undefined' || !chrome.storage || !chrome.storage.local) return;
-    chrome.storage.local.get(['xpider_owner_function_test_mode', 'xpider_owner_backup_snapshot', 'xpider_active_test_source', 'xpider_cloudflare_live_test']).then((st) => {
+    restoreStartButton();
+    chrome.storage.local.get(['xpider_owner_function_test_mode', 'xpider_owner_backup_snapshot', 'xpider_owner_original_profile', 'xpider_active_test_source', 'xpider_cloudflare_live_test']).then((st) => {
         const sc = counters ? (counters.success || 0) : 0;
         const sk = counters ? (counters.skipped || 0) : 0;
         const fl = counters ? (counters.failed || 0) : 0;
@@ -6184,9 +6193,33 @@ function onCampaignFinishedOwnerTestCheck(counters) {
             return;
         }
 
-        if (st && st.xpider_owner_function_test_mode) {
-            const isCaptchaLab = (st.xpider_active_test_source === 'OWNER_CAPTCHA_LAB');
+        const testSource = st?.xpider_active_test_source || (typeof window !== 'undefined' ? window.__xpider_last_test_source : null);
+        const isCaptchaLab = (testSource === 'OWNER_CAPTCHA_LAB');
 
+        if (isCaptchaLab) {
+            updateAutoSetupUI('COMPLETED');
+            const labPanel = document.getElementById('captcha-lab-panel');
+            if (labPanel) labPanel.style.display = 'block';
+            const labPass = (total === 7 && sc === 5);
+            if (labPass) {
+                showAutoSetupFeedback(
+                    `🏁 CONTROLLED CAPTCHA LAB PASS (100% EXPECTED OUTCOME)\n` +
+                    `Lab Cases: 7/7 PASS (5 Solved + 2 Expected Failures Verified | 0 Unexpected Failures)\n` +
+                    `Click '↩ RESTORE' to restore your previous settings and URL list.`,
+                    'success'
+                );
+            } else {
+                showAutoSetupFeedback(
+                    `⚠️ CONTROLLED CAPTCHA LAB INCOMPLETE (Expected 5 Solved / 2 Expected Failures)\n` +
+                    `Observed: ${sc} SUCCESS / ${sk} SKIPPED / ${fl} FAILURE (Total: ${total}/7)\n` +
+                    `Click '🧩 RUN CAPTCHA LAB' to retry or '↩ RESTORE' to restore.`,
+                    'warn'
+                );
+            }
+            return;
+        }
+
+        if (st && (st.xpider_owner_function_test_mode || testSource === 'OWNER_CORE_TEST' || testSource === 'OWNER_FULL_TEST')) {
             if (total === 0) {
                 updateAutoSetupUI('READY');
                 showAutoSetupFeedback(
@@ -6194,31 +6227,6 @@ function onCampaignFinishedOwnerTestCheck(counters) {
                     `All targets were filtered out (history or suppression). Click '✨ AUTO SETUP' to re-arm test fixtures.`,
                     'error'
                 );
-                return;
-            }
-
-            if (isCaptchaLab) {
-                // [R6.9G.10.3.7.1.4.9] CAPTCHA Lab Evaluation: 7 fixtures total (5 Solved + 2 Expected Failure Skips = 7/7 PASS)
-                const labPass = (total === 7 && sc === 5);
-                updateAutoSetupUI('COMPLETED');
-                const labPanel = document.getElementById('captcha-lab-panel');
-                if (labPanel) labPanel.style.display = 'block';
-
-                if (labPass) {
-                    showAutoSetupFeedback(
-                        `🏁 CONTROLLED CAPTCHA LAB PASS (100% EXPECTED OUTCOME)\n` +
-                        `Lab Cases: 7/7 PASS (5 Solved + 2 Expected Failures Verified | 0 Unexpected Failures)\n` +
-                        `Click '↩ RESTORE' to restore your previous settings and URL list.`,
-                        'success'
-                    );
-                } else {
-                    showAutoSetupFeedback(
-                        `⚠️ CONTROLLED CAPTCHA LAB INCOMPLETE (Expected 5 Solved / 2 Expected Failures)\n` +
-                        `Observed: ${sc} SUCCESS / ${sk} SKIPPED / ${fl} FAILURE (Total: ${total}/7)\n` +
-                        `Click '🧩 RUN CAPTCHA LAB' to retry or '↩ RESTORE' to restore.`,
-                        'warn'
-                    );
-                }
                 return;
             }
 
@@ -6317,34 +6325,66 @@ function initOwnerAutoSetup() {
                 // 2. Preserve Owner's existing public list and settings snapshot as a reversible restore point
                 const currentStorage = await chrome.storage.local.get(null);
                 let existingSnapshot = currentStorage.xpider_owner_backup_snapshot;
-                if (!existingSnapshot) {
-                    const qToSave = (Array.isArray(campaignQueue) && campaignQueue.length > 0)
-                        ? [...campaignQueue]
-                        : (Array.isArray(currentStorage.xpider_queue) ? [...currentStorage.xpider_queue] : []);
+                let persistentOriginal = currentStorage.xpider_owner_original_profile;
 
-                    const liveSkipEl = document.getElementById('skip-attempted-toggle');
-                    const liveDoubleEl = document.getElementById('double-submit-toggle');
+                const isLoopbackFn = (u) => /^https?:\/\/(?:127\.0\.0\.1|localhost)(?::\d+)?(?:\/|$)/i.test(typeof u === 'string' ? u : (u?.url || ''));
 
-                    existingSnapshot = {
-                        timestamp: Date.now(),
-                        queue: qToSave,
-                        totalTargets: totalTargets || qToSave.length,
-                        settings: {
-                            xpider_owner_function_test_mode: currentStorage.xpider_owner_function_test_mode || false,
-                            xpider_delayMs: currentStorage.xpider_delayMs,
-                            xpider_fillDelayMs: currentStorage.xpider_fillDelayMs,
-                            xpider_submitDelayMs: currentStorage.xpider_submitDelayMs,
-                            xpider_fill_mode: currentStorage.xpider_fill_mode,
-                            xpider_skip_attempted: liveSkipEl ? liveSkipEl.checked : (currentStorage.xpider_skip_attempted !== undefined ? currentStorage.xpider_skip_attempted : true),
-                            xpider_double_submit: liveDoubleEl ? liveDoubleEl.checked : Boolean(currentStorage.xpider_double_submit),
-                            xpider_strict_privacy: currentStorage.xpider_strict_privacy,
-                            xpider_privacy_transport: currentStorage.xpider_privacy_transport,
-                            xpider_captcha_method: currentStorage.xpider_captcha_method,
-                            xpider_active_campaign_run_id: currentStorage.xpider_active_campaign_run_id
-                        }
-                    };
-                    await chrome.storage.local.set({ xpider_owner_backup_snapshot: existingSnapshot });
+                // Determine public queue to preserve (strictly never loopback test fixtures)
+                let qToSave = [];
+                if (Array.isArray(campaignQueue) && campaignQueue.length > 0 && !campaignQueue.every(isLoopbackFn)) {
+                    qToSave = campaignQueue.filter(u => !isLoopbackFn(u));
+                } else if (Array.isArray(currentStorage.xpider_queue) && currentStorage.xpider_queue.length > 0 && !currentStorage.xpider_queue.every(isLoopbackFn)) {
+                    qToSave = currentStorage.xpider_queue.filter(u => !isLoopbackFn(u));
+                } else if (existingSnapshot && Array.isArray(existingSnapshot.queue) && existingSnapshot.queue.length > 0 && !existingSnapshot.queue.every(isLoopbackFn)) {
+                    qToSave = [...existingSnapshot.queue];
+                } else if (persistentOriginal && Array.isArray(persistentOriginal.queue) && persistentOriginal.queue.length > 0 && !persistentOriginal.queue.every(isLoopbackFn)) {
+                    qToSave = [...persistentOriginal.queue];
+                } else if (Array.isArray(currentStorage.saved_lists) && currentStorage.saved_lists.length > 0 && Array.isArray(currentStorage.saved_lists[0].urls)) {
+                    qToSave = currentStorage.saved_lists[0].urls.filter(u => !isLoopbackFn(u));
                 }
+
+                const liveSkipEl = document.getElementById('skip-attempted-toggle');
+                const liveDoubleEl = document.getElementById('double-submit-toggle');
+                const liveFilename = document.getElementById('filename-display')?.textContent || '';
+                const originalFilename = (!liveFilename.includes('OWNER_LOCAL_FIXTURES') && !liveFilename.includes('CAPTCHA'))
+                    ? liveFilename
+                    : (existingSnapshot?.filename || persistentOriginal?.filename || (qToSave.length > 0 ? 'Original Campaign Targets' : 'No file selected'));
+
+                const templateToSave = {
+                    firstName: document.getElementById('tpl-first-name')?.value || currentStorage.xpider_tpl?.firstName || '',
+                    lastName: document.getElementById('tpl-last-name')?.value || currentStorage.xpider_tpl?.lastName || '',
+                    name: document.getElementById('tpl-name')?.value || currentStorage.xpider_tpl?.name || '',
+                    email: document.getElementById('tpl-email')?.value || currentStorage.xpider_tpl?.email || '',
+                    phone: document.getElementById('tpl-phone')?.value || currentStorage.xpider_tpl?.phone || '',
+                    subject: document.getElementById('tpl-subject')?.value || currentStorage.xpider_tpl?.subject || '',
+                    message: document.getElementById('tpl-message')?.value || currentStorage.xpider_tpl?.message || '',
+                    website: document.getElementById('tpl-website')?.value || currentStorage.xpider_tpl?.website || ''
+                };
+
+                existingSnapshot = {
+                    timestamp: Date.now(),
+                    queue: qToSave,
+                    totalTargets: qToSave.length,
+                    filename: originalFilename,
+                    template: templateToSave,
+                    settings: {
+                        xpider_owner_function_test_mode: false,
+                        xpider_delayMs: currentStorage.xpider_delayMs,
+                        xpider_fillDelayMs: currentStorage.xpider_fillDelayMs,
+                        xpider_submitDelayMs: currentStorage.xpider_submitDelayMs,
+                        xpider_fill_mode: currentStorage.xpider_fill_mode,
+                        xpider_skip_attempted: liveSkipEl ? liveSkipEl.checked : (currentStorage.xpider_skip_attempted !== undefined ? currentStorage.xpider_skip_attempted : true),
+                        xpider_double_submit: liveDoubleEl ? liveDoubleEl.checked : Boolean(currentStorage.xpider_double_submit),
+                        xpider_strict_privacy: currentStorage.xpider_strict_privacy,
+                        xpider_privacy_transport: currentStorage.xpider_privacy_transport,
+                        xpider_captcha_method: currentStorage.xpider_captcha_method,
+                        xpider_active_campaign_run_id: currentStorage.xpider_active_campaign_run_id
+                    }
+                };
+                await chrome.storage.local.set({
+                    xpider_owner_backup_snapshot: existingSnapshot,
+                    xpider_owner_original_profile: existingSnapshot
+                });
 
                 // 3. Prepare the local Owner Functional Test profile (7 verified local fixtures)
                 campaignQueue = [...LOCALHOST_FIXTURES];
@@ -6605,47 +6645,70 @@ function initOwnerAutoSetup() {
 
 async function restoreUserSettings() {
     try {
-        const st = await chrome.storage.local.get(['xpider_owner_backup_snapshot']);
-        const snapshot = st.xpider_owner_backup_snapshot;
-        if (!snapshot) {
+        const st = await chrome.storage.local.get(['xpider_owner_backup_snapshot', 'xpider_owner_original_profile', 'saved_lists']);
+        const snapshot = st.xpider_owner_backup_snapshot || st.xpider_owner_original_profile;
+        if (!snapshot && (!Array.isArray(st.saved_lists) || st.saved_lists.length === 0)) {
             showAutoSetupFeedback('No previous settings or list backup found to restore.', 'warn');
             return;
         }
 
-        // Restore queue
-        campaignQueue = Array.isArray(snapshot.queue) ? [...snapshot.queue] : [];
-        totalTargets = snapshot.totalTargets || campaignQueue.length;
-
-        // Restore settings
-        const snapshotHadTestMode = Boolean(snapshot.settings?.xpider_owner_function_test_mode);
-        if (snapshotHadTestMode) {
-            console.log('[RESTORE_SANITIZE] staleTestModeInSnapshot=true forcedNormalMode=true');
-            addLog('🧹 [RESTORE_SANITIZE] staleTestModeInSnapshot=true forcedNormalMode=true', 'info');
+        // 1. Restore queue (filter out test fixtures to guarantee zero loopback remnants)
+        const isLoopback = (u) => /^https?:\/\/(?:127\.0\.0\.1|localhost)(?::\d+)?(?:\/|$)/i.test(typeof u === 'string' ? u : (u?.url || ''));
+        let qRestored = [];
+        if (snapshot && Array.isArray(snapshot.queue) && snapshot.queue.length > 0) {
+            qRestored = snapshot.queue.filter(u => !isLoopback(u));
+        }
+        if (qRestored.length === 0 && st.xpider_owner_original_profile && Array.isArray(st.xpider_owner_original_profile.queue)) {
+            qRestored = st.xpider_owner_original_profile.queue.filter(u => !isLoopback(u));
+        }
+        if (qRestored.length === 0 && Array.isArray(st.saved_lists) && st.saved_lists.length > 0 && Array.isArray(st.saved_lists[0].urls)) {
+            qRestored = st.saved_lists[0].urls.filter(u => !isLoopback(u));
         }
 
+        campaignQueue = [...qRestored];
+        totalTargets = (snapshot && snapshot.totalTargets) ? snapshot.totalTargets : campaignQueue.length;
+
+        // 2. Restore template
+        const tpl = snapshot?.template || st.xpider_owner_original_profile?.template;
+        if (tpl) {
+            const elFn = document.getElementById('tpl-first-name'); if (elFn && tpl.firstName !== undefined) elFn.value = tpl.firstName;
+            const elLn = document.getElementById('tpl-last-name'); if (elLn && tpl.lastName !== undefined) elLn.value = tpl.lastName;
+            const elN = document.getElementById('tpl-name'); if (elN && tpl.name !== undefined) elN.value = tpl.name;
+            const elEm = document.getElementById('tpl-email'); if (elEm && tpl.email !== undefined) elEm.value = tpl.email;
+            const elPh = document.getElementById('tpl-phone'); if (elPh && tpl.phone !== undefined) elPh.value = tpl.phone;
+            const elSub = document.getElementById('tpl-subject'); if (elSub && tpl.subject !== undefined) elSub.value = tpl.subject;
+            const elMsg = document.getElementById('tpl-message'); if (elMsg && tpl.message !== undefined) elMsg.value = tpl.message;
+            const elWeb = document.getElementById('tpl-website'); if (elWeb && tpl.website !== undefined) elWeb.value = tpl.website;
+            currentTpl = { ...tpl };
+        }
+
+        // 3. Restore delays & settings
         const restoredSettings = {
             xpider_queue: campaignQueue,
             xpider_total: totalTargets,
             xpider_owner_function_test_mode: false,
             xpider_cloudflare_live_test: false,
-            xpider_delayMs: snapshot.settings?.xpider_delayMs || 3000,
-            xpider_fillDelayMs: snapshot.settings?.xpider_fillDelayMs || 50,
-            xpider_submitDelayMs: snapshot.settings?.xpider_submitDelayMs || 1000,
-            xpider_skip_attempted: snapshot.settings?.xpider_skip_attempted !== undefined ? snapshot.settings.xpider_skip_attempted : true,
-            xpider_double_submit: Boolean(snapshot.settings?.xpider_double_submit)
+            xpider_delayMs: snapshot?.settings?.xpider_delayMs || 3000,
+            xpider_fillDelayMs: snapshot?.settings?.xpider_fillDelayMs || 50,
+            xpider_submitDelayMs: snapshot?.settings?.xpider_submitDelayMs || 1000,
+            xpider_skip_attempted: snapshot?.settings?.xpider_skip_attempted !== undefined ? snapshot.settings.xpider_skip_attempted : true,
+            xpider_double_submit: Boolean(snapshot?.settings?.xpider_double_submit)
         };
+        if (currentTpl && Object.keys(currentTpl).length > 0) {
+            restoredSettings.xpider_tpl = currentTpl;
+        }
 
-        if (snapshot.settings?.xpider_strict_privacy !== undefined) {
+        if (snapshot?.settings?.xpider_strict_privacy !== undefined) {
             restoredSettings.xpider_strict_privacy = snapshot.settings.xpider_strict_privacy;
         }
-        if (snapshot.settings?.xpider_privacy_transport !== undefined) {
+        if (snapshot?.settings?.xpider_privacy_transport !== undefined) {
             restoredSettings.xpider_privacy_transport = snapshot.settings.xpider_privacy_transport;
         }
-        if (snapshot.settings?.xpider_active_campaign_run_id !== undefined) {
+        if (snapshot?.settings?.xpider_active_campaign_run_id !== undefined) {
             restoredSettings.xpider_active_campaign_run_id = snapshot.settings.xpider_active_campaign_run_id;
         }
 
-        // [R6.9G.10.3.7.1.4.11 Restore Semantics] Remove DNR network guard and verify response
+        // 4. Remove DNR network guard and verify response
         try {
             const guardRes = await chrome.runtime.sendMessage({ action: 'REMOVE_OWNER_TEST_GUARD' });
             if (guardRes && guardRes.success) {
@@ -6658,50 +6721,56 @@ async function restoreUserSettings() {
             console.warn('[RESTORE_GUARD_REMOVE_ERROR]', gErr);
         }
 
+        // 5. Cleanup owner test run in background
         try {
             await chrome.runtime.sendMessage({
                 action: 'CLEANUP_OWNER_FUNCTIONAL_TEST_RUN',
-                previousRunId: snapshot.settings?.xpider_active_campaign_run_id
+                previousRunId: snapshot?.settings?.xpider_active_campaign_run_id
             });
         } catch (_) {}
 
+        // 6. Write back restored settings to storage (Preserve xpider_owner_original_profile)
         await chrome.storage.local.set(restoredSettings);
         await chrome.storage.local.remove([
             'xpider_owner_backup_snapshot',
             'xpider_active_test_source',
             'xpider_cloudflare_live_test',
             'xpider_owner_function_test_mode_active',
-            'xpider_test_mode_state'
+            'xpider_test_mode_state',
+            'xpider_paused_checkpoint'
         ]);
 
-        // Synchronize live DOM controls
+        // 7. Synchronize live DOM controls
         const skipToggle = document.getElementById('skip-attempted-toggle');
-        if (skipToggle && snapshot.settings?.xpider_skip_attempted !== undefined) {
+        if (skipToggle && snapshot?.settings?.xpider_skip_attempted !== undefined) {
             skipToggle.checked = Boolean(snapshot.settings.xpider_skip_attempted);
             skipToggle.dispatchEvent(new Event('change', { bubbles: true }));
         }
 
         const doubleSubmitToggle = document.getElementById('double-submit-toggle');
-        if (doubleSubmitToggle && snapshot.settings?.xpider_double_submit !== undefined) {
+        if (doubleSubmitToggle && snapshot?.settings?.xpider_double_submit !== undefined) {
             doubleSubmitToggle.checked = Boolean(snapshot.settings.xpider_double_submit);
             doubleSubmitToggle.dispatchEvent(new Event('change', { bubbles: true }));
         }
 
-        // Re-render UI
+        // 8. Re-render UI list & counts
         renderUrlsPreview(campaignQueue);
         const countDisplay = document.getElementById('url-count-display');
         if (countDisplay) countDisplay.textContent = `${totalTargets} URLs found`;
         const filenameDisplay = document.getElementById('filename-display');
-        if (filenameDisplay) filenameDisplay.textContent = totalTargets > 0 ? 'Restored Public List' : 'No file selected';
+        const restoredName = snapshot?.filename || (totalTargets > 0 ? 'Restored Public List' : 'No file selected');
+        if (filenameDisplay) filenameDisplay.textContent = restoredName;
 
         const oftToggle = document.getElementById('owner-function-test-toggle');
-        if (oftToggle) {
-            oftToggle.checked = false;
-        }
+        if (oftToggle) oftToggle.checked = false;
         const oftBanner = document.getElementById('owner-function-test-banner');
-        if (oftBanner) {
-            oftBanner.style.display = 'none';
-        }
+        if (oftBanner) oftBanner.style.display = 'none';
+
+        // 9. Reset terminal UI state and restore Start button to idle actionable
+        campaignActive = false;
+        campaignPaused = false;
+        _isCampaignLaunching = false;
+        restoreStartButton();
 
         updateRealTimeStatus({
             totalTargets,
@@ -6711,16 +6780,21 @@ async function restoreUserSettings() {
             skippedCount: 0,
             failedCount: 0
         });
+        updateProgress(0);
+        const statusTitle = document.getElementById('status-title');
+        if (statusTitle) statusTitle.textContent = "Live Progress (Ready)";
+        const statusDetail = document.getElementById('status-detail');
+        if (statusDetail) statusDetail.textContent = totalTargets > 0 ? `Restored ${totalTargets} targets for normal campaign dispatch.` : 'Ready to load target URLs.';
 
         if (typeof _renderHistoryPanel === 'function') {
             await _renderHistoryPanel();
         }
 
         updateAutoSetupUI('STANDBY');
-        showAutoSetupFeedback(`↩ Restored previous list (${campaignQueue.length} URLs) and settings successfully.`, 'info');
-        addLog(`↩ [RESTORE] Restored previous ${campaignQueue.length} URLs and settings from snapshot.`, 'info');
+        showAutoSetupFeedback(`↩ Restored previous list (${campaignQueue.length} URLs), template, and settings successfully.`, 'info');
+        addLog(`↩ [RESTORE] Restored previous ${campaignQueue.length} URLs, template, and settings from snapshot.`, 'info');
 
-        // [Issue #6 Comment #6461672411] Immediate fail-closed privacy readiness reconciliation after RESTORE
+        // Immediate fail-closed privacy readiness reconciliation after RESTORE
         if (typeof reconcilePrivacyReadiness === 'function') {
             await reconcilePrivacyReadiness({ force: true, reason: 'POST_RESTORE' });
         }
@@ -7216,6 +7290,27 @@ async function addSingleUrl() {
 
 let _isCampaignLaunching = false;
 
+function restoreStartButton() {
+    _isCampaignLaunching = false;
+    campaignActive = false;
+    const btn = document.getElementById('start-btn');
+    if (btn) {
+        btn.classList.remove('hidden');
+        btn.disabled = false;
+        btn.removeAttribute('data-build-locked');
+        const lang = document.getElementById('language-select')?.value || 'en';
+        const dict = (typeof i18nData !== 'undefined' && i18nData) ? (i18nData[lang] || i18nData['en'] || {}) : {};
+        btn.textContent = dict.btn_start || "🚀 START SENDING";
+        btn.title = "";
+    }
+    const multiActions = document.getElementById('multi-actions');
+    if (multiActions) multiActions.classList.add('hidden');
+    if (typeof window.checkAndRefreshPrivacyReadinessHUD === 'function') {
+        window.checkAndRefreshPrivacyReadinessHUD();
+    }
+}
+var _restoreStartButton = restoreStartButton;
+
 async function launchCampaign(options = {}) {
     let currentStartStep = '01';
     const source = options.source || 'USER_START_BUTTON';
@@ -7245,23 +7340,7 @@ async function launchCampaign(options = {}) {
     }
     _isCampaignLaunching = true;
 
-    function _restoreStartButton() {
-        _isCampaignLaunching = false;
-        campaignActive = false;
-        const btn = document.getElementById('start-btn');
-        if (btn) {
-            btn.classList.remove('hidden');
-            btn.disabled = false;
-            btn.removeAttribute('data-build-locked');
-            btn.textContent = "🚀 START SENDING";
-            btn.title = "";
-        }
-        const multiActions = document.getElementById('multi-actions');
-        if (multiActions) multiActions.classList.add('hidden');
-        if (typeof window.checkAndRefreshPrivacyReadinessHUD === 'function') {
-            window.checkAndRefreshPrivacyReadinessHUD();
-        }
-    }
+    // [RC3.60 .87] Outer restoreStartButton is used
 
     try {
         // [START_STEP 01] BUTTON_ACCEPTED

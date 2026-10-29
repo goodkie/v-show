@@ -25,20 +25,20 @@
         rollbackBase: '55cd543be5ebe7a4553cac0cbfcf933a00e4c8a5',
         previousFunctionalRestorePoint: 'b2af1c9bf614b9f572acec910265d8132d2043aa',
         manifestVersion: 3,
-        buildId: 'R6.9G.10.3.7.1.4.86-20261028-P0-RC3.60-PUBLIC-TARGET-SECURE-ENTRY-PASS',
-        builtAt: '2026-10-28T10:50:09.064Z',
+        buildId: 'R6.9G.10.3.7.1.4.87-20261029-P0-RC3.60-RECONCILE-RESTORE-PASS',
+        builtAt: '2026-10-29T06:27:47.800Z',
         provenanceSchema: 2,
         modules: {
-            backgroundSha: 'ddd3b0e8caea9dbb3e9f11825591105efa361a969390a20bdcce5ad0c767da13',
+            backgroundSha: '9f6624a0d219317fabc10b61b72e8c8c066b4206cd486ff0524234fa526d2aed',
             contentScriptSha: '8d0751813ac15671dbf397cecd87555a62d58eb4565ccd1484563930dd2620bd',
-            popupSha: '5af98da1eef7325b7bd2a2b115315288c6b6a8db67cb2eca10fbea675bfea30b',
+            popupSha: 'e21fe510a93038fae365237bfcabacbdcc2e416cd048e33247117931aee07d1f',
             solverContentSha: '6a1ff7154efaeb6dbd5946ac4f9be1ce5b5ff43bce2db06d0dca32950edd3bdb',
             solverCoreSha: 'ab4dee5c8213d7c2fd47942951a2bc40732c1c8c55a5742d493db617150bf95f',
             emailCollectorSha: '3f1147a379e159e7777158f2caa74cc8d40b2a0b0eb2c244f440af379cb5c9c9',
             historyStoreSha: '2b34f9c8c1a4c62d07dd406e0e304f179ac68b6d8fbf4bb0614038770fbc4138',
             contactGateSha: '9007adceec8b4e8ec7f7a14ee8a7d21af460a01ed043c578e1e3c2579cfae88e',
             visionSubmitSha: '6b89eab8fd132798fbb157e179bdeee64da1aa9867222fdb656e3fcf4fcc9311',
-            privacyGatewaySha: '952f3a5de921563b7b4df73817eabbdbc46446629c264432c32ff5838ffec090'
+            privacyGatewaySha: '683b47dc8c9fef55e79aa60598af31dc5f96b206b78da9ff9b2df5891fdcbbdd'
         }
     };
 

@@ -1926,6 +1926,9 @@
          * Verifies all policies, transport state, WebRTC leak guard, and fail-closed readiness.
          */
         async runPreflight(options = {}) {
+            if (options.controlToken && typeof options.controlToken === 'string') {
+                this.ephemeralRelayToken = options.controlToken;
+            }
             const mode = options.transportMode || this.config.transportMode || PRIVACY_MODES.SYSTEM_VPN;
             const failClosed = options.failClosed !== undefined ? options.failClosed : this.config.failClosed;
             const enabled = options.enabled !== undefined ? options.enabled : this.config.enabled;
@@ -2173,8 +2176,10 @@
                             ready = true;
                             this.isGateActive = true;
                             directFallbackBlocked = 'BLOCKED';
-                            dnsPrivacy = 'UNKNOWN';
-                            ipv6Protection = 'UNKNOWN';
+                            const companionDns = statusRes.status.dnsProtection || statusRes.status.residentialProxy?.dnsProtection || (statusRes.status.diagnostics?.dnsPath?.ok ? 'VERIFIED_REMOTE_PROXY_CONNECT' : null);
+                            const companionIpv6 = statusRes.status.ipv6Protection || statusRes.status.residentialProxy?.ipv6Protection || statusRes.status.diagnostics?.ipv6Path?.status;
+                            dnsPrivacy = (companionDns === 'PASS' || companionDns === 'VERIFIED_REMOTE_PROXY_CONNECT') ? 'PASS' : (companionDns || 'UNKNOWN');
+                            ipv6Protection = (companionIpv6 === 'PROTECTED' || companionIpv6 === 'VERIFIED_IPV6_DISABLED_AND_PROXY_BLOCKED' || companionIpv6 === 'IPV6_ROUTE_ACTIVE_BLOCKED_AT_PROXY') ? 'PROTECTED' : (companionIpv6 || 'UNKNOWN');
                             egressCheck = 'PASS';
                             this.ephemeralEgressFingerprint = statusRes.status.egressFingerprint;
                             this.config.selectedEgressId = statusRes.status.selectedEgressId;

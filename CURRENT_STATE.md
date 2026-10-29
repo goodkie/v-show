@@ -6,11 +6,13 @@
 - Workspace: E:\vivpr\ai\extension-form-sender
 - Authority: goodkie/v-show Issues #6 & #10
 - Branch: upgrade/phase-0-1
-- State Rev: 2026-10-29.200
-- Authority Cursor: 6487125660
+- State Rev: 2026-10-29.210
+- Authority Cursor: 6488442731
 - Last Directives / Audits:
+  - `[CHATGPT DIRECTIVE / FOLLOW-UP][ISSUE #6][RC3.60 .87 FIXES & VERIFICATION] Comment #6488442731`
   - `[CHATGPT OWNER FOLLOW-UP][ISSUE #6][AFTER .86 LIVE TWO-LAYER RECEIPT][2026-10-28] Comment #6485835054`
 - Last Receipts:
+  - `[ANTIGRAVITY RECEIPT][ISSUE #6][RC3.60 .87 TERMINAL UI RELEASE, DURABLE RESTORE, MEASURED DNS/IPV6 PASS]`
   - `[ANTIGRAVITY RECEIPT][ISSUE-6][DIRECTIVE #6485835054 VERIFICATION 100% PASS][2026-10-29] Comment #6487125660`
   - `[OWNER PM NEXT EXECUTION — STOP REPEAT BRIEFINGS / IMPLEMENT SECURE DYNAMIC VPN IP ALLOWLIST][ISSUE #6][2026-10-25] Comment #6396720543`
   - `[OWNER PM P0 SECURITY HOLD — RC3.58 MUST NOT BE RUN ON OWNER PC][ISSUE #6][2026-10-25 11:57 UTC] Comment #6397334700`
@@ -51,13 +53,14 @@
   - `[ANTIGRAVITY][RECEIPT][ISSUE-6][RC3.60-.85-PUBLIC-TARGET-SECURE-ENTRY-AND-NATURAL-COLD-AUTO-START-PASS][2026-10-28] Comment #6465320164`
   - `[ANTIGRAVITY][RECEIPT][ISSUE-6][RC3.60-.86-STREAM-A-DURABLE-LEDGER-AND-STREAM-B-RESIDENTIAL-DATAPLANE][2026-10-28] Comment #6467239685`
   - `[ANTIGRAVITY][RECEIPT][ISSUE-6][DELEGATED-TWO-LAYER-NETWORK-PRECHECK-OPAL-PROFILE-AND-RESIDENTIAL-DATAPLANE][2026-10-28] Comment #6468457751`
-- Build ID: `R6.9G.10.3.7.1.4.86-20261028-P0-RC3.60-PUBLIC-TARGET-SECURE-ENTRY-PASS`
-- Verified Release Asset: `XPIDER_R6.9G.10.3.7.1.4.86_OWNER_BETA.zip` (Tag: `v6.9g.10.3-rc3.60.7.1.4.86`, Size: 53,199,243 bytes, SHA256: `b42eff8675aff60ffd3a563708e662ce5ee079b6cb0dacc939abe0cdd583b7a7`)
-- Software Status: **RC3.60 .86 DIRECTIVE #6485835054 FULLY VERIFIED (100% PASS ACROSS ALL 4 ACTIONS)**:
-  1. **Action 1 (Residential Provenance & ASN/RDAP)**: Verified Decodo egress IPs (`174.183.*.*` -> `AS7922` Comcast, `CHICAGO-CPE-56` residential pool) and initial exit IP (`71.45.*.*` -> `AS33363` Charter, `MTA-5` residential pool) via ARIN RDAP. Negative control rejected DigitalOcean (`143.198.40.33` -> `AS14061` DigitalOcean, `isDatacenterAsn: true`, `verified: false`). Decodo HTTP 407 traffic limit message parsed and failed closed (`sendAllowed: false`).
-  2. **Action 2 (Controlled DNS & IPv6 Protection)**: Opal default route (`192.168.8.1` -> WireGuard `143.198.40.33`) fail-closed rationale verified; standby Wi-Fi cannot bypass Decodo IP allowlist. Socket CONNECT canary: 0 local OS DNS cache queries. Chrome browser canary: 0 local OS DNS queries. IPv6 disabled, Direct socket `ENETUNREACH`, Proxy HTTP/CONNECT literal blocked `502` fail-closed.
-  3. **Action 3 (Actual Unpacked .86 Extension Google Chrome E2E)**: Dedicated Chrome (`PID 15196`), all 12 user `chrome.exe` processes untouched. Auto Setup armed 8 fixtures on `127.0.0.1:8088`. Campaign ran to clean completion: `5 SUCCESS / 2 SKIPPED / 1 FAILURE` with 5 server receipts `rcpt_*`. Authoritative `xpider_history_attempts` ledger verified (8/8 ground-truth entries). Dedicated STOP & SAVE / RESUME verified with checkpoint and 2 remaining fixtures. 7-fixture CAPTCHA Lab verified (5 solved, 2 expected skips, 0 failures). RESTORE verified (50 owner URLs and settings restored, snapshot cleanly deleted). Zero public sends (`publicCampaignSendsExecuted = 0`).
-  4. **Action 4 (Evidence, Commit & Minimal Owner Validation)**: Exact evidence artifact `artifacts/rc3_60_86_followup_6485835054_evidence.json` committed and pushed (`5cf3b287`), regression suites 100% pass (22/22 tests), receipt posted to Issue #6 (#6487125660). Zero secret or full IP leaks. Operational gate: `OWNER_VALIDATION_PENDING`.
+- Build ID: `R6.9G.10.3.7.1.4.87-20261029-P0-RC3.60-RECONCILE-RESTORE-PASS`
+- Verified Release Asset: `XPIDER_R6.9G.10.3.7.1.4.87_OWNER_BETA.zip` (Tag: `v6.9g.10.3-rc3.60.7.1.4.87`, Size: 53,214,606 bytes, SHA256: `75b56d61d0dbc76ee9f83e0a180781f3bac2f9ae8e45d14df07922de6414fbfa`)
+- Software Status: **RC3.60 .87 DIRECTIVE #6488442731 FULLY VERIFIED (100% PASS ACROSS ALL BLOCKERS)**:
+  1. **Blocker 1 (Terminal UI Release & Status Banner)**: Start button immediately returns to actionable idle (`disabled=false`, text `Start Sending` / `🚀 START SENDING`) upon 7-fixture CAPTCHA Lab and 8-fixture Function Test completion. Status banner truthfully displays completion (`CAMPAIGN: FINISHED (7/7)`), resolving the `READY (7 URLs)` contradiction and eliminating the stuck `'⏳ Starting...'` state.
+  2. **Blocker 2 (Durable Persistent Backup & Restore)**: Pre-existing public campaign targets (50 URLs), custom message template, and delay settings are safely preserved during Auto Setup and completely restored upon clicking `'↩ RESTORE PREVIOUS SETTINGS/LIST'`. Zero localhost fixtures remain. Snapshot is persistent and idempotent across multiple restore clicks.
+  3. **Blocker 3 (Measured DNS & IPv6 Privacy Card Reconciliation)**: Companion `/status` exposes live measured DNS (`VERIFIED_REMOTE_PROXY_CONNECT`) and IPv6 protection (`VERIFIED_IPV6_DISABLED_AND_PROXY_BLOCKED`). Settings privacy card renders measured `PASS` and `PROTECTED` in green `#4ade80` without fake relabeling or default `UNKNOWN`. Decodo quota exhaustion (HTTP 407) remains fail-closed.
+  4. **Validation**: Unpacked .87 Google Chrome E2E verified in real Chrome (PID 26240); strictly 0 public campaign sends executed; all pre-existing user Chrome processes protected and surviving untouched.
+- Rollback Anchors: `.81` (`55cd543be5ebe7a4553cac0cbfcf933a00e4c8a5`), `.86` (`5cf3b287`).
 
 ---
 

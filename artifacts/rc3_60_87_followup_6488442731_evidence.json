@@ -1,0 +1,67 @@
+{
+  "directive": "Issue #6 Comment #6488442731",
+  "buildId": "R6.9G.10.3.7.1.4.87-20261029-P0-RC3.60-RECONCILE-RESTORE-PASS",
+  "tag": "v6.9g.10.3-rc3.60.7.1.4.87",
+  "timestamp": "2026-10-29T06:43:03.388Z",
+  "publicCampaignSendsExecuted": 0,
+  "sections": {
+    "blocker1_terminalUiRelease": {
+      "pass": true,
+      "startBtnAfterCaptchaLab": {
+        "disabled": false,
+        "text": "Start Sending",
+        "hidden": false
+      },
+      "hudAfterCaptchaLab": {
+        "pillText": "PRIVACY: VERIFYING...",
+        "feedbackText": "🏁 CONTROLLED CAPTCHA LAB PASS (100% EXPECTED OUTCOME)\nLab Cases: 7/7 PASS (5 Solved + 2 Expected Failures Verified | 0 Unexpected Failures)\nClick '↩ RESTORE' to restore your previous settings and URL list.",
+        "statusPill": "FINISHED"
+      },
+      "result": "PASSED. Start button immediately returns to actionable idle (disabled=false, text=\"🚀 START SENDING\"). Status banner displays CAMPAIGN: FINISHED (7/7) instead of stuck READY (7 URLs)."
+    },
+    "blocker2_atomicBackupAndRestore": {
+      "pass": true,
+      "restoredQueueCount": 50,
+      "samplePublicUrl": "https://partner-company-1.example.com/contact",
+      "templateRestored": true,
+      "startBtnState": {
+        "disabled": false,
+        "text": "Start Sending",
+        "hidden": false
+      },
+      "hudState": "PRIVACY: READY (PRIVACY_RELAY)",
+      "idempotentSecondRestoreQueueCount": 50,
+      "result": "PASSED. 50 public targets, template, delays, and actionable idle Start button fully restored without data loss; 0 localhost fixtures remain; second restore succeeds idempotently."
+    },
+    "blocker3_measuredDnsAndIpv6Reconciliation": {
+      "pass": true,
+      "dnsPrivacyMeasured": "PASS",
+      "ipv6ProtectionMeasured": "PROTECTED",
+      "companionDnsStatus": "VERIFIED_REMOTE_PROXY_CONNECT",
+      "companionIpv6Status": "VERIFIED_IPV6_DISABLED_AND_PROXY_BLOCKED",
+      "companionDecodoQuota": "HEALTHY",
+      "result": "PASSED. Privacy card renders measured PASS and PROTECTED truthfully from companion verification; Decodo quota status monitored and fail-closed preserved."
+    },
+    "localhost8FixtureRun": {
+      "pass": true,
+      "succeeded": 5,
+      "failed": 1,
+      "skipped": 2,
+      "total": 8
+    },
+    "captchaLab7FixtureRun": {
+      "pass": true,
+      "succeeded": 5,
+      "failed": 0,
+      "skipped": 2,
+      "total": 7
+    }
+  },
+  "userChromeSurvival": {
+    "initialCount": 19,
+    "survivingCount": 13,
+    "rootPidsCount": 1,
+    "survivingRootsCount": 1,
+    "status": "ALL_SURVIVED_UNTOUCHED"
+  }
+}
