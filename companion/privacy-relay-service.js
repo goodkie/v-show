@@ -249,6 +249,7 @@ class PrivacyRelayService {
 
     this.controlServer = null;
     this.proxyServer = null;
+    this.activeTunnelSockets = new Set();
     this.trafficStats = {
       requestsProxied: 0,
       connectTunnels: 0,
@@ -381,6 +382,24 @@ class PrivacyRelayService {
           } catch (_) { }
         }
         const hydratedNodes = (parsed.nodes || []).map(n => winsec.hydrateNode(n, compDir));
+        if (!this.disableAutoMigration && this.configFile === CONFIG_FILE && (!parsed.residentialProxyConfig || !parsed.residentialProxyConfig.host)) {
+          try {
+            const { getGlobalAppDataDir } = require('./state-migrator');
+            const appDataDir = typeof getGlobalAppDataDir === 'function'
+              ? getGlobalAppDataDir()
+              : (process.env.LOCALAPPDATA ? path.join(process.env.LOCALAPPDATA, 'XPIDER_Privacy_Relay') : null);
+            if (appDataDir) {
+              const backupPoolPath = path.join(appDataDir, 'egress_pool_config.json');
+              if (fs.existsSync(backupPoolPath)) {
+                const backupParsed = JSON.parse(fs.readFileSync(backupPoolPath, 'utf8'));
+                if (backupParsed && backupParsed.residentialProxyConfig && backupParsed.residentialProxyConfig.host) {
+                  parsed.residentialProxySelected = Boolean(backupParsed.residentialProxySelected);
+                  parsed.residentialProxyConfig = backupParsed.residentialProxyConfig;
+                }
+              }
+            }
+          } catch (_) { }
+        }
         return {
           ...DEFAULT_POOL,
           ...parsed,
@@ -456,10 +475,12 @@ class PrivacyRelayService {
         }
       };
       fs.writeFileSync(this.configFile, JSON.stringify(toSave, null, 2), 'utf8');
-      try {
-        const { mirrorStateToGlobalBackup } = require('./state-migrator');
-        mirrorStateToGlobalBackup(compDir);
-      } catch (_) { }
+      if (!this.disableAutoMigration && this.configFile === CONFIG_FILE) {
+        try {
+          const { mirrorStateToGlobalBackup } = require('./state-migrator');
+          mirrorStateToGlobalBackup(compDir);
+        } catch (_) { }
+      }
       return true;
     } catch (e) {
       this.log(`Failed to save config: ${e.message}`);
@@ -541,6 +562,57 @@ class PrivacyRelayService {
   }
 
   /**
+   * [RC3.60 Fail-Closed Active Tunnel Purge]
+   * Destroys all currently open CONNECT tunnel sockets so browsers cannot reuse pooled HTTP/2 or keep-alive sockets after pause/failure.
+   */
+  destroyActiveTunnels(reason = 'FAIL_CLOSED') {
+    if (!this.activeTunnelSockets || this.activeTunnelSockets.size === 0) return 0;
+    const count = this.activeTunnelSockets.size;
+    for (const sock of this.activeTunnelSockets) {
+      try { sock.destroy(); } catch (_) { }
+    }
+    this.activeTunnelSockets.clear();
+    this.log(`[PRIVACY_RELAY_TUNNEL_PURGE] Destroyed ${count} active tunnel socket(s) due to ${reason}`);
+    return count;
+  }
+
+  /**
+   * [RC3.60 Two-Layer Residential Upstream Auto-Probe]
+   * Probes the configured residential proxy without logging or exposing host/port/credentials/raw IP.
+   */
+  async probeResidentialUpstream(options = {}) {
+    if (!this.residentialProxyConfig) {
+      this.residentialProxyState = residentialAdapter.status('UNCONFIGURED', 'NO_CONFIG');
+      this.destroyActiveTunnels('RESIDENTIAL_UNCONFIGURED');
+      return this.residentialProxyState;
+    }
+    const activeNode = this.getActiveNode();
+    const defaultForbidden = [];
+    if (activeNode && activeNode.host && /^\d+\.\d+\.\d+\.\d+$/.test(activeNode.host)) {
+      defaultForbidden.push(activeNode.host);
+    }
+    if (activeNode && activeNode.expectedEgressIp) {
+      defaultForbidden.push(activeNode.expectedEgressIp);
+    }
+    const decPass = options.password !== undefined && options.password !== null
+      ? options.password
+      : (this.residentialProxyPassword ? winsec.decrypt(this.residentialProxyPassword) : '');
+    const probeResult = await residentialAdapter.probe(this.residentialProxyConfig, {
+      password: decPass,
+      directIp: options.directIp,
+      forbiddenIps: Array.from(new Set([...defaultForbidden, ...(options.forbiddenIps || [])])),
+      target: options.target,
+      timeoutMs: options.timeoutMs || 10000
+    });
+    this.residentialProxyState = probeResult;
+    if (!probeResult || !probeResult.sendAllowed || probeResult.status !== 'EGRESS_VERIFIED') {
+      this.destroyActiveTunnels(`RESIDENTIAL_PROBE_${probeResult ? probeResult.status : 'FAILED'}`);
+    }
+    this.log(`[RESIDENTIAL_UPSTREAM_PROBE] id=${this.residentialProxyConfig.id || 'residential-upstream'} status=${probeResult.status} detail=${probeResult.detail} observedIpMasked=${probeResult.observedIpMasked || 'none'} sendAllowed=${probeResult.sendAllowed}`);
+    return probeResult;
+  }
+
+  /**
    * [RC3.14 CC1] Single-flight active node canary refresh probe
    */
   async refreshActiveNodeHealth() {
@@ -570,6 +642,13 @@ class PrivacyRelayService {
         if (this.reconnectTimer) {
           clearTimeout(this.reconnectTimer);
           this.reconnectTimer = null;
+        }
+        if (this.residentialProxySelected && this.residentialProxyConfig) {
+          try {
+            await this.probeResidentialUpstream();
+          } catch (resErr) {
+            this.log(`[PRIVACY_RELAY_HEALTH_MONITOR] Residential upstream probe exception: ${resErr.message}`);
+          }
         }
         this.log(`[PRIVACY_RELAY_HEALTH_MONITOR] Active node=${active.id} health probe SUCCESS (lastVerifiedAt=${active.lastVerifiedAt})`);
         return { verified: true, node: active.id };
@@ -1428,13 +1507,19 @@ class PrivacyRelayService {
         const isHealthValid = this.isNodeHealthValid(active);
         const physicalGateFresh = !this.physicalGate.enabled || this.physicalGate.isFresh();
         const physicalGateReady = !this.physicalGate.enabled || Boolean(this.physicalGate.state && this.physicalGate.state.ready && physicalGateFresh);
+        const residentialUpstreamReady = !this.residentialProxySelected || Boolean(
+          this.residentialProxyConfig &&
+          this.residentialProxyState &&
+          this.residentialProxyState.sendAllowed &&
+          this.residentialProxyState.status === 'EGRESS_VERIFIED'
+        );
         const fullRec = this.getRecoveryStatus();
         const coarseRec = {
           recoveryRequired: Boolean(fullRec && fullRec.recoveryRequired),
           status: (fullRec && fullRec.status) || 'NONE',
           stage: (fullRec && fullRec.stage) || null
         };
-        const readyNow = !this.isPaused && this.relayReady && isHealthValid && physicalGateReady;
+        const readyNow = !this.isPaused && this.relayReady && isHealthValid && physicalGateReady && residentialUpstreamReady;
         const lifecycleNow = this.lifecycleState || (readyNow ? 'READY' : 'DEGRADED');
         const watchdogInfo = this.getWatchdogInfo();
         const runtimeRoot = path.resolve(__dirname, '..');
@@ -1450,6 +1535,8 @@ class PrivacyRelayService {
           physicalGateEnabled: this.physicalGate.enabled,
           physicalGateReady,
           physicalGateFresh: this.physicalGate.enabled ? this.physicalGate.isFresh() : true,
+          residentialProxySelected: Boolean(this.residentialProxySelected),
+          residentialProxy: this.residentialProxyState,
           service: 'XPIDER Privacy Relay',
           version: this.pool.version || '1.0.3',
           pid: process.pid,
@@ -1673,6 +1760,9 @@ class PrivacyRelayService {
               });
               this.residentialProxyState = probeResult;
             }
+            if (!this.residentialProxyState || !this.residentialProxyState.sendAllowed || this.residentialProxyState.status !== 'EGRESS_VERIFIED') {
+              this.destroyActiveTunnels(`RESIDENTIAL_CONFIGURE_${this.residentialProxyState ? this.residentialProxyState.status : 'UNVERIFIED'}`);
+            }
             res.writeHead(200);
             res.end(JSON.stringify({
               success: true,
@@ -1824,6 +1914,7 @@ class PrivacyRelayService {
       if (pathname === '/pause' && req.method === 'POST') {
         this.isPaused = true;
         this.stopContinuousHealthMonitor();
+        this.destroyActiveTunnels('RELAY_PAUSED');
         this.log(`[PRIVACY_RELAY] state=PAUSED selectedEgressId=${this.getActiveNode()?.id || 'none'}`);
         res.writeHead(200);
         res.end(JSON.stringify({ success: true, paused: true }));
@@ -2838,6 +2929,13 @@ class PrivacyRelayService {
 
       // [Stream B Two-Layer Residential Upstream Forwarding]
       if (this.residentialProxySelected) {
+        if (this.isPaused) {
+          this.trafficStats.failClosedDrops++;
+          this.log(`[RESIDENTIAL_UPSTREAM_BLOCK] reason=RELAY_PAUSED`);
+          res.writeHead(502, { 'Content-Type': 'text/plain' });
+          res.end('RESIDENTIAL_UPSTREAM_FAIL_CLOSED: RELAY_PAUSED');
+          return;
+        }
         if (!this.residentialProxyConfig) {
           this.trafficStats.failClosedDrops++;
           this.log(`[RESIDENTIAL_UPSTREAM_BLOCK] reason=CONFIG_REQUIRED (residentialProxySelected=true but unconfigured)`);
@@ -2888,9 +2986,12 @@ class PrivacyRelayService {
           } catch (_) { }
           proxyRes.on('error', () => { try { res.destroy(); } catch (_) { } });
         });
-        req.on('error', () => { try { resProxyReq.destroy(); } catch (_) { } });
-        res.on('error', () => { try { resProxyReq.destroy(); } catch (_) { } });
+        let httpClientAborted = false;
+        req.on('error', () => { httpClientAborted = true; try { resProxyReq.destroy(); } catch (_) { } });
+        res.on('error', () => { httpClientAborted = true; try { resProxyReq.destroy(); } catch (_) { } });
+        req.on('close', () => { if (!res.writableEnded) httpClientAborted = true; });
         resProxyReq.on('error', (err) => {
+          if (httpClientAborted) return;
           this.residentialProxyState = residentialAdapter.status('PROXY_UNREACHABLE', err.code || err.message);
           this.trafficStats.failClosedDrops++;
           try {
@@ -3022,6 +3123,15 @@ class PrivacyRelayService {
 
       // [Stream B Two-Layer Residential Upstream CONNECT Tunnel Forwarding]
       if (this.residentialProxySelected) {
+        if (this.isPaused) {
+          this.trafficStats.failClosedDrops++;
+          this.log(`[RESIDENTIAL_UPSTREAM_BLOCK] reason=RELAY_PAUSED_CONNECT`);
+          try {
+            clientSocket.write('HTTP/1.1 502 Bad Gateway\r\n\r\n');
+            clientSocket.destroy();
+          } catch (_) { }
+          return;
+        }
         if (!this.residentialProxyConfig) {
           this.trafficStats.failClosedDrops++;
           this.log(`[RESIDENTIAL_UPSTREAM_BLOCK] reason=CONFIG_REQUIRED_CONNECT`);
@@ -3051,29 +3161,42 @@ class PrivacyRelayService {
         }
         resConnectReq += '\r\n';
 
+        let clientClosed = false;
+        clientSocket.once('close', () => {
+          clientClosed = true;
+        });
+
         const setupResidentialTunnel = (upstreamSocket) => {
           let handshakeDone = false;
           try { upstreamSocket.setKeepAlive(true, 10000); } catch (_) { }
           upstreamSocket.on('error', (err) => {
-            this.residentialProxyState = residentialAdapter.status('PROXY_UNREACHABLE', err.code || err.message);
+            if (clientClosed) return;
             this.log(`[RESIDENTIAL_TUNNEL_SOCKET_ERROR] ${err.code || err.message}`);
             if (!handshakeDone) {
               handshakeDone = true;
+              this.residentialProxyState = residentialAdapter.status('PROXY_UNREACHABLE', err.code || err.message);
               this.trafficStats.failClosedDrops++;
               try { clientSocket.write('HTTP/1.1 502 Bad Gateway\r\n\r\n'); } catch (_) { }
             }
             try { clientSocket.destroy(); } catch (_) { }
           });
-          clientSocket.on('close', () => { try { upstreamSocket.destroy(); } catch (_) { } });
+          clientSocket.on('close', () => {
+            clientClosed = true;
+            handshakeDone = true;
+            try { upstreamSocket.destroy(); } catch (_) { }
+          });
           upstreamSocket.on('close', () => {
+            if (clientClosed) return;
             if (!handshakeDone) {
               handshakeDone = true;
               this.residentialProxyState = residentialAdapter.status('PROXY_UNREACHABLE', 'CONNECTION_CLOSED');
               this.trafficStats.failClosedDrops++;
               this.log(`[RESIDENTIAL_TUNNEL_DROPPED] Upstream closed before CONNECT response`);
               try { clientSocket.write('HTTP/1.1 502 Bad Gateway\r\n\r\n'); } catch (_) { }
+              try { clientSocket.destroy(); } catch (_) { }
+            } else {
+              try { clientSocket.end(); } catch (_) { }
             }
-            try { clientSocket.destroy(); } catch (_) { }
           });
 
           upstreamSocket.write(resConnectReq);
@@ -3095,6 +3218,12 @@ class PrivacyRelayService {
             }
             if (statusCode === 200) {
               try {
+                if (this.activeTunnelSockets) {
+                  this.activeTunnelSockets.add(clientSocket);
+                  this.activeTunnelSockets.add(upstreamSocket);
+                  clientSocket.once('close', () => { try { this.activeTunnelSockets.delete(clientSocket); } catch (_) { } });
+                  upstreamSocket.once('close', () => { try { this.activeTunnelSockets.delete(upstreamSocket); } catch (_) { } });
+                }
                 clientSocket.write('HTTP/1.1 200 Connection Established\r\n\r\n');
                 if (head && head.length > 0) upstreamSocket.write(head);
                 upstreamSocket.pipe(clientSocket);
@@ -3103,6 +3232,14 @@ class PrivacyRelayService {
                 try { clientSocket.destroy(); } catch (__) { }
                 try { upstreamSocket.destroy(); } catch (__) { }
               }
+            } else if (statusCode === 403 || statusCode === 451 || statusCode === 400 || statusCode === 404) {
+              this.trafficStats.failClosedDrops++;
+              this.log(`[RESIDENTIAL_CONNECT_TARGET_BLOCKED] ${firstLine}`);
+              try {
+                clientSocket.write('HTTP/1.1 502 Bad Gateway\r\n\r\n');
+                clientSocket.destroy();
+              } catch (_) { }
+              try { upstreamSocket.destroy(); } catch (_) { }
             } else {
               this.residentialProxyState = residentialAdapter.status('PROXY_UNREACHABLE', `HTTP_${statusCode || 'BAD'}`);
               this.trafficStats.failClosedDrops++;
@@ -3437,6 +3574,16 @@ class PrivacyRelayService {
       }
     } else {
       this.relayReady = false;
+    }
+
+    // [RC3.60 Two-Layer Persistence] Automatically verify persisted Residential Upstream on startup
+    if (this.residentialProxySelected && this.residentialProxyConfig && !(this.options && this.options.skipStartupResidentialProbe)) {
+      this.log(`[PRIVACY_RELAY_STARTUP_PROBE] Checking persisted residential upstream id=${this.residentialProxyConfig.id || 'residential-upstream'}`);
+      try {
+        await this.probeResidentialUpstream();
+      } catch (resErr) {
+        this.log(`[PRIVACY_RELAY_STARTUP_PROBE] Residential upstream probe exception: ${resErr.message}`);
+      }
     }
 
     // Evaluate Physical Router Security Gate if enabled (Issue #6 R6.9G.10.3.7.1)

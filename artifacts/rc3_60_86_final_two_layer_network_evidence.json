@@ -1,0 +1,303 @@
+{
+  "verifiedAt": "2026-10-29T01:27:55.884Z",
+  "releaseBuild": "R6.9G.10.3.7.1.4.86",
+  "securityInvariant": {
+    "credentialsPrinted": false,
+    "proxyEndpointPrinted": false,
+    "observedIpMaskedOnly": true,
+    "campaignSendsExecuted": 0
+  },
+  "phases": {
+    "phase1_twoLayerBaseline": {
+      "pass": true,
+      "initialSessionObservedIpMasked": "71.45.*.*",
+      "layer1_opalToDigitalOceanWireGuard": {
+        "opalRouterGateway": "192.168.8.1",
+        "opalGatewayReachable": true,
+        "wireGuardPeerEndpoint": "10.66.66.1",
+        "wgTunnelGatewayReachable": true,
+        "osDirectObservedIp": "143.198.40.33",
+        "osDirectColo": "YYZ"
+      },
+      "layer2_xpiderToDecodoIpAuth": {
+        "status": {
+          "service": "XPIDER Privacy Relay",
+          "version": "1.0.3",
+          "relayReady": true,
+          "lifecycleState": "READY",
+          "paused": false,
+          "selectedEgressId": "do-egress-tor1-611293905",
+          "egressFingerprint": "05b6b53daead49e7",
+          "health": "HEALTHY",
+          "isHealthValid": true,
+          "residentialProxySelected": true,
+          "residentialProxy": {
+            "status": "EGRESS_VERIFIED",
+            "detail": "OK",
+            "observedIpMasked": "172.56.*.*",
+            "residentialVerified": false,
+            "sendAllowed": true,
+            "dnsProtection": "UNKNOWN",
+            "ipv6Protection": "UNKNOWN",
+            "checkedAt": "2026-10-29T01:27:42.697Z"
+          },
+          "trafficStats": {
+            "requestsProxied": 0,
+            "connectTunnels": 2,
+            "failClosedDrops": 0
+          },
+          "companionPid": 21840
+        },
+        "residentialProxyStatus": {
+          "success": true,
+          "residentialProxySelected": true,
+          "residentialProxyConfig": {
+            "id": "decodo-ip-auth",
+            "type": "HTTP_PROXY",
+            "hostConfigured": true,
+            "portConfigured": true,
+            "USERNAME_EMPTY": true,
+            "hasCredentials": true
+          },
+          "residentialProxy": {
+            "status": "EGRESS_VERIFIED",
+            "detail": "OK",
+            "observedIpMasked": "172.56.*.*",
+            "residentialVerified": false,
+            "sendAllowed": true,
+            "dnsProtection": "UNKNOWN",
+            "ipv6Protection": "UNKNOWN",
+            "checkedAt": "2026-10-29T01:27:42.697Z"
+          }
+        },
+        "liveProxyTunnelTrace": {
+          "connectStatus": 200,
+          "connectLine": "HTTP/1.1 200 Connection Established",
+          "observedIpMasked": "172.56.*.*",
+          "isDistinctFromDo": true,
+          "colo": "DFW"
+        }
+      }
+    },
+    "phase2_companionRestartPersistence": {
+      "pass": true,
+      "preRestartPid": 21840,
+      "postRestartPid": 24056,
+      "manualConfigureOrProbeCalledAfterRestart": false,
+      "postRestartStatus": {
+        "service": "XPIDER Privacy Relay",
+        "version": "1.0.3",
+        "relayReady": true,
+        "lifecycleState": "READY",
+        "paused": false,
+        "selectedEgressId": "do-egress-tor1-611293905",
+        "egressFingerprint": "05b6b53daead49e7",
+        "health": "HEALTHY",
+        "isHealthValid": true,
+        "residentialProxySelected": true,
+        "residentialProxy": {
+          "status": "EGRESS_VERIFIED",
+          "detail": "OK",
+          "observedIpMasked": "172.56.*.*",
+          "residentialVerified": false,
+          "sendAllowed": true,
+          "dnsProtection": "UNKNOWN",
+          "ipv6Protection": "UNKNOWN",
+          "checkedAt": "2026-10-29T01:28:01.146Z"
+        },
+        "trafficStats": {
+          "requestsProxied": 0,
+          "connectTunnels": 0,
+          "failClosedDrops": 0
+        },
+        "companionPid": 24056
+      },
+      "postRestartResidentialProxy": {
+        "success": true,
+        "residentialProxySelected": true,
+        "residentialProxyConfig": {
+          "id": "decodo-ip-auth",
+          "type": "HTTP_PROXY",
+          "hostConfigured": true,
+          "portConfigured": true,
+          "USERNAME_EMPTY": true,
+          "hasCredentials": true
+        },
+        "residentialProxy": {
+          "status": "EGRESS_VERIFIED",
+          "detail": "OK",
+          "observedIpMasked": "172.56.*.*",
+          "residentialVerified": false,
+          "sendAllowed": true,
+          "dnsProtection": "UNKNOWN",
+          "ipv6Protection": "UNKNOWN",
+          "checkedAt": "2026-10-29T01:28:01.146Z"
+        }
+      },
+      "startupLogExcerptRedacted": [
+        "[2026-10-29T01:27:42.697Z] [RESIDENTIAL_UPSTREAM_PROBE] id=decodo-ip-auth status=EGRESS_VERIFIED detail=OK observedIpMasked=172.56.*.* sendAllowed=true",
+        "[2026-10-29T01:27:42.717Z] [PRIVACY_RELAY_HEALTH_MONITOR] Active node=do-egress-tor1-611293905 health probe SUCCESS (lastVerifiedAt=1793237262142)",
+        "[2026-10-29T01:27:57.551Z] [COMPANION_SHUTDOWN] Received authorized shutdown request. Terminating companion server...",
+        "[2026-10-29T01:27:57.569Z] [PRIVACY_RELAY_HEALTH_MONITOR] Continuous health monitor stopped",
+        "[2026-10-29T01:27:57.903Z] [PRIVACY_RELAY] state=STOPPED",
+        "[2026-10-29T01:27:58.287Z] [PRIVACY_RELAY_ACTIVE_NODE] Active private-egress node found: droplet=611293905 ip=[REDACTED_IP]",
+        "[2026-10-29T01:27:58.309Z] [FIREWALL_GUARDIAN] no local PAT stored; guardian idle",
+        "[2026-10-29T01:27:58.328Z] [PRIVACY_RELAY_STARTUP_PROBE] Checking sticky active node=do-egress-tor1-611293905",
+        "[2026-10-29T01:27:59.436Z] Control plane listening on http://127.0.0.1:18989",
+        "[2026-10-29T01:27:59.501Z] Proxy engine listening on http://127.0.0.1:18988",
+        "[2026-10-29T01:27:59.680Z] [PRIVACY_RELAY_STARTUP_PROBE] Sticky active node=do-egress-tor1-611293905 verified HEALTHY",
+        "[2026-10-29T01:27:59.706Z] [PRIVACY_RELAY_HEALTH_MONITOR] Starting continuous health monitor (cadence=20000ms, ttl=60000ms)",
+        "[2026-10-29T01:27:59.725Z] [PRIVACY_RELAY_STARTUP_PROBE] Checking persisted residential upstream id=decodo-ip-auth",
+        "[2026-10-29T01:28:01.146Z] [RESIDENTIAL_UPSTREAM_PROBE] id=decodo-ip-auth status=EGRESS_VERIFIED detail=OK observedIpMasked=172.56.*.* sendAllowed=true",
+        "[2026-10-29T01:28:01.166Z] [PRIVACY_RELAY] state=RUNNING selectedEgressId=do-egress-tor1-611293905 transport=HTTPS_PROXY health=HEALTHY rotationMode=HEALTH_FAILOVER fingerprint=05b6b53daead49e7"
+      ]
+    },
+    "phase3_realBrowserTrafficRouting": {
+      "pass": true,
+      "browserEngine": "Chrome/156.0.8078.48",
+      "browserProxyConfig": "http://127.0.0.1:18988 (with remote DNS enforcement)",
+      "cloudflareTraceObservedIpMasked": "172.56.*.*",
+      "cloudflareTraceColo": "DFW",
+      "ipifyObservedIpMasked": "172.56.*.*",
+      "simultaneousOsDirectIp": "143.198.40.33",
+      "connectTunnelsBefore": 0,
+      "connectTunnelsAfter": 35,
+      "connectTunnelsDelta": 35,
+      "campaignFormsSubmitted": 0
+    },
+    "phase4_failClosedAndRestoration": {
+      "pass": true,
+      "mode4A_relayPauseFailClosed": {
+        "relayReadyWhilePaused": false,
+        "httpProxyResponseStatus": 502,
+        "httpProxyResponseBody": "RESIDENTIAL_UPSTREAM_FAIL_CLOSED: RELAY_PAUSED",
+        "httpsConnectResponseStatus": 502,
+        "browserBlocked": true,
+        "browserError": "net::ERR_TUNNEL_CONNECTION_FAILED",
+        "directOrDoLeakOccurred": false
+      },
+      "mode4B_upstreamUnreachableFailClosed": {
+        "residentialStatus": "PROXY_UNREACHABLE",
+        "residentialDetail": "ECONNREFUSED",
+        "sendAllowed": false,
+        "relayReady": false,
+        "httpProxyResponseStatus": 502,
+        "httpProxyResponseBody": "RESIDENTIAL_UPSTREAM_FAIL_CLOSED: PROXY_UNREACHABLE",
+        "httpsConnectResponseStatus": 502,
+        "browserBlocked": true,
+        "browserError": "net::ERR_TUNNEL_CONNECTION_FAILED",
+        "directOrDoLeakOccurred": false
+      },
+      "restorationAfterFailure": {
+        "restoredStatus": {
+          "service": "XPIDER Privacy Relay",
+          "version": "1.0.3",
+          "relayReady": true,
+          "lifecycleState": "READY",
+          "paused": false,
+          "selectedEgressId": "do-egress-tor1-611293905",
+          "egressFingerprint": "05b6b53daead49e7",
+          "health": "HEALTHY",
+          "isHealthValid": true,
+          "residentialProxySelected": true,
+          "residentialProxy": {
+            "status": "EGRESS_VERIFIED",
+            "detail": "OK",
+            "observedIpMasked": "172.56.*.*",
+            "residentialVerified": false,
+            "sendAllowed": true,
+            "dnsProtection": "UNKNOWN",
+            "ipv6Protection": "UNKNOWN",
+            "checkedAt": "2026-10-29T01:28:14.112Z"
+          },
+          "trafficStats": {
+            "requestsProxied": 7,
+            "connectTunnels": 50,
+            "failClosedDrops": 24
+          },
+          "companionPid": 24056
+        },
+        "restoredResidentialProxy": {
+          "success": true,
+          "residentialProxySelected": true,
+          "residentialProxyConfig": {
+            "id": "decodo-ip-auth",
+            "type": "HTTP_PROXY",
+            "hostConfigured": true,
+            "portConfigured": true,
+            "USERNAME_EMPTY": true,
+            "hasCredentials": true
+          },
+          "residentialProxy": {
+            "status": "EGRESS_VERIFIED",
+            "detail": "OK",
+            "observedIpMasked": "172.56.*.*",
+            "residentialVerified": false,
+            "sendAllowed": true,
+            "dnsProtection": "UNKNOWN",
+            "ipv6Protection": "UNKNOWN",
+            "checkedAt": "2026-10-29T01:28:14.112Z"
+          }
+        },
+        "browserPostRecoveryObservedIpMasked": "172.56.*.*"
+      }
+    },
+    "phase5_preservationAndFinalState": {
+      "pass": true,
+      "existingChromeProcessesPreserved": true,
+      "preChromeProcessCount": 12,
+      "postChromeProcessCount": 12,
+      "finalCompanionStatus": {
+        "service": "XPIDER Privacy Relay",
+        "version": "1.0.3",
+        "relayReady": true,
+        "lifecycleState": "READY",
+        "paused": false,
+        "selectedEgressId": "do-egress-tor1-611293905",
+        "egressFingerprint": "05b6b53daead49e7",
+        "health": "HEALTHY",
+        "isHealthValid": true,
+        "residentialProxySelected": true,
+        "residentialProxy": {
+          "status": "EGRESS_VERIFIED",
+          "detail": "OK",
+          "observedIpMasked": "172.56.*.*",
+          "residentialVerified": false,
+          "sendAllowed": true,
+          "dnsProtection": "UNKNOWN",
+          "ipv6Protection": "UNKNOWN",
+          "checkedAt": "2026-10-29T01:28:14.112Z"
+        },
+        "trafficStats": {
+          "requestsProxied": 7,
+          "connectTunnels": 52,
+          "failClosedDrops": 24
+        },
+        "companionPid": 24056
+      },
+      "finalResidentialProxyStatus": {
+        "success": true,
+        "residentialProxySelected": true,
+        "residentialProxyConfig": {
+          "id": "decodo-ip-auth",
+          "type": "HTTP_PROXY",
+          "hostConfigured": true,
+          "portConfigured": true,
+          "USERNAME_EMPTY": true,
+          "hasCredentials": true
+        },
+        "residentialProxy": {
+          "status": "EGRESS_VERIFIED",
+          "detail": "OK",
+          "observedIpMasked": "172.56.*.*",
+          "residentialVerified": false,
+          "sendAllowed": true,
+          "dnsProtection": "UNKNOWN",
+          "ipv6Protection": "UNKNOWN",
+          "checkedAt": "2026-10-29T01:28:14.112Z"
+        }
+      },
+      "campaignSendsExecuted": 0
+    }
+  }
+}

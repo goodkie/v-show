@@ -76,7 +76,7 @@ function ensureLocalOpalWireGuardProfile(options = {}) {
   if (process.platform === 'win32') {
     try {
       execSync(`icacls "${appDataRoot}" /inheritance:r /grant:r "%USERNAME%:(OI)(CI)F"`, { stdio: 'ignore' });
-    } catch (_) {}
+    } catch (_) { }
   }
 
   let pair = null;
@@ -90,7 +90,7 @@ function ensureLocalOpalWireGuardProfile(options = {}) {
       if (parsed && parsed.client && parsed.client.privateKey && parsed.server && parsed.server.privateKey) {
         pair = parsed;
       }
-    } catch (_) {}
+    } catch (_) { }
   }
 
   if (!pair) {
@@ -138,7 +138,7 @@ function ensureLocalOpalWireGuardProfile(options = {}) {
     try {
       execSync(`icacls "${profilePath}" /inheritance:r /grant:r "%USERNAME%:F"`, { stdio: 'ignore' });
       execSync(`icacls "${consoleCmdPath}" /inheritance:r /grant:r "%USERNAME%:F"`, { stdio: 'ignore' });
-    } catch (_) {}
+    } catch (_) { }
   }
 
   const profileSha256 = crypto.createHash('sha256').update(clientProfileContent).digest('hex');
@@ -182,7 +182,7 @@ function httpGetLocal(urlStr, timeoutMs = 4000, headers = {}) {
       res.on('data', (c) => { if (b.length < 8192) b += c; });
       res.on('end', () => {
         let json = null;
-        try { json = JSON.parse(b); } catch (_) {}
+        try { json = JSON.parse(b); } catch (_) { }
         resolve({ status: res.statusCode, headers: res.headers, json, bodyPreview: b.slice(0, 300) });
       });
     });
@@ -309,19 +309,19 @@ async function runOpalAndRouteAudit() {
       const arpOut = execSync('arp -a 192.168.8.1', { encoding: 'utf8', timeout: 3000 });
       const m = /192\.168\.8\.1\s+([0-9a-fA-F-]{17})/i.exec(arpOut);
       if (m) arpMac = m[1].toLowerCase();
-    } catch (_) {}
+    } catch (_) { }
     try {
       const sshFpOut = execSync('ssh-keygen -l -F 192.168.8.1', { encoding: 'utf8', timeout: 3000 });
       const m = /(SHA256:[A-Za-z0-9+/=]+)/.exec(sshFpOut);
       if (m) sshHostKeyFp = m[1];
-    } catch (_) {}
+    } catch (_) { }
     try {
       const trOut = execSync('tracert -d -h 3 -w 1000 143.198.40.33', { encoding: 'utf8', timeout: 8000 });
       for (const line of trOut.split(/\r?\n/)) {
         const m = /^\s*(\d+)\s+.*?(\d{1,3}(?:\.\d{1,3}){3})\s*$/.exec(line);
         if (m) traceHops.push({ hop: Number(m[1]), ip: m[2] });
       }
-    } catch (_) {}
+    } catch (_) { }
   }
 
   const winAttest = new WindowsNetworkAttestation();
@@ -526,6 +526,7 @@ async function runSplitEgressAndDropVerification() {
     });
 
     // Test 1: Authenticated HTTPS_PROXY configure + probe with distinct exit IP (203.0.113.50 != DO 143.198.40.33 and != ISP 74.39.42.139)
+    const simulatedIspIp = (osDirectIp && osDirectIp !== '143.198.40.33') ? osDirectIp : '74.39.42.139';
     proxyBehavior = 'OK';
     simulatedExitIp = '203.0.113.50';
     const cfgOk = await postJson('/residential-proxy/configure', {
@@ -537,7 +538,7 @@ async function runSplitEgressAndDropVerification() {
       password: 'res_secret_pass',
       ca: CERT_PEM,
       runProbe: true,
-      directIp: osDirectIp,
+      directIp: simulatedIspIp,
       target: { host: '127.0.0.1', port: targetPort },
       targetCa: CERT_PEM
     });
@@ -548,18 +549,18 @@ async function runSplitEgressAndDropVerification() {
     const rawCredsOnDisk = fs.readFileSync(path.join(tmpDir, '.local_credentials.json'), 'utf8');
     const dpapiVerified = !rawPoolOnDisk.includes('res_secret_pass') && !rawCredsOnDisk.includes('res_secret_pass') && rawCredsOnDisk.includes('dpapi:');
 
-    // Test 2: Leak test fails closed if upstream exits with DO IP (143.198.40.33) or ISP IP (osDirectIp)
+    // Test 2: Leak test fails closed if upstream exits with DO IP (143.198.40.33) or ISP IP (simulatedIspIp)
     simulatedExitIp = '143.198.40.33';
     const probeDoLeak = await postJson('/residential-proxy/probe', {
-      directIp: osDirectIp,
+      directIp: simulatedIspIp,
       target: { host: '127.0.0.1', port: targetPort },
       targetCa: CERT_PEM
     });
     const tunnelBlockedOnDoLeak = await tunnelThroughRelay();
 
-    simulatedExitIp = osDirectIp;
+    simulatedExitIp = simulatedIspIp;
     const probeIspLeak = await postJson('/residential-proxy/probe', {
-      directIp: osDirectIp,
+      directIp: simulatedIspIp,
       target: { host: '127.0.0.1', port: targetPort },
       targetCa: CERT_PEM
     });
@@ -567,7 +568,7 @@ async function runSplitEgressAndDropVerification() {
     // Restore EGRESS_VERIFIED, then test mid-flight 407, 401, and socket DROP fail-closed
     simulatedExitIp = '203.0.113.50';
     await postJson('/residential-proxy/probe', {
-      directIp: osDirectIp,
+      directIp: simulatedIspIp,
       target: { host: '127.0.0.1', port: targetPort },
       targetCa: CERT_PEM
     });
@@ -609,7 +610,7 @@ async function runSplitEgressAndDropVerification() {
     if (relayService) await relayService.stop();
     if (mockResHttpsProxy) await new Promise((r) => mockResHttpsProxy.close(r));
     if (mockTargetTls) await new Promise((r) => mockTargetTls.close(r));
-    try { fs.rmSync(tmpDir, { recursive: true, force: true }); } catch (_) {}
+    try { fs.rmSync(tmpDir, { recursive: true, force: true }); } catch (_) { }
   }
 }
 

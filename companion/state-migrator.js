@@ -204,6 +204,19 @@ function mirrorStateToGlobalBackup(companionDir) {
       const src = path.join(companionDir, f);
       if (fs.existsSync(src)) {
         const dest = path.join(appDataDir, f);
+        if (f === 'egress_pool_config.json' && fs.existsSync(dest)) {
+          const srcJson = readJsonSafe(src);
+          const destJson = readJsonSafe(dest);
+          if (srcJson && destJson && !srcJson.residentialProxyConfig && destJson.residentialProxyConfig && destJson.residentialProxyConfig.host) {
+            const merged = {
+              ...srcJson,
+              residentialProxySelected: Boolean(destJson.residentialProxySelected),
+              residentialProxyConfig: destJson.residentialProxyConfig
+            };
+            fs.writeFileSync(dest, JSON.stringify(merged, null, 2), 'utf8');
+            continue;
+          }
+        }
         fs.copyFileSync(src, dest);
       }
     }

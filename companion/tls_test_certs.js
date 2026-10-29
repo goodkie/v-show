@@ -40,7 +40,7 @@ function generateTlsTestCertificates(dir) {
   execSync(`${openssl} req -newkey rsa:2048 -nodes -keyout "${serverKey}" -out "${serverCsr}" -subj "/CN=127.0.0.1"`, { stdio: 'ignore' });
 
   // 3. Extension config with SAN
-  fs.writeFileSync(extCnf, 'subjectAltName=IP:127.0.0.1\n', 'utf8');
+  fs.writeFileSync(extCnf, 'subjectAltName=IP:127.0.0.1,DNS:localhost\n', 'utf8');
 
   // 4. Sign server cert with Root CA
   execSync(`${openssl} x509 -req -in "${serverCsr}" -CA "${caCrt}" -CAkey "${caKey}" -CAcreateserial -out "${serverCrt}" -days 1 -extfile "${extCnf}"`, { stdio: 'ignore' });

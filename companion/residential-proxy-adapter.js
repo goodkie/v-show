@@ -50,7 +50,7 @@ function connectViaProxy(cfg, password, target, timeoutMs) {
     const done = (r) => {
       if (settled) return;
       settled = true;
-      try { sock.destroy(); } catch (_) {}
+      try { sock.destroy(); } catch (_) { }
       resolve(r);
     };
     const proxyType = normalizeProxyType(cfg);
@@ -96,7 +96,7 @@ function observeIp(tunnel, host, timeoutMs, ca) {
     if (ca) tlsOpts.ca = ca;
     const t = tls.connect(tlsOpts);
     let out = '';
-    const fin = (v) => { try { t.destroy(); } catch (_) {} resolve(v); };
+    const fin = (v) => { try { t.destroy(); } catch (_) { } resolve(v); };
     t.setTimeout(timeoutMs, () => fin(null));
     t.on('error', () => fin(null));
     t.on('secureConnect', () => t.write(`GET /cdn-cgi/trace HTTP/1.1\r\nHost: ${host}\r\nConnection: close\r\n\r\n`));
