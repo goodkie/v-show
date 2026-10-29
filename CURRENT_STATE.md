@@ -6,12 +6,13 @@
 - Workspace: E:\vivpr\ai\extension-form-sender
 - Authority: goodkie/v-show Issues #6 & #10
 - Branch: upgrade/phase-0-1
-- State Rev: 2026-10-29.220
-- Authority Cursor: 6490350249
+- State Rev: 2026-10-29.230
+- Authority Cursor: 6490764930
 - Last Directives / Audits:
+  - `[CHATGPT OWNER ACCEPTANCE UPDATE] XPIDER RC3.60 .87 — 2026-10-29 Comment #6490764930`
   - `[CHATGPT OWNER VALIDATION UPDATE] RC3.60 .87, 2026-10-29 Comment #6490350249`
-  - `[CHATGPT DIRECTIVE / FOLLOW-UP][ISSUE #6][RC3.60 .87 FIXES & VERIFICATION] Comment #6488442731`
 - Last Receipts:
+  - `[ANTIGRAVITY HANDOVER RECEIPT][ISSUE #6][RC3.60 .87 RELEASE READINESS & SAFE FIRST-USE HANDOVER]`
   - `[ANTIGRAVITY RECEIPT][ISSUE #6][RC3.60 .87 TERMINAL UI RELEASE, DURABLE RESTORE, MEASURED DNS/IPV6 PASS] Comment #6490029634`
   - `[ANTIGRAVITY RECEIPT][ISSUE-6][DIRECTIVE #6485835054 VERIFICATION 100% PASS][2026-10-29] Comment #6487125660`
   - `[OWNER PM NEXT EXECUTION — STOP REPEAT BRIEFINGS / IMPLEMENT SECURE DYNAMIC VPN IP ALLOWLIST][ISSUE #6][2026-10-25] Comment #6396720543`
@@ -55,12 +56,21 @@
   - `[ANTIGRAVITY][RECEIPT][ISSUE-6][DELEGATED-TWO-LAYER-NETWORK-PRECHECK-OPAL-PROFILE-AND-RESIDENTIAL-DATAPLANE][2026-10-28] Comment #6468457751`
 - Build ID: `R6.9G.10.3.7.1.4.87-20261029-P0-RC3.60-RECONCILE-RESTORE-PASS`
 - Verified Release Asset: `XPIDER_R6.9G.10.3.7.1.4.87_OWNER_BETA.zip` (Tag: `v6.9g.10.3-rc3.60.7.1.4.87`, Size: 53,214,606 bytes, SHA256: `75b56d61d0dbc76ee9f83e0a180781f3bac2f9ae8e45d14df07922de6414fbfa`)
-- Software Status: **RC3.60 .87 DIRECTIVE #6488442731 FULLY VERIFIED (100% PASS ACROSS ALL BLOCKERS)**:
-  1. **Blocker 1 (Terminal UI Release & Status Banner)**: Start button immediately returns to actionable idle (`disabled=false`, text `Start Sending` / `🚀 START SENDING`) upon 7-fixture CAPTCHA Lab and 8-fixture Function Test completion. Status banner truthfully displays completion (`CAMPAIGN: FINISHED (7/7)`), resolving the `READY (7 URLs)` contradiction and eliminating the stuck `'⏳ Starting...'` state.
-  2. **Blocker 2 (Durable Persistent Backup & Restore)**: Pre-existing public campaign targets (50 URLs), custom message template, and delay settings are safely preserved during Auto Setup and completely restored upon clicking `'↩ RESTORE PREVIOUS SETTINGS/LIST'`. Zero localhost fixtures remain. Snapshot is persistent and idempotent across multiple restore clicks.
-  3. **Blocker 3 (Measured DNS & IPv6 Privacy Card Reconciliation)**: Companion `/status` exposes live measured DNS (`VERIFIED_REMOTE_PROXY_CONNECT`) and IPv6 protection (`VERIFIED_IPV6_DISABLED_AND_PROXY_BLOCKED`). Settings privacy card renders measured `PASS` and `PROTECTED` in green `#4ade80` without fake relabeling or default `UNKNOWN`. Decodo quota exhaustion (HTTP 407) remains fail-closed.
-  4. **Validation**: Unpacked .87 Google Chrome E2E verified in real Chrome (PID 26240); strictly 0 public campaign sends executed; all pre-existing user Chrome processes protected and surviving untouched.
-- Rollback Anchors: `.81` (`55cd543be5ebe7a4553cac0cbfcf933a00e4c8a5`), `.86` (`5cf3b287`).
+- Operational Status: **RC3.60 .87 LOCAL OWNER ACCEPTANCE = PASS (OFFICIALLY CONFIRMED)**:
+  1. **Owner Acceptance Attestation (Comment #6490764930)**:
+     - STEP A (Privacy Preflight): Confirmed PASS by owner.
+     - STEP B (Localhost STOP & SAVE -> RESUME -> RESTORE): Confirmed PASS by owner.
+     - UI Defect 1 (RESTORE/RESET restored settings and list): Confirmed PASS by owner.
+     - UI Defect 2 (Start button released to actionable idle): Confirmed PASS by owner.
+     - Local 8-fixture suite and 7-fixture mock CAPTCHA lab: Completed with expected outcomes.
+  2. **Release Readiness Handover Prepared**:
+     - Known limitations clearly enumerated (Wit.ai key required / mock CAPTCHA only; Decodo quota / live gateway status check needed at live runtime).
+     - Non-destructive configuration preservation and fail-closed security invariants proven.
+     - Safe first-use checklist documented for when Owner initiates live public campaigns.
+  3. **Safety Invariants Maintained**:
+     - Public campaign sends executed: Strictly 0.
+     - Prior rollback builds preserved: `.86` (`5cf3b287`) and `.81` (`55cd543b`).
+     - Daily baseline: `XPIDER_R6.9G.10.3.7.1.4.11_OWNER_BETA.zip` (`50aee353`).
 
 ---
 
