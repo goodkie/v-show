@@ -1,0 +1,82 @@
+{
+  "protocol": "OCA-DEV-1.4",
+  "directiveAuthority": "goodkie/v-show Issue #6 Comment #6507436538",
+  "buildId": "R6.9G.10.3.7.1.4.89-20261029-P0-RC3.60-DECODO-LED-TRUTHFULNESS-PASS",
+  "tag": "v6.9g.10.3-rc3.60.7.1.4.89",
+  "zipName": "XPIDER_R6.9G.10.3.7.1.4.89_OWNER_BETA.zip",
+  "verifiedAt": "2026-10-29T20:54:25.064Z",
+  "sections": {
+    "section1_apiContract": {
+      "pass": true,
+      "companionBuildId": "R6.9G.10.3.7.1.4.89-20261029-P0-RC3.60-DECODO-LED-TRUTHFULNESS-PASS",
+      "egressMonitorMasked": {
+        "row1_companionProbe": {
+          "observedIp": "143.198.*.*",
+          "observedIpMasked": "143.198.*.*",
+          "status": "COMPANION_PROBE_ONLY",
+          "source": "COMPANION_PROBE",
+          "checkedAt": "2026-10-29T20:54:16.858Z",
+          "staleAt": "2026-10-29T20:55:16.858Z",
+          "confidence": "MEDIUM",
+          "error": null
+        },
+        "row2_decodo": {
+          "observedIp": "68.227.218.176",
+          "observedIpMasked": "68.227.*.*",
+          "status": "IN_USE",
+          "source": "DECODO_AUTHENTICATED_UPSTREAM_PROBE",
+          "checkedAt": "2026-10-29T20:54:18.624Z",
+          "staleAt": "2026-10-29T20:55:48.624Z",
+          "fresh": true,
+          "ageMs": 6866,
+          "lastCampaignConnectAt": "2026-10-29T20:53:44.784Z",
+          "confidence": "HIGH",
+          "inUse": true
+        },
+        "row3_digitalOcean": {
+          "configuredIp": "143.198.*.*",
+          "configuredIpMasked": "143.198.*.*",
+          "status": "HEALTHY",
+          "source": "DIGITALOCEAN_NODE_CONFIG",
+          "checkedAt": "2026-10-29T20:54:16.858Z"
+        },
+        "row4_rawIspWan": {
+          "observedIp": null,
+          "observedIpMasked": null,
+          "status": "UNKNOWN / NOT SAFELY MEASURED",
+          "source": "NONE",
+          "note": "Never bypass protected relay with a new direct public IP probe simply to learn the raw ISP IP"
+        },
+        "row5_activeRoute": {
+          "route": "DECODO",
+          "status": "VERIFIED",
+          "egressIp": "68.227.*.*",
+          "egressIpMasked": "68.227.*.*",
+          "checkedAt": "2026-10-29T20:54:25.490Z"
+        }
+      }
+    },
+    "section2_chromeUi": {
+      "pass": true,
+      "compactHUDVerified": true,
+      "toggleExactIpVerified": true,
+      "settings5RowsVerified": true,
+      "decodo407FailClosedVerified": true
+    },
+    "section3_regression": {
+      "pass": true,
+      "functionTestCompleted": 8,
+      "captchaLabCompleted": 7,
+      "restoreVerified": true,
+      "startButtonReleased": true
+    },
+    "section4_invariants": {
+      "pass": true,
+      "publicCampaignSendsExecuted": 0,
+      "credentialsExposed": 0,
+      "userChromeProcessesPreserved": true,
+      "initialCount": 14,
+      "finalCount": 14
+    }
+  }
+}

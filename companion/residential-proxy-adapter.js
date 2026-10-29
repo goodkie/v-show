@@ -230,7 +230,11 @@ async function probe(cfg, o = {}) {
   if (!v.ok) return status(STATUS.UNCONFIGURED, v.reason);
   const target = o.target || { host: 'cloudflare.com', port: 443 };
   const timeoutMs = o.timeoutMs || 10000;
-  const c = await connectViaProxy(cfg, o.password, target, timeoutMs);
+  let c = await connectViaProxy(cfg, o.password, target, timeoutMs);
+  if (c.status !== STATUS.PROXY_READY && (c.detail === 'HTTP_522' || c.detail === 'TIMEOUT')) {
+    await new Promise(r => setTimeout(r, 600));
+    c = await connectViaProxy(cfg, o.password, target, timeoutMs);
+  }
   if (c.status !== STATUS.PROXY_READY) {
     let failExtra = {};
     if (c.upstreamError) failExtra.upstreamError = c.upstreamError;

@@ -28,6 +28,17 @@
       "lastHealth": "UNKNOWN"
     }
   ],
+  "residentialProxySelected": true,
+  "residentialProxyConfig": {
+    "id": "decodo-ip-auth",
+    "host": "us.decodo.com",
+    "port": 10001,
+    "type": "HTTP_PROXY",
+    "username": "",
+    "ca": null,
+    "credentialRef": "",
+    "password": ""
+  },
   "physicalGate": {
     "enabled": false,
     "pinnedEgressFingerprint": "2cce62b1113e4231",

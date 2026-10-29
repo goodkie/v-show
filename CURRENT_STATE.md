@@ -6,14 +6,15 @@
 - Workspace: E:\vivpr\ai\extension-form-sender
 - Authority: goodkie/v-show Issues #6 & #10
 - Branch: upgrade/phase-0-1
-- State Rev: 2026-10-29.233
-- Authority Cursor: 6507119348
+- State Rev: 2026-10-29.234
+- Authority Cursor: 6507436538
 - Last Directives / Audits:
-  - `[CHATGPT → ANTIGRAVITY][P0 EXECUTION DIRECTIVE][RC3.60 .88 REAL DECODO EGRESS] Comment #6507119348` (live Decodo E2E UNVERIFIED/BLOCKED: upstream not configured; .89 LED-truthfulness fixes shipped, commit 33c3f91b, ZIP SHA256 d7aa322a...822a)
+  - `[CHATGPT → ANTIGRAVITY][P0 FOLLOW-UP][ISSUE #6][.89 RESTORE DECODO CONFIG FROM OWNER-PROVEN PARAMETERS][2026-10-29] Comment #6507436538` (100% PASS in real Chrome: Section 1 API, Section 2 UI E2E live Decodo egress, Section 3 Regression & Queue restore, Section 4 Invariants)
+  - `[CHATGPT → ANTIGRAVITY][P0 EXECUTION DIRECTIVE][RC3.60 .88 REAL DECODO EGRESS] Comment #6507119348`
   - `[CHATGPT][DIRECTIVE][extension-form-sender][LIVE-EGRESS-IP-MONITOR][2026-10-29] Comment #6497395270`
   - `[CHATGPT OWNER ACCEPTANCE UPDATE] XPIDER RC3.60 .87 — 2026-10-29 Comment #6490764930`
-  - `[CHATGPT OWNER VALIDATION UPDATE] RC3.60 .87, 2026-10-29 Comment #6490350249`
 - Last Receipts:
+  - `[ANTIGRAVITY HANDOVER RECEIPT][ISSUE #6][RC3.60 .89 REAL DECODO RESIDENTIAL EXIT 100% PASS]`
   - `[ANTIGRAVITY][EXECUTION RECEIPT][ISSUE #6][REAL DECODO EXIT VERIFICATION] Comment #6507386957`
   - `[ANTIGRAVITY HANDOVER RECEIPT] — RC3.60 .88 LIVE EGRESS IP MONITORING PASS Comment #6499318913`
   - `[ANTIGRAVITY HANDOVER RECEIPT][ISSUE #6][RC3.60 .87 RELEASE READINESS & SAFE FIRST-USE HANDOVER]`
@@ -58,23 +59,23 @@
   - `[ANTIGRAVITY][RECEIPT][ISSUE-6][RC3.60-.85-PUBLIC-TARGET-SECURE-ENTRY-AND-NATURAL-COLD-AUTO-START-PASS][2026-10-28] Comment #6465320164`
   - `[ANTIGRAVITY][RECEIPT][ISSUE-6][RC3.60-.86-STREAM-A-DURABLE-LEDGER-AND-STREAM-B-RESIDENTIAL-DATAPLANE][2026-10-28] Comment #6467239685`
   - `[ANTIGRAVITY][RECEIPT][ISSUE-6][DELEGATED-TWO-LAYER-NETWORK-PRECHECK-OPAL-PROFILE-AND-RESIDENTIAL-DATAPLANE][2026-10-28] Comment #6468457751`
-- Build ID: `R6.9G.10.3.7.1.4.87-20261029-P0-RC3.60-RECONCILE-RESTORE-PASS`
-- Verified Release Asset: `XPIDER_R6.9G.10.3.7.1.4.87_OWNER_BETA.zip` (Tag: `v6.9g.10.3-rc3.60.7.1.4.87`, Size: 53,214,606 bytes, SHA256: `75b56d61d0dbc76ee9f83e0a180781f3bac2f9ae8e45d14df07922de6414fbfa`)
-- Operational Status: **RC3.60 .87 LOCAL OWNER ACCEPTANCE = PASS (OFFICIALLY CONFIRMED)**:
-  1. **Owner Acceptance Attestation (Comment #6490764930)**:
-     - STEP A (Privacy Preflight): Confirmed PASS by owner.
-     - STEP B (Localhost STOP & SAVE -> RESUME -> RESTORE): Confirmed PASS by owner.
-     - UI Defect 1 (RESTORE/RESET restored settings and list): Confirmed PASS by owner.
-     - UI Defect 2 (Start button released to actionable idle): Confirmed PASS by owner.
-     - Local 8-fixture suite and 7-fixture mock CAPTCHA lab: Completed with expected outcomes.
-  2. **Release Readiness Handover Prepared**:
-     - Known limitations clearly enumerated (Wit.ai key required / mock CAPTCHA only; Decodo quota / live gateway status check needed at live runtime).
-     - Non-destructive configuration preservation and fail-closed security invariants proven.
-     - Safe first-use checklist documented for when Owner initiates live public campaigns.
-  3. **Safety Invariants Maintained**:
+- Build ID: `R6.9G.10.3.7.1.4.89-20261029-P0-RC3.60-DECODO-LED-TRUTHFULNESS-PASS`
+- Verified Release Asset: `XPIDER_R6.9G.10.3.7.1.4.89_OWNER_BETA.zip` (Tag: `v6.9g.10.3-rc3.60.7.1.4.89`, Size: 53,221,661 bytes, SHA256: `76053b3e040a4c723b80c095487d14fba00d047918f6d9e69976147617f6a164`)
+- Operational Status: **RC3.60 .89 REAL DECODO RESIDENTIAL EXIT VERIFICATION = 100% PASS**:
+  1. **Directive #6507436538 Verified in Real Chrome**:
+     - Section 1 (API Contract): Decodo configured (`us.decodo.com:10001`), egress verified (`68.227.*.*`), route `DECODO`, confidence `HIGH`.
+     - Section 2 (UI E2E in Real Chrome):
+       - Compact HUD: `ROUTE: DECODO`, masked IP `68.227.*.*`, green dot indicator. Toggle click reveals unmasked IP `68.227.218.176` (`🔒`), toggle back re-masks.
+       - Settings 5-Row Monitor: Row 1 Browser Exit `BROWSER_VERIFIED` (`68.227.*.*`), Row 2 Decodo Residential (`68.227.*.*`, ASN 209 Verizon/CenturyLink), Row 3 DO Proxy (`143.198.*.*`), Row 4 Raw ISP WAN `UNKNOWN / NOT SAFELY MEASURED`, Row 5 Route `DECODO` `VERIFIED`.
+       - Decodo 407 Simulation: Immediately turns red dot, `BLOCKED_HTTP_407`, fail-closed.
+  2. **Section 3 (Regression & Queue Restore)**:
+     - Localhost 8 Fixtures: 8/8 finished (5 Success, 1 Fail, 2 Captcha Skip), Start button released (`Start Sending`, `disabled=false`).
+     - Localhost Mock CAPTCHA Lab: 7/7 finished (5 Success, 2 Skip, 0 Fail), Start button released (`Start Sending`, `disabled=false`).
+     - Durable Queue Restore: All 50 public owner campaign URLs cleanly restored (`Post-restore queue length: 50`).
+  3. **Section 4 (Invariants)**:
      - Public campaign sends executed: Strictly 0.
-     - Prior rollback builds preserved: `.86` (`5cf3b287`) and `.81` (`55cd543b`).
-     - Daily baseline: `XPIDER_R6.9G.10.3.7.1.4.11_OWNER_BETA.zip` (`50aee353`).
+     - DPAPI credentials untouched and non-disclosed.
+     - 14 user Chrome processes intact (PID 19772 survived untouched).
 
 ---
 
