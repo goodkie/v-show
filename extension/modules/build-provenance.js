@@ -26,7 +26,7 @@
         previousFunctionalRestorePoint: 'b2af1c9bf614b9f572acec910265d8132d2043aa',
         manifestVersion: 3,
         buildId: 'R6.9G.10.3.7.1.4.89-20261029-P0-RC3.60-DECODO-LED-TRUTHFULNESS-PASS',
-        builtAt: '2026-10-29T20:59:59.216Z',
+        builtAt: '2026-10-29T22:47:57.449Z',
         provenanceSchema: 2,
         modules: {
             backgroundSha: 'fc2d17269b53f71f6c3863494527905805537957f9dc58645b6db32979cc699a',

@@ -3056,6 +3056,16 @@ class PrivacyRelayService {
     });
   }
 
+  isNonCampaignHost(host) {
+    if (!host || typeof host !== 'string') return true;
+    const h = host.trim().toLowerCase().split(':')[0];
+    if (/^(www\.)?cloudflare\.com$/.test(h) || h === '1.1.1.1' || h === 'one.one.one.one' || h.endsWith('.cloudflare.com')) return true;
+    if (/^(api(64)?|checkip|icanhazip|ifconfig|ipinfo|wtfismyip)\./i.test(h) || h.includes('ipify.org') || h.includes('icanhazip.com') || h.includes('ifconfig.co') || h.includes('ifconfig.me') || h.includes('ipinfo.io') || h.includes('checkip.amazonaws.com') || h.includes('wttr.in')) return true;
+    if (h.endsWith('.google.com') || h.endsWith('.googleapis.com') || h.endsWith('.gstatic.com') || h.endsWith('.gvt1.com') || h.endsWith('.gvt2.com') || h.endsWith('.googleusercontent.com') || h.endsWith('.chromium.org') || h.endsWith('.microsoft.com') || h.endsWith('.windowsupdate.com') || h.endsWith('.msftncsi.com') || h.endsWith('.mozilla.org') || h.endsWith('.mozilla.net')) return true;
+    if (h === 'localhost' || h === '127.0.0.1' || h === '[::1]' || h.startsWith('192.168.') || h.startsWith('10.')) return true;
+    return false;
+  }
+
   startProxyEngine() {
     this.proxyServer = http.createServer((req, res) => {
       this.trafficStats.requestsProxied++;
@@ -3252,16 +3262,9 @@ class PrivacyRelayService {
     // Handle CONNECT method for HTTPS tunnels
     this.proxyServer.on('connect', (req, clientSocket, head) => {
       this.trafficStats.connectTunnels++;
-      // [RC3.60 .89] Campaign-class CONNECT = any target other than the XPIDER canary hosts.
-      // Canary/probe tunnels (cloudflare trace) must never make the Decodo LED read IN_USE.
-      try {
-        const connectHost = String(req.url || '').split(':')[0].toLowerCase();
-        const isCanaryHost = /^(www\.)?cloudflare\.com$/.test(connectHost) || connectHost === '1.1.1.1' || connectHost === 'one.one.one.one';
-        if (!isCanaryHost) {
-          this.lastCampaignConnectAt = Date.now();
-          this.campaignConnectTunnels = (this.campaignConnectTunnels || 0) + 1;
-        }
-      } catch (_) { }
+      // [RC3.60 .89 Action C Fix] Campaign-class CONNECT: only genuine campaign destinations.
+      // Probes, canaries, IP diagnostics, and browser vendor background telemetry are strictly non-campaign.
+      const isCampaignTarget = !this.isNonCampaignHost(req.url);
       // Guard client socket against unhandled errors immediately
       clientSocket.on('error', (err) => {
         this.log(`[CLIENT_SOCKET_ERROR] ${err.code || err.message}`);
@@ -3390,6 +3393,10 @@ class PrivacyRelayService {
               return;
             }
             if (statusCode === 200) {
+              if (isCampaignTarget) {
+                this.lastCampaignConnectAt = Date.now();
+                this.campaignConnectTunnels = (this.campaignConnectTunnels || 0) + 1;
+              }
               try {
                 if (this.activeTunnelSockets) {
                   this.activeTunnelSockets.add(clientSocket);
@@ -3520,6 +3527,10 @@ class PrivacyRelayService {
         upstreamSocket.once('data', (data) => {
           const responseStr = data.toString('utf8');
           if (responseStr.includes('200')) {
+            if (isCampaignTarget) {
+              this.lastCampaignConnectAt = Date.now();
+              this.campaignConnectTunnels = (this.campaignConnectTunnels || 0) + 1;
+            }
             try {
               clientSocket.write('HTTP/1.1 200 Connection Established\r\n\r\n');
               if (head && head.length > 0) upstreamSocket.write(head);
