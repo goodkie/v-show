@@ -6,8 +6,8 @@
 - Workspace: E:\vivpr\ai\extension-form-sender
 - Authority: goodkie/v-show Issues #6 & #10
 - Branch: upgrade/phase-0-1
-- State Rev: 2026-10-29.198
-- Authority Cursor: 6485484222
+- State Rev: 2026-10-29.199
+- Authority Cursor: 6485717350
 - Last Directives / Audits:
   - `[OWNER PM NEXT EXECUTION — STOP REPEAT BRIEFINGS / IMPLEMENT SECURE DYNAMIC VPN IP ALLOWLIST][ISSUE #6][2026-10-25] Comment #6396720543`
   - `[OWNER PM P0 SECURITY HOLD — RC3.58 MUST NOT BE RUN ON OWNER PC][ISSUE #6][2026-10-25 11:57 UTC] Comment #6397334700`
