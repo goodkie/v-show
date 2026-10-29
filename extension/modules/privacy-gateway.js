@@ -2813,7 +2813,16 @@
                     return { ready: false, reason: failReason };
                 }
 
-                const rStatus = statusRes.status;
+                let rStatus = statusRes.status;
+                if (!rStatus.relayReady || rStatus.health === 'EXPIRED' || rStatus.health === 'NO_NODES') {
+                    // [RC3.60 P0 Live Recovery] Attempt immediate fast probe to refresh expired health before freezing
+                    try {
+                        const probeRes = await this.queryRelayStatus();
+                        if (probeRes && probeRes.status && probeRes.status.relayReady && probeRes.status.health !== 'EXPIRED') {
+                            rStatus = probeRes.status;
+                        }
+                    } catch (_) {}
+                }
                 if (!rStatus.relayReady || rStatus.health === 'EXPIRED' || rStatus.health === 'NO_NODES') {
                     const failReason = rStatus.health === 'EXPIRED' ? 'PRIVACY_RELAY_HEALTH_EXPIRED' : 'PRIVACY_RELAY_NOT_READY';
                     this.invalidateGateReadiness(failReason);

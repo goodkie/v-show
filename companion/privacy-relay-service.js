@@ -509,7 +509,7 @@ class PrivacyRelayService {
     if (!node || node.active === false) return false;
     if (node.lastHealth !== 'HEALTHY') return false;
     if (!node.observedFingerprint) return false;
-    const ttl = this.healthTtlMs || (this.pool && this.pool.healthTtlMs) || 60000;
+    const ttl = this.healthTtlMs || (this.pool && this.pool.healthTtlMs) || 120000;
     const now = Date.now();
     if (!node.lastVerifiedAt || (now - node.lastVerifiedAt > ttl)) {
       return false; // Stale verification expired

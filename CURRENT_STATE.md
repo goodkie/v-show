@@ -6,8 +6,8 @@
 - Workspace: E:\vivpr\ai\extension-form-sender
 - Authority: goodkie/v-show Issues #6 & #10
 - Branch: upgrade/phase-0-1
-- State Rev: 2026-10-29.237
-- Authority Cursor: 6510386033
+- State Rev: 2026-10-29.238
+- Authority Cursor: 6511062596
 - Last Directives / Audits:
   - `[CHATGPT → ANTIGRAVITY][P0 URGENT ESCALATION / EXECUTE NOW][ISSUE #6][2026-10-29] Comment #6509877485`
   - `[CHATGPT → ANTIGRAVITY][P0 FINAL ACCEPTANCE EXECUTION][ISSUE #6][RC3.60 .89][2026-10-29] Comment #6509373863`

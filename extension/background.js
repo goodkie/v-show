@@ -1282,7 +1282,8 @@ if (typeof self.XpiderSolverCore === 'undefined') {
                         lastStatusCode = getData.error;
                         // error 14 = Incomplete job (still processing)
                         // error 100 = not ready yet (legacy)
-                        if (getData.error === 14 || getData.error === 100) continue;
+                        // error 10 = task incomplete / invalid request (allow initial poll retries while queue initializes)
+                        if (getData.error === 14 || getData.error === 100 || (getData.error === 10 && pollCount <= 3)) continue;
                         throw new Error(`NopeCHA Poll Error (${getData.error}): ${getData.message || 'Unknown'}`);
                     }
                     if (getData.data && typeof getData.data === 'string' && getData.data.length > 20) {
@@ -8854,7 +8855,7 @@ async function orchestrateSending(urlInput, template, abortSignal = null) {
         }
         logBg(tabId, `[RESULT] resultUrl=${actualResultUrl || 'none'}`, "info");
 
-        // [R6.9A Canonical Terminal Status Determination]
+        // [RC3.60 P0 Canonical Terminal Status Determination]
         let terminalStatus;
         if (isSuccess) {
             terminalStatus = 'CONFIRMED_SUCCESS';
@@ -8862,8 +8863,14 @@ async function orchestrateSending(urlInput, template, abortSignal = null) {
             terminalStatus = 'DELIVERY_UNKNOWN';
         } else if (finalReason === 'TIMEOUT_LOCAL' || finalReason === 'TIMEOUT_GLOBAL') {
             terminalStatus = finalReason;
-        } else if (finalReason === 'SKIPPED' || finalReason === 'WOULD_SUBMIT' || finalReason?.includes('SKIPPED') || finalReason?.includes('NON_INQUIRY') || finalReason?.startsWith('NON_INQUIRY') || finalReason === 'EXPECTED_FAIL_PASS' || finalReason?.includes('EXPECTED_FAIL_PASS') || res?.isExpectedFailPass) {
+        } else if (finalReason === 'SKIPPED' || finalReason === 'WOULD_SUBMIT' || finalReason?.includes('SKIPPED') || finalReason?.includes('NON_INQUIRY') || finalReason?.startsWith('NON_INQUIRY') || finalReason === 'EXPECTED_FAIL_PASS' || finalReason?.includes('EXPECTED_FAIL_PASS') || res?.isExpectedFailPass || finalReason === 'NO_LONG_TEXT_INQUIRY_FIELD' || finalReason === 'NO_FORM_FOUND' || finalReason === 'NO_REACHABLE_CONTACT_PAGE') {
             terminalStatus = 'SKIPPED';
+        } else if (finalReason === 'REQUIRED_SELECT_UNSTABLE' || finalReason === 'REQUIRED_FIELD_LOST_BEFORE_SUBMIT' || finalReason === 'AUTOFILL_FAILED' || finalReason === 'FORM_FILL_FAILED') {
+            terminalStatus = 'AUTOMATION_FAILED';
+        } else if (finalReason === 'CAPTCHA_PROVIDER_ERROR' || finalReason === 'CAPTCHA_TIMEOUT') {
+            terminalStatus = 'CAPTCHA_PROVIDER_ERROR';
+        } else if (finalReason?.includes('CONNREFUSED') || finalReason?.includes('NETWORK_ERROR') || finalReason?.includes('NET_TRANSIENT')) {
+            terminalStatus = 'RETRYABLE';
         } else {
             terminalStatus = 'FAILURE';
         }

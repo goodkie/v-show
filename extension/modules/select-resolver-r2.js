@@ -25,11 +25,14 @@
     }
 }(typeof self !== 'undefined' ? self : this, function () {
 
-    const SENSITIVE_FACT_KEYWORDS = [
-        'revenue', 'annual sales', 'income', 'profit', 'turnover',
-        'employee count', 'headcount', 'company size', 'number of employees',
-        'age', 'date of birth', 'dob', 'ssn', 'tax id', 'ein', 'social security',
-        'budget', 'invest', 'funding', 'years in business', 'credit score', 'bank'
+    // [RC3.60 P0 Live Site Recovery] Exact regex patterns with word boundaries (Never substring 'age' in 'message' or 'page')
+    const SENSITIVE_FACT_PATTERNS = [
+        /\b(revenue|annual\s+sales|turnover|net\s+income)\b/i,
+        /\b(headcount|company\s+size|number\s+of\s+employees)\b/i,
+        /\b(ssn|tax\s+id|ein|social\s+security\s+number)\b/i,
+        /\b(credit\s+score|bank\s+account|routing\s+number)\b/i,
+        /\b(date\s+of\s+birth|dob|birth\s*date)\b/i,
+        /\b(exact\s+age|your\s+age|applicant\s+age)\b/i
     ];
 
     const INQUIRY_OPTION_RANK = [
@@ -401,15 +404,26 @@
         }
 
         isSensitiveFactual(purpose, el) {
+            if (!el) return false;
+            // Standard inquiry & service choices are NEVER sensitive factual
+            if (['inquiry_topic', 'service_choice', 'location', 'state_city'].includes(purpose)) {
+                return false;
+            }
+            // Only inspect immediate label or field attributes, never distant parent divs
+            let labelText = '';
+            try {
+                if (el.labels && el.labels[0]) labelText = el.labels[0].textContent || '';
+                else if (el.closest) labelText = el.closest('label')?.textContent || '';
+            } catch (_) {}
             const text = [
                 purpose || '',
                 el.name || '',
                 el.id || '',
                 el.getAttribute('aria-label') || '',
-                el.closest ? el.closest('label, div')?.textContent || '' : ''
+                labelText
             ].join(' ').toLowerCase();
 
-            return SENSITIVE_FACT_KEYWORDS.some(k => text.includes(k));
+            return SENSITIVE_FACT_PATTERNS.some(re => re.test(text));
         }
 
         dispatchChangeEvents(el) {

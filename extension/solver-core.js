@@ -561,12 +561,13 @@ class XpiderSolverCore {
                 }
 
                 if (getData && getData.error) {
-                    if (getData.error === 14 || getData.error === 100) {
-                        // Job in progress / pending
-                        this._emitTelemetry(provider, 'POLLING', { pollCount, status: 'IN_PROGRESS', elapsedMs: Date.now() - startTs }, telemetryCb);
+                    // [RC3.60 P0 Live Site Recovery] Error 10 on early polls is task-initialization in NopeCHA worker queue.
+                    if (getData.error === 14 || getData.error === 100 || (getData.error === 10 && pollCount <= 3)) {
+                        // Job in progress / pending / queue initializing
+                        this._emitTelemetry(provider, 'POLLING', { pollCount, status: getData.error === 10 ? 'QUEUE_INITIALIZING' : 'IN_PROGRESS', elapsedMs: Date.now() - startTs }, telemetryCb);
                         continue;
                     }
-                    const pollErrState = (getData.error === 15 || getData.error === 18) ? 'AUTH_ERROR' : (getData.error === 11 ? 'PROVIDER_TIMEOUT' : 'REJECTED');
+                    const pollErrState = (getData.error === 15 || getData.error === 18) ? 'AUTH_ERROR' : (getData.error === 11 ? 'PROVIDER_TIMEOUT' : 'CAPTCHA_PROVIDER_ERROR');
                     const pollErr = this._createProviderError(`NopeCHA Poll Error (${getData.error}): ${getData.message || 'Unknown'}`, pollErrState, provider, Date.now() - startTs);
                     this._emitTelemetry(provider, 'TERMINAL', { terminalState: pollErrState, errorCode: getData.error, elapsedMs: Date.now() - startTs }, telemetryCb);
                     throw pollErr;
