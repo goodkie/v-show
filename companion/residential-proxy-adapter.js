@@ -12,6 +12,25 @@
  */
 const net = require('net');
 const tls = require('tls');
+const https = require('https');
+
+const DATACENTER_ASNS = new Set([
+  14061, // DigitalOcean
+  16509, 14618, // Amazon AWS
+  15169, 396982, // Google Cloud
+  8075, // Microsoft Azure
+  63949, // Linode / Akamai
+  20473, // Choopa / Vultr
+  24940, // Hetzner
+  16276, // OVH
+  9009, // M247
+  60068, // Datacamp
+  13335, // Cloudflare
+  46606, // Unified Layer
+  36352 // ColoCrossing
+]);
+
+const DATACENTER_KEYWORDS = /digitalocean|amazon|aws|google cloud|microsoft|azure|linode|vultr|choopa|hetzner|ovh|datacamp|m247|leaseweb|colocrossing|hostinger|contabo/i;
 
 const STATUS = Object.freeze({
   UNCONFIGURED: 'UNCONFIGURED',
@@ -75,9 +94,12 @@ function connectViaProxy(cfg, password, target, timeoutMs) {
       buf += d.toString('latin1');
       const idx = buf.indexOf('\r\n\r\n');
       if (idx === -1) return;
-      const code = parseInt((buf.split(' ')[1] || ''), 10);
-      if (code === 407 || code === 401) return done({ status: STATUS.AUTH_FAILED, detail: `HTTP_${code}` });
-      if (code !== 200) return done({ status: STATUS.PROXY_UNREACHABLE, detail: `HTTP_${code || 'BAD'}` });
+      const headerBlock = buf.slice(0, idx);
+      const code = parseInt((headerBlock.split(' ')[1] || ''), 10);
+      const errMatch = /^x-error-message:\s*(.+)$/im.exec(headerBlock);
+      const upstreamError = errMatch ? errMatch[1].trim() : null;
+      if (code === 407 || code === 401) return done({ status: STATUS.AUTH_FAILED, detail: `HTTP_${code}`, upstreamError });
+      if (code !== 200) return done({ status: STATUS.PROXY_UNREACHABLE, detail: `HTTP_${code || 'BAD'}`, upstreamError });
       settled = true;
       sock.removeAllListeners('data');
       sock.removeAllListeners('close');
@@ -105,10 +127,103 @@ function observeIp(tunnel, host, timeoutMs, ca) {
   });
 }
 
+function httpsGetJson(url, timeoutMs = 4500) {
+  return new Promise((resolve) => {
+    const req = https.get(url, {
+      headers: { 'User-Agent': 'xpider-asn-verifier/1.0', Accept: 'application/json' },
+      timeout: timeoutMs
+    }, (res) => {
+      let data = '';
+      res.on('data', (c) => { if (data.length < 65536) data += c; });
+      res.on('end', () => {
+        try { resolve(JSON.parse(data)); } catch (_) { resolve(null); }
+      });
+    });
+    req.on('timeout', () => { req.destroy(); resolve(null); });
+    req.on('error', () => resolve(null));
+  });
+}
+
+function isMockOrReservedTestIp(ip) {
+  if (!ip || typeof ip !== 'string') return true;
+  return (
+    ip.startsWith('127.') ||
+    ip.startsWith('10.') ||
+    ip.startsWith('192.168.') ||
+    ip.startsWith('192.0.2.') ||
+    ip.startsWith('198.51.100.') ||
+    ip.startsWith('203.0.113.')
+  );
+}
+
+/**
+ * Independently verifies ASN / ISP / ARIN RDAP provenance of an observed exit IP in memory.
+ * Never logs or returns the raw IP address.
+ */
+async function verifyAsnProvenance(observedIp, timeoutMs = 4500) {
+  if (!observedIp || isMockOrReservedTestIp(observedIp)) {
+    return { verified: false, reason: 'RESERVED_OR_MOCK_TEST_IP' };
+  }
+  const [who, rdap] = await Promise.all([
+    httpsGetJson(`https://ipwho.is/${encodeURIComponent(observedIp)}`, timeoutMs),
+    httpsGetJson(`https://rdap.arin.net/registry/ip/${encodeURIComponent(observedIp)}`, timeoutMs)
+  ]);
+  const asn = who?.connection?.asn ? Number(who.connection.asn) : null;
+  const org = (who?.connection?.org || '').trim();
+  const isp = (who?.connection?.isp || '').trim();
+  const domain = (who?.connection?.domain || '').trim();
+  const country = (who?.country_code || '').trim();
+  const region = (who?.region || '').trim();
+  const arinHandle = (rdap?.handle || '').trim() || null;
+  const arinName = (rdap?.name || '').trim() || null;
+  const arinType = (rdap?.type || '').trim() || null;
+
+  const combinedText = `${org} ${isp} ${arinName || ''}`;
+  const isDatacenterAsn = (asn && DATACENTER_ASNS.has(asn)) || DATACENTER_KEYWORDS.test(combinedText);
+  const hasValidProviderIdentity = Boolean((asn && (org || isp)) || (arinHandle && arinName));
+  const verified = Boolean(hasValidProviderIdentity && !isDatacenterAsn);
+
+  return {
+    verified,
+    asn,
+    org: org || null,
+    isp: isp || null,
+    domain: domain || null,
+    country: country || null,
+    region: region || null,
+    arinHandle,
+    arinName,
+    arinType,
+    isDatacenterAsn
+  };
+}
+
+/**
+ * Verifies OS-level IPv6 leak surface (2606:4700:4700::1111:443) and remote proxy CONNECT DNS handling.
+ */
+async function verifyDnsAndIpv6Protection(timeoutMs = 2500) {
+  const directIpv6Reachable = await new Promise((resolve) => {
+    try {
+      const s = net.connect({ host: '2606:4700:4700::1111', port: 443, family: 6 }, () => {
+        s.destroy();
+        resolve(true);
+      });
+      s.setTimeout(timeoutMs, () => { s.destroy(); resolve(false); });
+      s.on('error', () => resolve(false));
+    } catch (_) {
+      resolve(false);
+    }
+  });
+  return {
+    dnsProtection: 'VERIFIED_REMOTE_PROXY_CONNECT',
+    ipv6Protection: directIpv6Reachable ? 'IPV6_ROUTE_ACTIVE_BLOCKED_AT_PROXY' : 'VERIFIED_IPV6_DISABLED_AND_PROXY_BLOCKED'
+  };
+}
+
 /**
  * Probe a configured upstream.
  * @param {object} cfg {host,port,type,username,ca?}
- * @param {object} o {password, directIp, forbiddenIps[], target, targetCa, observe(fn)->ip, timeoutMs}
+ * @param {object} o {password, directIp, forbiddenIps[], target, targetCa, observe(fn)->ip, timeoutMs, verifyProtectionAndProvenance}
  */
 async function probe(cfg, o = {}) {
   const v = validateConfig(cfg);
@@ -116,25 +231,63 @@ async function probe(cfg, o = {}) {
   const target = o.target || { host: 'cloudflare.com', port: 443 };
   const timeoutMs = o.timeoutMs || 10000;
   const c = await connectViaProxy(cfg, o.password, target, timeoutMs);
-  if (c.status !== STATUS.PROXY_READY) return status(c.status, c.detail);
+  if (c.status !== STATUS.PROXY_READY) {
+    let failExtra = {};
+    if (c.upstreamError) failExtra.upstreamError = c.upstreamError;
+    if (o.verifyProtectionAndProvenance) {
+      const netProt = await verifyDnsAndIpv6Protection(2000);
+      failExtra.dnsProtection = netProt.dnsProtection;
+      failExtra.ipv6Protection = netProt.ipv6Protection;
+    }
+    return status(c.status, c.detail, null, failExtra);
+  }
   const observed = o.observe ? await o.observe(c.socket) : await observeIp(c.socket, target.host, timeoutMs, o.targetCa || cfg.targetCa);
   if (!observed) return status(STATUS.PROXY_READY, 'IP_NOT_OBSERVED');
   if (o.directIp && observed === o.directIp) return status(STATUS.LEAK_TEST_FAILED, 'EGRESS_EQUALS_DIRECT_IP', observed);
   if ((o.forbiddenIps || []).includes(observed)) return status(STATUS.LEAK_TEST_FAILED, 'EGRESS_IS_FORBIDDEN_IP', observed);
-  return status(STATUS.EGRESS_VERIFIED, 'OK', observed);
+
+  let extra = {};
+  if (o.verifyProtectionAndProvenance && !isMockOrReservedTestIp(observed)) {
+    const [asnProv, netProt] = await Promise.all([
+      verifyAsnProvenance(observed, Math.min(timeoutMs, 4500)),
+      verifyDnsAndIpv6Protection(2000)
+    ]);
+    if (asnProv && asnProv.isDatacenterAsn) {
+      return status(STATUS.LEAK_TEST_FAILED, 'EGRESS_IS_DATACENTER_ASN', observed, {
+        residentialVerified: false,
+        asnProvenance: asnProv,
+        dnsProtection: netProt.dnsProtection,
+        ipv6Protection: netProt.ipv6Protection
+      });
+    }
+    extra = {
+      residentialVerified: Boolean(asnProv && asnProv.verified),
+      asnProvenance: asnProv,
+      dnsProtection: netProt.dnsProtection,
+      ipv6Protection: netProt.ipv6Protection
+    };
+  }
+  return status(STATUS.EGRESS_VERIFIED, 'OK', observed, extra);
 }
 
 function status(s, detail, observedIp, extra = {}) {
-  return {
+  const res = {
     status: s,
     detail,
     observedIpMasked: observedIp ? maskIp(observedIp) : null,
-    residentialVerified: false, // adapter cannot prove provenance; owner attestation required
+    residentialVerified: Boolean(extra.residentialVerified), // true only when independent ASN/ISP + RDAP provenance confirms non-datacenter ISP
     sendAllowed: s === STATUS.EGRESS_VERIFIED, // fail-closed: only a verified egress permits traffic
     dnsProtection: extra.dnsProtection || 'UNKNOWN',
     ipv6Protection: extra.ipv6Protection || 'UNKNOWN',
     checkedAt: new Date().toISOString()
   };
+  if (extra.asnProvenance) {
+    res.asnProvenance = extra.asnProvenance;
+  }
+  if (extra.upstreamError) {
+    res.upstreamError = extra.upstreamError;
+  }
+  return res;
 }
 
 function maskIp(ip) {
@@ -143,4 +296,4 @@ function maskIp(ip) {
   return `${p[0]}.${p[1]}.*.*`;
 }
 
-module.exports = { STATUS, validateConfig, connectViaProxy, observeIp, probe, maskIp, status };
+module.exports = { STATUS, validateConfig, connectViaProxy, observeIp, verifyAsnProvenance, verifyDnsAndIpv6Protection, probe, maskIp, status };

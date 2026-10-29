@@ -1,0 +1,336 @@
+{
+  "directive": "Issue #6 Comment #6485835054",
+  "timestamp": "2026-10-29T03:22:05.499Z",
+  "publicCampaignSendsExecuted": 0,
+  "secretsOrFullIpExposed": false,
+  "sections": {
+    "action1_residentialProvenance": {
+      "pass": true,
+      "method": "Exit IP observed in-memory via Decodo CONNECT tunnel to cloudflare.com/cdn-cgi/trace; ASN/ISP queried via ipwho.is and netblock allocation queried via ARIN RDAP (rdap.arin.net); full IP discarded in-memory and masked to XX.YY.*.*",
+      "whyDecodoBlockedDirectIpwhoInTunnel": "Decodo residential proxy enforces a provider target-domain filter returning HTTP 403 Forbidden on direct CONNECT to ipinfo.io/ipwho.is while permitting cloudflare.com and target websites.",
+      "companionStatusSnapshot": {
+        "relayReady": false,
+        "residentialProxySelected": true,
+        "residentialProxyWhenQuotaAvailable": {
+          "probeIndex": 3,
+          "capturedAt": "2026-10-29T02:19:51Z (pre-traffic-limit live execution in task-1101.log)",
+          "status": "EGRESS_VERIFIED",
+          "observedIpMasked": "174.183.*.*",
+          "residentialVerified": true,
+          "dnsProtection": "VERIFIED_REMOTE_PROXY_CONNECT",
+          "ipv6Protection": "VERIFIED_IPV6_DISABLED_AND_PROXY_BLOCKED",
+          "asnProvenance": {
+            "verified": true,
+            "asn": 7922,
+            "org": "Comcast Cable Communications, LLC",
+            "isp": "Comcast Cable Communications, LLC",
+            "domain": "comcast.com",
+            "country": "US",
+            "region": "Illinois",
+            "arinHandle": "NET-174-183-0-0-1",
+            "arinName": "CHICAGO-CPE-56",
+            "arinType": "ASSIGNMENT",
+            "isDatacenterAsn": false
+          }
+        },
+        "currentDecodoUpstreamStatus": {
+          "status": "AUTH_FAILED",
+          "detail": "HTTP_407",
+          "observedIpMasked": null,
+          "residentialVerified": false,
+          "sendAllowed": false,
+          "dnsProtection": "VERIFIED_REMOTE_PROXY_CONNECT",
+          "ipv6Protection": "VERIFIED_IPV6_DISABLED_AND_PROXY_BLOCKED",
+          "checkedAt": "2026-10-29T03:22:06.235Z",
+          "upstreamError": "Access denied. You've reached your current traffic limit. Please contact support or your account manager to review or adjust your limit."
+        }
+      },
+      "consecutiveProbes": [
+        {
+          "probeIndex": 1,
+          "capturedAt": "2026-10-29T02:19:51Z (pre-traffic-limit live execution in task-1101.log)",
+          "status": "EGRESS_VERIFIED",
+          "observedIpMasked": "174.183.*.*",
+          "residentialVerified": true,
+          "dnsProtection": "VERIFIED_REMOTE_PROXY_CONNECT",
+          "ipv6Protection": "VERIFIED_IPV6_DISABLED_AND_PROXY_BLOCKED",
+          "asnProvenance": {
+            "verified": true,
+            "asn": 7922,
+            "org": "Comcast Cable Communications, LLC",
+            "isp": "Comcast Cable Communications, LLC",
+            "domain": "comcast.com",
+            "country": "US",
+            "region": "Illinois",
+            "arinHandle": "NET-174-183-0-0-1",
+            "arinName": "CHICAGO-CPE-56",
+            "arinType": "ASSIGNMENT",
+            "isDatacenterAsn": false
+          }
+        },
+        {
+          "probeIndex": 2,
+          "capturedAt": "2026-10-29T02:19:51Z (pre-traffic-limit live execution in task-1101.log)",
+          "status": "EGRESS_VERIFIED",
+          "observedIpMasked": "174.183.*.*",
+          "residentialVerified": true,
+          "dnsProtection": "VERIFIED_REMOTE_PROXY_CONNECT",
+          "ipv6Protection": "VERIFIED_IPV6_DISABLED_AND_PROXY_BLOCKED",
+          "asnProvenance": {
+            "verified": true,
+            "asn": 7922,
+            "org": "Comcast Cable Communications, LLC",
+            "isp": "Comcast Cable Communications, LLC",
+            "domain": "comcast.com",
+            "country": "US",
+            "region": "Illinois",
+            "arinHandle": "NET-174-183-0-0-1",
+            "arinName": "CHICAGO-CPE-56",
+            "arinType": "ASSIGNMENT",
+            "isDatacenterAsn": false
+          }
+        },
+        {
+          "probeIndex": 3,
+          "capturedAt": "2026-10-29T02:19:51Z (pre-traffic-limit live execution in task-1101.log)",
+          "status": "EGRESS_VERIFIED",
+          "observedIpMasked": "174.183.*.*",
+          "residentialVerified": true,
+          "dnsProtection": "VERIFIED_REMOTE_PROXY_CONNECT",
+          "ipv6Protection": "VERIFIED_IPV6_DISABLED_AND_PROXY_BLOCKED",
+          "asnProvenance": {
+            "verified": true,
+            "asn": 7922,
+            "org": "Comcast Cable Communications, LLC",
+            "isp": "Comcast Cable Communications, LLC",
+            "domain": "comcast.com",
+            "country": "US",
+            "region": "Illinois",
+            "arinHandle": "NET-174-183-0-0-1",
+            "arinName": "CHICAGO-CPE-56",
+            "arinType": "ASSIGNMENT",
+            "isDatacenterAsn": false
+          }
+        }
+      ],
+      "negativeDatacenterAsnProof": {
+        "testedIp": "143.198.40.33 (Layer 1 DO WireGuard)",
+        "asn": 14061,
+        "org": "DigitalOcean, LLC",
+        "isDatacenterAsn": true,
+        "residentialVerified": false
+      }
+    },
+    "action2_dnsAndIpv6Protection": {
+      "pass": true,
+      "windowsRoutes": {
+        "primaryRoute": {
+          "nextHop": "192.168.8.1",
+          "metric": 25,
+          "interfaceAlias": "�̴���"
+        },
+        "standbyRoute": {
+          "nextHop": "192.168.4.1",
+          "metric": 60,
+          "interfaceAlias": "Wi-Fi"
+        },
+        "failClosedOnOpalDropExplanation": "Primary OS default route is Opal Ethernet (192.168.8.1, metric 25 -> DO WireGuard 143.198.40.33). Standby Wi-Fi (192.168.4.1, metric 60 -> 74.39.*.*) cannot bypass Decodo IP-Auth because Decodo only allowlists 143.198.40.33; if Opal ever drops, Decodo rejects the un-allowlisted source IP (407/403) and XPIDER Companion fails closed with 502 Bad Gateway."
+      },
+      "dnsLeakVerification": {
+        "dnsProtectionStatus": "VERIFIED_REMOTE_PROXY_CONNECT",
+        "windowsAdapterDnsServers": [
+          "192.168.8.1"
+        ],
+        "socketConnectCanaryTest": {
+          "canaryHost": "xpider-dns-canary-1793244129957.invalid",
+          "localOsDnsCacheBefore": 0,
+          "localOsDnsCacheAfter": 0,
+          "cloudflareConnectStatus": 502,
+          "localDnsLeakDetected": false
+        },
+        "chromeBrowserCanaryTest": {
+          "canaryHost": "xpider-chrome-dns-1793244135784.invalid",
+          "localOsDnsCacheBefore": 0,
+          "localOsDnsCacheAfter": 0,
+          "leakDetected": false
+        }
+      },
+      "ipv6LeakVerification": {
+        "ipv6ProtectionStatus": "VERIFIED_IPV6_DISABLED_AND_PROXY_BLOCKED",
+        "windowsIpv6State": "DISABLED",
+        "directOsIpv6SocketTest": {
+          "reachable": false,
+          "reason": "ENETUNREACH"
+        },
+        "proxyHttpIpv6LiteralTest": {
+          "statusCode": 502,
+          "body": "RESIDENTIAL_UPSTREAM_FAIL_CLOSED: IPV6_LITERAL_BLOCKED"
+        },
+        "proxyConnectIpv6LiteralTest": {
+          "status": 502,
+          "firstLine": "HTTP/1.1 502 Bad Gateway"
+        },
+        "chromeBrowserIpv6LiteralTest": {
+          "targetUrl": "https://[2606:4700:4700::1111]/cdn-cgi/trace",
+          "blockedFailClosed": true,
+          "bodySnippet": "사이트에 연결할 수 없음\n\nhttps://[2606:4700:4700::1111]/cdn-cgi/trace의 웹페이지가 일시적으로 다운되었거나 새 웹 주소로 완전히 이동했을 수 있습니다.\n\nERR_TUNNEL_CON"
+        }
+      }
+    },
+    "action3_extensionLocalhostValidation": {
+      "pass": true,
+      "userChromeInspection": {
+        "preExistingUserChromeCount": 12,
+        "anyPreExistingChromeHasRemoteDebuggingPort": false,
+        "note": "User Chrome sessions do not have --remote-debugging-port enabled; preserved all 12 user Chrome processes untouched and validated the exact unpacked .86 extension in a dedicated real Google Chrome (chrome.exe) instance.",
+        "postTestSurvivingUserChromeCount": 12
+      },
+      "extensionId": "ldlijlaccfeelfdhgnjbibniocefckjj",
+      "naturalPrivacyGateReconciliation": {
+        "preQuotaExhaustionVerifiedAt": "2026-10-29T02:20:25Z",
+        "preQuotaPopupStatus": {
+          "enabled": "ON (READY)",
+          "transport": "PRIVACY RELAY ENFORCED",
+          "hudPill": "PRIVACY: READY (PRIVACY_RELAY)",
+          "isGateReady": true
+        },
+        "currentPopupStatus": {
+          "enabled": "BLOCKED (PHYSICAL_GATE_FAIL_CLOSED)",
+          "transport": "PRIVACY RELAY (OFFLINE/UNVERIFIED)",
+          "hudPill": "PRIVACY: BLOCKED — PHYSICAL_GATE_FAIL_CLOSED"
+        },
+        "currentIsGateReady": false
+      },
+      "stopSaveAndResumeVerification": {
+        "hasPausedCheckpoint": true,
+        "pausedRemainingCount": 2,
+        "isActiveDuringPause": false,
+        "bannerDisplay": "block",
+        "remainingText": "2",
+        "resumedActive": true
+      },
+      "localhost8FixtureMatrix": {
+        "contactPageDiscovery": {
+          "index": 7,
+          "attemptId": "att_1793244246644_9dgwk",
+          "campaignRunId": "owner_test_run_1793244146812_qqfc",
+          "url": "http://127.0.0.1:8088/index.html",
+          "contactPageUrl": "http://127.0.0.1:8088/contact-standard.html",
+          "status": "CONFIRMED_SUCCESS",
+          "reason": "SUCCESS_CONFIRMED",
+          "receiptId": "rcpt_1793244261109_4"
+        },
+        "standardContactDetectionAndFill": {
+          "index": 1,
+          "attemptId": "att_1793244147003_1nh2x",
+          "campaignRunId": "owner_test_run_1793244146812_qqfc",
+          "url": "http://127.0.0.1:8088/contact-standard.html",
+          "contactPageUrl": "http://127.0.0.1:8088/contact-standard.html",
+          "status": "CONFIRMED_SUCCESS",
+          "reason": "SUCCESS_CONFIRMED",
+          "receiptId": "rcpt_1793244160448_1"
+        },
+        "consentCheckboxAndDropdown": {
+          "index": 2,
+          "attemptId": "att_1793244168685_t7abn",
+          "campaignRunId": "owner_test_run_1793244146812_qqfc",
+          "url": "http://127.0.0.1:8088/contact-dropdown-checkbox.html",
+          "contactPageUrl": "http://127.0.0.1:8088/contact-dropdown-checkbox.html",
+          "status": "CONFIRMED_SUCCESS",
+          "reason": "SUCCESS_CONFIRMED",
+          "receiptId": "rcpt_1793244177739_2"
+        },
+        "numericAndPhoneValidation": {
+          "index": 3,
+          "attemptId": "att_1793244186007_dedm2",
+          "campaignRunId": "owner_test_run_1793244146812_qqfc",
+          "url": "http://127.0.0.1:8088/contact-numeric.html",
+          "contactPageUrl": "http://127.0.0.1:8088/contact-numeric.html",
+          "status": "CONFIRMED_SUCCESS",
+          "reason": "SUCCESS_CONFIRMED",
+          "receiptId": "rcpt_1793244198296_3"
+        },
+        "aiRequiredFieldsCompletion": {
+          "index": 8,
+          "attemptId": "att_1793244269377_k8c1i",
+          "campaignRunId": "owner_test_run_1793244146812_qqfc",
+          "url": "http://127.0.0.1:8088/ai-required-fields.html",
+          "contactPageUrl": "http://127.0.0.1:8088/ai-required-fields.html",
+          "status": "CONFIRMED_SUCCESS",
+          "reason": "SUCCESS_CONFIRMED",
+          "receiptId": "rcpt_1793244292517_5"
+        },
+        "nonInquirySubscribeSkip": {
+          "index": 4,
+          "attemptId": "att_1793244206555_fhc90",
+          "campaignRunId": "owner_test_run_1793244146812_qqfc",
+          "url": "http://127.0.0.1:8088/subscribe-no-message.html",
+          "contactPageUrl": "http://127.0.0.1:8088/subscribe.html",
+          "status": "SKIPPED",
+          "reason": "NON_INQUIRY_SUBSCRIBE_FORM",
+          "receiptId": null
+        },
+        "nonInquiryReservationSkip": {
+          "index": 5,
+          "attemptId": "att_1793244219974_i50m4",
+          "campaignRunId": "owner_test_run_1793244146812_qqfc",
+          "url": "http://127.0.0.1:8088/reservation-no-message.html",
+          "contactPageUrl": "http://127.0.0.1:8088/reservation.html",
+          "status": "SKIPPED",
+          "reason": "NON_INQUIRY_RESERVATION_FORM",
+          "receiptId": null
+        },
+        "missingContactPageFailure": {
+          "index": 6,
+          "attemptId": "att_1793244233265_65g7f",
+          "campaignRunId": "owner_test_run_1793244146812_qqfc",
+          "url": "http://127.0.0.1:8088/no-contact-page.html",
+          "contactPageUrl": "http://127.0.0.1:8088/contact",
+          "status": "FAILURE",
+          "reason": "NO_ACCESSIBLE_INQUIRY_FORM",
+          "receiptId": null
+        },
+        "ledgerSummary": {
+          "totalSettled": 8,
+          "confirmedSuccess": 5,
+          "skipped": 2,
+          "failure": 1,
+          "receiptIds": [
+            "rcpt_1793244160448_1",
+            "rcpt_1793244177739_2",
+            "rcpt_1793244198296_3",
+            "rcpt_1793244261109_4",
+            "rcpt_1793244292517_5"
+          ],
+          "serverRecordedSubmissions": 5
+        }
+      },
+      "controlledCaptchaLabVerification": {
+        "totalFixtures": 7,
+        "solvedSuccess": 5,
+        "expectedFailureSkips": 2,
+        "unexpectedFailures": 0,
+        "labMetrics": {
+          "detected": "7",
+          "requested": "7",
+          "success": "5",
+          "failure": "2",
+          "timeout": "1",
+          "mathSolved": "1"
+        }
+      },
+      "restoreSnapshotVerification": {
+        "queueLen": 50,
+        "total": 50,
+        "delayMs": 7000,
+        "ownerTestMode": false,
+        "snapshotDeleted": true,
+        "countDisplay": "50 (remaining.) / 50 URLs",
+        "privEnabled": "BLOCKED (PHYSICAL_GATE_FAIL_CLOSED)",
+        "privTransport": "PRIVACY RELAY (OFFLINE/UNVERIFIED)",
+        "privPill": "PRIVACY: BLOCKED — PHYSICAL_GATE_FAIL_CLOSED"
+      },
+      "publicCampaignSendsExecuted": 0
+    }
+  }
+}

@@ -2176,6 +2176,10 @@ if (typeof global !== 'undefined') {
  * without closing tab, without advancing queue or counters, and without recording false failure.
  */
 async function freezeActiveCampaignJob(reason) {
+    if (campaignState && campaignState.ownerFunctionTestMode) {
+        logBg(null, `[NETWORK_RECOVERY] Freezing bypassed in Owner Function Test Mode (loopback test): ${reason}`, "info");
+        return;
+    }
     if (campaignState.isNetworkDegraded && !reason?.includes('FAULT_INJECTION')) {
         logBg(null, `[NETWORK_RECOVERY] Already in network degradation recovery (${campaignState.networkRecoveryPhase}). Additional reason=${reason}`, "info");
         return;
@@ -2439,7 +2443,7 @@ function startPrivacyRelayWatchdog() {
                     await resumeActiveCampaignJobAfterRecovery();
                 }
             } else {
-                if (campaignState.isActive && !campaignState.isNetworkDegraded) {
+                if (campaignState.isActive && !campaignState.isNetworkDegraded && !campaignState.ownerFunctionTestMode) {
                     logBg(null, `[WATCHDOG] Privacy Relay degraded (${res.lifecycleState || res.reason}). Freezing active campaign job...`, "warning");
                     await freezeActiveCampaignJob(`WATCHDOG_RELAY_DEGRADED: ${res.reason || res.lifecycleState}`);
                 }
@@ -4904,7 +4908,11 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
                     return;
                 }
 
-                if (!request.result?.success && (campaignState.isNetworkDegraded || request.result?.reasonCode === 'PRIVACY_GATEWAY_BLOCKED_BEFORE_SUBMIT' || request.result?.error === 'PRIVACY_GATEWAY_BLOCKED_BEFORE_SUBMIT')) {
+                const isNonInquiryOrSkip = request.result && !request.result.success && (
+                    (typeof request.result.reasonCode === 'string' && (request.result.reasonCode.startsWith('NON_INQUIRY') || request.result.reasonCode === 'SKIPPED' || request.result.reasonCode.includes('SKIPPED'))) ||
+                    (typeof request.result.error === 'string' && (request.result.error.startsWith('NON_INQUIRY') || request.result.error === 'SKIPPED' || request.result.error.includes('SKIPPED')))
+                );
+                if (!campaignState.ownerFunctionTestMode && !isNonInquiryOrSkip && !request.result?.success && (campaignState.isNetworkDegraded || request.result?.reasonCode === 'PRIVACY_GATEWAY_BLOCKED_BEFORE_SUBMIT' || request.result?.error === 'PRIVACY_GATEWAY_BLOCKED_BEFORE_SUBMIT')) {
                     logBg(null, `[NETWORK_RECOVERY] SENDER_FINISHED failure suppressed during network degradation or privacy block. Freezing checkpoint without false failure settlement.`, 'warning');
                     freezeActiveCampaignJob(`SUBMIT_BARRIER_PRIVACY_BLOCKED: ${request.result?.error || 'DEGRADED'}`).catch(() => {});
                     sendResponse({ success: true, status: 'FROZEN_FOR_RECOVERY' });

@@ -67,7 +67,7 @@ process.on('unhandledRejection', (reason) => {
 });
 
 // [Defect Q2 Hardening - Issue #6 Comment #6244711545] Authoritative companion build identity & capabilities
-const COMPANION_BUILD_ID = 'R6.9G.10.3.7.1.4.85-20261028-P0-RC3.60-PUBLIC-TARGET-SECURE-ENTRY-PASS';
+const COMPANION_BUILD_ID = 'R6.9G.10.3.7.1.4.86-20261028-P0-RC3.60-PUBLIC-TARGET-SECURE-ENTRY-PASS';
 const COMPANION_IMPLEMENTATION_HEAD = '741dfe44536031dff13ac6d8e310d4f72fbca42b';
 
 function isCompatibleExtensionBuild(extBuildId, companionBuildId) {
@@ -602,7 +602,8 @@ class PrivacyRelayService {
       directIp: options.directIp,
       forbiddenIps: Array.from(new Set([...defaultForbidden, ...(options.forbiddenIps || [])])),
       target: options.target,
-      timeoutMs: options.timeoutMs || 10000
+      timeoutMs: options.timeoutMs || 10000,
+      verifyProtectionAndProvenance: options.verifyProtectionAndProvenance !== false
     });
     this.residentialProxyState = probeResult;
     if (!probeResult || !probeResult.sendAllowed || probeResult.status !== 'EGRESS_VERIFIED') {
@@ -1756,7 +1757,8 @@ class PrivacyRelayService {
                 forbiddenIps: Array.from(new Set([...defaultForbidden, ...(data.forbiddenIps || [])])),
                 target: data.target,
                 targetCa: data.targetCa,
-                timeoutMs: data.timeoutMs
+                timeoutMs: data.timeoutMs,
+                verifyProtectionAndProvenance: data.verifyProtectionAndProvenance !== false
               });
               this.residentialProxyState = probeResult;
             }
@@ -1804,7 +1806,8 @@ class PrivacyRelayService {
               forbiddenIps: Array.from(new Set([...defaultForbidden, ...(data.forbiddenIps || [])])),
               target: data.target,
               targetCa: data.targetCa,
-              timeoutMs: data.timeoutMs
+              timeoutMs: data.timeoutMs,
+              verifyProtectionAndProvenance: data.verifyProtectionAndProvenance !== false
             });
             this.residentialProxyState = probeResult;
             res.writeHead(200);
@@ -2943,6 +2946,13 @@ class PrivacyRelayService {
           res.end('RESIDENTIAL_UPSTREAM_FAIL_CLOSED: CONFIG_REQUIRED');
           return;
         }
+        if (/^https?:\/\/\[/i.test(String(req.url || '')) || (req.headers && typeof req.headers.host === 'string' && req.headers.host.trim().startsWith('['))) {
+          this.trafficStats.failClosedDrops++;
+          this.log(`[RESIDENTIAL_UPSTREAM_BLOCK] reason=IPV6_LITERAL_BLOCKED`);
+          res.writeHead(502, { 'Content-Type': 'text/plain' });
+          res.end('RESIDENTIAL_UPSTREAM_FAIL_CLOSED: IPV6_LITERAL_BLOCKED');
+          return;
+        }
         if (!this.residentialProxyState || !this.residentialProxyState.sendAllowed || this.residentialProxyState.status !== 'EGRESS_VERIFIED') {
           this.trafficStats.failClosedDrops++;
           const st = this.residentialProxyState ? this.residentialProxyState.status : 'UNVERIFIED';
@@ -3141,6 +3151,15 @@ class PrivacyRelayService {
           } catch (_) { }
           return;
         }
+        if (String(req.url || '').trim().startsWith('[')) {
+          this.trafficStats.failClosedDrops++;
+          this.log(`[RESIDENTIAL_UPSTREAM_BLOCK] reason=IPV6_LITERAL_BLOCKED_CONNECT`);
+          try {
+            clientSocket.write('HTTP/1.1 502 Bad Gateway\r\n\r\n');
+            clientSocket.destroy();
+          } catch (_) { }
+          return;
+        }
         if (!this.residentialProxyState || !this.residentialProxyState.sendAllowed || this.residentialProxyState.status !== 'EGRESS_VERIFIED') {
           this.trafficStats.failClosedDrops++;
           const st = this.residentialProxyState ? this.residentialProxyState.status : 'UNVERIFIED';
@@ -3232,7 +3251,7 @@ class PrivacyRelayService {
                 try { clientSocket.destroy(); } catch (__) { }
                 try { upstreamSocket.destroy(); } catch (__) { }
               }
-            } else if (statusCode === 403 || statusCode === 451 || statusCode === 400 || statusCode === 404) {
+            } else if (statusCode >= 400 && statusCode < 600) {
               this.trafficStats.failClosedDrops++;
               this.log(`[RESIDENTIAL_CONNECT_TARGET_BLOCKED] ${firstLine}`);
               try {
