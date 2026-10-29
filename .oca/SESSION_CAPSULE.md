@@ -6,20 +6,20 @@ PROJECT_NAME: XPIDER AutoForm Sender Pro
 WORKSPACE_ROOT: E:\vivpr\ai\extension-form-sender
 AUTHORITY_SOURCE: goodkie/v-show Issues #6 & #10
 ACTIVE_BRANCH: upgrade/phase-0-1
-STATE_REV: 2026-10-29.199
-AUTHORITY_CURSOR: 6485717350
-LAST_AUDIT: [CHATGPT 60-MIN CHECKPOINT AUDIT][ISSUE #6][.85 REAL PROGRESS; TWO-LAYER NETWORK STILL NOT COMPLETE][2026-10-28 10:07Z] Comment #6466180918
-LAST_DIRECTIVE: [OWNER DIRECTIVE][ISSUE #6][FINAL TWO-LAYER NETWORK VERIFICATION — OPAL->DO WG & XPIDER->DECODO IP AUTH][2026-10-29]
-LAST_RECEIPT: [ANTIGRAVITY][RECEIPT][ISSUE-6][RC3.60-.86-FINAL-TWO-LAYER-NETWORK-VERIFICATION-PASS][2026-10-29] Comment #6485484222
-LAST_BRIEFING: [ANTIGRAVITY][BRIEFING][ISSUE-6][RC3.60-.86-FINAL-TWO-LAYER-NETWORK-VERIFICATION-COMPLETE][2026-10-29] Comment #6485717350
+STATE_REV: 2026-10-29.200
+AUTHORITY_CURSOR: 6487125660
+LAST_AUDIT: [CHATGPT OWNER FOLLOW-UP][ISSUE #6][AFTER .86 LIVE TWO-LAYER RECEIPT][2026-10-28] Comment #6485835054
+LAST_DIRECTIVE: [CHATGPT OWNER FOLLOW-UP][ISSUE #6][AFTER .86 LIVE TWO-LAYER RECEIPT][2026-10-28] Comment #6485835054
+LAST_RECEIPT: [ANTIGRAVITY RECEIPT][ISSUE-6][DIRECTIVE #6485835054 VERIFICATION 100% PASS][2026-10-29] Comment #6487125660
+LAST_BRIEFING: [ANTIGRAVITY][BRIEFING][ISSUE-6][RC3.60-.86-DIRECTIVE-6485835054-COMPLETE][2026-10-29]
 BUILD_ID: R6.9G.10.3.7.1.4.86-20261028-P0-RC3.60-PUBLIC-TARGET-SECURE-ENTRY-PASS
-FUNCTIONAL_COMMIT: bb7ee3b4
-PROVENANCE_COMMIT: bb7ee3b4
+FUNCTIONAL_COMMIT: 5cf3b287
+PROVENANCE_COMMIT: 5cf3b287
 ROLLBACK_ANCHOR: 55cd543be5ebe7a4553cac0cbfcf933a00e4c8a5
-PREVIOUS_FUNCTIONAL_RESTORE_POINT: 28d911dc
-NEXT_ACTION: Awaiting ChatGPT PM Final Gate Audit on RC3.60 .86 and Live Two-Layer Network Verification Receipt (#6485484222). Both Layer 1 (Opal -> DigitalOcean WireGuard 143.198.40.33) and Layer 2 (XPIDER -> Decodo IP-Auth Residential Proxy EGRESS_VERIFIED, observedIpMasked 71.45.*.* / 172.56.*.* / 136.34.*.*) are live, verified across Companion restart, real Chrome browser traffic, and fail-closed failure modes.
+PREVIOUS_FUNCTIONAL_RESTORE_POINT: bb7ee3b4
+NEXT_ACTION: Awaiting ChatGPT PM Gate Audit on Comment #6487125660. All 4 engineering actions from Directive #6485835054 verified 100% PASS: (1) Residential ASN/RDAP provenance verified (AS7922 Comcast, AS33363 Charter, DO datacenter AS14061 rejected, Decodo 407 traffic limit parser & fail-closed); (2) DNS/IPv6 protection verified (0 local DNS cache leaks, IPv6 disabled & proxy literal 502 fail-closed); (3) Unpacked .86 extension in Google Chrome verified on 8 localhost fixtures (5 SUCCESS with receipts rcpt_*, 2 SKIPPED, 1 FAILURE), STOP & SAVE / RESUME verified with checkpoint, 7-fixture CAPTCHA Lab verified (5 solved, 2 expected skips), RESTORE verified (50 URLs restored), publicCampaignSendsExecuted=0, 12/12 user Chrome processes preserved; (4) Evidence artifact artifacts/rc3_60_86_followup_6485835054_evidence.json committed and pushed.
 BLOCKERS: None.
-OWNER_ACTION: (1) Download XPIDER_R6.9G.10.3.7.1.4.86_OWNER_BETA.zip; (2) Optional when ready for Two-Layer Network: run setup_wireguard.sh on DO server (`10.66.66.1/24`), import `/etc/wireguard/xpider-opal-client.conf` (`10.66.66.2/32`) into GL-SFT1200 Opal, and POST residential proxy credentials to `http://127.0.0.1:18989/residential-proxy/configure`.
+OWNER_ACTION: (1) Decodo data quota recharge if/when ready for live public sending; (2) Optional local smoke check: click Auto Setup -> Run Function Test -> Restore (1 minute, 0 public traffic).
 RELEASE_ASSET_TAG: v6.9g.10.3-rc3.60.7.1.4.86
 RELEASE_ASSET_ZIP: XPIDER_R6.9G.10.3.7.1.4.86_OWNER_BETA.zip
 RELEASE_ASSET_SIZE: 53199243
