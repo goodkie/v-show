@@ -6,8 +6,18 @@
 - Workspace: E:\vivpr\ai\extension-form-sender
 - Authority: goodkie/v-show Issues #6 & #10
 - Branch: major/v7-dual-mode (branched from upgrade/phase-0-1)
-- State Rev: 2026-10-30.253
-- Authority Cursor: 6526123120
+- State Rev: 2026-10-30.254
+- Authority Cursor: 6527220431
+- Major-version v7.0.0-rc9 Four Defects Resolution COMPLETED:
+  - Commit `d1514259` on `major/v7-dual-mode`.
+  - GitHub Release: `v7.0.0-rc9` (tag `v7.0.0-rc9`).
+  - Package: `XPIDER_V7.0.0_RC9_DUAL_MODE_OWNER_BETA.zip` (SHA256: `26cce6d62e971c6736417e149a58ec0333645a539a46382a95257217ca6cebb6`, size: `53072455` bytes).
+  - Receipt posted: `Directive #6527220431`.
+  - Defect 1 (Form Stall / Watchdog on Modal Pages): Modal container triggers detected and activated (`a[href="#contact"]`, Elementor popup triggers, GymDesk / Martial Arts on Rails widgets) to uncover dynamic form elements. Strict bounded watchdog (<= 20s) routes immediately to operator assistance hold (in SEMI_AUTO and MANUAL) and to diagnosable failure (`NO_ACCESSIBLE_INQUIRY_FORM`) in AUTO without silent hang. Verified via `test/test_jiujitsu_modal_fixture.js`.
+  - Defect 2 (Residential Upstream HTTP 502 & Fail-Closed Transport): Added safe connectivity probe with bounded exponential backoff retries (3 attempts) on upstream 502/522/timeout before hard lock. Categorized upstream gateway errors in diagnostic telemetry without credential exposure. Fail-closed enforced (no DIRECT fallback). Reconnection idempotency enforced: already submitted work (`SUBMIT_TRIGGERED`) is never re-dispatched on reconnection. Verified via `test/test_rc9_residential_502_failclosed.js`.
+  - Defect 3 (PAUSE->RESUME Mode Selection Reliability): Fully audited 3-way resume selector handshake (`AUTO`, `SEMI_AUTO`, `MANUAL`). Cleaned up nested callback bindings. Mode applied atomically at next target boundary without duplicate attempt or queue loss. State preserved across Service Worker restarts. Verified via `test/test_v7_mode_resume_matrix.js`.
+  - Defect 4 (Persistent CURRENT MODE HUD): Added high-visibility, persistent HUD container above start/pause controls (Cyan for `AUTO`, Purple for `SEMI-AUTO`, Blue for `MANUAL`, separate status badge `RUNNING`/`PAUSED`/`WAITING`/`READY`, target URL, and remaining count). Synchronously updated across start, pause, resume switch, reconnect, reload, and restore.
+  - Regression Matrix: Static checks PASS, Stage 2 Matrix 12/12 PASS, Genuine Browser Safeguards 1, 2, 3 PASS, 100% 3-way hash parity verified.
 - Major-version v7.0.0-rc8 SEMI_AUTO Triple-Mode & Assistance Panel COMPLETED:
   - Commit `d8983348` on `major/v7-dual-mode`.
   - GitHub Release: `v7.0.0-rc8` (tag `v7.0.0-rc8`).
