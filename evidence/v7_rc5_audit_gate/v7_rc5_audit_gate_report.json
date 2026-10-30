@@ -1,6 +1,6 @@
 {
   "testSuite": "V7_RC5_AUDIT_GATE_SAFEGUARDS",
-  "timestamp": "2026-10-30T13:28:55.740Z",
+  "timestamp": "2026-10-30T17:20:49.263Z",
   "safeguard1_manualHoldBrowserFixture": {
     "pass": true,
     "details": {
@@ -27,30 +27,24 @@
   "safeguard3_ownerStorageReconciliation": {
     "pass": true,
     "details": {
-      "totalKeys": 71,
+      "totalKeys": 75,
       "counters": {
-        "completed": 5,
-        "deliveryUnknown": 2,
-        "failed": 1,
-        "failureBreakdown": {
-          "REQUIRED_FIELDS_UNRESOLVED": 1
-        },
+        "completed": 0,
+        "deliveryUnknown": 0,
+        "failed": 0,
+        "failureBreakdown": {},
         "inProgress": 0,
         "paused": 0,
-        "remaining": 73,
-        "skipped": 2,
+        "remaining": 62,
+        "skipped": 0,
         "skippedHistory": 0,
         "success": 0,
         "timeout": 0,
-        "total": 78
+        "total": 62
       },
-      "checkpoint": {
-        "campaignRunId": "normal_run_1793361618600_0esge6",
-        "campaignMode": "MANUAL",
-        "totalTargets": 78
-      },
-      "cumulativeAttemptsCount": 24,
-      "confirmedSuccessCount": 2,
+      "checkpoint": {},
+      "cumulativeAttemptsCount": 46,
+      "confirmedSuccessCount": 6,
       "deliveryUnknownCount": 4,
       "runsBreakdown": [
         {
@@ -76,6 +70,30 @@
           "deliveryUnknown": 2,
           "failed": 1,
           "skipped": 2
+        },
+        {
+          "runId": "normal_run_1793367572246_4vru1k",
+          "attempts": 1,
+          "confirmedSuccess": 0,
+          "deliveryUnknown": 0,
+          "failed": 0,
+          "skipped": 1
+        },
+        {
+          "runId": "normal_run_1793372331247_xheiwj",
+          "attempts": 20,
+          "confirmedSuccess": 4,
+          "deliveryUnknown": 0,
+          "failed": 3,
+          "skipped": 9
+        },
+        {
+          "runId": "normal_run_1793379038305_ppimxu",
+          "attempts": 1,
+          "confirmedSuccess": 0,
+          "deliveryUnknown": 0,
+          "failed": 0,
+          "skipped": 0
         }
       ],
       "priorRebaseScope": "ONLY per-run numbers (xpider_total, xpider_campaign_counters_v1); cumulative HistoryStore (xpider_history_attempts, rows, targets) remained 100% intact"

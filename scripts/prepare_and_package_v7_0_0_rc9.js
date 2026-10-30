@@ -278,3 +278,4 @@ const metadata = {
 };
 fs.writeFileSync(path.resolve('scratch_v7_0_0_rc9_metadata.json'), JSON.stringify(metadata, null, 2), 'utf8');
 console.log('Wrote scratch_v7_0_0_rc9_metadata.json');
+

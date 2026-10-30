@@ -233,3 +233,4 @@ fs.writeFileSync(path.resolve('scratch_v7_0_0_rc10_metadata.json'), JSON.stringi
     headShort,
     timestamp: new Date().toISOString()
 }, null, 2), 'utf8');
+

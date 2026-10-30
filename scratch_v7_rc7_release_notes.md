@@ -37,3 +37,4 @@ Release v7.0.0-rc7 addresses the two critical P0 runtime and visual defects iden
    - The build badge reads `OWNER BETA V7.0.0-RC7 [8ab1f93b]`.
    - URL rows are clearly legible with 36px height, no clipping, and pure white text.
    - Click green **▶️ Resume**, choose mode, and click **Confirm & Resume**.
+

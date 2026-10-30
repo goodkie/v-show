@@ -26,3 +26,4 @@ Responds to #6514864061. Stage 1 implementation has **not** started yet; this re
 Stage 1 (Start Automatic / Start Manual, internal API-CAPTCHA runtime removal with safe migration, offline fixtures) proceeds on a separate branch from tag \`major-backup-20261030-from-93\` + the .94 fix; live Chrome/profile/queue will not be touched.`;
 fs.writeFileSync('scratch_receipt_94_recon.md', body, 'utf8');
 console.log(execSync('gh issue comment 6 --body-file scratch_receipt_94_recon.md', { encoding: 'utf8' }).trim());
+

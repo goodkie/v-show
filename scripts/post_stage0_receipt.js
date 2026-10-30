@@ -35,3 +35,4 @@ None required for backup. Chrome was left running, so the storage copy is a poin
 Stage 1 (Start Automatic / Start Manual, removal of internal API-CAPTCHA runtime with safe migration) now begins from tag \`major-backup-20261030-from-93\`. Rollback: \`git checkout major-backup-20261030-from-93\` or the preserved .92/.93 ZIPs.`;
 fs.writeFileSync('scratch_receipt_stage0_backup.md', body, 'utf8');
 console.log(execSync('gh issue comment 6 --body-file scratch_receipt_stage0_backup.md', { encoding: 'utf8' }).trim());
+

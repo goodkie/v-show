@@ -39,3 +39,4 @@ Release v7.0.0-rc6 addresses all four defects and requests raised by the Owner a
    - Banner displays: `⏸️ Paused Campaign Available (73 remaining)`.
    - HUD displays: `CAMPAIGN: PAUSED (73 remaining)` in neon cyan.
 6. Click **▶️ Resume**. The mode modal appears instantly. Choose **MANUAL** or **AUTO** and click **Confirm & Resume**.
+

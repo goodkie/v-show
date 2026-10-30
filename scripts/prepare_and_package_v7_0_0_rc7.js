@@ -265,3 +265,4 @@ const metadata = {
     builtAt: new Date().toISOString()
 };
 fs.writeFileSync(path.resolve('scratch_v7_0_0_rc7_metadata.json'), JSON.stringify(metadata, null, 2), 'utf8');
+

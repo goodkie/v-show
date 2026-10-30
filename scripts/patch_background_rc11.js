@@ -99,3 +99,4 @@ if (!bg.includes('checkpoint.targetTimeoutMs || campaignState.targetTimeoutMs'))
 
 fs.writeFileSync(bgPath, bg, 'utf8');
 console.log('Successfully patched extension/background.js for RC11');
+

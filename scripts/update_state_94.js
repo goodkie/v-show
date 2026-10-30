@@ -15,3 +15,4 @@ s = s.replace(/- State Rev: .*/, '- State Rev: 2026-10-30.244')
   .replace(/- Build ID: .*/, '- Build ID: `R6.9G.10.3.7.1.4.94-20261029-P0-RC3.60-SCOPE-ERROR-HOTFIX-PASS`')
   .replace(/- Verified Release Asset: .*/, '- Verified Release Asset: `XPIDER_R6.9G.10.3.7.1.4.94_OWNER_BETA.zip` (Tag: `v6.9g.10.3-rc3.60.7.1.4.94`, 53,056,567 bytes, SHA256: `570d7ffe28e83aecd2f9d2d65b6f5ffe6947f333145b9435115d1e8fdf15e861`); .93 has a CORE_RUNTIME_BROKEN regression - do not use.');
 fs.writeFileSync(p, s);
+

@@ -1,132 +1,124 @@
-[2026-10-30T13:28:55.741Z] === STARTING AUDIT GATE SAFEGUARD VERIFICATION ===
-[2026-10-30T13:28:55.742Z] Starting owned loopback fixture server on port 8088
-[2026-10-30T13:28:55.769Z] Owned loopback fixture server active.
-[2026-10-30T13:28:55.770Z] Launching browser with isolated profile: C:\Users\oPus\AppData\Local\Temp\xpider-v7-rc5-audit-7Im8Xu
-[2026-10-30T13:28:57.116Z] Service Worker attached. Extension ID: ldlijlaccfeelfdhgnjbibniocefckjj
-[2026-10-30T13:28:57.116Z] 
+[2026-10-30T17:20:49.264Z] === STARTING AUDIT GATE SAFEGUARD VERIFICATION ===
+[2026-10-30T17:20:49.265Z] Starting owned loopback fixture server on port 8088
+[2026-10-30T17:20:49.289Z] Owned loopback fixture server active.
+[2026-10-30T17:20:49.290Z] Launching browser with isolated profile: C:\Users\oPus\AppData\Local\Temp\xpider-v7-rc5-audit-wO1uxR
+[2026-10-30T17:20:50.585Z] Service Worker attached. Extension ID: ldlijlaccfeelfdhgnjbibniocefckjj
+[2026-10-30T17:20:50.585Z] 
 --- EXECUTING SAFEGUARD 1: Checkbox Group & Manual Hold Browser Fixture ---
-[2026-10-30T13:28:57.134Z] [SW_CONSOLE] [BG_LOG][tab=none] [Auto CAPTCHA Solver Boot] method=api keyConfigured=false source=none
-[2026-10-30T13:28:57.156Z] [SW_CONSOLE] [OWNER_TEST_GUARD] declarativeNetRequest session rules removed cleanly
-[2026-10-30T13:28:57.157Z] [SW_CONSOLE] [BG_LOG][tab=none] [OWNER_TEST_GUARD] declarativeNetRequest session rules removed cleanly
-[2026-10-30T13:28:57.158Z] Navigating browser page target to loopback fixture: http://127.0.0.1:8088/contact-checkbox-manual-hold.html
-[2026-10-30T13:28:57.574Z] [SW_CONSOLE] [BootStep] restoring_campaign_state
-[2026-10-30T13:28:57.574Z] [SW_CONSOLE] [Boot] Initializing campaign state...
-[2026-10-30T13:28:57.578Z] [SW_CONSOLE] [OWNER_TEST_GUARD] declarativeNetRequest session rules removed cleanly
-[2026-10-30T13:28:57.581Z] [SW_CONSOLE] [BG_LOG][tab=none] [OWNER_TEST_GUARD] declarativeNetRequest session rules removed cleanly
-[2026-10-30T13:28:57.609Z] [SW_CONSOLE] [COUNTER_RECONCILE] legacySuccess=0 ledgerSuccess=0 action=LEDGER_WINS
-[2026-10-30T13:28:57.627Z] [SW_CONSOLE] [BootStep] restore_complete
-[2026-10-30T13:28:57.630Z] [SW_CONSOLE] [Boot] Privacy Relay configured — checking status and auto-recovering if offline...
-[2026-10-30T13:28:59.181Z] Fixture Tab Info from Service Worker: {"id":2056661328,"url":"http://127.0.0.1:8088/contact-checkbox-manual-hold.html"}
-[2026-10-30T13:28:59.183Z] Injecting content scripts into tabId 2056661328...
-[2026-10-30T13:28:59.295Z] Content scripts injected successfully into fixture tab.
-[2026-10-30T13:29:00.312Z] [SW_CONSOLE] [BG_LOG][tab=2056661328] 🖐️ [V7_MANUAL_MODE_HOLD] Form prepared on http://127.0.0.1:8088/contact-checkbox-manual-hold.html. Holding campaign queue for manual operator action.
-[2026-10-30T13:29:00.314Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=2056661328][attemptId=test_att_1][url=http://127.0.0.1:8088/contact-checkbox-manual-hold.html] 🖐️ [MANUAL_MODE_HOLD] Form prepared and frozen. Holding queue for operator registration (challenge=NONE, validationFailed=true, reason=REQUIRED_FIELDS_UNRESOLVED: Mandatory Verification Token).
-[2026-10-30T13:29:00.315Z] [SW_CONSOLE] [BG_LOG][tab=2056661328] [CONTENT_EVENT][tabId=2056661328][attemptId=test_att_1][url=http://127.0.0.1:8088/contact-checkbox-manual-hold.html] 🖐️ [MANUAL_MODE_HOLD] Form prepared and frozen. Holding queue for operator registration (challenge=NONE, validationFailed=true, reason=REQUIRED_FIELDS_UNRESOLVED: Mandatory Verification Token).
-[2026-10-30T13:29:00.316Z] [SW_CONSOLE] [BG_LOG][tab=2056661328] 🖐️ [V7_MANUAL_MODE_HOLD] Form prepared on http://127.0.0.1:8088/contact-checkbox-manual-hold.html. Holding campaign queue for manual operator action.
-[2026-10-30T13:29:01.114Z] Scripting Execution Result: {"checkbox1Checked":true,"checkboxCount":3,"holdActive":true,"holdInitiated":true,"recoveryBlocked":true,"sendFnResult":{"deadlinePaused":true,"state":"MANUAL_HOLD","success":true,"tabId":2056661328}}
-[2026-10-30T13:29:02.126Z] Page DOM Check via CDP: {"panelExists":true,"panelVisible":true,"bannerExists":true,"bannerText":"⚠️ Operator Action Needed: REQUIRED_FIELDS_UNRESOLVED: Mandatory Verification Token — please review/complete remaining fields on the page before submitting.","tabUrl":"http://127.0.0.1:8088/contact-checkbox-manual-hold.html"}
-[2026-10-30T13:29:02.127Z] Service Worker Diagnostic: {"stage":"MANUAL_HOLD","holdActive":true,"curTabId":2056661328,"curAtt":{"attemptId":"test_att_1","tabId":2056661328,"url":"http://127.0.0.1:8088/contact-checkbox-manual-hold.html"},"isActive":true,"curTok":"test_tok_1","curRunId":"test_run_fixture"}
-[2026-10-30T13:29:02.129Z] Service Worker Active Hold State: {"xpider_campaign_mode":"MANUAL","xpider_v7_active_hold_state":{"active":true,"attemptId":"test_att_1","campaignMode":"MANUAL","campaignRunId":"test_run_fixture","heldAt":1793366940315,"initialHoldUrl":"http://127.0.0.1:8088/contact-checkbox-manual-hold.html","restorationLogged":false,"sessionId":1,"stage":"MANUAL_HOLD","tabId":2056661328,"targetToken":"test_tok_1","unresolvedFields":["custom_unhandled_code"],"url":"http://127.0.0.1:8088/contact-checkbox-manual-hold.html","validationFailed":true,"validationReason":"REQUIRED_FIELDS_UNRESOLVED: Mandatory Verification Token"}}
-[2026-10-30T13:29:02.131Z] Local server submissions count: 0 (strictly 0)
-[2026-10-30T13:29:02.131Z] PASS: Safeguard 1 verified in genuine browser fixture!
+[2026-10-30T17:20:50.621Z] [SW_CONSOLE] [BOOT] [SW_RESTART] XPIDER Service Worker initialized buildId=V7.0.0-RC10-20261030-THREE-MODE-CONTRACTS-PASS channel=OWNER_BETA_V7_DUAL_MODE timestamp=2026-10-30T17:20:50.620Z modules={"modules/build-provenance.js":{"status":"PASS","buildId":"V7.0.0-RC10-20261030-THREE-MODE-CONTRACTS-PASS","implementationHead":"d15142591234567890abcdef1234567890abcdef"},"solver-core.js":{"status":"PASS"},"modules/operation-queue.js":{"status":"PASS"},"modules/template-store.js":{"status":"PASS"},"modules/history-store.js":{"status":"PASS"},"modules/email-collector.js":{"status":"PASS"},"modules/vision-submit-executor.js":{"status":"PASS"},"modules/privacy-gateway.js":{"status":"PASS"},"modules/smart-field-resolver.js":{"status":"PASS"},"modules/challenge-gate.js":{"status":"PASS"},"modules/mock-captcha-provider-adapter.js":{"status":"PASS"}}
+[2026-10-30T17:20:50.626Z] [SW_CONSOLE] [PRIVACY_GATE] Proxy onAuthRequired asyncBlocking listener registered with bounded retries.
+[2026-10-30T17:20:50.629Z] [SW_CONSOLE] [BootStep] solver_instantiation
+[2026-10-30T17:20:50.630Z] [SW_CONSOLE] [X PIDER] Background script initializing (Unified Mode)...
+[2026-10-30T17:20:50.631Z] [SW_CONSOLE] [BootStep] side_panel_config
+[2026-10-30T17:20:50.632Z] [SW_CONSOLE] [BootStep] campaign_state_init
+[2026-10-30T17:20:50.638Z] [SW_CONSOLE] [BootStep] global_functions_defined
+[2026-10-30T17:20:50.638Z] [SW_CONSOLE] [BootStep] worker_online
+[2026-10-30T17:20:50.660Z] [SW_CONSOLE] [BG_LOG][tab=none] [Auto CAPTCHA Solver Boot] method=api keyConfigured=false source=none
+[2026-10-30T17:20:50.681Z] Navigating browser page target to loopback fixture: http://127.0.0.1:8088/contact-checkbox-manual-hold.html
+[2026-10-30T17:20:50.694Z] [SW_CONSOLE] [OWNER_TEST_GUARD] declarativeNetRequest session rules removed cleanly
+[2026-10-30T17:20:50.695Z] [SW_CONSOLE] [BG_LOG][tab=none] [OWNER_TEST_GUARD] declarativeNetRequest session rules removed cleanly
+[2026-10-30T17:20:51.148Z] [SW_CONSOLE] [BootStep] restoring_campaign_state
+[2026-10-30T17:20:51.164Z] [SW_CONSOLE] [Boot] Initializing campaign state...
+[2026-10-30T17:20:51.196Z] [SW_CONSOLE] [OWNER_TEST_GUARD] declarativeNetRequest session rules removed cleanly
+[2026-10-30T17:20:51.197Z] [SW_CONSOLE] [BG_LOG][tab=none] [OWNER_TEST_GUARD] declarativeNetRequest session rules removed cleanly
+[2026-10-30T17:20:51.215Z] [SW_CONSOLE] [COUNTER_RECONCILE] legacySuccess=0 ledgerSuccess=0 action=LEDGER_WINS
+[2026-10-30T17:20:51.277Z] [SW_CONSOLE] [BootStep] restore_complete
+[2026-10-30T17:20:51.282Z] [SW_CONSOLE] [Boot] Privacy Relay configured — checking status and auto-recovering if offline...
+[2026-10-30T17:20:52.704Z] Fixture Tab Info from Service Worker: {"id":995000079,"url":"http://127.0.0.1:8088/contact-checkbox-manual-hold.html"}
+[2026-10-30T17:20:52.706Z] Injecting content scripts into tabId 995000079...
+[2026-10-30T17:20:52.774Z] Content scripts injected successfully into fixture tab.
+[2026-10-30T17:20:53.799Z] [SW_CONSOLE] [BG_LOG][tab=995000079] 🖐️ [V7_MANUAL_MODE_HOLD] Form prepared on http://127.0.0.1:8088/contact-checkbox-manual-hold.html. Holding campaign queue for manual operator action.
+[2026-10-30T17:20:53.800Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=995000079][attemptId=test_att_1][url=http://127.0.0.1:8088/contact-checkbox-manual-hold.html] 🖐️ [MANUAL_MODE_HOLD] Form prepared and frozen. Holding queue for operator registration (challenge=NONE, validationFailed=true, reason=REQUIRED_FIELDS_UNRESOLVED: Mandatory Verification Token).
+[2026-10-30T17:20:53.801Z] [SW_CONSOLE] [BG_LOG][tab=995000079] [CONTENT_EVENT][tabId=995000079][attemptId=test_att_1][url=http://127.0.0.1:8088/contact-checkbox-manual-hold.html] 🖐️ [MANUAL_MODE_HOLD] Form prepared and frozen. Holding queue for operator registration (challenge=NONE, validationFailed=true, reason=REQUIRED_FIELDS_UNRESOLVED: Mandatory Verification Token).
+[2026-10-30T17:20:53.803Z] [SW_CONSOLE] [BG_LOG][tab=995000079] 🖐️ [V7_MANUAL_MODE_HOLD] Form prepared on http://127.0.0.1:8088/contact-checkbox-manual-hold.html. Holding campaign queue for manual operator action.
+[2026-10-30T17:20:54.601Z] Scripting Execution Result: {"checkbox1Checked":true,"checkboxCount":3,"holdActive":true,"holdInitiated":true,"recoveryBlocked":true,"sendFnResult":{"deadlinePaused":true,"state":"MANUAL_HOLD","success":true,"tabId":995000079}}
+[2026-10-30T17:20:55.614Z] Page DOM Check via CDP: {"panelExists":true,"panelVisible":true,"bannerExists":true,"bannerText":"⚠️ Operator Action Needed: REQUIRED_FIELDS_UNRESOLVED: Mandatory Verification Token — please review/complete remaining fields on the page before submitting.","tabUrl":"http://127.0.0.1:8088/contact-checkbox-manual-hold.html"}
+[2026-10-30T17:20:55.615Z] Service Worker Diagnostic: {"stage":"MANUAL_HOLD","holdActive":true,"curTabId":995000079,"curAtt":{"attemptId":"test_att_1","tabId":995000079,"url":"http://127.0.0.1:8088/contact-checkbox-manual-hold.html"},"isActive":true,"curTok":"test_tok_1","curRunId":"test_run_fixture"}
+[2026-10-30T17:20:55.617Z] Service Worker Active Hold State: {"xpider_campaign_mode":"MANUAL","xpider_v7_active_hold_state":{"active":true,"attemptId":"test_att_1","campaignMode":"MANUAL","campaignRunId":"test_run_fixture","heldAt":1793380853801,"initialHoldUrl":"http://127.0.0.1:8088/contact-checkbox-manual-hold.html","restorationLogged":false,"sessionId":1,"stage":"MANUAL_HOLD","tabId":995000079,"targetToken":"test_tok_1","unresolvedFields":["custom_unhandled_code"],"url":"http://127.0.0.1:8088/contact-checkbox-manual-hold.html","validationFailed":true,"validationReason":"REQUIRED_FIELDS_UNRESOLVED: Mandatory Verification Token"}}
+[2026-10-30T17:20:55.619Z] Local server submissions count: 0 (strictly 0)
+[2026-10-30T17:20:55.619Z] PASS: Safeguard 1 verified in genuine browser fixture!
 
-[2026-10-30T13:29:02.131Z] --- EXECUTING SAFEGUARD 2: Pause -> Resume Modal & Mode Transitions ---
-[2026-10-30T13:29:02.131Z] Navigating page target to popup URL: chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/popup.html
-[2026-10-30T13:29:02.498Z] [SW_CONSOLE] [BG_LOG][tab=none] 📦 [Migration] Safely migrated to v2 (Backup: xpider_backup_v1_1793366942491)
-[2026-10-30T13:29:04.293Z] [SW_CONSOLE] [TEMPLATE_REPAIR] repaired=false source=none reason=NO_RECOVERABLE_MESSAGE
-[2026-10-30T13:29:06.208Z] Popup State Before Click: {"bannerDisplay":"block","bannerClass":"","pauseBtnText":"Pause","resumeBtnExists":true,"hasCampaignPaused":true}
-[2026-10-30T13:29:06.814Z] Resume Modal Display Check: {"clicked":true,"buttonId":"resume-campaign-btn","modalExists":true,"modalVisible":true,"btnText":"▶️ Resume"}
-[2026-10-30T13:29:06.816Z] Cancel Modal Check: {"modalVisible":false}
-[2026-10-30T13:29:06.818Z] Storage State After Cancel: {"xpider_campaign_mode":"MANUAL","xpider_isActive":false,"xpider_isPaused":true}
-[2026-10-30T13:29:07.836Z] Mode Switch (MANUAL -> AUTO) Check: {"confirmed":true,"capturedMsg":{"action":"RESUME_CAMPAIGN","campaignMode":"AUTO"},"currentCampaignMode":"AUTO"}
-[2026-10-30T13:29:07.841Z] [SW_CONSOLE] [BG_LOG][tab=none] [PAUSE] campaignRunId=test_run_1793361618600_p7873 remaining=0 inProgress=undefined
-[2026-10-30T13:29:07.843Z] [SW_CONSOLE] [BG_LOG][tab=none] ⏸️ [Engine] Campaign PAUSED / STOP & SAVE requested.
-[2026-10-30T13:29:07.847Z] [SW_CONSOLE] [TAB_BARRIER] phase=PAUSE_CAMPAIGN ownedBefore=0
-[2026-10-30T13:29:07.850Z] [SW_CONSOLE] [TAB_BARRIER] phase=PAUSE_CAMPAIGN ownedAfter=0 result=PASS
-[2026-10-30T13:29:07.851Z] [SW_CONSOLE] [TAB_KILL_SWITCH] keepTabId=2056661328 closedOthers=0 remainingOwned=1 result=PASS
-[2026-10-30T13:29:07.852Z] [SW_CONSOLE] [PRIVACY_SETTINGS_RESTORED] keepEnforced=true gateReady=true transportEnforced=true mode=PRIVACY_RELAY
-[2026-10-30T13:29:07.854Z] [SW_CONSOLE] [PRIVACY_SETTINGS_RESTORED] gateReady=true transportEnforced=true
-[2026-10-30T13:29:07.855Z] [SW_CONSOLE] [BG_LOG][tab=none] [PRIVACY_SETTINGS_RESTORED] gateReady=true transportEnforced=true
-[2026-10-30T13:29:07.857Z] [SW_CONSOLE] [BG_LOG][tab=none] 💾 [Checkpoint] Campaign snapshot saved: 0 targets remaining.
-[2026-10-30T13:29:07.860Z] [SW_CONSOLE] [BG_LOG][tab=none] === CAMPAIGN OUTCOME SUMMARY (currentRun) ===
-[2026-10-30T13:29:07.868Z] [SW_CONSOLE] [BG_LOG][tab=none] CONFIRMED_SUCCESS:           0
-[2026-10-30T13:29:07.868Z] [SW_CONSOLE] [BG_LOG][tab=none] FAILURE:                     0
-[2026-10-30T13:29:07.869Z] [SW_CONSOLE] [BG_LOG][tab=none] TIMEOUT_LOCAL:               0
-[2026-10-30T13:29:07.869Z] [SW_CONSOLE] [BG_LOG][tab=none] TIMEOUT_GLOBAL:              0
-[2026-10-30T13:29:07.870Z] [SW_CONSOLE] [BG_LOG][tab=none] DELIVERY_UNKNOWN:            0
-[2026-10-30T13:29:07.871Z] [SW_CONSOLE] [BG_LOG][tab=none] SKIPPED:                     0
-[2026-10-30T13:29:07.872Z] [SW_CONSOLE] [BG_LOG][tab=none] PAUSED_UNKNOWN:              0
-[2026-10-30T13:29:07.873Z] [SW_CONSOLE] [BG_LOG][tab=none] ----------------------------------------
-[2026-10-30T13:29:07.874Z] [SW_CONSOLE] [BG_LOG][tab=none] TOTAL TERMINAL / COMPLETED:  0
-[2026-10-30T13:29:07.876Z] [SW_CONSOLE] [CAMPAIGN_SUMMARY] success=0 failure=0 timeoutLocal=0 timeoutGlobal=0 unknown=0 skipped=0 paused=0 completed=0
-[2026-10-30T13:29:07.876Z] [SW_CONSOLE] [BG_LOG][tab=none] ========================================
-[2026-10-30T13:29:08.857Z] Mode Switch (AUTO -> MANUAL) Check: {"confirmed":true,"capturedMsg":{"action":"RESUME_CAMPAIGN","campaignMode":"MANUAL"},"currentCampaignMode":"MANUAL"}
-[2026-10-30T13:29:08.859Z] [SW_CONSOLE] [BG_TEST] 1. Setting up paused checkpoint
-[2026-10-30T13:29:08.859Z] [SW_CONSOLE] [BG_TEST] 2. Calling resumeCampaignOrchestrator AUTO
-[2026-10-30T13:29:08.860Z] [SW_CONSOLE] [BG_LOG][tab=none] [RESUME] campaignRunId=test_run_1793361618600_p7873 remaining=2
-[2026-10-30T13:29:08.861Z] [SW_CONSOLE] [BG_LOG][tab=none] ▶️ [Engine] RESUME_CAMPAIGN requested.
-[2026-10-30T13:29:08.871Z] [SW_CONSOLE] [BG_LOG][tab=none] 🚀 [Resume] Resuming campaign at task boundary in AUTO mode (previous=MANUAL, switched=true) from target 77 (2 targets remaining)...
-[2026-10-30T13:29:08.874Z] [SW_CONSOLE] [BG_TEST] 3. resAuto finished: AUTO
-[2026-10-30T13:29:08.874Z] [SW_CONSOLE] [BG_TEST] 4. Calling pauseCampaignOrchestrator
-[2026-10-30T13:29:08.875Z] [SW_CONSOLE] [BG_LOG][tab=none] [PAUSE] campaignRunId=test_run_1793361618600_p7873 remaining=2 inProgress=0
-[2026-10-30T13:29:08.875Z] [SW_CONSOLE] [BG_LOG][tab=none] ⏸️ [Engine] Campaign PAUSED / STOP & SAVE requested.
-[2026-10-30T13:29:08.884Z] [SW_CONSOLE] [TAB_BARRIER] phase=PAUSE_CAMPAIGN ownedBefore=0
-[2026-10-30T13:29:08.890Z] [SW_CONSOLE] [TAB_BARRIER] phase=PAUSE_CAMPAIGN ownedAfter=0 result=PASS
-[2026-10-30T13:29:08.891Z] [SW_CONSOLE] [PRIVACY_SETTINGS_RESTORED] keepEnforced=true gateReady=true transportEnforced=true mode=PRIVACY_RELAY
-[2026-10-30T13:29:08.891Z] [SW_CONSOLE] [PRIVACY_SETTINGS_RESTORED] gateReady=true transportEnforced=true
-[2026-10-30T13:29:08.891Z] [SW_CONSOLE] [BG_LOG][tab=none] [PRIVACY_SETTINGS_RESTORED] gateReady=true transportEnforced=true
-[2026-10-30T13:29:08.896Z] [SW_CONSOLE] [BG_LOG][tab=none] 💾 [Checkpoint] Campaign snapshot saved: 2 targets remaining.
-[2026-10-30T13:29:08.903Z] [SW_CONSOLE] [BG_LOG][tab=none] === CAMPAIGN OUTCOME SUMMARY (currentRun) ===
-[2026-10-30T13:29:08.904Z] [SW_CONSOLE] [BG_LOG][tab=none] CONFIRMED_SUCCESS:           0
-[2026-10-30T13:29:08.904Z] [SW_CONSOLE] [BG_LOG][tab=none] FAILURE:                     0
-[2026-10-30T13:29:08.904Z] [SW_CONSOLE] [BG_LOG][tab=none] TIMEOUT_LOCAL:               0
-[2026-10-30T13:29:08.905Z] [SW_CONSOLE] [BG_LOG][tab=none] TIMEOUT_GLOBAL:              0
-[2026-10-30T13:29:08.905Z] [SW_CONSOLE] [BG_LOG][tab=none] DELIVERY_UNKNOWN:            0
-[2026-10-30T13:29:08.906Z] [SW_CONSOLE] [BG_LOG][tab=none] SKIPPED:                     0
-[2026-10-30T13:29:08.906Z] [SW_CONSOLE] [BG_LOG][tab=none] PAUSED_UNKNOWN:              0
-[2026-10-30T13:29:08.915Z] [SW_CONSOLE] [BG_LOG][tab=none] ----------------------------------------
-[2026-10-30T13:29:08.915Z] [SW_CONSOLE] [BG_LOG][tab=none] TOTAL TERMINAL / COMPLETED:  0
-[2026-10-30T13:29:08.915Z] [SW_CONSOLE] [CAMPAIGN_SUMMARY] success=0 failure=0 timeoutLocal=0 timeoutGlobal=0 unknown=0 skipped=0 paused=0 completed=0
-[2026-10-30T13:29:08.915Z] [SW_CONSOLE] [BG_LOG][tab=none] ========================================
-[2026-10-30T13:29:08.916Z] [SW_CONSOLE] [BG_TEST] 5. Calling resumeCampaignOrchestrator MANUAL
-[2026-10-30T13:29:08.916Z] [SW_CONSOLE] [BG_LOG][tab=none] [RESUME] campaignRunId=test_run_1793361618600_p7873 remaining=2
-[2026-10-30T13:29:08.916Z] [SW_CONSOLE] [BG_LOG][tab=none] ▶️ [Engine] RESUME_CAMPAIGN requested.
-[2026-10-30T13:29:08.940Z] [SW_CONSOLE] [BG_LOG][tab=none] 🚀 [Resume] Resuming campaign at task boundary in MANUAL mode (previous=AUTO, switched=true) from target 77 (2 targets remaining)...
-[2026-10-30T13:29:08.946Z] [SW_CONSOLE] [BG_TEST] 6. resManual finished: MANUAL
-[2026-10-30T13:29:08.946Z] [SW_CONSOLE] [BG_LOG][tab=none] [PAUSE] campaignRunId=test_run_1793361618600_p7873 remaining=2 inProgress=0
-[2026-10-30T13:29:08.946Z] [SW_CONSOLE] [BG_LOG][tab=none] ⏸️ [Engine] Campaign PAUSED / STOP & SAVE requested.
-[2026-10-30T13:29:08.955Z] [SW_CONSOLE] [TAB_BARRIER] phase=PAUSE_CAMPAIGN ownedBefore=0
-[2026-10-30T13:29:08.961Z] [SW_CONSOLE] [TAB_BARRIER] phase=PAUSE_CAMPAIGN ownedAfter=0 result=PASS
-[2026-10-30T13:29:08.961Z] [SW_CONSOLE] [PRIVACY_SETTINGS_RESTORED] keepEnforced=true gateReady=true transportEnforced=true mode=PRIVACY_RELAY
-[2026-10-30T13:29:08.961Z] [SW_CONSOLE] [PRIVACY_SETTINGS_RESTORED] gateReady=true transportEnforced=true
-[2026-10-30T13:29:08.962Z] [SW_CONSOLE] [BG_LOG][tab=none] [PRIVACY_SETTINGS_RESTORED] gateReady=true transportEnforced=true
-[2026-10-30T13:29:08.967Z] [SW_CONSOLE] [BG_LOG][tab=none] 💾 [Checkpoint] Campaign snapshot saved: 2 targets remaining.
-[2026-10-30T13:29:08.976Z] [SW_CONSOLE] [BG_LOG][tab=none] === CAMPAIGN OUTCOME SUMMARY (currentRun) ===
-[2026-10-30T13:29:08.976Z] [SW_CONSOLE] [BG_LOG][tab=none] CONFIRMED_SUCCESS:           0
-[2026-10-30T13:29:08.977Z] [SW_CONSOLE] [BG_LOG][tab=none] FAILURE:                     0
-[2026-10-30T13:29:08.977Z] [SW_CONSOLE] [BG_LOG][tab=none] TIMEOUT_LOCAL:               0
-[2026-10-30T13:29:08.978Z] [SW_CONSOLE] [BG_LOG][tab=none] TIMEOUT_GLOBAL:              0
-[2026-10-30T13:29:08.978Z] [SW_CONSOLE] [BG_LOG][tab=none] DELIVERY_UNKNOWN:            0
-[2026-10-30T13:29:08.978Z] [SW_CONSOLE] [BG_LOG][tab=none] SKIPPED:                     0
-[2026-10-30T13:29:08.979Z] [SW_CONSOLE] [BG_LOG][tab=none] PAUSED_UNKNOWN:              0
-[2026-10-30T13:29:08.979Z] [SW_CONSOLE] [BG_LOG][tab=none] ----------------------------------------
-[2026-10-30T13:29:08.979Z] [SW_CONSOLE] [BG_LOG][tab=none] TOTAL TERMINAL / COMPLETED:  0
-[2026-10-30T13:29:08.987Z] [SW_CONSOLE] [CAMPAIGN_SUMMARY] success=0 failure=0 timeoutLocal=0 timeoutGlobal=0 unknown=0 skipped=0 paused=0 completed=0
-[2026-10-30T13:29:08.988Z] [SW_CONSOLE] [BG_LOG][tab=none] ========================================
-[2026-10-30T13:29:08.989Z] Background Mode Orchestrator Check: {"runIdPreservedAuto":true,"modeAfterAuto":"AUTO","runIdPreservedManual":true,"modeAfterManual":"MANUAL","targetTriggered":true,"checkpointRemaining":2}
-[2026-10-30T13:29:09.005Z] Service Worker Restart Preservation Check: {"hasCheckpoint":true,"runIdMatch":true,"total":78,"visitedCount":5,"remainingCount":2}
-[2026-10-30T13:29:09.005Z] PASS: Safeguard 2 verified in genuine browser popup!
+[2026-10-30T17:20:55.619Z] --- EXECUTING SAFEGUARD 2: Pause -> Resume Modal & Mode Transitions ---
+[2026-10-30T17:20:55.619Z] Navigating page target to popup URL: chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/popup.html
+[2026-10-30T17:20:56.094Z] [SW_CONSOLE] [BG_LOG][tab=none] 📦 [Migration] Safely migrated to v2 (Backup: xpider_backup_v1_1793380856080)
+[2026-10-30T17:20:57.794Z] [SW_CONSOLE] [TEMPLATE_REPAIR] repaired=false source=none reason=NO_RECOVERABLE_MESSAGE
+[2026-10-30T17:20:59.673Z] Popup State Before Click: {"bannerDisplay":"block","bannerClass":"","pauseBtnText":"Pause","resumeBtnExists":true,"hasCampaignPaused":true}
+[2026-10-30T17:21:00.278Z] Resume Modal Display Check: {"clicked":true,"buttonId":"resume-campaign-btn","modalExists":true,"modalVisible":true,"btnText":"▶️ Resume"}
+[2026-10-30T17:21:00.280Z] Cancel Modal Check: {"modalVisible":false}
+[2026-10-30T17:21:00.282Z] Storage State After Cancel: {"xpider_campaign_mode":"MANUAL","xpider_isActive":false,"xpider_isPaused":true}
+[2026-10-30T17:21:01.303Z] Mode Switch (MANUAL -> AUTO) Check: {"confirmed":true,"capturedMsg":{"action":"RESUME_CAMPAIGN","campaignMode":"AUTO"},"currentCampaignMode":"AUTO"}
+[2026-10-30T17:21:02.319Z] Mode Switch (AUTO -> MANUAL) Check: {"confirmed":true,"capturedMsg":{"action":"RESUME_CAMPAIGN","campaignMode":"MANUAL"},"currentCampaignMode":"MANUAL"}
+[2026-10-30T17:21:02.321Z] [SW_CONSOLE] [BG_TEST] 1. Setting up paused checkpoint
+[2026-10-30T17:21:02.322Z] [SW_CONSOLE] [BG_TEST] 2. Calling resumeCampaignOrchestrator AUTO
+[2026-10-30T17:21:02.322Z] [SW_CONSOLE] [BG_LOG][tab=none] [RESUME] campaignRunId=test_run_1793361618600_p7873 remaining=2
+[2026-10-30T17:21:02.323Z] [SW_CONSOLE] [BG_LOG][tab=none] ▶️ [Engine] RESUME_CAMPAIGN requested.
+[2026-10-30T17:21:02.332Z] [SW_CONSOLE] [BG_LOG][tab=none] 🚀 [Resume] Resuming campaign at task boundary in AUTO mode (previous=MANUAL, switched=true) from target 77 (2 targets remaining)...
+[2026-10-30T17:21:02.335Z] [SW_CONSOLE] [BG_TEST] 3. resAuto finished: AUTO
+[2026-10-30T17:21:02.336Z] [SW_CONSOLE] [BG_TEST] 4. Calling pauseCampaignOrchestrator
+[2026-10-30T17:21:02.341Z] [SW_CONSOLE] [BG_LOG][tab=none] [PAUSE] campaignRunId=test_run_1793361618600_p7873 remaining=2 inProgress=0
+[2026-10-30T17:21:02.341Z] [SW_CONSOLE] [BG_LOG][tab=none] ⏸️ [Engine] Campaign PAUSED / STOP & SAVE requested.
+[2026-10-30T17:21:02.345Z] [SW_CONSOLE] [TAB_BARRIER] phase=PAUSE_CAMPAIGN ownedBefore=0
+[2026-10-30T17:21:02.347Z] [SW_CONSOLE] [TAB_BARRIER] phase=PAUSE_CAMPAIGN ownedAfter=0 result=PASS
+[2026-10-30T17:21:02.347Z] [SW_CONSOLE] [PRIVACY_SETTINGS_RESTORED] keepEnforced=true gateReady=true transportEnforced=true mode=PRIVACY_RELAY
+[2026-10-30T17:21:02.347Z] [SW_CONSOLE] [PRIVACY_SETTINGS_RESTORED] gateReady=true transportEnforced=true
+[2026-10-30T17:21:02.348Z] [SW_CONSOLE] [BG_LOG][tab=none] [PRIVACY_SETTINGS_RESTORED] gateReady=true transportEnforced=true
+[2026-10-30T17:21:02.355Z] [SW_CONSOLE] [BG_LOG][tab=none] 💾 [Checkpoint] Campaign snapshot saved: 2 targets remaining.
+[2026-10-30T17:21:02.363Z] [SW_CONSOLE] [BG_LOG][tab=none] === CAMPAIGN OUTCOME SUMMARY (currentRun) ===
+[2026-10-30T17:21:02.363Z] [SW_CONSOLE] [BG_LOG][tab=none] CONFIRMED_SUCCESS:           0
+[2026-10-30T17:21:02.363Z] [SW_CONSOLE] [BG_LOG][tab=none] FAILURE:                     0
+[2026-10-30T17:21:02.364Z] [SW_CONSOLE] [BG_LOG][tab=none] TIMEOUT_LOCAL:               0
+[2026-10-30T17:21:02.364Z] [SW_CONSOLE] [BG_LOG][tab=none] TIMEOUT_GLOBAL:              0
+[2026-10-30T17:21:02.364Z] [SW_CONSOLE] [BG_LOG][tab=none] DELIVERY_UNKNOWN:            0
+[2026-10-30T17:21:02.364Z] [SW_CONSOLE] [BG_LOG][tab=none] SKIPPED:                     0
+[2026-10-30T17:21:02.365Z] [SW_CONSOLE] [BG_LOG][tab=none] PAUSED_UNKNOWN:              0
+[2026-10-30T17:21:02.373Z] [SW_CONSOLE] [BG_LOG][tab=none] ----------------------------------------
+[2026-10-30T17:21:02.373Z] [SW_CONSOLE] [BG_LOG][tab=none] TOTAL TERMINAL / COMPLETED:  0
+[2026-10-30T17:21:02.374Z] [SW_CONSOLE] [CAMPAIGN_SUMMARY] success=0 failure=0 timeoutLocal=0 timeoutGlobal=0 unknown=0 skipped=0 paused=0 completed=0
+[2026-10-30T17:21:02.374Z] [SW_CONSOLE] [BG_LOG][tab=none] ========================================
+[2026-10-30T17:21:02.374Z] [SW_CONSOLE] [BG_TEST] 5. Calling resumeCampaignOrchestrator MANUAL
+[2026-10-30T17:21:02.374Z] [SW_CONSOLE] [BG_LOG][tab=none] [RESUME] campaignRunId=test_run_1793361618600_p7873 remaining=2
+[2026-10-30T17:21:02.374Z] [SW_CONSOLE] [BG_LOG][tab=none] ▶️ [Engine] RESUME_CAMPAIGN requested.
+[2026-10-30T17:21:02.401Z] [SW_CONSOLE] [BG_LOG][tab=none] 🚀 [Resume] Resuming campaign at task boundary in MANUAL mode (previous=AUTO, switched=true) from target 77 (2 targets remaining)...
+[2026-10-30T17:21:02.406Z] [SW_CONSOLE] [BG_TEST] 6. resManual finished: MANUAL
+[2026-10-30T17:21:02.406Z] [SW_CONSOLE] [BG_LOG][tab=none] [PAUSE] campaignRunId=test_run_1793361618600_p7873 remaining=2 inProgress=0
+[2026-10-30T17:21:02.406Z] [SW_CONSOLE] [BG_LOG][tab=none] ⏸️ [Engine] Campaign PAUSED / STOP & SAVE requested.
+[2026-10-30T17:21:02.412Z] [SW_CONSOLE] [TAB_BARRIER] phase=PAUSE_CAMPAIGN ownedBefore=0
+[2026-10-30T17:21:02.416Z] [SW_CONSOLE] [TAB_BARRIER] phase=PAUSE_CAMPAIGN ownedAfter=0 result=PASS
+[2026-10-30T17:21:02.417Z] [SW_CONSOLE] [PRIVACY_SETTINGS_RESTORED] keepEnforced=true gateReady=true transportEnforced=true mode=PRIVACY_RELAY
+[2026-10-30T17:21:02.417Z] [SW_CONSOLE] [PRIVACY_SETTINGS_RESTORED] gateReady=true transportEnforced=true
+[2026-10-30T17:21:02.417Z] [SW_CONSOLE] [BG_LOG][tab=none] [PRIVACY_SETTINGS_RESTORED] gateReady=true transportEnforced=true
+[2026-10-30T17:21:02.424Z] [SW_CONSOLE] [BG_LOG][tab=none] 💾 [Checkpoint] Campaign snapshot saved: 2 targets remaining.
+[2026-10-30T17:21:02.431Z] [SW_CONSOLE] [BG_LOG][tab=none] === CAMPAIGN OUTCOME SUMMARY (currentRun) ===
+[2026-10-30T17:21:02.431Z] [SW_CONSOLE] [BG_LOG][tab=none] CONFIRMED_SUCCESS:           0
+[2026-10-30T17:21:02.431Z] [SW_CONSOLE] [BG_LOG][tab=none] FAILURE:                     0
+[2026-10-30T17:21:02.432Z] [SW_CONSOLE] [BG_LOG][tab=none] TIMEOUT_LOCAL:               0
+[2026-10-30T17:21:02.432Z] [SW_CONSOLE] [BG_LOG][tab=none] TIMEOUT_GLOBAL:              0
+[2026-10-30T17:21:02.432Z] [SW_CONSOLE] [BG_LOG][tab=none] DELIVERY_UNKNOWN:            0
+[2026-10-30T17:21:02.432Z] [SW_CONSOLE] [BG_LOG][tab=none] SKIPPED:                     0
+[2026-10-30T17:21:02.433Z] [SW_CONSOLE] [BG_LOG][tab=none] PAUSED_UNKNOWN:              0
+[2026-10-30T17:21:02.433Z] [SW_CONSOLE] [BG_LOG][tab=none] ----------------------------------------
+[2026-10-30T17:21:02.442Z] [SW_CONSOLE] [BG_LOG][tab=none] TOTAL TERMINAL / COMPLETED:  0
+[2026-10-30T17:21:02.443Z] [SW_CONSOLE] [CAMPAIGN_SUMMARY] success=0 failure=0 timeoutLocal=0 timeoutGlobal=0 unknown=0 skipped=0 paused=0 completed=0
+[2026-10-30T17:21:02.443Z] [SW_CONSOLE] [BG_LOG][tab=none] ========================================
+[2026-10-30T17:21:02.443Z] Background Mode Orchestrator Check: {"runIdPreservedAuto":true,"modeAfterAuto":"AUTO","runIdPreservedManual":true,"modeAfterManual":"MANUAL","targetTriggered":true,"checkpointRemaining":2}
+[2026-10-30T17:21:02.455Z] Service Worker Restart Preservation Check: {"hasCheckpoint":true,"runIdMatch":true,"total":78,"visitedCount":5,"remainingCount":2}
+[2026-10-30T17:21:02.455Z] PASS: Safeguard 2 verified in genuine browser popup!
 
-[2026-10-30T13:29:09.005Z] --- EXECUTING SAFEGUARD 3: Owner Storage Snapshot Reconciliation ---
-[2026-10-30T13:29:09.078Z] Owner Snapshot Key Count: 71
-[2026-10-30T13:29:09.079Z] Owner Counters: total=78, remaining=73, completed=5
-[2026-10-30T13:29:09.079Z] Owner History Attempts Count: 24
-[2026-10-30T13:29:09.079Z] Breakdown by Run:
-[2026-10-30T13:29:09.079Z]   Run normal_run_1793356376257_humd5v: 18 attempts (SUCCESS: 2, UNKNOWN: 1, FAIL: 13, SKIP: 0, TIMEOUT: 2)
-[2026-10-30T13:29:09.079Z]   Run normal_run_1793359173380_k5wpib: 1 attempts (SUCCESS: 0, UNKNOWN: 1, FAIL: 0, SKIP: 0, TIMEOUT: 0)
-[2026-10-30T13:29:09.079Z]   Run normal_run_1793361618600_0esge6: 5 attempts (SUCCESS: 0, UNKNOWN: 2, FAIL: 1, SKIP: 2, TIMEOUT: 0)
-[2026-10-30T13:29:09.079Z] Active Run (normal_run_1793361618600_0esge6): total=5, counters.completed=5
-[2026-10-30T13:29:09.079Z] PASS: Safeguard 3 verified with read-only LevelDB snapshot!
+[2026-10-30T17:21:02.456Z] --- EXECUTING SAFEGUARD 3: Owner Storage Snapshot Reconciliation ---
+[2026-10-30T17:21:02.516Z] Owner Snapshot Key Count: 75
+[2026-10-30T17:21:02.516Z] Owner Counters: total=62, remaining=62, completed=0
+[2026-10-30T17:21:02.516Z] Owner History Attempts Count: 46
+[2026-10-30T17:21:02.517Z] Breakdown by Run:
+[2026-10-30T17:21:02.517Z]   Run normal_run_1793356376257_humd5v: 18 attempts (SUCCESS: 2, UNKNOWN: 1, FAIL: 13, SKIP: 0, TIMEOUT: 2)
+[2026-10-30T17:21:02.517Z]   Run normal_run_1793359173380_k5wpib: 1 attempts (SUCCESS: 0, UNKNOWN: 1, FAIL: 0, SKIP: 0, TIMEOUT: 0)
+[2026-10-30T17:21:02.517Z]   Run normal_run_1793361618600_0esge6: 5 attempts (SUCCESS: 0, UNKNOWN: 2, FAIL: 1, SKIP: 2, TIMEOUT: 0)
+[2026-10-30T17:21:02.517Z]   Run normal_run_1793367572246_4vru1k: 1 attempts (SUCCESS: 0, UNKNOWN: 0, FAIL: 0, SKIP: 1, TIMEOUT: 0)
+[2026-10-30T17:21:02.517Z]   Run normal_run_1793372331247_xheiwj: 20 attempts (SUCCESS: 4, UNKNOWN: 0, FAIL: 3, SKIP: 9, TIMEOUT: 4)
+[2026-10-30T17:21:02.517Z]   Run normal_run_1793379038305_ppimxu: 1 attempts (SUCCESS: 0, UNKNOWN: 0, FAIL: 0, SKIP: 0, TIMEOUT: 0)
+[2026-10-30T17:21:02.517Z] Active Run (normal_run_1793379038305_ppimxu): total=1, counters.completed=0
+[2026-10-30T17:21:02.517Z] Reconciled Counts: total=62, remaining=62, completed=0 (cumulativeCompleted=0)
+[2026-10-30T17:21:02.517Z] Active run verified: total=1, activeCompleted=0, counters.completed=0
+[2026-10-30T17:21:02.517Z] PASS: Safeguard 3 verified with read-only LevelDB snapshot!
 
-[2026-10-30T13:29:09.079Z] Terminating isolated browser...
-[2026-10-30T13:29:09.080Z] Stopping loopback fixture server...
+[2026-10-30T17:21:02.517Z] Terminating isolated browser...
+[2026-10-30T17:21:02.518Z] Stopping loopback fixture server...

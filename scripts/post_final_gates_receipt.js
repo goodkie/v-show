@@ -140,3 +140,4 @@ fs.writeFileSync(tmpFile, commentBody, 'utf8');
 console.log('Posting final gates receipt to Issue #6...');
 const output = execSync(`gh issue comment 6 --repo goodkie/v-show --body-file "${tmpFile}"`, { encoding: 'utf8' });
 console.log('Result:', output);
+

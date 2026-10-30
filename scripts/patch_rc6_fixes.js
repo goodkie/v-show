@@ -433,3 +433,4 @@ fs.writeFileSync('extension/modules/build-provenance.js', prov, 'utf8');
 console.log('[build-provenance.js] BUILD_ID bumped to RC6.');
 
 console.log('=== ALL RC6 CODE FIXES APPLIED SUCCESSFULLY ===');
+

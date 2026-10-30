@@ -9,7 +9,7 @@
 - State Rev: 2026-10-30.259
 - Authority Cursor: 6534473346
 - Major-version v7.0.0-rc12 Triple Contract Fix (Semi-Auto Silent Advance + False Hold + State Desync) COMPLETED:
-  - Functional Commit pending/tagged on `major/v7-dual-mode`.
+  - Functional Commit `2954e116` on `major/v7-dual-mode`.
   - GitHub Release: `v7.0.0-rc12` (tag `v7.0.0-rc12`).
   - Package: `XPIDER_V7.0.0_RC12_DUAL_MODE_OWNER_BETA.zip` (SHA256: `3f77fe4ecf18c467accdedde3f361d859f312232b099227604c36f82dcf1ca1a`, size: `51695724` bytes).
   - Directive: `[CHATGPT -> ANTIGRAVITY][ISSUE #6][P0 POST-RC11 OWNER REGRESSION: SEMI_AUTO SILENT ADVANCE + FALSE HOLD + STATE DESYNC]` (Comment #6534473346 / `IC_kwDOT53X288AAAABhXwmgg`).

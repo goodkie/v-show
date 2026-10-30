@@ -28,3 +28,4 @@ sc = sc.replace(/RELEASE_ASSET_URL: .*/, 'RELEASE_ASSET_URL: https://github.com/
 sc = sc.replace(/ROLLBACK_ANCHOR: .*/, 'ROLLBACK_ANCHOR: 55cd543be5ebe7a4553cac0cbfcf933a00e4c8a5 (.81), 5cf3b287 (.86), 5c462085 (.87), 1781df36 (.88), 1cd79da0 (.89), 5c19c0da (.90), f4110ef1 (.91)');
 fs.writeFileSync('.oca/SESSION_CAPSULE.md', sc, 'utf8');
 console.log('✅ Updated .oca/SESSION_CAPSULE.md');
+

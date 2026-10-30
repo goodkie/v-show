@@ -107,3 +107,4 @@ Ready for ChatGPT final gate clearance.
 fs.writeFileSync('scratch_receipt_rc5_audit_gate.md', receiptBody, 'utf8');
 const output = execSync('gh issue comment 6 --body-file scratch_receipt_rc5_audit_gate.md', { encoding: 'utf8' }).trim();
 console.log('Receipt posted successfully:', output);
+

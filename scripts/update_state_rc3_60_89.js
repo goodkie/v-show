@@ -31,3 +31,4 @@ edit('CURRENT_STATE.md', [
   [/- Last Directives \/ Audits:\r?\n/, '- Last Directives / Audits:\n  - `[CHATGPT → ANTIGRAVITY][P0 EXECUTION DIRECTIVE][RC3.60 .88 REAL DECODO EGRESS] Comment #6507119348` (live Decodo E2E UNVERIFIED/BLOCKED: upstream not configured; .89 LED-truthfulness fixes shipped, commit 33c3f91b, ZIP SHA256 d7aa322a...822a)\n'],
   [/- Last Receipts:\r?\n/, '- Last Receipts:\n  - `[ANTIGRAVITY][EXECUTION RECEIPT][ISSUE #6][REAL DECODO EXIT VERIFICATION] Comment #6507386957`\n']
 ]);
+

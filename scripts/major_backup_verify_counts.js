@@ -21,3 +21,4 @@ const SECRET = /key|token|pass|secret|cred|auth|pat/i;
   console.log('total keys:', out.length);
   for (const [k, d] of out) if (/queue|pending|target|url|campaign|history|ledger|dedup|template|csv|remaining|email|collect|checkpoint|schema/i.test(k)) console.log(k.padEnd(48), d);
 })().catch((e) => { console.error('READ FAIL', e.message); process.exit(1); });
+

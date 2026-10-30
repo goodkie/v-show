@@ -271,3 +271,4 @@ fs.writeFileSync('scratch_v7_0_0_rc6_metadata.json', JSON.stringify({
     privacyGatewaySha,
     builtAt: new Date().toISOString()
 }, null, 2), 'utf8');
+
