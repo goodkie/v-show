@@ -26,10 +26,10 @@
         previousFunctionalRestorePoint: 'b2af1c9bf614b9f572acec910265d8132d2043aa',
         manifestVersion: 3,
         buildId: 'R6.9G.10.3.7.1.4.93-20261029-P0-RC3.60-CAPTCHA-FORM-QA-PASS',
-        builtAt: '2026-10-30T02:18:43.955Z',
+        builtAt: '2026-10-30T03:32:00.818Z',
         provenanceSchema: 2,
         modules: {
-            backgroundSha: 'f8ffb5fc202498aa7ca665756822e81c8ea5a5f20bf2acd217faf5174e20f381',
+            backgroundSha: '97491a1d46d483d3a6ba00ac6e758387f8d1ba7247ce7749d2b69c2ae47f65eb',
             contentScriptSha: '1b01d4ada6a9ac0e38b4037a3c4e3193f6649ecd5380bbc72364c96bda36ff40',
             popupSha: '27c43a22669e6fad2c4013ccd977cf7ac383d099b01e229f3cc7e54aec64a61c',
             solverContentSha: '6a1ff7154efaeb6dbd5946ac4f9be1ce5b5ff43bce2db06d0dca32950edd3bdb',

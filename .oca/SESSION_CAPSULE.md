@@ -21,8 +21,8 @@ BLOCKERS: Opal internal WireGuard handshake telemetry requires owner admin acces
 OWNER_ACTION: 1) Load unpacked extension or install XPIDER_R6.9G.10.3.7.1.4.93_OWNER_BETA.zip; 2) In Settings -> CAPTCHA, verify NopeCHA key displays masked and diagnostic shows CONFIGURED (keyPresent: true); 3) Run single target pilot.
 RELEASE_ASSET_TAG: v6.9g.10.3-rc3.60.7.1.4.93
 RELEASE_ASSET_ZIP: XPIDER_R6.9G.10.3.7.1.4.93_OWNER_BETA.zip
-RELEASE_ASSET_SIZE: 53056583
-RELEASE_ASSET_SHA256: 8a483bc1f5c309f9efc160a05b0b4b491c170eafdfd9b305b7f11db94715d99b
+RELEASE_ASSET_SIZE: 53056535
+RELEASE_ASSET_SHA256: 5714dd98fdb54fd4d3ed15ad2cb8af8d7eeccade1cd7e64708670a241c58fa2b
 RELEASE_ASSET_URL: https://github.com/goodkie/v-show/releases/tag/v6.9g.10.3-rc3.60.7.1.4.93
 IMMUTABLE_DAILY_USE_BASELINE: XPIDER_R6.9G.10.3.7.1.4.11_OWNER_BETA.zip (commit 50aee353, SHA256: 2149a760fb614140b297d3c57abcf4aa396b376bfb9459682fc0d323fc7c3532)
 

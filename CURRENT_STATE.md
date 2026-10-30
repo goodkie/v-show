@@ -65,7 +65,7 @@
   - `[ANTIGRAVITY][RECEIPT][ISSUE-6][RC3.60-.86-STREAM-A-DURABLE-LEDGER-AND-STREAM-B-RESIDENTIAL-DATAPLANE][2026-10-28] Comment #6467239685`
   - `[ANTIGRAVITY][RECEIPT][ISSUE-6][DELEGATED-TWO-LAYER-NETWORK-PRECHECK-OPAL-PROFILE-AND-RESIDENTIAL-DATAPLANE][2026-10-28] Comment #6468457751`
 - Build ID: `R6.9G.10.3.7.1.4.93-20261029-P0-RC3.60-CAPTCHA-FORM-QA-PASS`
-- Verified Release Asset: `XPIDER_R6.9G.10.3.7.1.4.93_OWNER_BETA.zip` (Tag: `v6.9g.10.3-rc3.60.7.1.4.93`, Size: 53,056,583 bytes, SHA256: `8a483bc1f5c309f9efc160a05b0b4b491c170eafdfd9b305b7f11db94715d99b`)
+- Verified Release Asset: `XPIDER_R6.9G.10.3.7.1.4.93_OWNER_BETA.zip` (Tag: `v6.9g.10.3-rc3.60.7.1.4.93`, Size: 53,056,535 bytes, SHA256: `5714dd98fdb54fd4d3ed15ad2cb8af8d7eeccade1cd7e64708670a241c58fa2b`)
 - Operational Status: **RC3.60 .89 REAL DECODO RESIDENTIAL EXIT VERIFICATION = 100% PASS**:
   1. **Directive #6507436538 Verified in Real Chrome**:
      - Section 1 (API Contract): Decodo configured (`us.decodo.com:10001`), egress verified (`68.227.*.*`), route `DECODO`, confidence `HIGH`.

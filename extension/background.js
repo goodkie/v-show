@@ -1549,13 +1549,34 @@ let solverDiagnosticsState = { provider: 'api', keyConfigured: false, keySource:
 console.log("[X PIDER] Background script initializing (Unified Mode)...");
 
 markBoot("side_panel_config");
-chrome.runtime.onInstalled.addListener(() => {
+const configureSidePanel = () => {
     if (typeof chrome.sidePanel !== 'undefined' && chrome.sidePanel.setPanelBehavior) {
         chrome.sidePanel
           .setPanelBehavior({ openPanelOnActionClick: true })
           .catch((error) => console.error("[SidePanel Error]", error));
     }
+};
+// Configure immediately on boot AND on install
+configureSidePanel();
+chrome.runtime.onInstalled.addListener(() => {
+    configureSidePanel();
 });
+// Fallback: If action click is not captured by setPanelBehavior, open sidepanel explicitly
+if (typeof chrome.action !== 'undefined' && chrome.action.onClicked) {
+    chrome.action.onClicked.addListener(async (tab) => {
+        try {
+            if (typeof chrome.sidePanel !== 'undefined' && chrome.sidePanel.open) {
+                if (tab && tab.windowId) {
+                    await chrome.sidePanel.open({ windowId: tab.windowId });
+                } else if (tab && tab.id) {
+                    await chrome.sidePanel.open({ tabId: tab.id });
+                }
+            }
+        } catch (spErr) {
+            console.error("[SidePanel Action Fallback Error]", spErr);
+        }
+    });
+}
 
 markBoot("campaign_state_init");
 
@@ -5642,52 +5663,6 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
                                     message: 'No solver key configured. Please solve CAPTCHA in browser.'
                                 }).catch(() => {});
                             }
-                            return;
-                        } else if (false) {
-                            campaignState.captchaLedger.pendingOwner = Math.max(0, campaignState.captchaLedger.pendingOwner - 1);
-                            campaignState.captchaLedger.manualSkip++;
-                            campaignState.currentTargetStage = 'CAPTCHA_SKIPPED';
-                            logBg(null, `[OWNER_CAPTCHA] Auto-first: no configured solver key and popup disabled. Advancing as SKIPPED.`, 'info');
-                            
-                            if (campaignState.currentAttempt?.attemptId) {
-                                campaignState.captchaFailuresRecorded.add(campaignState.currentAttempt.attemptId);
-                            }
-
-                            if (campaignState.targetDeadlineController) {
-                                campaignState.targetDeadlineController.cancel('CAPTCHA_SKIPPED_NO_SOLVER');
-                            }
-
-                            if (campaignState.currentTabId && chrome.alarms) {
-                                chrome.alarms.clear(`xpider_watchdog_${campaignState.currentTabId}_${campaignState.sessionId}`);
-                            }
-
-                            chrome.tabs.sendMessage(campaignState.currentTabId, {
-                                action: 'CAPTCHA_SKIP_DECISION',
-                                attemptId: campaignState.currentAttempt?.attemptId,
-                                targetToken: campaignState.currentTargetToken,
-                                campaignRunId: campaignState.campaignRunId,
-                                sessionId: campaignState.sessionId,
-                                captchaEpoch: curEpoch,
-                                tabId: campaignState.currentTabId,
-                                result: 'SKIPPED',
-                                reason: 'CAPTCHA_SKIPPED_NO_SOLVER'
-                            }).catch(() => {});
-
-                            if (typeof campaignState.targetResolve === 'function') {
-                                const resolveTarget = campaignState.targetResolve;
-                                campaignState.targetResolve = null;
-                                resolveTarget({
-                                    success: false,
-                                    reasonCode: 'CAPTCHA_SKIPPED_NO_SOLVER',
-                                    metadata: {
-                                        captchaStatus: 'SKIPPED_NO_SOLVER',
-                                        autoFirst: true,
-                                        popupShown: false
-                                    }
-                                });
-                            }
-
-                            sendResponse({ success: true, status: 'SKIPPED_NO_SOLVER' });
                             return;
                         }
                     }
