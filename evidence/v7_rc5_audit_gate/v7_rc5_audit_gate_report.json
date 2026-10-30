@@ -1,0 +1,85 @@
+{
+  "testSuite": "V7_RC5_AUDIT_GATE_SAFEGUARDS",
+  "timestamp": "2026-10-30T13:28:55.740Z",
+  "safeguard1_manualHoldBrowserFixture": {
+    "pass": true,
+    "details": {
+      "fixtureUrl": "http://127.0.0.1:8088/contact-checkbox-manual-hold.html",
+      "holdActive": true,
+      "panelVisible": true,
+      "bannerText": "⚠️ Operator Action Needed: REQUIRED_FIELDS_UNRESOLVED: Mandatory Verification Token — please review/complete remaining fields on the page before submitting.",
+      "automaticRecoveryBlocked": true,
+      "swHoldStateStored": true,
+      "submissionsCount": 0
+    }
+  },
+  "safeguard2_pauseResumeModeTransitions": {
+    "pass": true,
+    "details": {
+      "modalOverlayFound": true,
+      "cancelPreservedPause": true,
+      "manualToAutoMode": "AUTO",
+      "autoToManualMode": "MANUAL",
+      "runIdPreserved": true,
+      "swRestartPreserved": true
+    }
+  },
+  "safeguard3_ownerStorageReconciliation": {
+    "pass": true,
+    "details": {
+      "totalKeys": 71,
+      "counters": {
+        "completed": 5,
+        "deliveryUnknown": 2,
+        "failed": 1,
+        "failureBreakdown": {
+          "REQUIRED_FIELDS_UNRESOLVED": 1
+        },
+        "inProgress": 0,
+        "paused": 0,
+        "remaining": 73,
+        "skipped": 2,
+        "skippedHistory": 0,
+        "success": 0,
+        "timeout": 0,
+        "total": 78
+      },
+      "checkpoint": {
+        "campaignRunId": "normal_run_1793361618600_0esge6",
+        "campaignMode": "MANUAL",
+        "totalTargets": 78
+      },
+      "cumulativeAttemptsCount": 24,
+      "confirmedSuccessCount": 2,
+      "deliveryUnknownCount": 4,
+      "runsBreakdown": [
+        {
+          "runId": "normal_run_1793356376257_humd5v",
+          "attempts": 18,
+          "confirmedSuccess": 2,
+          "deliveryUnknown": 1,
+          "failed": 13,
+          "skipped": 0
+        },
+        {
+          "runId": "normal_run_1793359173380_k5wpib",
+          "attempts": 1,
+          "confirmedSuccess": 0,
+          "deliveryUnknown": 1,
+          "failed": 0,
+          "skipped": 0
+        },
+        {
+          "runId": "normal_run_1793361618600_0esge6",
+          "attempts": 5,
+          "confirmedSuccess": 0,
+          "deliveryUnknown": 2,
+          "failed": 1,
+          "skipped": 2
+        }
+      ],
+      "priorRebaseScope": "ONLY per-run numbers (xpider_total, xpider_campaign_counters_v1); cumulative HistoryStore (xpider_history_attempts, rows, targets) remained 100% intact"
+    }
+  },
+  "verdict": "ALL_SAFEGUARDS_PASSED"
+}

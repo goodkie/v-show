@@ -8231,7 +8231,10 @@ function endCampaign() {
     const multiActions = document.getElementById('multi-actions');
     if (multiActions) multiActions.classList.add('hidden');
     const banner = document.getElementById('resumable-campaign-banner');
-    if (banner) banner.style.display = 'none';
+    if (banner) {
+        banner.style.display = 'none';
+        banner.classList.add('hidden');
+    }
     const ind = document.getElementById('privacy-override-indicator');
     if (ind) {
         ind.style.display = 'none';
@@ -8361,7 +8364,10 @@ function confirmResumeCampaignWithMode(selectedMode) {
                 campaignActive = true;
                 campaignPaused = false;
                 const banner = document.getElementById('resumable-campaign-banner');
-                if (banner) banner.style.display = 'none';
+                if (banner) {
+                    banner.style.display = 'none';
+                    banner.classList.add('hidden');
+                }
                 const startRow = document.getElementById('start-buttons-row');
                 if (startRow) startRow.classList.add('hidden');
                 const startBtn = document.getElementById('start-btn');
@@ -8418,9 +8424,11 @@ function checkResumableCheckpoint() {
             window.__xpider_last_paused_mode = stateResp.pausedCampaignMode || stateResp.campaignMode;
         }
         if (stateResp && stateResp.hasPausedCheckpoint && !stateResp.isActive) {
+            banner.classList.remove('hidden');
             banner.style.display = 'block';
             if (countEl) countEl.textContent = stateResp.pausedRemainingCount || 0;
         } else {
+            banner.classList.add('hidden');
             banner.style.display = 'none';
         }
     });
