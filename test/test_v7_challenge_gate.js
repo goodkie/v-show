@@ -28,12 +28,15 @@ let n = 0; const ok = (m) => console.log(`  PASS ${++n}: ${m}`);
   assert.strictEqual(CG.decideAction({ mode: MODES.AUTO, challenge: c }), ACTIONS.SUBMIT_ONCE);
   ok('verified hCaptcha => SUBMIT_ONCE');
 }
-// 4. invisible reCAPTCHA is non-interactive => not a human gate
+// 4. invisible reCAPTCHA is non-interactive pre-submit, but NEVER claims verified/serverVerified
 {
   const c = CG.detectChallenge(mk({ [SEL.recaptchaWidget]: {}, [SEL.recaptchaToken]: { value: '' }, [SEL.invisibleRecaptcha]: {} }));
   assert.strictEqual(c.needsHuman, false);
+  assert.strictEqual(c.invisibleDetected, true);
+  assert.strictEqual(c.verified, false);
+  assert.strictEqual(c.serverVerified, false);
   assert.strictEqual(CG.decideAction({ mode: MODES.AUTO, challenge: c }), ACTIONS.SUBMIT_ONCE);
-  ok('invisible reCAPTCHA => site handles it, SUBMIT_ONCE');
+  ok('invisible reCAPTCHA => non-interactive pre-submit, never claims verified/serverVerified');
 }
 // 5. text/image captcha is unverifiable: pause until operator attests; attestation with empty input still pauses
 {
@@ -58,14 +61,19 @@ let n = 0; const ok = (m) => console.log(`  PASS ${++n}: ${m}`);
   assert.strictEqual(CG.decideAction({ mode: MODES.AUTO, challenge: { present: false }, formValid: false }), ACTIONS.PAUSE_FIELDS_INCOMPLETE);
   ok('already-submitted => BLOCK_DUPLICATE; incomplete/invalid form => PAUSE_FIELDS_INCOMPLETE');
 }
-// 8. manual resume: no evidence => DELIVERY_UNKNOWN, never SUCCESS
+// 8. manual resume: no evidence or generic navigation => DELIVERY_UNKNOWN, never SUCCESS
 {
   assert.strictEqual(CG.classifyManualResume({}).outcome, 'DELIVERY_UNKNOWN');
   assert.strictEqual(CG.classifyManualResume({ urlChanged: true }).outcome, 'DELIVERY_UNKNOWN');
+  // Audit Item (3): generic page navigation (formRemoved + urlChanged to non-confirmation URL) MUST NOT be SUCCESS
+  const genericNav = CG.classifyManualResume({ formRemoved: true, urlChanged: true, currentUrl: 'https://example.com/about' });
+  assert.strictEqual(genericNav.outcome, 'DELIVERY_UNKNOWN');
+  assert.strictEqual(genericNav.reasonCode, 'MANUAL_GENERIC_NAVIGATION_NO_CONFIRMATION');
+  // Positive confirmation URL or confirmation text => SUCCESS
   assert.strictEqual(CG.classifyManualResume({ successText: true }).outcome, 'SUCCESS');
-  assert.strictEqual(CG.classifyManualResume({ formRemoved: true, urlChanged: true }).outcome, 'SUCCESS');
+  assert.strictEqual(CG.classifyManualResume({ formRemoved: true, urlChanged: true, currentUrl: 'https://example.com/thank-you' }).outcome, 'SUCCESS');
   assert.ok(CG.hasSuccessText('Thank you! Your message has been sent') && !CG.hasSuccessText('Please fill the form'));
-  ok('manual resume: SUCCESS only with positive evidence; else DELIVERY_UNKNOWN');
+  ok('manual resume: SUCCESS only with positive confirmation text/URL; generic navigation => DELIVERY_UNKNOWN');
 }
 // 9. mixed: one verified + one unresolved => still pending
 {

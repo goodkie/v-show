@@ -2344,6 +2344,25 @@
 
             try { sessionStorage.setItem('xpider_pending_verify', 'true'); } catch(_) {}
 
+            // [V7.0.0-RC2 Audit Item 1] If an invisible/enterprise challenge opened an interactive prompt
+            // asynchronously upon submit click, transition into CAPTCHA_PENDING_EXTERNAL_USER instead of falsely settling.
+            if (_ChallengeGate) {
+                const postSubmitChallenge = _ChallengeGate.detectChallenge(document);
+                if (postSubmitChallenge && postSubmitChallenge.present && postSubmitChallenge.interactive && !postSubmitChallenge.verified) {
+                    logDev(`🛡️ [V7_ASYNC_CHALLENGE_AFTER_SUBMIT] Interactive challenge (${postSubmitChallenge.type}) opened after submit click. Entering CAPTCHA_PENDING_EXTERNAL_USER.`, "warning");
+                    const asyncWaitOutcome = await waitForExternalOrUserChallengeV7(form, template, frozenSnapshot, postSubmitChallenge);
+                    if (!asyncWaitOutcome || !asyncWaitOutcome.resolved) {
+                        verifier.cleanup();
+                        return false;
+                    }
+                    let postAsyncIntegrity = verifyFieldIntegrity(form, frozenSnapshot, template);
+                    if (!postAsyncIntegrity || postAsyncIntegrity.intact === false) {
+                        restoreFrozenSnapshot(form, frozenSnapshot);
+                    }
+                    submitOutcome = await executeSubmitStateMachine(form, template, { expectedSnapshot: frozenSnapshot, allowVisionSubmit: true });
+                }
+            }
+
             return await verifier.verify(submitOutcome);
         } catch (e) {
             logDev(`❌ [Action] Sequence aborted: ${e.message}`, "error");
@@ -4777,11 +4796,13 @@
         });
     }
 
-    async function handleV7ManualModeHold(form, template, frozenSnapshot, initialChallengeInfo) {
+    async function handleV7ManualModeHold(form, template, frozenSnapshot, initialChallengeInfo, holdOptions = {}) {
         const sendFn = (typeof window !== 'undefined' && window.__xpider_sendExecutionMessage) ||
             (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage ? chrome.runtime.sendMessage.bind(chrome.runtime) : null);
 
-        const initialHoldUrl = (typeof window !== 'undefined' && window.location) ? window.location.href : '';
+        const initialHoldUrl = (holdOptions && holdOptions.originalUrl)
+            ? holdOptions.originalUrl
+            : ((typeof window !== 'undefined' && window.location) ? window.location.href : '');
         const challengeStatusStr = !initialChallengeInfo?.detected
             ? 'NONE'
             : (initialChallengeInfo.verified ? `VERIFIED (${initialChallengeInfo.type})` : `PENDING (${initialChallengeInfo.type})`);
@@ -4894,6 +4915,9 @@
 
                     const classification = _ChallengeGate
                         ? _ChallengeGate.classifyManualResume({
+                            pageText: bodyText,
+                            currentUrl,
+                            urlChanged,
                             hasPositiveDomSuccess,
                             hasUrlRedirectSuccess,
                             hasServerAck,

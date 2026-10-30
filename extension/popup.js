@@ -1782,8 +1782,8 @@ async function hydrateSettings(overrideV2Store = null) {
             const dOcean = data.digitalOcean || {};
             const rawIsp = data.rawIspWan || {};
 
-            const isRouteVerified = routeStatus === 'VERIFIED' || bExit.status === 'BROWSER_VERIFIED';
-            const isDegraded = routeStatus === 'DEGRADED' || bExit.status === 'COMPANION_PROBE_ONLY' || bExit.status === 'CANARY_FAILED';
+            const isRouteVerified = routeStatus === 'VERIFIED' && bExit.status === 'BROWSER_VERIFIED';
+            const isDegraded = routeStatus !== 'VERIFIED' || bExit.status === 'COMPANION_PROBE_ONLY' || bExit.status === 'CANARY_FAILED' || bExit.status === 'PROXY_NOT_ENFORCED' || bExit.status === 'DO_NODE_ONLY_NOT_DECODO';
             const isBlocked = bExit.status === 'BLOCKED_HTTP_407' || decodo.status === 'BLOCKED_HTTP_407' || decodo.status === 'AUTH_FAILED';
             // [RC3.60 .89] Decodo LED truthfulness: companion emits 'CONNECTED / EGRESS_VERIFIED' (fresh upstream proof)
             // or 'IN_USE' (campaign-correlated CONNECT). Selected-but-not-fresh-verified must never read green.
@@ -10292,4 +10292,51 @@ if (typeof module !== 'undefined' && module.exports) {
         // R6.9G.10.3.7 Physical Gate UI Export
         _updatePhysicalGateUI
     };
+}
+
+
+// [V7.0.0-RC2] Lossless Stage-0 97/92 Snapshot Recovery Banner Controller (No Silent Rebase)
+if (typeof document !== 'undefined') {
+    const checkStage0RecoveryBanner = () => {
+        const banner = document.getElementById('v7-stage0-recovery-banner');
+        const restoreBtn = document.getElementById('v7-stage0-restore-btn');
+        const descEl = document.getElementById('v7-stage0-recovery-desc');
+        if (!banner || !restoreBtn) return;
+
+        if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
+            chrome.runtime.sendMessage({ action: 'CHECK_STAGE0_RECOVERY_AVAILABLE' }, (res) => {
+                if (res && res.success && res.recoveryNeeded && res.summary) {
+                    banner.style.display = 'block';
+                    if (descEl) {
+                        descEl.textContent = `Storage reset detected. Stage-0 Backup ready: ${res.summary.total} Total / ${res.summary.remaining} Remaining / ${res.summary.completed} Completed / ${res.summary.historyRowsCount} History Rows / ${res.summary.collectedEmailsCount} Emails.`;
+                    }
+                } else {
+                    banner.style.display = 'none';
+                }
+            });
+
+            restoreBtn.onclick = () => {
+                restoreBtn.disabled = true;
+                restoreBtn.textContent = '⏳ Restoring Stage-0 97/92 Snapshot...';
+                chrome.runtime.sendMessage({ action: 'RESTORE_STAGE0_AUTHORITATIVE_SNAPSHOT' }, (res) => {
+                    if (res && res.success) {
+                        banner.style.background = 'rgba(34, 197, 94, 0.2)';
+                        banner.style.borderColor = '#22c55e';
+                        restoreBtn.textContent = '✅ Restored 97/92 Snapshot! Reloading UI...';
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 600);
+                    } else {
+                        restoreBtn.disabled = false;
+                        restoreBtn.textContent = '⚠️ Restore Failed — Click to Retry';
+                    }
+                });
+            };
+        }
+    };
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => setTimeout(checkStage0RecoveryBanner, 350));
+    } else {
+        setTimeout(checkStage0RecoveryBanner, 350);
+    }
 }

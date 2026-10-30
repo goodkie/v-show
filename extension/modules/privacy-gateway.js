@@ -498,19 +498,10 @@
 
             this._egressCheckInProgress = (async () => {
                 try {
-                    // 1. Protected read-only browser canary probe through XPIDER proxy
-                    let browserCanaryRes = null;
-                    if (this.config.transportMode === PRIVACY_MODES.PRIVACY_RELAY || this.config.transportMode === PRIVACY_MODES.SOCKS5 || this.config.transportMode === PRIVACY_MODES.HTTPS_PROXY) {
-                        try {
-                            browserCanaryRes = await this.probeProxyCanary(this.config.canaryUrl || null, 5000);
-                        } catch (err) {
-                            browserCanaryRes = { success: false, reason: err.message };
-                        }
-                    }
-
-                    // 2. Query Companion Control Plane for authenticated upstream probe status
+                    // 1. Query Companion Control Plane FIRST for authenticated upstream probe status
                     let companionMonitor = null;
                     let relayReady = false;
+                    let residentialSelected = false;
                     try {
                         if (!this.ephemeralRelayToken) {
                             await this.fetchRelayControlToken();
@@ -519,36 +510,63 @@
                         if (relayStatusRes && relayStatusRes.success && relayStatusRes.status) {
                             companionMonitor = relayStatusRes.status.egressIpMonitor || null;
                             relayReady = Boolean(relayStatusRes.status.relayReady);
+                            residentialSelected = Boolean(relayStatusRes.status.residentialProxySelected);
                         }
                     } catch (_) {}
 
-                    // Row 1: ACTUAL XPIDER BROWSER EXIT IP (primary)
-                    let bObservedIp = null;
-                    let bStatus = 'UNKNOWN';
-                    let bSource = 'NONE';
-                    if (browserCanaryRes && browserCanaryRes.success && browserCanaryRes.observedIp) {
-                        bObservedIp = browserCanaryRes.observedIp;
-                        bStatus = 'BROWSER_VERIFIED';
-                        bSource = `BROWSER_CANARY (${browserCanaryRes.endpoint || 'proxy'})`;
-                    } else if (browserCanaryRes && !browserCanaryRes.success) {
-                        bObservedIp = null;
-                        bStatus = browserCanaryRes.reason === 'PROXY_AUTH_REQUIRED_407' ? 'BLOCKED_HTTP_407' : 'CANARY_FAILED';
-                        bSource = 'BROWSER_CANARY_FAIL';
-                    } else if (companionMonitor && companionMonitor.companionProbeEgress && companionMonitor.companionProbeEgress.observedIp) {
-                        // Companion probe only; never claim browser verified
-                        bObservedIp = companionMonitor.companionProbeEgress.observedIp;
-                        bStatus = 'COMPANION_PROBE_ONLY';
-                        bSource = 'COMPANION_PROBE_ONLY';
+                    // 2. Verify whether Chrome proxy settings are contemporaneously enforced before running browser canary
+                    let proxyEnforced = true;
+                    const isManagedTransport = (
+                        this.config.transportMode === PRIVACY_MODES.PRIVACY_RELAY ||
+                        this.config.transportMode === PRIVACY_MODES.SOCKS5 ||
+                        this.config.transportMode === PRIVACY_MODES.HTTPS_PROXY
+                    );
+                    if (isManagedTransport && typeof chrome !== 'undefined' && chrome.proxy && chrome.proxy.settings && typeof chrome.proxy.settings.get === 'function') {
+                        const expectedHost = this.config.transportMode === PRIVACY_MODES.PRIVACY_RELAY
+                            ? (this.config.relayHost || '127.0.0.1')
+                            : this.config.proxyHost;
+                        const expectedPort = Number(this.config.transportMode === PRIVACY_MODES.PRIVACY_RELAY
+                            ? (this.config.relayProxyPort || 18988)
+                            : this.config.proxyPort);
+
+                        const checkProxyReadback = async () => {
+                            return new Promise((resGet) => {
+                                try {
+                                    chrome.proxy.settings.get({ incognito: false }, (details) => {
+                                        if (chrome.runtime && chrome.runtime.lastError) return resGet(false);
+                                        const val = details && details.value;
+                                        const sp = val && val.rules && val.rules.singleProxy;
+                                        const match = Boolean(val && val.mode === 'fixed_servers' && sp && sp.host === expectedHost && Number(sp.port) === expectedPort);
+                                        resGet(match);
+                                    });
+                                } catch (_) {
+                                    resGet(false);
+                                }
+                            });
+                        };
+
+                        proxyEnforced = await checkProxyReadback();
+                        if (!proxyEnforced && this.config.enabled !== false && this.config.transportMode === PRIVACY_MODES.PRIVACY_RELAY && relayReady) {
+                            try {
+                                await this.applyManagedProxy(PRIVACY_MODES.HTTPS_PROXY, expectedHost, expectedPort, ['<-loopback>']);
+                                proxyEnforced = await checkProxyReadback();
+                            } catch (_) {
+                                proxyEnforced = false;
+                            }
+                        }
+                    } else if (isManagedTransport && !this.isGateReady && !relayReady && !this._mockFetch) {
+                        proxyEnforced = false;
                     }
 
-                    const browserExit = {
-                        observedIp: bObservedIp,
-                        observedIpMasked: this._maskIp(bObservedIp),
-                        status: bStatus,
-                        source: bSource,
-                        checkedAt: new Date().toISOString(),
-                        staleAt: new Date(Date.now() + 30000).toISOString()
-                    };
+                    // 3. Protected read-only browser canary probe ONLY when XPIDER proxy is enforced
+                    let browserCanaryRes = null;
+                    if (isManagedTransport && proxyEnforced) {
+                        try {
+                            browserCanaryRes = await this.probeProxyCanary(this.config.canaryUrl || null, 5000);
+                        } catch (err) {
+                            browserCanaryRes = { success: false, reason: err.message };
+                        }
+                    }
 
                     // Row 2: DECODO RESIDENTIAL EXIT IP
                     const decodo = companionMonitor && companionMonitor.decodoResidential ? { ...companionMonitor.decodoResidential } : {
@@ -571,6 +589,45 @@
                         checkedAt: new Date().toISOString()
                     };
 
+                    // Row 1: ACTUAL XPIDER BROWSER EXIT IP (primary)
+                    let bObservedIp = null;
+                    let bStatus = 'UNKNOWN';
+                    let bSource = 'NONE';
+                    if (!proxyEnforced && isManagedTransport) {
+                        bObservedIp = null;
+                        bStatus = 'PROXY_NOT_ENFORCED';
+                        bSource = 'PROXY_NOT_APPLIED';
+                    } else if (browserCanaryRes && browserCanaryRes.success && browserCanaryRes.observedIp) {
+                        bObservedIp = browserCanaryRes.observedIp;
+                        const doIp = digitalOcean && digitalOcean.configuredIp ? String(digitalOcean.configuredIp).trim() : null;
+                        if (residentialSelected && doIp && bObservedIp.trim() === doIp) {
+                            // [V7.0.0-RC2] Never conflate DO node IP (143.198.*.*) with Decodo residential path
+                            bStatus = 'DO_NODE_ONLY_NOT_DECODO';
+                            bSource = 'ROUTE_MISMATCH (BROWSER_ON_DO_NODE_NOT_DECODO)';
+                        } else {
+                            bStatus = 'BROWSER_VERIFIED';
+                            bSource = `BROWSER_CANARY (${browserCanaryRes.endpoint || 'proxy'})`;
+                        }
+                    } else if (browserCanaryRes && !browserCanaryRes.success) {
+                        bObservedIp = null;
+                        bStatus = browserCanaryRes.reason === 'PROXY_AUTH_REQUIRED_407' ? 'BLOCKED_HTTP_407' : 'CANARY_FAILED';
+                        bSource = 'BROWSER_CANARY_FAIL';
+                    } else if (companionMonitor && companionMonitor.companionProbeEgress && companionMonitor.companionProbeEgress.observedIp) {
+                        // Companion probe only; never claim browser verified
+                        bObservedIp = companionMonitor.companionProbeEgress.observedIp;
+                        bStatus = 'COMPANION_PROBE_ONLY';
+                        bSource = 'COMPANION_PROBE_ONLY';
+                    }
+
+                    const browserExit = {
+                        observedIp: bObservedIp,
+                        observedIpMasked: this._maskIp(bObservedIp),
+                        status: bStatus,
+                        source: bSource,
+                        checkedAt: new Date().toISOString(),
+                        staleAt: new Date(Date.now() + 30000).toISOString()
+                    };
+
                     // Row 4: RAW ISP WAN IP (Anti-leak invariant: Never direct public echo probe)
                     const rawIspWan = {
                         observedIp: null,
@@ -580,7 +637,7 @@
                         note: 'Never bypass protected relay with a new direct public IP probe simply to learn the raw ISP IP'
                     };
 
-                    // Row 5: ACTIVE ROUTE
+                    // Row 5: ACTIVE ROUTE (Never claim VERIFIED unless Browser Exit is genuinely BROWSER_VERIFIED)
                     let activeRoute = {
                         route: 'UNKNOWN/PARTIALLY VERIFIED',
                         status: 'DEGRADED',
@@ -590,17 +647,22 @@
                     };
                     if (companionMonitor && companionMonitor.activeRoute) {
                         activeRoute = { ...companionMonitor.activeRoute };
-                        // If browser exit is verified, bind real observed exit IP
                         if (bObservedIp && bStatus === 'BROWSER_VERIFIED') {
                             activeRoute.egressIp = bObservedIp;
                             activeRoute.egressIpMasked = this._maskIp(bObservedIp);
                             activeRoute.status = 'VERIFIED';
+                        } else if (bStatus === 'DO_NODE_ONLY_NOT_DECODO') {
+                            activeRoute.status = 'ROUTE_MISMATCH (DO_NOT_DECODO)';
+                        } else if (bStatus === 'COMPANION_PROBE_ONLY' && !residentialSelected) {
+                            activeRoute.status = 'COMPANION_PROBE_ONLY';
+                        } else {
+                            activeRoute.status = 'UPSTREAM_PROBE_ONLY (BROWSER_UNVERIFIED)';
                         }
                     } else if (this.config.transportMode === PRIVACY_MODES.PRIVACY_RELAY || relayReady) {
                         const decStatus = companionMonitor && companionMonitor.decodoResidential ? String(companionMonitor.decodoResidential.status || '') : '';
                         const isDecodo = decStatus.startsWith('CONNECTED') || decStatus === 'IN_USE';
                         activeRoute.route = isDecodo ? 'DECODO' : 'DIGITALOCEAN';
-                        activeRoute.status = bStatus === 'BROWSER_VERIFIED' ? 'VERIFIED' : (relayReady ? 'COMPANION_PROBE_ONLY' : 'DEGRADED');
+                        activeRoute.status = bStatus === 'BROWSER_VERIFIED' ? 'VERIFIED' : (relayReady ? 'UPSTREAM_PROBE_ONLY (BROWSER_UNVERIFIED)' : 'DEGRADED');
                         activeRoute.egressIp = bObservedIp || (companionMonitor && companionMonitor.companionProbeEgress && companionMonitor.companionProbeEgress.observedIp) || null;
                         activeRoute.egressIpMasked = this._maskIp(activeRoute.egressIp);
                     } else if (this.config.transportMode === 'DIRECT') {
@@ -2356,10 +2418,10 @@
                             subgateFailure = 'PRIVACY_RELAY_NO_NODES';
                         } else if (st.health === 'EXPIRED') {
                             subgateFailure = 'PRIVACY_RELAY_HEALTH_EXPIRED';
-                        } else if (st.lastDisconnectReason) {
-                            subgateFailure = `PRIVACY_RELAY_NODE_UNVERIFIED (${st.lastDisconnectReason})`;
                         } else if (!st.relayReady) {
-                            subgateFailure = 'PRIVACY_RELAY_UNVERIFIED';
+                            subgateFailure = st.lastDisconnectReason
+                                ? `PRIVACY_RELAY_NODE_UNVERIFIED (${st.lastDisconnectReason})`
+                                : 'PRIVACY_RELAY_UNVERIFIED';
                         }
                     } else {
                         subgateFailure = statusRes.reason === 'HTTP_401' ? 'PRIVACY_RELAY_UNAUTHORIZED' : (statusRes.reason || 'PRIVACY_RELAY_OFFLINE');

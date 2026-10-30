@@ -1,0 +1,77 @@
+{
+  "schema": "XPIDER_V7_RC1_STORAGE_AND_PRIVACY_DIAGNOSTIC_V1",
+  "diagnosedAt": "2026-10-30T09:54:53.114Z",
+  "chromeProfile": "Default",
+  "extensionId": "ldlijlaccfeelfdhgnjbibniocefckjj",
+  "extensionIdChanged": false,
+  "manifestKeyPinned": true,
+  "activeUnpackedPathInChrome": "E:\\vivpr\\ai\\extension-form-sender\\XPIDER_V7.0.0_RC1_DUAL_MODE_OWNER_BETA\\extension",
+  "rootCauseOfEmptyQueue": "When switching unpacked folders in chrome://extensions at 2026-10-30T09:42:06Z, clicking Remove on the prior unpacked extension instance caused Chromium to delete Local Extension Settings\\ldlijlaccfeelfdhgnjbibniocefckjj before Load unpacked initialized a fresh 14-key store under the same pinned Extension ID.",
+  "liveChromeStorageKeyCount": 14,
+  "liveChromeStorageRedacted": {
+    "savedUrlLists": "[Array(0)]",
+    "savedUrlLists_v2": "[Array(0)]",
+    "templates_v2": {
+      "defaultId": null,
+      "recentIds": "[Array(0)]",
+      "templates": {},
+      "version": 2
+    },
+    "xpider_backup_v1_1793353333839": {
+      "savedUrlLists": null,
+      "timestamp": 1793353333839,
+      "tplLibrary": null,
+      "xpider_tpl": null
+    },
+    "xpider_blackbox_logs": "[Array(8)]",
+    "xpider_boot_step": "restore_complete",
+    "xpider_boot_ts": 1793353326668,
+    "xpider_campaign_counters_v1": {
+      "completed": 0,
+      "deliveryUnknown": 0,
+      "failed": 0,
+      "failureBreakdown": {},
+      "paused": 0,
+      "remaining": 0,
+      "skipped": 0,
+      "success": 0,
+      "timeout": 0,
+      "total": 0
+    },
+    "xpider_current_run_diagnostics": {
+      "events": "[Array(4)]",
+      "truncated": false
+    },
+    "xpider_last_privacy_preflight": {
+      "directFallbackBlocked": "BLOCKED",
+      "dnsPrivacy": "UNKNOWN",
+      "egressCheck": "FAIL",
+      "egressFingerprint": null,
+      "failClosed": true,
+      "failureReason": "PRIVACY_RELAY_NODE_UNVERIFIED (EGRESS_PROBE_TIMEOUT: Phase TCP_CONNECT timed out after 10000ms)",
+      "ipv6Protection": "UNKNOWN",
+      "lastCheck": "2026-10-30T09:42:34.464Z",
+      "mode": "PRIVACY_RELAY",
+      "ready": false,
+      "selectedEgressId": null,
+      "webrtcGuard": "PASS"
+    },
+    "xpider_migration_phase": "COMPLETED",
+    "xpider_migration_ts": 1793353333839,
+    "xpider_schema_version": 2,
+    "xpider_success": 0
+  },
+  "stage0BackupKeyCount": 71,
+  "stage0RestorablePayloadKeyCount": 65,
+  "stage0Summary": {
+    "total": 97,
+    "remaining": 92,
+    "completed": 5,
+    "campaignRunId": "normal_run_1793331729467_y75m31",
+    "savedListsCount": 1,
+    "historyRowsCount": 198,
+    "historyTargetsCount": 99,
+    "collectedEmailsCount": 22,
+    "restoredKeysCount": 65
+  }
+}

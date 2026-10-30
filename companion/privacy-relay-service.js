@@ -67,7 +67,7 @@ process.on('unhandledRejection', (reason) => {
 });
 
 // [Defect Q2 Hardening - Issue #6 Comment #6244711545] Authoritative companion build identity & capabilities
-const COMPANION_BUILD_ID = 'V7.0.0-RC1-20261030-DUAL-MODE-EXTERNAL-CAPTCHA-PASS';
+const COMPANION_BUILD_ID = 'V7.0.0-RC2-20261030-DUAL-MODE-AUDIT-PRIVACY-STORAGE-PASS';
 const COMPANION_IMPLEMENTATION_HEAD = '741dfe44536031dff13ac6d8e310d4f72fbca42b';
 
 function isCompatibleExtensionBuild(extBuildId, companionBuildId) {
@@ -1229,6 +1229,11 @@ class PrivacyRelayService {
         this.log(`[SELF_HEALING_KEEPALIVE_PROBE] Testing active node=${active.id} in REMOTE_EGRESS_REPAIR_REQUIRED state...`);
         const vRes = await this.verifyNodeEgress(active, this.pool.healthCheckTimeoutMs || 5000);
         if (vRes.verified) {
+          if (this.lastDisconnectReason) {
+            this.lastHistoricalDisconnectReason = this.lastDisconnectReason;
+            this.lastHistoricalDisconnectTime = this.lastDisconnectTime || Date.now();
+            this.lastDisconnectReason = null;
+          }
           this.relayReady = true;
           this.lifecycleState = 'READY';
           this.reconnectAttempt = 0;
@@ -1261,6 +1266,11 @@ class PrivacyRelayService {
       this.log(`[SELF_HEALING_RECONNECT_PROBE] Testing active node=${active.id} (attempt ${attempt}/${this.maxReconnectAttempts})...`);
       const vRes = await this.verifyNodeEgress(active, this.pool.healthCheckTimeoutMs || 5000);
       if (vRes.verified) {
+        if (this.lastDisconnectReason) {
+          this.lastHistoricalDisconnectReason = this.lastDisconnectReason;
+          this.lastHistoricalDisconnectTime = this.lastDisconnectTime || Date.now();
+          this.lastDisconnectReason = null;
+        }
         this.relayReady = true;
         this.lifecycleState = 'READY';
         this.reconnectAttempt = 0;
@@ -1502,8 +1512,10 @@ class PrivacyRelayService {
       lifecycleState: lifecycle,
       reconnectAttempt: this.reconnectAttempt || 0,
       maxReconnectAttempts: this.maxReconnectAttempts || 10,
-      lastDisconnectReason: this.lastDisconnectReason || null,
-      lastDisconnectTime: this.lastDisconnectTime || null,
+      lastDisconnectReason: ready ? null : (this.lastDisconnectReason || null),
+      lastDisconnectTime: ready ? null : (this.lastDisconnectTime || null),
+      lastHistoricalDisconnectReason: this.lastHistoricalDisconnectReason || this.lastDisconnectReason || null,
+      lastHistoricalDisconnectTime: this.lastHistoricalDisconnectTime || this.lastDisconnectTime || null,
       lastProbeResult: this.lastProbeResult || null,
       paused: this.isPaused,
       controlPort: this.controlPort,
@@ -1740,6 +1752,30 @@ class PrivacyRelayService {
           success: true,
           recovery: this.getRecoveryStatus()
         }));
+        return;
+      }
+
+      // [V7.0.0-RC2] GET /storage-recovery/stage0-snapshot: Authenticated lossless recovery of Stage 0 97/92 store
+      if (pathname === '/storage-recovery/stage0-snapshot' && req.method === 'GET') {
+        const snapPath = path.join(__dirname, 'stage0_authoritative_97_92_snapshot.json');
+        try {
+          if (fs.existsSync(snapPath)) {
+            const snap = JSON.parse(fs.readFileSync(snapPath, 'utf8'));
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({
+              success: true,
+              available: true,
+              snapshot: snap
+            }));
+            return;
+          }
+        } catch (err) {
+          res.writeHead(500, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ success: false, available: false, error: err.message }));
+          return;
+        }
+        res.writeHead(404, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: false, available: false, error: 'STAGE0_SNAPSHOT_NOT_FOUND' }));
         return;
       }
 

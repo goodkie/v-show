@@ -1725,8 +1725,8 @@ async function closeAllCampaignTabsExcept(keepTabId = null, reason = 'CLEANUP') 
 async function closeOwnedTabVerified(tabId, reason = 'TARGET_FINAL') {
     if (!tabId) return true;
     if (tabId === campaignState.currentTabId &&
-        (campaignState.currentTargetStage === 'CAPTCHA_PENDING_EXTERNAL_USER' || campaignState.currentTargetStage === 'MANUAL_HOLD') &&
-        reason !== 'PAUSE_CAMPAIGN' && reason !== 'END_CAMPAIGN' && reason !== 'ABORTED') {
+        (campaignState.currentTargetStage === 'CAPTCHA_PENDING_EXTERNAL_USER' || campaignState.currentTargetStage === 'MANUAL_HOLD' || campaignState.manualHoldActive || campaignState.externalCaptchaWaitActive) &&
+        reason !== 'END_CAMPAIGN' && reason !== 'ABORTED') {
         console.warn(`[JGMMA_TAB_RETENTION_GUARD] Refusing to close active tabId=${tabId} while stage=${campaignState.currentTargetStage} (reason=${reason})`);
         logBg(tabId, `[JGMMA_TAB_RETENTION_GUARD] Refusing to close active tabId=${tabId} while stage=${campaignState.currentTargetStage}`, 'warning');
         return false;
@@ -4914,15 +4914,32 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
             sendResponse({ success: false, error: 'INTERNAL_SOLVER_RETIRED_V7', retired: true });
             return true;
 
-        case 'GET_CAMPAIGN_MODE':
+        case 'GET_CAMPAIGN_MODE': {
+            const callerTabId = sender && sender.tab ? sender.tab.id : (request.tabId || null);
+            const isCurrentHoldTab = Boolean(callerTabId && callerTabId === campaignState.currentTabId && (campaignState.manualHoldActive || campaignState.externalCaptchaWaitActive));
             sendResponse({
                 success: true,
                 campaignMode: campaignState.campaignMode || 'AUTO',
-                currentTargetStage: campaignState.currentTargetStage || null,
                 manualHoldActive: Boolean(campaignState.manualHoldActive),
-                externalCaptchaWaitActive: Boolean(campaignState.externalCaptchaWaitActive)
+                externalCaptchaWaitActive: Boolean(campaignState.externalCaptchaWaitActive),
+                isCurrentHoldTab,
+                activeHoldState: isCurrentHoldTab ? {
+                    active: true,
+                    stage: campaignState.currentTargetStage,
+                    tabId: campaignState.currentTabId,
+                    url: campaignState.currentAttempt?.url || '',
+                    campaignMode: campaignState.campaignMode || 'AUTO',
+                    executionIdentity: {
+                        tabId: campaignState.currentTabId,
+                        attemptId: campaignState.currentAttempt?.attemptId || null,
+                        targetToken: campaignState.currentTargetToken || null,
+                        campaignRunId: campaignState.campaignRunId || null,
+                        sessionId: campaignState.sessionId || 0
+                    }
+                } : null
             });
             return true;
+        }
 
         case 'CAPTCHA_PENDING_EXTERNAL_USER': {
             const validation = validateActiveExecution(request, sender, 'CAPTCHA_PENDING_EXTERNAL_USER', { allowBodyTabId: true });
@@ -4939,30 +4956,41 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
                 clearTimeout(campaignState.activeTimeoutId);
                 campaignState.activeTimeoutId = null;
             }
-            if (chrome.alarms && campaignState.sessionId) {
-                chrome.alarms.clear(`xpider_timeout_${campaignState.sessionId}`);
+            if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+                chrome.storage.local.set({
+                    xpider_v7_active_hold_state: {
+                        active: true,
+                        stage: 'CAPTCHA_PENDING_EXTERNAL_USER',
+                        tabId: validation.resolvedTabId,
+                        url: campaignState.currentAttempt?.url || request.url || '',
+                        attemptId: campaignState.currentAttempt?.attemptId || null,
+                        targetToken: campaignState.currentTargetToken || null,
+                        campaignRunId: campaignState.campaignRunId || null,
+                        campaignMode: campaignState.campaignMode || 'AUTO',
+                        heldAt: Date.now()
+                    }
+                }).catch(() => {});
             }
-            const tabId = sender?.tab?.id || campaignState.currentTabId;
-            logBg(tabId, `[CAPTCHA_PENDING_EXTERNAL_USER] tabId=${tabId} challengeType=${request.challengeType || 'unknown'} deadlinePaused=true tabRetained=true`, 'info');
-            chrome.runtime.sendMessage({
-                action: 'V7_TARGET_HOLD_STATE',
-                state: 'CAPTCHA_PENDING_EXTERNAL_USER',
-                challengeType: request.challengeType || 'unknown',
-                targetUrl: request.url || campaignState.currentAttempt?.url || '',
-                tabId
-            }).catch(() => {});
-            sendResponse({ success: true, state: 'CAPTCHA_PENDING_EXTERNAL_USER', deadlinePaused: true, tabRetained: true });
+            logBg(validation.resolvedTabId, `⏳ [V7_EXTERNAL_CAPTCHA_WAIT] Challenge detected (${request.challengeType || 'unknown'}). Pausing target deadline and awaiting external/user verification.`, 'warning');
+            sendResponse({ success: true, state: 'CAPTCHA_PENDING_EXTERNAL_USER', deadlinePaused: true });
             return true;
         }
 
         case 'CAPTCHA_EXTERNAL_VERIFIED_RESUME': {
+            const validation = validateActiveExecution(request, sender, 'CAPTCHA_EXTERNAL_VERIFIED_RESUME', { allowBodyTabId: true });
+            if (!validation.valid) {
+                sendResponse({ success: false, reason: validation.reason, stale: true });
+                return true;
+            }
             campaignState.externalCaptchaWaitActive = false;
             campaignState.currentTargetStage = 'CAPTCHA_VERIFIED_SUBMITTING';
+            if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+                chrome.storage.local.remove('xpider_v7_active_hold_state').catch(() => {});
+            }
             if (campaignState.targetDeadlineController) {
                 campaignState.targetDeadlineController.resume();
             }
-            const tabId = sender?.tab?.id || campaignState.currentTabId;
-            logBg(tabId, `[CAPTCHA_EXTERNAL_VERIFIED_RESUME] tabId=${tabId} method=${request.verificationMethod || 'dom_verified'} deadlineResumed=true`, 'success');
+            logBg(validation.resolvedTabId, `✅ [V7_EXTERNAL_CAPTCHA_VERIFIED] External/user challenge verified via ${request.verificationMethod || 'dom_verified'} deadlineResumed=true`, 'success');
             sendResponse({ success: true, state: 'CAPTCHA_VERIFIED_SUBMITTING' });
             return true;
         }
@@ -4982,19 +5010,134 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
                 clearTimeout(campaignState.activeTimeoutId);
                 campaignState.activeTimeoutId = null;
             }
-            if (chrome.alarms && campaignState.sessionId) {
-                chrome.alarms.clear(`xpider_timeout_${campaignState.sessionId}`);
+            if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+                chrome.storage.local.set({
+                    xpider_v7_active_hold_state: {
+                        active: true,
+                        stage: 'MANUAL_HOLD',
+                        tabId: validation.resolvedTabId,
+                        url: campaignState.currentAttempt?.url || request.url || '',
+                        attemptId: campaignState.currentAttempt?.attemptId || null,
+                        targetToken: campaignState.currentTargetToken || null,
+                        campaignRunId: campaignState.campaignRunId || null,
+                        campaignMode: campaignState.campaignMode || 'MANUAL',
+                        heldAt: Date.now()
+                    }
+                }).catch(() => {});
             }
-            const tabId = sender?.tab?.id || campaignState.currentTabId;
-            logBg(tabId, `[MANUAL_MODE_HOLD] tabId=${tabId} url=${request.url || campaignState.currentAttempt?.url || ''} challengeStatus=${request.challengeStatus || 'NONE'} deadlinePaused=true tabRetained=true`, 'info');
-            chrome.runtime.sendMessage({
-                action: 'V7_TARGET_HOLD_STATE',
-                state: 'MANUAL_HOLD',
-                challengeStatus: request.challengeStatus || 'NONE',
-                targetUrl: request.url || campaignState.currentAttempt?.url || '',
-                tabId
-            }).catch(() => {});
-            sendResponse({ success: true, state: 'MANUAL_HOLD', deadlinePaused: true, tabRetained: true });
+            logBg(validation.resolvedTabId, `🖐️ [V7_MANUAL_MODE_HOLD] Form prepared on ${request.url || ''}. Holding campaign queue for manual operator action.`, 'info');
+            sendResponse({ success: true, state: 'MANUAL_HOLD', deadlinePaused: true });
+            return true;
+        }
+
+        case 'AUTO_SOLVE_CAPTCHA':
+        case 'POLL_2CAPTCHA':
+        case 'NOPECHA_SOLVE': {
+            sendResponse({ success: false, error: 'INTERNAL_SOLVER_RETIRED_V7', reasonCode: 'INTERNAL_SOLVER_RETIRED_V7' });
+            return true;
+        }
+
+        case 'CHECK_STAGE0_RECOVERY_AVAILABLE': {
+            (async () => {
+                try {
+                    const st = await chrome.storage.local.get(['xpider_total', 'xpider_queue', 'xpider_saved_lists', 'xpider_paused_checkpoint']);
+                    const hasQueue = (Array.isArray(st.xpider_queue) && st.xpider_queue.length > 0) ||
+                        (st.xpider_paused_checkpoint && Array.isArray(st.xpider_paused_checkpoint.remainingQueue) && st.xpider_paused_checkpoint.remainingQueue.length > 0);
+                    const hasLists = Array.isArray(st.xpider_saved_lists) && st.xpider_saved_lists.length > 0;
+                    if (hasQueue || hasLists || Number(st.xpider_total) > 0) {
+                        sendResponse({ success: true, recoveryNeeded: false, reason: 'STORAGE_NOT_EMPTY' });
+                        return;
+                    }
+                    const pg = (typeof PrivacyGateway !== 'undefined' && PrivacyGateway.getInstance) ? PrivacyGateway.getInstance() : null;
+                    if (pg && !pg.ephemeralRelayToken && typeof pg.fetchRelayControlToken === 'function') {
+                        try { await pg.fetchRelayControlToken(); } catch (_) {}
+                    }
+                    const token = pg ? pg.ephemeralRelayToken : null;
+                    const ctrlPort = (pg && pg.config && pg.config.relayControlPort) || 18989;
+                    const resp = await fetch(`http://127.0.0.1:${ctrlPort}/storage-recovery/stage0-snapshot`, {
+                        method: 'GET',
+                        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+                    });
+                    if (!resp.ok) {
+                        sendResponse({ success: false, recoveryNeeded: false, reason: 'COMPANION_SNAPSHOT_UNAVAILABLE' });
+                        return;
+                    }
+                    const data = await resp.json();
+                    if (data && data.available && data.snapshot && data.snapshot.summary) {
+                        sendResponse({
+                            success: true,
+                            recoveryNeeded: true,
+                            summary: data.snapshot.summary
+                        });
+                    } else {
+                        sendResponse({ success: false, recoveryNeeded: false });
+                    }
+                } catch (err) {
+                    sendResponse({ success: false, recoveryNeeded: false, error: err.message });
+                }
+            })();
+            return true;
+        }
+
+        case 'RESTORE_STAGE0_AUTHORITATIVE_SNAPSHOT': {
+            (async () => {
+                try {
+                    const pg = (typeof PrivacyGateway !== 'undefined' && PrivacyGateway.getInstance) ? PrivacyGateway.getInstance() : null;
+                    if (pg && !pg.ephemeralRelayToken && typeof pg.fetchRelayControlToken === 'function') {
+                        try { await pg.fetchRelayControlToken(); } catch (_) {}
+                    }
+                    const token = pg ? pg.ephemeralRelayToken : null;
+                    const ctrlPort = (pg && pg.config && pg.config.relayControlPort) || 18989;
+                    const resp = await fetch(`http://127.0.0.1:${ctrlPort}/storage-recovery/stage0-snapshot`, {
+                        method: 'GET',
+                        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+                    });
+                    if (!resp.ok) {
+                        sendResponse({ success: false, error: `HTTP_${resp.status}` });
+                        return;
+                    }
+                    const data = await resp.json();
+                    if (!data || !data.available || !data.snapshot || !data.snapshot.payload) {
+                        sendResponse({ success: false, error: 'STAGE0_PAYLOAD_MISSING' });
+                        return;
+                    }
+                    // 1. Save lossless pre-restore backup of current storage
+                    const currentAll = await chrome.storage.local.get(null);
+                    const preBackupKey = `xpider_pre_stage0_restore_backup_${Date.now()}`;
+                    await chrome.storage.local.set({ [preBackupKey]: currentAll });
+
+                    // 2. Write authoritative 97/92 Stage 0 payload
+                    const payload = data.snapshot.payload;
+                    await chrome.storage.local.set(payload);
+
+                    // 3. Re-hydrate in-memory campaignState and HistoryStore
+                    const hs = await getHistoryStoreInstance();
+                    if (hs && typeof hs.load === 'function') {
+                        await hs.load();
+                    }
+                    if (payload.xpider_paused_checkpoint) {
+                        campaignState.pausedCheckpoint = payload.xpider_paused_checkpoint;
+                        campaignState.isPaused = true;
+                        campaignState.isActive = false;
+                        campaignState.queue = [...(payload.xpider_paused_checkpoint.remainingQueue || payload.xpider_queue || [])];
+                        campaignState.totalTargets = payload.xpider_total || 97;
+                        campaignState.visitedUrls = Array.isArray(payload.xpider_visited) ? [...payload.xpider_visited] : [];
+                        campaignState.template = payload.xpider_tpl || null;
+                        campaignState.campaignRunId = payload.xpider_active_campaign_run_id || payload.xpider_paused_checkpoint.campaignRunId;
+                    }
+                    if (hs) {
+                        await syncCampaignCountersFromLedger(hs);
+                    }
+                    logBg(null, `♻️ [STAGE0_RESTORE] Restored authoritative 97/92 Stage-0 snapshot (${Object.keys(payload).length} keys, preBackup=${preBackupKey})`, 'success');
+                    sendResponse({
+                        success: true,
+                        preBackupKey,
+                        summary: data.snapshot.summary
+                    });
+                } catch (err) {
+                    sendResponse({ success: false, error: err.message });
+                }
+            })();
             return true;
         }
 
@@ -7275,8 +7418,13 @@ async function pauseCampaignOrchestrator(saveCheckpoint = true) {
     const hsInstance = await getHistoryStoreInstance();
     await syncCampaignCountersFromLedger(hsInstance);
 
-    // [Issue #6 R6.9E B5] 5. ONLY THEN close campaign tabs
-    await closeAllCampaignTabsExcept(null, 'PAUSE_CAMPAIGN');
+    // [Issue #6 R6.9E B5 & V7.0.0-RC2 Audit Item 2] 5. Close campaign tabs EXCEPT held tab if in MANUAL_HOLD or CAPTCHA_PENDING_EXTERNAL_USER
+    const wasInV7Hold = Boolean(inFlightStage === 'MANUAL_HOLD' || inFlightStage === 'CAPTCHA_PENDING_EXTERNAL_USER' || campaignState.manualHoldActive || campaignState.externalCaptchaWaitActive);
+    const retainTabOnPause = wasInV7Hold ? campaignState.currentTabId : null;
+    await closeAllCampaignTabsExcept(retainTabOnPause, 'PAUSE_CAMPAIGN');
+    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+        chrome.storage.local.remove('xpider_v7_active_hold_state').catch(() => {});
+    }
     campaignState.currentTabId = null;
     campaignState.targetTabId = null;
     campaignState.submitLock = false;
@@ -9678,7 +9826,8 @@ async function restoreCampaignState() {
                 'xpider_isActive', 'xpider_queue', 'xpider_tpl', 'xpider_delayMs', 'xpider_fillDelayMs', 'xpider_submitDelayMs',
                 'xpider_sessionId', 'xpider_success', 'xpider_total', 'xpider_visited', 'xpider_successful', 'xpider_currentAttempt',
                 'xpider_paused_checkpoint', 'xpider_isPaused', 'xpider_active_campaign_run_id',
-                'xpider_owner_function_test_mode', 'xpider_owner_function_test_mode_active'
+                'xpider_owner_function_test_mode', 'xpider_owner_function_test_mode_active',
+                'xpider_v7_active_hold_state', 'xpider_campaign_mode'
             ], async (data) => {
                 try {
                     const hs = await getHistoryStoreInstance();
@@ -9696,9 +9845,13 @@ async function restoreCampaignState() {
                         await hs.reconcileLegacyCounters();
                     }
 
-                    // [v1.2.0 Delivery Protection on SW Restart]
+                    // [v1.2.0 Delivery Protection on SW Restart + V7.0.0-RC2 Hold State Preservation]
+                    const v7HoldState = (data.xpider_v7_active_hold_state && data.xpider_v7_active_hold_state.active) ? data.xpider_v7_active_hold_state : null;
+                    if (data.xpider_campaign_mode === 'MANUAL' || data.xpider_campaign_mode === 'AUTO') {
+                        campaignState.campaignMode = data.xpider_campaign_mode;
+                    }
                     let visited = Array.isArray(data.xpider_visited) ? [...data.xpider_visited] : [];
-                    if (data.xpider_currentAttempt) {
+                    if (data.xpider_currentAttempt && !v7HoldState) {
                         const interruptedUrl = data.xpider_currentAttempt.url;
                         const interruptedAttemptId = data.xpider_currentAttempt.attemptId;
 
@@ -9794,9 +9947,22 @@ async function restoreCampaignState() {
                         const isRestoredTest = Boolean(data.xpider_active_test_source && EXPLICIT_TEST_SOURCES.includes(data.xpider_active_test_source));
                         campaignState.ownerFunctionTestMode = isRestoredTest;
                         
-                        logBg(null, `Restored previous active campaign: ${campaignState.queue.length} targets remaining.`, "info");
-                        
-                        if (!campaignState.isLoopRunning) processNextCampaignTarget(campaignState.sessionId);
+                        if (v7HoldState) {
+                            campaignState.currentAttempt = data.xpider_currentAttempt || null;
+                            campaignState.currentTabId = v7HoldState.tabId || null;
+                            campaignState.targetTabId = v7HoldState.tabId || null;
+                            campaignState.currentTargetToken = v7HoldState.targetToken || null;
+                            campaignState.currentTargetStage = v7HoldState.stage;
+                            campaignState.campaignMode = v7HoldState.campaignMode || campaignState.campaignMode || 'AUTO';
+                            campaignState.manualHoldActive = (v7HoldState.stage === 'MANUAL_HOLD');
+                            campaignState.externalCaptchaWaitActive = (v7HoldState.stage === 'CAPTCHA_PENDING_EXTERNAL_USER');
+                            campaignState.activeTargetInFlight = true;
+                            if (v7HoldState.tabId) campaignOwnedTabIds.add(v7HoldState.tabId);
+                            logBg(v7HoldState.tabId, `🛡️ [V7_SW_RESTART_HOLD_PRESERVED] Restored active ${v7HoldState.stage} on tabId=${v7HoldState.tabId} without closing tab or advancing queue.`, "info");
+                        } else {
+                            logBg(null, `Restored previous active campaign: ${campaignState.queue.length} targets remaining.`, "info");
+                            if (!campaignState.isLoopRunning) processNextCampaignTarget(campaignState.sessionId);
+                        }
                     }
 
                     // Rebuild authoritative counters from HistoryStore ledger
