@@ -1100,14 +1100,15 @@ function bindCriticalControls() {
     let startBound = false;
     let saveBound = false;
 
-    // 1. Start Button
+    // 1. Start Automatic & Start Manual Buttons (v7.0 Dual Mode)
     const startBtn = document.getElementById('start-btn');
+    const startManualBtn = document.getElementById('start-manual-btn');
     if (startBtn) {
         if (!startBtn.dataset.bound) {
             startBtn.dataset.bound = 'true';
             startBtn.addEventListener('click', () => {
-                console.log('[BUTTON_CLICK] id=start-btn');
-                launchCampaign({ source: 'USER_START_BUTTON' }).catch(err => {
+                console.log('[BUTTON_CLICK] id=start-btn mode=AUTO');
+                launchCampaign({ source: 'USER_START_BUTTON', campaignMode: 'AUTO' }).catch(err => {
                     console.error('[START_EXCEPTION]', err);
                 });
             });
@@ -1115,6 +1116,15 @@ function bindCriticalControls() {
         startBound = true;
     } else {
         displayControlPlaneError('START_HANDLER_NOT_BOUND', 'element #start-btn not found in DOM');
+    }
+    if (startManualBtn && !startManualBtn.dataset.bound) {
+        startManualBtn.dataset.bound = 'true';
+        startManualBtn.addEventListener('click', () => {
+            console.log('[BUTTON_CLICK] id=start-manual-btn mode=MANUAL');
+            launchCampaign({ source: 'USER_START_BUTTON', campaignMode: 'MANUAL' }).catch(err => {
+                console.error('[START_EXCEPTION]', err);
+            });
+        });
     }
 
     // 2. Save Settings Button
@@ -5165,8 +5175,18 @@ function bindEvents() {
         if (startBtn && !startBtn.dataset.bound) {
             startBtn.dataset.bound = 'true';
             startBtn.addEventListener('click', () => {
-                console.log('[BUTTON_CLICK] id=start-btn');
-                launchCampaign({ source: 'USER_START_BUTTON' }).catch(err => {
+                console.log('[BUTTON_CLICK] id=start-btn mode=AUTO');
+                launchCampaign({ source: 'USER_START_BUTTON', campaignMode: 'AUTO' }).catch(err => {
+                    console.error('[START_EXCEPTION]', err);
+                });
+            });
+        }
+        const startManualBtn = document.getElementById('start-manual-btn');
+        if (startManualBtn && !startManualBtn.dataset.bound) {
+            startManualBtn.dataset.bound = 'true';
+            startManualBtn.addEventListener('click', () => {
+                console.log('[BUTTON_CLICK] id=start-manual-btn mode=MANUAL');
+                launchCampaign({ source: 'USER_START_BUTTON', campaignMode: 'MANUAL' }).catch(err => {
                     console.error('[START_EXCEPTION]', err);
                 });
             });
@@ -7503,14 +7523,22 @@ function restoreStartButton() {
     _isCampaignLaunching = false;
     campaignActive = false;
     const btn = document.getElementById('start-btn');
+    const manualBtn = document.getElementById('start-manual-btn');
+    const startRow = document.getElementById('start-buttons-row');
+    if (startRow) startRow.classList.remove('hidden');
     if (btn) {
         btn.classList.remove('hidden');
         btn.disabled = false;
         btn.removeAttribute('data-build-locked');
-        const lang = document.getElementById('language-select')?.value || 'en';
-        const dict = (typeof i18nData !== 'undefined' && i18nData) ? (i18nData[lang] || i18nData['en'] || {}) : {};
-        btn.textContent = dict.btn_start || "🚀 START SENDING";
+        btn.textContent = "🚀 Start Automatic";
         btn.title = "";
+    }
+    if (manualBtn) {
+        manualBtn.classList.remove('hidden');
+        manualBtn.disabled = false;
+        manualBtn.removeAttribute('data-build-locked');
+        manualBtn.textContent = "🖐️ Start Manual";
+        manualBtn.title = "";
     }
     const multiActions = document.getElementById('multi-actions');
     if (multiActions) multiActions.classList.add('hidden');
@@ -7927,6 +7955,12 @@ async function launchCampaign(options = {}) {
         const randomVariationToggle = document.getElementById('random-delay-toggle');
         const randomVariationActive = randomVariationToggle ? randomVariationToggle.checked : false;
 
+        const requestedCampaignMode = (options.campaignMode === 'MANUAL') ? 'MANUAL' : 'AUTO';
+        const modePill = document.getElementById('campaign-mode-pill');
+        if (modePill) {
+            modePill.textContent = `MODE: ${requestedCampaignMode}`;
+            modePill.style.color = requestedCampaignMode === 'MANUAL' ? '#fbbf24' : '#38bdf8';
+        }
         const startPayload = {
             queue: campaignQueue,
             template: currentTpl,
@@ -7940,7 +7974,8 @@ async function launchCampaign(options = {}) {
             skipPreviouslyAttempted,
             overrideSkipAttempted: isTestModeActive ? true : false,
             ownerFunctionTestMode: isTestModeActive ? true : false,
-            campaignRunId: resolvedRunId
+            campaignRunId: resolvedRunId,
+            campaignMode: requestedCampaignMode
         };
         try {
             bindCampaignTemplateMetadata(startPayload, currentTpl);
@@ -8045,7 +8080,8 @@ async function launchCampaign(options = {}) {
                 skipPreviouslyAttempted: startPayload.skipPreviouslyAttempted,
                 overrideSkipAttempted: startPayload.overrideSkipAttempted,
                 ownerFunctionTestMode: startPayload.ownerFunctionTestMode,
-                campaignRunId: startPayload.campaignRunId
+                campaignRunId: startPayload.campaignRunId,
+                campaignMode: startPayload.campaignMode
             }, (res) => {
                 if (chrome.runtime.lastError) {
                     return reject(new Error(chrome.runtime.lastError.message));
@@ -8071,6 +8107,10 @@ async function launchCampaign(options = {}) {
         campaignActive = true;
         campaignPaused = false;
         if (startBtn) startBtn.classList.add('hidden');
+        const startManualBtn = document.getElementById('start-manual-btn');
+        if (startManualBtn) startManualBtn.classList.add('hidden');
+        const startRow = document.getElementById('start-buttons-row');
+        if (startRow) startRow.classList.add('hidden');
         const multiActions = document.getElementById('multi-actions');
         if (multiActions) multiActions.classList.remove('hidden');
 
@@ -8132,11 +8172,19 @@ function stopCampaign() {
     campaignActive = false;
     campaignPaused = false;
     _isCampaignLaunching = false;
+    const startRow = document.getElementById('start-buttons-row');
+    if (startRow) startRow.classList.remove('hidden');
     const startBtn = document.getElementById('start-btn');
     if (startBtn) {
         startBtn.classList.remove('hidden');
         startBtn.disabled = false;
-        startBtn.textContent = (typeof dict !== 'undefined' && dict.btn_start) || "🚀 START SENDING";
+        startBtn.textContent = "🚀 Start Automatic";
+    }
+    const startManualBtn = document.getElementById('start-manual-btn');
+    if (startManualBtn) {
+        startManualBtn.classList.remove('hidden');
+        startManualBtn.disabled = false;
+        startManualBtn.textContent = "🖐️ Start Manual";
     }
     const multiActions = document.getElementById('multi-actions');
     if (multiActions) multiActions.classList.add('hidden');

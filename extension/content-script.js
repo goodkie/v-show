@@ -35,6 +35,10 @@
         (typeof window !== 'undefined' && window.ContactGate) || 
         (typeof require !== 'undefined' ? require('./modules/contact-gate.js') : null);
 
+    const _ChallengeGate = (typeof window !== 'undefined' && window.ChallengeGate) || 
+        (typeof globalThis !== 'undefined' && globalThis.ChallengeGate) || 
+        (typeof require !== 'undefined' ? (function(){ try { return require('./modules/challenge-gate.js'); } catch(_) { return null; } })() : null);
+
     const _SmartFieldResolver = (typeof SmartFieldResolver !== 'undefined' && SmartFieldResolver) || 
         (typeof window !== 'undefined' && window.SmartFieldResolver) || 
         (typeof require !== 'undefined' ? require('./modules/smart-field-resolver.js') : null);
@@ -496,13 +500,15 @@
                 const attemptId = request.attemptId || (Date.now().toString(36) + '_' + Math.random().toString(36).substring(2, 7));
                 const singleFlightKey = `${attemptId}:${currentRunUrl}:${domGeneration}`;
 
-                // [Issue #6 R6.9E] Canonical Execution Identity Binding
+                // [Issue #6 R6.9E & v7.0] Canonical Execution Identity & Campaign Mode Binding
+                window.__xpider_campaign_mode = (request.campaignMode === 'MANUAL') ? 'MANUAL' : 'AUTO';
                 window.__xpider_execution_identity = {
                     attemptId: request.attemptId || attemptId,
                     targetToken: request.targetToken || null,
                     campaignRunId: request.campaignRunId || null,
                     sessionId: (request.sessionId !== undefined && request.sessionId !== null) ? request.sessionId : null,
-                    captchaEpoch: request.captchaEpoch || 1
+                    captchaEpoch: request.captchaEpoch || 1,
+                    campaignMode: window.__xpider_campaign_mode
                 };
 
                 if (window.__xpider_active_single_flight === singleFlightKey || (window.__xpider_hasProcessingLock && window.__xpider_hasProcessingLock(currentRunUrl))) {
@@ -2015,68 +2021,6 @@
 
             logDev(`✅ [FORM_PREP] COMPLETE`, "info");
             
-            let hasCaptcha = false;
-            try {
-                hasCaptcha = !_isCaptchaSolved && (await checkForCaptcha());
-            } catch (err) {
-                const errorClass = (err && err.name) || (err instanceof Error ? err.constructor.name : 'Error');
-                const safeMessage = (err && err.message) ? String(err.message).replace(/[\r\n\t]+/g, ' ').substring(0, 200) : 'Error checking captcha';
-                logDev(`❌ [Security] CAPTCHA check runtime exception: ${errorClass}: ${safeMessage}`, "error");
-                currentTargetLifecycleState = TargetLifecycleState.SETTLING;
-                try {
-                    (window.__xpider_sendExecutionMessage || chrome.runtime.sendMessage)({
-                        action: 'CAPTCHA_RUNTIME_EXCEPTION',
-                        errorClass: errorClass,
-                        safeMessage: safeMessage,
-                        attemptId: window.__xpider_execution_identity?.attemptId || null
-                    });
-                } catch (_) {}
-                finishCampaign(false, `CAPTCHA_RUNTIME_EXCEPTION: ${errorClass}: ${safeMessage}`, 'CAPTCHA_RUNTIME_EXCEPTION', {
-                    errorClass: errorClass,
-                    safeMessage: safeMessage
-                });
-                return false;
-            }
-
-            if (hasCaptcha) {
-                logDev("🤖 [Security] CAPTCHA detected. Engine paused for solver.", "info");
-                try {
-                    (window.__xpider_sendExecutionMessage || chrome.runtime.sendMessage)({ action: 'STAGE_PROGRESSION', stage: 'CAPTCHA', url: window.location.href });
-                } catch (_) {}
-                let solved = false;
-                try {
-                    solved = await waitForCaptchaSolved();
-                } catch (err) {
-                    const errorClass = (err && err.name) || (err instanceof Error ? err.constructor.name : 'Error');
-                    const safeMessage = (err && err.message) ? String(err.message).replace(/[\r\n\t]+/g, ' ').substring(0, 200) : 'Unknown captcha exception';
-                    logDev(`❌ [Security] CAPTCHA runtime exception: ${errorClass}: ${safeMessage}`, "error");
-                    currentTargetLifecycleState = TargetLifecycleState.SETTLING;
-                    try {
-                        (window.__xpider_sendExecutionMessage || chrome.runtime.sendMessage)({
-                            action: 'CAPTCHA_RUNTIME_EXCEPTION',
-                            errorClass: errorClass,
-                            safeMessage: safeMessage,
-                            attemptId: window.__xpider_execution_identity?.attemptId || null
-                        });
-                    } catch (_) {}
-                    finishCampaign(false, `CAPTCHA_RUNTIME_EXCEPTION: ${errorClass}: ${safeMessage}`, 'CAPTCHA_RUNTIME_EXCEPTION', {
-                        errorClass: errorClass,
-                        safeMessage: safeMessage
-                    });
-                    return false;
-                }
-                if (!solved) {
-                    if (currentTargetLifecycleState === TargetLifecycleState.SETTLED) {
-                        logDev("ℹ️ [Security] CAPTCHA terminal decision settled. Halting sequence.", "info");
-                    } else {
-                        logDev("❌ [Security] CAPTCHA unsolved or solver unavailable. Halting sequence.", "error");
-                        finishCampaign(false, 'CAPTCHA_UNRESOLVED_TIMEOUT', 'CAPTCHA_UNRESOLVED_TIMEOUT');
-                    }
-                    return false;
-                }
-                logDev("🔑 [Security] Bypass verified", "success");
-            }
-            
             // [v18.7.5] Visual Hold: Pause so user can confirm mapped fields
             logDev(`⏳ [Engine] Holding for visual confirmation (${speed.hold}ms)...`, "info");
             await new Promise(r => setTimeout(r, speed.hold));
@@ -2146,6 +2090,60 @@
             // [Section B] FREEZE_VALUES: Stop sweeper, snapshot field values, freeze further mutations
             stopActiveEmptyFieldSweeper();
             const frozenSnapshot = freezeFieldValues(form, template);
+
+            // [v7.0 Directive #6514763285 & #6514783886] Post-Completion Dual Mode & Challenge Gate
+            const activeCampaignMode = (typeof window !== 'undefined' && window.__xpider_campaign_mode === 'MANUAL') ||
+                (template && template.campaignMode === 'MANUAL')
+                ? 'MANUAL' : 'AUTO';
+            const initialChallengeInfo = _ChallengeGate
+                ? _ChallengeGate.detectChallenge(document)
+                : { detected: false, verified: true, type: 'none' };
+
+            logDev(`[V7_DUAL_MODE_GATE] mode=${activeCampaignMode} challengeDetected=${initialChallengeInfo.detected} challengeType=${initialChallengeInfo.type} challengeVerified=${initialChallengeInfo.verified}`, "info");
+
+            if (activeCampaignMode === 'MANUAL') {
+                const manualOutcome = await handleV7ManualModeHold(form, template, frozenSnapshot, initialChallengeInfo);
+                return Boolean(manualOutcome && manualOutcome.success);
+            }
+
+            // AUTO mode: check verification state after form completion
+            const autoDecision = _ChallengeGate
+                ? _ChallengeGate.decideAction({
+                    mode: 'AUTO',
+                    fieldsComplete: true,
+                    challenge: initialChallengeInfo,
+                    alreadySubmitted: Boolean(window.__xpider_submitBoundaryReached && window.__xpider_submitBoundaryReached[window.__xpider_execution_identity?.attemptId || 'default']),
+                    operatorVerified: false
+                })
+                : ((initialChallengeInfo.detected && !initialChallengeInfo.verified) ? 'CAPTCHA_PENDING_EXTERNAL_USER' : 'SUBMIT_ONCE');
+            const autoAction = typeof autoDecision === 'string' ? autoDecision : (autoDecision && autoDecision.action);
+
+            logDev(`[V7_AUTO_DECISION] action=${autoAction}`, "info");
+
+            if (autoAction === 'BLOCK_DUPLICATE') {
+                logDev("[SUBMIT_DUPLICATE_BLOCK] Blocked by ChallengeGate duplicate guard", "warning");
+                return false;
+            }
+
+            if (autoAction === 'CAPTCHA_PENDING_EXTERNAL_USER') {
+                const waitOutcome = await waitForExternalOrUserChallengeV7(form, template, frozenSnapshot, initialChallengeInfo);
+                if (!waitOutcome || !waitOutcome.resolved) {
+                    return false;
+                }
+                // [Directive #6514783886] Re-verify live form validity and field integrity before single automatic submission
+                let postWaitIntegrity = verifyFieldIntegrity(form, frozenSnapshot, template);
+                if (!postWaitIntegrity || postWaitIntegrity.intact === false) {
+                    const restoredCount = restoreFrozenSnapshot(form, frozenSnapshot);
+                    logDev(`[V7_POST_CHALLENGE_RESTORE] restoredFields=${restoredCount} after challenge wait`, "info");
+                    postWaitIntegrity = verifyFieldIntegrity(form, frozenSnapshot, template);
+                }
+                if (!postWaitIntegrity || postWaitIntegrity.intact === false) {
+                    logDev(`❌ [V7_POST_CHALLENGE_INTEGRITY_FAIL] Form invalid after challenge wait: ${postWaitIntegrity?.reasonCode || postWaitIntegrity?.reason}`, "error");
+                    finishCampaign(false, 'REQUIRED_FIELD_LOST_BEFORE_SUBMIT', postWaitIntegrity?.reasonCode || 'REQUIRED_FIELD_LOST_BEFORE_SUBMIT');
+                    return false;
+                }
+                logDev(`✅ [V7_POST_CHALLENGE_VERIFY] Challenge verified (${waitOutcome.method}) and live form integrity confirmed. Proceeding to single automatic submission.`, "success");
+            }
 
             // [R6.3 A1 & B] SUBMIT_LOCK must only be acquired here — after FINAL_AUDIT_PASS, eligible form confirmed
             const submitLockUrl = (typeof window !== 'undefined' && window.location) ? window.location.href : '';
@@ -4599,7 +4597,391 @@
 
     let _activeCaptchaSolvePromise = null;
 
+    function isChallengeInputElement(el) {
+        if (!el) return false;
+        const attrs = ((el.name || '') + ' ' + (el.id || '') + ' ' + (el.className || '') + ' ' + (el.getAttribute && (el.getAttribute('placeholder') || '') || '')).toLowerCase();
+        return /captcha|recaptcha|hcaptcha|turnstile|g-recaptcha-response|h-captcha-response|cf-turnstile-response/i.test(attrs);
+    }
+
+    function restoreFrozenSnapshot(form, frozenSnapshot) {
+        if (!form || !frozenSnapshot || !( frozenSnapshot instanceof Map || typeof frozenSnapshot === 'object')) return 0;
+        let restored = 0;
+        try {
+            if (frozenSnapshot instanceof Map) {
+                for (const [el, expectedEntry] of frozenSnapshot.entries()) {
+                    if (!el || isChallengeInputElement(el)) continue;
+                    const expectedVal = (typeof expectedEntry === 'object' && expectedEntry !== null)
+                        ? ((el.type === 'checkbox' || el.type === 'radio') ? expectedEntry.checked : expectedEntry.value)
+                        : expectedEntry;
+                    const curVal = (el.type === 'checkbox' || el.type === 'radio') ? el.checked : (el.value || '');
+                    if ((curVal === '' || curVal === false) && expectedVal !== undefined && expectedVal !== '') {
+                        if (el.type === 'checkbox' || el.type === 'radio') {
+                            el.checked = Boolean(expectedVal);
+                        } else {
+                            el.value = expectedVal;
+                            try {
+                                el.dispatchEvent(new Event('input', { bubbles: true }));
+                                el.dispatchEvent(new Event('change', { bubbles: true }));
+                            } catch (_) {}
+                        }
+                        restored++;
+                    }
+                }
+            } else {
+                const inputs = Array.from(form.querySelectorAll('input, textarea, select'));
+                for (const el of inputs) {
+                    if (isChallengeInputElement(el)) continue;
+                    const key = el.name || el.id;
+                    if (key && frozenSnapshot[key] !== undefined && (!el.value || !String(el.value).trim())) {
+                        el.value = frozenSnapshot[key];
+                        try {
+                            el.dispatchEvent(new Event('input', { bubbles: true }));
+                            el.dispatchEvent(new Event('change', { bubbles: true }));
+                        } catch (_) {}
+                        restored++;
+                    }
+                }
+            }
+        } catch (_) {}
+        return restored;
+    }
+
+    async function waitForExternalOrUserChallengeV7(form, template, frozenSnapshot, challengeInfo) {
+        const sendFn = (typeof window !== 'undefined' && window.__xpider_sendExecutionMessage) ||
+            (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage ? chrome.runtime.sendMessage.bind(chrome.runtime) : null);
+
+        if (sendFn) {
+            try {
+                sendFn({
+                    action: 'CAPTCHA_PENDING_EXTERNAL_USER',
+                    challengeType: challengeInfo?.type || 'unknown',
+                    url: (typeof window !== 'undefined' && window.location) ? window.location.href : ''
+                }, () => {});
+            } catch (_) {}
+        }
+
+        logDev(`⏳ [CAPTCHA_PENDING_EXTERNAL_USER] Waiting for external extension or user challenge completion (type=${challengeInfo?.type || 'unknown'}). Tab retained.`, "info");
+
+        return new Promise((resolve) => {
+            let settled = false;
+            let pollTimer = null;
+
+            const cleanup = () => {
+                if (pollTimer) {
+                    clearInterval(pollTimer);
+                    pollTimer = null;
+                }
+                if (typeof document !== 'undefined') {
+                    const hud = document.getElementById('xpider-v7-external-captcha-hud');
+                    if (hud) hud.remove();
+                }
+                if (typeof window !== 'undefined') {
+                    delete window.__xpiderTriggerExternalCaptchaAction;
+                }
+            };
+
+            const finishWait = (outcome) => {
+                if (settled) return;
+                settled = true;
+                cleanup();
+                if (outcome && outcome.resolved && sendFn) {
+                    try {
+                        sendFn({
+                            action: 'CAPTCHA_EXTERNAL_VERIFIED_RESUME',
+                            verificationMethod: outcome.method || 'dom_verified'
+                        }, () => {});
+                    } catch (_) {}
+                }
+                resolve(outcome);
+            };
+
+            const handleAction = (actionType) => {
+                if (settled) return;
+                if (actionType === 'REVERIFY_AND_SUBMIT') {
+                    const latest = _ChallengeGate ? _ChallengeGate.detectChallenge(document) : { detected: false, verified: true, type: 'none' };
+                    if (latest.verified || !latest.detected) {
+                        finishWait({ resolved: true, method: latest.method || 'reverify_button_dom_verified' });
+                        return;
+                    }
+                    if (latest.unverifiable) {
+                        // Text/image captcha: check if captcha input field is non-empty or accept operator attestation
+                        const textCapInput = document.querySelector('input[name*="captcha" i]:not([type="hidden"]), input[id*="captcha" i]:not([type="hidden"]), input[placeholder*="captcha" i]');
+                        if (!textCapInput || (textCapInput.value && textCapInput.value.trim().length > 0)) {
+                            finishWait({ resolved: true, method: 'operator_verified_unverifiable_captcha' });
+                            return;
+                        }
+                    }
+                    const msgEl = typeof document !== 'undefined' ? document.getElementById('xpider-v7-captcha-hud-msg') : null;
+                    if (msgEl) {
+                        msgEl.textContent = `⚠️ Challenge (${latest.type}) is not yet verified on the page. Please complete the challenge widget first.`;
+                        msgEl.style.color = '#fca5a5';
+                    }
+                } else if (actionType === 'SKIP') {
+                    logDev("[CAPTCHA_PENDING_EXTERNAL_USER] Operator chose SKIP", "info");
+                    finishCampaign(false, 'CAPTCHA_OPERATOR_SKIP', 'CAPTCHA_OPERATOR_SKIP', { challengeType: challengeInfo?.type || 'unknown' });
+                    finishWait({ resolved: false, skipped: true });
+                } else if (actionType === 'STOP_AND_SAVE') {
+                    logDev("[CAPTCHA_PENDING_EXTERNAL_USER] Operator chose STOP_AND_SAVE", "info");
+                    if (sendFn) {
+                        try { sendFn({ action: 'STOP_AND_SAVE_CAMPAIGN' }, () => {}); } catch (_) {}
+                    }
+                    finishWait({ resolved: false, stopped: true });
+                }
+            };
+
+            if (typeof window !== 'undefined') {
+                window.__xpiderTriggerExternalCaptchaAction = handleAction;
+            }
+
+            // Render top HUD banner if document.body is available
+            if (typeof document !== 'undefined' && document.body) {
+                const existing = document.getElementById('xpider-v7-external-captcha-hud');
+                if (existing) existing.remove();
+
+                const hud = document.createElement('div');
+                hud.id = 'xpider-v7-external-captcha-hud';
+                hud.setAttribute('data-xpider-ui', 'true');
+                hud.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:2147483647;background:linear-gradient(90deg,#0f172a,#1e293b);color:#f8fafc;padding:10px 16px;border-bottom:2px solid #f59e0b;display:flex;align-items:center;justify-content:space-between;gap:12px;font-family:system-ui,-apple-system,sans-serif;font-size:12px;box-shadow:0 4px 20px rgba(0,0,0,0.5);';
+                hud.innerHTML = `
+                    <div style="display:flex;align-items:center;gap:10px;flex:1;">
+                        <span style="background:#f59e0b;color:#000;font-weight:700;padding:2px 8px;border-radius:4px;font-size:11px;">AUTO MODE — CHALLENGE PENDING</span>
+                        <span id="xpider-v7-captcha-hud-msg" style="color:#fde68a;">Waiting for external extension or user completion (${challengeInfo?.type || 'challenge'})...</span>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:8px;">
+                        <button type="button" id="xpider-v7-captcha-reverify-btn" style="background:#10b981;color:#fff;border:none;border-radius:4px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer;">✅ I Completed Challenge — Re-verify & Submit</button>
+                        <button type="button" id="xpider-v7-captcha-skip-btn" style="background:#475569;color:#fff;border:none;border-radius:4px;padding:5px 10px;font-size:11px;font-weight:600;cursor:pointer;">⏭️ Skip</button>
+                        <button type="button" id="xpider-v7-captcha-stop-save-btn" style="background:#d97706;color:#fff;border:none;border-radius:4px;padding:5px 10px;font-size:11px;font-weight:600;cursor:pointer;">⏸️ Stop & Save</button>
+                    </div>
+                `;
+                document.body.appendChild(hud);
+
+                hud.querySelector('#xpider-v7-captcha-reverify-btn')?.addEventListener('click', () => handleAction('REVERIFY_AND_SUBMIT'));
+                hud.querySelector('#xpider-v7-captcha-skip-btn')?.addEventListener('click', () => handleAction('SKIP'));
+                hud.querySelector('#xpider-v7-captcha-stop-save-btn')?.addEventListener('click', () => handleAction('STOP_AND_SAVE'));
+            }
+
+            // Non-invasive DOM polling for independent page-level challenge completion
+            pollTimer = setInterval(() => {
+                if (settled) return;
+                if (typeof window !== 'undefined' && window.__xpider_aborted) {
+                    finishWait({ resolved: false, aborted: true });
+                    return;
+                }
+                if (_ChallengeGate && typeof document !== 'undefined') {
+                    const check = _ChallengeGate.detectChallenge(document);
+                    if (!check.detected || check.verified) {
+                        finishWait({ resolved: true, method: check.method || 'dom_polled_verified' });
+                    }
+                }
+            }, 400);
+        });
+    }
+
+    async function handleV7ManualModeHold(form, template, frozenSnapshot, initialChallengeInfo) {
+        const sendFn = (typeof window !== 'undefined' && window.__xpider_sendExecutionMessage) ||
+            (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage ? chrome.runtime.sendMessage.bind(chrome.runtime) : null);
+
+        const initialHoldUrl = (typeof window !== 'undefined' && window.location) ? window.location.href : '';
+        const challengeStatusStr = !initialChallengeInfo?.detected
+            ? 'NONE'
+            : (initialChallengeInfo.verified ? `VERIFIED (${initialChallengeInfo.type})` : `PENDING (${initialChallengeInfo.type})`);
+
+        if (sendFn) {
+            try {
+                sendFn({
+                    action: 'MANUAL_MODE_HOLD',
+                    url: initialHoldUrl,
+                    challengeStatus: challengeStatusStr
+                }, () => {});
+            } catch (_) {}
+        }
+
+        logDev(`🖐️ [MANUAL_MODE_HOLD] Form prepared and frozen. Holding queue for operator registration (challenge=${challengeStatusStr}).`, "info");
+
+        return new Promise((resolve) => {
+            let settled = false;
+            let manualRetryCount = 0;
+            const MAX_MANUAL_RETRIES = 3;
+
+            const cleanup = () => {
+                if (typeof document !== 'undefined') {
+                    const panel = document.getElementById('xpider-v7-manual-hold-panel');
+                    if (panel) panel.remove();
+                }
+                if (typeof window !== 'undefined') {
+                    delete window.__xpiderTriggerManualAction;
+                }
+            };
+
+            const settleManual = (resObj) => {
+                if (settled) return resObj;
+                settled = true;
+                cleanup();
+                resolve(resObj);
+                return resObj;
+            };
+
+            const executeManualAction = (actionType, actionOpts = {}) => {
+                if (settled) return { settled: true };
+
+                if (actionType === 'RETRY_EDIT') {
+                    if (manualRetryCount >= MAX_MANUAL_RETRIES) {
+                        logDev(`[MANUAL_MODE_RETRY] Bounded retry limit (${MAX_MANUAL_RETRIES}/${MAX_MANUAL_RETRIES}) reached.`, "warning");
+                        return { retryCount: manualRetryCount, limitReached: true };
+                    }
+                    manualRetryCount++;
+                    const restored = restoreFrozenSnapshot(form, frozenSnapshot);
+                    const latestChallenge = _ChallengeGate ? _ChallengeGate.detectChallenge(document) : initialChallengeInfo;
+                    const newChalStr = !latestChallenge?.detected
+                        ? 'NONE'
+                        : (latestChallenge.verified ? `VERIFIED (${latestChallenge.type})` : `PENDING (${latestChallenge.type})`);
+
+                    if (typeof document !== 'undefined') {
+                        const retryBtn = document.getElementById('xpider-manual-retry-btn');
+                        if (retryBtn) {
+                            retryBtn.textContent = manualRetryCount >= MAX_MANUAL_RETRIES
+                                ? `🔄 Max Retries (${manualRetryCount}/${MAX_MANUAL_RETRIES})`
+                                : `🔄 Retry / Edit (${manualRetryCount}/${MAX_MANUAL_RETRIES})`;
+                            if (manualRetryCount >= MAX_MANUAL_RETRIES) {
+                                retryBtn.disabled = true;
+                                retryBtn.style.opacity = '0.5';
+                            }
+                        }
+                        const chalBadge = document.getElementById('xpider-manual-challenge-status');
+                        if (chalBadge) chalBadge.textContent = newChalStr;
+                    }
+                    logDev(`[MANUAL_MODE_RETRY] retry=${manualRetryCount}/${MAX_MANUAL_RETRIES} restoredEmptyFields=${restored} challenge=${newChalStr}`, "info");
+                    return { retryCount: manualRetryCount, restored, limitReached: manualRetryCount >= MAX_MANUAL_RETRIES };
+                }
+
+                if (actionType === 'SKIP') {
+                    logDev("[MANUAL_MODE_DECISION] action=SKIP reason=MANUAL_OPERATOR_SKIP", "info");
+                    finishCampaign(false, 'MANUAL_OPERATOR_SKIP', 'MANUAL_OPERATOR_SKIP', { manualMode: true });
+                    return settleManual({ success: false, status: 'SKIPPED', reasonCode: 'MANUAL_OPERATOR_SKIP' });
+                }
+
+                if (actionType === 'STOP_AND_SAVE') {
+                    logDev("[MANUAL_MODE_DECISION] action=STOP_AND_SAVE", "info");
+                    if (sendFn) {
+                        try { sendFn({ action: 'STOP_AND_SAVE_CAMPAIGN' }, () => {}); } catch (_) {}
+                    }
+                    return settleManual({ success: false, status: 'PAUSED', reasonCode: 'STOP_AND_SAVE_CAMPAIGN' });
+                }
+
+                if (actionType === 'REGISTERED_CONTINUE') {
+                    const currentUrl = (typeof window !== 'undefined' && window.location) ? window.location.href : '';
+                    const urlChanged = Boolean(initialHoldUrl && currentUrl && currentUrl !== initialHoldUrl);
+                    const bodyText = (typeof document !== 'undefined' && document.body)
+                        ? (document.body.innerText || document.body.textContent || '')
+                        : '';
+                    const hasPositiveDomSuccess = Boolean(
+                        actionOpts.hasPositiveDomSuccess ||
+                        (_ChallengeGate && _ChallengeGate.hasSuccessText(bodyText))
+                    );
+                    const formRemovedOrHidden = Boolean(
+                        actionOpts.formRemovedOrHidden ||
+                        (typeof document !== 'undefined' && form && (!document.contains(form) || (form.offsetWidth === 0 && form.offsetHeight === 0 && typeof form.getClientRects === 'function' && form.getClientRects().length === 0)))
+                    );
+                    const hasUrlRedirectSuccess = Boolean(
+                        actionOpts.hasUrlRedirectSuccess ||
+                        (urlChanged && (/thank|success|confirm|complete|sent|submitted/i.test(currentUrl) || hasPositiveDomSuccess))
+                    );
+                    const hasServerAck = Boolean(
+                        actionOpts.hasServerAck ||
+                        (typeof window !== 'undefined' && window.__xpider_last_server_ack_ok) ||
+                        (typeof document !== 'undefined' && document.querySelector('[data-xpider-submit-success="true"], .submission-success, #submission-success'))
+                    );
+
+                    const classification = _ChallengeGate
+                        ? _ChallengeGate.classifyManualResume({
+                            hasPositiveDomSuccess,
+                            hasUrlRedirectSuccess,
+                            hasServerAck,
+                            formStillPresent: !formRemovedOrHidden,
+                            operatorClaimedRegistered: true
+                        })
+                        : {
+                            status: (hasPositiveDomSuccess || hasUrlRedirectSuccess || hasServerAck) ? 'SUCCESS' : 'DELIVERY_UNKNOWN',
+                            reasonCode: (hasPositiveDomSuccess || hasUrlRedirectSuccess || hasServerAck) ? 'MANUAL_CONFIRMED_SUCCESS' : 'MANUAL_CLAIM_NO_EVIDENCE'
+                        };
+
+                    if (classification.status === 'SUCCESS') {
+                        logDev(`✅ [MANUAL_MODE_DECISION] action=REGISTERED_CONTINUE status=SUCCESS reason=${classification.reasonCode}`, "success");
+                        finishCampaign(true, null, 'SUCCESS_CONFIRMED', {
+                            manualMode: true,
+                            ownerManualConfirmed: true,
+                            outcomeEvidence: classification
+                        });
+                        return settleManual({ success: true, status: 'SUCCESS', reasonCode: classification.reasonCode });
+                    } else {
+                        logDev(`⚠️ [MANUAL_MODE_DECISION] action=REGISTERED_CONTINUE status=DELIVERY_UNKNOWN reason=${classification.reasonCode} operatorClaimOnly=true`, "warning");
+                        finishCampaign(false, 'DELIVERY_UNKNOWN', 'DELIVERY_UNKNOWN', {
+                            manualMode: true,
+                            ownerManualConfirmed: false,
+                            operatorClaimOnly: true,
+                            subReason: classification.reasonCode,
+                            outcomeEvidence: classification
+                        });
+                        return settleManual({ success: false, status: 'DELIVERY_UNKNOWN', reasonCode: classification.reasonCode });
+                    }
+                }
+            };
+
+            if (typeof window !== 'undefined') {
+                window.__xpiderTriggerManualAction = executeManualAction;
+            }
+
+            if (typeof document !== 'undefined' && document.body) {
+                const existing = document.getElementById('xpider-v7-manual-hold-panel');
+                if (existing) existing.remove();
+
+                const hostLabel = (typeof window !== 'undefined' && window.location && window.location.hostname) ? window.location.hostname : initialHoldUrl;
+                const fieldCount = (frozenSnapshot instanceof Map) ? frozenSnapshot.size : Object.keys(frozenSnapshot || {}).length;
+
+                const panel = document.createElement('div');
+                panel.id = 'xpider-v7-manual-hold-panel';
+                panel.setAttribute('data-xpider-ui', 'true');
+                panel.style.cssText = 'position:fixed;bottom:16px;right:16px;width:380px;max-width:94vw;z-index:2147483647;background:#0f172a;color:#f8fafc;border:2px solid #38bdf8;border-radius:10px;padding:14px 16px;font-family:system-ui,-apple-system,sans-serif;font-size:12px;box-shadow:0 10px 30px rgba(0,0,0,0.65);';
+                panel.innerHTML = `
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                        <span style="background:#0284c7;color:#fff;font-weight:700;padding:3px 8px;border-radius:4px;font-size:11px;">🖐️ MANUAL MODE — HOLD FOR REGISTRATION</span>
+                        <span style="color:#94a3b8;font-size:10px;font-family:monospace;">${hostLabel}</span>
+                    </div>
+                    <div style="background:rgba(30,41,59,0.8);border:1px solid rgba(148,163,184,0.2);border-radius:6px;padding:8px;margin-bottom:10px;font-size:11px;line-height:1.5;">
+                        <div>📋 <strong>Fields Prepared:</strong> <span style="color:#4ade80;">${fieldCount} fields verified ✓</span></div>
+                        <div>🧩 <strong>Challenge Status:</strong> <span id="xpider-manual-challenge-status" style="color:#fbbf24;">${challengeStatusStr}</span></div>
+                        <div style="color:#cbd5e1;font-size:10px;margin-top:4px;">Submit the form on the page when ready, then click <strong>I Registered — Continue</strong>.</div>
+                    </div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+                        <button type="button" id="xpider-manual-registered-btn" style="grid-column:span 2;background:#10b981;color:#fff;border:none;border-radius:6px;padding:8px 10px;font-size:12px;font-weight:700;cursor:pointer;">✅ I Registered — Continue</button>
+                        <button type="button" id="xpider-manual-retry-btn" style="background:#3b82f6;color:#fff;border:none;border-radius:6px;padding:6px 8px;font-size:11px;font-weight:600;cursor:pointer;">🔄 Retry / Edit (0/3)</button>
+                        <button type="button" id="xpider-manual-skip-btn" style="background:#64748b;color:#fff;border:none;border-radius:6px;padding:6px 8px;font-size:11px;font-weight:600;cursor:pointer;">⏭️ Skip</button>
+                        <button type="button" id="xpider-manual-stop-save-btn" style="grid-column:span 2;background:rgba(245,158,11,0.2);color:#fbbf24;border:1px solid #f59e0b;border-radius:6px;padding:6px 8px;font-size:11px;font-weight:600;cursor:pointer;">⏸️ Stop & Save Checkpoint</button>
+                    </div>
+                `;
+                document.body.appendChild(panel);
+
+                panel.querySelector('#xpider-manual-registered-btn')?.addEventListener('click', () => executeManualAction('REGISTERED_CONTINUE'));
+                panel.querySelector('#xpider-manual-retry-btn')?.addEventListener('click', () => executeManualAction('RETRY_EDIT'));
+                panel.querySelector('#xpider-manual-skip-btn')?.addEventListener('click', () => executeManualAction('SKIP'));
+                panel.querySelector('#xpider-manual-stop-save-btn')?.addEventListener('click', () => executeManualAction('STOP_AND_SAVE'));
+            }
+        });
+    }
+
     async function tryAutoSolveCaptcha(stage = 'MANUAL') {
+        // [v7.0 Directive #6514763285] Internal API-based CAPTCHA solving and token injection are retired.
+        logDev(`[SOLVER_RETIRED_V7] tryAutoSolveCaptcha(stage=${stage}) skipped: internal API solver retired in v7.`, 'info');
+        return {
+            success: false,
+            retired: true,
+            terminalSettled: false,
+            providerSolveAttempted: false,
+            reason: 'INTERNAL_SOLVER_RETIRED_V7'
+        };
+    }
+
+    async function _legacyTryAutoSolveCaptchaRetired(stage = 'MANUAL') {
         const captchaData = extractCaptchaSitekey();
         if (!captchaData) return false;
 
@@ -7957,6 +8339,10 @@
         window.__xpider_resetCaptchaRuntimeState = resetCaptchaRuntimeState;
         window.__xpiderClassifyWafBlock = classifyWafBlock;
         window.__xpiderIsPageWafBlocked = isPageWafBlocked;
+        window.__xpiderChallengeGate = _ChallengeGate;
+        window.__xpiderWaitForExternalOrUserChallengeV7 = waitForExternalOrUserChallengeV7;
+        window.__xpiderHandleV7ManualModeHold = handleV7ManualModeHold;
+        window.__xpiderRestoreFrozenSnapshot = restoreFrozenSnapshot;
         window.__xpider_initialized = true;
     }
 
@@ -7986,6 +8372,10 @@
             classifyWafBlock,
             isPageWafBlocked,
             ContactGate: _ContactGate,
+            ChallengeGate: _ChallengeGate,
+            waitForExternalOrUserChallengeV7,
+            handleV7ManualModeHold,
+            restoreFrozenSnapshot,
             SmartFieldResolver: _SmartFieldResolver,
             ContactDiscoveryEngine: _ContactDiscoveryEngine,
             CheckboxResolverR2: _CheckboxResolverR2,

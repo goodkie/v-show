@@ -5,25 +5,25 @@ PROJECT_ID: xpider-autoform-sender-pro
 PROJECT_NAME: XPIDER AutoForm Sender Pro
 WORKSPACE_ROOT: E:\vivpr\ai\extension-form-sender
 AUTHORITY_SOURCE: goodkie/v-show Issues #6 & #10
-ACTIVE_BRANCH: upgrade/phase-0-1
-STATE_REV: 2026-10-30.244
-AUTHORITY_CURSOR: 6514864061
-LAST_AUDIT: [CHATGPT OWNER ACCEPTANCE UPDATE] XPIDER RC3.60 .87 — 2026-10-29 Comment #6490764930
-LAST_DIRECTIVE: [CHATGPT → ANTIGRAVITY][ISSUE #6][NOPECHA OFFICIAL DOCUMENTATION ALIGNMENT / AUTH DIAGNOSTICS] Comment #6513127036
-LAST_RECEIPT: [ANTIGRAVITY][P0 CAPTCHA CREDENTIAL PERSISTENCE, DIAGNOSTICS & FORM CLASSIFICATION RECEIPT][ISSUE #6][.93]
-BUILD_ID: R6.9G.10.3.7.1.4.94-20261029-P0-RC3.60-SCOPE-ERROR-HOTFIX-PASS
-FUNCTIONAL_COMMIT: 832e3648
-PROVENANCE_COMMIT: 832e3648
-ROLLBACK_ANCHOR: 55cd543be5ebe7a4553cac0cbfcf933a00e4c8a5 (.81), 5cf3b287 (.86), 5c462085 (.87), 1781df36 (.88), 1cd79da0 (.89), 5c19c0da (.90), f4110ef1 (.91), e8d0cede (.92)
-PREVIOUS_FUNCTIONAL_RESTORE_POINT: e8d0cede
-NEXT_ACTION: Stage 1 (Start Automatic/Manual, remove internal API-CAPTCHA runtime) on separate branch from major-backup-20261030-from-93 + .94 fix. OWNER_DATA_RECONCILIATION_REQUIRED for 86/73 run (not in any local profile). Do not use .93. Receipt #6515848744.
-BLOCKERS: Opal internal WireGuard handshake telemetry requires owner admin access (`http://192.168.8.1/`); unproxied OS route egress to 143.198.40.33 confirms physical tunnel passage.
-OWNER_ACTION: 1) Load unpacked extension or install XPIDER_R6.9G.10.3.7.1.4.93_OWNER_BETA.zip; 2) In Settings -> CAPTCHA, verify NopeCHA key displays masked and diagnostic shows CONFIGURED (keyPresent: true); 3) Run single target pilot.
-RELEASE_ASSET_TAG: v6.9g.10.3-rc3.60.7.1.4.94
-RELEASE_ASSET_ZIP: XPIDER_R6.9G.10.3.7.1.4.94_OWNER_BETA.zip
-RELEASE_ASSET_SIZE: 53056567
-RELEASE_ASSET_SHA256: 570d7ffe28e83aecd2f9d2d65b6f5ffe6947f333145b9435115d1e8fdf15e861
-RELEASE_ASSET_URL: https://github.com/goodkie/v-show/releases/tag/v6.9g.10.3-rc3.60.7.1.4.93
+ACTIVE_BRANCH: major/v7-dual-mode
+STATE_REV: 2026-10-30.246
+AUTHORITY_CURSOR: 6515867050
+LAST_AUDIT: [CHATGPT → ANTIGRAVITY][ISSUE #6][REVIEW .94 RECEIPT / STAGE 1 EXECUTION DIRECTIVE] Comment #6515867050
+LAST_DIRECTIVE: [CHATGPT → ANTIGRAVITY][ISSUE #6][REVIEW .94 RECEIPT / STAGE 1 EXECUTION DIRECTIVE] Comment #6515867050
+LAST_RECEIPT: [ANTIGRAVITY][ISSUE #6][V7.0.0-RC1 STAGE 1 & STAGE 2 DUAL MODE + CAPTCHA DECOUPLING EXECUTION RECEIPT]
+BUILD_ID: V7.0.0-RC1-20261030-DUAL-MODE-EXTERNAL-CAPTCHA-PASS
+FUNCTIONAL_COMMIT: pending_head
+PROVENANCE_COMMIT: pending_head
+ROLLBACK_ANCHOR: major-backup-20261030-from-93 (4be780b4), v6.9g.10.3-rc3.60.7.1.4.94 (ebf2c7a3), v6.9g.10.3-rc3.60.7.1.4.92 (e8d0cede)
+PREVIOUS_FUNCTIONAL_RESTORE_POINT: ebf2c7a3 (.94)
+NEXT_ACTION: Await ChatGPT Audit / Gate and Owner Live Chrome Acceptance of v7.0.0-rc1 (Start Automatic & Start Manual dual modes). 97/92 live Chrome checkpoint carried forward untouched; 86/73 run remains labeled OWNER_DATA_RECONCILIATION_REQUIRED.
+BLOCKERS: None for offline Stage 1/2 implementation; live Owner Chrome acceptance is UNVERIFIED until Owner loads v7.0.0-rc1.
+OWNER_ACTION: 1) Load unpacked extension on branch major/v7-dual-mode or extract XPIDER_V7.0.0_RC1_DUAL_MODE_OWNER_BETA.zip; 2) Verify "Start Automatic" and "Start Manual" buttons and external/operator challenge handling; 3) Confirm whether the 97/92 checkpoint is the active run or if the 86/73 run resides in another browser profile/export.
+RELEASE_ASSET_TAG: v7.0.0-rc1
+RELEASE_ASSET_ZIP: XPIDER_V7.0.0_RC1_DUAL_MODE_OWNER_BETA.zip
+RELEASE_ASSET_SIZE: 53055056
+RELEASE_ASSET_SHA256: 344423465d39eef5969dd918951e69ae4363c226fb4b09ba754b20a0b6b5e539
+RELEASE_ASSET_URL: https://github.com/goodkie/v-show/releases/tag/v7.0.0-rc1
 IMMUTABLE_DAILY_USE_BASELINE: XPIDER_R6.9G.10.3.7.1.4.11_OWNER_BETA.zip (commit 50aee353, SHA256: 2149a760fb614140b297d3c57abcf4aa396b376bfb9459682fc0d323fc7c3532)
 
 CONTINUITY_RULE: On every new ChatGPT or Antigravity window, search the current project for prior work, recover the latest valid state, and continue existing work instead of restarting.

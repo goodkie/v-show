@@ -14,8 +14,8 @@
 }(typeof self !== 'undefined' ? self : this, function () {
 
     const BUILD_INFO = {
-        branch: 'upgrade/phase-0-1',
-        channel: 'OWNER_BETA_PRIVATE_EGRESS_RC3.60',
+        branch: 'major/v7-dual-mode',
+        channel: 'OWNER_BETA_V7_DUAL_MODE',
         testOnly: false,
         // [RC3.60 P0] Non-inquiry hang fix: finishCampaign heartbeat/lock/running cleanup + isFinished latch + SENDER_FINISHED NON_INQUIRY gate passthrough
         implementationHead: '741dfe44536031dff13ac6d8e310d4f72fbca42b',
@@ -25,14 +25,14 @@
         rollbackBase: '55cd543be5ebe7a4553cac0cbfcf933a00e4c8a5',
         previousFunctionalRestorePoint: 'b2af1c9bf614b9f572acec910265d8132d2043aa',
         manifestVersion: 3,
-        buildId: 'R6.9G.10.3.7.1.4.94-20261029-P0-RC3.60-SCOPE-ERROR-HOTFIX-PASS',
-        builtAt: '2026-10-30T05:35:04.433Z',
+        buildId: 'V7.0.0-RC1-20261030-DUAL-MODE-EXTERNAL-CAPTCHA-PASS',
+        builtAt: '2026-10-30T06:16:15.668Z',
         provenanceSchema: 2,
         modules: {
-            backgroundSha: '97491a1d46d483d3a6ba00ac6e758387f8d1ba7247ce7749d2b69c2ae47f65eb',
-            contentScriptSha: 'daba448b2db399aff6975220b2c38db1354b99db23e9fcb4abbe698f9dc487b8',
-            popupSha: '27c43a22669e6fad2c4013ccd977cf7ac383d099b01e229f3cc7e54aec64a61c',
-            solverContentSha: '6a1ff7154efaeb6dbd5946ac4f9be1ce5b5ff43bce2db06d0dca32950edd3bdb',
+            backgroundSha: '51901a5972f7f0307e125c286fa58a3cc437aabd00e4f4463414180fb727690a',
+            contentScriptSha: 'c347f7c9776f9c12c29b6f698e0acb2aedc15d945fd333fd3db48c8c43bbb4e6',
+            popupSha: '6769cc58b5660c3acb8f0b0eb25db2ba5b46cdfc574d8dc0a391fff30e6c40dd',
+            solverContentSha: '3d8412e68ce6ec24ef7cf3623b927db88a149084f48e09ebc7a79300139cd4bb',
             solverCoreSha: 'd8bd8499e7052fb434eac3f23994cc969e9e6f77e061207d049cf575a6ac1a1a',
             emailCollectorSha: '3f1147a379e159e7777158f2caa74cc8d40b2a0b0eb2c244f440af379cb5c9c9',
             historyStoreSha: '2b34f9c8c1a4c62d07dd406e0e304f179ac68b6d8fbf4bb0614038770fbc4138',

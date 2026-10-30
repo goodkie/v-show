@@ -5,11 +5,17 @@
 - Project ID: xpider-autoform-sender-pro
 - Workspace: E:\vivpr\ai\extension-form-sender
 - Authority: goodkie/v-show Issues #6 & #10
-- Branch: upgrade/phase-0-1
-- State Rev: 2026-10-30.244
-- Authority Cursor: 6514783886
-- Major-version Stage 0 backup DONE: tag major-backup-20261030-from-93 (4be780b4); backups/MAJOR_BACKUP_20261030_from_93_4be780b4 (local, DPAPI-encrypted secrets); sandbox restore PASS; receipt #6514847380. Stage 1 pending.
+- Branch: major/v7-dual-mode (branched from upgrade/phase-0-1)
+- State Rev: 2026-10-30.246
+- Authority Cursor: 6515867050
+- Major-version Stage 0 backup DONE: tag major-backup-20261030-from-93 (4be780b4); backups/MAJOR_BACKUP_20261030_from_93_4be780b4 (local, DPAPI-encrypted secrets); sandbox restore PASS; receipt #6514847380.
+- RC3.60 .94 Hotfix & Read-Only Reconciliation DONE: tag v6.9g.10.3-rc3.60.7.1.4.94 (ebf2c7a3); receipt #6515848744; 97/92 live Chrome snapshot carried forward; 86/73 run marked OWNER_DATA_RECONCILIATION_REQUIRED; .93 marked DO NOT USE.
+- Major-version Stage 1 & Stage 2 DONE (Offline Deterministic Matrix 9/9 PASS; Owner Live Chrome Acceptance UNVERIFIED): branch major/v7-dual-mode, tag v7.0.0-rc1, asset XPIDER_V7.0.0_RC1_DUAL_MODE_OWNER_BETA.zip (53,055,056 bytes, SHA256: 344423465d39eef5969dd918951e69ae4363c226fb4b09ba754b20a0b6b5e539).
 - Last Directives / Audits:
+  - `[CHATGPT → ANTIGRAVITY][ISSUE #6][REVIEW .94 RECEIPT / STAGE 1 EXECUTION DIRECTIVE] Comment #6515867050`
+  - `[CHATGPT → ANTIGRAVITY][ISSUE #6][STAGE 0 RECEIPT REVIEW / PROCEED STAGE 1] Comment #6514864061`
+  - `[OWNER → ANTIGRAVITY][ISSUE #6][MAJOR UPDATE REQUIREMENT CHANGE — AUTOMATIC MODE] Comment #6514783886`
+  - `[CHATGPT → ANTIGRAVITY][ISSUE #6][MAJOR VERSION DIRECTIVE — BACKUP FIRST / DUAL MODE / DECOUPLE CAPTCHA] Comment #6514763285`
   - `[CHATGPT → ANTIGRAVITY][ISSUE #6][NOPECHA OFFICIAL DOCUMENTATION ALIGNMENT / AUTH DIAGNOSTICS] Comment #6513127036`
   - `[CHATGPT → ANTIGRAVITY][P0 .92 CAPTCHA CONFIGURATION & FORM CLASSIFICATION QA][ISSUE #6] Comment #6513087470`
   - `[CHATGPT → ANTIGRAVITY][P0 OWNER .91 PRIVACY STARTUP REGRESSION][ISSUE #6] Comment #6512566924`
@@ -65,8 +71,9 @@
   - `[ANTIGRAVITY][RECEIPT][ISSUE-6][RC3.60-.85-PUBLIC-TARGET-SECURE-ENTRY-AND-NATURAL-COLD-AUTO-START-PASS][2026-10-28] Comment #6465320164`
   - `[ANTIGRAVITY][RECEIPT][ISSUE-6][RC3.60-.86-STREAM-A-DURABLE-LEDGER-AND-STREAM-B-RESIDENTIAL-DATAPLANE][2026-10-28] Comment #6467239685`
   - `[ANTIGRAVITY][RECEIPT][ISSUE-6][DELEGATED-TWO-LAYER-NETWORK-PRECHECK-OPAL-PROFILE-AND-RESIDENTIAL-DATAPLANE][2026-10-28] Comment #6468457751`
-- Build ID: `R6.9G.10.3.7.1.4.94-20261029-P0-RC3.60-SCOPE-ERROR-HOTFIX-PASS`
-- Verified Release Asset: `XPIDER_R6.9G.10.3.7.1.4.94_OWNER_BETA.zip` (Tag: `v6.9g.10.3-rc3.60.7.1.4.94`, 53,056,567 bytes, SHA256: `570d7ffe28e83aecd2f9d2d65b6f5ffe6947f333145b9435115d1e8fdf15e861`); .93 has a CORE_RUNTIME_BROKEN regression - do not use.
+- Build ID: `V7.0.0-RC1-20261030-DUAL-MODE-EXTERNAL-CAPTCHA-PASS`
+- Verified Release Asset (v7.0 Major): `XPIDER_V7.0.0_RC1_DUAL_MODE_OWNER_BETA.zip` (Tag: `v7.0.0-rc1`, 53,055,056 bytes, SHA256: `344423465d39eef5969dd918951e69ae4363c226fb4b09ba754b20a0b6b5e539`)
+- Preserved Restore Anchors: `major-backup-20261030-from-93` (`4be780b4`), `v6.9g.10.3-rc3.60.7.1.4.94` (`ebf2c7a3`, SHA256: `570d7ffe28e83aecd2f9d2d65b6f5ffe6947f333145b9435115d1e8fdf15e861`), `v6.9g.10.3-rc3.60.7.1.4.92` (`e8d0cede`); `.93` marked DO NOT USE.
 - Operational Status: **RC3.60 .89 REAL DECODO RESIDENTIAL EXIT VERIFICATION = 100% PASS**:
   1. **Directive #6507436538 Verified in Real Chrome**:
      - Section 1 (API Contract): Decodo configured (`us.decodo.com:10001`), egress verified (`68.227.*.*`), route `DECODO`, confidence `HIGH`.

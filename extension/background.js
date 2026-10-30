@@ -581,6 +581,9 @@ class TargetDeadlineController {
 // [v1.2.0] Global Campaign State Registry (Ensures availability across all scopes)
 let campaignState = {
     isActive: false,
+    campaignMode: 'AUTO', // [v7.0 Dual Mode] 'AUTO' | 'MANUAL'
+    manualHoldActive: false,
+    externalCaptchaWaitActive: false,
     queue: [],
     template: null,
     campaignRunId: null, // [R6.9A] Persistent campaign run identifier for ledger scoping
@@ -1721,6 +1724,13 @@ async function closeAllCampaignTabsExcept(keepTabId = null, reason = 'CLEANUP') 
  */
 async function closeOwnedTabVerified(tabId, reason = 'TARGET_FINAL') {
     if (!tabId) return true;
+    if (tabId === campaignState.currentTabId &&
+        (campaignState.currentTargetStage === 'CAPTCHA_PENDING_EXTERNAL_USER' || campaignState.currentTargetStage === 'MANUAL_HOLD') &&
+        reason !== 'PAUSE_CAMPAIGN' && reason !== 'END_CAMPAIGN' && reason !== 'ABORTED') {
+        console.warn(`[JGMMA_TAB_RETENTION_GUARD] Refusing to close active tabId=${tabId} while stage=${campaignState.currentTargetStage} (reason=${reason})`);
+        logBg(tabId, `[JGMMA_TAB_RETENTION_GUARD] Refusing to close active tabId=${tabId} while stage=${campaignState.currentTargetStage}`, 'warning');
+        return false;
+    }
     if (preCampaignTabIds.has(tabId) && !campaignOwnedTabIds.has(tabId)) {
         return false;
     }
@@ -2541,6 +2551,13 @@ globalThis.__xpider_testDuplicateTokenInjection = async (token) => {
         // Gated strictly behind Owner 'Auto' decision. Autonomous requests without owner authorization are rejected.
         async function handleSolveCaptchaInternal(request, sender, sendResponse) {
             try {
+                // [v7.0 Directive #6514763285] Internal API-based CAPTCHA solving is retired.
+                if (!campaignState.ownerFunctionTestMode || request.source !== 'LEGACY_LAB_OVERRIDE') {
+                    logBg(null, '[SOLVER_RETIRED_V7] Internal API solver is retired in v7. Returning INTERNAL_SOLVER_RETIRED_V7.', 'info');
+                    const retiredRes = { success: false, error: 'INTERNAL_SOLVER_RETIRED_V7', retired: true };
+                    if (typeof sendResponse === 'function') sendResponse(retiredRes);
+                    return retiredRes;
+                }
                 const curEpoch = campaignState.captchaEpoch || 1;
 
                 // [R6.9G.2 Gate 1/2] Autonomous solve forbidden before Owner Auto decision
@@ -4151,12 +4168,16 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
                             new Promise(res => setTimeout(res, 1000))
                         ]).catch(() => {});
                     }
+                    const resolvedMode = (request.campaignMode === 'MANUAL' || request.options?.campaignMode === 'MANUAL') ? 'MANUAL' : 'AUTO';
+                    campaignState.campaignMode = resolvedMode;
+                    try { await chrome.storage.local.set({ xpider_campaign_mode: resolvedMode }); } catch (_) {}
                     await startCampaignOrchestrator(request.queue, request.template, request.delayMs, request.fillDelayMs, request.submitDelayMs, {
                         skipPreviouslyAttempted: request.skipPreviouslyAttempted,
                         overrideSkipAttempted: request.overrideSkipAttempted,
                         ownerFunctionTestMode: isTestMode,
                         ownerTestSource: request.source || null,
                         campaignRunId: assignedRunId,
+                        campaignMode: resolvedMode,
                         targetTimeoutMs: request.targetTimeoutMs || request.options?.targetTimeoutMs
                     });
                 } catch (e) {
@@ -4889,8 +4910,93 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
             return true;
 
         case 'PERFORM_TRANSCRIPTION':
-            handleTranscription(request.audioData, request.url, sendResponse);
+            logBg(null, '[SOLVER_RETIRED_V7] Audio STT transcription retired in v7.', 'info');
+            sendResponse({ success: false, error: 'INTERNAL_SOLVER_RETIRED_V7', retired: true });
             return true;
+
+        case 'GET_CAMPAIGN_MODE':
+            sendResponse({
+                success: true,
+                campaignMode: campaignState.campaignMode || 'AUTO',
+                currentTargetStage: campaignState.currentTargetStage || null,
+                manualHoldActive: Boolean(campaignState.manualHoldActive),
+                externalCaptchaWaitActive: Boolean(campaignState.externalCaptchaWaitActive)
+            });
+            return true;
+
+        case 'CAPTCHA_PENDING_EXTERNAL_USER': {
+            const validation = validateActiveExecution(request, sender, 'CAPTCHA_PENDING_EXTERNAL_USER', { allowBodyTabId: true });
+            if (!validation.valid) {
+                sendResponse({ success: false, reason: validation.reason, stale: true });
+                return true;
+            }
+            campaignState.currentTargetStage = 'CAPTCHA_PENDING_EXTERNAL_USER';
+            campaignState.externalCaptchaWaitActive = true;
+            if (campaignState.targetDeadlineController) {
+                campaignState.targetDeadlineController.pause('CAPTCHA_PENDING_EXTERNAL_USER');
+            }
+            if (campaignState.activeTimeoutId) {
+                clearTimeout(campaignState.activeTimeoutId);
+                campaignState.activeTimeoutId = null;
+            }
+            if (chrome.alarms && campaignState.sessionId) {
+                chrome.alarms.clear(`xpider_timeout_${campaignState.sessionId}`);
+            }
+            const tabId = sender?.tab?.id || campaignState.currentTabId;
+            logBg(tabId, `[CAPTCHA_PENDING_EXTERNAL_USER] tabId=${tabId} challengeType=${request.challengeType || 'unknown'} deadlinePaused=true tabRetained=true`, 'info');
+            chrome.runtime.sendMessage({
+                action: 'V7_TARGET_HOLD_STATE',
+                state: 'CAPTCHA_PENDING_EXTERNAL_USER',
+                challengeType: request.challengeType || 'unknown',
+                targetUrl: request.url || campaignState.currentAttempt?.url || '',
+                tabId
+            }).catch(() => {});
+            sendResponse({ success: true, state: 'CAPTCHA_PENDING_EXTERNAL_USER', deadlinePaused: true, tabRetained: true });
+            return true;
+        }
+
+        case 'CAPTCHA_EXTERNAL_VERIFIED_RESUME': {
+            campaignState.externalCaptchaWaitActive = false;
+            campaignState.currentTargetStage = 'CAPTCHA_VERIFIED_SUBMITTING';
+            if (campaignState.targetDeadlineController) {
+                campaignState.targetDeadlineController.resume();
+            }
+            const tabId = sender?.tab?.id || campaignState.currentTabId;
+            logBg(tabId, `[CAPTCHA_EXTERNAL_VERIFIED_RESUME] tabId=${tabId} method=${request.verificationMethod || 'dom_verified'} deadlineResumed=true`, 'success');
+            sendResponse({ success: true, state: 'CAPTCHA_VERIFIED_SUBMITTING' });
+            return true;
+        }
+
+        case 'MANUAL_MODE_HOLD': {
+            const validation = validateActiveExecution(request, sender, 'MANUAL_MODE_HOLD', { allowBodyTabId: true });
+            if (!validation.valid) {
+                sendResponse({ success: false, reason: validation.reason, stale: true });
+                return true;
+            }
+            campaignState.currentTargetStage = 'MANUAL_HOLD';
+            campaignState.manualHoldActive = true;
+            if (campaignState.targetDeadlineController) {
+                campaignState.targetDeadlineController.pause('MANUAL_HOLD');
+            }
+            if (campaignState.activeTimeoutId) {
+                clearTimeout(campaignState.activeTimeoutId);
+                campaignState.activeTimeoutId = null;
+            }
+            if (chrome.alarms && campaignState.sessionId) {
+                chrome.alarms.clear(`xpider_timeout_${campaignState.sessionId}`);
+            }
+            const tabId = sender?.tab?.id || campaignState.currentTabId;
+            logBg(tabId, `[MANUAL_MODE_HOLD] tabId=${tabId} url=${request.url || campaignState.currentAttempt?.url || ''} challengeStatus=${request.challengeStatus || 'NONE'} deadlinePaused=true tabRetained=true`, 'info');
+            chrome.runtime.sendMessage({
+                action: 'V7_TARGET_HOLD_STATE',
+                state: 'MANUAL_HOLD',
+                challengeStatus: request.challengeStatus || 'NONE',
+                targetUrl: request.url || campaignState.currentAttempt?.url || '',
+                tabId
+            }).catch(() => {});
+            sendResponse({ success: true, state: 'MANUAL_HOLD', deadlinePaused: true, tabRetained: true });
+            return true;
+        }
 
         case 'XPIDER_LOG':
             logBg(null, `[Solver] ${request.message}`, request.status === 'FAIL' ? 'error' : 'info');
@@ -6942,6 +7048,9 @@ async function startCampaignOrchestrator(queue, template, delayMs, fillDelayMs =
         campaignState.delayMs = delayMs || 6000;
         campaignState.fillDelayMs = fillDelayMs || 300;
         campaignState.submitDelayMs = submitDelayMs || 1500;
+        campaignState.campaignMode = (options.campaignMode === 'MANUAL' || campaignState.campaignMode === 'MANUAL') ? 'MANUAL' : 'AUTO';
+        campaignState.manualHoldActive = false;
+        campaignState.externalCaptchaWaitActive = false;
         campaignState.ownerFunctionTestMode = !!options.ownerFunctionTestMode;
         campaignState.isActive = true;
         campaignState.isPaused = false; // [v18.7] Reset pause on new start
@@ -7207,6 +7316,7 @@ async function pauseCampaignOrchestrator(saveCheckpoint = true) {
             pausedAt: Date.now(),
             outcomeHistogram: { ...(campaignState.outcomeHistogram || {}) },
             counters: { ...(campaignState.counters || {}) },
+            campaignMode: campaignState.campaignMode || 'AUTO',
             restorationLogged: false,
             ownerFunctionTestMode: Boolean(campaignState.ownerFunctionTestMode)
         };
@@ -7289,6 +7399,7 @@ async function resumeCampaignOrchestrator() {
     campaignState.delayMs = checkpoint.delayMs || 6000;
     campaignState.fillDelayMs = checkpoint.fillDelayMs || 300;
     campaignState.submitDelayMs = checkpoint.submitDelayMs || 1500;
+    campaignState.campaignMode = checkpoint.campaignMode || campaignState.campaignMode || 'AUTO';
     campaignState.outcomeHistogram = { ...(checkpoint.outcomeHistogram || {}) };
     if (checkpoint.campaignRunId) {
         campaignState.campaignRunId = checkpoint.campaignRunId;
@@ -8846,6 +8957,11 @@ async function orchestrateSending(urlInput, template, abortSignal = null) {
             return;
         }
         
+        campaignState.manualHoldActive = false;
+        campaignState.externalCaptchaWaitActive = false;
+        if (campaignState.currentTargetStage === 'CAPTCHA_PENDING_EXTERNAL_USER' || campaignState.currentTargetStage === 'MANUAL_HOLD') {
+            campaignState.currentTargetStage = 'SETTLED';
+        }
         if (campaignState.currentTabId === tabId) {
             campaignState.currentTabId = null;
         }
@@ -8972,7 +9088,7 @@ async function orchestrateSending(urlInput, template, abortSignal = null) {
             terminalStatus = 'DELIVERY_UNKNOWN';
         } else if (finalReason === 'TIMEOUT_LOCAL' || finalReason === 'TIMEOUT_GLOBAL') {
             terminalStatus = finalReason;
-        } else if (finalReason === 'SKIPPED' || finalReason === 'WOULD_SUBMIT' || finalReason?.includes('SKIPPED') || finalReason?.includes('NON_INQUIRY') || finalReason?.startsWith('NON_INQUIRY') || finalReason === 'EXPECTED_FAIL_PASS' || finalReason?.includes('EXPECTED_FAIL_PASS') || res?.isExpectedFailPass || finalReason === 'NO_LONG_TEXT_INQUIRY_FIELD' || finalReason === 'NO_FORM_FOUND' || finalReason === 'NO_REACHABLE_CONTACT_PAGE') {
+        } else if (finalReason === 'SKIPPED' || finalReason === 'WOULD_SUBMIT' || finalReason?.includes('SKIPPED') || finalReason?.includes('NON_INQUIRY') || finalReason?.startsWith('NON_INQUIRY') || finalReason === 'EXPECTED_FAIL_PASS' || finalReason?.includes('EXPECTED_FAIL_PASS') || res?.isExpectedFailPass || finalReason === 'NO_LONG_TEXT_INQUIRY_FIELD' || finalReason === 'NO_FORM_FOUND' || finalReason === 'NO_REACHABLE_CONTACT_PAGE' || finalReason === 'MANUAL_OPERATOR_SKIP' || finalReason === 'CAPTCHA_OPERATOR_SKIP') {
             terminalStatus = 'SKIPPED';
         } else if (finalReason === 'REQUIRED_SELECT_UNSTABLE' || finalReason === 'REQUIRED_FIELD_LOST_BEFORE_SUBMIT' || finalReason === 'AUTOFILL_FAILED' || finalReason === 'FORM_FILL_FAILED' || finalReason === 'FINAL_CUSTOM_VALIDITY_FAILED' || finalReason === 'FINAL_NATIVE_VALIDITY_FAILED' || finalReason === 'FINAL_FORM_COMPLETION_FAILED') {
             terminalStatus = 'AUTOMATION_FAILED';
@@ -9177,6 +9293,7 @@ async function orchestrateSending(urlInput, template, abortSignal = null) {
             campaignRunId: campaignState.campaignRunId,
             sessionId: currentSession,
             captchaEpoch: campaignState.captchaEpoch,
+            campaignMode: campaignState.campaignMode || 'AUTO',
             template: template, 
             delayMs: campaignState.delayMs,
             fillDelayMs: campaignState.fillDelayMs || 300,
@@ -9280,6 +9397,7 @@ async function orchestrateSending(urlInput, template, abortSignal = null) {
                 
                 await safeScripting.executeScript({ target: { tabId }, files: [
                     'modules/contact-gate.js',
+                    'modules/challenge-gate.js',
                     'modules/math-captcha-solver.js',
                     'modules/smart-field-resolver.js',
                     'modules/contact-discovery-engine.js',
@@ -9291,7 +9409,7 @@ async function orchestrateSending(urlInput, template, abortSignal = null) {
                     'modules/email-collector.js',
                     'content-script.js'
                 ] });
-                safeScripting.executeScript({ target: { tabId, allFrames: true }, files: ['solver-content.js'] }).catch(() => {});
+                // [v7.0] solver-content.js frame injection retired
                 startPolling();
             } catch (e) {
                 const isErrorPageErr = /showing error page|chrome-error|chromewebdata|cannot access contents of url "chrome-error/i.test(e.message);
