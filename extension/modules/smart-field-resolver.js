@@ -69,6 +69,21 @@
     ];
 
     class SmartFieldResolver {
+        static isCaptchaChallengeField(el) {
+            if (!el) return false;
+            const tag = (el.tagName || '').toUpperCase();
+            const id = (el.id || '').toLowerCase();
+            const name = (el.name || '').toLowerCase();
+            const placeholder = (el.placeholder || '').toLowerCase();
+            const ariaLabel = (el.getAttribute ? (el.getAttribute('aria-label') || '') : '').toLowerCase();
+            const cls = (typeof el.className === 'string' ? el.className : '').toLowerCase();
+            const allText = `${id} ${name} ${placeholder} ${ariaLabel} ${cls}`;
+            const captchaPattern = /(?:^|[-_])captcha(?:[-_]|)|formcaptcha|recaptcha|hcaptcha|turnstile|cf-turnstile|verification[-_]?code|보안[-_]?문자|자동[-_]?가입/i;
+            if (captchaPattern.test(allText)) return true;
+            if (el.closest && el.closest('.g-recaptcha, .h-captcha, .cf-turnstile, [class*="captcha" i], [id*="captcha" i]')) return true;
+            return false;
+        }
+
         constructor() {
             this.cache = new Map();
             this.attemptCounts = new Map();
@@ -672,6 +687,9 @@
          */
         static resolveFieldSemantic(el, formCtx = {}) {
             if (!el) return { semantic: 'unknown', confidence: 0, reason: 'NO_ELEMENT' };
+            if (SmartFieldResolver.isCaptchaChallengeField(el)) {
+                return { semantic: 'captcha', confidence: 1.0, reason: 'CAPTCHA_CHALLENGE_FIELD', isCaptcha: true };
+            }
 
             const tag = (el.tagName || '').toUpperCase();
             const type = (el.type || 'text').toLowerCase();

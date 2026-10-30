@@ -166,7 +166,7 @@ const server = http.createServer((req, res) => {
       fixtureSet: 'OWNER_8_V1',
       totalFixtures: 8,
       hasAiRequiredFields: true,
-      version: 'R6.9G.10.3.7.1.4.92',
+      version: 'R6.9G.10.3.7.1.4.93',
       pid: process.pid,
       timestamp: Date.now(),
       submissionsCount: submissionLog.length

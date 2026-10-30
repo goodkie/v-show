@@ -1481,29 +1481,66 @@ if (typeof self.XpiderSolverCore === 'undefined') {
 
 markBoot("solver_instantiation");
 const solver = new self.XpiderSolverCore();
+let solverDiagnosticsState = { provider: 'api', keyConfigured: false, keySource: 'none', lastSyncedAt: Date.now() };
 
 // [Auto CAPTCHA Solver Boot] Restore CAPTCHA credentials from persistent storage on startup
 (async () => {
     try {
         const stored = await chrome.storage.local.get([
             'xpider_captcha_method', 'xpider_captcha_api_key', 'captchaMethod', 'captchaApiKey',
+            'xpider_captcha_api_key_nopecha', 'xpider_captcha_api_key_2captcha',
             'xpider_stt_api_key', 'audioSttKey', 'witKey'
         ]);
         const method = stored.xpider_captcha_method || stored.captchaMethod || 'api';
-        const apiKey = stored.xpider_captcha_api_key || stored.captchaApiKey || '';
-        const witKey = stored.xpider_stt_api_key || stored.audioSttKey || stored.witKey || '';
+        let apiKey = '';
+        let keySource = 'none';
 
+        if (method === 'nopecha') {
+            if (stored.xpider_captcha_api_key_nopecha) {
+                apiKey = stored.xpider_captcha_api_key_nopecha;
+                keySource = 'storage.xpider_captcha_api_key_nopecha';
+            } else if (stored.xpider_captcha_api_key) {
+                apiKey = stored.xpider_captcha_api_key;
+                keySource = 'storage.xpider_captcha_api_key';
+            } else if (stored.captchaApiKey) {
+                apiKey = stored.captchaApiKey;
+                keySource = 'storage.captchaApiKey';
+            }
+        } else if (method === 'api' || method === '2captcha') {
+            if (stored.xpider_captcha_api_key_2captcha) {
+                apiKey = stored.xpider_captcha_api_key_2captcha;
+                keySource = 'storage.xpider_captcha_api_key_2captcha';
+            } else if (stored.xpider_captcha_api_key) {
+                apiKey = stored.xpider_captcha_api_key;
+                keySource = 'storage.xpider_captcha_api_key';
+            } else if (stored.captchaApiKey) {
+                apiKey = stored.captchaApiKey;
+                keySource = 'storage.captchaApiKey';
+            }
+        }
+
+        const witKey = stored.xpider_stt_api_key || stored.audioSttKey || stored.witKey || '';
         if (witKey) solver.config.witAiKey = witKey;
+
+        solverDiagnosticsState = {
+            provider: method,
+            keyConfigured: Boolean(apiKey),
+            keySource: keySource,
+            lastSyncedAt: Date.now()
+        };
+
         if (method === 'api' || method === '2captcha') {
             if (apiKey) {
                 solver.config.twoCaptchaKey = apiKey;
-                logBg(null, `[Auto CAPTCHA Solver Boot] 2Captcha key restored keyConfigured=true`, 'info');
+                solver.config.nopeChaKey = null;
             }
+            logBg(null, `[Auto CAPTCHA Solver Boot] method=${method} keyConfigured=${Boolean(apiKey)} source=${keySource}`, 'info');
         } else if (method === 'nopecha') {
             if (apiKey) {
                 solver.config.nopeChaKey = apiKey;
-                logBg(null, `[Auto CAPTCHA Solver Boot] NopeCHA key restored`, 'info');
+                solver.config.twoCaptchaKey = null;
             }
+            logBg(null, `[Auto CAPTCHA Solver Boot] method=nopecha keyConfigured=${Boolean(apiKey)} source=${keySource}`, 'info');
         }
     } catch (bootErr) {
         console.warn('[Auto CAPTCHA Solver Boot] Failed to restore credentials:', bootErr.message);
@@ -5581,6 +5618,32 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
                                 return;
                             }
                         } else {
+                            // [Issue #6 RC3.60 .93] Directive #6513087470 Item 3:
+                            // Ensure manual challenge pause and accessible user-visible action when provider is unconfigured; NO silent SKIP!
+                            const curAttemptId = campaignState.currentAttempt?.attemptId;
+                            campaignState.manualFallbackAttemptId = curAttemptId;
+                            campaignState.currentTargetStage = 'CAPTCHA_PENDING_MANUAL';
+                            logBg(null, `[OWNER_CAPTCHA] Solver key missing or unconfigured. Pausing for accessible manual challenge resolution.`, 'warning');
+                            
+                            if (campaignState.targetDeadlineController) {
+                                campaignState.targetDeadlineController.pause('CAPTCHA_PENDING_MANUAL');
+                            }
+
+                            if (campaignState.currentTabId) {
+                                chrome.tabs.sendMessage(campaignState.currentTabId, {
+                                    action: 'START_MANUAL_CAPTCHA_WAIT',
+                                    attemptId: curAttemptId,
+                                    targetToken: campaignState.currentTargetToken,
+                                    campaignRunId: campaignState.campaignRunId,
+                                    sessionId: campaignState.sessionId,
+                                    captchaEpoch: curEpoch,
+                                    tabId: campaignState.currentTabId,
+                                    fallbackFrom: userSettings.xpider_captcha_method || 'provider',
+                                    message: 'No solver key configured. Please solve CAPTCHA in browser.'
+                                }).catch(() => {});
+                            }
+                            return;
+                        } else if (false) {
                             campaignState.captchaLedger.pendingOwner = Math.max(0, campaignState.captchaLedger.pendingOwner - 1);
                             campaignState.captchaLedger.manualSkip++;
                             campaignState.currentTargetStage = 'CAPTCHA_SKIPPED';
@@ -6311,27 +6374,98 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
             // [Auto CAPTCHA Solver] Live sync of CAPTCHA method + API key to solver engine
             (async () => {
                 const method = request.method || 'api';
-                const key = request.key || '';
-                const shortKey = key ? key.substring(0, 8) + '...' : 'NONE';
-                logBg(null, `[CAPTCHA-Sync] method=${method} key=${shortKey}`, 'info');
-                await chrome.storage.local.set({
+                let key = (typeof request.key === 'string') ? request.key.trim() : '';
+                let keySource = 'runtime_update';
+
+                // Prevent accidental key wipe on method toggle when caller passed empty key
+                if (!key && !request.clearKey) {
+                    const stored = await chrome.storage.local.get([
+                        'xpider_captcha_api_key_nopecha', 'xpider_captcha_api_key_2captcha',
+                        'xpider_captcha_api_key', 'captchaApiKey'
+                    ]);
+                    if (method === 'nopecha') {
+                        key = stored.xpider_captcha_api_key_nopecha || stored.xpider_captcha_api_key || stored.captchaApiKey || '';
+                        if (key) keySource = 'storage.xpider_captcha_api_key_nopecha';
+                    } else if (method === 'api' || method === '2captcha') {
+                        key = stored.xpider_captcha_api_key_2captcha || stored.xpider_captcha_api_key || stored.captchaApiKey || '';
+                        if (key) keySource = 'storage.xpider_captcha_api_key_2captcha';
+                    }
+                }
+
+                // Sanitize log: NEVER log the key or substring
+                logBg(null, `[CAPTCHA-Sync] method=${method} keyConfigured=${Boolean(key)} source=${keySource}`, 'info');
+                
+                const storagePayload = {
                     xpider_captcha_method: method,
                     xpider_captcha_api_key: key,
                     captchaMethod: method,
                     captchaApiKey: key
-                });
+                };
+                if (method === 'nopecha') {
+                    storagePayload.xpider_captcha_api_key_nopecha = key;
+                } else if (method === 'api' || method === '2captcha') {
+                    storagePayload.xpider_captcha_api_key_2captcha = key;
+                }
+                await chrome.storage.local.set(storagePayload);
+
                 // Apply to live solver instance immediately
                 if (method === 'api' || method === '2captcha') {
-                    solver.config.twoCaptchaKey = key;
+                    solver.config.twoCaptchaKey = key || null;
                     solver.config.nopeChaKey = null;
                 } else if (method === 'nopecha') {
-                    solver.config.nopeChaKey = key;
+                    solver.config.nopeChaKey = key || null;
                     solver.config.twoCaptchaKey = null;
                 } else {
                     solver.config.twoCaptchaKey = null;
                     solver.config.nopeChaKey = null;
                 }
-                sendResponse({ success: true, method, applied: !!key });
+
+                solverDiagnosticsState = {
+                    provider: method,
+                    keyConfigured: Boolean(key),
+                    keySource: keySource,
+                    lastSyncedAt: Date.now()
+                };
+
+                sendResponse({ success: true, method, applied: !!key, keyConfigured: !!key, source: keySource });
+            })();
+            return true;
+
+        case 'QUERY_SOLVER_DIAGNOSTICS':
+            // [Issue #6 RC3.60 .93] SAFE Administrative Solver Diagnostics
+            (async () => {
+                const stored = await chrome.storage.local.get([
+                    'xpider_captcha_method', 'xpider_captcha_api_key',
+                    'xpider_captcha_api_key_nopecha', 'xpider_captcha_api_key_2captcha',
+                    'captchaMethod', 'captchaApiKey'
+                ]);
+                const method = stored.xpider_captcha_method || stored.captchaMethod || 'api';
+                let apiKey = '';
+                let keySource = 'none';
+                if (method === 'nopecha') {
+                    if (stored.xpider_captcha_api_key_nopecha) { apiKey = stored.xpider_captcha_api_key_nopecha; keySource = 'storage.xpider_captcha_api_key_nopecha'; }
+                    else if (stored.xpider_captcha_api_key) { apiKey = stored.xpider_captcha_api_key; keySource = 'storage.xpider_captcha_api_key'; }
+                    else if (stored.captchaApiKey) { apiKey = stored.captchaApiKey; keySource = 'storage.captchaApiKey'; }
+                } else {
+                    if (stored.xpider_captcha_api_key_2captcha) { apiKey = stored.xpider_captcha_api_key_2captcha; keySource = 'storage.xpider_captcha_api_key_2captcha'; }
+                    else if (stored.xpider_captcha_api_key) { apiKey = stored.xpider_captcha_api_key; keySource = 'storage.xpider_captcha_api_key'; }
+                    else if (stored.captchaApiKey) { apiKey = stored.captchaApiKey; keySource = 'storage.captchaApiKey'; }
+                }
+                const keyPresent = Boolean(apiKey && apiKey.trim().length > 0);
+                sendResponse({
+                    success: true,
+                    diagnostics: {
+                        provider: method,
+                        mode: method,
+                        keyPresent: keyPresent,
+                        keyConfigured: keyPresent,
+                        keySource: keySource,
+                        authStatus: keyPresent ? 'CONFIGURED' : 'UNCONFIGURED',
+                        providerConnected: keyPresent,
+                        documentationRef: method === 'nopecha' ? 'https://developers.nopecha.com/guides/getting_started/' : 'https://2captcha.com/api-docs',
+                        verifiedLiveProof: false // Mark UNVERIFIED without live owner runtime proof
+                    }
+                });
             })();
             return true;
 

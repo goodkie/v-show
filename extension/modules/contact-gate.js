@@ -250,12 +250,10 @@
         const isPureBookingSubmit = submitHasBookToken && !leadContext.includes('consultation') && !leadContext.includes('appointment') &&
                                     (hasDateOrTimePicker || submitBtnText.includes('book now') || submitBtnText.includes('book online'));
 
-        if (hasNameInput && hasEmailInput && (hasPhoneInput || allVisibleInputs.length >= 3) && hasLeadAction && !hasNegativeGuard && !hasPasswordField && !hasDateOrTimePicker && !isPureBookingSubmit) {
-            console.log('[LONG_TEXT_GATE] found=true type=lead-inquiry-form semantic=consultation');
-            return { el: textInputs[0] || formEl, type: 'lead-inquiry-form', name: 'lead_inquiry', semantic: 'consultation' };
-        }
-
-        console.log('[LONG_TEXT_GATE] found=false');
+        // [Issue #6 RC3.60 .93] Directive #6513087470 Item 11:
+        // Do NOT classify forms lacking genuine message body as lead-inquiry-form!
+        // A genuine message field (textarea or explicit message inquiry control) is REQUIRED for form sending.
+        console.log('[LONG_TEXT_GATE] found=false (no genuine multiline/inquiry message element)');
         return null;
     }
 

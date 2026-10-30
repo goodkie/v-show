@@ -1371,11 +1371,11 @@ async function hydrateSettings(overrideV2Store = null) {
 
         methodSelect.addEventListener('change', async () => {
             const newMethod = methodSelect.value;
-            const stored = await chrome.storage.local.get(['xpider_captcha_api_key_nopecha', 'xpider_captcha_api_key_2captcha']);
+            const stored = await chrome.storage.local.get(['xpider_captcha_api_key_nopecha', 'xpider_captcha_api_key_2captcha', 'xpider_captcha_api_key']);
             if (apiKeyInput) {
                 apiKeyInput.value = newMethod === 'nopecha'
-                    ? (stored.xpider_captcha_api_key_nopecha || '')
-                    : (stored.xpider_captcha_api_key_2captcha || '');
+                    ? (stored.xpider_captcha_api_key_nopecha || stored.xpider_captcha_api_key || '')
+                    : (stored.xpider_captcha_api_key_2captcha || stored.xpider_captcha_api_key || '');
             }
             updateCaptchaMethodUI(newMethod);
         });

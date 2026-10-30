@@ -1940,11 +1940,25 @@
                     return fillAndSubmit(form, template, speed);
                 }
                 // [RC3.60 P0] Terminal settlement on unhandled autofill failure — never hang in RUNNING
+                if (result && (result.reasonCode === 'NO_LONG_TEXT_INQUIRY_FIELD' || result.terminalStatus === 'SKIPPED')) {
+                    logDev(`ℹ️ [Engine] Non-inquiry form without message body: settling SKIPPED`, "info");
+                    finishCampaign(false, 'NO_LONG_TEXT_INQUIRY_FIELD', 'NO_LONG_TEXT_INQUIRY_FIELD');
+                    return false;
+                }
                 logDev(`❌ [Engine] Autofill failure terminal settlement: ${failReason}`, "error");
                 finishCampaign(false, failReason, 'REQUIRED_FIELD_LOST_BEFORE_SUBMIT');
                 return false;
             }
-            logDev("[FILL] messageBodyFilled=true", "success");
+            if (result && result.terminalStatus === 'SKIPPED') {
+                logDev(`ℹ️ [Fill] Terminal skip outcome: ${result.reasonCode}`, "info");
+                finishCampaign(false, result.reasonCode, result.reasonCode);
+                return false;
+            }
+            if (isAutofillSuccess && hasGenuineMessageField) {
+                logDev("[FILL] messageBodyFilled=true", "success");
+            } else {
+                logDev("[FILL] messageBodyFilled=false", "info");
+            }
             
             // [RC3.25 Directive A] Non-sensitive visual confirmation after autofill resolves
             try {
@@ -4336,9 +4350,8 @@
         }
 
         if (!messageFilled) {
-            const rescueTarget = finalAllInputs.find(el => isMsgElement(el))
-                || finalAllInputs.find(el => el.tagName === 'TEXTAREA' || el.contentEditable === 'true')
-                || finalAllInputs.find(el => !el.value && !['hidden', 'submit', 'button', 'checkbox', 'radio'].includes(el.type));
+            const rescueTarget = finalAllInputs.find(el => isMsgElement(el) && !isCaptchaChallengeField(el))
+                || finalAllInputs.find(el => (el.tagName === 'TEXTAREA' || el.contentEditable === 'true') && !isCaptchaChallengeField(el));
             if (rescueTarget) {
                 await applyVal(rescueTarget, tpl.message || getRandomTemplateVal(), 'Fallback-Message-Rescue');
                 filledFields++;
@@ -4380,7 +4393,7 @@
             });
         } catch (_) {}
 
-        const interactiveInputs = finalAllInputs.filter(el => !['hidden', 'submit', 'button', 'image', 'reset'].includes(el.type));
+        const interactiveInputs = finalAllInputs.filter(el => !['hidden', 'submit', 'button', 'image', 'reset'].includes(el.type) && !isCaptchaChallengeField(el));
         const totalInputsCount = interactiveInputs.length;
         const unresolvedFields = [];
         if (!messageFilled) unresolvedFields.push('message_body');
@@ -4501,7 +4514,10 @@
             '[data-sitekey]',
             'img[src*="captcha" i]',
             'img[id*="captcha" i]',
-            'img[class*="captcha" i]'
+            'img[class*="captcha" i]',
+            'input[name*="captcha" i]',
+            'input[id*="captcha" i]',
+            '[class*="captcha" i] input'
         ];
         return captchaSelectors.some(s => document.querySelector(s) !== null);
     }
@@ -5858,6 +5874,22 @@
     // ============================================================
     // [Section B] Field Integrity Before Submit (Freeze & Verify)
     // ============================================================
+    
+    function isCaptchaChallengeField(el) {
+        if (!el) return false;
+        const tag = (el.tagName || '').toUpperCase();
+        const id = (el.id || '').toLowerCase();
+        const name = (el.name || '').toLowerCase();
+        const placeholder = (el.placeholder || '').toLowerCase();
+        const ariaLabel = (el.getAttribute ? (el.getAttribute('aria-label') || '') : '').toLowerCase();
+        const cls = (typeof el.className === 'string' ? el.className : '').toLowerCase();
+        const allText = `${id} ${name} ${placeholder} ${ariaLabel} ${cls}`;
+        const captchaPattern = /(?:^|[-_])captcha(?:[-_]|)|formcaptcha|recaptcha|hcaptcha|turnstile|cf-turnstile|verification[-_]?code|보안[-_]?문자|자동[-_]?가입/i;
+        if (captchaPattern.test(allText)) return true;
+        if (el.closest && el.closest('.g-recaptcha, .h-captcha, .cf-turnstile, [class*="captcha" i], [id*="captcha" i]')) return true;
+        return false;
+    }
+
     function freezeFieldValues(form, tpl = {}) {
         stopActiveEmptyFieldSweeper();
         const snapshot = new Map();
@@ -5865,9 +5897,10 @@
 
         const fields = queryAllInputs(form);
         for (const el of fields) {
+            const isCaptcha = isCaptchaChallengeField(el);
             const val = el.contentEditable === 'true' ? (el.textContent || '') : (el.value || '');
             const checked = !!el.checked;
-            const isReq = !!(el.required || el.getAttribute('aria-required') === 'true');
+            const isReq = !isCaptcha && !!(el.required || el.getAttribute('aria-required') === 'true');
             const sig = el.id || el.name || el.getAttribute('data-testid') || (el.tagName + '_' + (el.type || 'text'));
             snapshot.set(el, {
                 sig,
