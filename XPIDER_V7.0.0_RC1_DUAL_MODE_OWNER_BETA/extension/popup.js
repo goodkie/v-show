@@ -5872,9 +5872,9 @@ async function verifyBuildHandshake(options = {}) {
                 const bgHead = bgInfo.implementationHead || bgInfo.head;
                 const bgBuild = bgInfo.buildId;
 
-                const localManifest = localInfo.manifestVersion || 3;
-                const bgManifest = bgInfo.manifestVersion;
-                const isMatch = (localHead === bgHead && localBuild === bgBuild && Number(localManifest) === Number(bgManifest));
+                const localManifest = Number((localInfo && localInfo.manifestVersion) || 3);
+                const bgManifest = Number((bgInfo && bgInfo.manifestVersion) || 3);
+                const isMatch = (localHead === bgHead && localBuild === bgBuild && localManifest === bgManifest);
                 if (isMatch) {
                     console.log(`[BUILD_HANDSHAKE] localHead=${localHead} backgroundHead=${bgHead} result=PASS`);
                     const startBtn = document.getElementById('start-btn');
@@ -7055,12 +7055,16 @@ async function restoreUserSettings() {
 }
 
 function getBadgeTextFromBuildInfo(info) {
-    if (!info) return 'OWNER BETA R6.9G.10.3.7.1.4.11 [5a0e9830]';
-    const m = (info.buildId || '').match(/R\d+\.\d+[A-Za-z0-9\.]*/);
-    const ver = m ? m[0] : 'R6.9G.10.3.7.1.4.11';
-    const sha = info.implementationHeadShort || info.headShort || (info.implementationHead ? info.implementationHead.substring(0, 8) : '5a0e9830');
-    const label = (info.channel === 'OWNER_BETA') ? 'OWNER BETA' : (info.channel === 'TEST_ONLY' ? 'TEST-ONLY' : (info.channel || 'OWNER BETA'));
-    return `${label} ${ver} [${sha}]`;
+    if (!info) return 'OWNER BETA V7.0.0-RC7';
+    let ver = 'V7.0.0-RC7';
+    if (info.tag) {
+        ver = info.tag.toUpperCase();
+    } else {
+        const m = (info.buildId || '').match(/(?:V|R)\d+\.\d+(?:\.\d+)?[A-Za-z0-9\.\-]*/i);
+        if (m) ver = m[0];
+    }
+    const sha = info.implementationHeadShort || info.headShort || (info.implementationHead ? info.implementationHead.substring(0, 8) : 'rc7');
+    return `OWNER BETA ${ver} [${sha}]`;
 }
 
 function initBuildProvenanceBadge() {
@@ -8088,7 +8092,7 @@ async function launchCampaign(options = {}) {
                 runScopedDirectPrivacy: runScopedDirect,
                 expectedImplementationHead: localInfo.implementationHead,
                 expectedBuildId: localInfo.buildId,
-                expectedManifestVersion: localInfo.manifestVersion || 3,
+                expectedManifestVersion: Number((localInfo && localInfo.manifestVersion) || 3),
                 queue: startPayload.queue,
                 template: startPayload.template,
                 delayMs: startPayload.delayMs,

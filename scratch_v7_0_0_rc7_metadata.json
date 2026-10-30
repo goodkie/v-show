@@ -1,0 +1,15 @@
+{
+  "tag": "v7.0.0-rc7",
+  "zipName": "XPIDER_V7.0.0_RC7_DUAL_MODE_OWNER_BETA.zip",
+  "zipSize": 53066667,
+  "zipSha": "786e708e7e4539b018c86b80172927f5dc1d9f6ae9b666f80bac7a2c221aa929",
+  "buildId": "V7.0.0-RC7-20261030-RUNTIME-HANDSHAKE-AND-LAYOUT-PASS",
+  "backgroundSha": "1d82d43bac8894604e91fffc1ca83f08ede26ed79b3ccbbdfd3c22a3eaa6f689",
+  "contentScriptSha": "19345f75b1d1b0f4dc262f53bc275ed935f064f527d7b65b99238018371c9bb8",
+  "popupSha": "91e40375b0fce52e06a79cc4dc984e07ff611fd76974fb35bd62828c9dcf5d09",
+  "popupCssSha": "5ae7f46d0b850e7810b528d8ba8c32e30f1edc5dea2c4887b6676dd127b4a1c6",
+  "popupHtmlSha": "e78fb06b5ad58fb24d34b93da929578cdf64da2e7724e1423bdd0fba75989334",
+  "challengeGateSha": "509cf0be725a1b0e78d2caff4936a6fb85b0d6d35f24b39f7ee237112bc827f2",
+  "privacyGatewaySha": "bfa6a4d70ec77a10a508d94d8424d5b90aca6a2d45a09f64e70f7239ae28c6bb",
+  "builtAt": "2026-10-30T14:34:19.064Z"
+}

@@ -1153,17 +1153,18 @@ body.template-active .action-buttons {
     transform: scale(1.2);
 }
 
-/* File URLs Preview Area — High Contrast Dark Mode (RC6) */
+/* File URLs Preview Area — High Contrast Dark Mode & Generous Row Clearance (RC7) */
 .file-urls-preview {
     margin-top: 10px;
     background: #0f172a !important;
     border: 1px solid #38bdf8 !important;
     border-radius: 8px;
-    padding: 10px;
+    padding: 10px 12px;
     display: flex;
     flex-direction: column;
-    gap: 6px;
-    max-height: 160px;
+    gap: 8px;
+    max-height: 220px;
+    box-sizing: border-box !important;
 }
 
 .file-urls-preview .preview-header {
@@ -1173,44 +1174,55 @@ body.template-active .action-buttons {
     text-transform: uppercase;
     letter-spacing: 0.5px;
     border-bottom: 1px solid rgba(56, 189, 248, 0.3) !important;
-    padding-bottom: 5px;
+    padding-bottom: 6px;
+    line-height: 1.4 !important;
+    box-sizing: border-box !important;
 }
 
 .file-urls-preview .preview-list {
-    overflow-y: auto;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
     display: flex;
     flex-direction: column;
-    gap: 4px;
-    max-height: 120px;
+    gap: 6px;
+    max-height: 160px;
     padding-right: 4px;
+    box-sizing: border-box !important;
 }
 
 .file-urls-preview .preview-item,
 .file-urls-preview .preview-item * {
-    font-size: 0.82rem !important;
+    font-size: 12px !important;
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace !important;
     font-weight: 600 !important;
     color: #ffffff !important;
+    line-height: 20px !important;
     opacity: 1 !important;
+    box-sizing: border-box !important;
 }
 
 .file-urls-preview .preview-item {
     background: rgba(30, 41, 59, 0.95) !important;
-    border: 1px solid rgba(148, 163, 184, 0.4) !important;
+    border: 1px solid rgba(148, 163, 184, 0.35) !important;
     border-left: 3px solid #38bdf8 !important;
-    padding: 6px 10px !important;
+    padding: 6px 12px !important;
+    min-height: 36px !important;
+    height: 36px !important;
     border-radius: 4px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    transition: all 0.2s ease-in-out;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    display: flex !important;
+    align-items: center !important;
+    transition: all 0.15s ease-in-out;
 }
 
 .file-urls-preview .preview-item:hover,
 .file-urls-preview .preview-item:focus {
     background: rgba(56, 189, 248, 0.25) !important;
     border-color: #38bdf8 !important;
-    color: #38bdf8 !important;
+    border-left: 3px solid #38bdf8 !important;
+    color: #ffffff !important;
     outline: none !important;
 }
 

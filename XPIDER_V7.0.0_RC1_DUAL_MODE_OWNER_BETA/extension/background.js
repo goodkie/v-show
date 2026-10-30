@@ -3786,10 +3786,15 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
         case 'GET_BUILD_PROVENANCE': {
             if (typeof BuildProvenance !== 'undefined' && BuildProvenance.BUILD_INFO) {
                 const bpData = BuildProvenance.BUILD_INFO;
+                const manifestVer = Number(bpData.manifestVersion || 3);
                 sendResponse({
                     success: true,
-                    provenance: bpData,
+                    provenance: {
+                        ...bpData,
+                        manifestVersion: manifestVer
+                    },
                     ...bpData,
+                    manifestVersion: manifestVer,
                     bootModules: globalThis.__xpider_sw_boot_modules || {}
                 });
             } else {
@@ -4064,8 +4069,8 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
             const liveBuild = liveBp.buildId;
             const reqHead = request.expectedImplementationHead;
             const reqBuild = request.expectedBuildId;
-            const reqManifest = request.expectedManifestVersion;
-            const liveManifest = liveBp ? liveBp.manifestVersion : 3;
+            const reqManifest = Number(request.expectedManifestVersion || 3);
+            const liveManifest = Number((liveBp && liveBp.manifestVersion) || 3);
 
             // [Issue #6 R6.9F.1] Fail-closed: all three provenance fields are REQUIRED and must match exactly.
             const missingProv = [];
