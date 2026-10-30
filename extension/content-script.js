@@ -4824,6 +4824,7 @@
 
         return new Promise((resolve) => {
             let settled = false;
+            let resolvingInFlight = false;
             let manualRetryCount = 0;
             const MAX_MANUAL_RETRIES = 3;
 
@@ -4837,16 +4838,54 @@
                 }
             };
 
+            const disableHoldActionButtons = () => {
+                if (typeof document !== 'undefined') {
+                    const regBtn = document.getElementById('xpider-manual-registered-btn');
+                    const skipBtn = document.getElementById('xpider-manual-skip-btn');
+                    if (regBtn) { regBtn.disabled = true; regBtn.style.opacity = '0.6'; }
+                    if (skipBtn) { skipBtn.disabled = true; skipBtn.style.opacity = '0.6'; }
+                }
+            };
+
             const settleManual = (resObj) => {
-                if (settled) return resObj;
+                if (settled) return { ...resObj, settled: true, duplicate: true };
                 settled = true;
+                resolvingInFlight = false;
                 cleanup();
                 resolve(resObj);
                 return resObj;
             };
 
+            const dispatchManualHoldResolveHandshake = (decision, evidencePayload, onHandshakeDone) => {
+                if (!sendFn) {
+                    onHandshakeDone(null);
+                    return;
+                }
+                let callbackFired = false;
+                const doneOnce = (ack) => {
+                    if (callbackFired) return;
+                    callbackFired = true;
+                    onHandshakeDone(ack);
+                };
+                try {
+                    const fallbackTimer = setTimeout(() => doneOnce(null), 30);
+                    sendFn({
+                        action: 'MANUAL_HOLD_RESOLVE',
+                        decision,
+                        url: evidencePayload.currentUrl || initialHoldUrl,
+                        initialHoldUrl,
+                        evidence: evidencePayload
+                    }, (ack) => {
+                        clearTimeout(fallbackTimer);
+                        doneOnce(ack || null);
+                    });
+                } catch (_) {
+                    doneOnce(null);
+                }
+            };
+
             const executeManualAction = (actionType, actionOpts = {}) => {
-                if (settled) return { settled: true };
+                if (settled || resolvingInFlight) return { settled: true, duplicate: true };
 
                 if (actionType === 'RETRY_EDIT') {
                     if (manualRetryCount >= MAX_MANUAL_RETRIES) {
@@ -4879,12 +4918,24 @@
                 }
 
                 if (actionType === 'SKIP') {
+                    resolvingInFlight = true;
+                    disableHoldActionButtons();
                     logDev("[MANUAL_MODE_DECISION] action=SKIP reason=MANUAL_OPERATOR_SKIP", "info");
-                    finishCampaign(false, 'MANUAL_OPERATOR_SKIP', 'MANUAL_OPERATOR_SKIP', { manualMode: true });
-                    return settleManual({ success: false, status: 'SKIPPED', reasonCode: 'MANUAL_OPERATOR_SKIP' });
+                    const currentUrl = (typeof window !== 'undefined' && window.location) ? window.location.href : '';
+                    dispatchManualHoldResolveHandshake('SKIP', { currentUrl, initialHoldUrl }, (ack) => {
+                        if (ack && ack.stale) {
+                            resolvingInFlight = false;
+                            return;
+                        }
+                        finishCampaign(false, 'MANUAL_OPERATOR_SKIP', 'MANUAL_OPERATOR_SKIP', { manualMode: true, handshakeAck: Boolean(ack && ack.settled) });
+                        settleManual({ success: false, status: 'SKIPPED', reasonCode: 'MANUAL_OPERATOR_SKIP' });
+                    });
+                    return { success: false, status: 'SKIPPED', reasonCode: 'MANUAL_OPERATOR_SKIP' };
                 }
 
                 if (actionType === 'STOP_AND_SAVE') {
+                    resolvingInFlight = true;
+                    disableHoldActionButtons();
                     logDev("[MANUAL_MODE_DECISION] action=STOP_AND_SAVE", "info");
                     if (sendFn) {
                         try { sendFn({ action: 'STOP_AND_SAVE_CAMPAIGN' }, () => {}); } catch (_) {}
@@ -4893,6 +4944,8 @@
                 }
 
                 if (actionType === 'REGISTERED_CONTINUE') {
+                    resolvingInFlight = true;
+                    disableHoldActionButtons();
                     const currentUrl = (typeof window !== 'undefined' && window.location) ? window.location.href : '';
                     const urlChanged = Boolean(initialHoldUrl && currentUrl && currentUrl !== initialHoldUrl);
                     const bodyText = (typeof document !== 'undefined' && document.body)
@@ -4908,7 +4961,7 @@
                     );
                     const hasUrlRedirectSuccess = Boolean(
                         actionOpts.hasUrlRedirectSuccess ||
-                        (urlChanged && (/thank|success|confirm|complete|sent|submitted/i.test(currentUrl) || hasPositiveDomSuccess))
+                        (urlChanged && ((_ChallengeGate && typeof _ChallengeGate.hasConfirmationUrl === 'function' ? _ChallengeGate.hasConfirmationUrl(currentUrl) : /thank|success|confirm|complete|sent|submitted/i.test(currentUrl)) || hasPositiveDomSuccess))
                     );
                     const hasServerAck = Boolean(
                         actionOpts.hasServerAck ||
@@ -4916,41 +4969,64 @@
                         (typeof document !== 'undefined' && document.querySelector('[data-xpider-submit-success="true"], .submission-success, #submission-success'))
                     );
 
+                    const evidencePayload = {
+                        pageText: bodyText,
+                        currentUrl,
+                        initialHoldUrl,
+                        urlChanged,
+                        hasPositiveDomSuccess,
+                        hasUrlRedirectSuccess,
+                        hasServerAck,
+                        formStillPresent: !formRemovedOrHidden,
+                        operatorClaimedRegistered: true
+                    };
+
                     const classification = _ChallengeGate
-                        ? _ChallengeGate.classifyManualResume({
-                            pageText: bodyText,
-                            currentUrl,
-                            urlChanged,
-                            hasPositiveDomSuccess,
-                            hasUrlRedirectSuccess,
-                            hasServerAck,
-                            formStillPresent: !formRemovedOrHidden,
-                            operatorClaimedRegistered: true
-                        })
+                        ? _ChallengeGate.classifyManualResume(evidencePayload)
                         : {
                             status: (hasPositiveDomSuccess || hasUrlRedirectSuccess || hasServerAck) ? 'SUCCESS' : 'DELIVERY_UNKNOWN',
                             reasonCode: (hasPositiveDomSuccess || hasUrlRedirectSuccess || hasServerAck) ? 'MANUAL_CONFIRMED_SUCCESS' : 'MANUAL_CLAIM_NO_EVIDENCE'
                         };
 
-                    if (classification.status === 'SUCCESS') {
-                        logDev(`✅ [MANUAL_MODE_DECISION] action=REGISTERED_CONTINUE status=SUCCESS reason=${classification.reasonCode}`, "success");
-                        finishCampaign(true, null, 'SUCCESS_CONFIRMED', {
-                            manualMode: true,
-                            ownerManualConfirmed: true,
-                            outcomeEvidence: classification
-                        });
-                        return settleManual({ success: true, status: 'SUCCESS', reasonCode: classification.reasonCode });
-                    } else {
-                        logDev(`⚠️ [MANUAL_MODE_DECISION] action=REGISTERED_CONTINUE status=DELIVERY_UNKNOWN reason=${classification.reasonCode} operatorClaimOnly=true`, "warning");
-                        finishCampaign(false, 'DELIVERY_UNKNOWN', 'DELIVERY_UNKNOWN', {
-                            manualMode: true,
-                            ownerManualConfirmed: false,
-                            operatorClaimOnly: true,
-                            subReason: classification.reasonCode,
-                            outcomeEvidence: classification
-                        });
-                        return settleManual({ success: false, status: 'DELIVERY_UNKNOWN', reasonCode: classification.reasonCode });
-                    }
+                    dispatchManualHoldResolveHandshake('REGISTERED_CONTINUE', evidencePayload, (ack) => {
+                        if (ack && ack.stale) {
+                            logDev(`⚠️ [MANUAL_HOLD_RESOLVE] Stale or paused manual resolution rejected (${ack.reason}).`, "warning");
+                            resolvingInFlight = false;
+                            return;
+                        }
+                        const effectiveSuccess = ack && ack.settled
+                            ? (ack.terminalStatus === 'CONFIRMED_SUCCESS')
+                            : (classification.status === 'SUCCESS');
+                        const effectiveSubReason = (ack && ack.subReason) || classification.reasonCode;
+
+                        if (effectiveSuccess) {
+                            logDev(`✅ [MANUAL_MODE_DECISION] action=REGISTERED_CONTINUE status=SUCCESS reason=${effectiveSubReason}`, "success");
+                            finishCampaign(true, null, 'SUCCESS_CONFIRMED', {
+                                manualMode: true,
+                                ownerManualConfirmed: true,
+                                handshakeAck: Boolean(ack && ack.settled),
+                                outcomeEvidence: { ...evidencePayload, ...classification }
+                            });
+                            settleManual({ success: true, status: 'SUCCESS', reasonCode: effectiveSubReason });
+                        } else {
+                            logDev(`⚠️ [MANUAL_MODE_DECISION] action=REGISTERED_CONTINUE status=DELIVERY_UNKNOWN reason=${effectiveSubReason} operatorClaimOnly=true`, "warning");
+                            finishCampaign(false, 'DELIVERY_UNKNOWN', 'DELIVERY_UNKNOWN', {
+                                manualMode: true,
+                                ownerManualConfirmed: false,
+                                operatorClaimOnly: true,
+                                handshakeAck: Boolean(ack && ack.settled),
+                                subReason: effectiveSubReason,
+                                outcomeEvidence: { ...evidencePayload, ...classification }
+                            });
+                            settleManual({ success: false, status: 'DELIVERY_UNKNOWN', reasonCode: effectiveSubReason });
+                        }
+                    });
+
+                    return {
+                        success: classification.status === 'SUCCESS',
+                        status: classification.status === 'SUCCESS' ? 'SUCCESS' : 'DELIVERY_UNKNOWN',
+                        reasonCode: classification.reasonCode
+                    };
                 }
             };
 
@@ -5600,6 +5676,37 @@
                         confirmed: confirmed,
                         reason: hasKeyword ? 'KEYWORD_DETECTED' : (window.__xpider_submit_success_confirmed ? 'CONFIRMED_FLAG' : (formStillPresent ? 'FORM_STILL_PRESENT' : 'NO_CONFIRMATION'))
                     });
+                    return true;
+                } else if (msg && msg.action === 'RESTORE_MANUAL_HOLD_PANEL') {
+                    if (msg.attemptId) {
+                        const execId = {
+                            attemptId: msg.attemptId,
+                            targetToken: msg.targetToken || window.__xpider_execution_identity?.targetToken || null,
+                            campaignRunId: msg.campaignRunId || window.__xpider_execution_identity?.campaignRunId || null,
+                            sessionId: (msg.sessionId !== undefined && msg.sessionId !== null) ? msg.sessionId : (window.__xpider_execution_identity?.sessionId ?? null),
+                            captchaEpoch: msg.captchaEpoch || 1
+                        };
+                        window.__xpider_execution_identity = execId;
+                        window.__xpider_exec_identity = execId;
+                        window.__xpider_sendExecutionMessage = (payload, cb) => {
+                            const enriched = Object.assign({}, payload, {
+                                attemptId: execId.attemptId,
+                                targetToken: execId.targetToken,
+                                campaignRunId: execId.campaignRunId,
+                                sessionId: execId.sessionId,
+                                captchaEpoch: execId.captchaEpoch
+                            });
+                            if (cb) chrome.runtime.sendMessage(enriched, cb);
+                            else chrome.runtime.sendMessage(enriched).catch(() => {});
+                        };
+                    }
+                    const form = document.querySelector('form, #contact_form, .contact-form, [action*="contact"]');
+                    const chal = _ChallengeGate ? _ChallengeGate.detectChallenge(document) : { detected: false };
+                    handleV7ManualModeHold(form || null, msg.template || {}, new Map(), chal, {
+                        originalUrl: msg.initialHoldUrl || (window.location ? window.location.href : ''),
+                        restoredAfterReload: true
+                    });
+                    if (sendResponse) sendResponse({ success: true, restored: true });
                     return true;
                 } else if (msg && msg.action === 'FREEZE_NETWORK_RECOVERY') {
                     window.__xpider_isNetworkDegraded = true;

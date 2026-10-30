@@ -68,6 +68,7 @@ const _swFoundationModules = [
     'modules/vision-submit-executor.js',
     'modules/privacy-gateway.js',
     'modules/smart-field-resolver.js',
+    'modules/challenge-gate.js',
     'modules/mock-captcha-provider-adapter.js'
 ];
 
@@ -1991,7 +1992,226 @@ function validateActiveExecution(request, sender, action, options = {}) {
         }
     }
 
-    return { valid: true, execution: { tabId: curTabId, attemptId: curAttemptId, targetToken: curTok, campaignRunId: curRunId, sessionId: curSessionId } };
+    return {
+        valid: true,
+        resolvedTabId: curTabId,
+        execution: { tabId: curTabId, attemptId: curAttemptId, targetToken: curTok, campaignRunId: curRunId, sessionId: curSessionId }
+    };
+}
+
+// [Issue #6 Comment #6521464588] Authoritative Manual-Hold Resolution Handshake & Idempotency Registry
+const settledManualHoldAttempts = new Map(); // attemptId -> receipt
+const manualHoldResolvingInFlight = new Map(); // attemptId -> Promise<receipt>
+
+function evaluateManualHoldEvidence(evidence = {}) {
+    const cg = (typeof self !== 'undefined' && self.ChallengeGate)
+        || (typeof globalThis !== 'undefined' && globalThis.ChallengeGate)
+        || (typeof require === 'function' ? (() => { try { return require('./modules/challenge-gate.js'); } catch (_) { return null; } })() : null);
+    if (cg && typeof cg.classifyManualResume === 'function') {
+        return cg.classifyManualResume(evidence || {});
+    }
+    const pageText = String(evidence.pageText || '');
+    const currentUrl = String(evidence.currentUrl || evidence.url || '');
+    const hasError = Boolean(evidence.hasError || /invalid captcha|verification failed|captcha required|please complete the security check|error submitting|submission failed|필수 항목|올바르지 않|인식에 실패|다시 시도해/i.test(pageText));
+    const serverAck = Boolean(evidence.serverAck || evidence.hasServerAck);
+    const explicitSuccessText = Boolean(evidence.successText || evidence.hasPositiveDomSuccess || /thank you|thanks for|message (has been )?sent|successfully (sent|submitted)|we(?:'ll| will) (be in touch|get back|contact)|submission (received|successful)|received your|감사합니다|접수(되었|가 완료)|전송(되었|이 완료)|문의가 (접수|등록|성공적으로)/i.test(pageText));
+    const urlChanged = Boolean(evidence.urlChanged);
+    const urlRedirectSuccess = Boolean(evidence.hasUrlRedirectSuccess || (urlChanged && /(?:[/?#&_-]|^)(?:thank[-_]?you|thanks|success|submitted|complete|completed|confirm|confirmed|done|receipt|status=success|sent=1|submitted=true)(?:[/?#&_-]|$)/i.test(currentUrl)));
+    const positive = !hasError && Boolean(serverAck || explicitSuccessText || urlRedirectSuccess);
+    return {
+        outcome: positive ? 'SUCCESS' : 'DELIVERY_UNKNOWN',
+        status: positive ? 'SUCCESS' : 'DELIVERY_UNKNOWN',
+        reasonCode: positive ? 'MANUAL_REGISTRATION_EVIDENCE_CONFIRMED' : (hasError ? 'MANUAL_PAGE_ERROR_DETECTED' : 'MANUAL_CLAIM_NO_EVIDENCE'),
+        operatorClaimOnly: !positive
+    };
+}
+
+async function resolveManualHoldHandshake(request = {}, sender = {}) {
+    const reqIdentity = request.executionIdentity || {};
+    const reqAttemptId = request.attemptId || reqIdentity.attemptId || null;
+
+    // 1. Idempotency check: if this attempt was already resolved by a prior click, return cached receipt without duplicate writes
+    if (reqAttemptId && settledManualHoldAttempts.has(reqAttemptId)) {
+        const cached = settledManualHoldAttempts.get(reqAttemptId);
+        logBg(sender?.tab?.id || null, `[MANUAL_HOLD_RESOLVE] Duplicate manual resolution ignored for attemptId=${reqAttemptId} (status=${cached.terminalStatus})`, 'info');
+        return { ...cached, duplicate: true };
+    }
+    if (reqAttemptId && manualHoldResolvingInFlight.has(reqAttemptId)) {
+        const inflightReceipt = await manualHoldResolvingInFlight.get(reqAttemptId);
+        return { ...inflightReceipt, duplicate: true };
+    }
+
+    // 2. Operator pause / inactive check: if operator paused the campaign, stay paused and reject auto-advance
+    if (campaignState.isPaused || campaignState.pausedByOperator || !campaignState.isActive) {
+        logBg(sender?.tab?.id || null, `[STALE_TARGET_EVENT] action=MANUAL_HOLD_RESOLVE reason=campaign_paused_or_inactive result=REJECTED`, 'warning');
+        return { success: false, stale: true, reason: 'campaign_paused_or_inactive' };
+    }
+
+    // 3. Verify attempt & tab ownership
+    const normalizedReq = {
+        ...request,
+        attemptId: reqAttemptId,
+        targetToken: request.targetToken || reqIdentity.targetToken || null,
+        campaignRunId: request.campaignRunId || reqIdentity.campaignRunId || null,
+        sessionId: (request.sessionId !== undefined && request.sessionId !== null) ? request.sessionId : reqIdentity.sessionId,
+        tabId: request.tabId || reqIdentity.tabId || sender?.tab?.id || null
+    };
+    const validation = validateActiveExecution(normalizedReq, sender, 'MANUAL_HOLD_RESOLVE', { allowBodyTabId: true });
+    if (!validation.valid) {
+        return { success: false, stale: true, reason: validation.reason };
+    }
+
+    const curStage = campaignState.currentTargetStage;
+    if (curStage !== 'MANUAL_HOLD' && !campaignState.manualHoldActive) {
+        logBg(validation.resolvedTabId, `[STALE_TARGET_EVENT] action=MANUAL_HOLD_RESOLVE stage=${curStage} result=REJECTED reason=not_in_manual_hold`, 'warning');
+        return { success: false, stale: true, reason: 'not_in_manual_hold' };
+    }
+
+    const activeAttemptId = validation.execution.attemptId;
+    const activeTabId = validation.execution.tabId;
+    const activeTargetToken = validation.execution.targetToken;
+    const activeUrl = campaignState.currentAttempt?.url || request.initialHoldUrl || request.url || '';
+
+    const resolutionPromise = (async () => {
+        // 4. Verify receipt evidence (never record CONFIRMED_SUCCESS without positive evidence)
+        const decision = request.decision || 'REGISTERED_CONTINUE';
+        const rawEvidence = request.evidence || {};
+        let terminalStatus;
+        let reasonCode;
+        let subReason;
+        let isSuccess = false;
+        let isDeliveryUnknown = false;
+
+        if (decision === 'SKIP') {
+            terminalStatus = 'SKIPPED';
+            reasonCode = 'MANUAL_OPERATOR_SKIP';
+            subReason = 'MANUAL_OPERATOR_SKIP';
+        } else {
+            const classification = evaluateManualHoldEvidence(rawEvidence);
+            if (classification.status === 'SUCCESS') {
+                terminalStatus = 'CONFIRMED_SUCCESS';
+                reasonCode = REASON_CODES.SUCCESS_CONFIRMED;
+                subReason = classification.reasonCode || 'MANUAL_REGISTRATION_EVIDENCE_CONFIRMED';
+                isSuccess = true;
+            } else {
+                terminalStatus = 'DELIVERY_UNKNOWN';
+                reasonCode = REASON_CODES.DELIVERY_UNKNOWN;
+                subReason = classification.reasonCode || 'MANUAL_CLAIM_NO_EVIDENCE';
+                isDeliveryUnknown = true;
+            }
+        }
+
+        // 5. Transition state machine out of MANUAL_HOLD before settlement
+        campaignState.currentTargetStage = 'MANUAL_HOLD_RESOLVED';
+        campaignState.manualHoldActive = false;
+        campaignState.manualHoldInitialUrl = null;
+
+        if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+            await chrome.storage.local.remove('xpider_v7_active_hold_state').catch(() => {});
+        }
+
+        const resultPayload = {
+            success: isSuccess,
+            error: isSuccess ? null : reasonCode,
+            reasonCode,
+            metadata: {
+                manualMode: true,
+                ownerManualConfirmed: isSuccess,
+                operatorClaimOnly: isDeliveryUnknown,
+                subReason,
+                outcomeEvidence: {
+                    ...rawEvidence,
+                    verifiedClassification: subReason
+                },
+                resultUrl: rawEvidence.currentUrl || request.url || activeUrl || null
+            }
+        };
+
+        const receipt = {
+            success: true,
+            settled: true,
+            duplicate: false,
+            attemptId: activeAttemptId,
+            tabId: activeTabId,
+            terminalStatus,
+            reasonCode,
+            subReason
+        };
+        settledManualHoldAttempts.set(activeAttemptId, receipt);
+
+        // 6. Perform exactly one atomic ledger transition & advance queue only after completion
+        if (typeof campaignState.targetResolve === 'function') {
+            const resolveFn = campaignState.targetResolve;
+            campaignState.targetResolve = null;
+            await resolveFn(resultPayload);
+        } else {
+            // Fallback when Service Worker restarted during MANUAL_HOLD (targetResolve closure was lost across SW reload)
+            const hs = await getHistoryStoreInstance();
+            if (hs && activeAttemptId) {
+                const existing = hs.attempts.find(a => a.attemptId === activeAttemptId);
+                if (!existing || !hs.isTerminalStatus(existing.status)) {
+                    await hs.settleCanonicalAttempt(activeAttemptId, terminalStatus, reasonCode, resultPayload.metadata.outcomeEvidence, {
+                        campaignRunId: campaignState.campaignRunId,
+                        resultUrl: resultPayload.metadata.resultUrl,
+                        targetToken: activeTargetToken,
+                        contactPageUrl: activeUrl,
+                        committedContactUrl: activeUrl,
+                        formPageUrl: activeUrl,
+                        committedFormUrl: activeUrl,
+                        formDetectionStatus: 'FOUND',
+                        autofillStatus: 'SUCCESS',
+                        submissionStatus: terminalStatus,
+                        ownerManualConfirmed: isSuccess
+                    });
+                    await hs.persist();
+                }
+                await syncCampaignCountersFromLedger(hs);
+            }
+            if (!campaignState.outcomeHistogram) campaignState.outcomeHistogram = {};
+            campaignState.outcomeHistogram[reasonCode] = (campaignState.outcomeHistogram[reasonCode] || 0) + 1;
+
+            campaignState.currentTargetStage = 'SETTLED';
+            campaignState.currentAttempt = null;
+            campaignState.activeTargetInFlight = false;
+            campaignState.activeTargetCount = 0;
+            campaignState.lastFinalTs = Date.now();
+            if (campaignState.currentTabId === activeTabId) {
+                campaignState.currentTabId = null;
+            }
+            if (campaignState.targetTabId === activeTabId) {
+                campaignState.targetTabId = null;
+            }
+            if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+                await chrome.storage.local.remove(['xpider_currentAttempt', 'xpider_v7_active_hold_state']).catch(() => {});
+            }
+            if (activeTabId) {
+                if (isDeliveryUnknown && KEEP_DELIVERY_UNKNOWN_TABS && MAX_RETAINED_UNCERTAIN_TABS > 0) {
+                    retainedTabIds.add(activeTabId);
+                    campaignOwnedTabIds.delete(activeTabId);
+                    retainedUncertainTabs.push(activeTabId);
+                } else {
+                    await closeOwnedTabVerified(activeTabId, 'MANUAL_HOLD_RESOLVED').catch(() => {});
+                }
+            }
+            if (campaignState.isActive && !campaignState.isPaused && !campaignState.pausedByOperator && !campaignState.isLoopRunning) {
+                processNextCampaignTarget(campaignState.sessionId, campaignState.schedulerGeneration);
+            }
+        }
+
+        logBg(activeTabId, `✅ [MANUAL_HOLD_RESOLVE] Handshake settled attemptId=${activeAttemptId} status=${terminalStatus} reason=${reasonCode} subReason=${subReason}`, isSuccess ? 'success' : 'info');
+        return receipt;
+    })();
+
+    if (reqAttemptId) {
+        manualHoldResolvingInFlight.set(reqAttemptId, resolutionPromise);
+    }
+    try {
+        return await resolutionPromise;
+    } finally {
+        if (reqAttemptId) {
+            manualHoldResolvingInFlight.delete(reqAttemptId);
+        }
+    }
 }
 
 if (typeof global !== 'undefined') {
@@ -5017,12 +5237,19 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
             }
             campaignState.currentTargetStage = 'MANUAL_HOLD';
             campaignState.manualHoldActive = true;
+            campaignState.manualHoldInitialUrl = request.url || campaignState.currentAttempt?.url || '';
             if (campaignState.targetDeadlineController) {
                 campaignState.targetDeadlineController.pause('MANUAL_HOLD');
             }
             if (campaignState.activeTimeoutId) {
                 clearTimeout(campaignState.activeTimeoutId);
                 campaignState.activeTimeoutId = null;
+            }
+            if (typeof chrome !== 'undefined' && chrome.alarms && campaignState.sessionId) {
+                const sId = campaignState.sessionId;
+                const tId = validation.resolvedTabId || campaignState.currentTabId;
+                if (tId) chrome.alarms.clear(`xpider_watchdog_${tId}_${sId}`);
+                chrome.alarms.clear(`xpider_timeout_${sId}`);
             }
             if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
                 chrome.storage.local.set({
@@ -5031,9 +5258,11 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
                         stage: 'MANUAL_HOLD',
                         tabId: validation.resolvedTabId,
                         url: campaignState.currentAttempt?.url || request.url || '',
+                        initialHoldUrl: campaignState.manualHoldInitialUrl,
                         attemptId: campaignState.currentAttempt?.attemptId || null,
                         targetToken: campaignState.currentTargetToken || null,
                         campaignRunId: campaignState.campaignRunId || null,
+                        sessionId: campaignState.sessionId || 0,
                         campaignMode: campaignState.campaignMode || 'MANUAL',
                         heldAt: Date.now()
                     }
@@ -5041,6 +5270,18 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
             }
             logBg(validation.resolvedTabId, `🖐️ [V7_MANUAL_MODE_HOLD] Form prepared on ${request.url || ''}. Holding campaign queue for manual operator action.`, 'info');
             sendResponse({ success: true, state: 'MANUAL_HOLD', deadlinePaused: true });
+            return true;
+        }
+
+        case 'MANUAL_HOLD_RESOLVE': {
+            (async () => {
+                try {
+                    const receipt = await resolveManualHoldHandshake(request, sender);
+                    sendResponse(receipt);
+                } catch (err) {
+                    sendResponse({ success: false, error: err.message });
+                }
+            })();
             return true;
         }
 
@@ -5278,8 +5519,15 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
             return true;
 
         case 'SENDER_FINISHED':
-            // [Issue #6 R6.9E.1 Section 8A/8B] Strict Terminal Barrier with Unified Execution Validator
+            // [Issue #6 R6.9E.1 Section 8A/8B & Comment #6521464588 Manual Hold Idempotency]
             (() => {
+                const reqAttId = request?.attemptId || request?.executionIdentity?.attemptId || null;
+                if (reqAttId && settledManualHoldAttempts.has(reqAttId)) {
+                    const cached = settledManualHoldAttempts.get(reqAttId);
+                    sendResponse({ success: true, duplicate: true, alreadySettledByManualHoldResolve: true, receipt: cached });
+                    return;
+                }
+
                 const validation = validateActiveExecution(request, sender, 'SENDER_FINISHED');
                 if (!validation.valid) {
                     sendResponse({ success: false, reason: validation.reason });
@@ -5299,7 +5547,8 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
 
                 const curStage = campaignState.currentTargetStage;
                 // Stage authority: must be at allowed terminal stage or explicit failure/skip
-                const allowedTerminalStages = ['VERIFYING', 'CONFIRMED_SUCCESS', 'SUBMITTING', 'SUBMIT_TRIGGERED', 'SUBMIT_ATTEMPT_STARTED', 'POST_SUBMIT_CONFIRMING', 'SETTLED', 'READY_TO_SUBMIT', 'CAPTCHA_AUTO_SUCCESS'];
+                // [Comment #6521464588] Include MANUAL_HOLD and MANUAL_HOLD_RESOLVED so manual-mode completions are never rejected as non_terminal_stage
+                const allowedTerminalStages = ['VERIFYING', 'CONFIRMED_SUCCESS', 'SUBMITTING', 'SUBMIT_TRIGGERED', 'SUBMIT_ATTEMPT_STARTED', 'POST_SUBMIT_CONFIRMING', 'SETTLED', 'READY_TO_SUBMIT', 'CAPTCHA_AUTO_SUCCESS', 'MANUAL_HOLD', 'MANUAL_HOLD_RESOLVED'];
                 // [RC3.60 P0] Non-inquiry / SKIPPED settlements arrive before any STAGE_PROGRESSION (stage is null/PREPARING).
                 // They must ALWAYS be allowed through — blocking them causes the infinite heartbeat hang.
                 const isNonInquiryOrSkipResult = request.result && !request.result.success && (
@@ -5314,6 +5563,40 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
                     logBg(null, `[STALE_TARGET_EVENT] action=SENDER_FINISHED stage=${curStage} result=REJECTED reason=non_terminal_stage`, 'warning');
                     sendResponse({ success: false, reason: 'INVALID_STAGE_FOR_FINISH' });
                     return;
+                }
+
+                // [Comment #6521464588] If SENDER_FINISHED arrives directly while in MANUAL_HOLD, enforce receipt evidence verification
+                if ((curStage === 'MANUAL_HOLD' || request.result?.metadata?.manualMode) && request.result?.success) {
+                    const ev = request.result?.metadata?.outcomeEvidence || {};
+                    const isAlreadyVerified = ev.status === 'SUCCESS' || ev.outcome === 'SUCCESS' || Boolean(ev.hasPositiveDomSuccess || ev.hasUrlRedirectSuccess || ev.hasServerAck);
+                    const cls = isAlreadyVerified ? { status: 'SUCCESS', reasonCode: ev.reasonCode || 'MANUAL_REGISTRATION_EVIDENCE_CONFIRMED' } : evaluateManualHoldEvidence(ev);
+                    if (cls.status !== 'SUCCESS') {
+                        logBg(validation.resolvedTabId, `⚠️ [MANUAL_HOLD_EVIDENCE_GUARD] Downgrading un-evidenced manual SUCCESS to DELIVERY_UNKNOWN (${cls.reasonCode})`, 'warning');
+                        request.result.success = false;
+                        request.result.error = REASON_CODES.DELIVERY_UNKNOWN;
+                        request.result.reasonCode = REASON_CODES.DELIVERY_UNKNOWN;
+                        if (!request.result.metadata) request.result.metadata = {};
+                        request.result.metadata.ownerManualConfirmed = false;
+                        request.result.metadata.operatorClaimOnly = true;
+                        request.result.metadata.subReason = cls.reasonCode;
+                    }
+                    campaignState.currentTargetStage = 'MANUAL_HOLD_RESOLVED';
+                    campaignState.manualHoldActive = false;
+                    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+                        chrome.storage.local.remove('xpider_v7_active_hold_state').catch(() => {});
+                    }
+                    if (validation.execution?.attemptId) {
+                        settledManualHoldAttempts.set(validation.execution.attemptId, {
+                            success: true,
+                            settled: true,
+                            duplicate: false,
+                            attemptId: validation.execution.attemptId,
+                            tabId: validation.execution.tabId,
+                            terminalStatus: request.result.success ? 'CONFIRMED_SUCCESS' : 'DELIVERY_UNKNOWN',
+                            reasonCode: request.result.reasonCode,
+                            subReason: request.result.metadata?.subReason || request.result.reasonCode
+                        });
+                    }
                 }
 
                 // [RC3.33 P0-C: Immediate Runtime Exception Settlement]
@@ -7380,7 +7663,14 @@ async function pauseCampaignOrchestrator(saveCheckpoint = true) {
         campaignState.targetDeadlineController.cancel('PAUSE');
         campaignState.targetDeadlineController = null;
     }
-    if (typeof campaignState.targetResolve === 'function') {
+    const wasInV7Hold = Boolean(
+        inFlightStage === 'MANUAL_HOLD' ||
+        inFlightStage === 'CAPTCHA_PENDING_EXTERNAL_USER' ||
+        campaignState.manualHoldActive ||
+        campaignState.externalCaptchaWaitActive
+    );
+    const hadTargetResolve = typeof campaignState.targetResolve === 'function';
+    if (hadTargetResolve) {
         const resolve = campaignState.targetResolve;
         campaignState.targetResolve = null;
         resolve({
@@ -7396,9 +7686,22 @@ async function pauseCampaignOrchestrator(saveCheckpoint = true) {
     }
 
     // 3. WAIT FOR ACTIVE ORCHESTRATION TO QUIESCE BEFORE WRITING CHECKPOINT SNAPSHOT
-    const pauseQuiesceStart = Date.now();
-    while (campaignState.activeTargetInFlight && (Date.now() - pauseQuiesceStart < 5000)) {
-        await new Promise(r => setTimeout(r, 50));
+    if (wasInV7Hold || !hadTargetResolve) {
+        if (hadTargetResolve && campaignState.activeTargetInFlight) {
+            const holdQuiesceStart = Date.now();
+            while (campaignState.activeTargetInFlight && (Date.now() - holdQuiesceStart < 200)) {
+                await new Promise(r => setTimeout(r, 25));
+            }
+        }
+        campaignState.activeTargetInFlight = false;
+        campaignState.activeTargetCount = 0;
+        campaignState.manualHoldActive = false;
+        campaignState.externalCaptchaWaitActive = false;
+    } else {
+        const pauseQuiesceStart = Date.now();
+        while (campaignState.activeTargetInFlight && (Date.now() - pauseQuiesceStart < 5000)) {
+            await new Promise(r => setTimeout(r, 50));
+        }
     }
 
     if (campaignState.activeTargetInFlight) {
@@ -7482,7 +7785,6 @@ async function pauseCampaignOrchestrator(saveCheckpoint = true) {
     await syncCampaignCountersFromLedger(hsInstance);
 
     // [Issue #6 R6.9E B5 & V7.0.0-RC2 Audit Item 2] 5. Close campaign tabs EXCEPT held tab if in MANUAL_HOLD or CAPTCHA_PENDING_EXTERNAL_USER
-    const wasInV7Hold = Boolean(inFlightStage === 'MANUAL_HOLD' || inFlightStage === 'CAPTCHA_PENDING_EXTERNAL_USER' || campaignState.manualHoldActive || campaignState.externalCaptchaWaitActive);
     const retainTabOnPause = wasInV7Hold ? campaignState.currentTabId : null;
     await closeAllCampaignTabsExcept(retainTabOnPause, 'PAUSE_CAMPAIGN');
     if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
@@ -9152,7 +9454,7 @@ async function orchestrateSending(urlInput, template, abortSignal = null) {
         if (!actualResultUrl && res?.metadata?.resultUrl) {
             actualResultUrl = res.metadata.resultUrl;
         }
-        if (!isConfirmedProof && actualResultUrl && (actualResultUrl.includes('success') || actualResultUrl.includes('thank'))) {
+        if (!isConfirmedProof && !res?.metadata?.manualMode && res?.reasonCode !== REASON_CODES.DELIVERY_UNKNOWN && res?.reasonCode !== 'MANUAL_OPERATOR_SKIP' && actualResultUrl && (actualResultUrl.includes('success') || actualResultUrl.includes('thank'))) {
             isConfirmedProof = true;
             if (!res) res = { success: true, metadata: { resultUrl: actualResultUrl } };
             else { res.success = true; if (!res.metadata) res.metadata = {}; res.metadata.resultUrl = actualResultUrl; }
@@ -9393,11 +9695,12 @@ async function orchestrateSending(urlInput, template, abortSignal = null) {
         }
 
         if (res && res.success) {
-            const holdMs = Math.max(3500, campaignState.submitDelayMs ? parseInt(campaignState.submitDelayMs) : 3500);
+            const holdMs = res?.metadata?.manualMode ? 20 : Math.max(3500, campaignState.submitDelayMs ? parseInt(campaignState.submitDelayMs) : 3500);
             logBg(tabId, `✨ [Engine] Submission confirmed. Maintaining tab for completion (${holdMs}ms)...`, "success");
             await new Promise(r => setTimeout(r, holdMs));
         } else if (res?.error !== 'ABORTED' && res?.reasonCode !== 'ABORTED' && !campaignState.isPaused) {
-            await new Promise(r => setTimeout(r, 1000));
+            const failWaitMs = res?.metadata?.manualMode ? 20 : 1000;
+            await new Promise(r => setTimeout(r, failWaitMs));
         }
 
         if (discoveryCtx) {
@@ -9523,6 +9826,39 @@ async function orchestrateSending(urlInput, template, abortSignal = null) {
         if (updatedTabId !== tabId || discoveryCtx.aborted || campaignState.isPaused || isFinished) return;
         if (updatedTabId === tabId) {
             lastActivity = Date.now();
+            // [Comment #6521464588] Reload/navigation during MANUAL_HOLD: preserve hold state, never recreate watchdog timeout or restart START_SENDING scan
+            if (campaignState.manualHoldActive || campaignState.currentTargetStage === 'MANUAL_HOLD') {
+                if (statusInfo.status === 'complete') {
+                    (async () => {
+                        try {
+                            await safeScripting.executeScript({ target: { tabId }, files: [
+                                'modules/contact-gate.js',
+                                'modules/challenge-gate.js',
+                                'modules/math-captcha-solver.js',
+                                'modules/smart-field-resolver.js',
+                                'modules/contact-discovery-engine.js',
+                                'modules/checkbox-resolver-r2.js',
+                                'modules/select-resolver-r2.js',
+                                'modules/final-form-completion-engine.js',
+                                'modules/form-discovery-engine-r2.js',
+                                'modules/vision-submit-executor.js',
+                                'modules/email-collector.js',
+                                'content-script.js'
+                            ] });
+                        } catch (_) {}
+                        safeTabs.sendMessage(tabId, {
+                            action: 'RESTORE_MANUAL_HOLD_PANEL',
+                            attemptId: _attemptId,
+                            targetToken,
+                            campaignRunId: campaignState.campaignRunId,
+                            sessionId: currentSession,
+                            initialHoldUrl: campaignState.manualHoldInitialUrl || currentAttemptUrl,
+                            template
+                        }).catch(() => {});
+                    })();
+                }
+                return;
+            }
             if (chrome.alarms) chrome.alarms.create(`xpider_watchdog_${tabId}_${currentSession}`, { delayInMinutes: 1 });
             
             const norm = normalizeUrl(statusInfo.url || '');
@@ -10172,7 +10508,11 @@ if (typeof module !== 'undefined' && module.exports) {
         removeOwnerTestNetworkGuard,
         reconcileOwnerTestNetworkGuardOnBoot,
         OWNER_TEST_GUARD_RULE_IDS,
-        assertPrivacyTransportReady
+        assertPrivacyTransportReady,
+        resolveManualHoldHandshake,
+        evaluateManualHoldEvidence,
+        settledManualHoldAttempts,
+        validateActiveExecution
     };
 }
 

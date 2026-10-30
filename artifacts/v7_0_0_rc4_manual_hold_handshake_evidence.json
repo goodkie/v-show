@@ -1,0 +1,59 @@
+{
+  "directive": "Issue #6 Comment #6521464588 — [CHATGPT -> ANTIGRAVITY][MANUAL HOLD EVENT REJECTION - LOCAL STATE FIX]",
+  "releaseTag": "v7.0.0-rc4",
+  "releaseAsset": {
+    "name": "XPIDER_V7.0.0_RC4_DUAL_MODE_OWNER_BETA.zip",
+    "sizeBytes": 53099525,
+    "sha256": "e26cf0bedd6f6d9c0e71aa9532aac0696787b774d7c4678b76267b837bb2c718"
+  },
+  "buildId": "V7.0.0-RC4-20261030-MANUAL-HOLD-HANDSHAKE-PASS",
+  "branch": "major/v7-dual-mode",
+  "timestamp": "2026-10-30T11:50:30.000Z",
+  "rootCauseDiagnosis": {
+    "reproducedFailure": "[STALE_TARGET_EVENT] action=SENDER_FINISHED stage=MANUAL_HOLD result=REJECTED reason=non_terminal_stage on jeongstkd.com at 07:20:15",
+    "exactHandlerLocation": "extension/background.js (case 'SENDER_FINISHED': lines 5521-5635)",
+    "exactMismatch": [
+      "1. When content-script.js entered Manual Hold on jeongstkd.com at 07:19:53, background.js (case 'MANUAL_MODE_HOLD', line 5238) set campaignState.currentTargetStage = 'MANUAL_HOLD'.",
+      "2. At 07:20:15, the Owner clicked '✅ I Registered — Continue'. content-script.js logged '[MANUAL_MODE_DECISION] action=REGISTERED_CONTINUE status=SUCCESS' and called finishCampaign(true, REASON_CODES.SUCCESS_CONFIRMED, ...), which sent runtime message action='SENDER_FINISHED' with result.success=true directly while campaignState.currentTargetStage was still 'MANUAL_HOLD'.",
+      "3. In background.js case 'SENDER_FINISHED', allowedTerminalStages was ['VERIFYING', 'CONFIRMED_SUCCESS', 'SUBMITTING', 'SUBMIT_TRIGGERED', 'SUBMIT_ATTEMPT_STARTED', 'POST_SUBMIT_CONFIRMING', 'SETTLED', 'READY_TO_SUBMIT', 'CAPTCHA_AUTO_SUCCESS'] — omitting 'MANUAL_HOLD'.",
+      "4. And isTerminalStageAllowed had fallback (request.result && !request.result.success), which allowed DELIVERY_UNKNOWN (success: false) and SKIP (success: false) to pass during MANUAL_HOLD, but rejected SUCCESS (request.result.success === true) with reason=non_terminal_stage!"
+    ]
+  },
+  "codeLocations": {
+    "backgroundHandshake": "extension/background.js:2003-2216 (settledManualHoldAttempts, manualHoldResolvingInFlight, evaluateManualHoldEvidence, resolveManualHoldHandshake)",
+    "backgroundMessageHandler": "extension/background.js:5276-5286 (case 'MANUAL_HOLD_RESOLVE':)",
+    "backgroundSenderFinishedGuard": "extension/background.js:5521-5598 (case 'SENDER_FINISHED': deduplication + allowedTerminalStages includes 'MANUAL_HOLD'/'MANUAL_HOLD_RESOLVED' + evaluateManualHoldEvidence downgrade guard)",
+    "backgroundPauseQuiescenceFix": "extension/background.js:7666-7712 (pauseCampaignOrchestrator immediate quiescence during MANUAL_HOLD / SW reload)",
+    "backgroundFinishUrlOverrideGuard": "extension/background.js:9438 (finish() respects explicit manualMode DELIVERY_UNKNOWN/SKIP)",
+    "backgroundNavWatcherHoldPreservation": "extension/background.js:9810-9842 (navWatcher preserves MANUAL_HOLD on tab reload/navigation and sends RESTORE_MANUAL_HOLD_PANEL)",
+    "contentScriptHandshakeAndIdempotency": "extension/content-script.js:4825-5035 (handleV7ManualModeHold sends MANUAL_HOLD_RESOLVE with evidencePayload, disables buttons, guards resolvingInFlight)",
+    "contentScriptReloadRestore": "extension/content-script.js:5680-5710 (case 'RESTORE_MANUAL_HOLD_PANEL': restores #xpider-v7-manual-hold-panel after page reload)"
+  },
+  "testSuites": {
+    "test_v7_rc4_manual_hold_resolution.js": {
+      "passed": 6,
+      "failed": 0,
+      "scenarios": [
+        "1. hold -> confirmed: MANUAL_HOLD -> CONFIRMED_SUCCESS handshake settles atomically with zero SENDER_FINISHED stage rejection",
+        "2. hold -> unknown: Un-evidenced REGISTERED_CONTINUE and un-evidenced SENDER_FINISHED record DELIVERY_UNKNOWN, never CONFIRMED_SUCCESS",
+        "3. stale attempt rejection: Mismatched attemptId or tabId is rejected with zero state/ledger mutation",
+        "4. double click idempotency: Concurrent & sequential repeated clicks perform strictly 1 ledger transition",
+        "5. reload during hold: SW reload during MANUAL_HOLD (targetResolve=null) settles ledger atomically and releases slot",
+        "6. operator pause stays paused: Operator PAUSE / STOP & SAVE retains held tab and blocks late resolution or watchdog auto-resume"
+      ]
+    },
+    "test_v7_rc2_audit_and_p0_privacy_storage.js": "11/11 PASS",
+    "test_v7_challenge_gate.js": "9/9 PASS",
+    "test_v7_stage2_matrix.js": "9/9 PASS",
+    "test_no_new_undefined_identifiers.js": "PASS"
+  },
+  "liveCampaignPreservation": {
+    "storageResetPerformed": false,
+    "publicCampaignSendsExecuted": 0,
+    "preservedCampaignProgress": {
+      "total": 97,
+      "remaining": 79,
+      "completed": 18
+    }
+  }
+}
