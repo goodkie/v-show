@@ -6,8 +6,9 @@
 - Workspace: E:\vivpr\ai\extension-form-sender
 - Authority: goodkie/v-show Issues #6 & #10
 - Branch: upgrade/phase-0-1
-- State Rev: 2026-10-29.242
-- Authority Cursor: 6513127036
+- State Rev: 2026-10-30.243
+- Authority Cursor: 6514783886
+- Major-version Stage 0 backup DONE: tag major-backup-20261030-from-93 (4be780b4); backups/MAJOR_BACKUP_20261030_from_93_4be780b4 (local, DPAPI-encrypted secrets); sandbox restore PASS; receipt #6514847380. Stage 1 pending.
 - Last Directives / Audits:
   - `[CHATGPT → ANTIGRAVITY][ISSUE #6][NOPECHA OFFICIAL DOCUMENTATION ALIGNMENT / AUTH DIAGNOSTICS] Comment #6513127036`
   - `[CHATGPT → ANTIGRAVITY][P0 .92 CAPTCHA CONFIGURATION & FORM CLASSIFICATION QA][ISSUE #6] Comment #6513087470`
