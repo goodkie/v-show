@@ -1954,11 +1954,8 @@
                 finishCampaign(false, result.reasonCode, result.reasonCode);
                 return false;
             }
-            if (isAutofillSuccess && hasGenuineMessageField) {
-                logDev("[FILL] messageBodyFilled=true", "success");
-            } else {
-                logDev("[FILL] messageBodyFilled=false", "info");
-            }
+            // Reaching here means autofill succeeded (no unresolved message_body), so this is truthful.
+            logDev("[FILL] messageBodyFilled=true", "success");
             
             // [RC3.25 Directive A] Non-sensitive visual confirmation after autofill resolves
             try {

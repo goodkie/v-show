@@ -1,0 +1,57 @@
+{
+  "extension/background.js": [
+    "BuildProvenance",
+    "EXPLICIT_TEST_SOURCES",
+    "EmailCollectorStore",
+    "MockCaptchaProviderAdapter",
+    "PrivacyGateway",
+    "global",
+    "importScripts",
+    "logBuffer",
+    "module",
+    "puter",
+    "require"
+  ],
+  "extension/content-script.js": [
+    "CheckboxResolverR2",
+    "ContactDiscoveryEngine",
+    "ContactGate",
+    "FinalFormCompletionEngine",
+    "MathCaptchaSolver",
+    "SelectResolverR2",
+    "SmartFieldResolver",
+    "VisionSubmitExecutor",
+    "_currentCampaignTemplate",
+    "applyCheckbox",
+    "applyRadio",
+    "applySelect",
+    "applyVal",
+    "extractEmailsFromDocument",
+    "global",
+    "hadMatchingIframeBeforeApply",
+    "module",
+    "require",
+    "submitDelayMs",
+    "typeHumanlike"
+  ],
+  "extension/popup.js": [
+    "BuildProvenance",
+    "EmailCollectorStore",
+    "HistoryStore",
+    "TemplateStore",
+    "_renderHistoryPanel",
+    "campaignGeneration",
+    "dict",
+    "module",
+    "require",
+    "updatePrivacyHud",
+    "updateQueueUI"
+  ],
+  "extension/solver-content.js": [
+    "module"
+  ],
+  "extension/solver-core.js": [
+    "module",
+    "puter"
+  ]
+}
