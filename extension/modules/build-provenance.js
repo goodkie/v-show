@@ -1,5 +1,5 @@
 /**
- * Build Provenance & Runtime Self-Check Module (v7.0 Dual & Semi-Auto Mode RC8)
+ * Build Provenance & Runtime Self-Check Module (v7.0 Dual & Semi-Auto Mode RC9)
  */
 (function(root, factory) {
     if (typeof define === 'function' && define.amd) {
@@ -14,13 +14,13 @@
 
     const BUILD_INFO = Object.freeze({
         version: "7.0.0",
-        buildId: "V7.0.0-RC8-20261030-SEMI-AUTO-TRIPLE-MODE-PASS",
+        buildId: "V7.0.0-RC9-20261030-FOUR-DEFECTS-RESOLUTION-PASS",
         channel: "OWNER_BETA_V7_DUAL_MODE",
-        tag: "v7.0.0-rc8",
+        tag: "v7.0.0-rc9",
         manifestVersion: 3,
-        implementationHead: "1b1d164a8360a420fda804231de1fa10c5978227",
-        implementationHeadShort: "1b1d164a",
-        builtAt: "2026-10-30T15:32:54.238Z",
+        implementationHead: "2cdef1e1a179672e92f42ddc9a870db436b2a6e7",
+        implementationHeadShort: "2cdef1e1",
+        builtAt: "2026-10-30T16:24:34.029Z",
         testOnly: false,
         productionReady: true,
         features: Object.freeze([
@@ -31,6 +31,11 @@
             "START_MANUAL",
             "SEMI_AUTOMATIC_MODE",
             "OPERATOR_ASSISTANCE_CARD",
+            "PERSISTENT_CURRENT_MODE_HUD",
+            "BOUNDED_DISCOVERY_WATCHDOG",
+            "MODAL_TRIGGER_UNCOVER",
+            "RESIDENTIAL_502_BOUNDED_RETRY",
+            "TRIPLE_MODE_RESUME_RELIABILITY",
             "EXTERNAL_CAPTCHA_WAIT",
             "FORM_COMPLETION_FIRST",
             "ZERO_UNHANDLED_CHECKBOX_LEAKAGE",

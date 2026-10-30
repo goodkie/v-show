@@ -699,11 +699,30 @@
             'contacter', // French
             'お問い合わせ', '連絡', // Japanese
             '联系', '留言', // Chinese
-            'tribeca', 'canarsie', 'marine park', 'location' // [v18.0.0] Regional location buttons
+            'tribeca', 'canarsie', 'marine park', 'location', // [v18.0.0] Regional location buttons
+            'book', 'trial', 'free trial', 'get started', 'sign up', 'register', 'membership', 'appointment'
         ];
+
+        // Check for specific hidden modal containers (e.g. Elementor modal wrapping GymDesk/Maonrails on jiujitsufoundation.com)
+        const modalContainer = document.querySelector('#jjf-form-modal, [id*="form-modal"], div.maonrails-form, div[attr-gym]');
+        if (modalContainer) {
+            const modalTrigger = document.querySelector('a[href="#contact"], .elementor-button, [data-elementor-open-lightbox]');
+            if (modalTrigger) {
+                logDev(`🎯 [Supreme-Scan 3.0] Discovered modal container with trigger "${modalTrigger.textContent?.trim() || '#contact'}". Activating trigger...`);
+                try {
+                    modalTrigger.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    modalTrigger.click();
+                    ['mouseenter', 'mousedown', 'mouseup', 'click'].forEach(evt => {
+                        modalTrigger.dispatchEvent(new MouseEvent(evt, { bubbles: true, cancelable: true }));
+                    });
+                } catch (_) {}
+                await new Promise(r => setTimeout(r, 1200));
+                return true;
+            }
+        }
         
         // Search for buttons, links, and action-oriented spans/divs
-        const possibleTriggers = queryAllDeep('button, a, div[role="button"], span.btn, .contact-btn, #contact-trigger, [class*="chat"], [id*="chat"], .support-trigger, .lightbox-handle, .sqs-block-button, .sqs-editable-button');
+        const possibleTriggers = queryAllDeep('button, a, div[role="button"], span.btn, .contact-btn, #contact-trigger, [class*="chat"], [id*="chat"], .support-trigger, .lightbox-handle, .sqs-block-button, .sqs-editable-button, a[href="#contact"], [data-elementor-open-lightbox], .elementor-button, [class*="modal-trigger"], [data-toggle="modal"], [data-target*="modal"], [class*="maonrails"], [attr-gym], #jjf-form-modal');
         
         for (const btn of possibleTriggers) {
             // [Safety Guard] Skip elements that trigger downloads or external application protocols (e.g. Outlook/vCard/PDF)
@@ -1466,16 +1485,16 @@
             sessionStorage.removeItem('xpider_recursion_debt');
             sessionStorage.removeItem('xpider_guessed_paths');
             const curMode = (typeof window !== 'undefined' && window.__xpider_campaign_mode) || (template && template.campaignMode) || 'AUTO';
-            if (curMode === 'SEMI_AUTO') {
-                logDev(`🖐️ [SEMI_AUTO_DISCOVERY_HOLD] No inquiry form automatically discovered. Retaining tab and displaying operator assistance panel.`, "warning");
-                const semiOutcome = await handleV7ManualModeHold(null, template, new Map(), { detected: false, verified: true, type: 'none' }, {
-                    mode: 'SEMI_AUTO',
+            if (curMode === 'SEMI_AUTO' || curMode === 'MANUAL') {
+                logDev(`🖐️ [${curMode}_DISCOVERY_HOLD] No inquiry form automatically discovered. Retaining tab and displaying operator assistance panel.`, "warning");
+                const holdOutcome = await handleV7ManualModeHold(null, template, new Map(), { detected: false, verified: true, type: 'none' }, {
+                    mode: curMode,
                     stage: 'FORM_DISCOVERY',
                     validationFailed: true,
                     validationReason: 'NO_ACCESSIBLE_INQUIRY_FORM',
                     unresolvedFields: ['inquiry_form']
                 });
-                return Boolean(semiOutcome && semiOutcome.success);
+                return Boolean(holdOutcome && holdOutcome.success);
             }
             currentTargetLifecycleState = TargetLifecycleState.SETTLING;
             finishCampaign(false, "NO_FORM_ON_PAGE", "NO_ACCESSIBLE_INQUIRY_FORM");

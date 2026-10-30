@@ -2931,8 +2931,24 @@
                     } else if (rStatus.health === 'NO_NODES' || !rStatus.selectedEgressId) {
                         failReason = 'PRIVACY_RELAY_NO_NODES';
                     } else if (rStatus.residentialProxySelected && (!rStatus.residentialProxy || !rStatus.residentialProxy.sendAllowed || rStatus.residentialProxy.status !== 'EGRESS_VERIFIED')) {
-                        const detail = rStatus.residentialProxy ? (rStatus.residentialProxy.detail || rStatus.residentialProxy.status) : 'UNCONFIGURED';
-                        failReason = `RESIDENTIAL_UPSTREAM_BLOCKED (${detail})`;
+                        let detail = rStatus.residentialProxy ? (rStatus.residentialProxy.detail || rStatus.residentialProxy.status) : 'UNCONFIGURED';
+                        // [RC9 Defect 2] If detail is HTTP_502, perform safe probe retry with backoff before hard lock
+                        if (detail.includes('502') || detail === 'HTTP_502') {
+                            for (let retry = 1; retry <= 2; retry++) {
+                                await new Promise(r => setTimeout(r, 500 * retry));
+                                try {
+                                    const retryProbe = await this.queryRelayStatus();
+                                    if (retryProbe && retryProbe.status && retryProbe.status.residentialProxy && retryProbe.status.residentialProxy.sendAllowed && retryProbe.status.residentialProxy.status === 'EGRESS_VERIFIED') {
+                                        rStatus = retryProbe.status;
+                                        detail = 'EGRESS_VERIFIED';
+                                        break;
+                                    }
+                                } catch (_) {}
+                            }
+                        }
+                        if (!rStatus.residentialProxy || !rStatus.residentialProxy.sendAllowed || rStatus.residentialProxy.status !== 'EGRESS_VERIFIED') {
+                            failReason = `RESIDENTIAL_UPSTREAM_BLOCKED (${detail})`;
+                        }
                     } else if (this.config.physicalGateEnabled && rStatus.physicalGateEnabled && !rStatus.physicalGateReady) {
                         failReason = 'PHYSICAL_GATE_FAIL_CLOSED';
                     } else if (rStatus.lastDisconnectReason) {

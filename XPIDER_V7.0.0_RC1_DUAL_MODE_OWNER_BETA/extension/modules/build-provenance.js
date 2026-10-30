@@ -1,5 +1,5 @@
 /**
- * Build Provenance & Runtime Self-Check Module (v7.0 Dual Mode RC7)
+ * Build Provenance & Runtime Self-Check Module (v7.0 Dual & Semi-Auto Mode RC9)
  */
 (function(root, factory) {
     if (typeof define === 'function' && define.amd) {
@@ -14,19 +14,28 @@
 
     const BUILD_INFO = Object.freeze({
         version: "7.0.0",
-        buildId: "V7.0.0-RC7-20261030-RUNTIME-HANDSHAKE-AND-LAYOUT-PASS",
+        buildId: "V7.0.0-RC9-20261030-FOUR-DEFECTS-RESOLUTION-PASS",
         channel: "OWNER_BETA_V7_DUAL_MODE",
-        tag: "v7.0.0-rc7",
+        tag: "v7.0.0-rc9",
         manifestVersion: 3,
-        implementationHead: "62837dafae0137a20a64752028494f89bcdfc642",
-        implementationHeadShort: "62837daf",
-        builtAt: "2026-10-30T14:32:01.940Z",
+        implementationHead: "2cdef1e1a179672e92f42ddc9a870db436b2a6e7",
+        implementationHeadShort: "2cdef1e1",
+        builtAt: "2026-10-30T16:24:34.029Z",
         testOnly: false,
         productionReady: true,
         features: Object.freeze([
             "DUAL_START_MODES",
+            "TRIPLE_START_MODES",
             "START_AUTOMATIC",
+            "START_SEMI_AUTO",
             "START_MANUAL",
+            "SEMI_AUTOMATIC_MODE",
+            "OPERATOR_ASSISTANCE_CARD",
+            "PERSISTENT_CURRENT_MODE_HUD",
+            "BOUNDED_DISCOVERY_WATCHDOG",
+            "MODAL_TRIGGER_UNCOVER",
+            "RESIDENTIAL_502_BOUNDED_RETRY",
+            "TRIPLE_MODE_RESUME_RELIABILITY",
             "EXTERNAL_CAPTCHA_WAIT",
             "FORM_COMPLETION_FIRST",
             "ZERO_UNHANDLED_CHECKBOX_LEAKAGE",
@@ -51,11 +60,21 @@
         return true;
     }
 
+    function isTripleModeSupported() {
+        return true;
+    }
+
+    function isSemiAutoSupported() {
+        return true;
+    }
+
     return {
         BUILD_INFO,
         verifyModuleIntegrity,
         isTestOnlyBuild,
         isDualModeSupported,
+        isTripleModeSupported,
+        isSemiAutoSupported,
         manifestVersion: 3,
         getBuildProvenanceLogs: function() { return []; }
     };

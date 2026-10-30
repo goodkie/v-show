@@ -2704,16 +2704,32 @@ async function resumeActiveCampaignJobAfterRecovery() {
 
     // Ensure the interrupted URL is retried cleanly if not replayed in place
     if (!replayed) {
-        if (tabId) {
-            try {
-                await chrome.tabs.reload(tabId);
-            } catch (_) {
-                if (checkpoint.url && !campaignState.queue.includes(checkpoint.url)) {
-                    campaignState.queue.unshift(checkpoint.url);
-                }
+        // [RC9 Defect 2 Invariant] NEVER re-dispatch submitted work on reconnection
+        if (checkpoint.submitState === 'SUBMIT_TRIGGERED' || checkpoint.workflowPhase?.includes('SUBMIT')) {
+            logBg(null, `🛡️ [NETWORK_RECOVERY] Work was already submitted (submitState=${checkpoint.submitState}). Settling as DELIVERY_UNKNOWN without duplicate submission.`, "warning");
+            const hs = await getHistoryStoreInstance();
+            if (hs && checkpoint.attemptId) {
+                await hs.settleCanonicalAttempt(checkpoint.attemptId, 'DELIVERY_UNKNOWN', REASON_CODES.DELIVERY_UNKNOWN, {}, { campaignRunId: checkpoint.campaignRunId });
+                await syncCampaignCountersFromLedger(hs);
             }
-        } else if (checkpoint.url && !campaignState.queue.includes(checkpoint.url)) {
-            campaignState.queue.unshift(checkpoint.url);
+            if (campaignState.targetResolve) {
+                const resolve = campaignState.targetResolve;
+                campaignState.targetResolve = null;
+                resolve({ success: false, reasonCode: REASON_CODES.DELIVERY_UNKNOWN });
+            }
+            if (tabId) chrome.tabs.remove(tabId).catch(() => {});
+        } else {
+            if (tabId) {
+                try {
+                    await chrome.tabs.reload(tabId);
+                } catch (_) {
+                    if (checkpoint.url && !campaignState.queue.includes(checkpoint.url)) {
+                        campaignState.queue.unshift(checkpoint.url);
+                    }
+                }
+            } else if (checkpoint.url && !campaignState.queue.includes(checkpoint.url)) {
+                campaignState.queue.unshift(checkpoint.url);
+            }
         }
     }
 
@@ -9566,6 +9582,13 @@ async function orchestrateSending(urlInput, template, abortSignal = null) {
             } else if (isScanningPaths) {
                 waitingForPaths = true;
                 logBg(tabId, `⏳ [Engine] Waiting for contact path scan to finish...`, "info");
+                setTimeout(() => {
+                    if (waitingForPaths && !isFinished) {
+                        waitingForPaths = false;
+                        logBg(tabId, `⏱️ [Watchdog] Contact path scan wait limit reached (12s). Advancing candidate pipeline...`, "warning");
+                        tryNext();
+                    }
+                }, 12000);
             } else {
                 tryNext();
             }
@@ -10147,6 +10170,19 @@ async function orchestrateSending(urlInput, template, abortSignal = null) {
         if (baseUrl.includes('teamusatkd.com')) baseUrl = "https://teamusatkd.com";
 
         if (pathIdx >= validPaths.length) {
+            const curMode = campaignState.campaignMode || 'AUTO';
+            if (curMode === 'SEMI_AUTO' || curMode === 'MANUAL') {
+                logBg(tabId, `🖐️ [${curMode}_DISCOVERY_HOLD] All contact discovery paths exhausted. Displaying operator assistance hold...`, "warning");
+                chrome.runtime.sendMessage({
+                    action: 'TRIGGER_SIDE_PANEL_ASSIST',
+                    data: {
+                        url: currentAttemptUrl || baseUrl,
+                        reason: 'NO_ACCESSIBLE_INQUIRY_FORM (All paths exhausted)',
+                        mode: curMode,
+                        stage: 'FORM_DISCOVERY'
+                    }
+                }).catch(() => {});
+            }
             finish({ success: false, error: "Paths exhausted", reasonCode: 'CONTACT_DISCOVERY_EXHAUSTED' });
             return;
         }

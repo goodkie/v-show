@@ -500,8 +500,8 @@
                 const attemptId = request.attemptId || (Date.now().toString(36) + '_' + Math.random().toString(36).substring(2, 7));
                 const singleFlightKey = `${attemptId}:${currentRunUrl}:${domGeneration}`;
 
-                // [Issue #6 R6.9E & v7.0] Canonical Execution Identity & Campaign Mode Binding
-                window.__xpider_campaign_mode = (request.campaignMode === 'MANUAL') ? 'MANUAL' : 'AUTO';
+                // [Issue #6 R6.9E & v7.0 Triple Mode] Canonical Execution Identity & Campaign Mode Binding
+                window.__xpider_campaign_mode = (request.campaignMode === 'MANUAL' || request.campaignMode === 'SEMI_AUTO') ? request.campaignMode : 'AUTO';
                 window.__xpider_execution_identity = {
                     attemptId: request.attemptId || attemptId,
                     targetToken: request.targetToken || null,
@@ -699,11 +699,30 @@
             'contacter', // French
             'お問い合わせ', '連絡', // Japanese
             '联系', '留言', // Chinese
-            'tribeca', 'canarsie', 'marine park', 'location' // [v18.0.0] Regional location buttons
+            'tribeca', 'canarsie', 'marine park', 'location', // [v18.0.0] Regional location buttons
+            'book', 'trial', 'free trial', 'get started', 'sign up', 'register', 'membership', 'appointment'
         ];
+
+        // Check for specific hidden modal containers (e.g. Elementor modal wrapping GymDesk/Maonrails on jiujitsufoundation.com)
+        const modalContainer = document.querySelector('#jjf-form-modal, [id*="form-modal"], div.maonrails-form, div[attr-gym]');
+        if (modalContainer) {
+            const modalTrigger = document.querySelector('a[href="#contact"], .elementor-button, [data-elementor-open-lightbox]');
+            if (modalTrigger) {
+                logDev(`🎯 [Supreme-Scan 3.0] Discovered modal container with trigger "${modalTrigger.textContent?.trim() || '#contact'}". Activating trigger...`);
+                try {
+                    modalTrigger.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    modalTrigger.click();
+                    ['mouseenter', 'mousedown', 'mouseup', 'click'].forEach(evt => {
+                        modalTrigger.dispatchEvent(new MouseEvent(evt, { bubbles: true, cancelable: true }));
+                    });
+                } catch (_) {}
+                await new Promise(r => setTimeout(r, 1200));
+                return true;
+            }
+        }
         
         // Search for buttons, links, and action-oriented spans/divs
-        const possibleTriggers = queryAllDeep('button, a, div[role="button"], span.btn, .contact-btn, #contact-trigger, [class*="chat"], [id*="chat"], .support-trigger, .lightbox-handle, .sqs-block-button, .sqs-editable-button');
+        const possibleTriggers = queryAllDeep('button, a, div[role="button"], span.btn, .contact-btn, #contact-trigger, [class*="chat"], [id*="chat"], .support-trigger, .lightbox-handle, .sqs-block-button, .sqs-editable-button, a[href="#contact"], [data-elementor-open-lightbox], .elementor-button, [class*="modal-trigger"], [data-toggle="modal"], [data-target*="modal"], [class*="maonrails"], [attr-gym], #jjf-form-modal');
         
         for (const btn of possibleTriggers) {
             // [Safety Guard] Skip elements that trigger downloads or external application protocols (e.g. Outlook/vCard/PDF)
@@ -1465,6 +1484,18 @@
             logDev("❌ [Discovery] No valid forms or links found. Jumping to root/next candidate...", "warning");
             sessionStorage.removeItem('xpider_recursion_debt');
             sessionStorage.removeItem('xpider_guessed_paths');
+            const curMode = (typeof window !== 'undefined' && window.__xpider_campaign_mode) || (template && template.campaignMode) || 'AUTO';
+            if (curMode === 'SEMI_AUTO' || curMode === 'MANUAL') {
+                logDev(`🖐️ [${curMode}_DISCOVERY_HOLD] No inquiry form automatically discovered. Retaining tab and displaying operator assistance panel.`, "warning");
+                const holdOutcome = await handleV7ManualModeHold(null, template, new Map(), { detected: false, verified: true, type: 'none' }, {
+                    mode: curMode,
+                    stage: 'FORM_DISCOVERY',
+                    validationFailed: true,
+                    validationReason: 'NO_ACCESSIBLE_INQUIRY_FORM',
+                    unresolvedFields: ['inquiry_form']
+                });
+                return Boolean(holdOutcome && holdOutcome.success);
+            }
             currentTargetLifecycleState = TargetLifecycleState.SETTLING;
             finishCampaign(false, "NO_FORM_ON_PAGE", "NO_ACCESSIBLE_INQUIRY_FORM");
         } catch (e) {
@@ -1984,9 +2015,9 @@
             const autofillStatus = isAutofillSuccess ? 'SUCCESS' : ((resolvedCount > 0 || result?.filledAny) ? 'PARTIAL' : 'FAILED');
             logDev(`[AUTOFILL_RESULT] status=${autofillStatus} fieldsDetected=${detectedCount} fieldsFilled=${resolvedCount} (new=${newlyFilledCount}, prefilled=${alreadyValidCount}) unresolved=${unresolvedCount} reason=${result?.reasonCode || 'ok'}`, "info");
 
-            const activeCampaignMode = (typeof window !== 'undefined' && window.__xpider_campaign_mode === 'MANUAL') ||
-                (template && template.campaignMode === 'MANUAL')
-                ? 'MANUAL' : 'AUTO';
+            const activeCampaignMode = (typeof window !== 'undefined' && (window.__xpider_campaign_mode === 'MANUAL' || window.__xpider_campaign_mode === 'SEMI_AUTO'))
+                ? window.__xpider_campaign_mode
+                : ((template && (template.campaignMode === 'MANUAL' || template.campaignMode === 'SEMI_AUTO')) ? template.campaignMode : 'AUTO');
 
             if (!isAutofillSuccess) {
                 // [RC3.60 P0] Non-inquiry form without message body settles SKIPPED immediately
@@ -1996,12 +2027,13 @@
                     return false;
                 }
                 const failReason = (result && result.reasonCode) || "Zero-mapping: No usable fields found.";
-                if (activeCampaignMode === 'MANUAL') {
-                    logDev(`🖐️ [MANUAL_MODE_VALIDATION_HOLD] Autofill validation incomplete (${failReason}) in MANUAL mode. Retaining tab and displaying operator hold panel.`, "warning");
+                if (activeCampaignMode === 'MANUAL' || activeCampaignMode === 'SEMI_AUTO') {
+                    logDev(`🖐️ [${activeCampaignMode}_MODE_VALIDATION_HOLD] Autofill validation incomplete (${failReason}) in ${activeCampaignMode} mode. Retaining tab and displaying operator hold panel.`, "warning");
                     stopActiveEmptyFieldSweeper();
                     const frozenSnap = freezeFieldValues(form, template);
                     const chalInfo = _ChallengeGate ? _ChallengeGate.detectChallenge(document) : { detected: false, verified: true, type: 'none' };
                     const manualOutcome = await handleV7ManualModeHold(form, template, frozenSnap, chalInfo, {
+                        mode: activeCampaignMode,
                         validationFailed: true,
                         validationReason: failReason,
                         unresolvedFields: unresolvedList
@@ -2111,12 +2143,13 @@
                     if (!auditResult.pass) {
                         logDev(`❌ [FinalAudit] Submission blocked by Hard Gate: ${auditResult.reason}`, "error");
                         const unres = auditResult.unresolvedList || auditResult.unresolvedFields || [auditResult.reason];
-                        if (activeCampaignMode === 'MANUAL') {
-                            logDev(`🖐️ [MANUAL_MODE_VALIDATION_HOLD] Final audit failed (${auditResult.reason}) in MANUAL mode. Retaining tab and displaying operator hold panel.`, "warning");
+                        if (activeCampaignMode === 'MANUAL' || activeCampaignMode === 'SEMI_AUTO') {
+                            logDev(`🖐️ [${activeCampaignMode}_MODE_VALIDATION_HOLD] Final audit failed (${auditResult.reason}) in ${activeCampaignMode} mode. Retaining tab and displaying operator hold panel.`, "warning");
                             stopActiveEmptyFieldSweeper();
                             const frozenSnap = freezeFieldValues(form, template);
                             const chalInfo = _ChallengeGate ? _ChallengeGate.detectChallenge(document) : { detected: false, verified: true, type: 'none' };
                             const manualOutcome = await handleV7ManualModeHold(form, template, frozenSnap, chalInfo, {
+                                mode: activeCampaignMode,
                                 validationFailed: true,
                                 validationReason: auditResult.reason || 'REQUIRED_FIELDS_UNRESOLVED',
                                 unresolvedFields: unres
@@ -2179,8 +2212,22 @@
             logDev(`[V7_DUAL_MODE_GATE] mode=${activeCampaignMode} challengeDetected=${initialChallengeInfo.detected} challengeType=${initialChallengeInfo.type} challengeVerified=${initialChallengeInfo.verified}`, "info");
 
             if (activeCampaignMode === 'MANUAL') {
-                const manualOutcome = await handleV7ManualModeHold(form, template, frozenSnapshot, initialChallengeInfo);
+                const manualOutcome = await handleV7ManualModeHold(form, template, frozenSnapshot, initialChallengeInfo, { mode: 'MANUAL' });
                 return Boolean(manualOutcome && manualOutcome.success);
+            }
+
+            const curMode = (typeof window !== 'undefined' && window.__xpider_campaign_mode) || (template && template.campaignMode) || 'AUTO';
+            if (curMode === 'SEMI_AUTO') {
+                if (initialChallengeInfo.detected && !initialChallengeInfo.verified) {
+                    logDev(`🖐️ [SEMI_AUTO_CAPTCHA_HOLD] CAPTCHA detected (${initialChallengeInfo.type}) in SEMI_AUTO mode. Holding queue for operator assistance.`, "info");
+                    const semiOutcome = await handleV7ManualModeHold(form, template, frozenSnapshot, initialChallengeInfo, {
+                        mode: 'SEMI_AUTO',
+                        validationFailed: false,
+                        validationReason: `CAPTCHA_CHALLENGE_PENDING (${initialChallengeInfo.type})`
+                    });
+                    return Boolean(semiOutcome && semiOutcome.success);
+                }
+                logDev("⚡ [SEMI_AUTO] Pre-submit checks passed and no unresolved challenge. Proceeding to automatic submission.", "info");
             }
 
             // AUTO mode: check verification state after form completion
@@ -5020,6 +5067,28 @@
                     return { success: false, status: 'SKIPPED', reasonCode: 'MANUAL_OPERATOR_SKIP' };
                 }
 
+                if (actionType === 'MARK_UNKNOWN') {
+                    resolvingInFlight = true;
+                    disableHoldActionButtons();
+                    logDev("[MANUAL_MODE_DECISION] action=MARK_UNKNOWN reason=OPERATOR_MARKED_DELIVERY_UNKNOWN", "info");
+                    const currentUrl = (typeof window !== 'undefined' && window.location) ? window.location.href : '';
+                    dispatchManualHoldResolveHandshake('MARK_UNKNOWN', { currentUrl, initialHoldUrl }, (ack) => {
+                        if (ack && ack.stale) {
+                            resolvingInFlight = false;
+                            return;
+                        }
+                        finishCampaign(false, 'DELIVERY_UNKNOWN', 'DELIVERY_UNKNOWN', {
+                            manualMode: true,
+                            ownerManualConfirmed: false,
+                            operatorClaimOnly: true,
+                            handshakeAck: Boolean(ack && ack.settled),
+                            subReason: 'OPERATOR_MARKED_DELIVERY_UNKNOWN'
+                        });
+                        settleManual({ success: false, status: 'DELIVERY_UNKNOWN', reasonCode: 'OPERATOR_MARKED_DELIVERY_UNKNOWN' });
+                    });
+                    return { success: false, status: 'DELIVERY_UNKNOWN', reasonCode: 'OPERATOR_MARKED_DELIVERY_UNKNOWN' };
+                }
+
                 if (actionType === 'STOP_AND_SAVE') {
                     resolvingInFlight = true;
                     disableHoldActionButtons();
@@ -5127,38 +5196,57 @@
 
                 const hostLabel = (typeof window !== 'undefined' && window.location && window.location.hostname) ? window.location.hostname : initialHoldUrl;
                 const fieldCount = (frozenSnapshot instanceof Map) ? frozenSnapshot.size : Object.keys(frozenSnapshot || {}).length;
+                const isSemiAuto = Boolean(holdOptions && holdOptions.mode === 'SEMI_AUTO');
+                const headerBadge = isSemiAuto ? '⚡ SEMI-AUTO — OPERATOR ASSISTANCE' : '🖐️ MANUAL MODE — HOLD FOR REGISTRATION';
+                const headerBg = isSemiAuto ? '#7c3aed' : '#0284c7';
+                const borderColor = isSemiAuto ? '#a855f7' : '#38bdf8';
+                const panelBg = isSemiAuto ? '#1e1b4b' : '#0f172a';
 
                 const validationSummary = isValidationHold
                     ? `<div id="xpider-manual-validation-banner" style="background:rgba(245,158,11,0.18);border:1px solid #f59e0b;color:#fde68a;border-radius:6px;padding:6px 8px;margin-bottom:8px;font-size:11px;line-height:1.4;">⚠️ <strong>Operator Action Needed:</strong> ${validationReasonStr || 'REQUIRED_FIELDS_UNRESOLVED'} — please review/complete remaining fields on the page before submitting.</div>`
                     : '';
 
+                const buttonGrid = isSemiAuto
+                    ? `
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+                        <button type="button" id="xpider-manual-registered-btn" style="grid-column:span 2;background:#10b981;color:#fff;border:none;border-radius:6px;padding:8px 10px;font-size:12px;font-weight:700;cursor:pointer;">✅ Confirm Verified Receipt</button>
+                        <button type="button" id="xpider-manual-retry-btn" style="background:#3b82f6;color:#fff;border:none;border-radius:6px;padding:6px 8px;font-size:11px;font-weight:600;cursor:pointer;">🔄 Recheck / Retry (0/3)</button>
+                        <button type="button" id="xpider-manual-unknown-btn" style="background:#d97706;color:#fff;border:none;border-radius:6px;padding:6px 8px;font-size:11px;font-weight:600;cursor:pointer;">❓ Mark Delivery Unknown</button>
+                        <button type="button" id="xpider-manual-skip-btn" style="grid-column:span 2;background:#64748b;color:#fff;border:none;border-radius:6px;padding:6px 8px;font-size:11px;font-weight:600;cursor:pointer;">⏭️ Skip Target</button>
+                        <button type="button" id="xpider-manual-stop-save-btn" style="grid-column:span 2;background:rgba(245,158,11,0.2);color:#fbbf24;border:1px solid #f59e0b;border-radius:6px;padding:6px 8px;font-size:11px;font-weight:600;cursor:pointer;">⏸️ Stop & Save Checkpoint</button>
+                    </div>`
+                    : `
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+                        <button type="button" id="xpider-manual-registered-btn" style="grid-column:span 2;background:#10b981;color:#fff;border:none;border-radius:6px;padding:8px 10px;font-size:12px;font-weight:700;cursor:pointer;">✅ I Registered — Continue</button>
+                        <button type="button" id="xpider-manual-retry-btn" style="background:#3b82f6;color:#fff;border:none;border-radius:6px;padding:6px 8px;font-size:11px;font-weight:600;cursor:pointer;">🔄 Retry / Edit (0/3)</button>
+                        <button type="button" id="xpider-manual-skip-btn" style="background:#64748b;color:#fff;border:none;border-radius:6px;padding:6px 8px;font-size:11px;font-weight:600;cursor:pointer;">⏭️ Skip</button>
+                        <button type="button" id="xpider-manual-stop-save-btn" style="grid-column:span 2;background:rgba(245,158,11,0.2);color:#fbbf24;border:1px solid #f59e0b;border-radius:6px;padding:6px 8px;font-size:11px;font-weight:600;cursor:pointer;">⏸️ Stop & Save Checkpoint</button>
+                    </div>`;
+
                 const panel = document.createElement('div');
                 panel.id = 'xpider-v7-manual-hold-panel';
                 panel.setAttribute('data-xpider-ui', 'true');
                 panel.setAttribute('data-validation-failed', isValidationHold ? 'true' : 'false');
-                panel.style.cssText = 'position:fixed;bottom:16px;right:16px;width:380px;max-width:94vw;z-index:2147483647;background:#0f172a;color:#f8fafc;border:2px solid #38bdf8;border-radius:10px;padding:14px 16px;font-family:system-ui,-apple-system,sans-serif;font-size:12px;box-shadow:0 10px 30px rgba(0,0,0,0.65);';
+                panel.setAttribute('data-mode', isSemiAuto ? 'SEMI_AUTO' : 'MANUAL');
+                panel.style.cssText = `position:fixed;bottom:16px;right:16px;width:380px;max-width:94vw;z-index:2147483647;background:${panelBg};color:#f8fafc;border:2px solid ${borderColor};border-radius:10px;padding:14px 16px;font-family:system-ui,-apple-system,sans-serif;font-size:12px;box-shadow:0 10px 30px rgba(0,0,0,0.65);`;
                 panel.innerHTML = `
                     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-                        <span style="background:#0284c7;color:#fff;font-weight:700;padding:3px 8px;border-radius:4px;font-size:11px;">🖐️ MANUAL MODE — HOLD FOR REGISTRATION</span>
+                        <span style="background:${headerBg};color:#fff;font-weight:700;padding:3px 8px;border-radius:4px;font-size:11px;">${headerBadge}</span>
                         <span style="color:#94a3b8;font-size:10px;font-family:monospace;">${hostLabel}</span>
                     </div>
                     ${validationSummary}
                     <div style="background:rgba(30,41,59,0.8);border:1px solid rgba(148,163,184,0.2);border-radius:6px;padding:8px;margin-bottom:10px;font-size:11px;line-height:1.5;">
                         <div>📋 <strong>Fields Prepared:</strong> <span style="color:${isValidationHold ? '#fbbf24' : '#4ade80'};">${isValidationHold ? `${fieldCount} fields prepared (attention needed)` : `${fieldCount} fields verified ✓`}</span></div>
                         <div>🧩 <strong>Challenge Status:</strong> <span id="xpider-manual-challenge-status" style="color:#fbbf24;">${challengeStatusStr}</span></div>
-                        <div style="color:#cbd5e1;font-size:10px;margin-top:4px;">Submit the form on the page when ready, then click <strong>I Registered — Continue</strong>.</div>
+                        <div style="color:#cbd5e1;font-size:10px;margin-top:4px;">${isSemiAuto ? 'Review and resolve page status, then select an action below.' : 'Submit the form on the page when ready, then click <strong>I Registered — Continue</strong>.'}</div>
                     </div>
-                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
-                        <button type="button" id="xpider-manual-registered-btn" style="grid-column:span 2;background:#10b981;color:#fff;border:none;border-radius:6px;padding:8px 10px;font-size:12px;font-weight:700;cursor:pointer;">✅ I Registered — Continue</button>
-                        <button type="button" id="xpider-manual-retry-btn" style="background:#3b82f6;color:#fff;border:none;border-radius:6px;padding:6px 8px;font-size:11px;font-weight:600;cursor:pointer;">🔄 Retry / Edit (0/3)</button>
-                        <button type="button" id="xpider-manual-skip-btn" style="background:#64748b;color:#fff;border:none;border-radius:6px;padding:6px 8px;font-size:11px;font-weight:600;cursor:pointer;">⏭️ Skip</button>
-                        <button type="button" id="xpider-manual-stop-save-btn" style="grid-column:span 2;background:rgba(245,158,11,0.2);color:#fbbf24;border:1px solid #f59e0b;border-radius:6px;padding:6px 8px;font-size:11px;font-weight:600;cursor:pointer;">⏸️ Stop & Save Checkpoint</button>
-                    </div>
+                    ${buttonGrid}
                 `;
                 document.body.appendChild(panel);
 
                 panel.querySelector('#xpider-manual-registered-btn')?.addEventListener('click', () => executeManualAction('REGISTERED_CONTINUE'));
                 panel.querySelector('#xpider-manual-retry-btn')?.addEventListener('click', () => executeManualAction('RETRY_EDIT'));
+                panel.querySelector('#xpider-manual-unknown-btn')?.addEventListener('click', () => executeManualAction('MARK_UNKNOWN'));
                 panel.querySelector('#xpider-manual-skip-btn')?.addEventListener('click', () => executeManualAction('SKIP'));
                 panel.querySelector('#xpider-manual-stop-save-btn')?.addEventListener('click', () => executeManualAction('STOP_AND_SAVE'));
             }
@@ -5804,6 +5892,14 @@
                         unresolvedFields: msg.unresolvedFields || []
                     });
                     if (sendResponse) sendResponse({ success: true, restored: true });
+                    return true;
+                } else if (msg && msg.action === 'TRIGGER_MANUAL_ACTION') {
+                    if (typeof window !== 'undefined' && typeof window.__xpiderTriggerManualAction === 'function') {
+                        const res = window.__xpiderTriggerManualAction(msg.actionType, msg.actionOpts || {});
+                        if (sendResponse) sendResponse({ success: true, result: res });
+                    } else {
+                        if (sendResponse) sendResponse({ success: false, reason: 'TRIGGER_NOT_AVAILABLE' });
+                    }
                     return true;
                 } else if (msg && msg.action === 'FREEZE_NETWORK_RECOVERY') {
                     window.__xpider_isNetworkDegraded = true;
@@ -8492,6 +8588,27 @@
             } else {
                 logDev(`[FINAL] status=${finalDecision}`, "warning");
                 sessionStorage.removeItem('xpider_submit_count');
+                const curMode = (typeof window !== 'undefined' && window.__xpider_campaign_mode) || 'AUTO';
+                if (curMode === 'SEMI_AUTO') {
+                    logDev(`🖐️ [SEMI_AUTO_SUBMIT_HOLD] Submission outcome uncertain (${finalDecision}). Retaining tab and displaying operator assistance panel.`, "warning");
+                    const frozenSnap = freezeFieldValues(this.form, this.template);
+                    const chalInfo = _ChallengeGate ? _ChallengeGate.detectChallenge(document) : { detected: false, verified: true, type: 'none' };
+                    const semiOutcome = await handleV7ManualModeHold(this.form, this.template, frozenSnap, chalInfo, {
+                        mode: 'SEMI_AUTO',
+                        stage: 'SUBMISSION_VERIFICATION',
+                        uncertainSubmit: true,
+                        validationFailed: true,
+                        validationReason: `SUBMISSION_${finalDecision}`,
+                        unresolvedFields: []
+                    });
+                    return {
+                        success: Boolean(semiOutcome && semiOutcome.success),
+                        reasonCode: semiOutcome?.reasonCode || `SEMI_AUTO_${finalDecision}`,
+                        decision: finalDecision,
+                        latencyMs: totalLatency,
+                        outcomeEvidence
+                    };
+                }
                 finishCampaign(false, `Submission outcome: ${finalDecision}`, finalDecision, {
                     resultUrl: (typeof window !== 'undefined') ? window.location.href : '',
                     decision: finalDecision,

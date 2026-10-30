@@ -1199,6 +1199,7 @@ function renderSidePanelAssistanceCard(holdState) {
     if (urlEl) {
         urlEl.textContent = holdState.url || holdState.initialHoldUrl || 'Current target';
     }
+    updatePersistentModeHud(holdState.campaignMode || currentCampaignMode, 'HOLD', holdState.url || holdState.initialHoldUrl, undefined);
 }
 
 function bindSidePanelAssistanceControls() {
@@ -5187,6 +5188,10 @@ function updateRealTimeStatus(data) {
     if (typeof _renderHistoryPanel === 'function') {
         _renderHistoryPanel();
     }
+
+    const activeMode = data.campaignMode || currentCampaignMode || 'AUTO';
+    const activeStatus = campaignPaused ? 'PAUSED' : (campaignActive ? 'RUNNING' : (remainingTargets > 0 ? 'READY' : 'IDLE'));
+    updatePersistentModeHud(activeMode, activeStatus, data.currentTargetUrl, remainingTargets);
 }
 
 function renderFailureBreakdown(breakdown) {
@@ -8146,14 +8151,15 @@ async function launchCampaign(options = {}) {
         const randomVariationToggle = document.getElementById('random-delay-toggle');
         const randomVariationActive = randomVariationToggle ? randomVariationToggle.checked : false;
 
-        const requestedCampaignMode = (options.campaignMode === 'MANUAL') ? 'MANUAL' : 'AUTO';
+        const requestedCampaignMode = (options.campaignMode === 'MANUAL' || options.campaignMode === 'SEMI_AUTO') ? options.campaignMode : 'AUTO';
         currentCampaignMode = requestedCampaignMode;
         window.__xpider_last_paused_mode = requestedCampaignMode;
         const modePill = document.getElementById('campaign-mode-pill');
         if (modePill) {
             modePill.textContent = `MODE: ${requestedCampaignMode}`;
-            modePill.style.color = requestedCampaignMode === 'MANUAL' ? '#fbbf24' : '#38bdf8';
+            modePill.style.color = requestedCampaignMode === 'SEMI_AUTO' ? '#c084fc' : (requestedCampaignMode === 'MANUAL' ? '#fbbf24' : '#38bdf8');
         }
+        updatePersistentModeHud(requestedCampaignMode, 'RUNNING', campaignQueue?.[0] || 'Starting...', campaignQueue?.length || 0);
         const startPayload = {
             queue: campaignQueue,
             template: currentTpl,
@@ -8301,15 +8307,7 @@ async function launchCampaign(options = {}) {
         campaignPaused = false;
         if (startBtn) startBtn.classList.add('hidden');
         const startSemiAutoBtn = document.getElementById('start-semi-auto-btn');
-        if (startSemiAutoBtn && !startSemiAutoBtn.dataset.bound) {
-            startSemiAutoBtn.dataset.bound = 'true';
-            startSemiAutoBtn.addEventListener('click', () => {
-                console.log('[BUTTON_CLICK] id=start-semi-auto-btn mode=SEMI_AUTO');
-                launchCampaign({ source: 'USER_START_BUTTON', campaignMode: 'SEMI_AUTO' }).catch(err => {
-                    console.error('[START_EXCEPTION]', err);
-                });
-            });
-        }
+        if (startSemiAutoBtn) startSemiAutoBtn.classList.add('hidden');
         const startManualBtn = document.getElementById('start-manual-btn');
         if (startManualBtn) startManualBtn.classList.add('hidden');
         const startRow = document.getElementById('start-buttons-row');
@@ -8365,6 +8363,7 @@ function togglePause() {
 
     campaignPaused = true;
     window.__xpider_last_paused_mode = currentCampaignMode || 'AUTO';
+    updatePersistentModeHud(currentCampaignMode, 'PAUSED', undefined, undefined);
     addDiagnosticLog('[Engine][TX] action=PAUSE_CAMPAIGN');
     if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
         chrome.runtime.sendMessage({ action: 'PAUSE_CAMPAIGN' }).catch(e => console.error('[Pause Ext Error]', e));
@@ -8387,16 +8386,22 @@ function stopCampaign() {
     if (startBtn) {
         startBtn.classList.remove('hidden');
         startBtn.disabled = false;
-        startBtn.textContent = "🚀 Start Automatic";
+        startBtn.textContent = "🚀 Automatic";
+    }
+    const startSemiAutoBtn = document.getElementById('start-semi-auto-btn');
+    if (startSemiAutoBtn) {
+        startSemiAutoBtn.classList.remove('hidden');
+        startSemiAutoBtn.disabled = false;
     }
     const startManualBtn = document.getElementById('start-manual-btn');
     if (startManualBtn) {
         startManualBtn.classList.remove('hidden');
         startManualBtn.disabled = false;
-        startManualBtn.textContent = "🖐️ Start Manual";
+        startManualBtn.textContent = "🖐️ Manual";
     }
     const multiActions = document.getElementById('multi-actions');
     if (multiActions) multiActions.classList.add('hidden');
+    updatePersistentModeHud(currentCampaignMode, 'READY', 'Stopped', remainingTargets);
     const ind = document.getElementById('privacy-override-indicator');
     if (ind) {
         ind.style.display = 'none';
@@ -8450,6 +8455,62 @@ function endCampaign() {
         });
     }
     addLog("🛑 Campaign ended. Remaining queue discarded.", "stop");
+    updatePersistentModeHud(currentCampaignMode, 'READY', 'Finished', 0);
+}
+
+function updatePersistentModeHud(mode, status, currentTarget, remainingCount) {
+    const hudContainer = document.getElementById('persistent-mode-hud');
+    const badgeEl = document.getElementById('hud-current-mode-badge');
+    const statusEl = document.getElementById('hud-orchestrator-status');
+    const targetEl = document.getElementById('hud-current-target-val');
+    const remEl = document.getElementById('hud-remaining-count-val');
+    if (!hudContainer || !badgeEl || !statusEl) return;
+
+    const resolvedMode = (mode === 'SEMI_AUTO' || mode === 'MANUAL') ? mode : 'AUTO';
+    if (resolvedMode === 'SEMI_AUTO') {
+        badgeEl.textContent = '⚡ SEMI-AUTO';
+        badgeEl.style.background = '#a855f7';
+        badgeEl.style.color = '#ffffff';
+        badgeEl.style.boxShadow = '0 0 8px rgba(168, 85, 247, 0.4)';
+        hudContainer.style.borderColor = '#a855f7';
+    } else if (resolvedMode === 'MANUAL') {
+        badgeEl.textContent = '🖐️ MANUAL';
+        badgeEl.style.background = '#3b82f6';
+        badgeEl.style.color = '#ffffff';
+        badgeEl.style.boxShadow = '0 0 8px rgba(59, 130, 246, 0.4)';
+        hudContainer.style.borderColor = '#3b82f6';
+    } else {
+        badgeEl.textContent = '🚀 AUTO';
+        badgeEl.style.background = '#06b6d4';
+        badgeEl.style.color = '#000000';
+        badgeEl.style.boxShadow = '0 0 8px rgba(6, 182, 212, 0.4)';
+        hudContainer.style.borderColor = '#06b6d4';
+    }
+
+    if (status) {
+        statusEl.textContent = status.toUpperCase();
+        if (status === 'RUNNING') {
+            statusEl.style.background = '#10b981';
+            statusEl.style.color = '#ffffff';
+        } else if (status === 'PAUSED') {
+            statusEl.style.background = '#f59e0b';
+            statusEl.style.color = '#000000';
+        } else if (status === 'WAITING' || status === 'HOLD') {
+            statusEl.style.background = '#8b5cf6';
+            statusEl.style.color = '#ffffff';
+        } else {
+            statusEl.style.background = '#334155';
+            statusEl.style.color = '#f8fafc';
+        }
+    }
+
+    if (targetEl && currentTarget !== undefined && currentTarget !== null) {
+        targetEl.textContent = currentTarget || 'Idle';
+        targetEl.title = currentTarget || 'No active target';
+    }
+    if (remEl && remainingCount !== undefined && remainingCount !== null) {
+        remEl.textContent = String(remainingCount);
+    }
 }
 
 function applyResumeModeSelectionUI(selectedMode, previousMode) {
@@ -8580,9 +8641,18 @@ function confirmResumeCampaignWithMode(selectedMode) {
     currentCampaignMode = targetMode;
     const modePill = document.getElementById('campaign-mode-pill');
     if (modePill) {
-        modePill.textContent = targetMode === 'MANUAL' ? 'MODE: MANUAL (HOLD FOR REGISTER)' : 'MODE: AUTO (CHALLENGE GATE)';
-        modePill.style.color = targetMode === 'MANUAL' ? '#fbbf24' : '#38bdf8';
+        if (targetMode === 'SEMI_AUTO') {
+            modePill.textContent = 'MODE: SEMI-AUTO (ASSIST HOLD)';
+            modePill.style.color = '#c084fc';
+        } else if (targetMode === 'MANUAL') {
+            modePill.textContent = 'MODE: MANUAL (HOLD FOR REGISTER)';
+            modePill.style.color = '#fbbf24';
+        } else {
+            modePill.textContent = 'MODE: AUTO (CHALLENGE GATE)';
+            modePill.style.color = '#38bdf8';
+        }
     }
+    updatePersistentModeHud(targetMode, 'RUNNING', undefined, undefined);
 
     addDiagnosticLog(`[Engine][TX] action=RESUME_CAMPAIGN campaignMode=${targetMode}`);
     if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
@@ -8600,16 +8670,8 @@ function confirmResumeCampaignWithMode(selectedMode) {
                 const startBtn = document.getElementById('start-btn');
                 if (startBtn) startBtn.classList.add('hidden');
                 const startSemiAutoBtn = document.getElementById('start-semi-auto-btn');
-        if (startSemiAutoBtn && !startSemiAutoBtn.dataset.bound) {
-            startSemiAutoBtn.dataset.bound = 'true';
-            startSemiAutoBtn.addEventListener('click', () => {
-                console.log('[BUTTON_CLICK] id=start-semi-auto-btn mode=SEMI_AUTO');
-                launchCampaign({ source: 'USER_START_BUTTON', campaignMode: 'SEMI_AUTO' }).catch(err => {
-                    console.error('[START_EXCEPTION]', err);
-                });
-            });
-        }
-        const startManualBtn = document.getElementById('start-manual-btn');
+                if (startSemiAutoBtn) startSemiAutoBtn.classList.add('hidden');
+                const startManualBtn = document.getElementById('start-manual-btn');
                 if (startManualBtn) startManualBtn.classList.add('hidden');
                 const multiActions = document.getElementById('multi-actions');
                 if (multiActions) multiActions.classList.remove('hidden');
@@ -8623,6 +8685,7 @@ function confirmResumeCampaignWithMode(selectedMode) {
                 const statusBox = document.getElementById('status-box');
                 if (statusBox) statusBox.classList.remove('hidden');
                 refreshStatusDetailUI();
+                updatePersistentModeHud(targetMode, 'RUNNING', undefined, res.remainingCount);
                 addLog(`▶️ Campaign resumed in ${targetMode} mode (${res.remainingCount} remaining).`, "start");
             } else {
                 addLog(`❌ Resume failed: ${res?.error || 'Unknown error'}`, "error");
@@ -8689,6 +8752,11 @@ function checkResumableCheckpoint() {
             banner.classList.add('hidden');
             banner.style.display = 'none';
         }
+        const currentMode = stateResp?.pausedCampaignMode || stateResp?.campaignMode || window.__xpider_last_paused_mode || currentCampaignMode || 'AUTO';
+        const currentStatus = stateResp?.hasPausedCheckpoint ? 'PAUSED' : (stateResp?.isActive ? 'RUNNING' : 'READY');
+        const currentTarget = stateResp?.currentTargetUrl || (stateResp?.hasPausedCheckpoint ? 'Paused Target' : 'Idle');
+        const remCount = stateResp?.pausedRemainingCount || stateResp?.remainingCount || remainingTargets || 0;
+        updatePersistentModeHud(currentMode, currentStatus, currentTarget, remCount);
     });
 }
 

@@ -231,9 +231,12 @@ async function probe(cfg, o = {}) {
   const target = o.target || { host: 'cloudflare.com', port: 443 };
   const timeoutMs = o.timeoutMs || 10000;
   let c = await connectViaProxy(cfg, o.password, target, timeoutMs);
-  if (c.status !== STATUS.PROXY_READY && (c.detail === 'HTTP_522' || c.detail === 'TIMEOUT')) {
-    await new Promise(r => setTimeout(r, 600));
-    c = await connectViaProxy(cfg, o.password, target, timeoutMs);
+  if (c.status !== STATUS.PROXY_READY && (c.detail === 'HTTP_502' || c.detail === 'HTTP_522' || c.detail === 'TIMEOUT' || c.detail === 'CONNECTION_CLOSED')) {
+    const maxRetries = 2;
+    for (let r = 1; r <= maxRetries && c.status !== STATUS.PROXY_READY; r++) {
+      await new Promise(res => setTimeout(res, 500 * r));
+      c = await connectViaProxy(cfg, o.password, target, timeoutMs);
+    }
   }
   if (c.status !== STATUS.PROXY_READY) {
     let failExtra = {};

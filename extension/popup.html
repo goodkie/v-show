@@ -1323,6 +1323,27 @@
                 </div>
             </div>
 
+            <!-- [RC9 Defect 4] Persistent CURRENT MODE HUD -->
+            <div id="persistent-mode-hud" style="background: rgba(15, 23, 42, 0.9); border: 2px solid #06b6d4; border-radius: 8px; padding: 8px 12px; margin-bottom: 10px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span style="font-size: 10px; color: #94a3b8; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">CURRENT MODE:</span>
+                        <span id="hud-current-mode-badge" style="font-size: 12px; font-weight: 800; padding: 2px 10px; border-radius: 4px; background: #06b6d4; color: #000; letter-spacing: 0.5px; box-shadow: 0 0 8px rgba(6, 182, 212, 0.4);">🚀 AUTO</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                        <span id="hud-orchestrator-status" style="font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 4px; background: #334155; color: #f8fafc; font-family: monospace;">READY</span>
+                    </div>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; font-size: 10px; font-family: monospace; color: #cbd5e1; border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 5px;">
+                    <div style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 210px;">
+                        <span style="color: #64748b;">Target: </span><span id="hud-current-target-val" style="color: #38bdf8;" title="No active target">Idle</span>
+                    </div>
+                    <div style="flex-shrink: 0;">
+                        <span style="color: #64748b;">Remaining: </span><span id="hud-remaining-count-val" style="color: #fde047; font-weight: 700;">0</span>
+                    </div>
+                </div>
+            </div>
+
             <div class="action-buttons">
                 <div id="start-buttons-row" style="display: flex; gap: 6px; width: 100%;">
                     <button id="start-btn" data-mode="AUTO" class="primary-btn pulse" style="flex: 1; padding: 9px 4px; font-size: 11px;" title="Fill fields, check verification state, and automatically submit once when verified">🚀 Automatic</button>
