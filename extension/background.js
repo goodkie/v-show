@@ -5257,6 +5257,11 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
         }
 
         case 'MANUAL_MODE_HOLD': {
+            if (campaignState.campaignMode === 'AUTO') {
+                logBg(null, `[MANUAL_MODE_HOLD_REJECTED] In AUTO mode: rejecting manual mode hold request.`, 'warning');
+                sendResponse({ success: false, reason: 'AUTO_MODE_NO_HOLD', rejected: true });
+                return true;
+            }
             const validation = validateActiveExecution(request, sender, 'MANUAL_MODE_HOLD', { allowBodyTabId: true });
             if (!validation.valid) {
                 sendResponse({ success: false, reason: validation.reason, stale: true });
@@ -6559,6 +6564,11 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
 
         // [R6.9G.8] Form Manual Assist Request (Triggered by Content Script)
         case 'FORM_MANUAL_ASSIST_REQUEST':
+            if (campaignState.campaignMode === 'AUTO') {
+                logBg(null, `[FORM_MANUAL_ASSIST_REJECTED] In AUTO mode: rejecting manual assist request.`, 'warning');
+                sendResponse({ success: false, reason: 'AUTO_MODE_NO_MANUAL_ASSIST', rejected: true });
+                return true;
+            }
             (async () => {
                 try {
                     const { attemptId, sourceUrl, contactPageUrl, formPageUrl, externalFormUrl, reason, unresolvedFields } = request;
@@ -7530,6 +7540,14 @@ async function startCampaignOrchestrator(queue, template, delayMs, fillDelayMs =
         await closeAllCampaignTabsExcept(null, 'START_CAMPAIGN_BOOT');
         if (chrome.alarms) chrome.alarms.clearAll(); 
 
+        // [RC10 P0] Purge stale manual hold state on campaign boot
+        campaignState.manualHoldActive = false;
+        campaignState.currentTargetStage = 'RUNNING';
+        campaignState.manualAssistDetails = null;
+        try {
+            await chrome.storage.local.remove(['xpider_v7_active_hold_state']);
+        } catch (_) {}
+
         logBg(null, "[Boot] Previous state cleared.", "debug");
 
         // [NopeCHA Fix] Reset stale CAPTCHA solver state from previous campaign.
@@ -8084,6 +8102,20 @@ async function resumeCampaignOrchestrator(options = {}) {
     campaignState.isLoopRunning = false;
     campaignState.lastActionTime = Date.now();
     campaignState.pausedCheckpoint = null;
+
+    // [RC10 P0] Authoritative triple-mode contract & Stale Hold Purge on Resume:
+    campaignState.manualHoldActive = false;
+    campaignState.currentTargetStage = 'RUNNING';
+    campaignState.manualAssistDetails = null;
+    await chrome.storage.local.remove(['xpider_v7_active_hold_state']);
+
+    // If there is an active target tab from before pause, dismiss in-page hold if resuming in AUTO
+    if (campaignState.currentTabId || campaignState.targetTabId) {
+        const holdTabId = campaignState.currentTabId || campaignState.targetTabId;
+        if (requestedMode === 'AUTO') {
+            safeTabs.sendMessage(holdTabId, { action: 'DISMISS_MANUAL_HOLD_PANEL', reason: 'RESUMED_IN_AUTO' }).catch(() => {});
+        }
+    }
 
     await chrome.storage.local.set({
         xpider_isActive: true,
@@ -9981,8 +10013,8 @@ async function orchestrateSending(urlInput, template, abortSignal = null) {
         if (updatedTabId !== tabId || discoveryCtx.aborted || campaignState.isPaused || isFinished) return;
         if (updatedTabId === tabId) {
             lastActivity = Date.now();
-            // [Comment #6521464588] Reload/navigation during MANUAL_HOLD: preserve hold state, never recreate watchdog timeout or restart START_SENDING scan
-            if (campaignState.manualHoldActive || campaignState.currentTargetStage === 'MANUAL_HOLD') {
+            // [Comment #6521464588 & RC10] Reload/navigation during MANUAL_HOLD: preserve hold state only in SEMI_AUTO or MANUAL, NEVER in AUTO
+            if ((campaignState.manualHoldActive || campaignState.currentTargetStage === 'MANUAL_HOLD') && campaignState.campaignMode !== 'AUTO') {
                 if (statusInfo.status === 'complete') {
                     (async () => {
                         try {

@@ -1,7 +1,7 @@
 /**
- * Build Provenance & Runtime Self-Check Module (v7.0 Dual & Semi-Auto Mode RC9)
+ * Build Provenance & Runtime Self-Check Module (v7.0 Dual & Semi-Auto Mode RC8)
  */
-(function(root, factory) {
+(function (root, factory) {
     if (typeof define === 'function' && define.amd) {
         define([], factory);
     } else if (typeof module === 'object' && module.exports) {
@@ -9,18 +9,18 @@
     } else {
         root.BuildProvenance = factory();
     }
-}(typeof self !== 'undefined' ? self : this, function() {
+}(typeof self !== 'undefined' ? self : this, function () {
     'use strict';
 
     const BUILD_INFO = Object.freeze({
         version: "7.0.0",
-        buildId: "V7.0.0-RC9-20261030-FOUR-DEFECTS-RESOLUTION-PASS",
+        buildId: "V7.0.0-RC10-20261030-THREE-MODE-CONTRACTS-PASS",
         channel: "OWNER_BETA_V7_DUAL_MODE",
-        tag: "v7.0.0-rc9",
+        tag: "v7.0.0-rc10",
         manifestVersion: 3,
-        implementationHead: "2cdef1e1a179672e92f42ddc9a870db436b2a6e7",
-        implementationHeadShort: "2cdef1e1",
-        builtAt: "2026-10-30T16:24:34.029Z",
+        implementationHead: "0fb0929ecd3c0220f9c849117cf8ab2db2633bf0",
+        implementationHeadShort: "0fb0929e",
+        builtAt: new Date().toISOString(),
         testOnly: false,
         productionReady: true,
         features: Object.freeze([
@@ -30,6 +30,7 @@
             "START_SEMI_AUTO",
             "START_MANUAL",
             "SEMI_AUTOMATIC_MODE",
+            "THREE_MODE_CONTRACTS_ENFORCED",
             "OPERATOR_ASSISTANCE_CARD",
             "PERSISTENT_CURRENT_MODE_HUD",
             "BOUNDED_DISCOVERY_WATCHDOG",
@@ -76,6 +77,6 @@
         isTripleModeSupported,
         isSemiAutoSupported,
         manifestVersion: 3,
-        getBuildProvenanceLogs: function() { return []; }
+        getBuildProvenanceLogs: function () { return []; }
     };
 }));

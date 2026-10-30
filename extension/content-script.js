@@ -1281,6 +1281,17 @@
                     logDev(`[FORM_GATE] eligible=false reason=${assistReason}`, "info");
                     if (window.__xpider_releaseProcessingLock) window.__xpider_releaseProcessingLock(currentUrl);
 
+                    const curMode = (typeof window !== 'undefined' && window.__xpider_campaign_mode) || (template && template.campaignMode) || 'AUTO';
+                    if (curMode === 'AUTO') {
+                        logDev(`[AUTO_CROSS_ORIGIN_INACCESSIBLE] formPageUrl=${window.location.href} externalUrl=${detectedExternalFormUrl} action=FAIL_CLOSED_NO_MANUAL_HOLD`, "warning");
+                        currentTargetLifecycleState = TargetLifecycleState.SETTLING;
+                        finishCampaign(false, "External cross-origin form is inaccessible and cannot be automated", "EXTERNAL_CROSS_ORIGIN_FORM_UNRESOLVABLE", {
+                            externalFormUrl: detectedExternalFormUrl,
+                            inaccessibleCrossOrigin: true
+                        });
+                        return;
+                    }
+
                     const dedupeKey = getManualAssistDedupeKey(assistReason);
                     if (!hasManualAssistBeenShown(dedupeKey)) {
                         logDev(`[MANUAL_ASSIST_ESCALATE] reason=${assistReason} attempts=1 evidence=${detectedExternalFormUrl}`, "info");
@@ -1763,6 +1774,12 @@
 
     // [R6.9G.8 & Directive B, C & V7-RC5] Manual Form Assist: Sticky Owner-Gated Hold with Actionable Panel
     async function requestManualFormAssist(reason, externalFormUrl = '', unresolvedFields = [], form = null, template = null) {
+        const curMode = (typeof window !== 'undefined' && window.__xpider_campaign_mode) || (template && template.campaignMode) || 'AUTO';
+        if (curMode === 'AUTO') {
+            logDev(`[AUTO_MODE_NO_MANUAL_ASSIST] Suppressing manual assist in AUTO mode for reason=${reason}`, "info");
+            return false;
+        }
+
         const dedupeKey = getManualAssistDedupeKey(reason);
         if (hasManualAssistBeenShown(dedupeKey)) {
             logDev(`[MANUAL_ASSIST_DEDUPE_SUPPRESSED] Key=${dedupeKey} already requested assist. Suppressing popup.`, "info");
@@ -1822,7 +1839,7 @@
                     logDev(`🛡️ [MANUAL_ASSIST_PROTECTED] Blocked automatic RETRY_DETECTION from superseding pending operator action.`, "warning");
                     return;
                 }
-                if (msg.action === 'ABORT_TARGET' || msg.action === 'CANCEL_MANUAL_ASSIST') {
+                if (msg.action === 'ABORT_TARGET' || msg.action === 'CANCEL_MANUAL_ASSIST' || msg.action === 'DISMISS_MANUAL_HOLD_PANEL') {
                     window.__xpider_manual_hold_active = false;
                     finishAssist(false);
                 } else if (msg.action === 'RESUME_AUTOFILL') {
@@ -1835,6 +1852,7 @@
             }
 
             handleV7ManualModeHold(targetForm, activeTpl, frozenSnap, chalInfo, {
+                mode: curMode,
                 validationFailed: true,
                 validationReason: reason,
                 unresolvedFields: unresolvedFields || []
@@ -1927,6 +1945,16 @@
         // 6. If external form exists and we haven't exhausted manual assist for this target
         if (detectedExternalFormUrl) {
             logDev(`[AUTO_RECOVERY] attempt=${retryCount}/3 reason=${reason} result=EXTERNAL_FORM_FOUND externalUrl=${detectedExternalFormUrl}`, "info");
+            const curMode = (typeof window !== 'undefined' && window.__xpider_campaign_mode) || (template && template.campaignMode) || 'AUTO';
+            if (curMode === 'AUTO') {
+                logDev(`[AUTO_CROSS_ORIGIN_INACCESSIBLE] formPageUrl=${window.location.href} externalUrl=${detectedExternalFormUrl} action=FAIL_CLOSED_NO_MANUAL_HOLD`, "warning");
+                currentTargetLifecycleState = TargetLifecycleState.SETTLING;
+                finishCampaign(false, "External cross-origin form is inaccessible and cannot be automated", "EXTERNAL_CROSS_ORIGIN_FORM_UNRESOLVABLE", {
+                    externalFormUrl: detectedExternalFormUrl,
+                    inaccessibleCrossOrigin: true
+                });
+                return false;
+            }
             const dedupeKey = getManualAssistDedupeKey('EXTERNAL_CROSS_ORIGIN_FORM');
             if (!hasManualAssistBeenShown(dedupeKey)) {
                 logDev(`[MANUAL_ASSIST_ESCALATE] reason=EXTERNAL_CROSS_ORIGIN_FORM attempts=${retryCount} evidence=${detectedExternalFormUrl}`, "info");
@@ -2040,15 +2068,7 @@
                     });
                     return Boolean(manualOutcome && manualOutcome.success);
                 }
-                logDev(`⚠️ [Engine] Autofill ${autofillStatus}: requesting manual form assist.`, "warning");
-                const assistHandled = await requestManualFormAssist('AUTOFILL_PARTIAL', '', unresolvedList, form, template);
-                if (assistHandled && typeof assistHandled === 'object' && assistHandled.manualHoldResolved) {
-                    return Boolean(assistHandled.outcome && assistHandled.outcome.success);
-                }
-                if (assistHandled === true) {
-                    return fillAndSubmit(form, template, speed);
-                }
-                logDev(`❌ [Engine] Autofill failure terminal settlement: ${failReason}`, "error");
+                logDev(`❌ [AUTO_MODE_FAIL_SAFE] Autofill failure terminal settlement in AUTO mode: ${failReason}`, "error");
                 finishCampaign(false, failReason, 'REQUIRED_FIELD_LOST_BEFORE_SUBMIT');
                 return false;
             }
@@ -2163,14 +2183,7 @@
                             finishCampaign(false, auditResult.reason, auditResult.context || auditResult.reason, { audit: auditResult });
                             return false;
                         }
-                        const assistReason = (auditResult.unresolvedRequired > 0 || auditResult.reason === 'REQUIRED_FIELDS_UNRESOLVED' || !auditResult.reason) ? 'REQUIRED_FIELDS_UNRESOLVED' : auditResult.reason;
-                        const assistHandled = await requestManualFormAssist(assistReason, '', unres, form, template);
-                        if (assistHandled && typeof assistHandled === 'object' && assistHandled.manualHoldResolved) {
-                            return Boolean(assistHandled.outcome && assistHandled.outcome.success);
-                        }
-                        if (assistHandled === true) {
-                            return fillAndSubmit(form, template, speed);
-                        }
+                        logDev(`❌ [AUTO_MODE_FAIL_SAFE] Final audit failed in AUTO mode (${auditResult.reason}). Settling safely without manual hold.`, "error");
                         finishCampaign(false, "FINAL_FORM_COMPLETION_FAILED", auditResult.reason, { audit: auditResult });
                         return false;
                     }
@@ -4924,6 +4937,14 @@
     }
 
     async function handleV7ManualModeHold(form, template, frozenSnapshot, initialChallengeInfo, holdOptions = {}) {
+        const isExplicitAuto = (holdOptions && holdOptions.mode === 'AUTO') ||
+            (typeof window !== 'undefined' && window.__xpider_campaign_mode === 'AUTO') ||
+            (template && template.campaignMode === 'AUTO');
+        if (isExplicitAuto) {
+            logDev(`[V7_AUTO_GUARD] handleV7ManualModeHold called in AUTO mode. Suppressing manual hold panel and failing safe.`, "warning");
+            return { success: false, reasonCode: holdOptions.validationReason || 'AUTO_MODE_NO_HOLD' };
+        }
+
         if (typeof window !== 'undefined') {
             window.__xpider_manual_hold_active = true;
         }
@@ -4961,7 +4982,20 @@
             let manualRetryCount = 0;
             const MAX_MANUAL_RETRIES = 3;
 
+            const holdMsgListener = (msg) => {
+                if (!msg) return;
+                if (msg.action === 'DISMISS_MANUAL_HOLD_PANEL') {
+                    settleManual({ success: false, status: 'DISMISSED', reasonCode: 'DISMISS_MANUAL_HOLD_PANEL' });
+                }
+            };
+            if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.onMessage) {
+                chrome.runtime.onMessage.addListener(holdMsgListener);
+            }
+
             const cleanup = () => {
+                if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.onMessage) {
+                    try { chrome.runtime.onMessage.removeListener(holdMsgListener); } catch (_) {}
+                }
                 if (typeof document !== 'undefined') {
                     const panel = document.getElementById('xpider-v7-manual-hold-panel');
                     if (panel) panel.remove();
@@ -5206,6 +5240,27 @@
                     ? `<div id="xpider-manual-validation-banner" style="background:rgba(245,158,11,0.18);border:1px solid #f59e0b;color:#fde68a;border-radius:6px;padding:6px 8px;margin-bottom:8px;font-size:11px;line-height:1.4;">⚠️ <strong>Operator Action Needed:</strong> ${validationReasonStr || 'REQUIRED_FIELDS_UNRESOLVED'} — please review/complete remaining fields on the page before submitting.</div>`
                     : '';
 
+                const isCrossOrigin = validationReasonStr === 'EXTERNAL_CROSS_ORIGIN_FORM';
+                const isNoForm = validationReasonStr === 'NO_ACCESSIBLE_INQUIRY_FORM' || !form;
+                const isUnavailable = fieldCount === 0 || isCrossOrigin || isNoForm;
+
+                let fieldSummaryHtml = '';
+                if (isUnavailable) {
+                    fieldSummaryHtml = `
+                    <div style="background:rgba(239,68,68,0.18);border:1px solid #ef4444;border-radius:6px;padding:8px;margin-bottom:10px;font-size:11px;line-height:1.5;">
+                        <div style="color:#fca5a5;font-weight:700;">🚫 Auto-Fill Unavailable: 0 fields verified</div>
+                        <div style="color:#fecaca;font-size:10px;margin-top:2px;">${isCrossOrigin ? 'Form is hosted in an external cross-origin frame and cannot be automated.' : (validationReasonStr || 'No automatable form found.')} Please review or submit manually.</div>
+                        <div style="margin-top:4px;">🧩 <strong>Challenge Status:</strong> <span id="xpider-manual-challenge-status" style="color:#fbbf24;">${challengeStatusStr}</span></div>
+                    </div>`;
+                } else {
+                    fieldSummaryHtml = `
+                    <div style="background:rgba(30,41,59,0.8);border:1px solid rgba(148,163,184,0.2);border-radius:6px;padding:8px;margin-bottom:10px;font-size:11px;line-height:1.5;">
+                        <div>📋 <strong>Fields Prepared:</strong> <span style="color:${isValidationHold ? '#fbbf24' : '#4ade80'};">${isValidationHold ? `${fieldCount} fields prepared (attention needed)` : `${fieldCount} fields verified ✓`}</span></div>
+                        <div>🧩 <strong>Challenge Status:</strong> <span id="xpider-manual-challenge-status" style="color:#fbbf24;">${challengeStatusStr}</span></div>
+                        <div style="color:#cbd5e1;font-size:10px;margin-top:4px;">${isSemiAuto ? 'Review and resolve page status, then select an action below.' : 'Submit the form on the page when ready, then click <strong>I Registered — Continue</strong>.'}</div>
+                    </div>`;
+                }
+
                 const buttonGrid = isSemiAuto
                     ? `
                     <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
@@ -5235,11 +5290,7 @@
                         <span style="color:#94a3b8;font-size:10px;font-family:monospace;">${hostLabel}</span>
                     </div>
                     ${validationSummary}
-                    <div style="background:rgba(30,41,59,0.8);border:1px solid rgba(148,163,184,0.2);border-radius:6px;padding:8px;margin-bottom:10px;font-size:11px;line-height:1.5;">
-                        <div>📋 <strong>Fields Prepared:</strong> <span style="color:${isValidationHold ? '#fbbf24' : '#4ade80'};">${isValidationHold ? `${fieldCount} fields prepared (attention needed)` : `${fieldCount} fields verified ✓`}</span></div>
-                        <div>🧩 <strong>Challenge Status:</strong> <span id="xpider-manual-challenge-status" style="color:#fbbf24;">${challengeStatusStr}</span></div>
-                        <div style="color:#cbd5e1;font-size:10px;margin-top:4px;">${isSemiAuto ? 'Review and resolve page status, then select an action below.' : 'Submit the form on the page when ready, then click <strong>I Registered — Continue</strong>.'}</div>
-                    </div>
+                    ${fieldSummaryHtml}
                     ${buttonGrid}
                 `;
                 document.body.appendChild(panel);
@@ -5858,7 +5909,30 @@
                         reason: hasKeyword ? 'KEYWORD_DETECTED' : (window.__xpider_submit_success_confirmed ? 'CONFIRMED_FLAG' : (formStillPresent ? 'FORM_STILL_PRESENT' : 'NO_CONFIRMATION'))
                     });
                     return true;
+                } else if (msg && msg.action === 'DISMISS_MANUAL_HOLD_PANEL') {
+                    if (typeof document !== 'undefined') {
+                        const panel = document.getElementById('xpider-v7-manual-hold-panel');
+                        if (panel) panel.remove();
+                    }
+                    if (typeof window !== 'undefined') {
+                        window.__xpider_manual_hold_active = false;
+                        delete window.__xpiderTriggerManualAction;
+                    }
+                    if (sendResponse) sendResponse({ success: true, dismissed: true });
+                    return true;
                 } else if (msg && msg.action === 'RESTORE_MANUAL_HOLD_PANEL') {
+                    const curMode = (typeof window !== 'undefined' && window.__xpider_campaign_mode) || (msg.template && msg.template.campaignMode) || (msg.mode) || 'AUTO';
+                    if (curMode === 'AUTO' || msg.mode === 'AUTO') {
+                        if (typeof document !== 'undefined') {
+                            const panel = document.getElementById('xpider-v7-manual-hold-panel');
+                            if (panel) panel.remove();
+                        }
+                        if (typeof window !== 'undefined') {
+                            window.__xpider_manual_hold_active = false;
+                        }
+                        if (sendResponse) sendResponse({ success: false, suppressed: true, reason: 'AUTO_MODE_NO_MANUAL_HOLD' });
+                        return true;
+                    }
                     if (msg.attemptId) {
                         const execId = {
                             attemptId: msg.attemptId,
@@ -5884,6 +5958,7 @@
                     const form = document.querySelector('form, #contact_form, .contact-form, [action*="contact"]');
                     const chal = _ChallengeGate ? _ChallengeGate.detectChallenge(document) : { detected: false };
                     handleV7ManualModeHold(form || null, msg.template || {}, new Map(), chal, {
+                        mode: curMode,
                         originalUrl: msg.initialHoldUrl || (window.location ? window.location.href : ''),
                         restoredAfterReload: true,
                         suppressInitialHoldSignal: true,
