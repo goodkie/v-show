@@ -1868,10 +1868,8 @@ function validateActiveExecution(request, sender, action, options = {}) {
     }
 
     // 2. Strict exact target tab verification
-    let effectiveTabId = sTabId;
-    if (options.allowBodyTabId && request?.tabId) {
-        effectiveTabId = request.tabId;
-    }
+    // [RC3.60 .90 Fix] Sender tab may be absent from internal worker or iframe contexts; allow fallback to request.tabId
+    let effectiveTabId = sTabId || (request?.tabId ? request.tabId : null);
     if (!effectiveTabId || !curTabId || effectiveTabId !== curTabId) {
         logBg(null, `[STALE_TARGET_EVENT] action=${action} senderTab=${effectiveTabId || 'none'} expectedTab=${curTabId} result=REJECTED reason=tab_mismatch`, 'warning');
         return { valid: false, reason: 'tab_mismatch' };
@@ -8865,7 +8863,7 @@ async function orchestrateSending(urlInput, template, abortSignal = null) {
             terminalStatus = finalReason;
         } else if (finalReason === 'SKIPPED' || finalReason === 'WOULD_SUBMIT' || finalReason?.includes('SKIPPED') || finalReason?.includes('NON_INQUIRY') || finalReason?.startsWith('NON_INQUIRY') || finalReason === 'EXPECTED_FAIL_PASS' || finalReason?.includes('EXPECTED_FAIL_PASS') || res?.isExpectedFailPass || finalReason === 'NO_LONG_TEXT_INQUIRY_FIELD' || finalReason === 'NO_FORM_FOUND' || finalReason === 'NO_REACHABLE_CONTACT_PAGE') {
             terminalStatus = 'SKIPPED';
-        } else if (finalReason === 'REQUIRED_SELECT_UNSTABLE' || finalReason === 'REQUIRED_FIELD_LOST_BEFORE_SUBMIT' || finalReason === 'AUTOFILL_FAILED' || finalReason === 'FORM_FILL_FAILED') {
+        } else if (finalReason === 'REQUIRED_SELECT_UNSTABLE' || finalReason === 'REQUIRED_FIELD_LOST_BEFORE_SUBMIT' || finalReason === 'AUTOFILL_FAILED' || finalReason === 'FORM_FILL_FAILED' || finalReason === 'FINAL_CUSTOM_VALIDITY_FAILED' || finalReason === 'FINAL_NATIVE_VALIDITY_FAILED' || finalReason === 'FINAL_FORM_COMPLETION_FAILED') {
             terminalStatus = 'AUTOMATION_FAILED';
         } else if (finalReason === 'CAPTCHA_PROVIDER_ERROR' || finalReason === 'CAPTCHA_TIMEOUT') {
             terminalStatus = 'CAPTCHA_PROVIDER_ERROR';

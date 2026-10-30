@@ -66,6 +66,7 @@
     class CheckboxResolverR2 {
         constructor(options = {}) {
             this.logger = options.logger || console.log;
+            this.options = options;
             this.cachedGroupChoices = new Map(); // groupKey -> chosenIdentifier
             this.maxRetries = 1;
         }
@@ -186,7 +187,7 @@
                 case 'inquiry_choice':
                 case 'program/service_interest':
                     groupKey = this.getGroupIdentifier(cbEl, form);
-                    shouldCheck = this.decideGroupSelection(cbEl, groupKey, isRequired);
+                    shouldCheck = this.decideGroupSelection(cbEl, groupKey, isRequired, options);
                     break;
 
                 case 'privacy_required':
@@ -265,22 +266,36 @@
         /**
          * Deterministically select one option for an inquiry checkbox group and cache choice
          */
-        decideGroupSelection(cbEl, groupKey, isRequired) {
-            if (!isRequired) {
-                // If group is not required at all, optionally pick the first or leave
+        decideGroupSelection(cbEl, groupKey, isRequired, options = {}) {
+
+            let chosenId = this.cachedGroupChoices.get(groupKey);
+            // [RC3.60 .90 Fix] In HTML, checkbox.value defaults to "on" when attribute is unset.
+            // Do NOT use default "on" as unique identifier; check id first, then non-"on" attribute, then label text.
+            const explicitVal = cbEl.getAttribute && cbEl.getAttribute('value');
+            const validVal = (explicitVal && explicitVal !== 'on') ? explicitVal : null;
+            const thisId = cbEl.id || validVal || this.getLabelText(cbEl) || (cbEl.name ? `${cbEl.name}_${cbEl.id || 'opt'}` : 'opt_1');
+
+            const hasRandomVariation = Boolean(
+                (options && options.randomVariation) ||
+                (this.options && this.options.randomVariation) ||
+                (typeof window !== 'undefined' && window.__xpider_random_variation)
+            );
+
+            if (!chosenId) {
+                if (isRequired || hasRandomVariation) {
+                    chosenId = thisId;
+                    this.cachedGroupChoices.set(groupKey, chosenId);
+                    if (this.logger) {
+                        this.logger(`[CHECKBOX_GROUP_CHOICE] group="${groupKey}" chosen="${chosenId}" isRequired=${isRequired} randomVariation=${hasRandomVariation}`);
+                    }
+                }
+            }
+
+            if (!isRequired && !hasRandomVariation) {
                 return false;
             }
 
-            let chosenId = this.cachedGroupChoices.get(groupKey);
-            const thisId = cbEl.value || cbEl.id || cbEl.name || this.getLabelText(cbEl) || 'opt_1';
-
-            if (!chosenId) {
-                // First valid element in required group becomes the locked choice for this attempt
-                chosenId = thisId;
-                this.cachedGroupChoices.set(groupKey, chosenId);
-            }
-
-            return (chosenId === thisId);
+            return Boolean(chosenId && chosenId === thisId);
         }
 
         /**
@@ -431,8 +446,22 @@
         }
 
         isGroupRequired(cbEl, form) {
-            const surrounding = this.getSurroundingText(cbEl) + ' ' + this.getParentGroupHeader(cbEl);
-            return /\*|required|필수|please select/i.test(surrounding);
+            // [RC3.60 .90 Fix] Check explicit checkbox requirement
+            if (cbEl.required || (cbEl.getAttribute && cbEl.getAttribute('aria-required') === 'true')) return true;
+            
+            // Check immediate fieldset
+            const fieldset = cbEl.closest ? cbEl.closest('fieldset') : null;
+            if (fieldset) {
+                if (fieldset.getAttribute('aria-required') === 'false') return false;
+                if (fieldset.getAttribute('aria-required') === 'true' || fieldset.hasAttribute('required')) return true;
+                const legend = fieldset.querySelector('legend');
+                if (legend && /\*|required|필수/i.test(legend.textContent || '')) return true;
+            }
+
+            // Check immediate group header only (not distant parent divs containing other required inputs)
+            const groupHeader = this.getParentGroupHeader(cbEl);
+            if (groupHeader && /\*|required|필수/i.test(groupHeader)) return true;
+            return false;
         }
 
         sleep(ms) {

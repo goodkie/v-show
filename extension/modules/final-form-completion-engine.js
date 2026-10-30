@@ -692,7 +692,8 @@
                                 answer = template.email || 'inquiry@example.com';
                             }
                             else if (type === 'tel' || /\b(phone|tel|mobile|cell)\b/i.test(ctx)) {
-                                answer = template.phone || template.telephone || '010-1234-5678';
+                                // [RC3.60 .90 Fix] Standard US 10-digit phone format, never Korean 010 on US/NANP forms
+                    answer = template.phone || template.telephone || '202-555-0149';
                             }
                             // 4. Textarea / Multi-line Comments (strictly message, NEVER phone)
                             else if (tag === 'textarea' || /\b(message|inquiry|comment|details|description|body)\b/i.test(ctx)) {
@@ -865,14 +866,36 @@
                 if (typeof el.checkValidity === 'function') {
                     try {
                         if (!el.checkValidity()) {
-                            nativeInvalidCount++;
-                            invalidFields.push({ tag, type: type || 'text', category: classification.category, kind: 'native' });
+                            // [RC3.60 .90 Recovery] If field is OPTIONAL and invalid, safely clear it to restore valid empty state
+                            if (!required) {
+                                setNativeValue(el, '');
+                                el.dispatchEvent(new Event('input', { bubbles: true }));
+                                el.dispatchEvent(new Event('change', { bubbles: true }));
+                                el.dispatchEvent(new Event('blur', { bubbles: true }));
+                                if (typeof this.logger === 'function') {
+                                    this.logger(`[OPTIONAL_RECOVERY] Cleared invalid optional field category=${classification.category} id=${el.id || el.name}`);
+                                }
+                            } else {
+                                nativeInvalidCount++;
+                                invalidFields.push({ tag, type: type || 'text', category: classification.category, kind: 'native' });
+                            }
                         }
                     } catch (_) {}
                 }
                 if (el.getAttribute && el.getAttribute('aria-invalid') === 'true') {
-                    customInvalidCount++;
-                    invalidFields.push({ tag, type: type || 'text', category: classification.category, kind: 'custom' });
+                    // [RC3.60 .90 Recovery] If field is OPTIONAL and custom invalid (e.g. Wix phone mask), safely clear it
+                    if (!required) {
+                        setNativeValue(el, '');
+                        el.dispatchEvent(new Event('input', { bubbles: true }));
+                        el.dispatchEvent(new Event('change', { bubbles: true }));
+                        el.dispatchEvent(new Event('blur', { bubbles: true }));
+                        if (typeof this.logger === 'function') {
+                            this.logger(`[OPTIONAL_RECOVERY] Cleared custom-invalid optional field category=${classification.category} id=${el.id || el.name}`);
+                        }
+                    } else {
+                        customInvalidCount++;
+                        invalidFields.push({ tag, type: type || 'text', category: classification.category, kind: 'custom' });
+                    }
                 }
             }
 

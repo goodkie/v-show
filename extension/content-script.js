@@ -4334,7 +4334,12 @@
             }
         }
 
+        const hasGenuineMessageField = finalAllInputs.some(el => isMsgElement(el) || el.tagName === 'TEXTAREA' || el.contentEditable === 'true');
         if (!messageFilled) {
+            if (!hasGenuineMessageField) {
+                logDev("ℹ️ [Fill] No genuine message field on form — legitimate non-inquiry skip", "info");
+                return { filledAny: false, reasonCode: 'NO_LONG_TEXT_INQUIRY_FIELD', terminalStatus: 'SKIPPED' };
+            }
             logDev("❌ [Fill] Message body was not filled", "error");
             return { filledAny: false, reasonCode: 'REQUIRED_FIELD_LOST_BEFORE_SUBMIT' };
         }

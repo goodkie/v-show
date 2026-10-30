@@ -7901,6 +7901,9 @@ async function launchCampaign(options = {}) {
         const activeRunStorage = await chrome.storage.local.get(['xpider_active_campaign_run_id']);
         const resolvedRunId = isTestModeActive ? activeRunStorage.xpider_active_campaign_run_id : (assignedNormalRunId || activeRunStorage.xpider_active_campaign_run_id);
 
+        const randomVariationToggle = document.getElementById('random-delay-toggle');
+        const randomVariationActive = randomVariationToggle ? randomVariationToggle.checked : false;
+
         const startPayload = {
             queue: campaignQueue,
             template: currentTpl,
@@ -7908,6 +7911,7 @@ async function launchCampaign(options = {}) {
             fillDelayMs,
             submitDelayMs,
             fillMode,
+            randomVariation: randomVariationActive,
             templateId: currentTpl.templateId || 'default',
             templateVersion: currentTpl.templateVersion || 1,
             skipPreviouslyAttempted,
