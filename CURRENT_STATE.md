@@ -6,7 +6,7 @@
 - Workspace: E:\vivpr\ai\extension-form-sender
 - Authority: goodkie/v-show Issues #6 & #10
 - Branch: upgrade/phase-0-1
-- State Rev: 2026-10-30.243
+- State Rev: 2026-10-30.244
 - Authority Cursor: 6514783886
 - Major-version Stage 0 backup DONE: tag major-backup-20261030-from-93 (4be780b4); backups/MAJOR_BACKUP_20261030_from_93_4be780b4 (local, DPAPI-encrypted secrets); sandbox restore PASS; receipt #6514847380. Stage 1 pending.
 - Last Directives / Audits:
@@ -65,8 +65,8 @@
   - `[ANTIGRAVITY][RECEIPT][ISSUE-6][RC3.60-.85-PUBLIC-TARGET-SECURE-ENTRY-AND-NATURAL-COLD-AUTO-START-PASS][2026-10-28] Comment #6465320164`
   - `[ANTIGRAVITY][RECEIPT][ISSUE-6][RC3.60-.86-STREAM-A-DURABLE-LEDGER-AND-STREAM-B-RESIDENTIAL-DATAPLANE][2026-10-28] Comment #6467239685`
   - `[ANTIGRAVITY][RECEIPT][ISSUE-6][DELEGATED-TWO-LAYER-NETWORK-PRECHECK-OPAL-PROFILE-AND-RESIDENTIAL-DATAPLANE][2026-10-28] Comment #6468457751`
-- Build ID: `R6.9G.10.3.7.1.4.93-20261029-P0-RC3.60-CAPTCHA-FORM-QA-PASS`
-- Verified Release Asset: `XPIDER_R6.9G.10.3.7.1.4.93_OWNER_BETA.zip` (Tag: `v6.9g.10.3-rc3.60.7.1.4.93`, Size: 53,056,535 bytes, SHA256: `5714dd98fdb54fd4d3ed15ad2cb8af8d7eeccade1cd7e64708670a241c58fa2b`)
+- Build ID: `R6.9G.10.3.7.1.4.94-20261029-P0-RC3.60-SCOPE-ERROR-HOTFIX-PASS`
+- Verified Release Asset: `XPIDER_R6.9G.10.3.7.1.4.94_OWNER_BETA.zip` (Tag: `v6.9g.10.3-rc3.60.7.1.4.94`, 53,056,567 bytes, SHA256: `570d7ffe28e83aecd2f9d2d65b6f5ffe6947f333145b9435115d1e8fdf15e861`); .93 has a CORE_RUNTIME_BROKEN regression - do not use.
 - Operational Status: **RC3.60 .89 REAL DECODO RESIDENTIAL EXIT VERIFICATION = 100% PASS**:
   1. **Directive #6507436538 Verified in Real Chrome**:
      - Section 1 (API Contract): Decodo configured (`us.decodo.com:10001`), egress verified (`68.227.*.*`), route `DECODO`, confidence `HIGH`.
