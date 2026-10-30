@@ -6,8 +6,19 @@
 - Workspace: E:\vivpr\ai\extension-form-sender
 - Authority: goodkie/v-show Issues #6 & #10
 - Branch: major/v7-dual-mode (branched from upgrade/phase-0-1)
-- State Rev: 2026-10-30.254
-- Authority Cursor: 6527220431
+- State Rev: 2026-10-30.257
+- Authority Cursor: 6528400000
+- Major-version v7.0.0-rc10 Three-Mode Contracts, Stale Hold Purge & Resume Reliability COMPLETED:
+  - Functional Commit `f5e235eb` on `major/v7-dual-mode`.
+  - GitHub Release: `v7.0.0-rc10` (tag `v7.0.0-rc10`).
+  - Package: `XPIDER_V7.0.0_RC10_DUAL_MODE_OWNER_BETA.zip` (SHA256: `951c4cd0f1f1a383918ca10d28fa65d85db4bac4d92f29af107ff3f9718b8070`, size: `51699608` bytes).
+  - Receipt posted: `Directive #6528400000`.
+  - Contract Enforcement:
+    1. Cross-Origin Inaccessible Form & AUTO Mode Isolation: On sites with cross-origin inaccessible forms (e.g. `jitsuacademy.com`), AUTO mode terminates discovery cleanly as `EXTERNAL_CROSS_ORIGIN_FORM_UNRESOLVABLE` without presenting generic manual registration hold, without hanging, and without false success. SEMI_AUTO and MANUAL route to operator assistance hold displaying truthful reason.
+    2. Truthful UI Rendering in Manual Hold Panel: Replaced `0 fields verified ✓` with `🚫 Auto-Fill Unavailable: 0 fields verified` and exact explanation when `fieldCount === 0 || isCrossOrigin || isNoForm`.
+    3. Resume 3-Way Mode Selection & Stale Hold Purge: Fixed broken ternary in `popup.js` line 8635 where `selectedMode === 'SEMI_AUTO'` was bypassed. Synchronously clears `manualHoldActive`, `xpider_v7_active_hold_state`, and sends `DISMISS_MANUAL_HOLD_PANEL` if resuming in `AUTO`.
+    4. Background Latch & Anti-Stale Restoration: In `navWatcher` and SW boot, stale hold states are purged and only restored if `campaignMode !== 'AUTO'`. Message handlers for `MANUAL_MODE_HOLD` and `FORM_MANUAL_ASSIST_REQUEST` immediately reject in `AUTO` mode.
+  - Regression Matrix: `test/test_v7_rc10_all_contracts.js` PASS (All 9/9 mode transitions, AUTO cross-origin fail-safe, truthful UI, anti-stale restore, CAPTCHA safety), `test/test_v7_stage2_matrix.js` PASS (12/12 passed), `test/test_jiujitsu_modal_fixture.js` PASS, `test/test_rc9_residential_502_failclosed.js` PASS, 100% 3-way hash parity verified across git root `extension/`, unpacked folder `XPIDER_V7.0.0_RC1_DUAL_MODE_OWNER_BETA/extension/`, and packaged zip.
 - Major-version v7.0.0-rc9 Four Defects Resolution COMPLETED:
   - Commit `d1514259` on `major/v7-dual-mode`.
   - GitHub Release: `v7.0.0-rc9` (tag `v7.0.0-rc9`).

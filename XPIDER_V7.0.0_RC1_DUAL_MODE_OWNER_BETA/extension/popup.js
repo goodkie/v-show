@@ -1177,11 +1177,13 @@ function bindCriticalControls() {
 function renderSidePanelAssistanceCard(holdState) {
     const card = document.getElementById('side-panel-assistance-card');
     if (!card) return;
-    if (!holdState || !holdState.active) {
+    if (!holdState || !holdState.active || currentCampaignMode === 'AUTO' || holdState.campaignMode === 'AUTO') {
         card.style.display = 'none';
+        card.classList.add('hidden');
         return;
     }
     card.style.display = 'block';
+    card.classList.remove('hidden');
     const stageBadge = document.getElementById('sp-assist-stage-badge');
     const reasonEl = document.getElementById('sp-assist-reason');
     const urlEl = document.getElementById('sp-assist-url');
@@ -5189,6 +5191,9 @@ function updateRealTimeStatus(data) {
         _renderHistoryPanel();
     }
 
+    if (data.campaignMode && (data.campaignMode === 'AUTO' || data.campaignMode === 'SEMI_AUTO' || data.campaignMode === 'MANUAL')) {
+        currentCampaignMode = data.campaignMode;
+    }
     const activeMode = data.campaignMode || currentCampaignMode || 'AUTO';
     const activeStatus = campaignPaused ? 'PAUSED' : (campaignActive ? 'RUNNING' : (remainingTargets > 0 ? 'READY' : 'IDLE'));
     updatePersistentModeHud(activeMode, activeStatus, data.currentTargetUrl, remainingTargets);
@@ -8547,6 +8552,9 @@ function wireResumeModeModalOnce() {
     const radioAuto = document.getElementById('resume-mode-radio-auto');
     const radioSemiAuto = document.getElementById('resume-mode-radio-semi-auto');
     const radioManual = document.getElementById('resume-mode-radio-manual');
+    const optAuto = document.getElementById('resume-mode-option-auto');
+    const optSemiAuto = document.getElementById('resume-mode-option-semi-auto');
+    const optManual = document.getElementById('resume-mode-option-manual');
     const cancelBtn = document.getElementById('cancel-resume-mode-btn');
     const confirmBtn = document.getElementById('confirm-resume-mode-btn');
 
@@ -8563,6 +8571,30 @@ function wireResumeModeModalOnce() {
     if (radioManual) {
         radioManual.addEventListener('change', () => {
             if (radioManual.checked) applyResumeModeSelectionUI('MANUAL', window.__xpider_last_paused_mode || currentCampaignMode || 'AUTO');
+        });
+    }
+    if (optAuto) {
+        optAuto.addEventListener('click', (e) => {
+            if (e.target !== radioAuto) {
+                if (radioAuto) radioAuto.checked = true;
+                applyResumeModeSelectionUI('AUTO', window.__xpider_last_paused_mode || currentCampaignMode || 'AUTO');
+            }
+        });
+    }
+    if (optSemiAuto) {
+        optSemiAuto.addEventListener('click', (e) => {
+            if (e.target !== radioSemiAuto) {
+                if (radioSemiAuto) radioSemiAuto.checked = true;
+                applyResumeModeSelectionUI('SEMI_AUTO', window.__xpider_last_paused_mode || currentCampaignMode || 'AUTO');
+            }
+        });
+    }
+    if (optManual) {
+        optManual.addEventListener('click', (e) => {
+            if (e.target !== radioManual) {
+                if (radioManual) radioManual.checked = true;
+                applyResumeModeSelectionUI('MANUAL', window.__xpider_last_paused_mode || currentCampaignMode || 'AUTO');
+            }
         });
     }
     if (cancelBtn) {
@@ -8632,7 +8664,9 @@ function cancelResumeCampaignModal() {
 }
 
 function confirmResumeCampaignWithMode(selectedMode) {
-    const targetMode = (selectedMode === 'MANUAL') ? 'MANUAL' : ((selectedMode === 'AUTO') ? 'AUTO' : (window.__xpider_last_paused_mode || currentCampaignMode || 'AUTO'));
+    const targetMode = (selectedMode === 'MANUAL' || selectedMode === 'SEMI_AUTO' || selectedMode === 'AUTO')
+        ? selectedMode
+        : (window.__xpider_last_paused_mode || currentCampaignMode || 'AUTO');
     const modal = document.getElementById('resume-mode-modal-overlay');
     if (modal) {
         modal.classList.add('hidden');
@@ -8696,7 +8730,7 @@ function confirmResumeCampaignWithMode(selectedMode) {
 }
 
 function resumeCampaign(explicitMode) {
-    if (explicitMode === 'AUTO' || explicitMode === 'MANUAL') {
+    if (explicitMode === 'AUTO' || explicitMode === 'SEMI_AUTO' || explicitMode === 'MANUAL') {
         return confirmResumeCampaignWithMode(explicitMode);
     }
     promptResumeCampaignMode();

@@ -216,7 +216,7 @@
                 this.lastPreflightResult = null;
                 this.isGateReady = false;
                 if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
-                    chrome.storage.local.remove(['xpider_last_privacy_preflight']).catch(() => {});
+                    chrome.storage.local.remove(['xpider_last_privacy_preflight']).catch(() => { });
                 }
                 if (this.config.transportMode === PRIVACY_MODES.SYSTEM_VPN || newConfig.transportMode === PRIVACY_MODES.SYSTEM_VPN) {
                     if (newConfig.systemVpnConfirmed === undefined) {
@@ -288,9 +288,9 @@
                     try {
                         const nodeCrypto = require('crypto');
                         return nodeCrypto.createHash('sha256').update(String(str)).digest('hex').substring(0, 16);
-                    } catch (_) {}
+                    } catch (_) { }
                 }
-            } catch (_) {}
+            } catch (_) { }
             let hash = 0;
             for (let i = 0; i < str.length; i++) {
                 hash = ((hash << 5) - hash) + str.charCodeAt(i);
@@ -442,11 +442,11 @@
                                         try {
                                             const parsed = JSON.parse(trimmed);
                                             if (parsed.ip) observedIp = String(parsed.ip).trim();
-                                        } catch (_) {}
+                                        } catch (_) { }
                                     }
                                 }
                             }
-                        } catch (_) {}
+                        } catch (_) { }
                         return { success: true, status: resp.status, endpoint: target, observedIp: observedIp || null };
                     } else if (resp.status === 407) {
                         return { success: false, reason: 'PROXY_AUTH_REQUIRED_407', endpoint: target };
@@ -512,7 +512,7 @@
                             relayReady = Boolean(relayStatusRes.status.relayReady);
                             residentialSelected = Boolean(relayStatusRes.status.residentialProxySelected);
                         }
-                    } catch (_) {}
+                    } catch (_) { }
 
                     // 2. Verify whether Chrome proxy settings are contemporaneously enforced before running browser canary
                     let proxyEnforced = true;
@@ -1236,7 +1236,7 @@
                     await new Promise(r => chrome.proxy.settings.clear({ scope: 'regular' }, r));
                     this.isGateActive = false;
                     this.isGateReady = false;
-                } catch (_) {}
+                } catch (_) { }
             }
 
             const host = this.config.relayHost || '127.0.0.1';
@@ -1353,7 +1353,7 @@
                     try {
                         await new Promise(r => chrome.proxy.settings.clear({ scope: 'regular' }, r));
                         res = await fetchFn(`http://${host}:${port}/recovery-status`, { cache: 'no-store', headers });
-                    } catch (_) {}
+                    } catch (_) { }
                 }
                 if (res.ok) {
                     return await res.json();
@@ -1878,8 +1878,8 @@
                     chrome.runtime.sendMessage({
                         action: 'SYSTEM_VPN_CONFIRMATION_INVALIDATED',
                         reason: reason
-                    }).catch(() => {});
-                } catch (_) {}
+                    }).catch(() => { });
+                } catch (_) { }
             }
             return { success: true, reason };
         }
@@ -2433,40 +2433,40 @@
                         egressCheck = 'FAIL';
                         failureReason = subgateFailure;
                     } else {
-                    try {
-                        // 2. Configure Chrome Proxy to loopback proxy on 18988
-                        await this.applyManagedProxy(PRIVACY_MODES.HTTPS_PROXY, relayHost, relayProxyPort, ['<-loopback>']);
+                        try {
+                            // 2. Configure Chrome Proxy to loopback proxy on 18988
+                            await this.applyManagedProxy(PRIVACY_MODES.HTTPS_PROXY, relayHost, relayProxyPort, ['<-loopback>']);
 
-                        // 3. Canary probe through Relay Proxy
-                        const canaryUrl = options.canaryUrl || this.config.canaryUrl || null;
-                        const canaryRes = await this.probeProxyCanary(canaryUrl, 3000);
+                            // 3. Canary probe through Relay Proxy
+                            const canaryUrl = options.canaryUrl || this.config.canaryUrl || null;
+                            const canaryRes = await this.probeProxyCanary(canaryUrl, 3000);
 
-                        if (!canaryRes.success) {
+                            if (!canaryRes.success) {
+                                ready = false;
+                                directFallbackBlocked = 'BLOCKED';
+                                egressCheck = 'FAIL';
+                                failureReason = `PRIVACY_RELAY_CANARY_FAILED: ${canaryRes.reason}`;
+                            } else {
+                                ready = true;
+                                this.isGateActive = true;
+                                directFallbackBlocked = 'BLOCKED';
+                                const companionDns = statusRes.status.dnsProtection || statusRes.status.residentialProxy?.dnsProtection || (statusRes.status.diagnostics?.dnsPath?.ok ? 'VERIFIED_REMOTE_PROXY_CONNECT' : null);
+                                const companionIpv6 = statusRes.status.ipv6Protection || statusRes.status.residentialProxy?.ipv6Protection || statusRes.status.diagnostics?.ipv6Path?.status;
+                                dnsPrivacy = (companionDns === 'PASS' || companionDns === 'VERIFIED_REMOTE_PROXY_CONNECT') ? 'PASS' : (companionDns || 'UNKNOWN');
+                                ipv6Protection = (companionIpv6 === 'PROTECTED' || companionIpv6 === 'VERIFIED_IPV6_DISABLED_AND_PROXY_BLOCKED' || companionIpv6 === 'IPV6_ROUTE_ACTIVE_BLOCKED_AT_PROXY') ? 'PROTECTED' : (companionIpv6 || 'UNKNOWN');
+                                egressCheck = 'PASS';
+                                this.ephemeralEgressFingerprint = statusRes.status.egressFingerprint;
+                                this.config.selectedEgressId = statusRes.status.selectedEgressId;
+                                failureReason = null;
+                            }
+                        } catch (relayErr) {
                             ready = false;
                             directFallbackBlocked = 'BLOCKED';
                             egressCheck = 'FAIL';
-                            failureReason = `PRIVACY_RELAY_CANARY_FAILED: ${canaryRes.reason}`;
-                        } else {
-                            ready = true;
-                            this.isGateActive = true;
-                            directFallbackBlocked = 'BLOCKED';
-                            const companionDns = statusRes.status.dnsProtection || statusRes.status.residentialProxy?.dnsProtection || (statusRes.status.diagnostics?.dnsPath?.ok ? 'VERIFIED_REMOTE_PROXY_CONNECT' : null);
-                            const companionIpv6 = statusRes.status.ipv6Protection || statusRes.status.residentialProxy?.ipv6Protection || statusRes.status.diagnostics?.ipv6Path?.status;
-                            dnsPrivacy = (companionDns === 'PASS' || companionDns === 'VERIFIED_REMOTE_PROXY_CONNECT') ? 'PASS' : (companionDns || 'UNKNOWN');
-                            ipv6Protection = (companionIpv6 === 'PROTECTED' || companionIpv6 === 'VERIFIED_IPV6_DISABLED_AND_PROXY_BLOCKED' || companionIpv6 === 'IPV6_ROUTE_ACTIVE_BLOCKED_AT_PROXY') ? 'PROTECTED' : (companionIpv6 || 'UNKNOWN');
-                            egressCheck = 'PASS';
-                            this.ephemeralEgressFingerprint = statusRes.status.egressFingerprint;
-                            this.config.selectedEgressId = statusRes.status.selectedEgressId;
-                            failureReason = null;
+                            failureReason = `PRIVACY_RELAY_SETUP_ERROR: ${relayErr.message}`;
                         }
-                    } catch (relayErr) {
-                        ready = false;
-                        directFallbackBlocked = 'BLOCKED';
-                        egressCheck = 'FAIL';
-                        failureReason = `PRIVACY_RELAY_SETUP_ERROR: ${relayErr.message}`;
                     }
                 }
-            }
             } else {
                 ready = false;
                 failureReason = `UNKNOWN_TRANSPORT_MODE: ${mode}`;
@@ -2522,8 +2522,8 @@
                         dnsPrivacy: result.dnsPrivacy || 'UNKNOWN',
                         ipv6Protection: result.ipv6Protection || 'UNKNOWN'
                     };
-                    chrome.storage.local.set({ xpider_last_privacy_preflight: snapshot }).catch(() => {});
-                } catch (_) {}
+                    chrome.storage.local.set({ xpider_last_privacy_preflight: snapshot }).catch(() => { });
+                } catch (_) { }
             }
             return result;
         }
@@ -2922,7 +2922,7 @@
                         if (probeRes && probeRes.status && probeRes.status.relayReady && probeRes.status.health !== 'EXPIRED') {
                             rStatus = probeRes.status;
                         }
-                    } catch (_) {}
+                    } catch (_) { }
                 }
                 if (!rStatus.relayReady || rStatus.health === 'EXPIRED' || rStatus.health === 'NO_NODES') {
                     let failReason = 'PRIVACY_RELAY_NOT_READY';
@@ -2943,7 +2943,7 @@
                                         detail = 'EGRESS_VERIFIED';
                                         break;
                                     }
-                                } catch (_) {}
+                                } catch (_) { }
                             }
                         }
                         if (!rStatus.residentialProxy || !rStatus.residentialProxy.sendAllowed || rStatus.residentialProxy.status !== 'EGRESS_VERIFIED') {
