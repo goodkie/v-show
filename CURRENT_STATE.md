@@ -6,8 +6,19 @@
 - Workspace: E:\vivpr\ai\extension-form-sender
 - Authority: goodkie/v-show Issues #6 & #10
 - Branch: major/v7-dual-mode (branched from upgrade/phase-0-1)
-- State Rev: 2026-10-30.258
-- Authority Cursor: 6529136385
+- State Rev: 2026-10-30.259
+- Authority Cursor: 6534473346
+- Major-version v7.0.0-rc12 Triple Contract Fix (Semi-Auto Silent Advance + False Hold + State Desync) COMPLETED:
+  - Functional Commit pending/tagged on `major/v7-dual-mode`.
+  - GitHub Release: `v7.0.0-rc12` (tag `v7.0.0-rc12`).
+  - Package: `XPIDER_V7.0.0_RC12_DUAL_MODE_OWNER_BETA.zip` (SHA256: `3f77fe4ecf18c467accdedde3f361d859f312232b099227604c36f82dcf1ca1a`, size: `51695724` bytes).
+  - Directive: `[CHATGPT -> ANTIGRAVITY][ISSUE #6][P0 POST-RC11 OWNER REGRESSION: SEMI_AUTO SILENT ADVANCE + FALSE HOLD + STATE DESYNC]` (Comment #6534473346 / `IC_kwDOT53X288AAAABhXwmgg`).
+  - Contract Enforcement:
+    1. Squarespace / Form Autofill Stall Resolution (`https://jkdsciences.com/contact-us`): Eliminated `template.campaignMode === 'AUTO'` bug in `handleV7ManualModeHold` which wrongly evaluated `isExplicitAuto = true` in SEMI_AUTO / MANUAL modes and suppressed operator hold with `AUTO_MODE_NO_HOLD`. Unified fill engine across AUTO, SEMI_AUTO, and MANUAL; SEMI_AUTO now attempts full fill identically to AUTO/MANUAL and settles via submit or truthful operator hold—never silently hangs or advances on watchdog.
+    2. Non-Inquiry Form Classification & Guard (`https://jk02.org`): Tightened `detectInquiryBodyField` in `contact-gate.js` by eliminating generic soft tokens (`details`, `description`, `request`) that misidentified single-line non-message inputs. In `FinalFormCompletionEngine` and `content-script.js`, forms lacking a genuine inquiry/message textarea/field are immediately classified and settled as `SKIPPED NON_INQUIRY_FORM` before fill and before hold. Added `captureSelectedFormEvidence` capturing form action, sanitized field names/types/visibility, and confidence (0.95) with zero PII.
+    3. Authoritative Background State Snapshot & Desync Elimination: Added monotonically increasing `stateRevision` to background `campaignState`. Centralized all state broadcasts via `getAuthoritativeStateSnapshot()` (`AUTHORITATIVE_STATE_UPDATE`). In `popup.js`, implemented `applyAuthoritativeStateSnapshot(snapshot)` which rejects stale async callbacks (`revision < currentSnapshotRevision`). Atomically synchronizes `#campaign-ready-pill`, `#persistent-mode-hud`, banner, and progress counters. UI can NEVER show PAUSED and RUNNING simultaneously for the same run.
+    4. PAUSE -> RESUME 3-Way Mode Matrix & In-Flight Preservation: `pauseCampaignOrchestrator` cleanly closes campaign tabs (`closeAllCampaignTabsExcept(null)`), prevents resurrection of prior-mode holds, and unshifts uncommitted in-flight targets back to `campaignState.queue[0]`. On resume, broadcasts new authoritative state and applies selected mode (`AUTO`, `SEMI_AUTO`, or `MANUAL`) atomically with zero target loss.
+    5. Regression Matrix & Parity Verification: `test/test_v7_rc12_owner_regressions.js` (15/15 tests PASS), `test/test_v7_rc11_contracts.js` (53/53 assertions PASS), `test/test_v7_mode_resume_matrix.js` PASS. 100% 3-way hash parity verified across git root `extension/`, unpacked directory `XPIDER_V7.0.0_RC1_DUAL_MODE_OWNER_BETA/extension/`, and `XPIDER_V7.0.0_RC12_DUAL_MODE_OWNER_BETA.zip`.
 - Major-version v7.0.0-rc11 P0 Contract Implementation & Defect Resolution COMPLETED:
   - Functional Commit `20678ada` on `major/v7-dual-mode`.
   - GitHub Release: `v7.0.0-rc11` (tag `v7.0.0-rc11`).

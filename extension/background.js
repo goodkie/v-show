@@ -581,6 +581,7 @@ class TargetDeadlineController {
 
 // [v1.2.0] Global Campaign State Registry (Ensures availability across all scopes)
 let campaignState = {
+    stateRevision: 0, // [RC12 Item 3] Authoritative Monotonic State Revision Counter
     isActive: false,
     campaignMode: 'AUTO', // [v7.0 Dual Mode] 'AUTO' | 'MANUAL'
     manualHoldActive: false,
@@ -738,6 +739,7 @@ function broadcastCounters() {
             counters: campaignState.counters
         }
     }).catch(() => {});
+    broadcastAuthoritativeState();
 }
 
 async function persistCounters() {
@@ -746,6 +748,58 @@ async function persistCounters() {
             await chrome.storage.local.set({ xpider_campaign_counters_v1: campaignState.counters });
         } catch (_) {}
     }
+}
+
+// [RC12 Item 3] Authoritative Canonical State Snapshot with Monotonic Revision
+function getAuthoritativeStateSnapshot() {
+    if (!campaignState.stateRevision) campaignState.stateRevision = 1;
+    else campaignState.stateRevision++;
+    const checkpoint = campaignState.pausedCheckpoint;
+    const counters = campaignState.counters || { success: 0, failed: 0, completed: 0, remaining: 0, total: 0 };
+    const remCount = campaignState.isActive
+        ? (campaignState.queue ? campaignState.queue.length : 0)
+        : (campaignState.isPaused && checkpoint && Array.isArray(checkpoint.remainingQueue)
+            ? checkpoint.remainingQueue.length
+            : (campaignState.queue ? campaignState.queue.length : 0));
+    const compCount = counters.completed !== undefined ? counters.completed : ((counters.success || 0) + (counters.failed || 0));
+    const totTargets = (counters.total !== undefined && counters.total > 0)
+        ? counters.total
+        : (campaignState.totalTargets || (remCount + compCount));
+    
+    return {
+        revision: campaignState.stateRevision,
+        campaignRunId: campaignState.campaignRunId || null,
+        runEpoch: campaignState.sessionId || 1,
+        isActive: Boolean(campaignState.isActive),
+        isPaused: Boolean(campaignState.isPaused),
+        campaignMode: campaignState.campaignMode || (checkpoint && checkpoint.campaignMode) || 'AUTO',
+        remainingCount: remCount,
+        completedCount: compCount,
+        successCount: counters.success || campaignState.successCount || 0,
+        failedCount: counters.failed || 0,
+        totalTargets: totTargets,
+        currentTargetUrl: (campaignState.currentAttempt && campaignState.currentAttempt.url) || campaignState.currentTargetUrl || (campaignState.isPaused ? 'Paused Target' : 'Idle'),
+        stage: campaignState.currentTargetStage || (campaignState.isPaused ? 'PAUSED' : (campaignState.isActive ? 'RUNNING' : 'IDLE')),
+        hasPausedCheckpoint: Boolean(campaignState.isPaused && checkpoint && Array.isArray(checkpoint.remainingQueue) && checkpoint.remainingQueue.length > 0),
+        pausedRemainingCount: (checkpoint && Array.isArray(checkpoint.remainingQueue)) ? checkpoint.remainingQueue.length : 0,
+        pausedCampaignMode: (checkpoint && checkpoint.campaignMode) || campaignState.campaignMode || 'AUTO',
+        failureBreakdown: counters.failureBreakdown || {},
+        counters: {
+            ...counters,
+            remaining: remCount,
+            completed: compCount,
+            total: totTargets
+        }
+    };
+}
+
+function broadcastAuthoritativeState() {
+    const snapshot = getAuthoritativeStateSnapshot();
+    chrome.runtime.sendMessage({
+        action: 'AUTHORITATIVE_STATE_UPDATE',
+        snapshot
+    }).catch(() => {});
+    return snapshot;
 }
 
 // [v18.35.0] Mission-Critical API Wrapper: Native bridge for missing APIs
@@ -5098,26 +5152,14 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
 
         case 'GET_STATE':
             chrome.storage.local.get(['xpider_paused_checkpoint'], (stored) => {
-                const checkpoint = campaignState.pausedCheckpoint || stored.xpider_paused_checkpoint || null;
-                const counters = campaignState.counters || { success: 0, failed: 0, completed: 0, remaining: 0, total: 0 };
+                if (!campaignState.pausedCheckpoint && stored.xpider_paused_checkpoint) {
+                    campaignState.pausedCheckpoint = stored.xpider_paused_checkpoint;
+                }
+                const snapshot = getAuthoritativeStateSnapshot();
                 sendResponse({
                     success: true,
-                    isActive: campaignState.isActive,
-                    successCount: counters.success !== undefined ? counters.success : campaignState.successCount,
-                    failedCount: counters.failed !== undefined ? counters.failed : 0,
-                    completedCount: counters.completed !== undefined ? counters.completed : 0,
-                    remainingCount: counters.remaining !== undefined ? counters.remaining : campaignState.queue.length,
-                    totalTargets: counters.total !== undefined && counters.total > 0 ? counters.total : campaignState.totalTargets,
-                    failureBreakdown: counters.failureBreakdown || {},
-                    counters: counters,
-                    isPaused: campaignState.isPaused,
-                    hasPausedCheckpoint: !!(checkpoint && checkpoint.remainingQueue && checkpoint.remainingQueue.length > 0),
-                    pausedRemainingCount: (checkpoint && checkpoint.remainingQueue) ? checkpoint.remainingQueue.length : 0,
-                    campaignMode: campaignState.campaignMode || (checkpoint && checkpoint.campaignMode) || 'AUTO',
-                    pausedCampaignMode: (checkpoint && checkpoint.campaignMode) || campaignState.campaignMode || 'AUTO',
-                    hasActiveLock: !!(campaignState.currentAttempt && campaignState.currentAttempt.status === 'SUBMIT_PENDING'),
-                    currentAttempt: campaignState.currentAttempt,
-                    outcomeHistogram: campaignState.outcomeHistogram || {}
+                    ...snapshot,
+                    snapshot
                 });
             });
             return true;
@@ -5125,7 +5167,17 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
         case 'PAUSE_CAMPAIGN':
             (async () => {
                 const res = await pauseCampaignOrchestrator(true);
-                sendResponse({ success: true, ...res });
+                const snapshot = getAuthoritativeStateSnapshot();
+                broadcastAuthoritativeState();
+                sendResponse({
+                    success: true,
+                    ...res,
+                    snapshot,
+                    revision: snapshot.revision,
+                    effectiveMode: snapshot.campaignMode,
+                    runId: snapshot.campaignRunId,
+                    remainingCount: snapshot.remainingCount
+                });
             })();
             return true;
             
@@ -5135,7 +5187,17 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
                     const res = await resumeCampaignOrchestrator({
                         campaignMode: request.campaignMode
                     });
-                    sendResponse({ success: true, ...res });
+                    const snapshot = getAuthoritativeStateSnapshot();
+                    broadcastAuthoritativeState();
+                    sendResponse({
+                        success: true,
+                        ...res,
+                        snapshot,
+                        revision: snapshot.revision,
+                        effectiveMode: snapshot.campaignMode,
+                        runId: snapshot.campaignRunId,
+                        remainingCount: snapshot.remainingCount
+                    });
                 } catch (err) {
                     sendResponse({ success: false, error: err.message });
                 }
@@ -6937,7 +6999,7 @@ async function startCampaignOrchestrator(queue, template, delayMs, fillDelayMs =
         logBg(null, "[Boot] Storage sync initiated.", "debug");
 
         await syncCampaignCountersFromLedger(hs);
-
+        broadcastAuthoritativeState();
         processNextCampaignTarget(campaignState.sessionId);
         logBg(null, "[Boot] Target loop triggered.", "debug");
         
@@ -7133,9 +7195,8 @@ async function pauseCampaignOrchestrator(saveCheckpoint = true) {
     const hsInstance = await getHistoryStoreInstance();
     await syncCampaignCountersFromLedger(hsInstance);
 
-    // [Issue #6 R6.9E B5 & V7.0.0-RC2 Audit Item 2] 5. Close campaign tabs EXCEPT held tab if in MANUAL_HOLD or CAPTCHA_PENDING_EXTERNAL_USER
-    const retainTabOnPause = wasInV7Hold ? campaignState.currentTabId : null;
-    await closeAllCampaignTabsExcept(retainTabOnPause, 'PAUSE_CAMPAIGN');
+    // [RC12 Item 4] Close all campaign tabs on pause; clean task boundary ensures never resurrecting a prior-mode hold
+    await closeAllCampaignTabsExcept(null, 'PAUSE_CAMPAIGN');
     if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
         chrome.storage.local.remove('xpider_v7_active_hold_state').catch(() => {});
     }
@@ -7337,6 +7398,7 @@ async function resumeCampaignOrchestrator(options = {}) {
     logBg(null, `🚀 [Resume] Resuming campaign at task boundary in ${requestedMode} mode (previous=${previousMode}, switched=${modeSwitched}) from target ${campaignState.totalTargets - campaignState.queue.length + 1} (${campaignState.queue.length} targets remaining)...`, "start");
 
     const restoredCount = checkpoint.remainingQueue.length;
+    broadcastAuthoritativeState();
     processNextCampaignTarget(campaignState.sessionId);
     return {
         success: true,

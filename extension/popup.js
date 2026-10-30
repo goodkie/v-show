@@ -1899,33 +1899,94 @@ async function hydrateSettings(overrideV2Store = null) {
             privacyBlockModal.style.display = 'flex';
         };
 
+        let currentSnapshotRevision = 0;
+
+        function applyAuthoritativeStateSnapshot(snapshot) {
+            if (!snapshot || typeof snapshot !== 'object') return;
+            if (typeof snapshot.revision === 'number') {
+                if (snapshot.revision < currentSnapshotRevision) {
+                    console.warn(`[STATE_DESYNC_REJECTED] Stale snapshot revision=${snapshot.revision} < current=${currentSnapshotRevision}`);
+                    return;
+                }
+                currentSnapshotRevision = snapshot.revision;
+            }
+            window.__xpider_last_authoritative_snapshot = snapshot;
+
+            // Authoritative state variables
+            campaignActive = Boolean(snapshot.isActive);
+            campaignPaused = Boolean(snapshot.isPaused);
+            currentCampaignMode = (snapshot.campaignMode === 'MANUAL' || snapshot.campaignMode === 'SEMI_AUTO') ? snapshot.campaignMode : 'AUTO';
+            remainingTargets = snapshot.remainingCount !== undefined ? snapshot.remainingCount : 0;
+            completedCount = snapshot.completedCount !== undefined ? snapshot.completedCount : 0;
+            successCount = snapshot.successCount !== undefined ? snapshot.successCount : 0;
+            failedCount = snapshot.failedCount !== undefined ? snapshot.failedCount : 0;
+            totalTargets = snapshot.totalTargets || (remainingTargets + completedCount);
+            window.__xpider_has_paused_checkpoint = Boolean(snapshot.hasPausedCheckpoint && !snapshot.isActive);
+
+            // 1. TOP PILL: #campaign-ready-pill (Strict single source of truth: NEVER show RUNNING & PAUSED simultaneously)
+            const campPill = document.getElementById('campaign-ready-pill');
+            if (campPill) {
+                if (campaignActive && !campaignPaused) {
+                    campPill.textContent = `CAMPAIGN: RUNNING (${completedCount}/${totalTargets})`;
+                    campPill.style.color = '#38bdf8';
+                } else if (campaignPaused || window.__xpider_has_paused_checkpoint) {
+                    campPill.textContent = `CAMPAIGN: PAUSED (${remainingTargets} remaining)`;
+                    campPill.style.color = '#00ffcc';
+                } else if (completedCount > 0 && remainingTargets === 0) {
+                    campPill.textContent = `CAMPAIGN: FINISHED (${completedCount}/${totalTargets})`;
+                    campPill.style.color = '#22c55e';
+                } else if (remainingTargets > 0) {
+                    campPill.textContent = `CAMPAIGN: READY (${remainingTargets} URLs)`;
+                    campPill.style.color = '#22c55e';
+                } else {
+                    campPill.textContent = 'CAMPAIGN: QUEUE EMPTY';
+                    campPill.style.color = '#94a3b8';
+                }
+            }
+
+            // 2. HUD: #persistent-mode-hud & mode pill
+            const hudStatus = campaignPaused ? 'PAUSED' : (campaignActive ? 'RUNNING' : (remainingTargets > 0 ? 'READY' : 'IDLE'));
+            updatePersistentModeHud(currentCampaignMode, hudStatus, snapshot.currentTargetUrl, remainingTargets);
+
+            // 3. Resumable Banner
+            const banner = document.getElementById('resumable-campaign-banner');
+            if (banner) {
+                if (campaignPaused && !campaignActive && snapshot.hasPausedCheckpoint) {
+                    banner.classList.remove('hidden');
+                    banner.style.display = 'block';
+                    const countEl = document.getElementById('resumable-remaining-count');
+                    if (countEl) countEl.textContent = String(snapshot.pausedRemainingCount || remainingTargets);
+                } else {
+                    banner.classList.add('hidden');
+                    banner.style.display = 'none';
+                }
+            }
+
+            // 4. Progress Stats & Counter displays
+            if (typeof updateRealTimeStatus === 'function') {
+                updateRealTimeStatus({
+                    successCount: successCount,
+                    failedCount: failedCount,
+                    completedCount: completedCount,
+                    remainingCount: remainingTargets,
+                    totalTargets: totalTargets,
+                    failureBreakdown: snapshot.failureBreakdown || {}
+                });
+            }
+
+            const countDisplay = document.getElementById('url-count-display');
+            if (countDisplay && (campaignActive || campaignPaused || snapshot.hasPausedCheckpoint)) {
+                countDisplay.textContent = `${remainingTargets} (remaining) / ${totalTargets} URLs`;
+            }
+        }
+        window.__xpider_applyAuthoritativeStateSnapshot = applyAuthoritativeStateSnapshot;
+
         window.checkAndRefreshPrivacyReadinessHUD = async function() {
             try {
-                const campPill = document.getElementById('campaign-ready-pill');
-                const privPill = document.getElementById('privacy-ready-pill');
-                const qLen = Array.isArray(campaignQueue) ? campaignQueue.length : 0;
-                if (campPill) {
-                    const cComp = (typeof completedCount !== 'undefined') ? completedCount : 0;
-                    const cRem = (typeof remainingTargets !== 'undefined') ? remainingTargets : 0;
-                    const isRunFinished = (!campaignActive) && (cComp > 0 && cRem === 0);
-                    if (campaignActive) {
-                        campPill.textContent = `CAMPAIGN: RUNNING (${cComp}/${totalTargets || qLen})`;
-                        campPill.style.color = '#38bdf8';
-                    } else if (isRunFinished) {
-                        campPill.textContent = `CAMPAIGN: FINISHED (${cComp}/${totalTargets || qLen})`;
-                        campPill.style.color = '#22c55e';
-                    } else if (campaignPaused || window.__xpider_has_paused_checkpoint) {
-                        const remDisplay = (typeof remainingTargets !== 'undefined' && remainingTargets > 0) ? remainingTargets : qLen;
-                        campPill.textContent = `CAMPAIGN: PAUSED (${remDisplay} remaining)`;
-                        campPill.style.color = '#00ffcc';
-                    } else if (qLen > 0) {
-                        campPill.textContent = `CAMPAIGN: READY (${qLen} URLs)`;
-                        campPill.style.color = '#22c55e';
-                    } else {
-                        campPill.textContent = 'CAMPAIGN: QUEUE EMPTY';
-                        campPill.style.color = '#94a3b8';
-                    }
+                if (window.__xpider_last_authoritative_snapshot) {
+                    applyAuthoritativeStateSnapshot(window.__xpider_last_authoritative_snapshot);
                 }
+                const privPill = document.getElementById('privacy-ready-pill');
 
                 if (privPill) {
                     const st = await chrome.storage.local.get(['xpider_privacy_config', 'xpider_strict_privacy']);
@@ -4313,23 +4374,8 @@ async function hydrateCampaignState() {
 
             if (response && response.success) {
                 onBackgroundMessageSuccess();
-                totalTargets = response.totalTargets || 0;
-                successCount = response.successCount || 0;
-                failedCount = response.failedCount || 0;
-                completedCount = response.completedCount || 0;
-                remainingTargets = response.remainingCount !== undefined ? response.remainingCount : 0;
-                campaignPaused = !!response.isPaused;
-
-                if (typeof updateRealTimeStatus === 'function') {
-                    updateRealTimeStatus({
-                        successCount: successCount,
-                        failedCount: failedCount,
-                        completedCount: completedCount,
-                        remainingCount: remainingTargets,
-                        totalTargets: totalTargets,
-                        failureBreakdown: response.failureBreakdown || {}
-                    });
-                }
+                // [RC12 Item 3] Synchronize authoritative state snapshot from background
+                applyAuthoritativeStateSnapshot(response.snapshot || response);
 
                 try {
                     const st = await chrome.storage.local.get(['xpider_queue', 'xpider_total', 'xpider_success', 'xpider_paused_checkpoint', 'xpider_isPaused']);
@@ -4651,6 +4697,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                     window.isNetworkRecovery = false;
                     window.networkRecoveryPhase = null;
                     refreshStatusDetailUI();
+                } else if (request.action === 'AUTHORITATIVE_STATE_UPDATE' && request.snapshot) {
+                    applyAuthoritativeStateSnapshot(request.snapshot);
                 } else if (request.action === 'UPDATE_STATS') {
                     updateRealTimeStatus(request.data);
                 } else if (request.action === 'CAMPAIGN_FINISHED') {
@@ -4940,7 +4988,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                     if (!request) return;
                     if (request.action === 'SENDER_LOG') {
                         addLog(request.message, request.logType);
-                    } else if (request.action === 'UPDATE_STATS') {
+                    } else if (request.action === 'AUTHORITATIVE_STATE_UPDATE' && request.snapshot) {
+                    applyAuthoritativeStateSnapshot(request.snapshot);
+                } else if (request.action === 'UPDATE_STATS') {
                         updateRealTimeStatus(request.data);
                     }
                 }
@@ -8515,7 +8565,11 @@ function togglePause() {
     updatePersistentModeHud(currentCampaignMode, 'PAUSED', undefined, undefined);
     addDiagnosticLog('[Engine][TX] action=PAUSE_CAMPAIGN');
     if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
-        chrome.runtime.sendMessage({ action: 'PAUSE_CAMPAIGN' }).catch(e => console.error('[Pause Ext Error]', e));
+        chrome.runtime.sendMessage({ action: 'PAUSE_CAMPAIGN' }, (res) => {
+            if (res && res.snapshot) {
+                applyAuthoritativeStateSnapshot(res.snapshot);
+            }
+        });
     }
 
     if (btn) {
@@ -8863,8 +8917,12 @@ function confirmResumeCampaignWithMode(selectedMode) {
         const targetTimeoutMs = (parseInt(document.getElementById('target-max-wait-input')?.value, 10) || 180) * 1000;
         chrome.runtime.sendMessage({ action: 'RESUME_CAMPAIGN', campaignMode: targetMode, targetTimeoutMs }, (res) => {
             if (res && res.success) {
-                campaignActive = true;
-                campaignPaused = false;
+                if (res.snapshot) {
+                    applyAuthoritativeStateSnapshot(res.snapshot);
+                } else {
+                    campaignActive = true;
+                    campaignPaused = false;
+                }
                 const banner = document.getElementById('resumable-campaign-banner');
                 if (banner) {
                     banner.style.display = 'none';

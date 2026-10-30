@@ -1977,12 +1977,55 @@
         return false;
     }
 
+    function captureSelectedFormEvidence(form) {
+        if (!form || !form.querySelectorAll) return { hasForm: false };
+        const inputs = Array.from(form.querySelectorAll('input, textarea, select'));
+        const fieldNames = [];
+        const fieldTypes = [];
+        inputs.forEach(el => {
+            const tag = (el.tagName || '').toLowerCase();
+            const type = (el.type || tag).toLowerCase();
+            const name = (el.name || el.id || '').toLowerCase();
+            if (name && !fieldNames.includes(name)) fieldNames.push(name.slice(0, 30));
+            if (type && !fieldTypes.includes(type)) fieldTypes.push(type.slice(0, 20));
+        });
+        const isVis = !!(form.offsetWidth || form.offsetHeight || (typeof form.getClientRects === 'function' && form.getClientRects().length > 0));
+        const action = (typeof form.getAttribute === 'function' ? form.getAttribute('action') : '') || (typeof form.action === 'string' ? form.action : '') || '';
+        return {
+            formAction: action.split('?')[0],
+            fieldNames: fieldNames.slice(0, 10),
+            fieldTypes: fieldTypes.slice(0, 10),
+            fieldsCount: inputs.length,
+            visibility: isVis,
+            confidence: 0.95,
+            exactReason: 'NO_GENUINE_MESSAGE_FIELD'
+        };
+    }
+
     async function fillAndSubmit(form, template, speed) {
         try {
             window.__xpider_last_template = template;
             // [RC3.33 P0-B] Attempt-scoped reset at fillAndSubmit entry
             resetCaptchaRuntimeState(window.__xpider_execution_identity?.attemptId, window.__xpider_execution_identity?.captchaEpoch);
             extractAndSendPageEmails('FORM_ENTRY');
+
+            const activeCampaignMode = (typeof window !== 'undefined' && (window.__xpider_campaign_mode === 'MANUAL' || window.__xpider_campaign_mode === 'SEMI_AUTO'))
+                ? window.__xpider_campaign_mode
+                : ((template && (template.campaignMode === 'MANUAL' || template.campaignMode === 'SEMI_AUTO')) ? template.campaignMode : 'AUTO');
+
+            // [RC12 Item 2] Strict Pre-Fill Inquiry Body Field Gate:
+            // Forms confirmed to lack an inquiry message field MUST be SKIPPED as NON_INQUIRY_FORM before fill or hold in all modes.
+            const hasReachableMsgField = form && typeof form.querySelectorAll === 'function' &&
+                (form.querySelectorAll('textarea, [contenteditable="true"], [role="textbox"][aria-multiline="true"], .ql-editor, .fr-element, .note-editable, .mce-content-body').length > 0 ||
+                 (_ContactGate && typeof _ContactGate.detectInquiryBodyField === 'function' && _ContactGate.detectInquiryBodyField(form)));
+
+            if (!hasReachableMsgField) {
+                const formEvidence = captureSelectedFormEvidence(form);
+                logDev(`ℹ️ [NON_INQUIRY_GATE] Confirmed absence of genuine message/inquiry field on reachable form: settling SKIPPED NON_INQUIRY_FORM in all modes (${activeCampaignMode})`, "info");
+                currentTargetLifecycleState = TargetLifecycleState.SETTLING;
+                finishCampaign(false, 'NON_INQUIRY_FORM', 'NO_LONG_TEXT_INQUIRY_FIELD', { formEvidence });
+                return false;
+            }
 
             // [HARD ELIGIBILITY GATE] Verify form eligibility before any autofill or submit
             if (_ContactGate && typeof _ContactGate.classifyFormIntent === 'function') {
@@ -2170,6 +2213,19 @@
                     // [R6.1 FINAL REQUIRED AUDIT - HARD GATE]
                     if (!auditResult.pass) {
                         logDev(`❌ [FinalAudit] Submission blocked by Hard Gate: ${auditResult.reason}`, "error");
+                        if (auditResult.reason === 'NON_INQUIRY_FORM' || auditResult.reason === 'FINAL_MESSAGE_FIELD_EMPTY') {
+                            const hasRealMsg = form && Boolean(
+                                (form.querySelectorAll && form.querySelectorAll('textarea, [contenteditable="true"], [role="textbox"][aria-multiline="true"], .ql-editor, .fr-element, .note-editable, .mce-content-body').length > 0) ||
+                                (_ContactGate && typeof _ContactGate.detectInquiryBodyField === 'function' && _ContactGate.detectInquiryBodyField(form))
+                            );
+                            if (!hasRealMsg || auditResult.reason === 'NON_INQUIRY_FORM') {
+                                const formEvidence = captureSelectedFormEvidence(form);
+                                logDev(`ℹ️ [NON_INQUIRY_GATE] Confirmed non-inquiry form (no genuine message field). Settling SKIPPED NON_INQUIRY_FORM without operator hold.`, "info");
+                                currentTargetLifecycleState = TargetLifecycleState.SETTLING;
+                                finishCampaign(false, 'NON_INQUIRY_FORM', 'NON_INQUIRY_FORM', { formEvidence });
+                                return false;
+                            }
+                        }
                         const unres = auditResult.unresolvedList || auditResult.unresolvedFields || [auditResult.reason];
                         if (activeCampaignMode === 'MANUAL' || activeCampaignMode === 'SEMI_AUTO') {
                             logDev(`🖐️ [${activeCampaignMode}_MODE_VALIDATION_HOLD] Final audit failed (${auditResult.reason}) in ${activeCampaignMode} mode. Retaining tab and displaying operator hold panel.`, "warning");
@@ -5006,10 +5062,17 @@
     }
 
     async function handleV7ManualModeHold(form, template, frozenSnapshot, initialChallengeInfo, holdOptions = {}) {
-        const isExplicitAuto = (holdOptions && holdOptions.mode === 'AUTO') ||
-            (typeof window !== 'undefined' && window.__xpider_campaign_mode === 'AUTO') ||
-            (template && template.campaignMode === 'AUTO');
-        if (isExplicitAuto) {
+        // [RC12 P0 Hard Fix] Authoritative Triple Mode Resolution:
+        // Priority: holdOptions.mode > window.__xpider_campaign_mode > template.campaignMode > 'AUTO'
+        // CRITICAL: NEVER let template.campaignMode === 'AUTO' suppress hold if runtime mode is SEMI_AUTO or MANUAL!
+        const effectiveMode = (holdOptions && (holdOptions.mode === 'SEMI_AUTO' || holdOptions.mode === 'MANUAL'))
+            ? holdOptions.mode
+            : ((typeof window !== 'undefined' && (window.__xpider_campaign_mode === 'SEMI_AUTO' || window.__xpider_campaign_mode === 'MANUAL'))
+                ? window.__xpider_campaign_mode
+                : ((holdOptions && holdOptions.mode === 'AUTO') || (typeof window !== 'undefined' && window.__xpider_campaign_mode === 'AUTO')
+                    ? 'AUTO'
+                    : ((template && template.campaignMode) || 'AUTO')));
+        if (effectiveMode === 'AUTO') {
             logDev(`[V7_AUTO_GUARD] handleV7ManualModeHold called in AUTO mode. Suppressing manual hold panel and failing safe.`, "warning");
             return { success: false, reasonCode: holdOptions.validationReason || 'AUTO_MODE_NO_HOLD' };
         }
@@ -5299,7 +5362,7 @@
 
                 const hostLabel = (typeof window !== 'undefined' && window.location && window.location.hostname) ? window.location.hostname : initialHoldUrl;
                 const fieldCount = (frozenSnapshot instanceof Map) ? frozenSnapshot.size : Object.keys(frozenSnapshot || {}).length;
-                const isSemiAuto = Boolean(holdOptions && holdOptions.mode === 'SEMI_AUTO');
+                const isSemiAuto = Boolean(effectiveMode === 'SEMI_AUTO' || (holdOptions && holdOptions.mode === 'SEMI_AUTO'));
                 const headerBadge = isSemiAuto ? '⚡ SEMI-AUTO — OPERATOR ASSISTANCE' : '🖐️ MANUAL MODE — HOLD FOR REGISTRATION';
                 const headerBg = isSemiAuto ? '#7c3aed' : '#0284c7';
                 const borderColor = isSemiAuto ? '#a855f7' : '#38bdf8';

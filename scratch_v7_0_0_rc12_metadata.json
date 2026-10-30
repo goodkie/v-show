@@ -1,0 +1,10 @@
+{
+  "buildId": "V7.0.0-RC12-20261030-SEMI-AUTO-TRIPLE-CONTRACT-FIX",
+  "tag": "v7.0.0-rc12",
+  "zipName": "XPIDER_V7.0.0_RC12_DUAL_MODE_OWNER_BETA.zip",
+  "size": 51695724,
+  "sha256": "3f77fe4ecf18c467accdedde3f361d859f312232b099227604c36f82dcf1ca1a",
+  "headCommit": "0ba678097d2aca48e717c8513831fe0224a940c6",
+  "headShort": "0ba67809",
+  "timestamp": "2026-10-30T22:32:08.381Z"
+}

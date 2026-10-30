@@ -14,12 +14,12 @@
 
     const BUILD_INFO = Object.freeze({
         version: "7.0.0",
-        buildId: "V7.0.0-RC11-20261030-THREE-MODE-CONTRACTS-PASS",
+        buildId: "V7.0.0-RC12-20261030-SEMI-AUTO-TRIPLE-CONTRACT-FIX",
         channel: "OWNER_BETA_V7_DUAL_MODE",
-        tag: "v7.0.0-rc11",
+        tag: "v7.0.0-rc12",
         manifestVersion: 3,
-        implementationHead: "20678ada6491bf842ec7e996a88108152c76007f",
-        implementationHeadShort: "20678ada",
+        implementationHead: "0ba678097d2aca48e717c8513831fe0224a940c6",
+        implementationHeadShort: "0ba67809",
         builtAt: new Date().toISOString(),
         testOnly: false,
         productionReady: true,
