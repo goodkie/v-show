@@ -16,3 +16,5 @@ companion/.relay.lock
 companion/.do_firewall_pat.dpapi
 companion/.firewall_guardian_state.json
 companion/.firewall_guardian.json
+
+backups/
