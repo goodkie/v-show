@@ -4878,7 +4878,8 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
         case 'CAPTCHA_RUNTIME_EXCEPTION':
             // [RC3.33 P0-C / Sprint Fix F1 / C1] Validate active execution identity before immediate settlement
             (() => {
-                const validation = validateActiveExecution(request, sender, 'CAPTCHA_RUNTIME_EXCEPTION', { checkEpoch: true });
+                // [RC3.60 .91 Defect 5 Fix] Allow bodyTabId fallback so tab identity is preserved during terminal solver error
+                const validation = validateActiveExecution(request, sender, 'CAPTCHA_RUNTIME_EXCEPTION', { checkEpoch: true, allowBodyTabId: true });
                 if (!validation.valid) {
                     logBg(sender.tab?.id, `[STALE_TARGET_EVENT] action=CAPTCHA_RUNTIME_EXCEPTION reason=${validation.reason} result=REJECTED`, 'warning');
                     sendResponse({ success: false, reason: validation.reason, stale: true });
@@ -8342,20 +8343,21 @@ async function scanContactPaths(baseUrl, tabId, discoveryCtx = null) {
         }
     } catch (_) {}
 
-    const pool = PROACTIVE_PATHS.slice(0, 50); // Limit to top 50 for speed
+    // [RC3.60 .91 Defect 4 Fix] Tightly bound contact path scan: top 10 most common paths, 1.2s timeout per probe
+    // Prevents excessive contact-link discovery delay (finishes in < 1.5s total)
+    const pool = PROACTIVE_PATHS.slice(0, 10);
 
-    // Concurrent scanning in small batches to prevent blocking
     const batchSize = 10;
     for (let i = 0; i < pool.length; i += batchSize) {
         if (discoveryCtx?.aborted || campaignState.isPaused) {
             logBg(tabId, "⏸️ [Scan] In-flight scan aborted due to pause/cancel.", "info");
             break;
         }
-        logBg(tabId, `🔦 Scanning paths ${i + 1}-${Math.min(i + batchSize, pool.length)}...`, "info");
+        logBg(tabId, `🔦 Fast-scanning candidate paths (1-${Math.min(i + batchSize, pool.length)})...`, "info");
         const batch = pool.slice(i, i + batchSize);
         const results = await Promise.all(batch.map(async (path) => {
             const controller = new AbortController();
-            const timeout = setTimeout(() => controller.abort(), 2500); // 2.5s per probe
+            const timeout = setTimeout(() => controller.abort(), 1200); // 1.2s fast probe
             try {
                 // [Regression Guard Section 21] Must use new URL
                 const url = new URL(path, baseUrl).href;

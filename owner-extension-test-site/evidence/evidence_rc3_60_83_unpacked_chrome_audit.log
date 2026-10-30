@@ -1,0 +1,89 @@
+[2026-10-28T06:11:55.841Z] ========================================================================
+[2026-10-28T06:11:55.851Z]   XPIDER RC3.60 .83 GOOGLE CHROME UNPACKED ZIP INTEGRITY & E2E AUDIT
+[2026-10-28T06:11:55.858Z] ========================================================================
+[2026-10-28T06:11:55.865Z] 
+>>> [STAGE 1] Validating Package Archive Existence & SHA256...
+[2026-10-28T06:11:56.074Z]    ZIP Path:   E:\vivpr\ai\extension-form-sender\XPIDER_R6.9G.10.3.7.1.4.83_OWNER_BETA.zip
+[2026-10-28T06:11:56.109Z]    ZIP Size:   53,178,420 bytes
+[2026-10-28T06:11:56.117Z]    ZIP SHA256: 918c4c9c234e6cd3d73783f5f7041dd669eafaea29cf8e139df165aefd4a1f94
+[2026-10-28T06:11:56.124Z]    ✅ STAGE 1 PASS: Archive exists, valid size, and hash computed.
+[2026-10-28T06:11:56.131Z] 
+>>> [STAGE 2] Unpacking Archive into Clean Sandbox & Checking Byte Parity...
+[2026-10-28T06:11:56.609Z]    Extracting XPIDER_R6.9G.10.3.7.1.4.83_OWNER_BETA.zip -> E:\vivpr\ai\extension-form-sender\scratch\unpacked_rc3_60_83...
+[2026-10-28T06:12:52.476Z]    ✔ Verified 2229 files match PACKAGE_INVENTORY_SHA256.txt byte-for-byte.
+[2026-10-28T06:12:52.485Z]    ✅ STAGE 2 PASS: Clean unpack succeeded with 100% byte-for-byte inventory parity.
+[2026-10-28T06:12:52.492Z] 
+>>> [STAGE 3] Inspecting Build Provenance in Unpacked Code...
+[2026-10-28T06:12:52.503Z]    Unpacked Build ID: R6.9G.10.3.7.1.4.83-20261028-P0-RC3.60-PRIVACY-GATE-AUTO-RECONCILE-PASS
+[2026-10-28T06:12:52.512Z]    Unpacked Branch:   upgrade/phase-0-1
+[2026-10-28T06:12:52.522Z]    Unpacked Channel:  OWNER_BETA_PRIVATE_EGRESS_RC3.60
+[2026-10-28T06:12:52.531Z]    ✅ STAGE 3 PASS: Build provenance matches expected RC3.60 .83 metadata.
+[2026-10-28T06:12:52.539Z] 
+>>> [STAGE 4] Executing AI Constraints & Consent Unit Tests on Unpacked Code...
+[2026-10-28T06:12:53.248Z]    ✔ 4.1 PASS: Unpacked constraint completion verified.
+[2026-10-28T06:12:53.320Z]    ✔ 4.2 PASS: Unpacked sensitive fact guard halted with UNRESOLVED_REQUIRED_FACT.
+[2026-10-28T06:12:53.378Z]    ✔ 4.3 PASS: Unpacked consent-negative fixture halted with OWNER_ACTION_REQUIRED.
+[2026-10-28T06:12:53.440Z]    ✔ 4.4 PASS: Unpacked missing URL halted with UNRESOLVED_BUSINESS_FACT.
+[2026-10-28T06:12:53.448Z]    ✅ STAGE 4 PASS: All unpacked unit test constraints passed 100%.
+[2026-10-28T06:12:53.456Z] 
+>>> [STAGE 5] Launching Google Chrome Loading the UNPACKED Extension...
+[2026-10-28T06:12:53.594Z]    ✔ Unpacked Native Messaging Host registered in Windows Registry.
+[2026-10-28T06:12:53.619Z]    Test server on 8088 is missing or stale. Running unpacked companion/ensure_owner_test_server.js...
+[2026-10-28T06:12:56.306Z]    ✔ Test server running on port 8088 with 8 fixtures verified.
+[2026-10-28T06:12:56.314Z]    Spawning Google Chrome with remote debugging on port 9414...
+[2026-10-28T06:12:56.921Z]    Connected to Google Chrome Browser CDP: Chrome/156.0.8078.48
+[2026-10-28T06:12:57.005Z]    Loading unpacked extension via Extensions.loadUnpacked: E:\vivpr\ai\extension-form-sender\scratch\unpacked_rc3_60_83\extension
+[2026-10-28T06:12:57.061Z]    ✅ Google Chrome successfully installed extension ID: ldlijlaccfeelfdhgnjbibniocefckjj
+[2026-10-28T06:12:58.160Z]    Connecting to Chrome popup page target: chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/popup.html
+[2026-10-28T06:12:59.447Z] 
+   [STEP 5.1] Auditing Privacy Status Card on fresh startup (WITHOUT clicking preflight button)...
+[2026-10-28T06:13:01.536Z]    Startup Privacy Card Status (before manual click): {"enabled":"BLOCKED (PRIVACY_RELAY_UNAUTHORIZED)","transport":"PRIVACY RELAY (OFFLINE/UNVERIFIED)","egress":"FAIL","fallback":"BLOCKED","hudPill":"PRIVACY: BLOCKED — PRIVACY_RELAY_UNAUTHORIZED","reconcileExposed":true}
+[2026-10-28T06:13:01.546Z]    ✔ Fresh startup correctly initialized and avoided stale SYSTEM_VPN placeholder.
+[2026-10-28T06:13:01.555Z] 
+   [STEP 5.2] Auditing Popup Close and Reopen...
+[2026-10-28T06:13:04.766Z]    Reopened Popup Status: {"enabled":"BLOCKED (PRIVACY_RELAY_UNAUTHORIZED)","transport":"PRIVACY RELAY (OFFLINE/UNVERIFIED)","hudPill":"PRIVACY: BLOCKED — PRIVACY_RELAY_UNAUTHORIZED"}
+[2026-10-28T06:13:04.776Z]    ✔ Reopened popup target connected cleanly without disruption.
+[2026-10-28T06:13:04.785Z] 
+   [STEP 5.3] Pre-populating 50 owner URLs and executing Auto Setup...
+[2026-10-28T06:13:06.842Z]    Popup Auto Setup Description: "One-click automated setup for local software-only testing. Automatically isolates 8 verified local fixtures, preserves public list, configures delays, and verifies network guard fail-closed."
+[2026-10-28T06:13:06.852Z]    ✔ UI description correctly indicates 8 verified local fixtures.
+[2026-10-28T06:13:06.864Z]    Clicking #auto-setup-btn on unpacked extension in Google Chrome...
+[2026-10-28T06:13:08.896Z]    Auto Setup Status: {"pill":"READY — LOCAL TEST SERVER VERIFIED","feedback":"READY FOR LOCAL FUNCTION TEST\n8 local fixtures loaded | Local test server verified (127.0.0.1:8088) | DNR rules 990001-990005 verified | Preserved 50 public URLs in restore point","queueLen":8,"restoreDisplay":"inline-flex"}
+[2026-10-28T06:13:08.905Z]    ✔ Auto Setup completed: 8 verified local fixtures armed.
+[2026-10-28T06:13:08.913Z] 
+   [STEP 5.4] Executing #run-function-test-btn in Google Chrome...
+[2026-10-28T06:13:08.942Z]    ✔ Clicked #run-function-test-btn with fast test delay configuration.
+[2026-10-28T06:13:10.742Z]    [Chrome Progress] 0% | SUCCESS: 0 | SKIPPED: 0 | FAILURE: 0 | Remaining: 8 | Status: Live Progress (Running)
+[2026-10-28T06:13:18.306Z]    [Chrome Progress] 0% | SUCCESS: 0 | SKIPPED: 0 | FAILURE: 0 | Remaining: 8 | Status: Live Progress (Running)
+[2026-10-28T06:13:25.845Z]    [Chrome Progress] 13% | SUCCESS: 1 | SKIPPED: 0 | FAILURE: 0 | Remaining: 7 | Status: Live Progress (Running)
+[2026-10-28T06:13:33.397Z]    [Chrome Progress] 13% | SUCCESS: 1 | SKIPPED: 0 | FAILURE: 0 | Remaining: 7 | Status: Live Progress (Running)
+[2026-10-28T06:13:40.956Z]    [Chrome Progress] 13% | SUCCESS: 1 | SKIPPED: 0 | FAILURE: 0 | Remaining: 7 | Status: Live Progress (Running)
+[2026-10-28T06:13:48.510Z]    [Chrome Progress] 25% | SUCCESS: 2 | SKIPPED: 0 | FAILURE: 0 | Remaining: 6 | Status: Live Progress (Running)
+[2026-10-28T06:13:56.059Z]    [Chrome Progress] 25% | SUCCESS: 2 | SKIPPED: 0 | FAILURE: 0 | Remaining: 6 | Status: Live Progress (Running)
+[2026-10-28T06:14:03.622Z]    [Chrome Progress] 25% | SUCCESS: 2 | SKIPPED: 0 | FAILURE: 0 | Remaining: 6 | Status: Live Progress (Running)
+[2026-10-28T06:14:11.182Z]    [Chrome Progress] 38% | SUCCESS: 3 | SKIPPED: 0 | FAILURE: 0 | Remaining: 5 | Status: Live Progress (Running)
+[2026-10-28T06:14:18.728Z]    [Chrome Progress] 38% | SUCCESS: 3 | SKIPPED: 0 | FAILURE: 0 | Remaining: 5 | Status: Live Progress (Running)
+[2026-10-28T06:14:26.278Z]    [Chrome Progress] 50% | SUCCESS: 3 | SKIPPED: 1 | FAILURE: 0 | Remaining: 4 | Status: Live Progress (Running)
+[2026-10-28T06:14:33.835Z]    [Chrome Progress] 63% | SUCCESS: 3 | SKIPPED: 2 | FAILURE: 0 | Remaining: 3 | Status: Live Progress (Running)
+[2026-10-28T06:14:41.375Z]    [Chrome Progress] 63% | SUCCESS: 3 | SKIPPED: 2 | FAILURE: 0 | Remaining: 3 | Status: Live Progress (Running)
+[2026-10-28T06:14:48.935Z]    [Chrome Progress] 75% | SUCCESS: 3 | SKIPPED: 2 | FAILURE: 1 | Remaining: 2 | Status: Live Progress (Running)
+[2026-10-28T06:14:56.496Z]    [Chrome Progress] 75% | SUCCESS: 3 | SKIPPED: 2 | FAILURE: 1 | Remaining: 2 | Status: Live Progress (Running)
+[2026-10-28T06:15:04.040Z]    [Chrome Progress] 75% | SUCCESS: 3 | SKIPPED: 2 | FAILURE: 1 | Remaining: 2 | Status: Live Progress (Running)
+[2026-10-28T06:15:11.670Z]    [Chrome Progress] 88% | SUCCESS: 4 | SKIPPED: 2 | FAILURE: 1 | Remaining: 1 | Status: Live Progress (Running)
+[2026-10-28T06:15:19.229Z]    [Chrome Progress] 88% | SUCCESS: 4 | SKIPPED: 2 | FAILURE: 1 | Remaining: 1 | Status: Live Progress (Running)
+[2026-10-28T06:15:26.784Z]    [Chrome Progress] 88% | SUCCESS: 4 | SKIPPED: 2 | FAILURE: 1 | Remaining: 1 | Status: Live Progress (Running)
+[2026-10-28T06:15:34.342Z]    [Chrome Progress] 88% | SUCCESS: 4 | SKIPPED: 2 | FAILURE: 1 | Remaining: 1 | Status: Live Progress (Running)
+[2026-10-28T06:15:37.399Z]    Campaign finished. Final counts: SUCCESS=5, SKIPPED=2, FAILURE=1
+[2026-10-28T06:15:37.408Z]    Connecting to background service worker: chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/background.js
+[2026-10-28T06:15:37.525Z]    Final Ledger Entries in Google Chrome (8):
+[2026-10-28T06:15:37.532Z]    Ledger Outcome in Google Chrome: 5 SUCCESS / 2 SKIPPED / 1 FAILURE
+[2026-10-28T06:15:37.540Z]    ✔ Strict Counter & Ledger Parity Verified in Chrome: 5 SUCCESS / 2 SKIPPED / 1 FAILURE.
+[2026-10-28T06:15:37.548Z] 
+   [STEP 5.5] Clicking #restore-user-settings-btn in Google Chrome...
+[2026-10-28T06:15:40.072Z]    Restored State: {"queueLen":50,"total":50,"delayMs":7000,"ownerTestMode":false,"snapshotDeleted":true,"countDisplay":"50 (remaining.) / 50 URLs","privEnabled":"ON (READY)","privTransport":"PRIVACY RELAY ENFORCED","privPill":"PRIVACY: READY (PRIVACY_RELAY)","hudState":{"isGateReady":true,"mode":"PRIVACY_RELAY","failureReason":null,"isGateActive":true,"lastPreflight":{"ready":true,"mode":"PRIVACY_RELAY","failClosed":true,"ownerVpnConfirmed":false,"egressVerified":true,"webrtcGuard":"PASS","directFallbackBlocked":"BLOCKED","egressCheck":"PASS","egressFingerprint":"05b6b53daead49e7","selectedEgressId":"do-egress-tor1-611293905","dnsPrivacy":"UNKNOWN","ipv6Protection":"UNKNOWN","failureReason":null,"lastCheck":"2026-10-28T06:15:37.866Z"}}}
+[2026-10-28T06:15:40.078Z]    ✔ All 50 public URLs and settings cleanly restored from snapshot.
+[2026-10-28T06:15:40.086Z]    ✔ Post-restore Privacy Relay readiness immediately reconciled and verified.
+[2026-10-28T06:15:40.107Z] 
+========================================================================
+[2026-10-28T06:15:40.116Z]   ALL 5 STAGES PASSED 100% IN REAL GOOGLE CHROME FOR RC3.60 .83
+[2026-10-28T06:15:40.125Z] ========================================================================

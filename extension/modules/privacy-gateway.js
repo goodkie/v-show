@@ -2729,6 +2729,21 @@
          * On ANY failure, mismatch, timeout, 401, or proxy tampering: strictly invalidates gate and fails closed.
          */
         async verifyAuthoritativeEgressEnforcement(context = 'GENERAL') {
+            // [RC3.60 .91 Defect 7 Fix] Single-flight promise deduplication to prevent duplicate concurrent health check jobs
+            if (this._inFlightEgressVerification) {
+                return this._inFlightEgressVerification;
+            }
+            this._inFlightEgressVerification = (async () => {
+                try {
+                    return await this._executeAuthoritativeEgressEnforcement(context);
+                } finally {
+                    this._inFlightEgressVerification = null;
+                }
+            })();
+            return this._inFlightEgressVerification;
+        }
+
+        async _executeAuthoritativeEgressEnforcement(context = 'GENERAL') {
             if (context === 'OWNER_FUNCTION_TEST' || (typeof campaignState !== 'undefined' && campaignState.ownerFunctionTestMode)) {
                 return { ready: true, mode: PRIVACY_MODES.DIRECT, ownerFunctionTestMode: true };
             }

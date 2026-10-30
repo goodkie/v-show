@@ -1,0 +1,80 @@
+[2026-10-28T05:21:16.442Z] ========================================================================
+[2026-10-28T05:21:16.452Z]   XPIDER RC3.60 .82 GOOGLE CHROME UNPACKED ZIP INTEGRITY & E2E AUDIT
+[2026-10-28T05:21:16.460Z] ========================================================================
+[2026-10-28T05:21:16.467Z] 
+>>> [STAGE 1] Validating Package Archive Existence & SHA256...
+[2026-10-28T05:21:16.714Z]    ZIP Path:   E:\vivpr\ai\extension-form-sender\XPIDER_R6.9G.10.3.7.1.4.82_OWNER_BETA.zip
+[2026-10-28T05:21:16.721Z]    ZIP Size:   53174263 bytes
+[2026-10-28T05:21:16.728Z]    ZIP SHA256: b2fc3c48d301dba4612ec700ae8b5091228d00063a638c74ecb7e909d24d7003
+[2026-10-28T05:21:16.743Z]    ✅ STAGE 1 PASS: Archive exists and SHA256 computed.
+[2026-10-28T05:21:16.751Z] 
+>>> [STAGE 2] Unpacking Archive into Isolated Directory...
+[2026-10-28T05:21:52.363Z]    Extracted into: E:\vivpr\ai\extension-form-sender\scratch\unpacked_rc3_60_82
+[2026-10-28T05:21:52.372Z]    Inventory entries to verify: 2228
+[2026-10-28T05:22:05.879Z]    ✅ STAGE 2 PASS: All 2228 inventory files verified byte-for-byte in unpacked archive.
+[2026-10-28T05:22:05.886Z] 
+>>> [STAGE 3] Checking Build Provenance in Unpacked Extension...
+[2026-10-28T05:22:05.896Z]    Unpacked Build ID: R6.9G.10.3.7.1.4.82-20261028-P0-RC3.60-LEGACY-TEST-SERVER-UPGRADE-PASS
+[2026-10-28T05:22:05.904Z]    Unpacked Channel:  OWNER_BETA_PRIVATE_EGRESS_RC3.60
+[2026-10-28T05:22:05.911Z]    Unpacked testOnly: false
+[2026-10-28T05:22:05.918Z]    ✅ STAGE 3 PASS: Unpacked build provenance contains correct .82 identifiers.
+[2026-10-28T05:22:05.928Z] 
+>>> [STAGE 4] Executing AI Constraint, Legal Consent & Truthful Fact Tests from Unpacked Code...
+[2026-10-28T05:22:06.544Z]    ✔ 4.1 PASS: Unpacked constraint completion verified.
+[2026-10-28T05:22:06.592Z]    ✔ 4.2 PASS: Unpacked sensitive fact guard halted with UNRESOLVED_REQUIRED_FACT.
+[2026-10-28T05:22:06.636Z]    ✔ 4.3 PASS: Unpacked consent-negative fixture halted with OWNER_ACTION_REQUIRED.
+[2026-10-28T05:22:06.688Z]    ✔ 4.4 PASS: Unpacked missing URL halted with UNRESOLVED_BUSINESS_FACT.
+[2026-10-28T05:22:06.734Z]    ✅ STAGE 4 PASS: All unpacked unit test constraints passed 100%.
+[2026-10-28T05:22:06.744Z] 
+>>> [STAGE 5] Launching Google Chrome Loading the UNPACKED Extension...
+[2026-10-28T05:22:06.945Z]    ✔ Unpacked Native Messaging Host registered in Windows Registry.
+[2026-10-28T05:22:07.251Z]    ✔ Test server running on port 8088 with 8 fixtures verified.
+[2026-10-28T05:22:07.261Z]    Spawning Google Chrome with remote debugging on port 9412...
+[2026-10-28T05:22:07.818Z]    Connected to Google Chrome Browser CDP: Chrome/156.0.8078.48
+[2026-10-28T05:22:07.857Z]    Loading unpacked extension via Extensions.loadUnpacked: E:\vivpr\ai\extension-form-sender\scratch\unpacked_rc3_60_82\extension
+[2026-10-28T05:22:07.953Z]    ✅ Google Chrome successfully installed extension ID: ldlijlaccfeelfdhgnjbibniocefckjj
+[2026-10-28T05:22:09.022Z]    Connecting to Chrome popup page target: chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/popup.html
+[2026-10-28T05:22:11.701Z]    Popup Auto Setup Description: "One-click automated setup for local software-only testing. Automatically isolates 8 verified local fixtures, preserves public list, configures delays, and verifies network guard fail-closed."
+[2026-10-28T05:22:11.717Z]    ✔ UI description correctly indicates 8 verified local fixtures (not 7).
+[2026-10-28T05:22:11.729Z]    Clicking #auto-setup-btn on unpacked extension in Google Chrome...
+[2026-10-28T05:22:13.812Z]    Auto Setup Status: READY — LOCAL TEST SERVER VERIFIED | Queue Length: 8
+[2026-10-28T05:22:13.821Z]    Auto Setup Feedback: READY FOR LOCAL FUNCTION TEST
+8 local fixtures loaded | Local test server verified (127.0.0.1:8088) | DNR rules 990001-990005 verified | Preserved 50 public URLs in restore point
+[2026-10-28T05:22:13.833Z]    Clicking #run-function-test-btn in Google Chrome...
+[2026-10-28T05:22:15.466Z]    [Chrome Progress] 0% | SUCCESS: 0 | SKIPPED: 0 | FAILURE: 0 | Remaining: 8 | Status: Live Progress (Running)
+[2026-10-28T05:22:24.151Z]    [Chrome Progress] 0% | SUCCESS: 0 | SKIPPED: 0 | FAILURE: 0 | Remaining: 8 | Status: Live Progress (Running)
+[2026-10-28T05:22:31.709Z]    [Chrome Progress] 13% | SUCCESS: 1 | SKIPPED: 0 | FAILURE: 0 | Remaining: 7 | Status: Live Progress (Running)
+[2026-10-28T05:22:39.265Z]    [Chrome Progress] 13% | SUCCESS: 1 | SKIPPED: 0 | FAILURE: 0 | Remaining: 7 | Status: Live Progress (Running)
+[2026-10-28T05:22:46.814Z]    [Chrome Progress] 13% | SUCCESS: 1 | SKIPPED: 0 | FAILURE: 0 | Remaining: 7 | Status: Live Progress (Running)
+[2026-10-28T05:22:54.380Z]    [Chrome Progress] 25% | SUCCESS: 2 | SKIPPED: 0 | FAILURE: 0 | Remaining: 6 | Status: Live Progress (Running)
+[2026-10-28T05:23:01.947Z]    [Chrome Progress] 25% | SUCCESS: 2 | SKIPPED: 0 | FAILURE: 0 | Remaining: 6 | Status: Live Progress (Running)
+[2026-10-28T05:23:09.506Z]    [Chrome Progress] 38% | SUCCESS: 3 | SKIPPED: 0 | FAILURE: 0 | Remaining: 5 | Status: Live Progress (Running)
+[2026-10-28T05:23:17.066Z]    [Chrome Progress] 38% | SUCCESS: 3 | SKIPPED: 0 | FAILURE: 0 | Remaining: 5 | Status: Live Progress (Running)
+[2026-10-28T05:23:24.699Z]    [Chrome Progress] 38% | SUCCESS: 3 | SKIPPED: 0 | FAILURE: 0 | Remaining: 5 | Status: Live Progress (Running)
+[2026-10-28T05:23:32.250Z]    [Chrome Progress] 50% | SUCCESS: 3 | SKIPPED: 1 | FAILURE: 0 | Remaining: 4 | Status: Live Progress (Running)
+[2026-10-28T05:23:39.792Z]    [Chrome Progress] 63% | SUCCESS: 3 | SKIPPED: 2 | FAILURE: 0 | Remaining: 3 | Status: Live Progress (Running)
+[2026-10-28T05:23:47.342Z]    [Chrome Progress] 63% | SUCCESS: 3 | SKIPPED: 2 | FAILURE: 0 | Remaining: 3 | Status: Live Progress (Running)
+[2026-10-28T05:23:54.891Z]    [Chrome Progress] 75% | SUCCESS: 3 | SKIPPED: 2 | FAILURE: 1 | Remaining: 2 | Status: Live Progress (Running)
+[2026-10-28T05:24:02.644Z]    [Chrome Progress] 75% | SUCCESS: 3 | SKIPPED: 2 | FAILURE: 1 | Remaining: 2 | Status: Live Progress (Running)
+[2026-10-28T05:24:10.227Z]    [Chrome Progress] 75% | SUCCESS: 3 | SKIPPED: 2 | FAILURE: 1 | Remaining: 2 | Status: Live Progress (Running)
+[2026-10-28T05:24:17.782Z]    [Chrome Progress] 88% | SUCCESS: 4 | SKIPPED: 2 | FAILURE: 1 | Remaining: 1 | Status: Live Progress (Running)
+[2026-10-28T05:24:25.338Z]    [Chrome Progress] 88% | SUCCESS: 4 | SKIPPED: 2 | FAILURE: 1 | Remaining: 1 | Status: Live Progress (Running)
+[2026-10-28T05:24:32.895Z]    [Chrome Progress] 88% | SUCCESS: 4 | SKIPPED: 2 | FAILURE: 1 | Remaining: 1 | Status: Live Progress (Running)
+[2026-10-28T05:24:40.451Z]    [Chrome Progress] 88% | SUCCESS: 4 | SKIPPED: 2 | FAILURE: 1 | Remaining: 1 | Status: Live Progress (Running)
+[2026-10-28T05:24:43.486Z]    Connecting to background service worker: chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/background.js
+[2026-10-28T05:24:43.603Z]    Final Ledger Entries in Google Chrome (8):
+[2026-10-28T05:24:43.611Z]    Popup Counters in Google Chrome: SUCCESS=5, SKIPPED=2, FAILURE=1
+[2026-10-28T05:24:43.619Z]    Ledger Outcome in Google Chrome: 5 SUCCESS / 2 SKIPPED / 1 FAILURE
+[2026-10-28T05:24:43.626Z]    Target #4 result: {"url":"https://127.0.0.1/subscribe-no-message.html","status":"SKIPPED","reason":"NON_INQUIRY_SUBSCRIBE_FORM"}
+[2026-10-28T05:24:43.634Z]    Target #5 result: {"url":"https://127.0.0.1/reservation-no-message.html","status":"SKIPPED","reason":"NON_INQUIRY_RESERVATION_FORM"}
+[2026-10-28T05:24:43.642Z]    Target #6 result: {"url":"https://127.0.0.1/no-contact-page.html","status":"FAILURE","reason":"NO_ACCESSIBLE_INQUIRY_FORM"}
+[2026-10-28T05:24:43.649Z]    Target #8 result: {"url":"https://127.0.0.1/ai-required-fields.html","status":"CONFIRMED_SUCCESS","reason":"SUCCESS_CONFIRMED","receiptId":"rcpt_1793165081159_10"}
+[2026-10-28T05:24:44.670Z]    Restored Queue Length:    50 (expected 50)
+[2026-10-28T05:24:44.677Z]    Restored Delay Setting:   7000ms (expected 7000ms)
+[2026-10-28T05:24:44.683Z]    Private Egress Preserved: WIREGUARD_DISPOSABLE
+[2026-10-28T05:24:44.690Z]    ✔ 50 URLs and settings restored cleanly in Google Chrome.
+[2026-10-28T05:24:44.699Z]    ✅ STAGE 5 PASS: Real Google Chrome E2E test against UNPACKED ZIP verified 100%.
+[2026-10-28T05:24:44.707Z] 
+========================================================================
+[2026-10-28T05:24:44.719Z]   🏆 ALL UNPACKED RC3.60 .82 GOOGLE CHROME INTEGRITY & E2E GATES PASSED 100%
+[2026-10-28T05:24:44.730Z] ========================================================================

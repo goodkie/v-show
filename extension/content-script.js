@@ -3527,17 +3527,26 @@
         // ============================================================
         // [v4.1] 텍스트/이메일/전화 필드 값 입력 (초지능 인간 타이핑 연계)
         // ============================================================
+        // [RC3.60 .91] Per-element fill attempt tracking for bounded retries (max 1 rewrite per element)
+        if (!window.__xpider_field_fill_attempts) window.__xpider_field_fill_attempts = new WeakMap();
+
         const applyVal = async (el, val, matchedAttr) => {
             if (!val || !el) return;
+            // [RC3.60 .91 Defect 3 Guard] Never modify hidden or honeypot controls
+            if (isHoneypotV4(el) || el.type === 'hidden' || el.hidden || (el.style && (el.style.display === 'none' || el.style.visibility === 'hidden'))) {
+                logDev(`   - [HONEYPOT_GUARD] Protected honeypot/hidden field skipped: ${el.id || el.name || 'unnamed'}`, 'debug');
+                return;
+            }
             if (el.tagName === 'SELECT') {
                 await applySelect(el);
                 return;
             }
 
-            // [P0-A Fix] 이미 값이 있으면 스킵하되, 이미 유효하게 입력된 필드로 카운트 및 등록
+            // [RC3.60 .91 Defect 1 Fix] Bounded Retries: If field already has non-empty value, never clear or rewrite it repeatedly
             const currentVal = el.contentEditable === 'true' ? (el.textContent || '') : (el.value || '');
-            if (currentVal.trim() !== '') {
-                logDev(`   - [FIELD_SKIP] field=${el.id || el.name || 'unnamed'} tag=${el.tagName} reason=ALREADY_FILLED`);
+            const attempts = window.__xpider_field_fill_attempts.get(el) || 0;
+            if (currentVal.trim() !== '' && attempts >= 1) {
+                logDev(`   - [FIELD_SKIP] field=${el.id || el.name || 'unnamed'} tag=${el.tagName} reason=ALREADY_FILLED_AND_STABLE`);
                 fieldsAlreadyValid++;
                 const semanticRes = resolveFieldSemantic(el);
                 let category = semanticRes.semantic;
@@ -3598,6 +3607,7 @@
             }
             fieldsNewlyFilled++;
             filledFields++;
+            try { window.__xpider_field_fill_attempts.set(el, (window.__xpider_field_fill_attempts.get(el) || 0) + 1); } catch (_) {}
 
             try {
                 const fieldKey = el.id || el.name || el.getAttribute('name') || el.getAttribute('id') || `field_${filledFields}`;
@@ -3793,6 +3803,8 @@
         // ── 확장된 honeypot 판정 (v4.1: 완벽한 허니팟 차단 및 오탐 방지) ──
         function isHoneypotV4(el) {
             if (!el) return false;
+            // [RC3.60 .91 Defect 3 Fix] Type="hidden" and hidden attributes are strictly protected
+            if (el.type === 'hidden' || el.hidden === true || el.getAttribute('hidden') !== null) return true;
             // 1. 명시적 허니팟 ID, Name, Class 검사 (Elementor, Gravity, WPForms, Wix 등 전수 차단)
             const idNameClass = [
                 String(el.id || ''),
@@ -5371,7 +5383,9 @@
                 // 2. 조상 래퍼 클래스 트래버스 (최대 5레벨 위 조상까지 검사하여 invalid 클래스 마킹 확인 - Wix .tkHMZu 등 감지)
                 if (!isError) {
                     let ancestor = el.parentElement;
-                    const errorKeywords = ['error', 'invalid', 'failed', 'danger', 'required', 'warning', 'err-', 'tkhmzu'];
+                    // [RC3.60 .91 Fix] REMOVE 'required' from error keywords!
+                    // 'required' is a standard container class (e.g. form-group required) indicating a mandatory field, NOT a validation error!
+                    const errorKeywords = ['has-error', 'field-error', 'invalid', 'form-error', 'danger', 'err-', 'tkhmzu'];
                     for (let depth = 0; depth < 5 && ancestor; depth++) {
                         const ancestorClass = (ancestor.className || '').toString().toLowerCase();
                         const ancestorId = (ancestor.id || '').toString().toLowerCase();
