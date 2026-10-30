@@ -6,8 +6,24 @@
 - Workspace: E:\vivpr\ai\extension-form-sender
 - Authority: goodkie/v-show Issues #6 & #10
 - Branch: major/v7-dual-mode (branched from upgrade/phase-0-1)
-- State Rev: 2026-10-30.257
-- Authority Cursor: 6528400000
+- State Rev: 2026-10-30.258
+- Authority Cursor: 6529136385
+- Major-version v7.0.0-rc11 P0 Contract Implementation & Defect Resolution COMPLETED:
+  - Functional Commit `20678ada` on `major/v7-dual-mode`.
+  - GitHub Release: `v7.0.0-rc11` (tag `v7.0.0-rc11`).
+  - Package: `XPIDER_V7.0.0_RC11_DUAL_MODE_OWNER_BETA.zip` (SHA256: `46a1470c80249466f79a3a4fe5599976593d99fd52f945b87add876f1b787a54`, size: `51693297` bytes).
+  - Directive: `[CHATGPT → ANTIGRAVITY][Issue #6][P0 RC11 IMPLEMENTATION DIRECTIVE — OWNER RC10 FAIL]`.
+  - Contract Enforcement:
+    1. Configurable per-target MAX WAIT in Settings (`#target-max-wait-input`, default 180s, min 30s, max 600s). Operator hold timer suspended/inhibited during `MANUAL_HOLD` & `CAPTCHA_PENDING_EXTERNAL_USER`. Safely times out in `AUTO` mode as `TIMEOUT_TARGET_DEADLINE`.
+    2. Auto-Fill Form Now / Apply Template: `#xpider-manual-autofill-btn` on hold panel, `#autofill-open-tab-btn` on popup, and `#sp-assist-autofill-btn` on side panel assist. Strictly fills without submitting, returns field counts, truthfully discloses cross-origin iframes.
+    3. Header vs HUD Mode Synchronization: Synchronous update of `campaign-mode-pill` and `hud-current-mode-badge` inside `updatePersistentModeHud`. 0 contradictions across all 3 modes.
+    4. In-App CAPTCHA Solvers Retired: `XpiderSolverCore` inert stub; Wit.ai, Whisper, NopeCHA, 2Captcha API calls and audio bypass retired. `ChallengeGate` detection and `CAPTCHA_PENDING_EXTERNAL_USER` retained. Zero credential leakage.
+    5. Genuine Message/Inquiry Field Required: Forms confirming absence of genuine message field SKIPPED immediately as `NO_LONG_TEXT_INQUIRY_FIELD` before operator hold across all modes.
+    6. Pause -> Resume 3-way mode adoption: in-flight target at `queue[0]` cleanly preserved without drop or duplicate.
+    7. Message Template Tab per-field Copy buttons (`.tpl-copy-field-btn`) and open tab autofill.
+    8. Canonical Ledger Reconciliation across 7 buckets.
+  - Regression Matrix: `test/test_v7_rc11_contracts.js` PASS (53 assertions passed), `test/test_v7_rc10_all_contracts.js` PASS, `test/test_jiujitsu_modal_fixture.js` PASS, `test/test_rc9_residential_502_failclosed.js` PASS.
+  - 100% 3-way hash parity verified across git root `extension/`, unpacked folder `XPIDER_V7.0.0_RC1_DUAL_MODE_OWNER_BETA/extension/`, and packaged zip.
 - Major-version v7.0.0-rc10 Three-Mode Contracts, Stale Hold Purge & Resume Reliability COMPLETED:
   - Functional Commit `f5e235eb` on `major/v7-dual-mode`.
   - GitHub Release: `v7.0.0-rc10` (tag `v7.0.0-rc10`).
