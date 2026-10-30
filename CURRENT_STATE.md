@@ -7,7 +7,16 @@
 - Authority: goodkie/v-show Issues #6 & #10
 - Branch: major/v7-dual-mode (branched from upgrade/phase-0-1)
 - State Rev: 2026-10-30.252
-- Authority Cursor: 6524894891
+- Authority Cursor: 6525365864
+- Major-version v7.0.0-rc7 Defect Remediation & Handshake Parity COMPLETED:
+  - Commit `fb120fba` on `major/v7-dual-mode`.
+  - GitHub Release: `v7.0.0-rc7` (tag `v7.0.0-rc7`).
+  - Package: `XPIDER_V7.0.0_RC7_DUAL_MODE_OWNER_BETA.zip` (SHA256: `786e708e7e4539b018c86b80172927f5dc1d9f6ae9b666f80bac7a2c221aa929`).
+  - Receipt posted: `Comment #6525365864`.
+  - Defect 1 (Runtime Build Mismatch): Diagnosed and fixed `Number(localManifest) === Number(bgManifest)` where `bgManifest` was `undefined`, causing `3 === NaN` to evaluate to `false` and trigger false `⚠️ RUNTIME BUILD MISMATCH` banner. Coerced both to `Number(ver || 3)`. Red banner 100% eliminated.
+  - Defect 2 (URL Row Height / Horizontal Bars): Fixed `.preview-item` with explicit `height: 36px !important; line-height: 20px !important; font-size: 12px !important; padding: 6px 12px !important; display: flex !important; align-items: center !important;`. Zero character clipping across actual 380px side-panel width.
+  - Defect 3 (UI Badge Version Regex): Updated regex in `getBadgeTextFromBuildInfo()` to match `V7.0.0` tags, displaying `OWNER BETA V7.0.0-RC7 [8ab1f93b]` cleanly.
+  - Defect 4 (Build & Package Parity): 100% identical hashes across root `extension/`, unpacked folder `XPIDER_V7.0.0_RC1_DUAL_MODE_OWNER_BETA/extension`, and packaged ZIP.
 - Major-version v7.0.0-rc6 Defect Remediation & Package Parity COMPLETED:
   - Commit `8ab1f93b` on `major/v7-dual-mode`.
   - GitHub Release: `v7.0.0-rc6` (tag `v7.0.0-rc6`).
