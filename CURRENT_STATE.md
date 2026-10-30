@@ -6,8 +6,18 @@
 - Workspace: E:\vivpr\ai\extension-form-sender
 - Authority: goodkie/v-show Issues #6 & #10
 - Branch: major/v7-dual-mode (branched from upgrade/phase-0-1)
-- State Rev: 2026-10-30.252
-- Authority Cursor: 6525365864
+- State Rev: 2026-10-30.253
+- Authority Cursor: 6526123120
+- Major-version v7.0.0-rc8 SEMI_AUTO Triple-Mode & Assistance Panel COMPLETED:
+  - Commit `d8983348` on `major/v7-dual-mode`.
+  - GitHub Release: `v7.0.0-rc8` (tag `v7.0.0-rc8`).
+  - Package: `XPIDER_V7.0.0_RC8_DUAL_MODE_OWNER_BETA.zip` (SHA256: `c01767d90e4a50f2dc5913f39342bf9cac8912e51b05637bb8e1f7dde024eac7`).
+  - Receipt posted: `Directive #6526123120`.
+  - Feature 1 (SEMI_AUTO Mode Engine): Full automation on happy path with automatic submit. On ANY non-terminal automation failure, missing required fields, pending CAPTCHA challenge, or uncertain submit outcome, dispatch immediately halts at current target, keeps tab open and focused, and presents operator assistance panel.
+  - Feature 2 (Triple-Mode UI Controls): Added `#start-semi-auto-btn` in primary button row. Enhanced Pause->Resume modal with 3-way selection (`AUTO`, `SEMI_AUTO`, `MANUAL`), previous mode badge, and Cancel button.
+  - Feature 3 (Dual Assistance UI): High-contrast in-page panel (`#xpider-v7-manual-hold-panel` with purple styling) plus persistent side-panel assistance card fallback (`#side-panel-assistance-card`).
+  - Feature 4 (Canonical Settlement Guard): Explicit operator actions (Confirm Verified Receipt, Recheck/Retry, Mark Delivery Unknown, Skip Target, Stop & Save Checkpoint). Verifies positive DOM/redirect evidence before settling as `CONFIRMED_SUCCESS`; otherwise records `DELIVERY_UNKNOWN` (`operatorClaimOnly: true`). Zero false positives on click alone.
+  - Feature 5 (Deterministic Regression Suite & Parity): Static ESLint no-undef PASS, Stage 2 Matrix 12/12 PASS, Genuine Browser Safeguards 1, 2, 3 PASS, 100% 3-way hash parity verified.
 - Major-version v7.0.0-rc7 Defect Remediation & Handshake Parity COMPLETED:
   - Commit `fb120fba` on `major/v7-dual-mode`.
   - GitHub Release: `v7.0.0-rc7` (tag `v7.0.0-rc7`).
