@@ -1217,11 +1217,40 @@ function bindSidePanelAssistanceControls() {
         } catch (_) { return null; }
     };
 
+    const autofillBtn = document.getElementById('sp-assist-autofill-btn');
     const confirmBtn = document.getElementById('sp-assist-confirm-btn');
     const retryBtn = document.getElementById('sp-assist-retry-btn');
     const unknownBtn = document.getElementById('sp-assist-unknown-btn');
     const skipBtn = document.getElementById('sp-assist-skip-btn');
     const stopBtn = document.getElementById('sp-assist-stop-btn');
+
+    if (autofillBtn) {
+        autofillBtn.addEventListener('click', async () => {
+            const hold = await getHoldState();
+            if (!hold || !hold.tabId) return;
+            const tpl = (typeof getTemplateFromUI === 'function') ? getTemplateFromUI() : {};
+            autofillBtn.disabled = true;
+            autofillBtn.textContent = '⏳ Applying Template...';
+            chrome.tabs.sendMessage(hold.tabId, { action: 'EXECUTE_AUTOFILL_NOW', template: tpl }, (resp) => {
+                autofillBtn.disabled = false;
+                autofillBtn.textContent = '🪄 Auto-Fill Form Now / Apply Template';
+                const reasonEl = document.getElementById('sp-assist-reason');
+                if (chrome.runtime.lastError || !resp) {
+                    if (reasonEl) reasonEl.textContent = `Auto-fill error: ${chrome.runtime.lastError ? chrome.runtime.lastError.message : 'No response from tab'}`;
+                    return;
+                }
+                if (reasonEl) {
+                    if (resp.isCrossOrigin || resp.fieldsDetected === 0) {
+                        reasonEl.textContent = `🚫 Auto-fill Unavailable: 0 fields verified (${resp.reason || 'Form is in external cross-origin frame'})`;
+                    } else if (resp.fieldsFilled > 0) {
+                        reasonEl.textContent = `✅ Applied Template: ${resp.fieldsFilled} filled, ${resp.fieldsSkipped || 0} skipped, ${resp.fieldsBlocked || 0} blocked. (Form NOT submitted)`;
+                    } else {
+                        reasonEl.textContent = `⚠️ Auto-fill: 0 fields matched (${resp.reason || 'None compatible'})`;
+                    }
+                }
+            });
+        });
+    }
 
     if (confirmBtn) {
         confirmBtn.addEventListener('click', async () => {
@@ -1631,6 +1660,17 @@ async function hydrateSettings(overrideV2Store = null) {
 
     if (document.getElementById('random-delay-toggle')) {
         document.getElementById('random-delay-toggle').checked = !!data.xpider_random_delay;
+    }
+
+    // [RC11] Hydrate Target Execution Max Wait (seconds)
+    const targetMaxWaitInput = document.getElementById('target-max-wait-input');
+    if (targetMaxWaitInput) {
+        targetMaxWaitInput.value = data.xpider_target_max_wait || 180;
+        targetMaxWaitInput.onchange = () => {
+            const val = Math.max(30, Math.min(600, parseInt(targetMaxWaitInput.value, 10) || 180));
+            targetMaxWaitInput.value = val;
+            chrome.storage.local.set({ xpider_target_max_wait: val });
+        };
     }
 
     const fillMode = data.xpider_fill_mode || 'instant';
@@ -5724,6 +5764,109 @@ function bindEvents() {
             tplSelect.dataset.bound = 'true';
             tplSelect.addEventListener('change', loadTemplateFromLibrary);
         }
+
+        // [RC11] Per-field Copy Buttons in Message Template Tab
+        document.querySelectorAll('.tpl-copy-field-btn').forEach(btn => {
+            if (!btn.dataset.bound) {
+                btn.dataset.bound = 'true';
+                btn.addEventListener('click', () => {
+                    const targetId = btn.getAttribute('data-target');
+                    const targetEl = document.getElementById(targetId);
+                    if (targetEl) {
+                        const val = targetEl.value || '';
+                        navigator.clipboard.writeText(val).then(() => {
+                            const origText = btn.textContent;
+                            btn.textContent = '✅ Copied!';
+                            btn.style.color = '#34d399';
+                            setTimeout(() => {
+                                btn.textContent = origText;
+                                btn.style.color = '#94a3b8';
+                            }, 1200);
+                        }).catch(err => {
+                            console.error('Clipboard copy failed:', err);
+                        });
+                    }
+                });
+            }
+        });
+
+        // [RC11] Auto-Fill Open Tab Buttons
+        const triggerAutofillActiveTab = async () => {
+            const banner = document.getElementById('autofill-tab-status-banner');
+            if (banner) {
+                banner.style.display = 'block';
+                banner.style.background = 'rgba(14, 165, 233, 0.15)';
+                banner.style.border = '1px solid #0ea5e9';
+                banner.style.color = '#38bdf8';
+                banner.textContent = '⏳ Communicating with active tab and populating form...';
+            }
+            try {
+                const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+                if (!tabs || tabs.length === 0 || !tabs[0].id) {
+                    throw new Error('No active tab found in current window.');
+                }
+                const activeTab = tabs[0];
+                const activeUrl = activeTab.url || '';
+                if (!activeUrl || activeUrl.startsWith('chrome://') || activeUrl.startsWith('edge://')) {
+                    throw new Error('Cannot fill browser internal page.');
+                }
+                const tpl = (typeof getTemplateFromUI === 'function') ? getTemplateFromUI() : {};
+                chrome.tabs.sendMessage(activeTab.id, {
+                    action: 'EXECUTE_AUTOFILL_NOW',
+                    template: tpl
+                }, (response) => {
+                    if (chrome.runtime.lastError || !response) {
+                        if (banner) {
+                            banner.style.background = 'rgba(239, 68, 68, 0.15)';
+                            banner.style.border = '1px solid #ef4444';
+                            banner.style.color = '#f87171';
+                            banner.textContent = `❌ Active tab error: ${chrome.runtime.lastError ? chrome.runtime.lastError.message : 'No response from content script. Please reload page.'}`;
+                        }
+                        return;
+                    }
+                    if (response.isCrossOrigin || response.fieldsDetected === 0) {
+                        if (banner) {
+                            banner.style.background = 'rgba(245, 158, 11, 0.15)';
+                            banner.style.border = '1px solid #f59e0b';
+                            banner.style.color = '#fbbf24';
+                            banner.textContent = `🚫 Auto-fill unavailable: 0 fields verified (${response.reason || 'Form is hosted in an external cross-origin frame'}).`;
+                        }
+                    } else if (response.success || response.fieldsFilled > 0) {
+                        if (banner) {
+                            banner.style.background = 'rgba(16, 185, 129, 0.15)';
+                            banner.style.border = '1px solid #10b981';
+                            banner.style.color = '#34d399';
+                            banner.textContent = `✅ Applied Template: ${response.fieldsFilled} filled, ${response.fieldsSkipped || 0} skipped, ${response.fieldsBlocked || 0} blocked. (Form NOT submitted)`;
+                        }
+                    } else {
+                        if (banner) {
+                            banner.style.background = 'rgba(239, 68, 68, 0.15)';
+                            banner.style.border = '1px solid #ef4444';
+                            banner.style.color = '#f87171';
+                            banner.textContent = `⚠️ Fill incomplete: ${response.reason || 'No compatible input fields matched.'}`;
+                        }
+                    }
+                });
+            } catch (err) {
+                if (banner) {
+                    banner.style.background = 'rgba(239, 68, 68, 0.15)';
+                    banner.style.border = '1px solid #ef4444';
+                    banner.style.color = '#f87171';
+                    banner.textContent = `❌ ${err.message}`;
+                }
+            }
+        };
+
+        const autoFillTabBtn = document.getElementById('autofill-open-tab-btn');
+        if (autoFillTabBtn && !autoFillTabBtn.dataset.bound) {
+            autoFillTabBtn.dataset.bound = 'true';
+            autoFillTabBtn.addEventListener('click', triggerAutofillActiveTab);
+        }
+        const autoFillTabBottomBtn = document.getElementById('autofill-open-tab-bottom-btn');
+        if (autoFillTabBottomBtn && !autoFillTabBottomBtn.dataset.bound) {
+            autoFillTabBottomBtn.dataset.bound = 'true';
+            autoFillTabBottomBtn.addEventListener('click', triggerAutofillActiveTab);
+        }
     } catch (e) {
         console.error('[POPUP_BOOT] Single URL and template library binding error:', e);
     }
@@ -8179,7 +8322,8 @@ async function launchCampaign(options = {}) {
             overrideSkipAttempted: isTestModeActive ? true : false,
             ownerFunctionTestMode: isTestModeActive ? true : false,
             campaignRunId: resolvedRunId,
-            campaignMode: requestedCampaignMode
+            campaignMode: requestedCampaignMode,
+            targetTimeoutMs: (parseInt(document.getElementById('target-max-wait-input')?.value, 10) || 180) * 1000
         };
         try {
             bindCampaignTemplateMetadata(startPayload, currentTpl);
@@ -8469,27 +8613,53 @@ function updatePersistentModeHud(mode, status, currentTarget, remainingCount) {
     const statusEl = document.getElementById('hud-orchestrator-status');
     const targetEl = document.getElementById('hud-current-target-val');
     const remEl = document.getElementById('hud-remaining-count-val');
+    const modePill = document.getElementById('campaign-mode-pill');
     if (!hudContainer || !badgeEl || !statusEl) return;
 
     const resolvedMode = (mode === 'SEMI_AUTO' || mode === 'MANUAL') ? mode : 'AUTO';
+    
+    // Telemetry: verify coherence with local state and auto-reconcile
+    if (currentCampaignMode && currentCampaignMode !== resolvedMode) {
+        console.warn(`[MODE_DESYNC_DETECTED] local currentCampaignMode=${currentCampaignMode} desynced from background canonical mode=${resolvedMode}. Auto-synchronizing.`);
+    }
+    currentCampaignMode = resolvedMode;
+
     if (resolvedMode === 'SEMI_AUTO') {
         badgeEl.textContent = '⚡ SEMI-AUTO';
         badgeEl.style.background = '#a855f7';
         badgeEl.style.color = '#ffffff';
         badgeEl.style.boxShadow = '0 0 8px rgba(168, 85, 247, 0.4)';
         hudContainer.style.borderColor = '#a855f7';
+        if (modePill) {
+            modePill.textContent = 'MODE: SEMI-AUTO (ASSIST HOLD)';
+            modePill.style.color = '#c084fc';
+        }
     } else if (resolvedMode === 'MANUAL') {
         badgeEl.textContent = '🖐️ MANUAL';
         badgeEl.style.background = '#3b82f6';
         badgeEl.style.color = '#ffffff';
         badgeEl.style.boxShadow = '0 0 8px rgba(59, 130, 246, 0.4)';
         hudContainer.style.borderColor = '#3b82f6';
+        if (modePill) {
+            modePill.textContent = 'MODE: MANUAL (HOLD FOR REGISTER)';
+            modePill.style.color = '#fbbf24';
+        }
     } else {
         badgeEl.textContent = '🚀 AUTO';
         badgeEl.style.background = '#06b6d4';
         badgeEl.style.color = '#000000';
         badgeEl.style.boxShadow = '0 0 8px rgba(6, 182, 212, 0.4)';
         hudContainer.style.borderColor = '#06b6d4';
+        if (modePill) {
+            modePill.textContent = 'MODE: AUTO (CHALLENGE GATE)';
+            modePill.style.color = '#38bdf8';
+        }
+        // In AUTO, never retain operator side panel assistance card
+        const assistCard = document.getElementById('side-panel-assistance-card');
+        if (assistCard) {
+            assistCard.style.display = 'none';
+            assistCard.classList.add('hidden');
+        }
     }
 
     if (status) {
@@ -8690,7 +8860,8 @@ function confirmResumeCampaignWithMode(selectedMode) {
 
     addDiagnosticLog(`[Engine][TX] action=RESUME_CAMPAIGN campaignMode=${targetMode}`);
     if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
-        chrome.runtime.sendMessage({ action: 'RESUME_CAMPAIGN', campaignMode: targetMode }, (res) => {
+        const targetTimeoutMs = (parseInt(document.getElementById('target-max-wait-input')?.value, 10) || 180) * 1000;
+        chrome.runtime.sendMessage({ action: 'RESUME_CAMPAIGN', campaignMode: targetMode, targetTimeoutMs }, (res) => {
             if (res && res.success) {
                 campaignActive = true;
                 campaignPaused = false;

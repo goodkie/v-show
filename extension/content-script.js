@@ -2048,9 +2048,17 @@
                 : ((template && (template.campaignMode === 'MANUAL' || template.campaignMode === 'SEMI_AUTO')) ? template.campaignMode : 'AUTO');
 
             if (!isAutofillSuccess) {
-                // [RC3.60 P0] Non-inquiry form without message body settles SKIPPED immediately
-                if (result && (result.reasonCode === 'NO_LONG_TEXT_INQUIRY_FIELD' || result.terminalStatus === 'SKIPPED')) {
-                    logDev(`ℹ️ [Engine] Non-inquiry form without message body: settling SKIPPED`, "info");
+                // [RC11 P0 Directive 5] Genuine message/inquiry field is REQUIRED for form submission eligibility in all modes.
+                // Forms with confirmed absence of genuine message field MUST be SKIPPED before operator hold in ALL MODES.
+                const hasReachableMsgField = form && typeof form.querySelectorAll === 'function' &&
+                    Array.from(form.querySelectorAll('input, textarea, [contenteditable="true"]')).some(el =>
+                        (typeof isMsgElement === 'function' && isMsgElement(el)) ||
+                        el.tagName === 'TEXTAREA' ||
+                        el.getAttribute('contenteditable') === 'true'
+                    );
+
+                if (!hasReachableMsgField || (result && (result.reasonCode === 'NO_LONG_TEXT_INQUIRY_FIELD' || result.terminalStatus === 'SKIPPED'))) {
+                    logDev(`ℹ️ [FORM_ELIGIBILITY_GATE] Confirmed absence of genuine message/inquiry field on reachable form: settling SKIPPED in all modes (${activeCampaignMode})`, "info");
                     finishCampaign(false, 'NO_LONG_TEXT_INQUIRY_FIELD', 'NO_LONG_TEXT_INQUIRY_FIELD');
                     return false;
                 }
@@ -4936,6 +4944,67 @@
         });
     }
 
+    async function executeAutoFillNow(formToFill, templateData) {
+        const tpl = templateData || window.__xpider_last_template || {};
+        let target = formToFill;
+        if (!target || (typeof document !== 'undefined' && !document.contains(target))) {
+            target = (typeof findOptimalForm === 'function') ? findOptimalForm(document) : null;
+        }
+        if (!target) {
+            const detectedExt = (typeof detectExternalFormIframe === 'function') ? detectExternalFormIframe(document) : null;
+            if (detectedExt) {
+                return {
+                    success: false,
+                    isCrossOrigin: true,
+                    fieldsDetected: 0,
+                    fieldsFilled: 0,
+                    fieldsSkipped: 0,
+                    fieldsBlocked: 0,
+                    reason: 'Form is hosted in an external cross-origin frame and cannot be automated.'
+                };
+            }
+            return {
+                success: false,
+                isCrossOrigin: false,
+                fieldsDetected: 0,
+                fieldsFilled: 0,
+                fieldsSkipped: 0,
+                fieldsBlocked: 0,
+                reason: 'No reachable form elements found on current page.'
+            };
+        }
+
+        try {
+            const fillResult = await fillFormIntelligent(target, tpl, 'instant');
+            const detected = fillResult?.fieldsDetected || 0;
+            const filled = fillResult?.fieldsFilled || (fillResult?.filledAny ? 1 : 0);
+            const unresolved = fillResult?.unresolvedFields?.length || 0;
+            return {
+                success: Boolean(filled > 0),
+                isCrossOrigin: false,
+                fieldsDetected: detected,
+                fieldsFilled: filled,
+                fieldsSkipped: fillResult?.fieldsSkipped || 0,
+                fieldsBlocked: unresolved,
+                unresolvedFields: fillResult?.unresolvedFields || [],
+                reason: fillResult?.reasonCode || 'SUCCESS'
+            };
+        } catch (fillErr) {
+            return {
+                success: false,
+                isCrossOrigin: false,
+                fieldsDetected: 0,
+                fieldsFilled: 0,
+                fieldsSkipped: 0,
+                fieldsBlocked: 0,
+                reason: fillErr.message
+            };
+        }
+    }
+    if (typeof window !== 'undefined') {
+        window.__xpiderExecuteAutoFillNow = executeAutoFillNow;
+    }
+
     async function handleV7ManualModeHold(form, template, frozenSnapshot, initialChallengeInfo, holdOptions = {}) {
         const isExplicitAuto = (holdOptions && holdOptions.mode === 'AUTO') ||
             (typeof window !== 'undefined' && window.__xpider_campaign_mode === 'AUTO') ||
@@ -5247,23 +5316,28 @@
                 let fieldSummaryHtml = '';
                 if (isUnavailable) {
                     fieldSummaryHtml = `
-                    <div style="background:rgba(239,68,68,0.18);border:1px solid #ef4444;border-radius:6px;padding:8px;margin-bottom:10px;font-size:11px;line-height:1.5;">
-                        <div style="color:#fca5a5;font-weight:700;">🚫 Auto-Fill Unavailable: 0 fields verified</div>
-                        <div style="color:#fecaca;font-size:10px;margin-top:2px;">${isCrossOrigin ? 'Form is hosted in an external cross-origin frame and cannot be automated.' : (validationReasonStr || 'No automatable form found.')} Please review or submit manually.</div>
-                        <div style="margin-top:4px;">🧩 <strong>Challenge Status:</strong> <span id="xpider-manual-challenge-status" style="color:#fbbf24;">${challengeStatusStr}</span></div>
+                    <div id="xpider-hold-field-summary">
+                        <div style="background:rgba(239,68,68,0.18);border:1px solid #ef4444;border-radius:6px;padding:8px;margin-bottom:10px;font-size:11px;line-height:1.5;">
+                            <div style="color:#fca5a5;font-weight:700;">🚫 Auto-Fill Unavailable: 0 fields verified</div>
+                            <div style="color:#fecaca;font-size:10px;margin-top:2px;">${isCrossOrigin ? 'Form is hosted in an external cross-origin frame and cannot be automated.' : (validationReasonStr || 'No automatable form found.')} Please review or submit manually.</div>
+                            <div style="margin-top:4px;">🧩 <strong>Challenge Status:</strong> <span id="xpider-manual-challenge-status" style="color:#fbbf24;">${challengeStatusStr}</span></div>
+                        </div>
                     </div>`;
                 } else {
                     fieldSummaryHtml = `
-                    <div style="background:rgba(30,41,59,0.8);border:1px solid rgba(148,163,184,0.2);border-radius:6px;padding:8px;margin-bottom:10px;font-size:11px;line-height:1.5;">
-                        <div>📋 <strong>Fields Prepared:</strong> <span style="color:${isValidationHold ? '#fbbf24' : '#4ade80'};">${isValidationHold ? `${fieldCount} fields prepared (attention needed)` : `${fieldCount} fields verified ✓`}</span></div>
-                        <div>🧩 <strong>Challenge Status:</strong> <span id="xpider-manual-challenge-status" style="color:#fbbf24;">${challengeStatusStr}</span></div>
-                        <div style="color:#cbd5e1;font-size:10px;margin-top:4px;">${isSemiAuto ? 'Review and resolve page status, then select an action below.' : 'Submit the form on the page when ready, then click <strong>I Registered — Continue</strong>.'}</div>
+                    <div id="xpider-hold-field-summary">
+                        <div style="background:rgba(30,41,59,0.8);border:1px solid rgba(148,163,184,0.2);border-radius:6px;padding:8px;margin-bottom:10px;font-size:11px;line-height:1.5;">
+                            <div>📋 <strong>Fields Prepared:</strong> <span style="color:${isValidationHold ? '#fbbf24' : '#4ade80'};">${isValidationHold ? `${fieldCount} fields prepared (attention needed)` : `${fieldCount} fields verified ✓`}</span></div>
+                            <div>🧩 <strong>Challenge Status:</strong> <span id="xpider-manual-challenge-status" style="color:#fbbf24;">${challengeStatusStr}</span></div>
+                            <div style="color:#cbd5e1;font-size:10px;margin-top:4px;">${isSemiAuto ? 'Review and resolve page status, then select an action below.' : 'Submit the form on the page when ready, then click <strong>I Registered — Continue</strong>.'}</div>
+                        </div>
                     </div>`;
                 }
 
                 const buttonGrid = isSemiAuto
                     ? `
                     <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+                        <button type="button" id="xpider-manual-autofill-btn" style="grid-column:span 2;background:linear-gradient(135deg, #0ea5e9, #0284c7);color:#fff;border:none;border-radius:6px;padding:7px 10px;font-size:11px;font-weight:700;cursor:pointer;margin-bottom:2px;" title="Auto-fill form fields with message template values without submitting">🪄 Auto-Fill Form Now / Apply Template</button>
                         <button type="button" id="xpider-manual-registered-btn" style="grid-column:span 2;background:#10b981;color:#fff;border:none;border-radius:6px;padding:8px 10px;font-size:12px;font-weight:700;cursor:pointer;">✅ Confirm Verified Receipt</button>
                         <button type="button" id="xpider-manual-retry-btn" style="background:#3b82f6;color:#fff;border:none;border-radius:6px;padding:6px 8px;font-size:11px;font-weight:600;cursor:pointer;">🔄 Recheck / Retry (0/3)</button>
                         <button type="button" id="xpider-manual-unknown-btn" style="background:#d97706;color:#fff;border:none;border-radius:6px;padding:6px 8px;font-size:11px;font-weight:600;cursor:pointer;">❓ Mark Delivery Unknown</button>
@@ -5272,6 +5346,7 @@
                     </div>`
                     : `
                     <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+                        <button type="button" id="xpider-manual-autofill-btn" style="grid-column:span 2;background:linear-gradient(135deg, #0ea5e9, #0284c7);color:#fff;border:none;border-radius:6px;padding:7px 10px;font-size:11px;font-weight:700;cursor:pointer;margin-bottom:2px;" title="Auto-fill form fields with message template values without submitting">🪄 Auto-Fill Form Now / Apply Template</button>
                         <button type="button" id="xpider-manual-registered-btn" style="grid-column:span 2;background:#10b981;color:#fff;border:none;border-radius:6px;padding:8px 10px;font-size:12px;font-weight:700;cursor:pointer;">✅ I Registered — Continue</button>
                         <button type="button" id="xpider-manual-retry-btn" style="background:#3b82f6;color:#fff;border:none;border-radius:6px;padding:6px 8px;font-size:11px;font-weight:600;cursor:pointer;">🔄 Retry / Edit (0/3)</button>
                         <button type="button" id="xpider-manual-skip-btn" style="background:#64748b;color:#fff;border:none;border-radius:6px;padding:6px 8px;font-size:11px;font-weight:600;cursor:pointer;">⏭️ Skip</button>
@@ -5294,6 +5369,41 @@
                     ${buttonGrid}
                 `;
                 document.body.appendChild(panel);
+
+                panel.querySelector('#xpider-manual-autofill-btn')?.addEventListener('click', async () => {
+                    const btn = panel.querySelector('#xpider-manual-autofill-btn');
+                    if (btn) {
+                        btn.disabled = true;
+                        btn.textContent = '⏳ Applying Template...';
+                    }
+                    const fillRes = await executeAutoFillNow(form, template);
+                    if (btn) {
+                        btn.disabled = false;
+                        btn.textContent = '🪄 Auto-Fill Form Now / Apply Template';
+                    }
+                    const summaryEl = panel.querySelector('#xpider-hold-field-summary');
+                    if (summaryEl) {
+                        if (fillRes.isCrossOrigin || fillRes.fieldsDetected === 0) {
+                            summaryEl.innerHTML = `
+                                <div style="background:rgba(239,68,68,0.18);border:1px solid #ef4444;border-radius:6px;padding:8px;margin-bottom:10px;font-size:11px;line-height:1.5;">
+                                    <div style="color:#fca5a5;font-weight:700;">🚫 Auto-Fill Unavailable: 0 fields verified</div>
+                                    <div style="color:#fecaca;font-size:10px;margin-top:2px;">${fillRes.reason || 'Form is hosted in an external cross-origin frame.'}</div>
+                                </div>`;
+                        } else if (fillRes.fieldsFilled > 0) {
+                            summaryEl.innerHTML = `
+                                <div style="background:rgba(16,185,129,0.18);border:1px solid #10b981;border-radius:6px;padding:8px;margin-bottom:10px;font-size:11px;line-height:1.5;">
+                                    <div style="color:#4ade80;font-weight:700;">✅ Applied Template: ${fillRes.fieldsFilled} filled, ${fillRes.fieldsSkipped || 0} skipped, ${fillRes.fieldsBlocked || 0} blocked</div>
+                                    <div style="color:#a7f3d0;font-size:10px;margin-top:2px;">Form has NOT been submitted. Review and submit when ready.</div>
+                                </div>`;
+                        } else {
+                            summaryEl.innerHTML = `
+                                <div style="background:rgba(245,158,11,0.18);border:1px solid #f59e0b;border-radius:6px;padding:8px;margin-bottom:10px;font-size:11px;line-height:1.5;">
+                                    <div style="color:#fbbf24;font-weight:700;">⚠️ Fill Incomplete</div>
+                                    <div style="color:#fef08a;font-size:10px;margin-top:2px;">${fillRes.reason || 'No compatible fields matched.'}</div>
+                                </div>`;
+                        }
+                    }
+                });
 
                 panel.querySelector('#xpider-manual-registered-btn')?.addEventListener('click', () => executeManualAction('REGISTERED_CONTINUE'));
                 panel.querySelector('#xpider-manual-retry-btn')?.addEventListener('click', () => executeManualAction('RETRY_EDIT'));
@@ -5877,7 +5987,14 @@
     if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.onMessage) {
         try {
             chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
-                if (msg && (msg.action === 'CAPTCHA_TOKEN_INJECTED' || msg.action === 'CAPTCHA_TOKEN_RECEIVED')) {
+                if (msg && (msg.action === 'EXECUTE_AUTOFILL_NOW' || msg.action === 'AUTO_FILL_ACTIVE_TAB')) {
+                    executeAutoFillNow(null, msg.template).then(res => {
+                        if (sendResponse) sendResponse(res);
+                    }).catch(err => {
+                        if (sendResponse) sendResponse({ success: false, reason: err.message, fieldsDetected: 0, fieldsFilled: 0 });
+                    });
+                    return true;
+                } else if (msg && (msg.action === 'CAPTCHA_TOKEN_INJECTED' || msg.action === 'CAPTCHA_TOKEN_RECEIVED')) {
                     _captchaTokenInjected = true;
                     logDev(`🔑 [Security] Captcha token injected signal received via runtime message (action=${msg.action})`, 'info');
                     if (sendResponse) sendResponse({ success: true, acknowledged: true, type: 'TOKEN_INJECTED_ACK' });
