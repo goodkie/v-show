@@ -7,9 +7,16 @@
 - Authority: goodkie/v-show Issues #6 & #10
 - Branch: major/v7-dual-mode (branched from upgrade/phase-0-1)
 - State Rev: 2026-10-30.252
-- Authority Cursor: 6524051311
-- Major-version Stage 0 backup DONE: tag major-backup-20261030-from-93 (4be780b4); backups/MAJOR_BACKUP_20261030_from_93_4be780b4 (local, DPAPI-encrypted secrets); sandbox restore PASS; receipt #6514847380.
-- RC3.60 .94 Hotfix & Read-Only Reconciliation DONE: tag v6.9g.10.3-rc3.60.7.1.4.94 (ebf2c7a3); receipt #6515848744; 97/92 live Chrome snapshot carried forward; 86/73 run marked OWNER_DATA_RECONCILIATION_REQUIRED; .93 marked DO NOT USE.
+- Authority Cursor: 6524894891
+- Major-version v7.0.0-rc6 Defect Remediation & Package Parity COMPLETED:
+  - Commit `8ab1f93b` on `major/v7-dual-mode`.
+  - GitHub Release: `v7.0.0-rc6` (tag `v7.0.0-rc6`).
+  - Package: `XPIDER_V7.0.0_RC6_DUAL_MODE_OWNER_BETA.zip` (SHA256: `256b9d936139c09cdc51ba4140652b428a831884e796a74f49b3ac8d9e2a296d`).
+  - Receipt posted: `Comment #6524894891`.
+  - Defect 1 (URL Preview Contrast): Fixed with `#0f172a` bg, `#38bdf8` cyan border, 100% white monospace text, status tags, browser screenshot evidence.
+  - Defect 2 (Resume Inert): Synchronous 0ms modal presentation, explicit click event binding, `z-index: 99999 !important;`, CDP click->modal->selection verified.
+  - Defect 3 (Queue/HUD Parity): Reconciled 74 total = 1 completed + 73 remaining; HUD reflects `CAMPAIGN: PAUSED (73 remaining)` in neon cyan.
+  - Defect 4 (Build & Package Parity): 100% identical hashes across root `extension/`, unpacked folder `XPIDER_V7.0.0_RC1_DUAL_MODE_OWNER_BETA/extension`, and packaged ZIP.
 - Major-version v7.0.0-rc5 Safety Audit Gate VERIFIED: commit `2e8543ad`, Directive #6523347310, Receipt #6524051311. All 3 safeguards verified PASS:
   1. Safeguard 1 (Browser Fixture Manual Hold on Checkboxes): PASS. Tab retained, `#xpider-v7-manual-hold-panel` & `#xpider-manual-validation-banner` visible, `retryCurrentPageDetection() === false`, zero external submissions.
   2. Safeguard 2 (Pause/Resume Mode Transitions & SW Restart): PASS. Modal toggle MANUAL ↔ AUTO verified in popup DOM without `runId` rebase or checkpoint loss, Cancel preserves pause, SW restart verified.
