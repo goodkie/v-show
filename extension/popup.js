@@ -107,6 +107,7 @@ let currentTpl = {};
 let campaignQueue = [];
 let campaignActive = false;
 let campaignPaused = false;
+let currentCampaignMode = 'AUTO';
 let successCount = 0;
 let failedCount = 0;
 let completedCount = 0;
@@ -7956,6 +7957,8 @@ async function launchCampaign(options = {}) {
         const randomVariationActive = randomVariationToggle ? randomVariationToggle.checked : false;
 
         const requestedCampaignMode = (options.campaignMode === 'MANUAL') ? 'MANUAL' : 'AUTO';
+        currentCampaignMode = requestedCampaignMode;
+        window.__xpider_last_paused_mode = requestedCampaignMode;
         const modePill = document.getElementById('campaign-mode-pill');
         if (modePill) {
             modePill.textContent = `MODE: ${requestedCampaignMode}`;
@@ -8150,20 +8153,26 @@ async function startCampaign() {
 }
 
 function togglePause() {
-    campaignPaused = !campaignPaused;
     const btn = document.getElementById('pause-btn');
     const lang = document.getElementById('language-select')?.value || 'en';
     const dict = i18nData ? (i18nData[lang] || i18nData['en'] || {}) : {};
 
-    const extAction = campaignPaused ? 'PAUSE_CAMPAIGN' : 'RESUME_CAMPAIGN';
-    addDiagnosticLog(`[Engine][TX] action=${extAction}`);
+    // [V7-RC5 Directive #6522457298 Item 3] When already paused, prompt for Resume Mode (Automatic or Manual); Cancel preserves paused state!
+    if (campaignPaused) {
+        promptResumeCampaignMode();
+        return;
+    }
+
+    campaignPaused = true;
+    window.__xpider_last_paused_mode = currentCampaignMode || 'AUTO';
+    addDiagnosticLog('[Engine][TX] action=PAUSE_CAMPAIGN');
     if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
-        chrome.runtime.sendMessage({ action: extAction }).catch(e => console.error('[Pause Ext Error]', e));
+        chrome.runtime.sendMessage({ action: 'PAUSE_CAMPAIGN' }).catch(e => console.error('[Pause Ext Error]', e));
     }
 
     if (btn) {
-        btn.textContent = campaignPaused ? (dict.btn_resume || "▶️ Resume") : (dict.btn_pause || "⏸️ Pause");
-        btn.style.backgroundColor = campaignPaused ? "#22c55e" : "#f59e0b";
+        btn.textContent = dict.btn_resume || "▶️ Resume";
+        btn.style.backgroundColor = "#22c55e";
     }
     refreshStatusDetailUI();
 }
@@ -8240,27 +8249,159 @@ function endCampaign() {
     addLog("🛑 Campaign ended. Remaining queue discarded.", "stop");
 }
 
-function resumeCampaign() {
-    addDiagnosticLog(`[Engine][TX] action=RESUME_CAMPAIGN`);
+function applyResumeModeSelectionUI(selectedMode, previousMode) {
+    const normSel = (selectedMode === 'MANUAL') ? 'MANUAL' : 'AUTO';
+    const normPrev = (previousMode === 'MANUAL') ? 'MANUAL' : 'AUTO';
+    const radioAuto = document.getElementById('resume-mode-radio-auto');
+    const radioManual = document.getElementById('resume-mode-radio-manual');
+    const optAuto = document.getElementById('resume-mode-option-auto');
+    const optManual = document.getElementById('resume-mode-option-manual');
+    const tagAuto = document.getElementById('resume-mode-auto-default-tag');
+    const tagManual = document.getElementById('resume-mode-manual-default-tag');
+    const prevBadge = document.getElementById('resume-mode-prev-badge');
+
+    if (radioAuto) radioAuto.checked = (normSel === 'AUTO');
+    if (radioManual) radioManual.checked = (normSel === 'MANUAL');
+    if (optAuto) optAuto.style.borderColor = (normSel === 'AUTO') ? '#38bdf8' : 'rgba(148, 163, 184, 0.3)';
+    if (optManual) optManual.style.borderColor = (normSel === 'MANUAL') ? '#38bdf8' : 'rgba(148, 163, 184, 0.3)';
+    if (tagAuto) tagAuto.style.display = (normPrev === 'AUTO') ? 'inline' : 'none';
+    if (tagManual) tagManual.style.display = (normPrev === 'MANUAL') ? 'inline' : 'none';
+    if (prevBadge) prevBadge.textContent = `PREV: ${normPrev}`;
+}
+
+function wireResumeModeModalOnce() {
+    const modal = document.getElementById('resume-mode-modal-overlay');
+    if (!modal || modal.dataset.wired === 'true') return;
+    modal.dataset.wired = 'true';
+
+    const radioAuto = document.getElementById('resume-mode-radio-auto');
+    const radioManual = document.getElementById('resume-mode-radio-manual');
+    const cancelBtn = document.getElementById('cancel-resume-mode-btn');
+    const confirmBtn = document.getElementById('confirm-resume-mode-btn');
+
+    if (radioAuto) {
+        radioAuto.addEventListener('change', () => {
+            if (radioAuto.checked) applyResumeModeSelectionUI('AUTO', window.__xpider_last_paused_mode || currentCampaignMode || 'AUTO');
+        });
+    }
+    if (radioManual) {
+        radioManual.addEventListener('change', () => {
+            if (radioManual.checked) applyResumeModeSelectionUI('MANUAL', window.__xpider_last_paused_mode || currentCampaignMode || 'AUTO');
+        });
+    }
+    if (cancelBtn) {
+        cancelBtn.addEventListener('click', () => cancelResumeCampaignModal());
+    }
+    if (confirmBtn) {
+        confirmBtn.addEventListener('click', () => {
+            const chosen = (radioManual && radioManual.checked) ? 'MANUAL' : 'AUTO';
+            confirmResumeCampaignWithMode(chosen);
+        });
+    }
+}
+
+function promptResumeCampaignMode(defaultModeOverride) {
+    wireResumeModeModalOnce();
+    const openModalWithMode = (prevMode) => {
+        const effectivePrev = (prevMode === 'MANUAL' || prevMode === 'AUTO')
+            ? prevMode
+            : ((window.__xpider_last_paused_mode === 'MANUAL' || window.__xpider_last_paused_mode === 'AUTO') ? window.__xpider_last_paused_mode : (currentCampaignMode || 'AUTO'));
+        window.__xpider_last_paused_mode = effectivePrev;
+        applyResumeModeSelectionUI(effectivePrev, effectivePrev);
+        const modal = document.getElementById('resume-mode-modal-overlay');
+        if (modal) {
+            modal.classList.remove('hidden');
+            modal.style.display = 'flex';
+        }
+    };
+
+    if (defaultModeOverride === 'MANUAL' || defaultModeOverride === 'AUTO') {
+        openModalWithMode(defaultModeOverride);
+        return;
+    }
     if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
-        chrome.runtime.sendMessage({ action: 'RESUME_CAMPAIGN' }, (res) => {
+        chrome.runtime.sendMessage({ action: 'GET_STATE' }, (stateResp) => {
+            const stateMode = stateResp && (stateResp.pausedCampaignMode || stateResp.campaignMode);
+            openModalWithMode(stateMode);
+        });
+    } else {
+        openModalWithMode(window.__xpider_last_paused_mode || currentCampaignMode || 'AUTO');
+    }
+}
+
+function cancelResumeCampaignModal() {
+    const modal = document.getElementById('resume-mode-modal-overlay');
+    if (modal) {
+        modal.classList.add('hidden');
+        modal.style.display = 'none';
+    }
+    // Strictly preserve paused state without dispatching RESUME_CAMPAIGN
+    addDiagnosticLog('[Engine][ResumeModal] Cancel clicked — paused state preserved.');
+    return { cancelled: true, campaignPaused: true, campaignActive: false };
+}
+
+function confirmResumeCampaignWithMode(selectedMode) {
+    const targetMode = (selectedMode === 'MANUAL') ? 'MANUAL' : ((selectedMode === 'AUTO') ? 'AUTO' : (window.__xpider_last_paused_mode || currentCampaignMode || 'AUTO'));
+    const modal = document.getElementById('resume-mode-modal-overlay');
+    if (modal) {
+        modal.classList.add('hidden');
+        modal.style.display = 'none';
+    }
+    currentCampaignMode = targetMode;
+    const modePill = document.getElementById('campaign-mode-pill');
+    if (modePill) {
+        modePill.textContent = targetMode === 'MANUAL' ? 'MODE: MANUAL (HOLD FOR REGISTER)' : 'MODE: AUTO (CHALLENGE GATE)';
+        modePill.style.color = targetMode === 'MANUAL' ? '#fbbf24' : '#38bdf8';
+    }
+
+    addDiagnosticLog(`[Engine][TX] action=RESUME_CAMPAIGN campaignMode=${targetMode}`);
+    if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
+        chrome.runtime.sendMessage({ action: 'RESUME_CAMPAIGN', campaignMode: targetMode }, (res) => {
             if (res && res.success) {
                 campaignActive = true;
                 campaignPaused = false;
                 const banner = document.getElementById('resumable-campaign-banner');
                 if (banner) banner.style.display = 'none';
+                const startRow = document.getElementById('start-buttons-row');
+                if (startRow) startRow.classList.add('hidden');
                 const startBtn = document.getElementById('start-btn');
                 if (startBtn) startBtn.classList.add('hidden');
+                const startManualBtn = document.getElementById('start-manual-btn');
+                if (startManualBtn) startManualBtn.classList.add('hidden');
                 const multiActions = document.getElementById('multi-actions');
                 if (multiActions) multiActions.classList.remove('hidden');
+                const pauseBtn = document.getElementById('pause-btn');
+                const lang = document.getElementById('language-select')?.value || 'en';
+                const dict = i18nData ? (i18nData[lang] || i18nData['en'] || {}) : {};
+                if (pauseBtn) {
+                    pauseBtn.textContent = dict.btn_pause || "⏸️ Pause";
+                    pauseBtn.style.backgroundColor = "#f59e0b";
+                }
                 const statusBox = document.getElementById('status-box');
                 if (statusBox) statusBox.classList.remove('hidden');
-                addLog(`▶️ Campaign resumed (${res.remainingCount} remaining).`, "start");
+                refreshStatusDetailUI();
+                addLog(`▶️ Campaign resumed in ${targetMode} mode (${res.remainingCount} remaining).`, "start");
             } else {
                 addLog(`❌ Resume failed: ${res?.error || 'Unknown error'}`, "error");
             }
         });
     }
+    return { confirmed: true, campaignMode: targetMode };
+}
+
+function resumeCampaign(explicitMode) {
+    if (explicitMode === 'AUTO' || explicitMode === 'MANUAL') {
+        return confirmResumeCampaignWithMode(explicitMode);
+    }
+    promptResumeCampaignMode();
+}
+
+if (typeof window !== 'undefined') {
+    window.promptResumeCampaignMode = promptResumeCampaignMode;
+    window.cancelResumeCampaignModal = cancelResumeCampaignModal;
+    window.confirmResumeCampaignWithMode = confirmResumeCampaignWithMode;
+    window.resumeCampaign = resumeCampaign;
+    window.togglePause = togglePause;
 }
 
 function discardCheckpoint() {
@@ -8273,6 +8414,9 @@ function checkResumableCheckpoint() {
         const banner = document.getElementById('resumable-campaign-banner');
         const countEl = document.getElementById('resumable-remaining-count');
         if (!banner) return;
+        if (stateResp && (stateResp.pausedCampaignMode || stateResp.campaignMode)) {
+            window.__xpider_last_paused_mode = stateResp.pausedCampaignMode || stateResp.campaignMode;
+        }
         if (stateResp && stateResp.hasPausedCheckpoint && !stateResp.isActive) {
             banner.style.display = 'block';
             if (countEl) countEl.textContent = stateResp.pausedRemainingCount || 0;

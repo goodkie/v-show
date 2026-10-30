@@ -1,4 +1,4 @@
-/**
+﻿/**
  * privacy-relay-service.js
  * 
  * XPIDER Companion Privacy Relay Service (Issue #6 R6.9G.10.2)
@@ -67,7 +67,7 @@ process.on('unhandledRejection', (reason) => {
 });
 
 // [Defect Q2 Hardening - Issue #6 Comment #6244711545] Authoritative companion build identity & capabilities
-const COMPANION_BUILD_ID = 'V7.0.0-RC4-20261030-MANUAL-HOLD-HANDSHAKE-PASS';
+const COMPANION_BUILD_ID = 'V7.0.0-RC5-20261030-CHECKBOX-MANUAL-RESUME-PASS';
 const COMPANION_IMPLEMENTATION_HEAD = 'ec56efbd7654ed83b92e099068bdd0acb0b6084b';
 
 function isCompatibleExtensionBuild(extBuildId, companionBuildId) {
@@ -1447,11 +1447,11 @@ class PrivacyRelayService {
     let routeEgressIp = activeIp;
     let routeEgressIpMasked = maskedActiveIp;
     if (decodoSelected && decodoSendAllowed) {
-      routeClassification = opalVpnActive ? 'OPAL → DIGITALOCEAN → DECODO' : 'DECODO';
+      routeClassification = opalVpnActive ? 'OPAL ??DIGITALOCEAN ??DECODO' : 'DECODO';
       routeEgressIp = decodoIp || activeIp;
       routeEgressIpMasked = decodoMasked || maskedActiveIp;
     } else if (active && ready) {
-      routeClassification = opalVpnActive ? 'OPAL → DIGITALOCEAN' : 'DIGITALOCEAN';
+      routeClassification = opalVpnActive ? 'OPAL ??DIGITALOCEAN' : 'DIGITALOCEAN';
       routeEgressIp = activeIp;
       routeEgressIpMasked = maskedActiveIp;
     }
@@ -1846,7 +1846,7 @@ class PrivacyRelayService {
         return;
       }
 
-      // [Lane B] POST /residential-proxy/configure (Authenticated — DPAPI credential persistence + optional probe)
+      // [Lane B] POST /residential-proxy/configure (Authenticated ??DPAPI credential persistence + optional probe)
       if (pathname === '/residential-proxy/configure' && req.method === 'POST') {
         let body = '';
         req.on('data', c => body += c);
@@ -2609,7 +2609,7 @@ class PrivacyRelayService {
               };
               this.provisioningState.events.push(scrubbedEv);
               this.provisioningState.lastEvent = scrubbedEv;
-              this.log(`[PROVISION_PROGRESS] Step ${ev.step}/8 ${ev.title}: ${ev.status} — ${scrubbedEv.details}`);
+              this.log(`[PROVISION_PROGRESS] Step ${ev.step}/8 ${ev.title}: ${ev.status} ??${scrubbedEv.details}`);
             }
           });
 

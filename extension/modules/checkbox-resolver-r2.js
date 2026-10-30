@@ -74,7 +74,7 @@
         /**
          * Classify checkbox into one of 10 categories
          */
-        classify(cbEl, containerContext = '') {
+        classify(cbEl, containerContext = '', form = null) {
             if (!cbEl) return 'unknown';
 
             // Check honeypot first
@@ -84,8 +84,8 @@
             const attrText = [
                 cbEl.name || '',
                 cbEl.id || '',
-                cbEl.getAttribute('aria-label') || '',
-                cbEl.getAttribute('aria-describedby') || '',
+                cbEl.getAttribute ? (cbEl.getAttribute('aria-label') || '') : '',
+                cbEl.getAttribute ? (cbEl.getAttribute('aria-describedby') || '') : '',
                 cbEl.value || '',
                 cbEl.className || ''
             ].join(' ').toLowerCase();
@@ -132,8 +132,14 @@
             }
 
             // Check if element belongs to a checkbox group in a fieldset/container with inquiry/interest header
-            const parentGroupHeader = this.getParentGroupHeader(cbEl).toLowerCase();
+            const parentGroupHeader = this.getParentGroupHeader(cbEl, form).toLowerCase();
             if (INQUIRY_INTEREST_KEYWORDS.some(k => parentGroupHeader.includes(k))) {
+                return 'inquiry_choice';
+            }
+
+            // [V7-RC5] Any multi-checkbox choice group (>= 2 members) that is not consent/marketing is an inquiry_choice group
+            const groupMembers = this.getGroupMembers(cbEl, form || cbEl.form || (cbEl.closest ? cbEl.closest('form') : null));
+            if (groupMembers && groupMembers.length >= 2) {
                 return 'inquiry_choice';
             }
 
@@ -146,7 +152,7 @@
         isHoneypot(el) {
             if (!el) return false;
             if (el.tabIndex === -1) return true;
-            if (el.getAttribute('aria-hidden') === 'true') return true;
+            if (el.getAttribute && el.getAttribute('aria-hidden') === 'true') return true;
 
             const nameOrId = ((el.name || '') + ' ' + (el.id || '')).toLowerCase();
             if (/\bhoneypot\b|\btrap\b|\bwebsite_url\b|\bleave.*blank\b/i.test(nameOrId)) return true;
@@ -156,7 +162,7 @@
                     const style = window.getComputedStyle(el);
                     if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') {
                         // Check if it's visually hidden but has a real custom wrapper before calling honeypot
-                        const hasCustomWrapper = el.closest('[class*="custom-checkbox"], [class*="Checkbox"], .MuiCheckbox-root');
+                        const hasCustomWrapper = el.closest && el.closest('[class*="custom-checkbox"], [class*="Checkbox"], .MuiCheckbox-root');
                         if (!hasCustomWrapper && (el.offsetWidth === 0 && el.offsetHeight === 0)) {
                             return true;
                         }
@@ -175,8 +181,10 @@
                 return { handled: true, category: 'honeypot', action: 'skip', stable: true };
             }
 
-            const category = this.classify(cbEl);
-            const isExplicitRequired = !!(cbEl.required || cbEl.getAttribute('aria-required') === 'true');
+            const category = this.classify(cbEl, '', form);
+            const groupMembers = this.getGroupMembers(cbEl, form);
+            const isChoiceGroup = groupMembers.length >= 2 && (category === 'inquiry_choice' || category === 'program/service_interest' || category === 'unknown');
+            const isExplicitRequired = !!(cbEl.required || (cbEl.getAttribute && (cbEl.getAttribute('aria-required') === 'true' || cbEl.getAttribute('required') !== null)));
             const isGroupRequired = this.isGroupRequired(cbEl, form);
             const isRequired = isExplicitRequired || isGroupRequired;
 
@@ -187,7 +195,7 @@
                 case 'inquiry_choice':
                 case 'program/service_interest':
                     groupKey = this.getGroupIdentifier(cbEl, form);
-                    shouldCheck = this.decideGroupSelection(cbEl, groupKey, isRequired, options);
+                    shouldCheck = this.decideGroupSelection(cbEl, groupKey, isRequired, options, form);
                     break;
 
                 case 'privacy_required':
@@ -226,13 +234,27 @@
 
                 case 'unknown':
                 default:
-                    // Only check if explicitly required and not marketing
-                    shouldCheck = isRequired;
+                    if (isChoiceGroup) {
+                        groupKey = this.getGroupIdentifier(cbEl, form);
+                        shouldCheck = this.decideGroupSelection(cbEl, groupKey, isRequired, options, form);
+                    } else {
+                        // Standalone checkbox: only check if explicitly required and not marketing
+                        shouldCheck = isRequired;
+                    }
                     break;
             }
 
+            // [V7-RC5] If this checkbox is an unselected member of a choice group, clear native required attribute
+            // so HTML5 checkValidity() does not treat every unchecked member of a choice group as individually required.
+            if (isChoiceGroup && !shouldCheck && isRequired) {
+                try {
+                    cbEl.required = false;
+                    if (cbEl.removeAttribute) cbEl.removeAttribute('required');
+                } catch (_) {}
+            }
+
             // Apply target state with native setter and verification
-            const result = await this.applyAndVerify(cbEl, shouldCheck, category, 0);
+            const result = await this.applyAndVerify(cbEl, shouldCheck, category, 0, isChoiceGroup);
             return result;
         }
 
@@ -263,17 +285,32 @@
             };
         }
 
+        getCheckboxOptionId(cbEl, indexHint = 0) {
+            if (!cbEl) return `opt_${indexHint}`;
+            const explicitVal = cbEl.getAttribute && cbEl.getAttribute('value');
+            const validVal = (explicitVal && explicitVal !== 'on') ? explicitVal : null;
+            return cbEl.id || validVal || this.getLabelText(cbEl) || (cbEl.name ? `${cbEl.name}_${indexHint}` : `opt_${indexHint}`);
+        }
+
         /**
          * Deterministically select one option for an inquiry checkbox group and cache choice
          */
-        decideGroupSelection(cbEl, groupKey, isRequired, options = {}) {
+        decideGroupSelection(cbEl, groupKey, isRequired, options = {}, form = null) {
+            const members = this.getGroupMembers(cbEl, form);
+            const memberIdx = Math.max(0, members.indexOf(cbEl));
+            const thisId = this.getCheckboxOptionId(cbEl, memberIdx);
 
             let chosenId = this.cachedGroupChoices.get(groupKey);
-            // [RC3.60 .90 Fix] In HTML, checkbox.value defaults to "on" when attribute is unset.
-            // Do NOT use default "on" as unique identifier; check id first, then non-"on" attribute, then label text.
-            const explicitVal = cbEl.getAttribute && cbEl.getAttribute('value');
-            const validVal = (explicitVal && explicitVal !== 'on') ? explicitVal : null;
-            const thisId = cbEl.id || validVal || this.getLabelText(cbEl) || (cbEl.name ? `${cbEl.name}_${cbEl.id || 'opt'}` : 'opt_1');
+
+            // [V7-RC5] If a member of this group is already checked (e.g. pre-selected or user/fixture selected) and enabled,
+            // honor that valid selection rather than selecting a duplicate or different option.
+            if (!chosenId && members.length >= 2) {
+                const alreadyCheckedIdx = members.findIndex(m => m && m.checked === true && !m.disabled);
+                if (alreadyCheckedIdx !== -1) {
+                    chosenId = this.getCheckboxOptionId(members[alreadyCheckedIdx], alreadyCheckedIdx);
+                    this.cachedGroupChoices.set(groupKey, chosenId);
+                }
+            }
 
             const hasRandomVariation = Boolean(
                 (options && options.randomVariation) ||
@@ -283,7 +320,32 @@
 
             if (!chosenId) {
                 if (isRequired || hasRandomVariation) {
-                    chosenId = thisId;
+                    // Prefer template match or first enabled option in the group
+                    let selectedMember = cbEl;
+                    let selectedIdx = memberIdx;
+                    if (members.length >= 2) {
+                        const enabledMembers = members.filter(m => !m.disabled);
+                        const pool = enabledMembers.length > 0 ? enabledMembers : members;
+                        const tpl = (options && options.template) || (this.options && this.options.template) || {};
+                        const tplKeywords = [
+                            tpl.service, tpl.program, tpl.interest, tpl.topic, tpl.category, tpl.inquiryType, tpl.subject
+                        ].filter(Boolean).map(s => String(s).toLowerCase());
+
+                        let match = null;
+                        if (tplKeywords.length > 0) {
+                            match = pool.find(m => {
+                                const lbl = this.getLabelText(m).toLowerCase();
+                                const val = ((m.getAttribute && m.getAttribute('value')) || '').toLowerCase();
+                                return tplKeywords.some(kw => lbl.includes(kw) || val.includes(kw));
+                            });
+                        }
+                        if (!match) {
+                            match = pool[0] || cbEl;
+                        }
+                        selectedMember = match;
+                        selectedIdx = Math.max(0, members.indexOf(selectedMember));
+                    }
+                    chosenId = this.getCheckboxOptionId(selectedMember, selectedIdx);
                     this.cachedGroupChoices.set(groupKey, chosenId);
                     if (this.logger) {
                         this.logger(`[CHECKBOX_GROUP_CHOICE] group="${groupKey}" chosen="${chosenId}" isRequired=${isRequired} randomVariation=${hasRandomVariation}`);
@@ -292,7 +354,7 @@
             }
 
             if (!isRequired && !hasRandomVariation) {
-                return false;
+                return Boolean(chosenId && chosenId === thisId);
             }
 
             return Boolean(chosenId && chosenId === thisId);
@@ -301,7 +363,7 @@
         /**
          * Native-setter + event dispatch + bounded wait + verification + 1 corrective retry
          */
-        async applyAndVerify(cbEl, expectedChecked, category, retryCount = 0) {
+        async applyAndVerify(cbEl, expectedChecked, category, retryCount = 0, isChoiceGroup = false) {
             // Apply native checked property
             this.setNativeChecked(cbEl, expectedChecked);
 
@@ -329,7 +391,10 @@
             const logLine = `[CHECKBOX] category=${category} expected=${expectedChecked} actual=${actualChecked} stable=${stable} retry=${retryCount}`;
             if (this.logger) this.logger(logLine);
 
-            const isRequired = (category === 'privacy_required' || category === 'terms_required' || category === 'response_consent_required' || cbEl.required);
+            // [V7-RC5] In a choice group, an unchecked member (expectedChecked=false) is NOT individually required
+            const isRequired = isChoiceGroup
+                ? expectedChecked
+                : (category === 'privacy_required' || category === 'terms_required' || category === 'response_consent_required' || !!cbEl.required);
 
             return {
                 handled: true,
@@ -401,9 +466,17 @@
         getLabelText(el) {
             if (!el) return '';
             let text = '';
-            if (el.id && typeof document !== 'undefined' && document.querySelector) {
-                const lbl = document.querySelector(`label[for="${el.id}"]`);
-                if (lbl) text = lbl.textContent || '';
+            if (el.labels && el.labels.length > 0) {
+                text = Array.from(el.labels).map(l => l.textContent || '').join(' ');
+            }
+            if (!text && el.id && typeof document !== 'undefined' && document.querySelector) {
+                try {
+                    const lbl = document.querySelector(`label[for="${CSS && CSS.escape ? CSS.escape(el.id) : el.id}"]`);
+                    if (lbl) text = lbl.textContent || '';
+                } catch (_) {
+                    const lbl = document.querySelector(`label[for="${el.id}"]`);
+                    if (lbl) text = lbl.textContent || '';
+                }
             }
             if (!text && el.closest) {
                 const parentLbl = el.closest('label');
@@ -417,50 +490,205 @@
 
         getSurroundingText(el) {
             if (!el || !el.closest) return '';
-            const container = el.closest('fieldset, div, p, li, tr') || el.parentElement;
-            return (container?.textContent || '').substring(0, 300).trim();
+            // Only inspect immediate single-item container so sibling checkboxes in a 13-option group do not cross-contaminate classification
+            const itemContainer = el.closest('label, li, p, .checkbox-item, .form-check, .gchoice');
+            if (itemContainer && itemContainer.querySelectorAll) {
+                const cbs = itemContainer.querySelectorAll('input[type="checkbox"]');
+                if (cbs.length <= 1) {
+                    return (itemContainer.textContent || '').substring(0, 200).trim();
+                }
+            }
+            const parent = el.parentElement;
+            if (parent && parent.querySelectorAll && parent.querySelectorAll('input[type="checkbox"]').length <= 1) {
+                return (parent.textContent || '').substring(0, 200).trim();
+            }
+            return '';
         }
 
-        getParentGroupHeader(el) {
+        /**
+         * Locate dedicated multi-checkbox group container (fieldset, role="group", or dedicated checkbox list container)
+         */
+        getGroupContainer(el, form = null) {
+            if (!el) return null;
+            if (el.closest) {
+                const explicit = el.closest('fieldset, [role="group"], .checkbox-group, .gfield_checkbox, .wpforms-field-checkbox, .wpcf7-checkbox, [class*="checkbox-group"], [class*="check-group"], [class*="checkbox-list"], [class*="choices"]');
+                if (explicit && explicit.querySelectorAll) {
+                    const cbs = explicit.querySelectorAll('input[type="checkbox"], [role="checkbox"]');
+                    if (cbs.length >= 2) return explicit;
+                }
+            }
+            let curr = el.parentElement;
+            let depth = 0;
+            while (curr && depth < 4) {
+                const tag = (curr.tagName || '').toUpperCase();
+                if (tag === 'FORM' || tag === 'BODY' || tag === 'HTML') break;
+                if (curr.querySelectorAll) {
+                    const cbs = curr.querySelectorAll('input[type="checkbox"], [role="checkbox"]');
+                    const nonCheckboxInputs = curr.querySelectorAll('input:not([type="checkbox"]):not([type="hidden"]):not([type="submit"]):not([type="button"]):not([type="reset"]), textarea, select');
+                    if (cbs.length >= 2 && nonCheckboxInputs.length === 0) {
+                        return curr;
+                    }
+                    if (nonCheckboxInputs.length > 0) {
+                        break;
+                    }
+                }
+                curr = curr.parentElement;
+                depth++;
+            }
+            return null;
+        }
+
+        isStandalonePolicyCheckbox(el) {
+            if (!el) return false;
+            const text = `${this.getLabelText(el)} ${el.name || ''} ${el.id || ''}`.toLowerCase();
+            return PRIVACY_TERMS_KEYWORDS.some(k => text.includes(k)) ||
+                RESPONSE_CONSENT_KEYWORDS.some(k => text.includes(k)) ||
+                MARKETING_KEYWORDS.some(k => text.includes(k)) ||
+                NEWSLETTER_KEYWORDS.some(k => text.includes(k)) ||
+                SMS_MARKETING_KEYWORDS.some(k => text.includes(k));
+        }
+
+        /**
+         * Returns all checkboxes belonging to the same logical choice group as cbEl.
+         */
+        getGroupMembers(cbEl, form = null) {
+            if (!cbEl) return [];
+            const root = form || cbEl.form || (cbEl.closest && cbEl.closest('form')) || cbEl.ownerDocument || (typeof document !== 'undefined' ? document : null);
+
+            // 1. Same name attribute across form (>= 2 checkboxes)
+            if (cbEl.name && root && root.querySelectorAll) {
+                const allCbs = Array.from(root.querySelectorAll('input[type="checkbox"], [role="checkbox"]'));
+                const sameName = allCbs.filter(c => c.name === cbEl.name && !this.isHoneypot(c));
+                if (sameName.length >= 2) return sameName;
+            }
+
+            // 2. Shared group container (handles distinct names like opt_1..opt_13 or unnamed checkboxes)
+            const container = this.getGroupContainer(cbEl, form);
+            if (container && container.querySelectorAll) {
+                const cbs = Array.from(container.querySelectorAll('input[type="checkbox"], [role="checkbox"]'))
+                    .filter(c => !this.isHoneypot(c));
+                if (cbs.length >= 2) {
+                    if (!this.isStandalonePolicyCheckbox(cbEl)) {
+                        const choiceMembers = cbs.filter(c => !this.isStandalonePolicyCheckbox(c));
+                        if (choiceMembers.length >= 2) return choiceMembers;
+                    }
+                    return cbs;
+                }
+            }
+
+            return [cbEl];
+        }
+
+        getParentGroupHeader(el, form = null) {
             if (!el || !el.closest) return '';
             const fieldset = el.closest('fieldset');
             if (fieldset) {
                 const legend = fieldset.querySelector('legend');
                 if (legend) return legend.textContent || '';
             }
-            const container = el.closest('[role="group"], [class*="group"], [class*="field"]');
+            const container = this.getGroupContainer(el, form);
             if (container) {
-                const header = container.querySelector('h1, h2, h3, h4, h5, h6, label, .label, [class*="title"]');
-                if (header) return header.textContent || '';
+                // Direct header inside the group container that is not an individual checkbox's own label
+                const headerCandidates = container.querySelectorAll
+                    ? Array.from(container.querySelectorAll('legend, h1, h2, h3, h4, h5, h6, .group-label, .field-label, .gfield_label, .wpforms-field-label, [class*="group-title"], [class*="field-title"]'))
+                    : [];
+                for (const h of headerCandidates) {
+                    if (!h.querySelector || !h.querySelector('input[type="checkbox"]')) {
+                        return h.textContent || '';
+                    }
+                }
+                // Check direct preceding sibling header of the group container (e.g. <label>Services *</label><div class="checkbox-group">...</div>)
+                if (container.previousElementSibling) {
+                    const prev = container.previousElementSibling;
+                    const hasInputs = prev.querySelector && prev.querySelector('input, select, textarea');
+                    if (!hasInputs && prev.textContent) {
+                        return prev.textContent || '';
+                    }
+                }
+                // Check parent wrapper if parent wrapper only wraps this checkbox group + a label/header
+                const parent = container.parentElement;
+                if (parent && parent.tagName !== 'FORM' && parent.tagName !== 'BODY' && parent.querySelectorAll) {
+                    const otherInputs = parent.querySelectorAll('input:not([type="checkbox"]):not([type="hidden"]):not([type="submit"]):not([type="button"]):not([type="reset"]), textarea, select');
+                    if (otherInputs.length === 0) {
+                        const firstChild = parent.firstElementChild;
+                        if (firstChild && firstChild !== container && (!firstChild.querySelector || !firstChild.querySelector('input[type="checkbox"]'))) {
+                            return firstChild.textContent || '';
+                        }
+                    }
+                }
             }
             return '';
         }
 
-        getGroupIdentifier(cbEl, form) {
+        getGroupIdentifier(cbEl, form = null) {
+            const members = this.getGroupMembers(cbEl, form);
+            if (members.length >= 2) {
+                if (cbEl.name && members.every(m => m.name === cbEl.name)) {
+                    return `name:${cbEl.name}`;
+                }
+                const container = this.getGroupContainer(cbEl, form);
+                const firstMember = members[0];
+                const firstKey = firstMember.id || firstMember.name || this.getLabelText(firstMember) || 'idx0';
+                if (container && container.id) {
+                    return `container:${container.id}`;
+                }
+                return `group_members:${firstKey}_count${members.length}`;
+            }
             if (cbEl.name) return `name:${cbEl.name}`;
             const fieldset = cbEl.closest ? cbEl.closest('fieldset') : null;
             if (fieldset && fieldset.id) return `fieldset:${fieldset.id}`;
-            const parent = cbEl.parentElement;
-            if (parent && parent.className) return `parent:${parent.className.slice(0, 30)}`;
-            return `group_${cbEl.id || 'anonymous'}`;
+            return `single_${cbEl.id || this.getLabelText(cbEl) || 'anonymous'}`;
         }
 
-        isGroupRequired(cbEl, form) {
-            // [RC3.60 .90 Fix] Check explicit checkbox requirement
-            if (cbEl.required || (cbEl.getAttribute && cbEl.getAttribute('aria-required') === 'true')) return true;
-            
-            // Check immediate fieldset
-            const fieldset = cbEl.closest ? cbEl.closest('fieldset') : null;
-            if (fieldset) {
-                if (fieldset.getAttribute('aria-required') === 'false') return false;
-                if (fieldset.getAttribute('aria-required') === 'true' || fieldset.hasAttribute('required')) return true;
-                const legend = fieldset.querySelector('legend');
-                if (legend && /\*|required|필수/i.test(legend.textContent || '')) return true;
+        isGroupRequired(cbEl, form = null) {
+            if (!cbEl) return false;
+            // 1. Check explicit checkbox requirement on element itself
+            if (cbEl.required || (cbEl.getAttribute && (cbEl.getAttribute('aria-required') === 'true' || cbEl.getAttribute('required') !== null))) {
+                return true;
+            }
+            const ownLabel = this.getLabelText(cbEl);
+            if (ownLabel && /\*|필수|\(required\)/i.test(ownLabel) && !/\boptional\b|선택사항|선택/i.test(ownLabel)) {
+                return true;
             }
 
-            // Check immediate group header only (not distant parent divs containing other required inputs)
-            const groupHeader = this.getParentGroupHeader(cbEl);
-            if (groupHeader && /\*|required|필수/i.test(groupHeader)) return true;
+            // 2. Check immediate fieldset (explicit group element)
+            const fieldset = cbEl.closest ? cbEl.closest('fieldset') : null;
+            if (fieldset) {
+                if (fieldset.getAttribute && fieldset.getAttribute('aria-required') === 'false') return false;
+                if (fieldset.getAttribute && (fieldset.getAttribute('aria-required') === 'true' || (fieldset.hasAttribute && fieldset.hasAttribute('required')))) return true;
+                const legend = fieldset.querySelector ? fieldset.querySelector('legend') : null;
+                if (legend) {
+                    const legendTxt = legend.textContent || '';
+                    if (/\boptional\b|선택사항/i.test(legendTxt) && !/\*|필수/i.test(legendTxt)) return false;
+                    if (/\*|required|필수/i.test(legendTxt)) return true;
+                }
+            }
+
+            // 3. Check if part of a multi-checkbox choice group
+            const members = this.getGroupMembers(cbEl, form);
+            if (members.length < 2) {
+                // Standalone checkbox: do NOT inherit requirement from unrelated sibling/ancestor labels
+                return false;
+            }
+
+            // 4. Multi-checkbox group requirement semantics
+            if (members.some(m => m.required || (m.getAttribute && (m.getAttribute('aria-required') === 'true' || m.getAttribute('required') !== null)))) {
+                return true;
+            }
+
+            const container = this.getGroupContainer(cbEl, form);
+            if (container) {
+                if (container.getAttribute && container.getAttribute('aria-required') === 'false') return false;
+                if (container.getAttribute && (container.getAttribute('aria-required') === 'true' || container.hasAttribute('required'))) return true;
+                if (/\b(required|gfield_contains_required|wpforms-field-required|is-required)\b/i.test(container.className || '')) return true;
+            }
+
+            const groupHeader = this.getParentGroupHeader(cbEl, form);
+            if (groupHeader) {
+                if (/\boptional\b|선택사항/i.test(groupHeader) && !/\*|필수/i.test(groupHeader)) return false;
+                if (/\*|required|필수/i.test(groupHeader)) return true;
+            }
+
             return false;
         }
 

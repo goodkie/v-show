@@ -1730,8 +1730,8 @@
         } catch (_) {}
     }
 
-    // [R6.9G.8 & Directive B, C] Manual Form Assist: Sticky Owner-Gated Pause
-    async function requestManualFormAssist(reason, externalFormUrl = '', unresolvedFields = []) {
+    // [R6.9G.8 & Directive B, C & V7-RC5] Manual Form Assist: Sticky Owner-Gated Hold with Actionable Panel
+    async function requestManualFormAssist(reason, externalFormUrl = '', unresolvedFields = [], form = null, template = null) {
         const dedupeKey = getManualAssistDedupeKey(reason);
         if (hasManualAssistBeenShown(dedupeKey)) {
             logDev(`[MANUAL_ASSIST_DEDUPE_SUPPRESSED] Key=${dedupeKey} already requested assist. Suppressing popup.`, "info");
@@ -1739,43 +1739,89 @@
         }
         markManualAssistShown(dedupeKey);
 
+        if (typeof window !== 'undefined') {
+            window.__xpider_manual_hold_active = true;
+        }
+
         logDev(`[MANUAL_ASSIST] state=FORM_MANUAL_ASSIST_PENDING_OWNER reason=${reason} contactPageUrl=${window.location.href} formPageUrl=${window.location.href} externalFormUrl=${externalFormUrl || 'none'}`, "warning");
         logDev(`⚠️ [ManualAssist] Pausing automation for Owner assist: ${reason}`, "info");
 
-        const sendFn = window.__xpider_sendExecutionMessage || chrome.runtime.sendMessage;
-        const attemptId = (window.__xpider_exec_identity && window.__xpider_exec_identity.attemptId) || null;
+        const sendFn = window.__xpider_sendExecutionMessage || (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage ? chrome.runtime.sendMessage.bind(chrome.runtime) : null);
+        const attemptId = (window.__xpider_execution_identity && window.__xpider_execution_identity.attemptId) ||
+            (window.__xpider_exec_identity && window.__xpider_exec_identity.attemptId) || null;
 
         try {
-            sendFn({
-                action: 'FORM_MANUAL_ASSIST_REQUEST',
-                attemptId: attemptId,
-                sourceUrl: window.__xpider_running_url || window.location.href,
-                contactPageUrl: window.location.href,
-                formPageUrl: window.location.href,
-                externalFormUrl: externalFormUrl || '',
-                reason: reason,
-                unresolvedFields: unresolvedFields || []
-            });
+            if (sendFn) {
+                sendFn({
+                    action: 'FORM_MANUAL_ASSIST_REQUEST',
+                    attemptId: attemptId,
+                    sourceUrl: window.__xpider_running_url || window.location.href,
+                    contactPageUrl: window.location.href,
+                    formPageUrl: window.location.href,
+                    externalFormUrl: externalFormUrl || '',
+                    reason: reason,
+                    unresolvedFields: unresolvedFields || []
+                });
+            }
         } catch (e) {
             logDev(`❌ [ManualAssist] Failed to signal background: ${e.message}`, "error");
         }
 
+        // [V7-RC5] Display actionable manual hold panel on the page and retain tab for operator action
+        const targetForm = form || (typeof document !== 'undefined' ? document.querySelector('form, #contact_form, .contact-form, [action*="contact"]') : null);
+        const activeTpl = template || (typeof _currentCampaignTemplate !== 'undefined' ? _currentCampaignTemplate : (window.__xpider_current_template || {}));
+        const frozenSnap = targetForm ? freezeFieldValues(targetForm, activeTpl) : new Map();
+        const chalInfo = _ChallengeGate ? _ChallengeGate.detectChallenge(document) : { detected: false, verified: true, type: 'none' };
+
         return new Promise((resolve) => {
+            let resolvedOnce = false;
+            const finishAssist = (val) => {
+                if (resolvedOnce) return;
+                resolvedOnce = true;
+                if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.onMessage) {
+                    chrome.runtime.onMessage.removeListener(messageHandler);
+                }
+                resolve(val);
+            };
+
             const messageHandler = (msg) => {
+                if (!msg) return;
+                // [V7-RC5] Block automatic recovery (RETRY_DETECTION) from superseding a pending operator action during manual hold
+                if (msg.action === 'RETRY_DETECTION' && window.__xpider_manual_hold_active) {
+                    logDev(`🛡️ [MANUAL_ASSIST_PROTECTED] Blocked automatic RETRY_DETECTION from superseding pending operator action.`, "warning");
+                    return;
+                }
                 if (msg.action === 'ABORT_TARGET' || msg.action === 'CANCEL_MANUAL_ASSIST') {
-                    chrome.runtime.onMessage.removeListener(messageHandler);
-                    resolve(false);
-                } else if (msg.action === 'RESUME_AUTOFILL' || msg.action === 'RETRY_DETECTION') {
-                    chrome.runtime.onMessage.removeListener(messageHandler);
-                    resolve(true);
+                    window.__xpider_manual_hold_active = false;
+                    finishAssist(false);
+                } else if (msg.action === 'RESUME_AUTOFILL') {
+                    window.__xpider_manual_hold_active = false;
+                    finishAssist(true);
                 }
             };
-            chrome.runtime.onMessage.addListener(messageHandler);
+            if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.onMessage) {
+                chrome.runtime.onMessage.addListener(messageHandler);
+            }
+
+            handleV7ManualModeHold(targetForm, activeTpl, frozenSnap, chalInfo, {
+                validationFailed: true,
+                validationReason: reason,
+                unresolvedFields: unresolvedFields || []
+            }).then((holdOutcome) => {
+                finishAssist({ manualHoldResolved: true, outcome: holdOutcome });
+            }).catch(() => {
+                finishAssist(false);
+            });
         });
     }
 
     // [Directive A: Authoritative Retry Entry Point]
     async function retryCurrentPageDetection(context = {}) {
+        // [V7-RC5] Never allow automatic recovery/retry to supersede an active manual hold / operator panel
+        if (typeof window !== 'undefined' && (window.__xpider_manual_hold_active === true || (typeof document !== 'undefined' && document.getElementById('xpider-v7-manual-hold-panel')))) {
+            logDev(`🛡️ [AUTO_RECOVERY_BLOCKED] Active manual hold panel present; blocking automatic recovery from superseding operator action.`, "warning");
+            return false;
+        }
         const {
             template = (typeof _currentCampaignTemplate !== 'undefined' ? _currentCampaignTemplate : (window.__xpider_current_template || null)),
             delayMs = 10000,
@@ -1938,18 +1984,37 @@
             const autofillStatus = isAutofillSuccess ? 'SUCCESS' : ((resolvedCount > 0 || result?.filledAny) ? 'PARTIAL' : 'FAILED');
             logDev(`[AUTOFILL_RESULT] status=${autofillStatus} fieldsDetected=${detectedCount} fieldsFilled=${resolvedCount} (new=${newlyFilledCount}, prefilled=${alreadyValidCount}) unresolved=${unresolvedCount} reason=${result?.reasonCode || 'ok'}`, "info");
 
+            const activeCampaignMode = (typeof window !== 'undefined' && window.__xpider_campaign_mode === 'MANUAL') ||
+                (template && template.campaignMode === 'MANUAL')
+                ? 'MANUAL' : 'AUTO';
+
             if (!isAutofillSuccess) {
-                const failReason = (result && result.reasonCode) || "Zero-mapping: No usable fields found.";
-                logDev(`⚠️ [Engine] Autofill ${autofillStatus}: requesting manual form assist.`, "warning");
-                const assistHandled = await requestManualFormAssist('AUTOFILL_PARTIAL', '', unresolvedList);
-                if (assistHandled) {
-                    return fillAndSubmit(form, template, speed);
-                }
-                // [RC3.60 P0] Terminal settlement on unhandled autofill failure — never hang in RUNNING
+                // [RC3.60 P0] Non-inquiry form without message body settles SKIPPED immediately
                 if (result && (result.reasonCode === 'NO_LONG_TEXT_INQUIRY_FIELD' || result.terminalStatus === 'SKIPPED')) {
                     logDev(`ℹ️ [Engine] Non-inquiry form without message body: settling SKIPPED`, "info");
                     finishCampaign(false, 'NO_LONG_TEXT_INQUIRY_FIELD', 'NO_LONG_TEXT_INQUIRY_FIELD');
                     return false;
+                }
+                const failReason = (result && result.reasonCode) || "Zero-mapping: No usable fields found.";
+                if (activeCampaignMode === 'MANUAL') {
+                    logDev(`🖐️ [MANUAL_MODE_VALIDATION_HOLD] Autofill validation incomplete (${failReason}) in MANUAL mode. Retaining tab and displaying operator hold panel.`, "warning");
+                    stopActiveEmptyFieldSweeper();
+                    const frozenSnap = freezeFieldValues(form, template);
+                    const chalInfo = _ChallengeGate ? _ChallengeGate.detectChallenge(document) : { detected: false, verified: true, type: 'none' };
+                    const manualOutcome = await handleV7ManualModeHold(form, template, frozenSnap, chalInfo, {
+                        validationFailed: true,
+                        validationReason: failReason,
+                        unresolvedFields: unresolvedList
+                    });
+                    return Boolean(manualOutcome && manualOutcome.success);
+                }
+                logDev(`⚠️ [Engine] Autofill ${autofillStatus}: requesting manual form assist.`, "warning");
+                const assistHandled = await requestManualFormAssist('AUTOFILL_PARTIAL', '', unresolvedList, form, template);
+                if (assistHandled && typeof assistHandled === 'object' && assistHandled.manualHoldResolved) {
+                    return Boolean(assistHandled.outcome && assistHandled.outcome.success);
+                }
+                if (assistHandled === true) {
+                    return fillAndSubmit(form, template, speed);
                 }
                 logDev(`❌ [Engine] Autofill failure terminal settlement: ${failReason}`, "error");
                 finishCampaign(false, failReason, 'REQUIRED_FIELD_LOST_BEFORE_SUBMIT');
@@ -2045,6 +2110,19 @@
                     // [R6.1 FINAL REQUIRED AUDIT - HARD GATE]
                     if (!auditResult.pass) {
                         logDev(`❌ [FinalAudit] Submission blocked by Hard Gate: ${auditResult.reason}`, "error");
+                        const unres = auditResult.unresolvedList || auditResult.unresolvedFields || [auditResult.reason];
+                        if (activeCampaignMode === 'MANUAL') {
+                            logDev(`🖐️ [MANUAL_MODE_VALIDATION_HOLD] Final audit failed (${auditResult.reason}) in MANUAL mode. Retaining tab and displaying operator hold panel.`, "warning");
+                            stopActiveEmptyFieldSweeper();
+                            const frozenSnap = freezeFieldValues(form, template);
+                            const chalInfo = _ChallengeGate ? _ChallengeGate.detectChallenge(document) : { detected: false, verified: true, type: 'none' };
+                            const manualOutcome = await handleV7ManualModeHold(form, template, frozenSnap, chalInfo, {
+                                validationFailed: true,
+                                validationReason: auditResult.reason || 'REQUIRED_FIELDS_UNRESOLVED',
+                                unresolvedFields: unres
+                            });
+                            return Boolean(manualOutcome && manualOutcome.success);
+                        }
                         if (auditResult.reason === 'OWNER_ACTION_REQUIRED' ||
                             auditResult.reason === 'UNRESOLVED_REQUIRED_FACT' ||
                             auditResult.reason === 'UNRESOLVED_BUSINESS_FACT' ||
@@ -2052,10 +2130,12 @@
                             finishCampaign(false, auditResult.reason, auditResult.context || auditResult.reason, { audit: auditResult });
                             return false;
                         }
-                        const unres = auditResult.unresolvedFields || [auditResult.reason];
                         const assistReason = (auditResult.unresolvedRequired > 0 || auditResult.reason === 'REQUIRED_FIELDS_UNRESOLVED' || !auditResult.reason) ? 'REQUIRED_FIELDS_UNRESOLVED' : auditResult.reason;
-                        const assistHandled = await requestManualFormAssist(assistReason, '', unres);
-                        if (assistHandled) {
+                        const assistHandled = await requestManualFormAssist(assistReason, '', unres, form, template);
+                        if (assistHandled && typeof assistHandled === 'object' && assistHandled.manualHoldResolved) {
+                            return Boolean(assistHandled.outcome && assistHandled.outcome.success);
+                        }
+                        if (assistHandled === true) {
                             return fillAndSubmit(form, template, speed);
                         }
                         finishCampaign(false, "FINAL_FORM_COMPLETION_FAILED", auditResult.reason, { audit: auditResult });
@@ -2092,9 +2172,6 @@
             const frozenSnapshot = freezeFieldValues(form, template);
 
             // [v7.0 Directive #6514763285 & #6514783886] Post-Completion Dual Mode & Challenge Gate
-            const activeCampaignMode = (typeof window !== 'undefined' && window.__xpider_campaign_mode === 'MANUAL') ||
-                (template && template.campaignMode === 'MANUAL')
-                ? 'MANUAL' : 'AUTO';
             const initialChallengeInfo = _ChallengeGate
                 ? _ChallengeGate.detectChallenge(document)
                 : { detected: false, verified: true, type: 'none' };
@@ -4319,7 +4396,7 @@
         // ── Directive 4 & Verification: FREEZE_VALUES gate & Stability check ──
         if (!checkboxStability.stable) {
             logDev(`❌ [Fill] Required checkbox unstable: ${checkboxStability.reasonCode}`, "error");
-            return { filledAny: false, reasonCode: 'REQUIRED_CHECKBOX_UNSTABLE' };
+            return { filledAny: false, reasonCode: checkboxStability.reasonCode || 'REQUIRED_CHECKBOX_UNSTABLE' };
         }
         if (!selectStability.stable) {
             logDev(`❌ [Fill] Required select unstable: ${selectStability.reasonCode}`, "error");
@@ -4800,6 +4877,9 @@
     }
 
     async function handleV7ManualModeHold(form, template, frozenSnapshot, initialChallengeInfo, holdOptions = {}) {
+        if (typeof window !== 'undefined') {
+            window.__xpider_manual_hold_active = true;
+        }
         const sendFn = (typeof window !== 'undefined' && window.__xpider_sendExecutionMessage) ||
             (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage ? chrome.runtime.sendMessage.bind(chrome.runtime) : null);
 
@@ -4809,18 +4889,24 @@
         const challengeStatusStr = !initialChallengeInfo?.detected
             ? 'NONE'
             : (initialChallengeInfo.verified ? `VERIFIED (${initialChallengeInfo.type})` : `PENDING (${initialChallengeInfo.type})`);
+        const isValidationHold = Boolean(holdOptions && holdOptions.validationFailed);
+        const validationReasonStr = (holdOptions && holdOptions.validationReason) || '';
+        const unresolvedFieldsArr = Array.isArray(holdOptions && holdOptions.unresolvedFields) ? holdOptions.unresolvedFields : [];
 
-        if (sendFn) {
+        if (sendFn && !(holdOptions && holdOptions.suppressInitialHoldSignal)) {
             try {
                 sendFn({
                     action: 'MANUAL_MODE_HOLD',
                     url: initialHoldUrl,
-                    challengeStatus: challengeStatusStr
+                    challengeStatus: challengeStatusStr,
+                    validationFailed: isValidationHold,
+                    validationReason: validationReasonStr,
+                    unresolvedFields: unresolvedFieldsArr
                 }, () => {});
             } catch (_) {}
         }
 
-        logDev(`🖐️ [MANUAL_MODE_HOLD] Form prepared and frozen. Holding queue for operator registration (challenge=${challengeStatusStr}).`, "info");
+        logDev(`🖐️ [MANUAL_MODE_HOLD] Form prepared and frozen. Holding queue for operator registration (challenge=${challengeStatusStr}, validationFailed=${isValidationHold}, reason=${validationReasonStr || 'NONE'}).`, "info");
 
         return new Promise((resolve) => {
             let settled = false;
@@ -4834,6 +4920,7 @@
                     if (panel) panel.remove();
                 }
                 if (typeof window !== 'undefined') {
+                    window.__xpider_manual_hold_active = false;
                     delete window.__xpiderTriggerManualAction;
                 }
             };
@@ -5041,17 +5128,23 @@
                 const hostLabel = (typeof window !== 'undefined' && window.location && window.location.hostname) ? window.location.hostname : initialHoldUrl;
                 const fieldCount = (frozenSnapshot instanceof Map) ? frozenSnapshot.size : Object.keys(frozenSnapshot || {}).length;
 
+                const validationSummary = isValidationHold
+                    ? `<div id="xpider-manual-validation-banner" style="background:rgba(245,158,11,0.18);border:1px solid #f59e0b;color:#fde68a;border-radius:6px;padding:6px 8px;margin-bottom:8px;font-size:11px;line-height:1.4;">⚠️ <strong>Operator Action Needed:</strong> ${validationReasonStr || 'REQUIRED_FIELDS_UNRESOLVED'} — please review/complete remaining fields on the page before submitting.</div>`
+                    : '';
+
                 const panel = document.createElement('div');
                 panel.id = 'xpider-v7-manual-hold-panel';
                 panel.setAttribute('data-xpider-ui', 'true');
+                panel.setAttribute('data-validation-failed', isValidationHold ? 'true' : 'false');
                 panel.style.cssText = 'position:fixed;bottom:16px;right:16px;width:380px;max-width:94vw;z-index:2147483647;background:#0f172a;color:#f8fafc;border:2px solid #38bdf8;border-radius:10px;padding:14px 16px;font-family:system-ui,-apple-system,sans-serif;font-size:12px;box-shadow:0 10px 30px rgba(0,0,0,0.65);';
                 panel.innerHTML = `
                     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
                         <span style="background:#0284c7;color:#fff;font-weight:700;padding:3px 8px;border-radius:4px;font-size:11px;">🖐️ MANUAL MODE — HOLD FOR REGISTRATION</span>
                         <span style="color:#94a3b8;font-size:10px;font-family:monospace;">${hostLabel}</span>
                     </div>
+                    ${validationSummary}
                     <div style="background:rgba(30,41,59,0.8);border:1px solid rgba(148,163,184,0.2);border-radius:6px;padding:8px;margin-bottom:10px;font-size:11px;line-height:1.5;">
-                        <div>📋 <strong>Fields Prepared:</strong> <span style="color:#4ade80;">${fieldCount} fields verified ✓</span></div>
+                        <div>📋 <strong>Fields Prepared:</strong> <span style="color:${isValidationHold ? '#fbbf24' : '#4ade80'};">${isValidationHold ? `${fieldCount} fields prepared (attention needed)` : `${fieldCount} fields verified ✓`}</span></div>
                         <div>🧩 <strong>Challenge Status:</strong> <span id="xpider-manual-challenge-status" style="color:#fbbf24;">${challengeStatusStr}</span></div>
                         <div style="color:#cbd5e1;font-size:10px;margin-top:4px;">Submit the form on the page when ready, then click <strong>I Registered — Continue</strong>.</div>
                     </div>
@@ -5704,7 +5797,11 @@
                     const chal = _ChallengeGate ? _ChallengeGate.detectChallenge(document) : { detected: false };
                     handleV7ManualModeHold(form || null, msg.template || {}, new Map(), chal, {
                         originalUrl: msg.initialHoldUrl || (window.location ? window.location.href : ''),
-                        restoredAfterReload: true
+                        restoredAfterReload: true,
+                        suppressInitialHoldSignal: true,
+                        validationFailed: Boolean(msg.validationFailed),
+                        validationReason: msg.validationReason || '',
+                        unresolvedFields: msg.unresolvedFields || []
                     });
                     if (sendResponse) sendResponse({ success: true, restored: true });
                     return true;
@@ -6144,11 +6241,24 @@
                     continue;
                 }
 
-                // B. Checkboxes
+                // B. Checkboxes (Group-aware validation semantics)
                 if (el.type === 'checkbox') {
+                    let groupMembers = [el];
+                    if (_CheckboxResolverR2) {
+                        try {
+                            const cbHelper = new _CheckboxResolverR2();
+                            groupMembers = cbHelper.getGroupMembers(el, this.form);
+                        } catch (_) {}
+                    }
+                    // If part of a choice group (>= 2 checkboxes) and at least 1 valid option is already checked, the group is satisfied
+                    if (groupMembers.length >= 2 && groupMembers.some(m => m && m.checked === true)) {
+                        t.stableCycles++;
+                        if (t.stableCycles >= this.requiredStableCycles) t.state = 'STABLE';
+                        continue;
+                    }
                     const isRequired = el.required || el.getAttribute('aria-required') === 'true';
-                    const containerText = (el.closest('div, label, span, li')?.textContent || '').toLowerCase();
-                    const hasAsterisk = containerText.includes('*') || containerText.includes('필수') || containerText.includes('agree');
+                    const directLabelText = (el.closest('label')?.textContent || (el.id && typeof document !== 'undefined' ? document.querySelector(`label[for="${el.id}"]`)?.textContent : '') || '').toLowerCase();
+                    const hasAsterisk = directLabelText.includes('*') || directLabelText.includes('필수') || directLabelText.includes('agree');
                     
                     if (isRequired || hasAsterisk) {
                         if (el.checked) {
@@ -8511,6 +8621,8 @@
             ChallengeGate: _ChallengeGate,
             waitForExternalOrUserChallengeV7,
             handleV7ManualModeHold,
+            requestManualFormAssist,
+            retryCurrentPageDetection,
             restoreFrozenSnapshot,
             SmartFieldResolver: _SmartFieldResolver,
             ContactDiscoveryEngine: _ContactDiscoveryEngine,

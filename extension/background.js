@@ -5235,6 +5235,7 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
                 sendResponse({ success: false, reason: validation.reason, stale: true });
                 return true;
             }
+            const resolvedHoldTabId = validation.resolvedTabId || sender?.tab?.id || campaignState.currentTabId || campaignState.targetTabId || null;
             campaignState.currentTargetStage = 'MANUAL_HOLD';
             campaignState.manualHoldActive = true;
             campaignState.manualHoldInitialUrl = request.url || campaignState.currentAttempt?.url || '';
@@ -5245,18 +5246,24 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
                 clearTimeout(campaignState.activeTimeoutId);
                 campaignState.activeTimeoutId = null;
             }
+            if (campaignState.manualAssistTimer) {
+                clearTimeout(campaignState.manualAssistTimer);
+                campaignState.manualAssistTimer = null;
+            }
             if (typeof chrome !== 'undefined' && chrome.alarms && campaignState.sessionId) {
                 const sId = campaignState.sessionId;
-                const tId = validation.resolvedTabId || campaignState.currentTabId;
-                if (tId) chrome.alarms.clear(`xpider_watchdog_${tId}_${sId}`);
+                if (resolvedHoldTabId) chrome.alarms.clear(`xpider_watchdog_${resolvedHoldTabId}_${sId}`);
                 chrome.alarms.clear(`xpider_timeout_${sId}`);
             }
-            if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+            if (resolvedHoldTabId) {
+                campaignOwnedTabIds.add(resolvedHoldTabId);
+            }
+            if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local && resolvedHoldTabId) {
                 chrome.storage.local.set({
                     xpider_v7_active_hold_state: {
                         active: true,
                         stage: 'MANUAL_HOLD',
-                        tabId: validation.resolvedTabId,
+                        tabId: resolvedHoldTabId,
                         url: campaignState.currentAttempt?.url || request.url || '',
                         initialHoldUrl: campaignState.manualHoldInitialUrl,
                         attemptId: campaignState.currentAttempt?.attemptId || null,
@@ -5264,12 +5271,16 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
                         campaignRunId: campaignState.campaignRunId || null,
                         sessionId: campaignState.sessionId || 0,
                         campaignMode: campaignState.campaignMode || 'MANUAL',
+                        validationFailed: Boolean(request.validationFailed),
+                        validationReason: request.validationReason || '',
+                        unresolvedFields: Array.isArray(request.unresolvedFields) ? request.unresolvedFields : [],
+                        restorationLogged: false,
                         heldAt: Date.now()
                     }
                 }).catch(() => {});
             }
-            logBg(validation.resolvedTabId, `🖐️ [V7_MANUAL_MODE_HOLD] Form prepared on ${request.url || ''}. Holding campaign queue for manual operator action.`, 'info');
-            sendResponse({ success: true, state: 'MANUAL_HOLD', deadlinePaused: true });
+            logBg(resolvedHoldTabId, `🖐️ [V7_MANUAL_MODE_HOLD] Form prepared on ${request.url || ''}. Holding campaign queue for manual operator action.`, 'info');
+            sendResponse({ success: true, state: 'MANUAL_HOLD', deadlinePaused: true, tabId: resolvedHoldTabId });
             return true;
         }
 
@@ -5860,6 +5871,8 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
                     isPaused: campaignState.isPaused,
                     hasPausedCheckpoint: !!(checkpoint && checkpoint.remainingQueue && checkpoint.remainingQueue.length > 0),
                     pausedRemainingCount: (checkpoint && checkpoint.remainingQueue) ? checkpoint.remainingQueue.length : 0,
+                    campaignMode: campaignState.campaignMode || (checkpoint && checkpoint.campaignMode) || 'AUTO',
+                    pausedCampaignMode: (checkpoint && checkpoint.campaignMode) || campaignState.campaignMode || 'AUTO',
                     hasActiveLock: !!(campaignState.currentAttempt && campaignState.currentAttempt.status === 'SUBMIT_PENDING'),
                     currentAttempt: campaignState.currentAttempt,
                     outcomeHistogram: campaignState.outcomeHistogram || {}
@@ -5877,7 +5890,9 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
         case 'RESUME_CAMPAIGN':
             (async () => {
                 try {
-                    const res = await resumeCampaignOrchestrator();
+                    const res = await resumeCampaignOrchestrator({
+                        campaignMode: request.campaignMode
+                    });
                     sendResponse({ success: true, ...res });
                 } catch (err) {
                     sendResponse({ success: false, error: err.message });
@@ -6571,6 +6586,66 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
                             await hs.persist();
                         }
                     } catch (_) {}
+
+                    // [V7-RC5 Directive #6522457298 Item 2]
+                    // When field validation fails, the manual assistance state must retain the tab,
+                    // display an actionable panel, and block automatic recovery/cleanup from superseding a pending operator action.
+                    if (request.allowLegacyAutoSkip !== true) {
+                        const resolvedHoldTabId = sender?.tab?.id || campaignState.currentTabId || campaignState.targetTabId || null;
+                        campaignState.currentTargetStage = 'MANUAL_HOLD';
+                        campaignState.manualHoldActive = true;
+                        campaignState.manualHoldInitialUrl = formPageUrl || contactPageUrl || sourceUrl || campaignState.currentAttempt?.url || '';
+                        if (campaignState.targetDeadlineController) {
+                            campaignState.targetDeadlineController.pause('MANUAL_HOLD');
+                        }
+                        if (campaignState.activeTimeoutId) {
+                            clearTimeout(campaignState.activeTimeoutId);
+                            campaignState.activeTimeoutId = null;
+                        }
+                        if (campaignState.manualAssistTimer) {
+                            clearTimeout(campaignState.manualAssistTimer);
+                            campaignState.manualAssistTimer = null;
+                        }
+                        if (typeof chrome !== 'undefined' && chrome.alarms && campaignState.sessionId) {
+                            const sId = campaignState.sessionId;
+                            if (resolvedHoldTabId) chrome.alarms.clear(`xpider_watchdog_${resolvedHoldTabId}_${sId}`);
+                            chrome.alarms.clear(`xpider_timeout_${sId}`);
+                        }
+                        if (resolvedHoldTabId) {
+                            campaignOwnedTabIds.add(resolvedHoldTabId);
+                        }
+                        if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local && resolvedHoldTabId) {
+                            chrome.storage.local.set({
+                                xpider_v7_active_hold_state: {
+                                    active: true,
+                                    stage: 'MANUAL_HOLD',
+                                    tabId: resolvedHoldTabId,
+                                    url: campaignState.currentAttempt?.url || formPageUrl || contactPageUrl || sourceUrl || '',
+                                    initialHoldUrl: campaignState.manualHoldInitialUrl,
+                                    attemptId: curAttemptId || campaignState.currentAttempt?.attemptId || null,
+                                    targetToken: campaignState.currentTargetToken || null,
+                                    campaignRunId: campaignState.campaignRunId || null,
+                                    sessionId: campaignState.sessionId || 0,
+                                    campaignMode: campaignState.campaignMode || 'MANUAL',
+                                    validationFailed: true,
+                                    validationReason: curReason || 'REQUIRED_FIELDS_UNRESOLVED',
+                                    unresolvedFields: Array.isArray(unresolvedFields) ? unresolvedFields : [],
+                                    restorationLogged: false,
+                                    heldAt: Date.now()
+                                }
+                            }).catch(() => {});
+                        }
+                        logBg(resolvedHoldTabId, `🖐️ [V7_MANUAL_ASSIST_HOLD] Field validation failed (${curReason}). Retaining tab=${resolvedHoldTabId}, displaying actionable panel, and blocking auto-recovery/cleanup from superseding operator.`, 'warning');
+                        sendResponse({
+                            success: true,
+                            status: 'MANUAL_HOLD',
+                            state: 'MANUAL_HOLD',
+                            tabRetained: true,
+                            autoRecoveryBlocked: true,
+                            tabId: resolvedHoldTabId
+                        });
+                        return;
+                    }
 
                     // [Issue #6 RC3.22/RC3.23] Check UX settings for Form Assist handling
                     const assistSettings = await chrome.storage.local.get([
@@ -7387,6 +7462,14 @@ function normalizeUrl(url) {
 }
 
 async function startCampaignOrchestrator(queue, template, delayMs, fillDelayMs = 300, submitDelayMs = 1500, options = {}) {
+    // [V7-RC5] Guard against accidental checkpoint overwrite if START_CAMPAIGN is invoked with the paused remainingQueue
+    if (!options.ownerFunctionTestMode && !options.forceNewCampaign && campaignState.isPaused && campaignState.pausedCheckpoint && Array.isArray(campaignState.pausedCheckpoint.remainingQueue) && campaignState.pausedCheckpoint.remainingQueue.length > 0 && Array.isArray(queue) && queue.length === campaignState.pausedCheckpoint.remainingQueue.length && normalizeUrl(queue[0]) === normalizeUrl(campaignState.pausedCheckpoint.remainingQueue[0])) {
+        const requestedMode = (options.campaignMode === 'MANUAL' || options.campaignMode === 'AUTO')
+            ? options.campaignMode
+            : ((template && (template.campaignMode === 'MANUAL' || template.campaignMode === 'AUTO')) ? template.campaignMode : undefined);
+        logBg(null, `🔄 [START_REDIRECT_TO_RESUME] Active paused checkpoint detected with matching remaining queue (${queue.length} items). Resuming checkpoint in ${requestedMode || campaignState.pausedCheckpoint.campaignMode || 'AUTO'} mode to preserve totalTargets & history.`, "info");
+        return await resumeCampaignOrchestrator({ campaignMode: requestedMode });
+    }
     // [v18.17.0] Emergency Diagnostic Sequence
     logBg(null, "[Boot] Orchestrator entered.", "debug");
     
@@ -7751,8 +7834,16 @@ async function pauseCampaignOrchestrator(saveCheckpoint = true) {
                 if (!campaignState.queue.includes(effectiveAtt.url)) {
                     campaignState.queue.unshift(effectiveAtt.url);
                 }
-                // Cleanly remove uncommitted pre-submit placeholder attempt from HistoryStore
+                // Cleanly remove uncommitted pre-submit placeholder attempt from HistoryStore & unlink importRows
                 hs.attempts = hs.attempts.filter(a => a.attemptId !== effectiveAtt.attemptId);
+                if (Array.isArray(hs.importRows)) {
+                    for (const row of hs.importRows) {
+                        if (row && row.attemptId === effectiveAtt.attemptId) {
+                            row.attemptId = null;
+                            row.status = 'QUEUED';
+                        }
+                    }
+                }
                 logBg(null, `🔄 [Pause] Current target PREPARING re-queued to front: ${effectiveAtt.url}`, "info");
             }
             await hs.persist();
@@ -7849,7 +7940,7 @@ async function pauseCampaignOrchestrator(saveCheckpoint = true) {
     return { success: true, remainingCount: campaignState.queue.length };
 }
 
-async function resumeCampaignOrchestrator() {
+async function resumeCampaignOrchestrator(options = {}) {
     logBg(null, `[RESUME] campaignRunId=${campaignState.campaignRunId} remaining=${campaignState.queue ? campaignState.queue.length : 0}`, "start");
     logBg(null, "▶️ [Engine] RESUME_CAMPAIGN requested.", "info");
 
@@ -7913,7 +8004,17 @@ async function resumeCampaignOrchestrator() {
     campaignState.delayMs = checkpoint.delayMs || 6000;
     campaignState.fillDelayMs = checkpoint.fillDelayMs || 300;
     campaignState.submitDelayMs = checkpoint.submitDelayMs || 1500;
-    campaignState.campaignMode = checkpoint.campaignMode || campaignState.campaignMode || 'AUTO';
+    const previousMode = (checkpoint.campaignMode === 'MANUAL' || checkpoint.campaignMode === 'AUTO')
+        ? checkpoint.campaignMode
+        : ((campaignState.campaignMode === 'MANUAL' || campaignState.campaignMode === 'AUTO') ? campaignState.campaignMode : 'AUTO');
+    const requestedMode = (options && (options.campaignMode === 'MANUAL' || options.campaignMode === 'AUTO'))
+        ? options.campaignMode
+        : previousMode;
+    const modeSwitched = requestedMode !== previousMode;
+    campaignState.campaignMode = requestedMode;
+    if (campaignState.template && typeof campaignState.template === 'object') {
+        campaignState.template = { ...campaignState.template, campaignMode: requestedMode };
+    }
     campaignState.outcomeHistogram = { ...(checkpoint.outcomeHistogram || {}) };
     if (checkpoint.campaignRunId) {
         campaignState.campaignRunId = checkpoint.campaignRunId;
@@ -7953,12 +8054,25 @@ async function resumeCampaignOrchestrator() {
     campaignState.lastActionTime = Date.now();
     campaignState.pausedCheckpoint = null;
 
-    await chrome.storage.local.set({ xpider_isActive: true, xpider_isPaused: false });
-    logBg(null, `🚀 [Resume] Resuming campaign from target ${campaignState.totalTargets - campaignState.queue.length + 1} (${campaignState.queue.length} targets remaining)...`, "start");
+    await chrome.storage.local.set({
+        xpider_isActive: true,
+        xpider_isPaused: false,
+        xpider_campaign_mode: requestedMode
+    });
+    logBg(null, `🚀 [Resume] Resuming campaign at task boundary in ${requestedMode} mode (previous=${previousMode}, switched=${modeSwitched}) from target ${campaignState.totalTargets - campaignState.queue.length + 1} (${campaignState.queue.length} targets remaining)...`, "start");
 
     const restoredCount = checkpoint.remainingQueue.length;
     processNextCampaignTarget(campaignState.sessionId);
-    return { success: true, restoredCount, remainingCount: campaignState.queue.length };
+    return {
+        success: true,
+        restoredCount,
+        remainingCount: campaignState.queue.length,
+        campaignMode: requestedMode,
+        previousMode,
+        modeSwitched,
+        totalTargets: campaignState.totalTargets,
+        campaignRunId: campaignState.campaignRunId
+    };
 }
 
 async function endCampaignOrchestrator() {
@@ -7984,7 +8098,7 @@ async function endCampaignOrchestrator() {
     await closeAllCampaignTabsExcept(null, 'END_CAMPAIGN');
     campaignState.currentTabId = null;
     campaignState.targetTabId = null;
-    await chrome.storage.local.remove(['xpider_paused_checkpoint', 'xpider_currentAttempt', 'xpider_isActive', 'xpider_isPaused']);
+    await chrome.storage.local.remove(['xpider_paused_checkpoint', 'xpider_currentAttempt', 'xpider_isActive', 'xpider_isPaused', 'xpider_v7_active_hold_state']);
     if (campaignState.ownerFunctionTestMode) {
         await removeOwnerTestNetworkGuard();
     }
@@ -9481,6 +9595,9 @@ async function orchestrateSending(urlInput, template, abortSignal = null) {
         if (campaignState.currentTargetStage === 'CAPTCHA_PENDING_EXTERNAL_USER' || campaignState.currentTargetStage === 'MANUAL_HOLD') {
             campaignState.currentTargetStage = 'SETTLED';
         }
+        if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+            chrome.storage.local.remove('xpider_v7_active_hold_state').catch(() => {});
+        }
         if (campaignState.currentTabId === tabId) {
             campaignState.currentTabId = null;
         }
@@ -10250,8 +10367,37 @@ async function restoreCampaignState() {
                         await hs.reconcileLegacyCounters();
                     }
 
-                    // [v1.2.0 Delivery Protection on SW Restart + V7.0.0-RC2 Hold State Preservation]
-                    const v7HoldState = (data.xpider_v7_active_hold_state && data.xpider_v7_active_hold_state.active) ? data.xpider_v7_active_hold_state : null;
+                    // [v1.2.0 Delivery Protection on SW Restart + V7.0.0-RC5 Validated Hold State Preservation]
+                    let v7HoldState = (data.xpider_v7_active_hold_state && data.xpider_v7_active_hold_state.active) ? data.xpider_v7_active_hold_state : null;
+                    if (v7HoldState) {
+                        const candidateHoldTabId = Number.isInteger(v7HoldState.tabId) && v7HoldState.tabId > 0
+                            ? v7HoldState.tabId
+                            : (Number.isInteger(data.xpider_currentAttempt?.tabId) && data.xpider_currentAttempt.tabId > 0 ? data.xpider_currentAttempt.tabId : null);
+                        const holdAttempt = (hs && v7HoldState.attemptId && Array.isArray(hs.attempts))
+                            ? hs.attempts.find(a => a.attemptId === v7HoldState.attemptId)
+                            : null;
+                        const holdAlreadyTerminal = Boolean(holdAttempt && hs && typeof hs.isTerminalStatus === 'function' && hs.isTerminalStatus(holdAttempt.status));
+                        let holdTabExists = false;
+                        if (candidateHoldTabId && !holdAlreadyTerminal) {
+                            try {
+                                const openTab = await safeTabs.get(candidateHoldTabId);
+                                holdTabExists = Boolean(openTab && openTab.id === candidateHoldTabId);
+                            } catch (_) {
+                                holdTabExists = false;
+                            }
+                        }
+                        if (!candidateHoldTabId || holdAlreadyTerminal || !holdTabExists) {
+                            const rawTabId = v7HoldState.tabId;
+                            const rawAttId = v7HoldState.attemptId || 'none';
+                            v7HoldState = null;
+                            try {
+                                await chrome.storage.local.remove('xpider_v7_active_hold_state');
+                            } catch (_) {}
+                            logBg(null, `🧹 [V7_HOLD_STATE_CLEANUP] Purged stale xpider_v7_active_hold_state (tabId=${rawTabId ?? 'undefined'}, attemptId=${rawAttId}, terminal=${holdAlreadyTerminal}, tabExists=${holdTabExists}).`, "info");
+                        } else {
+                            v7HoldState.tabId = candidateHoldTabId;
+                        }
+                    }
                     if (data.xpider_campaign_mode === 'MANUAL' || data.xpider_campaign_mode === 'AUTO') {
                         campaignState.campaignMode = data.xpider_campaign_mode;
                     }
@@ -10354,18 +10500,40 @@ async function restoreCampaignState() {
                         const isRestoredTest = Boolean(data.xpider_active_test_source && EXPLICIT_TEST_SOURCES.includes(data.xpider_active_test_source));
                         campaignState.ownerFunctionTestMode = isRestoredTest;
                         
-                        if (v7HoldState) {
+                        if (v7HoldState && Number.isInteger(v7HoldState.tabId) && v7HoldState.tabId > 0) {
                             campaignState.currentAttempt = data.xpider_currentAttempt || null;
-                            campaignState.currentTabId = v7HoldState.tabId || null;
-                            campaignState.targetTabId = v7HoldState.tabId || null;
+                            campaignState.currentTabId = v7HoldState.tabId;
+                            campaignState.targetTabId = v7HoldState.tabId;
                             campaignState.currentTargetToken = v7HoldState.targetToken || null;
                             campaignState.currentTargetStage = v7HoldState.stage;
                             campaignState.campaignMode = v7HoldState.campaignMode || campaignState.campaignMode || 'AUTO';
                             campaignState.manualHoldActive = (v7HoldState.stage === 'MANUAL_HOLD');
                             campaignState.externalCaptchaWaitActive = (v7HoldState.stage === 'CAPTCHA_PENDING_EXTERNAL_USER');
                             campaignState.activeTargetInFlight = true;
-                            if (v7HoldState.tabId) campaignOwnedTabIds.add(v7HoldState.tabId);
-                            logBg(v7HoldState.tabId, `🛡️ [V7_SW_RESTART_HOLD_PRESERVED] Restored active ${v7HoldState.stage} on tabId=${v7HoldState.tabId} without closing tab or advancing queue.`, "info");
+                            campaignOwnedTabIds.add(v7HoldState.tabId);
+                            if (!v7HoldState.restorationLogged) {
+                                v7HoldState.restorationLogged = true;
+                                try {
+                                    chrome.storage.local.set({ xpider_v7_active_hold_state: v7HoldState }).catch(() => {});
+                                } catch (_) {}
+                                logBg(v7HoldState.tabId, `🛡️ [V7_SW_RESTART_HOLD_PRESERVED] Restored active ${v7HoldState.stage} on tabId=${v7HoldState.tabId} without closing tab or advancing queue.`, "info");
+                            }
+                            if (v7HoldState.stage === 'MANUAL_HOLD' && typeof chrome !== 'undefined' && chrome.tabs && chrome.tabs.sendMessage) {
+                                try {
+                                    chrome.tabs.sendMessage(v7HoldState.tabId, {
+                                        action: 'RESTORE_MANUAL_HOLD_PANEL',
+                                        attemptId: v7HoldState.attemptId || campaignState.currentAttempt?.attemptId || null,
+                                        targetToken: v7HoldState.targetToken || campaignState.currentTargetToken || null,
+                                        campaignRunId: v7HoldState.campaignRunId || campaignState.campaignRunId || null,
+                                        sessionId: v7HoldState.sessionId || campaignState.sessionId || 0,
+                                        initialHoldUrl: v7HoldState.initialHoldUrl || v7HoldState.url || '',
+                                        validationFailed: Boolean(v7HoldState.validationFailed),
+                                        validationReason: v7HoldState.validationReason || '',
+                                        unresolvedFields: v7HoldState.unresolvedFields || [],
+                                        template: campaignState.template || {}
+                                    }).catch(() => {});
+                                } catch (_) {}
+                            }
                         } else {
                             logBg(null, `Restored previous active campaign: ${campaignState.queue.length} targets remaining.`, "info");
                             if (!campaignState.isLoopRunning) processNextCampaignTarget(campaignState.sessionId);

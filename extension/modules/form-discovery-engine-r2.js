@@ -134,7 +134,7 @@
 
                 cur = cur.parentElement;
             }
-        } catch (_) {}
+        } catch (_) { }
         return false;
     }
 
@@ -182,7 +182,7 @@
                 '페이지를 찾을 수 없습니다'
             ];
             if (strongErrorSignals.some(s => bodyText.includes(s))) return true;
-        } catch (_) {}
+        } catch (_) { }
         return false;
     }
 
@@ -210,7 +210,7 @@
                     if (legend) parts.push(legend.textContent || '');
                 }
             }
-        } catch (_) {}
+        } catch (_) { }
         return parts.join(' ').toLowerCase();
     }
 
@@ -258,7 +258,7 @@
                             'message', 'pushpress', 'grow', 'lead', 'cognito', 'forms.gle', 'tally',
                             'google.com/forms', 'activecampaign', 'marketo', 'pardot', 'calendly', 'chilipiper'
                         ];
-                        const isContactRelated = WIDGET_KEYWORDS.some(k => 
+                        const isContactRelated = WIDGET_KEYWORDS.some(k =>
                             srcLower.includes(k) || title.includes(k) || idCls.includes(k)
                         );
                         // Also promote if source is HTTP and not same-origin and not 0x0 hidden pixel
@@ -273,7 +273,7 @@
                             });
                         }
                     }
-                } catch (_) {}
+                } catch (_) { }
             }
 
             // Traverse children
@@ -285,7 +285,7 @@
 
         try {
             traverse(doc, 0);
-        } catch (_) {}
+        } catch (_) { }
 
         return { roots, crossOriginSignals, shadowCount, iframeCount };
     }
@@ -321,7 +321,7 @@
                         root
                     });
                 }
-            } catch (_) {}
+            } catch (_) { }
 
             // 2. Visible Contenteditable Controls
             try {
@@ -339,7 +339,7 @@
                         root
                     });
                 }
-            } catch (_) {}
+            } catch (_) { }
 
             // 3. ARIA Multiline Textboxes
             try {
@@ -360,7 +360,7 @@
                         });
                     }
                 }
-            } catch (_) {}
+            } catch (_) { }
 
             // 4. Multiline or Semantic Text Inputs
             try {
@@ -381,7 +381,7 @@
                         });
                     }
                 }
-            } catch (_) {}
+            } catch (_) { }
         }
 
         return candidates;
@@ -603,9 +603,9 @@
                 const eligible = !isOverlay && hasValidBody && hasInquiryContext && !isNewsletterOnly;
                 const reason = isOverlay ? 'REJECTED_OVERLAY_CONTAINER'
                     : !hasValidBody ? 'NO_VISIBLE_BODY_FIELD'
-                    : !hasInquiryContext ? 'NO_CONTACT_OR_SUBMIT_ASSOCIATED'
-                    : isNewsletterOnly ? 'REJECTED_NEWSLETTER_ONLY'
-                    : 'ELIGIBLE_INQUIRY_FORM';
+                        : !hasInquiryContext ? 'NO_CONTACT_OR_SUBMIT_ASSOCIATED'
+                            : isNewsletterOnly ? 'REJECTED_NEWSLETTER_ONLY'
+                                : 'ELIGIBLE_INQUIRY_FORM';
 
                 // Logging Requirement 1: [FORM_GATE]
                 const candidateSig = computeFormSignature(container);
@@ -674,7 +674,7 @@
                                 await new Promise(r => setTimeout(r, 450));
                                 return true;
                             }
-                        } catch (_) {}
+                        } catch (_) { }
                     }
                 }
             }
@@ -738,7 +738,7 @@
             if (typeof window !== 'undefined' && typeof window.scrollBy === 'function') {
                 try {
                     window.scrollBy({ top: 400, behavior: 'smooth' });
-                } catch (_) {}
+                } catch (_) { }
             }
             await this.dynamicFormReveal(root);
 

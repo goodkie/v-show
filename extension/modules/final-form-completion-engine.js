@@ -77,9 +77,54 @@
         other: 'General Inquiry'
     };
 
+    const STANDALONE_POLICY_CATEGORIES = new Set([
+        'terms_privacy_checkbox',
+        'privacy_required',
+        'terms_required',
+        'response_consent_required',
+        'marketing_newsletter_checkbox',
+        'marketing_optional',
+        'newsletter_optional',
+        'sms_marketing_optional'
+    ]);
+
+    const OPTIONAL_MARKETING_CATEGORIES = new Set([
+        'marketing_newsletter_checkbox',
+        'marketing_optional',
+        'newsletter_optional',
+        'sms_marketing_optional'
+    ]);
+
     // ------------------------------------------------------------------------
     // Helper Utilities
     // ------------------------------------------------------------------------
+
+    function getDirectLabelText(el) {
+        if (!el) return '';
+        const parts = [];
+        if (el.labels && el.labels.length > 0) {
+            for (let i = 0; i < el.labels.length; i++) {
+                if (el.labels[i].textContent) parts.push(el.labels[i].textContent);
+            }
+        } else if (el.id && typeof document !== 'undefined' && document.querySelector) {
+            try {
+                const labelFor = document.querySelector(`label[for="${CSS && CSS.escape ? CSS.escape(el.id) : el.id}"]`);
+                if (labelFor && labelFor.textContent) parts.push(labelFor.textContent);
+            } catch (_) {
+                const labelFor = document.querySelector(`label[for="${el.id}"]`);
+                if (labelFor && labelFor.textContent) parts.push(labelFor.textContent);
+            }
+        }
+        if (parts.length === 0 && el.closest) {
+            const parentLabel = el.closest('label');
+            if (parentLabel && parentLabel.textContent) parts.push(parentLabel.textContent);
+        }
+        if (el.getAttribute) {
+            const ariaLabel = el.getAttribute('aria-label');
+            if (ariaLabel) parts.push(ariaLabel);
+        }
+        return parts.join(' ').replace(/\s+/g, ' ').trim();
+    }
 
     function getElementContextText(el) {
         if (!el) return '';
@@ -98,14 +143,8 @@
         }
 
         // Associated label
-        if (el.labels && el.labels.length > 0) {
-            for (let i = 0; i < el.labels.length; i++) {
-                if (el.labels[i].textContent) parts.push(el.labels[i].textContent);
-            }
-        } else if (el.id && typeof document !== 'undefined') {
-            const labelFor = document.querySelector(`label[for="${el.id}"]`);
-            if (labelFor && labelFor.textContent) parts.push(labelFor.textContent);
-        }
+        const directLbl = getDirectLabelText(el);
+        if (directLbl) parts.push(directLbl);
 
         // Parent label or fieldset legend
         let parent = el.parentElement;
@@ -119,10 +158,14 @@
                 const legend = parent.querySelector('legend');
                 if (legend && legend.textContent) parts.push(legend.textContent);
             }
-            // Nearby preceding text
+            // Nearby preceding text (only if preceding sibling is a label/header and NOT another field container with inputs)
             if (parent.previousElementSibling && parent.previousElementSibling.textContent) {
-                const txt = parent.previousElementSibling.textContent.trim();
-                if (txt.length < 80) parts.push(txt);
+                const prev = parent.previousElementSibling;
+                const hasOtherControls = prev.querySelector && prev.querySelector('input, select, textarea');
+                if (!hasOtherControls) {
+                    const txt = prev.textContent.trim();
+                    if (txt.length < 80) parts.push(txt);
+                }
             }
             parent = parent.parentElement;
             depth++;
@@ -139,6 +182,7 @@
         if (/\b(required|mandatory|is-required|req)\b/.test(cls)) return true;
         // Check label asterisk
         const ctx = getElementContextText(el);
+        if (/\boptional\b|선택사항/i.test(ctx) && !/\*|필수|\(required\)/i.test(getDirectLabelText(el))) return false;
         if (/\*|필수|\(required\)/i.test(ctx)) return true;
         return false;
     }
@@ -251,9 +295,117 @@
         }
 
         /**
+         * Returns all checkboxes in the same logical choice group as el.
+         */
+        getCheckboxGroupMembers(el, form = null, classification = null) {
+            if (!el) return [];
+            const cat = classification ? classification.category : null;
+            if (cat && STANDALONE_POLICY_CATEGORIES.has(cat)) {
+                return [el];
+            }
+            if (this.checkboxResolver && typeof this.checkboxResolver.getGroupMembers === 'function') {
+                const members = this.checkboxResolver.getGroupMembers(el, form);
+                if (Array.isArray(members) && members.length > 0) return members;
+            }
+            const root = form || el.form || (el.closest && el.closest('form')) || el.ownerDocument || (typeof document !== 'undefined' ? document : null);
+            if (el.name && root && root.querySelectorAll) {
+                const sameName = Array.from(root.querySelectorAll('input[type="checkbox"], [role="checkbox"]'))
+                    .filter(c => c.name === el.name && !isHoneypot(c));
+                if (sameName.length >= 2) return sameName;
+            }
+            if (el.closest) {
+                const explicit = el.closest('fieldset, [role="group"], .checkbox-group, .gfield_checkbox, .wpforms-field-checkbox, .wpcf7-checkbox, [class*="checkbox-group"], [class*="check-group"], [class*="checkbox-list"]');
+                if (explicit && explicit.querySelectorAll) {
+                    const cbs = Array.from(explicit.querySelectorAll('input[type="checkbox"], [role="checkbox"]')).filter(c => !isHoneypot(c));
+                    if (cbs.length >= 2) return cbs;
+                }
+            }
+            let curr = el.parentElement;
+            let depth = 0;
+            while (curr && depth < 4) {
+                const tag = (curr.tagName || '').toUpperCase();
+                if (tag === 'FORM' || tag === 'BODY' || tag === 'HTML') break;
+                if (curr.querySelectorAll) {
+                    const cbs = Array.from(curr.querySelectorAll('input[type="checkbox"], [role="checkbox"]')).filter(c => !isHoneypot(c));
+                    const nonCbs = curr.querySelectorAll('input:not([type="checkbox"]):not([type="hidden"]):not([type="submit"]):not([type="button"]):not([type="reset"]), textarea, select');
+                    if (cbs.length >= 2 && nonCbs.length === 0) return cbs;
+                    if (nonCbs.length > 0) break;
+                }
+                curr = curr.parentElement;
+                depth++;
+            }
+            return [el];
+        }
+
+        getCheckboxGroupKey(el, form = null, classification = null) {
+            if (!el) return 'single_cb';
+            if (this.checkboxResolver && typeof this.checkboxResolver.getGroupIdentifier === 'function') {
+                const members = this.getCheckboxGroupMembers(el, form, classification);
+                if (members.length >= 2) {
+                    return this.checkboxResolver.getGroupIdentifier(el, form);
+                }
+            }
+            const members = this.getCheckboxGroupMembers(el, form, classification);
+            if (members.length >= 2) {
+                if (el.name && members.every(m => m.name === el.name)) {
+                    return `name:${el.name}`;
+                }
+                const first = members[0];
+                const firstKey = first.id || first.name || getDirectLabelText(first) || 'idx0';
+                return `group_members:${firstKey}_count${members.length}`;
+            }
+            return `single:${el.id || el.name || getDirectLabelText(el) || 'cb'}`;
+        }
+
+        /**
+         * Group-aware requirement check for checkboxes.
+         * - Optional marketing checkboxes are never required.
+         * - Standalone checkboxes only check their own element / direct label (never unrelated sibling fields).
+         * - Multi-checkbox choice groups (>= 2 members) check group-level requirement.
+         */
+        isCheckboxOrGroupRequired(el, form = null, classification = null) {
+            if (!el) return false;
+            const cat = classification ? classification.category : null;
+            if (cat && OPTIONAL_MARKETING_CATEGORIES.has(cat)) {
+                return false;
+            }
+            const members = this.getCheckboxGroupMembers(el, form, classification);
+            if (members.length >= 2 && (!cat || !STANDALONE_POLICY_CATEGORIES.has(cat))) {
+                if (this.checkboxResolver && typeof this.checkboxResolver.isGroupRequired === 'function') {
+                    return this.checkboxResolver.isGroupRequired(el, form);
+                }
+                if (members.some(m => m.required || (m.getAttribute && (m.getAttribute('aria-required') === 'true' || m.getAttribute('required') !== null)))) {
+                    return true;
+                }
+                return isElementRequired(el);
+            }
+            // Standalone checkbox: check element attributes or own direct label/wrapper only
+            if (el.required) return true;
+            if (el.getAttribute && (el.getAttribute('aria-required') === 'true' || el.getAttribute('required') !== null)) return true;
+            const cls = ((el.className || '') + ' ' + (el.id || '')).toLowerCase();
+            if (/\b(required|mandatory|is-required|req)\b/.test(cls)) return true;
+            const directLbl = getDirectLabelText(el);
+            if (directLbl) {
+                if (/\boptional\b|선택사항/i.test(directLbl) && !/\*|필수|\(required\)/i.test(directLbl)) return false;
+                if (/\*|필수|\(required\)/i.test(directLbl)) return true;
+            }
+            // Check immediate wrapper only if it contains strictly this single control
+            const parent = el.parentElement;
+            if (parent && parent.tagName !== 'FORM' && parent.querySelectorAll) {
+                const allInputs = parent.querySelectorAll('input, select, textarea');
+                if (allInputs.length === 1) {
+                    const pText = parent.textContent || '';
+                    if (/\boptional\b|선택사항/i.test(pText) && !/\*|필수|\(required\)/i.test(pText)) return false;
+                    if (/\*|필수|\(required\)/i.test(pText)) return true;
+                }
+            }
+            return false;
+        }
+
+        /**
          * Classifies control category.
          */
-        classifyControl(el) {
+        classifyControl(el, form = null) {
             if (!el) return { category: 'unknown', isSensitive: false, isHoneypot: false };
 
             const tag = (el.tagName || '').toLowerCase();
@@ -270,7 +422,7 @@
                 let cat = 'inquiry_checkbox';
                 if (this.checkboxResolver) {
                     if (typeof this.checkboxResolver.classify === 'function') {
-                        cat = this.checkboxResolver.classify(el);
+                        cat = this.checkboxResolver.classify(el, '', form);
                     } else if (typeof this.checkboxResolver.classifyCheckbox === 'function') {
                         const cInfo = this.checkboxResolver.classifyCheckbox(el);
                         cat = typeof cInfo === 'string' ? cInfo : (cInfo.category || 'inquiry_checkbox');
@@ -332,27 +484,42 @@
         /**
          * Checks if control is already resolved.
          */
-        isControlResolved(el, classification) {
+        isControlResolved(el, classification, form = null) {
             if (!el) return true;
             const tag = (el.tagName || '').toLowerCase();
             const type = (el.type || '').toLowerCase();
 
-            if (type === 'checkbox' || el.getAttribute && el.getAttribute('role') === 'checkbox') {
-                // If required, must be checked; if optional marketing, considered resolved as unchecked
-                if (classification.category === 'marketing_newsletter_checkbox' || classification.category === 'marketing_optional' || classification.category === 'newsletter_optional' || classification.category === 'sms_marketing_optional') {
+            if (type === 'checkbox' || (el.getAttribute && el.getAttribute('role') === 'checkbox')) {
+                if (classification && OPTIONAL_MARKETING_CATEGORIES.has(classification.category)) {
                     return true;
                 }
-                if (isElementRequired(el)) {
-                    return el.checked === true;
+                const required = this.isCheckboxOrGroupRequired(el, form, classification);
+                if (!required) {
+                    return true;
                 }
-                return true;
+                const groupMembers = this.getCheckboxGroupMembers(el, form, classification);
+                if (groupMembers.length >= 2 && (!classification || !STANDALONE_POLICY_CATEGORIES.has(classification.category))) {
+                    const groupSatisfied = groupMembers.some(m => m && m.checked === true);
+                    if (groupSatisfied) {
+                        for (const member of groupMembers) {
+                            if (member && !member.checked && (member.required || (member.getAttribute && member.getAttribute('required') !== null))) {
+                                try {
+                                    member.required = false;
+                                    if (member.removeAttribute) member.removeAttribute('required');
+                                } catch (_) {}
+                            }
+                        }
+                    }
+                    return groupSatisfied;
+                }
+                return el.checked === true;
             }
 
-            if (type === 'radio' || el.getAttribute && el.getAttribute('role') === 'radio') {
+            if (type === 'radio' || (el.getAttribute && el.getAttribute('role') === 'radio')) {
                 if (isElementRequired(el)) {
-                    // Check if any radio in the same group is checked
-                    if (el.name && el.form) {
-                        const checked = el.form.querySelector(`input[type="radio"][name="${el.name}"]:checked`);
+                    const root = form || el.form;
+                    if (el.name && root && root.querySelector) {
+                        const checked = root.querySelector(`input[type="radio"][name="${el.name}"]:checked`);
                         return !!checked;
                     }
                     return el.checked === true;
@@ -404,19 +571,35 @@
             let textResolved = 0;
 
             const domainKey = (typeof window !== 'undefined' && window.location ? window.location.hostname : 'default');
+            const countedUnresolvedCheckboxGroups = new Set();
 
             // 1. First Pass: Classification & Resolution
             for (const el of controls) {
-                const required = isElementRequired(el);
-                const classification = this.classifyControl(el);
+                const classification = this.classifyControl(el, form);
 
                 if (classification.category === 'honeypot') {
                     // Honeypots must never be touched
                     continue;
                 }
 
-                const resolved = this.isControlResolved(el, classification);
-                if (!resolved) unresolvedBefore++;
+                const type = (el.type || '').toLowerCase();
+                const isCheckbox = (type === 'checkbox' || (el.getAttribute && el.getAttribute('role') === 'checkbox'));
+                const required = isCheckbox
+                    ? this.isCheckboxOrGroupRequired(el, form, classification)
+                    : isElementRequired(el);
+
+                const resolved = this.isControlResolved(el, classification, form);
+                if (!resolved) {
+                    if (isCheckbox) {
+                        const gKey = this.getCheckboxGroupKey(el, form, classification);
+                        if (!countedUnresolvedCheckboxGroups.has(gKey)) {
+                            countedUnresolvedCheckboxGroups.add(gKey);
+                            unresolvedBefore++;
+                        }
+                    } else {
+                        unresolvedBefore++;
+                    }
+                }
 
                 if (!resolved && required) {
                     // SENSITIVE FACT GUARD: Never fabricate sensitive facts
@@ -472,10 +655,9 @@
                     // TIER 2 & 3 & 4: Control-specific resolutions
                     if (!handled) {
                         const tag = (el.tagName || '').toLowerCase();
-                        const type = (el.type || '').toLowerCase();
 
                         // Checkbox
-                        if (type === 'checkbox' || el.getAttribute && el.getAttribute('role') === 'checkbox') {
+                        if (isCheckbox) {
                             if (classification.category === 'terms_privacy_checkbox' || classification.category === 'privacy_required' || classification.category === 'terms_required' || classification.category === 'response_consent_required') {
                                 const isConsentAuthorized = Boolean(
                                     this.options.ownerAuthorizedConsent ||
@@ -494,16 +676,55 @@
                                         context: getElementContextText(el)
                                     };
                                 }
-                            } else if (classification.category === 'marketing_newsletter_checkbox' || classification.category === 'marketing_optional' || classification.category === 'newsletter_optional' || classification.category === 'sms_marketing_optional') {
+                            } else if (OPTIONAL_MARKETING_CATEGORIES.has(classification.category)) {
                                 // Strictly remain unchecked
-                            } else if (classification.category === 'inquiry_choice' || classification.category === 'inquiry_checkbox' || classification.category === 'unknown') {
-                                // Cache choice per domain to avoid rerandomization
-                                const groupKey = domainKey + '_' + (el.name || 'single_cb');
-                                if (!this.domainChoiceCache.has(groupKey)) {
-                                    this.domainChoiceCache.set(groupKey, el.id || el.name || 'checked');
-                                    setNativeChecked(el, true);
-                                    checkboxResolved++;
-                                } else if (this.domainChoiceCache.get(groupKey) === (el.id || el.name || 'checked')) {
+                            } else {
+                                // Choice group or standalone inquiry checkbox: select ONE valid member for the group
+                                const groupMembers = this.getCheckboxGroupMembers(el, form, classification);
+                                const groupKey = domainKey + '_' + this.getCheckboxGroupKey(el, form, classification);
+                                if (groupMembers.length >= 2) {
+                                    if (!groupMembers.some(m => m && m.checked === true)) {
+                                        const enabledMembers = groupMembers.filter(m => !m.disabled && isElementVisible(m));
+                                        const pool = enabledMembers.length > 0 ? enabledMembers : groupMembers.filter(m => !m.disabled);
+                                        const candidates = pool.length > 0 ? pool : [el];
+
+                                        const tplKeywords = [
+                                            template.service, template.program, template.interest,
+                                            template.topic, template.category, template.inquiryType, template.subject
+                                        ].filter(Boolean).map(s => String(s).toLowerCase());
+
+                                        let chosenMember = null;
+                                        if (tplKeywords.length > 0) {
+                                            chosenMember = candidates.find(m => {
+                                                const mLbl = getDirectLabelText(m).toLowerCase();
+                                                const mVal = ((m.getAttribute && m.getAttribute('value')) || '').toLowerCase();
+                                                return tplKeywords.some(kw => mLbl.includes(kw) || mVal.includes(kw));
+                                            });
+                                        }
+                                        if (!chosenMember) {
+                                            chosenMember = candidates.find(m => {
+                                                const mLbl = getDirectLabelText(m).toLowerCase();
+                                                const mVal = ((m.getAttribute && m.getAttribute('value')) || '').toLowerCase();
+                                                return /general|inquiry|consulting|service|support|standard|other|일반|문의|상담|기타/i.test(mLbl) ||
+                                                       /general|inquiry|consulting|service|support|standard|other|일반|문의|상담|기타/i.test(mVal);
+                                            });
+                                        }
+                                        if (!chosenMember) {
+                                            chosenMember = candidates[0] || el;
+                                        }
+                                        this.domainChoiceCache.set(groupKey, chosenMember.id || chosenMember.name || getDirectLabelText(chosenMember) || 'checked');
+                                        setNativeChecked(chosenMember, true);
+                                        for (const member of groupMembers) {
+                                            if (member && member !== chosenMember && (member.required || (member.getAttribute && member.getAttribute('required') !== null))) {
+                                                try {
+                                                    member.required = false;
+                                                    if (member.removeAttribute) member.removeAttribute('required');
+                                                } catch (_) {}
+                                            }
+                                        }
+                                        checkboxResolved++;
+                                    }
+                                } else {
                                     setNativeChecked(el, true);
                                     checkboxResolved++;
                                 }
@@ -511,8 +732,9 @@
                         }
 
                         // Radio Group
-                        else if (type === 'radio' || el.getAttribute && el.getAttribute('role') === 'radio') {
-                            const allRadios = el.form ? Array.from(el.form.querySelectorAll(`input[type="radio"][name="${el.name}"]`)) : [el];
+                        else if (type === 'radio' || (el.getAttribute && el.getAttribute('role') === 'radio')) {
+                            const root = form || el.form;
+                            const allRadios = (root && el.name) ? Array.from(root.querySelectorAll(`input[type="radio"][name="${el.name}"]`)) : [el];
                             let radios = allRadios.filter(r => !r.disabled && isElementVisible(r));
                             if (radios.length === 0) radios = allRadios.filter(r => !r.disabled);
                             if (radios.length === 0) radios = [el];
@@ -693,7 +915,7 @@
                             }
                             else if (type === 'tel' || /\b(phone|tel|mobile|cell)\b/i.test(ctx)) {
                                 // [RC3.60 .90 Fix] Standard US 10-digit phone format, never Korean 010 on US/NANP forms
-                    answer = template.phone || template.telephone || '202-555-0149';
+                                answer = template.phone || template.telephone || '202-555-0149';
                             }
                             // 4. Textarea / Multi-line Comments (strictly message, NEVER phone)
                             else if (tag === 'textarea' || /\b(message|inquiry|comment|details|description|body)\b/i.test(ctx)) {
@@ -812,26 +1034,63 @@
 
             const unresolvedList = [];
             const invalidFields = [];
+            const auditedCheckboxGroups = new Set();
 
             for (const el of controls) {
-                const required = isElementRequired(el);
-                const classification = this.classifyControl(el);
+                const classification = this.classifyControl(el, form);
 
                 if (classification.category === 'honeypot') continue;
 
                 const tag = (el.tagName || '').toLowerCase();
                 const type = (el.type || '').toLowerCase();
+                const isCheckbox = (type === 'checkbox' || (el.getAttribute && el.getAttribute('role') === 'checkbox'));
+
+                const required = isCheckbox
+                    ? this.isCheckboxOrGroupRequired(el, form, classification)
+                    : isElementRequired(el);
 
                 // Check message field
                 if (classification.category === 'message' || tag === 'textarea') {
                     if ((el.value || '').trim().length > 0) messageFieldFilled = true;
                 }
 
+                // [V7-RC5] Group-level checkbox audit: evaluate a multi-checkbox choice group once per groupKey
+                if (isCheckbox) {
+                    const groupMembers = this.getCheckboxGroupMembers(el, form, classification);
+                    const isChoiceGroup = groupMembers.length >= 2 && !STANDALONE_POLICY_CATEGORIES.has(classification.category);
+                    if (isChoiceGroup) {
+                        const resolved = this.isControlResolved(el, classification, form);
+                        const groupKey = this.getCheckboxGroupKey(el, form, classification);
+                        if (!auditedCheckboxGroups.has(groupKey)) {
+                            auditedCheckboxGroups.add(groupKey);
+                            if (required) {
+                                requiredTotal++;
+                                requiredCheckboxTotal++;
+                                if (resolved) {
+                                    requiredCheckboxResolved++;
+                                    requiredResolved++;
+                                } else {
+                                    unstableCheckboxes++;
+                                    unresolvedRequired++;
+                                    unresolvedList.push({
+                                        type: el.tagName,
+                                        label: getElementContextText(el),
+                                        reason: 'REQUIRED_UNRESOLVED',
+                                        groupKey
+                                    });
+                                    this.logger(`[MISSED_FIELD] type=${el.tagName} group="${groupKey}" label="${getElementContextText(el)}" reason=REQUIRED_UNRESOLVED`);
+                                }
+                            }
+                        }
+                        continue;
+                    }
+                }
+
                 if (required) {
                     requiredTotal++;
-                    const resolved = this.isControlResolved(el, classification);
+                    const resolved = this.isControlResolved(el, classification, form);
 
-                    if (type === 'checkbox') {
+                    if (isCheckbox) {
                         requiredCheckboxTotal++;
                         if (resolved) requiredCheckboxResolved++;
                         else unstableCheckboxes++;

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * build-provenance.js
  * Immutable Build Provenance & Module Verification (Issue #6 R6.9G.7)
  */
@@ -25,7 +25,7 @@
         rollbackBase: '55cd543be5ebe7a4553cac0cbfcf933a00e4c8a5',
         previousFunctionalRestorePoint: 'd8ca75827d271778ea4bcc484bb5b75ab2dbef0a',
         manifestVersion: 3,
-        buildId: 'V7.0.0-RC4-20261030-MANUAL-HOLD-HANDSHAKE-PASS',
+        buildId: 'V7.0.0-RC5-20261030-CHECKBOX-MANUAL-RESUME-PASS',
         builtAt: '2026-10-30T11:49:25.000Z',
         provenanceSchema: 2,
         modules: {
