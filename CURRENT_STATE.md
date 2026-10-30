@@ -6,8 +6,8 @@
 - Workspace: E:\vivpr\ai\extension-form-sender
 - Authority: goodkie/v-show Issues #6 & #10
 - Branch: major/v7-dual-mode (branched from upgrade/phase-0-1)
-- State Rev: 2026-10-30.249
-- Authority Cursor: 6521464588
+- State Rev: 2026-10-30.250
+- Authority Cursor: 6522457298
 - Major-version Stage 0 backup DONE: tag major-backup-20261030-from-93 (4be780b4); backups/MAJOR_BACKUP_20261030_from_93_4be780b4 (local, DPAPI-encrypted secrets); sandbox restore PASS; receipt #6514847380.
 - RC3.60 .94 Hotfix & Read-Only Reconciliation DONE: tag v6.9g.10.3-rc3.60.7.1.4.94 (ebf2c7a3); receipt #6515848744; 97/92 live Chrome snapshot carried forward; 86/73 run marked OWNER_DATA_RECONCILIATION_REQUIRED; .93 marked DO NOT USE.
 - Major-version Stage 1 & Stage 2 + RC1 Audit (#6519627675) + P0 Privacy Block & Stage-0 Storage Recovery (#6519754631) + RC2 Owner Safety & Live 18-Target Run Telemetry Patch (#6520384382) + RC4 Manual Hold Resolution Handshake Fix (#6521464588) DONE: branch major/v7-dual-mode, tag v7.0.0-rc4, asset XPIDER_V7.0.0_RC4_DUAL_MODE_OWNER_BETA.zip (53,099,525 bytes, SHA256: e26cf0bedd6f6d9c0e71aa9532aac0696787b774d7c4678b76267b837bb2c718).
@@ -249,3 +249,5 @@ Firewall 8443 = 74.39.42.139/32 via guardian; probe verified exit IP 143.198.40.
   - Screenshots: `shot_01_privacy_block_modal.png`, `shot_02_relay_returns_recovery_started.png`, `shot_03_campaign_paused_worker_shutdown.png`, `shot_04_mixed_matrix_settled.png`
 
 
+
+- RC5 (#6522457298) DONE: commit a696ab36, tag v7.0.0-rc5, asset XPIDER_V7.0.0_RC5_DUAL_MODE_OWNER_BETA.zip (53,600,478 bytes, SHA256 23db1531bb0e794ac3553d9ebf981fe7ac429e78ff18f38ccdfd75747327fb8e); receipt #6523266964. Group-level checkbox validation, manual hold on validation failure, resume-mode prompt, stale MANUAL_HOLD cleanup. Local tests only; no live SW restart or live ledger check.
