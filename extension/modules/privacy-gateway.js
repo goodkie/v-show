@@ -1592,11 +1592,19 @@
                 const statusRes = await this.queryRelayStatus();
                 if (statusRes.status && statusRes.status.physicalGate) {
                     this.lastPhysicalGateStatus = statusRes.status.physicalGate;
-                    if (this.config.physicalGateEnabled && !statusRes.status.physicalGate.ready) {
+                    if (this.config.physicalGateEnabled && statusRes.status.physicalGate.enabled && !statusRes.status.physicalGate.ready) {
                         return {
                             pass: false,
                             reason: 'PHYSICAL_GATE_FAIL_CLOSED',
                             details: (statusRes.status.physicalGate.reasons || []).join(', ')
+                        };
+                    }
+                    if (statusRes.status.residentialProxySelected && (!statusRes.status.residentialProxy || !statusRes.status.residentialProxy.sendAllowed || statusRes.status.residentialProxy.status !== 'EGRESS_VERIFIED')) {
+                        const detail = statusRes.status.residentialProxy ? (statusRes.status.residentialProxy.detail || statusRes.status.residentialProxy.status) : 'UNCONFIGURED';
+                        return {
+                            pass: false,
+                            reason: 'RESIDENTIAL_UPSTREAM_BLOCKED',
+                            details: detail
                         };
                     }
                 }
@@ -2336,16 +2344,32 @@
                         this.lastPhysicalGateStatus = statusRes.status.physicalGate;
                     }
 
-                    if (this.config.physicalGateEnabled && statusRes.status && statusRes.status.physicalGate && !statusRes.status.physicalGate.ready) {
+                    let subgateFailure = null;
+                    const st = statusRes.status;
+                    if (st) {
+                        if (this.config.physicalGateEnabled && st.physicalGate && st.physicalGate.enabled && !st.physicalGate.ready) {
+                            subgateFailure = 'PHYSICAL_GATE_FAIL_CLOSED';
+                        } else if (st.residentialProxySelected && (!st.residentialProxy || !st.residentialProxy.sendAllowed || st.residentialProxy.status !== 'EGRESS_VERIFIED')) {
+                            const resDetail = st.residentialProxy ? (st.residentialProxy.detail || st.residentialProxy.status) : 'UNCONFIGURED';
+                            subgateFailure = `RESIDENTIAL_UPSTREAM_BLOCKED (${resDetail})`;
+                        } else if (st.health === 'NO_NODES' || !st.selectedEgressId) {
+                            subgateFailure = 'PRIVACY_RELAY_NO_NODES';
+                        } else if (st.health === 'EXPIRED') {
+                            subgateFailure = 'PRIVACY_RELAY_HEALTH_EXPIRED';
+                        } else if (st.lastDisconnectReason) {
+                            subgateFailure = `PRIVACY_RELAY_NODE_UNVERIFIED (${st.lastDisconnectReason})`;
+                        } else if (!st.relayReady) {
+                            subgateFailure = 'PRIVACY_RELAY_UNVERIFIED';
+                        }
+                    } else {
+                        subgateFailure = statusRes.reason === 'HTTP_401' ? 'PRIVACY_RELAY_UNAUTHORIZED' : (statusRes.reason || 'PRIVACY_RELAY_OFFLINE');
+                    }
+
+                    if (subgateFailure) {
                         ready = false;
                         directFallbackBlocked = 'BLOCKED';
                         egressCheck = 'FAIL';
-                        failureReason = 'PHYSICAL_GATE_FAIL_CLOSED';
-                    } else if (!statusRes.status || !statusRes.status.relayReady || statusRes.status.health === 'NO_NODES') {
-                        ready = false;
-                        directFallbackBlocked = 'BLOCKED';
-                        egressCheck = 'FAIL';
-                        failureReason = (statusRes.status && statusRes.status.physicalGate && !statusRes.status.physicalGate.ready) ? 'PHYSICAL_GATE_FAIL_CLOSED' : 'PRIVACY_RELAY_NO_HEALTHY_EGRESS';
+                        failureReason = subgateFailure;
                     } else {
                     try {
                         // 2. Configure Chrome Proxy to loopback proxy on 18988
@@ -2839,7 +2863,19 @@
                     } catch (_) {}
                 }
                 if (!rStatus.relayReady || rStatus.health === 'EXPIRED' || rStatus.health === 'NO_NODES') {
-                    const failReason = rStatus.health === 'EXPIRED' ? 'PRIVACY_RELAY_HEALTH_EXPIRED' : 'PRIVACY_RELAY_NOT_READY';
+                    let failReason = 'PRIVACY_RELAY_NOT_READY';
+                    if (rStatus.health === 'EXPIRED') {
+                        failReason = 'PRIVACY_RELAY_HEALTH_EXPIRED';
+                    } else if (rStatus.health === 'NO_NODES' || !rStatus.selectedEgressId) {
+                        failReason = 'PRIVACY_RELAY_NO_NODES';
+                    } else if (rStatus.residentialProxySelected && (!rStatus.residentialProxy || !rStatus.residentialProxy.sendAllowed || rStatus.residentialProxy.status !== 'EGRESS_VERIFIED')) {
+                        const detail = rStatus.residentialProxy ? (rStatus.residentialProxy.detail || rStatus.residentialProxy.status) : 'UNCONFIGURED';
+                        failReason = `RESIDENTIAL_UPSTREAM_BLOCKED (${detail})`;
+                    } else if (this.config.physicalGateEnabled && rStatus.physicalGateEnabled && !rStatus.physicalGateReady) {
+                        failReason = 'PHYSICAL_GATE_FAIL_CLOSED';
+                    } else if (rStatus.lastDisconnectReason) {
+                        failReason = `PRIVACY_RELAY_NODE_UNVERIFIED (${rStatus.lastDisconnectReason})`;
+                    }
                     this.invalidateGateReadiness(failReason);
                     return { ready: false, reason: failReason };
                 }

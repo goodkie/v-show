@@ -67,7 +67,7 @@ process.on('unhandledRejection', (reason) => {
 });
 
 // [Defect Q2 Hardening - Issue #6 Comment #6244711545] Authoritative companion build identity & capabilities
-const COMPANION_BUILD_ID = 'R6.9G.10.3.7.1.4.91-20261029-P0-RC3.60-QA-DEFECT-REPAIR-PASS';
+const COMPANION_BUILD_ID = 'R6.9G.10.3.7.1.4.92-20261029-P0-RC3.60-PRIVACY-SUBGATE-ACTIONABLE-PASS';
 const COMPANION_IMPLEMENTATION_HEAD = '741dfe44536031dff13ac6d8e310d4f72fbca42b';
 
 function isCompatibleExtensionBuild(extBuildId, companionBuildId) {
@@ -2108,25 +2108,50 @@ class PrivacyRelayService {
             return;
           }
           const verifyRes = await this.verifyNodeEgress(active, this.pool.healthCheckTimeoutMs || 5000, probeCanaryUrl);
-          if (verifyRes.verified) {
+          let resProbeRes = null;
+          if (this.residentialProxySelected && this.residentialProxyConfig) {
+            try {
+              resProbeRes = await this.probeResidentialUpstream();
+            } catch (rErr) {
+              this.log(`[PRIVACY_RELAY_PROBE] residential upstream probe error: ${rErr.message}`);
+            }
+          }
+          const isHealthValid = this.isNodeHealthValid(active);
+          const isResReady = !this.residentialProxySelected || Boolean(this.residentialProxyState && this.residentialProxyState.sendAllowed && this.residentialProxyState.status === 'EGRESS_VERIFIED');
+          const isPhysReady = !this.physicalGate.enabled || Boolean(this.physicalGate.state && this.physicalGate.state.ready);
+          const allVerified = Boolean(verifyRes.verified && isHealthValid && isResReady && isPhysReady);
+
+          if (allVerified) {
             this.relayReady = true;
             this.lifecycleState = 'READY';
             this.reconnectAttempt = 0;
             this.startContinuousHealthMonitor();
+          } else {
+            this.relayReady = false;
+            this.lifecycleState = 'DEGRADED';
           }
-          res.writeHead(verifyRes.verified ? 200 : 503);
+
+          let probeReason = null;
+          if (!verifyRes.verified) probeReason = verifyRes.reason || 'NODE_VERIFY_FAILED';
+          else if (!isResReady) probeReason = resProbeRes ? `RESIDENTIAL_UPSTREAM_${resProbeRes.status} (${resProbeRes.detail || ''})` : 'RESIDENTIAL_UPSTREAM_NOT_VERIFIED';
+          else if (!isPhysReady) probeReason = 'PHYSICAL_GATE_FAIL_CLOSED';
+          else if (!isHealthValid) probeReason = 'NODE_HEALTH_INVALID';
+
+          res.writeHead(allVerified ? 200 : 503);
           res.end(JSON.stringify({
-            success: Boolean(verifyRes.verified),
-            verified: Boolean(verifyRes.verified),
+            success: Boolean(allVerified),
+            verified: Boolean(allVerified),
             selectedEgressId: active.id,
             activeNode: active.id,
             observedEgressIp: active.observedEgressIp || verifyRes.observedEgressIp || verifyRes.observed || verifyRes.ip || null,
             egressFingerprint: active.observedFingerprint || verifyRes.fingerprint || null,
             rotationCount: this.rotationCount,
             transport: active.type,
-            health: verifyRes.verified ? 'HEALTHY' : 'UNHEALTHY',
-            reason: verifyRes.reason || null,
-            details: verifyRes.reason || (verifyRes.verified ? 'VERIFIED' : 'UNVERIFIED'),
+            health: allVerified ? 'HEALTHY' : 'UNHEALTHY',
+            reason: probeReason,
+            details: probeReason || (allVerified ? 'VERIFIED' : 'UNVERIFIED'),
+            residentialProxy: this.residentialProxyState,
+            physicalGate: this.physicalGate.state,
             verifyResult: verifyRes
           }));
         });
@@ -3764,9 +3789,17 @@ class PrivacyRelayService {
     if (this.residentialProxySelected && this.residentialProxyConfig && !(this.options && this.options.skipStartupResidentialProbe)) {
       this.log(`[PRIVACY_RELAY_STARTUP_PROBE] Checking persisted residential upstream id=${this.residentialProxyConfig.id || 'residential-upstream'}`);
       try {
-        await this.probeResidentialUpstream();
+        const resSt = await this.probeResidentialUpstream();
+        if (!resSt || !resSt.sendAllowed || resSt.status !== 'EGRESS_VERIFIED') {
+          this.relayReady = false;
+          this.lifecycleState = 'DEGRADED';
+          this.lastDisconnectReason = `RESIDENTIAL_UPSTREAM_${resSt ? resSt.status : 'UNVERIFIED'}`;
+        }
       } catch (resErr) {
         this.log(`[PRIVACY_RELAY_STARTUP_PROBE] Residential upstream probe exception: ${resErr.message}`);
+        this.relayReady = false;
+        this.lifecycleState = 'DEGRADED';
+        this.lastDisconnectReason = `RESIDENTIAL_UPSTREAM_EXCEPTION: ${resErr.message}`;
       }
     }
 

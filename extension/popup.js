@@ -2147,7 +2147,25 @@ async function hydrateSettings(overrideV2Store = null) {
             }
 
             if (privDiagFailure) {
-                const fail = failureReason || (statusData ? (statusData.relayReady ? 'OPERATIONAL' : 'DEGRADED') : 'OFFLINE');
+                let fail = failureReason;
+                if (!fail || fail === 'ONLINE_STANDBY' || fail === 'DEGRADED') {
+                    if (statusData) {
+                        if (statusData.relayReady) {
+                            fail = 'OPERATIONAL';
+                        } else if (statusData.residentialProxySelected && (!statusData.residentialProxy || !statusData.residentialProxy.sendAllowed || statusData.residentialProxy.status !== 'EGRESS_VERIFIED')) {
+                            const resDetail = statusData.residentialProxy ? (statusData.residentialProxy.detail || statusData.residentialProxy.status) : 'UNCONFIGURED';
+                            fail = `UPSTREAM_WAIT: DECODO_${resDetail}`;
+                        } else if (statusData.physicalGate && statusData.physicalGate.enabled && !statusData.physicalGate.ready) {
+                            fail = 'PHYSICAL_GATE_FAIL_CLOSED';
+                        } else if (statusData.totalNodes === 0 || !statusData.selectedEgressId) {
+                            fail = 'NO_EGRESS_NODES';
+                        } else {
+                            fail = statusData.lastDisconnectReason || 'STANDBY_UNVERIFIED';
+                        }
+                    } else {
+                        fail = 'OFFLINE';
+                    }
+                }
                 privDiagFailure.textContent = fail;
                 privDiagFailure.style.color = (fail === 'OPERATIONAL' || fail === 'HEALTHY') ? '#4ade80' : '#f87171';
             }
@@ -3558,9 +3576,14 @@ async function hydrateSettings(overrideV2Store = null) {
                     });
                     if (res && res.preflight) {
                         _updatePrivacyCardUI(res.preflight);
-                        if (typeof window.checkAndRefreshPrivacyReadinessHUD === 'function') {
-                            window.checkAndRefreshPrivacyReadinessHUD();
+                    }
+                    chrome.runtime.sendMessage({ action: 'QUERY_PRIVACY_RELAY_STATUS' }, (stRes) => {
+                        if (stRes && stRes.result && stRes.result.status && typeof updateRelayStatusUI === 'function') {
+                            updateRelayStatusUI(stRes.result.status);
                         }
+                    });
+                    if (typeof window.checkAndRefreshPrivacyReadinessHUD === 'function') {
+                        window.checkAndRefreshPrivacyReadinessHUD();
                     }
                 } catch (_) {}
                 finally {
