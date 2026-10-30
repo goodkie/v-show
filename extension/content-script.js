@@ -1890,9 +1890,9 @@
                 logDev(`[CONTACT_GATE] PASS bodyField=${classification.bodyFieldType}`, "success");
                 logDev("[STAGE] stage=ELIGIBLE_FORM_FOUND", "success");
                 const liveFormIdentity = {
-                    action: form.getAttribute('action') || form.action || '',
-                    formId: form.id || form.name || 'contact_form',
-                    method: (form.method || 'POST').toUpperCase(),
+                    action: (typeof form.getAttribute === 'function' ? form.getAttribute('action') : '') || (typeof form.action === 'string' ? form.action : '') || '',
+                    formId: (typeof form.id === 'string' && form.id) || (typeof form.getAttribute === 'function' && form.getAttribute('id')) || (typeof form.name === 'string' && form.name) || (typeof form.getAttribute === 'function' && form.getAttribute('name')) || 'contact_form',
+                    method: String((typeof form.method === 'string' ? form.method : (typeof form.getAttribute === 'function' ? form.getAttribute('method') : '')) || 'POST').toUpperCase(),
                     fieldsCount: (form.elements || []).length,
                     tag: form.tagName || 'FORM'
                 };
@@ -2560,8 +2560,11 @@
         // Framework-Specific Detection Adapters (R6 Section 6.3)
         detectFrameworkAdapter(container) {
             if (!container) return null;
-            const sig = `${container.id || ''} ${container.className || ''} ${container.getAttribute('data-form-id') || ''}`.toLowerCase();
-            const action = (container.action || container.getAttribute('action') || '').toLowerCase();
+            const cId = typeof container.id === 'string' ? container.id : (container.getAttribute ? (container.getAttribute('id') || '') : '');
+            const cCls = typeof container.className === 'string' ? container.className : (container.getAttribute ? (container.getAttribute('class') || '') : '');
+            const cAct = typeof container.action === 'string' ? container.action : (container.getAttribute ? (container.getAttribute('action') || '') : '');
+            const sig = `${cId} ${cCls} ${container.getAttribute ? (container.getAttribute('data-form-id') || '') : ''}`.toLowerCase();
+            const action = cAct.toLowerCase();
 
             if (sig.includes('hs-') || sig.includes('hubspot') || (container.querySelector && container.querySelector('.hs-form, [data-form-id]'))) return 'HubSpot';
             if (sig.includes('gform') || sig.includes('gravity') || (container.querySelector && container.querySelector('.gform_wrapper'))) return 'GravityForms';
@@ -6568,9 +6571,10 @@
 
             // 2. Associated external controls
             const externalButtons = [];
-            if (form.id && typeof document !== 'undefined' && document.querySelectorAll) {
+            const safeFormIdStr = (form && typeof form.id === 'string') ? form.id : (form && typeof form.getAttribute === 'function' ? (form.getAttribute('id') || '') : '');
+            if (safeFormIdStr && typeof document !== 'undefined' && document.querySelectorAll) {
                 try {
-                    const escId = (typeof CSS !== 'undefined' && CSS.escape) ? CSS.escape(form.id) : form.id;
+                    const escId = (typeof CSS !== 'undefined' && CSS.escape) ? CSS.escape(safeFormIdStr) : safeFormIdStr;
                     const externals = Array.from(document.querySelectorAll(`button[form="${escId}"], input[form="${escId}"], [data-form="${escId}"]`));
                     for (const eb of externals) {
                         if (!nativeButtons.includes(eb) && !externalButtons.includes(eb)) externalButtons.push(eb);
@@ -6643,7 +6647,7 @@
                     score = 150;
                 }
                 // 2. Associated external submitter
-                else if (form.id && (btn.getAttribute('form') === form.id)) {
+                else if (safeFormIdStr && (btn.getAttribute('form') === safeFormIdStr)) {
                     rankTier = 2;
                     score = 130;
                 }
@@ -6674,7 +6678,7 @@
                 if (text === 'send' || text === 'submit' || text === 'send message') score += 20;
 
                 const insideForm = form.contains(btn);
-                const associated = insideForm || (form.id && btn.getAttribute('form') === form.id);
+                const associated = insideForm || (safeFormIdStr && btn.getAttribute('form') === safeFormIdStr);
 
                 candidates.push({
                     button: btn,
@@ -7030,8 +7034,9 @@
                 }
 
                 // [Issue #6 R6.6 Wix/Custom Form Adapter]
+                const safeWixFormId = (form && typeof form.id === 'string') ? form.id : (form && typeof form.getAttribute === 'function' ? (form.getAttribute('id') || '') : '');
                 const isWixOrCustom = form && (
-                    (form.id && form.id.includes('comp-')) ||
+                    (safeWixFormId && safeWixFormId.includes('comp-')) ||
                     (form.className && typeof form.className === 'string' && form.className.includes('wix')) ||
                     (primary && (primary.textContent || '').trim().match(/^(send|submit|보내기|제출)$/i)) ||
                     form.tagName !== 'FORM'

@@ -1,0 +1,76 @@
+{
+  "schema": "XPIDER_V7_0_0_RC3_EVIDENCE_V1",
+  "protocol": "OCA-DEV-1.4",
+  "directive": "Comment #6520384382 ([RC2 OWNER SAFETY / RESTORE ACCEPTANCE]) + Live 18-Target Run Forensic Telemetry",
+  "branch": "major/v7-dual-mode",
+  "releaseTag": "v7.0.0-rc3",
+  "buildId": "V7.0.0-RC3-20261030-LIVE-TELEMETRY-RESTORE-GUARD-PASS",
+  "extensionId": "ldlijlaccfeelfdhgnjbibniocefckjj",
+  "publicCampaignSendsExecutedByAgent": 0,
+  "ownerLiveRunForensics": {
+    "stage0RestoreAcceptedAndVerifiedInLiveChrome": true,
+    "privacyGatewayPreflightInLiveChrome": {
+      "ready": true,
+      "dnsPrivacy": "PASS",
+      "egressCheck": "PASS",
+      "ipv6Protection": "PROTECTED",
+      "webrtcPolicy": "disable_non_proxied_udp"
+    },
+    "liveCampaignProgressAtPause": {
+      "campaignRunId": "normal_run_1793356376257_humd5v",
+      "total": 97,
+      "completed": 18,
+      "remaining": 79,
+      "success": 2,
+      "deliveryUnknown": 1,
+      "failed": 13,
+      "timeout": 2,
+      "isPaused": true,
+      "isActive": false
+    }
+  },
+  "rc3FixesVerified": [
+    {
+      "id": "RC3-FIX-1",
+      "issue": "Live TypeError: (formEl.id || \"\").toLowerCase is not a function (DOM clobbering when <form> contains <input name=\"id\"> or <input name=\"action\">)",
+      "files": [
+        "extension/modules/contact-gate.js",
+        "extension/modules/form-discovery-engine-r2.js",
+        "extension/content-script.js"
+      ],
+      "status": "PASS"
+    },
+    {
+      "id": "RC3-FIX-2",
+      "issue": "Sentry & Wix telemetry DSNs (@*.ingest.sentry.io, @sentry-next.wixpress.com, 32-hex tokens) collected as business emails",
+      "files": [
+        "extension/modules/email-collector.js"
+      ],
+      "status": "PASS"
+    },
+    {
+      "id": "RC3-FIX-3",
+      "issue": "Network watchdog auto-resuming campaign 36s after explicit operator PAUSE / STOP & SAVE",
+      "files": [
+        "extension/background.js"
+      ],
+      "status": "PASS"
+    },
+    {
+      "id": "RC3-FIX-4",
+      "issue": "Directive #6520384382 Stage-0 restore manifest integrity verification before write + protection of newer live progress (completed=18, remaining=79) against accidental rollback",
+      "files": [
+        "extension/background.js",
+        "companion/stage0_authoritative_97_92_snapshot.json"
+      ],
+      "status": "PASS"
+    }
+  ],
+  "testSuites": {
+    "test_v7_rc2_audit_and_p0_privacy_storage": "11/11 PASS",
+    "test_v7_challenge_gate": "9/9 PASS",
+    "test_v7_stage2_matrix": "9/9 PASS",
+    "test_no_new_undefined_identifiers": "PASS (0 new undefined identifiers)"
+  }
+}
+

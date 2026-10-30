@@ -504,15 +504,25 @@
         return { names, emails, phones, subjects, selects, checkboxes, radios, submits, allInputs };
     }
 
+    function safeElemAttr(el, attr) {
+        if (!el) return '';
+        if (typeof el.getAttribute === 'function') {
+            const v = el.getAttribute(attr);
+            if (typeof v === 'string') return v;
+        }
+        const prop = attr === 'class' ? el.className : el[attr];
+        return typeof prop === 'string' ? prop : '';
+    }
+
     function computeFormSignature(container) {
         if (!container) return 'form_null';
-        const id = container.id || '';
-        const cls = (container.className || '').toString().slice(0, 40);
+        const id = safeElemAttr(container, 'id');
+        const cls = safeElemAttr(container, 'class').slice(0, 40);
         const tag = (container.tagName || 'DIV').toLowerCase();
         let fieldSig = '';
         if (container.querySelectorAll) {
             const inputs = Array.from(container.querySelectorAll('input, textarea, select')).slice(0, 5);
-            fieldSig = inputs.map(i => i.name || i.id || i.type || i.tagName).join(',');
+            fieldSig = inputs.map(i => safeElemAttr(i, 'name') || safeElemAttr(i, 'id') || safeElemAttr(i, 'type') || i.tagName).join(',');
         }
         return `${tag}#${id}.${cls}[${fieldSig}]`;
     }
@@ -533,8 +543,8 @@
         // Framework Fingerprint Detection (R6 Section 6.3)
         detectFrameworkAdapter(container) {
             if (!container) return null;
-            const sig = `${container.id || ''} ${container.className || ''} ${container.getAttribute?.('data-form-id') || ''}`.toLowerCase();
-            const action = (container.action || container.getAttribute?.('action') || '').toLowerCase();
+            const sig = `${safeElemAttr(container, 'id')} ${safeElemAttr(container, 'class')} ${safeElemAttr(container, 'data-form-id')}`.toLowerCase();
+            const action = safeElemAttr(container, 'action').toLowerCase();
 
             if (sig.includes('hs-') || sig.includes('hubspot') || (container.querySelector && container.querySelector('.hs-form, [data-form-id]'))) return 'HubSpot';
             if (sig.includes('gform') || sig.includes('gravity') || (container.querySelector && container.querySelector('.gform_wrapper'))) return 'GravityForms';
@@ -578,7 +588,7 @@
                 // 2. AND (is a native <form> OR has contact/identity fields OR has submitters OR container/body context is inquiry)
                 const isOverlay = isExcludedOverlayElement(container);
                 const hasValidBody = isVisible(bc.element) && !isExcludedOverlayElement(bc.element);
-                const containerContext = `${container.id || ''} ${container.className || ''}`.toLowerCase();
+                const containerContext = `${safeElemAttr(container, 'id')} ${safeElemAttr(container, 'class')}`.toLowerCase();
                 const hasInquiryContext = !isOverlay && (isNativeForm || (contactCount >= 1 || submitCount >= 1) ||
                     INQUIRY_BODY_TOKENS.some(k => bc.context.includes(k)) ||
                     containerContext.includes('contact') || containerContext.includes('form') || containerContext.includes('inquiry'));

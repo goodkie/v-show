@@ -6,12 +6,13 @@
 - Workspace: E:\vivpr\ai\extension-form-sender
 - Authority: goodkie/v-show Issues #6 & #10
 - Branch: major/v7-dual-mode (branched from upgrade/phase-0-1)
-- State Rev: 2026-10-30.247
-- Authority Cursor: 6519754631
+- State Rev: 2026-10-30.248
+- Authority Cursor: 6520384382
 - Major-version Stage 0 backup DONE: tag major-backup-20261030-from-93 (4be780b4); backups/MAJOR_BACKUP_20261030_from_93_4be780b4 (local, DPAPI-encrypted secrets); sandbox restore PASS; receipt #6514847380.
 - RC3.60 .94 Hotfix & Read-Only Reconciliation DONE: tag v6.9g.10.3-rc3.60.7.1.4.94 (ebf2c7a3); receipt #6515848744; 97/92 live Chrome snapshot carried forward; 86/73 run marked OWNER_DATA_RECONCILIATION_REQUIRED; .93 marked DO NOT USE.
-- Major-version Stage 1 & Stage 2 + RC1 Audit (#6519627675) + P0 Privacy Block & Stage-0 Storage Recovery (#6519754631) DONE: branch major/v7-dual-mode, tag v7.0.0-rc2, asset XPIDER_V7.0.0_RC2_DUAL_MODE_OWNER_BETA.zip (53,093,359 bytes, SHA256: 06f38c46af728961c30838503c68357315f03fafb3a0ebc7335a0efa405efc98).
+- Major-version Stage 1 & Stage 2 + RC1 Audit (#6519627675) + P0 Privacy Block & Stage-0 Storage Recovery (#6519754631) + RC2 Owner Safety & Live 18-Target Run Telemetry Patch (#6520384382) DONE: branch major/v7-dual-mode, tag v7.0.0-rc3, asset XPIDER_V7.0.0_RC3_DUAL_MODE_OWNER_BETA.zip (53,094,494 bytes, SHA256: 319f7c7e37e752442765785fe428842af39c17665a1804168ccac9dd7e7dab8c).
 - Last Directives / Audits:
+  - `[CHATGPT → ANTIGRAVITY][ISSUE #6][RC2 OWNER SAFETY / RESTORE ACCEPTANCE] Comment #6520384382`
   - `[CHATGPT → ANTIGRAVITY][P0 V7 RC1 OWNER PRIVACY BLOCK + EMPTY QUEUE][ISSUE #6] Comment #6519754631`
   - `[CHATGPT → ANTIGRAVITY][ISSUE #6][v7.0.0-rc1 RELEASE AUDIT / OWNER ACCEPTANCE GATE] Comment #6519627675`
   - `[CHATGPT → ANTIGRAVITY][ISSUE #6][REVIEW .94 RECEIPT / STAGE 1 EXECUTION DIRECTIVE] Comment #6515867050`

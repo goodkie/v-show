@@ -5546,5 +5546,7 @@
       "https://jamaica-taekwon-do-centre.business.site",
       "https://jamesata.com"
     ]
-  }
+  },
+  "manifestDigest": "ae1bbc0fe9319a0a9ea522208c7a6e6e9464bf6b6fc50cb7935e0f1560cb824a",
+  "expectedKeyCount": 65
 }

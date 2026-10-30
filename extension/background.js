@@ -622,6 +622,7 @@ let campaignState = {
     faultReason: null,
     // [RC3.18 Campaign Continuity & Network Degradation Recovery]
     isNetworkDegraded: false,
+    pausedByOperator: false,
     networkRecoveryPhase: null, // 'NONE' | 'CHECKPOINTED' | 'RELAY_RECONNECTING' | 'PRIVACY_REVERIFY' | 'JOB_RESTORE'
     networkCheckpoint: null,
     networkRecoveryRetryCount: 0,
@@ -2247,6 +2248,9 @@ async function freezeActiveCampaignJob(reason) {
         logBg(null, `[NETWORK_RECOVERY] Freezing bypassed in Owner Function Test Mode (loopback test): ${reason}`, "info");
         return;
     }
+    if (!campaignState.isActive || campaignState.isPaused || campaignState.pausedByOperator) {
+        return;
+    }
     if (campaignState.isNetworkDegraded && !reason?.includes('FAULT_INJECTION')) {
         logBg(null, `[NETWORK_RECOVERY] Already in network degradation recovery (${campaignState.networkRecoveryPhase}). Additional reason=${reason}`, "info");
         return;
@@ -2332,6 +2336,12 @@ async function freezeActiveCampaignJob(reason) {
  */
 async function resumeActiveCampaignJobAfterRecovery() {
     if (!campaignState.isNetworkDegraded) return;
+    if (campaignState.pausedByOperator || campaignState.isPaused || !campaignState.isActive) {
+        campaignState.isNetworkDegraded = false;
+        campaignState.networkRecoveryPhase = null;
+        campaignState.networkCheckpoint = null;
+        return;
+    }
 
     campaignState.isPaused = false;
     logBg(null, `[NETWORK_RECOVERY] 🔄 Privacy Relay re-established. Initiating preflight and job restoration...`, "info");
@@ -2505,12 +2515,16 @@ function startPrivacyRelayWatchdog() {
             const res = await pg.probeRelayLifecycle(true);
 
             if (res.ok && res.lifecycleState === 'READY') {
-                if (campaignState.isNetworkDegraded) {
+                if (campaignState.isNetworkDegraded && !campaignState.pausedByOperator && !campaignState.isPaused && campaignState.isActive) {
                     logBg(null, `[WATCHDOG] Privacy Relay returned to READY. Resuming campaign...`, "info");
                     await resumeActiveCampaignJobAfterRecovery();
+                } else if (campaignState.isNetworkDegraded && (campaignState.pausedByOperator || campaignState.isPaused || !campaignState.isActive)) {
+                    campaignState.isNetworkDegraded = false;
+                    campaignState.networkRecoveryPhase = null;
+                    campaignState.networkCheckpoint = null;
                 }
             } else {
-                if (campaignState.isActive && !campaignState.isNetworkDegraded && !campaignState.ownerFunctionTestMode) {
+                if (campaignState.isActive && !campaignState.isPaused && !campaignState.pausedByOperator && !campaignState.isNetworkDegraded && !campaignState.ownerFunctionTestMode) {
                     logBg(null, `[WATCHDOG] Privacy Relay degraded (${res.lifecycleState || res.reason}). Freezing active campaign job...`, "warning");
                     await freezeActiveCampaignJob(`WATCHDOG_RELAY_DEGRADED: ${res.reason || res.lifecycleState}`);
                 }
@@ -5101,13 +5115,53 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
                         sendResponse({ success: false, error: 'STAGE0_PAYLOAD_MISSING' });
                         return;
                     }
-                    // 1. Save lossless pre-restore backup of current storage
-                    const currentAll = await chrome.storage.local.get(null);
-                    const preBackupKey = `xpider_pre_stage0_restore_backup_${Date.now()}`;
-                    await chrome.storage.local.set({ [preBackupKey]: currentAll });
+                    const snap = data.snapshot;
+                    const payload = snap.payload;
+                    const payloadKeys = (payload && typeof payload === 'object') ? Object.keys(payload) : [];
+                    const expectedKeys = Number(snap.expectedKeyCount || 65);
+                    const hasValidManifest = (
+                        snap.schema === 'XPIDER_STAGE0_RECOVERY_SNAPSHOT_V1' &&
+                        snap.extensionId === 'ldlijlaccfeelfdhgnjbibniocefckjj' &&
+                        payloadKeys.length === expectedKeys &&
+                        Number(payload.xpider_total) === 97 &&
+                        Array.isArray(payload.xpider_queue) && payload.xpider_queue.length === 92 &&
+                        Array.isArray(payload.xpider_saved_lists) && payload.xpider_saved_lists.length >= 1 &&
+                        payload.xpider_history_v1 && Array.isArray(payload.xpider_history_v1.attempts) && payload.xpider_history_v1.attempts.length === 198 &&
+                        payload.xpider_email_collector_v1 && Number(payload.xpider_email_collector_v1.totalUnique) === 22
+                    );
+                    if (!hasValidManifest) {
+                        logBg(null, `🚨 [STAGE0_RESTORE] Manifest integrity verification failed (keys=${payloadKeys.length}/${expectedKeys}). Storage left untouched.`, 'error');
+                        sendResponse({ success: false, error: 'STAGE0_MANIFEST_INTEGRITY_MISMATCH' });
+                        return;
+                    }
 
-                    // 2. Write authoritative 97/92 Stage 0 payload
-                    const payload = data.snapshot.payload;
+                    // 1. Inspect current storage & protect newer campaign progress unless forceStage0Rollback=true
+                    const currentAll = await chrome.storage.local.get(null);
+                    const currentCompleted = Number(currentAll?.xpider_campaign_counters_v1?.completed || 0);
+                    const currentRemaining = Number(currentAll?.xpider_campaign_counters_v1?.remaining || 0);
+                    if (currentCompleted > 5 && !request.forceStage0Rollback) {
+                        logBg(null, `🛡️ [STAGE0_RESTORE] Refused to overwrite newer live campaign progress (completed=${currentCompleted}, remaining=${currentRemaining}). Pass forceStage0Rollback=true to override.`, 'warning');
+                        sendResponse({
+                            success: false,
+                            error: 'NEWER_CAMPAIGN_PROGRESS_PROTECTED',
+                            completed: currentCompleted,
+                            remaining: currentRemaining
+                        });
+                        return;
+                    }
+
+                    // 2. Save lossless pre-restore backup of current storage before writing
+                    const preBackupKey = `xpider_pre_stage0_restore_backup_${Date.now()}`;
+                    await chrome.storage.local.set({
+                        [preBackupKey]: currentAll,
+                        xpider_pre_stage0_restore_latest_backup: {
+                            savedAt: new Date().toISOString(),
+                            keyCount: Object.keys(currentAll || {}).length,
+                            backupKey: preBackupKey
+                        }
+                    });
+
+                    // 3. Write authoritative 97/92 Stage 0 payload
                     await chrome.storage.local.set(payload);
 
                     // 3. Re-hydrate in-memory campaignState and HistoryStore
@@ -7197,6 +7251,7 @@ async function startCampaignOrchestrator(queue, template, delayMs, fillDelayMs =
         campaignState.ownerFunctionTestMode = !!options.ownerFunctionTestMode;
         campaignState.isActive = true;
         campaignState.isPaused = false; // [v18.7] Reset pause on new start
+        campaignState.pausedByOperator = false;
         campaignState.isNetworkDegraded = false;
         campaignState.networkRecoveryPhase = null;
         campaignState.networkCheckpoint = null;
@@ -7279,6 +7334,14 @@ async function pauseCampaignOrchestrator(saveCheckpoint = true) {
 
     campaignState.schedulerGeneration = (campaignState.schedulerGeneration || 0) + 1;
     campaignState.isPaused = true;
+    campaignState.pausedByOperator = true;
+    campaignState.isActive = false;
+    campaignState.isNetworkDegraded = false;
+    campaignState.networkRecoveryPhase = null;
+    campaignState.networkCheckpoint = null;
+    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+        chrome.storage.local.remove(['xpider_active_network_checkpoint', 'xpider_isNetworkDegraded', 'xpider_networkRecoveryPhase']).catch(() => {});
+    }
     campaignState.captchaEpoch = (campaignState.captchaEpoch || 0) + 1;
     logBg(null, `[PAUSE] campaignRunId=${campaignState.campaignRunId} remaining=${campaignState.queue ? campaignState.queue.length : 0} inProgress=${campaignState.counters ? campaignState.counters.inProgress : 0}`, "info");
     logBg(null, "⏸️ [Engine] Campaign PAUSED / STOP & SAVE requested.", "info");
@@ -7462,6 +7525,7 @@ async function pauseCampaignOrchestrator(saveCheckpoint = true) {
             submitDelayMs: campaignState.submitDelayMs,
             sessionId: campaignState.sessionId,
             pausedAt: Date.now(),
+            pausedByOperator: true,
             outcomeHistogram: { ...(campaignState.outcomeHistogram || {}) },
             counters: { ...(campaignState.counters || {}) },
             campaignMode: campaignState.campaignMode || 'AUTO',
@@ -7582,6 +7646,7 @@ async function resumeCampaignOrchestrator() {
     campaignState.sessionId = (checkpoint.sessionId || 0) + 1;
     campaignState.isActive = true;
     campaignState.isPaused = false;
+    campaignState.pausedByOperator = false;
     campaignState.isLoopRunning = false;
     campaignState.lastActionTime = Date.now();
     campaignState.pausedCheckpoint = null;
@@ -7598,6 +7663,10 @@ async function endCampaignOrchestrator() {
     logBg(null, "🛑 [Engine] END_CAMPAIGN requested. Clearing queue and snapshot.", "stop");
     campaignState.isActive = false;
     campaignState.isPaused = false;
+    campaignState.pausedByOperator = false;
+    campaignState.isNetworkDegraded = false;
+    campaignState.networkRecoveryPhase = null;
+    campaignState.networkCheckpoint = null;
     campaignState.queue = [];
     campaignState.pausedCheckpoint = null;
     if (campaignState.currentTargetAbortController) {
@@ -9914,6 +9983,8 @@ async function restoreCampaignState() {
                     if (data.xpider_paused_checkpoint && Array.isArray(data.xpider_paused_checkpoint.remainingQueue) && data.xpider_paused_checkpoint.remainingQueue.length > 0) {
                         campaignState.pausedCheckpoint = data.xpider_paused_checkpoint;
                         campaignState.isPaused = true;
+                        campaignState.pausedByOperator = true;
+                        campaignState.isNetworkDegraded = false;
                         campaignState.isActive = false;
                         campaignState.queue = [...data.xpider_paused_checkpoint.remainingQueue];
                         campaignState.totalTargets = data.xpider_paused_checkpoint.totalTargets || campaignState.queue.length;

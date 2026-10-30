@@ -26,6 +26,19 @@
         'sample', 'name', 'domain', 'company'
     ];
 
+    const IGNORE_DOMAINS = [
+        'sentry.io',
+        'ingest.sentry.io',
+        'sentry.wixpress.com',
+        'sentry-next.wixpress.com',
+        'wixpress.com',
+        'example.com',
+        'example.org',
+        'example.net'
+    ];
+
+    const HEX32_TELEMETRY_PREFIX_REGEX = /^[a-f0-9]{32,}$/i;
+
     const INVALID_EXTENSIONS = [
         'png', 'jpg', 'jpeg', 'gif', 'svg', 'webp', 'css', 'js',
         'ico', 'bmp', 'tiff', 'woff', 'woff2', 'ttf', 'eot', 'mp3', 'mp4', 'wav'
@@ -69,8 +82,10 @@
         const domain = atParts[1];
 
         if (IGNORE_PREFIXES.includes(prefix)) return null;
+        if (HEX32_TELEMETRY_PREFIX_REGEX.test(prefix)) return null;
         if (prefix.length < 2 || prefix.length > 64) return null;
         if (domain.length < 4 || !domain.includes('.')) return null;
+        if (IGNORE_DOMAINS.some(d => domain === d || domain.endsWith('.' + d))) return null;
 
         return email;
     }

@@ -67,7 +67,7 @@ process.on('unhandledRejection', (reason) => {
 });
 
 // [Defect Q2 Hardening - Issue #6 Comment #6244711545] Authoritative companion build identity & capabilities
-const COMPANION_BUILD_ID = 'V7.0.0-RC2-20261030-DUAL-MODE-AUDIT-PRIVACY-STORAGE-PASS';
+const COMPANION_BUILD_ID = 'V7.0.0-RC3-20261030-LIVE-TELEMETRY-RESTORE-GUARD-PASS';
 const COMPANION_IMPLEMENTATION_HEAD = '741dfe44536031dff13ac6d8e310d4f72fbca42b';
 
 function isCompatibleExtensionBuild(extBuildId, companionBuildId) {

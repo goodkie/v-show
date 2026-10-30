@@ -213,8 +213,8 @@
         const formHeader = Array.from(formEl.querySelectorAll('h1, h2, h3, h4, h5, legend, .title, .form-title'))
             .map(h => (h.textContent || '').trim().toLowerCase())
             .join(' ');
-        const formActionAttr = ((formEl.getAttribute?.('action') || '')).toLowerCase();
-        const formIdAttr = ((formEl.id || '')).toLowerCase();
+        const formActionAttr = (typeof formEl.getAttribute === 'function' ? (formEl.getAttribute('action') || '') : (typeof formEl.action === 'string' ? formEl.action : '')).toLowerCase();
+        const formIdAttr = (typeof formEl.id === 'string' ? formEl.id : (typeof formEl.getAttribute === 'function' ? (formEl.getAttribute('id') || '') : '')).toLowerCase();
         const leadContext = `${submitBtnText} ${formHeader} ${formIdAttr} ${formActionAttr}`;
 
         const LEAD_ACTION_TOKENS = [

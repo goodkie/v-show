@@ -213,7 +213,61 @@ console.log('=== TEST SUITE: v7.0.0-rc2 Audit (#6519627675) & P0 Privacy/Storage
     pass('Audit Items 4 & 6: Retired solver listeners blocked, Privacy fail-closed & EmailCollector active');
   }
 
-  console.log(`\nALL ${passed}/7 v7.0.0-rc2 audit & P0 privacy/storage tests PASSED!`);
+  // T8: RC3 Live Telemetry Bug 1 — DOM Clobbering Guard (<input name="id">, <input name="action">, <input name="method">)
+  {
+    const ContactGate = require('../extension/modules/contact-gate');
+    const clobberedInput = { tagName: 'INPUT', type: 'text', name: 'id', id: 'id' };
+    const clobberedForm = {
+      tagName: 'FORM',
+      id: clobberedInput, // DOM clobbering: formEl.id is an HTMLInputElement object, not a string!
+      action: clobberedInput,
+      className: clobberedInput,
+      getAttribute: (attr) => attr === 'id' ? 'real-form-id' : (attr === 'action' ? '/contact-submit' : ''),
+      querySelectorAll: () => [],
+      querySelector: () => null
+    };
+    const res = ContactGate.classifyFormIntent(clobberedForm, { url: 'https://example.com/contact' });
+    assert.ok(res && typeof res.eligible === 'boolean', 'ContactGate.classifyFormIntent must not throw when formEl.id is clobbered');
+    const cgSrc = fs.readFileSync(path.join(ROOT, 'extension', 'modules', 'contact-gate.js'), 'utf8');
+    assert.ok(!cgSrc.includes('((formEl.id || \'\')).toLowerCase()'), 'Unprotected ((formEl.id || "")).toLowerCase() must be removed');
+    pass('RC3 Live Bug 1: DOM clobbering on formEl.id / formEl.action guarded without TypeError');
+  }
+
+  // T9: RC3 Live Telemetry Bug 2 — Sentry / Wix Telemetry DSN Exclusion in EmailCollector
+  {
+    const EmailCollector = require('../extension/modules/email-collector');
+    assert.strictEqual(EmailCollector.normalizeEmail('0fd2930120484402ac9adfb9e05cacd5@o37417.ingest.sentry.io'), null);
+    assert.strictEqual(EmailCollector.normalizeEmail('18d2f96d279149989b95faf0a4b41882@sentry-next.wixpress.com'), null);
+    assert.strictEqual(EmailCollector.normalizeEmail('deadbeef0123456789abcdef01234567@custom-telemetry.org'), null);
+    assert.strictEqual(EmailCollector.normalizeEmail('info@jaenamtraining.com'), 'info@jaenamtraining.com');
+    const extracted = EmailCollector.extractEmailsFromText(
+      'Contact us at master@taekwondo.kr or DSN 0fd2930120484402ac9adfb9e05cacd5@o37417.ingest.sentry.io and 18d2f96d279149989b95faf0a4b41882@sentry-next.wixpress.com'
+    );
+    assert.deepStrictEqual(extracted, ['master@taekwondo.kr']);
+    pass('RC3 Live Bug 2: Sentry and Wix telemetry DSNs excluded from EmailCollector');
+  }
+
+  // T10: RC3 Live Telemetry Bug 3 — Operator Pause vs Network Watchdog Auto-Resume Guard
+  {
+    const bgSrc = fs.readFileSync(path.join(ROOT, 'extension', 'background.js'), 'utf8');
+    assert.ok(bgSrc.includes('campaignState.pausedByOperator = true;'), 'pauseCampaignOrchestrator must set pausedByOperator = true');
+    assert.ok(bgSrc.includes('if (campaignState.pausedByOperator || campaignState.isPaused || !campaignState.isActive)'), 'resumeActiveCampaignJobAfterRecovery must abort if pausedByOperator');
+    assert.ok(bgSrc.includes('if (campaignState.isNetworkDegraded && !campaignState.pausedByOperator && !campaignState.isPaused && campaignState.isActive)'), 'Watchdog must not auto-resume an operator-paused campaign');
+    pass('RC3 Live Bug 3: Operator PAUSE / STOP & SAVE prevents network watchdog auto-resume');
+  }
+
+  // T11: RC3 Directive #6520384382 — Stage-0 Restore Manifest Integrity & Newer Progress Protection
+  {
+    const bgSrc = fs.readFileSync(path.join(ROOT, 'extension', 'background.js'), 'utf8');
+    assert.ok(bgSrc.includes('STAGE0_MANIFEST_INTEGRITY_MISMATCH'), 'Stage-0 restore must verify manifest integrity before writing');
+    assert.ok(bgSrc.includes('NEWER_CAMPAIGN_PROGRESS_PROTECTED'), 'Stage-0 restore must protect newer campaign progress (completed > 5) unless forceStage0Rollback=true');
+    const stage0 = JSON.parse(fs.readFileSync(path.join(ROOT, 'companion', 'stage0_authoritative_97_92_snapshot.json'), 'utf8'));
+    assert.strictEqual(stage0.expectedKeyCount, 65);
+    assert.ok(typeof stage0.manifestDigest === 'string' && stage0.manifestDigest.length === 64);
+    pass('RC3 Directive #6520384382: Stage-0 restore manifest integrity & newer progress protection verified');
+  }
+
+  console.log(`\nALL ${passed}/11 v7.0.0-rc3 audit, live telemetry & privacy/storage tests PASSED!`);
 })().catch((err) => {
   console.error('TEST FAILED:', err);
   process.exit(1);
