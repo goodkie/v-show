@@ -1,0 +1,8643 @@
+/**
+ * X PIDER Sender Pro - Content Script (V2.0 Advanced Engine)
+ * Borrowing high-performance patterns from XSpider Pro core.
+ * [v4.17.0] XPIDER DevLog Bridge 패치 적용됨
+ */
+
+// ── XPIDER DEV LOG BRIDGE (Content Script) ───────────────────────────────
+(function() {
+  const _EXT_NAME = 'Ext[AutoFormSender/Content]';
+  const _xDL = (lvl, msg) => {
+    try {
+      chrome.runtime.sendMessage({
+        _xpider_devlog: true, level: lvl, source: _EXT_NAME,
+        msg: String(msg).substring(0, 2048)
+      }).catch(() => {});
+    } catch(_) {}
+  };
+  ['log','warn','error','debug','info'].forEach(m => {
+    const _o = console[m].bind(console);
+    console[m] = (...a) => {
+      _o(...a);
+      const lvlMap = { log:'INFO', warn:'WARN', error:'ERROR', debug:'DEBUG', info:'INFO' };
+    };
+  });
+  if (typeof window !== 'undefined' && window.addEventListener) {
+    window.addEventListener('error', (e) => _xDL('ERROR', `[Uncaught] ${e.message} at ${e.filename}:${e.lineno}`));
+  }
+})();
+// ── END DEV LOG BRIDGE ───────────────────────────────────────────────────
+
+(function() {
+    console.log("🚀 [XpiderSender] Advanced Engine Loaded: " + (typeof window !== 'undefined' && window.location ? window.location.href : '(node-test)'));
+
+    const _ContactGate = (typeof ContactGate !== 'undefined' && ContactGate) || 
+        (typeof window !== 'undefined' && window.ContactGate) || 
+        (typeof require !== 'undefined' ? require('./modules/contact-gate.js') : null);
+
+    const _ChallengeGate = (typeof window !== 'undefined' && window.ChallengeGate) || 
+        (typeof globalThis !== 'undefined' && globalThis.ChallengeGate) || 
+        (typeof require !== 'undefined' ? (function(){ try { return require('./modules/challenge-gate.js'); } catch(_) { return null; } })() : null);
+
+    const _SmartFieldResolver = (typeof SmartFieldResolver !== 'undefined' && SmartFieldResolver) || 
+        (typeof window !== 'undefined' && window.SmartFieldResolver) || 
+        (typeof require !== 'undefined' ? require('./modules/smart-field-resolver.js') : null);
+
+    const _MathCaptchaSolver = (typeof MathCaptchaSolver !== 'undefined' && MathCaptchaSolver) || 
+        (typeof window !== 'undefined' && window.MathCaptchaSolver) || 
+        (typeof require !== 'undefined' ? (function(){ try { return require('./modules/math-captcha-solver.js'); } catch(_) { return null; } })() : null);
+
+    const _ContactDiscoveryEngine = (typeof ContactDiscoveryEngine !== 'undefined' && ContactDiscoveryEngine) || 
+        (typeof window !== 'undefined' && window.ContactDiscoveryEngine) || 
+        (typeof require !== 'undefined' ? require('./modules/contact-discovery-engine.js') : null);
+
+    const _CheckboxResolverR2 = (typeof CheckboxResolverR2 !== 'undefined' && CheckboxResolverR2) || 
+        (typeof window !== 'undefined' && window.CheckboxResolverR2) || 
+        (typeof require !== 'undefined' ? require('./modules/checkbox-resolver-r2.js') : null);
+
+    const _SelectResolverR2 = (typeof SelectResolverR2 !== 'undefined' && SelectResolverR2) || 
+        (typeof window !== 'undefined' && window.SelectResolverR2) || 
+        (typeof require !== 'undefined' ? require('./modules/select-resolver-r2.js') : null);
+
+    const _FinalFormCompletionEngine = (typeof FinalFormCompletionEngine !== 'undefined' && FinalFormCompletionEngine) || 
+        (typeof window !== 'undefined' && window.FinalFormCompletionEngine) || 
+        (typeof require !== 'undefined' ? require('./modules/final-form-completion-engine.js') : null);
+
+    const _FormDiscoveryEngineR2 = (typeof window !== 'undefined' && window.FormDiscoveryEngineR2) || 
+        (typeof global !== 'undefined' && global.FormDiscoveryEngineR2) || 
+        (typeof require !== 'undefined' ? require('./modules/form-discovery-engine-r2.js') : null);
+
+    const _VisionSubmitExecutor = (typeof VisionSubmitExecutor !== 'undefined' && VisionSubmitExecutor) || 
+        (typeof window !== 'undefined' && window.VisionSubmitExecutor) || 
+        (typeof require !== 'undefined' ? require('./modules/vision-submit-executor.js') : null);
+
+    // [Issue #6 R4 Top-Level Scope Guarantee] Downloadable extensions filter
+    const NON_HTML_DOWNLOADABLE_EXTENSIONS = /\.(vcf|ics|ical|ifb|msg|eml|pdf|doc|docx|rtf|odt|xls|xlsx|csv|tsv|ppt|pptx|zip|rar|7z|tar|gz|bz2|exe|msi|bat|cmd|sh|apk|dmg|pkg|bin|mp3|wav|ogg|mp4|avi|mov|mkv|webm|jpg|jpeg|png|gif|svg|webp|ico|bmp|tiff|xml|json)(\?.*)?$/i;
+    console.log("[RUNTIME_ASSERT] NON_HTML_DOWNLOADABLE_EXTENSIONS ready=true");
+
+    // [Issue #6 R6.5] Target Lifecycle State Machine
+    const TargetLifecycleState = {
+        ACTIVE_FORM: 'ACTIVE_FORM',
+        SUBMIT_RECOVERY: 'SUBMIT_RECOVERY',
+        DISCOVERY_FALLBACK: 'DISCOVERY_FALLBACK',
+        SETTLING: 'SETTLING',
+        SETTLED: 'SETTLED'
+    };
+    let currentTargetLifecycleState = TargetLifecycleState.ACTIVE_FORM;
+    // [RC3.33 P0-A / Comment #6308024751] Declare CAPTCHA runtime state flags
+    let _isCaptchaSolved = false;
+    let _captchaTokenInjected = false;
+
+    // [RC3.33 P0-B] Centralized attempt-scoped CAPTCHA runtime state reset
+    function resetCaptchaRuntimeState(attemptId = null, epoch = null) {
+        _isCaptchaSolved = false;
+        _captchaTokenInjected = false;
+        if (typeof window !== 'undefined') {
+            window.__xpider_captchaTokenInjected = false;
+            window.__xpider_isCaptchaSolved = false;
+            window.__xpider_resetCaptchaRuntimeState = resetCaptchaRuntimeState;
+            window.__xpiderResetCaptchaRuntimeState = resetCaptchaRuntimeState;
+        }
+        logDev(`[CAPTCHA_STATE_RESET] attemptId=${attemptId || 'current'} epoch=${epoch || 'current'} isCaptchaSolved=false captchaTokenInjected=false`, 'info');
+    }
+
+    function getTargetLifecycleState() {
+        return currentTargetLifecycleState;
+    }
+    function setTargetLifecycleState(state) {
+        currentTargetLifecycleState = state;
+    }
+
+
+    // ============================================================
+    // [HyperEngine v4.0] Top-level React/Vue/Angular Native Value & Checked Setters
+    // ============================================================
+    function setNativeValue(el, val) {
+        if (!el) return;
+        try {
+            const proto = el.tagName === 'TEXTAREA' ? HTMLTextAreaElement.prototype
+                        : el.tagName === 'SELECT' ? HTMLSelectElement.prototype
+                        : HTMLInputElement.prototype;
+            const nativeSetter = Object.getOwnPropertyDescriptor(proto, 'value');
+            if (nativeSetter && nativeSetter.set) {
+                nativeSetter.set.call(el, val);
+            } else {
+                el.value = val;
+            }
+        } catch (e) {
+            el.value = val;
+        }
+    }
+
+    function setNativeChecked(el, checked) {
+        if (!el) return;
+        try {
+            const proto = HTMLInputElement.prototype;
+            const nativeSetter = Object.getOwnPropertyDescriptor(proto, 'checked');
+            if (nativeSetter && nativeSetter.set) {
+                nativeSetter.set.call(el, checked);
+            } else {
+                el.checked = checked;
+            }
+        } catch (e) {
+            el.checked = checked;
+        }
+    }
+
+    // [v4.18.0 / R6.9G.10.3.7.1.4.9] Operator-Visible Top-Level CAPTCHA Solver HUD with Stale Toast Prevention
+    function removeTopSolverHUD(reason = 'CLEARED') {
+        try {
+            if (typeof document === 'undefined') return;
+            const hud = document.getElementById('xpider-top-solver-hud');
+            if (hud) {
+                console.log(`[CAPTCHA_UI_CLEAR] reason=${reason}`);
+                hud.style.opacity = '0';
+                setTimeout(() => {
+                    try { if (hud.parentNode) hud.parentNode.removeChild(hud); } catch (_) {}
+                }, 300);
+            }
+        } catch (_) {}
+    }
+
+    function updateTopSolverHUD(message, status = 'ACTIVE', options = {}) {
+        try {
+            if (typeof document === 'undefined' || !document.body) return;
+            let hud = document.getElementById('xpider-top-solver-hud');
+            if (!hud) {
+                hud = document.createElement('div');
+                hud.id = 'xpider-top-solver-hud';
+                Object.assign(hud.style, {
+                    position: 'fixed',
+                    top: '12px',
+                    right: '12px',
+                    zIndex: '2147483647',
+                    background: 'rgba(10, 15, 25, 0.95)',
+                    border: '1px solid #00ffcc',
+                    boxShadow: '0 0 15px rgba(0, 255, 204, 0.3)',
+                    borderRadius: '8px',
+                    padding: '8px 14px',
+                    color: '#e0e0e0',
+                    fontFamily: 'Inter, system-ui, sans-serif',
+                    fontSize: '12px',
+                    fontWeight: '600',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    pointerEvents: 'none',
+                    backdropFilter: 'blur(6px)',
+                    transition: 'opacity 0.3s ease'
+                });
+                document.body.appendChild(hud);
+            }
+            const isSuccess = status === 'DONE' || status === 'PASS' || status === 'SUCCESS';
+            const isFail = status === 'FAIL' || status === 'ERROR';
+            const statusColor = isSuccess ? '#00ffcc' : (isFail ? '#ff3333' : '#ffaa00');
+
+            if (options && options.showButtons) {
+                hud.style.pointerEvents = 'auto';
+                hud.innerHTML = `
+                    <span style="font-size: 14px;">🤖</span>
+                    <span>[XPIDER AI Solver] <span style="color:#ffaa00">${message}</span></span>
+                    <button id="xpider-btn-manual-solved" style="background:#00ffcc;color:#000;border:none;border-radius:4px;padding:3px 9px;font-size:11px;font-weight:bold;cursor:pointer;margin-left:6px;pointer-events:auto;">✓ I Solved It</button>
+                    <button id="xpider-btn-manual-skip" style="background:#374151;color:#f3f4f6;border:1px solid #4b5563;border-radius:4px;padding:3px 9px;font-size:11px;font-weight:bold;cursor:pointer;margin-left:4px;pointer-events:auto;">⏭ Skip</button>
+                `;
+                const btnSolved = hud.querySelector('#xpider-btn-manual-solved');
+                const btnSkip = hud.querySelector('#xpider-btn-manual-skip');
+                if (btnSolved && typeof options.onSolved === 'function') {
+                    btnSolved.onclick = (e) => { e.preventDefault(); e.stopPropagation(); options.onSolved(); };
+                }
+                if (btnSkip && typeof options.onSkip === 'function') {
+                    btnSkip.onclick = (e) => { e.preventDefault(); e.stopPropagation(); options.onSkip(); };
+                }
+            } else {
+                hud.style.pointerEvents = 'none';
+                hud.innerHTML = `<span style="font-size: 14px;">🤖</span><span>[XPIDER AI Solver] <span style="color:${statusColor}">${message}</span></span>`;
+            }
+
+            if (isSuccess) {
+                setTimeout(() => { removeTopSolverHUD('SUCCESS_AUTO_DISMISS'); }, 800);
+            } else {
+                hud.style.opacity = '1';
+            }
+        } catch (_) {}
+    }
+
+    if (typeof window !== 'undefined' && window.addEventListener) {
+        window.addEventListener('message', (ev) => {
+            if (ev.data && ev.data.type === 'XPIDER_SOLVER_HUD_UPDATE') {
+                updateTopSolverHUD(ev.data.text || ev.data.status, ev.data.status);
+            }
+        });
+    }
+
+    // [Issue #6 R6.2 Requirement 8 / R6.3 A2] Reset Duplicate/SPA Suppression Per Real Navigation
+    const currentSetupUrl = (typeof window !== 'undefined' && window.location ? window.location.href : '');
+    const isNewSetupUrl = !window.__xpider_last_setup_url || window.__xpider_last_setup_url !== currentSetupUrl;
+    window.__xpider_last_setup_url = currentSetupUrl;
+
+    // [R6.3 A2] Execution Identity — multi-dimension lock replacing single boolean
+    // Format: { attemptId, url, domGeneration }
+    // URL change invalidates previous page's processing latch entirely.
+    if (isNewSetupUrl) {
+        const prevUrl = window.__xpider_exec_identity ? window.__xpider_exec_identity.url : null;
+        if (prevUrl && prevUrl !== currentSetupUrl) {
+            try {
+                chrome.runtime.sendMessage({
+                    action: 'SENDER_LOG',
+                    message: `[TARGET_PAGE] url=${currentSetupUrl} domGeneration=${Date.now()} (prev=${prevUrl} invalidated)`,
+                    logType: 'info'
+                });
+            } catch (_) {}
+        }
+        // Clear stale setup and running latch from previous DOM generation
+        window.__xpider_initialized = false;
+        window.__xpider_exec_identity = null;  // [R6.3] replaces __xpider_running boolean
+        window.__xpider_running = false;        // legacy compat — keep in sync
+        window.__xpider_running_url = null;
+    }
+
+    // [R6.3] Expose execution identity helpers on window for testability
+    window.__xpider_acquireProcessingLock = function(attemptId, url, domGeneration) {
+        if (window.__xpider_exec_identity) {
+            const id = window.__xpider_exec_identity;
+            // Same execution key — suppress duplicate
+            if (id.attemptId === attemptId || (id.url === url && id.domGeneration === domGeneration)) {
+                return false;
+            }
+            // Different URL or domGeneration — must have been released already (stale)
+        }
+        window.__xpider_exec_identity = { attemptId, url, domGeneration };
+        window.__xpider_running = true;
+        window.__xpider_running_url = url;
+        return true;
+    };
+    window.__xpider_releaseProcessingLock = function(forUrl) {
+        if (!forUrl || (window.__xpider_exec_identity && window.__xpider_exec_identity.url === forUrl)) {
+            window.__xpider_exec_identity = null;
+            window.__xpider_running = false;
+            window.__xpider_running_url = null;
+        }
+    };
+    window.__xpider_hasProcessingLock = function(url, domGeneration) {
+        const id = window.__xpider_exec_identity;
+        if (!id) return false;
+        if (url && id.url !== url) return false;  // different URL -> no lock
+        if (domGeneration !== undefined && id.domGeneration !== domGeneration) return false;
+        return true;
+    };
+
+    const alreadyInitialized = window.__xpider_initialized;
+    window.__xpider_initialized = true;
+
+    // Initial signal to background that we are ready
+    // [v6.0.0] Signal Flooding: Send READY multiple times to ensure sync on slow loads
+    for (let i = 0; i < 6; i++) {
+        setTimeout(() => {
+            chrome.runtime.sendMessage({ action: 'SENDER_READY' });
+        }, i * 500);
+    }
+
+    if (alreadyInitialized && !isNewSetupUrl) {
+        logDev("⚠️ [Engine] Suppressing duplicate setup (Signals re-sent).", "debug");
+        return;
+    }
+
+    // [R6.9G.7 Safe Identifier Extraction] Prevents HTMLInputElement name/id clobbering TypeError
+    function safeGetStrAttr(el, attr) {
+        if (!el) return '';
+        try {
+            const val = el[attr];
+            if (typeof val === 'string') return val.toLowerCase();
+            if (typeof el.getAttribute === 'function') {
+                const a = el.getAttribute(attr);
+                if (typeof a === 'string') return a.toLowerCase();
+            }
+        } catch (_) {}
+        return '';
+    }
+
+    // [v1.6.2 / R6.9G.7] Bulletproof Heartbeat with Abort Suppression
+    function startHeartbeat() {
+        if (window.__xpider_heartbeat_interval) clearInterval(window.__xpider_heartbeat_interval);
+        window.__xpider_heartbeat_interval = setInterval(() => {
+            if (window.__xpider_aborted) {
+                clearInterval(window.__xpider_heartbeat_interval);
+                window.__xpider_heartbeat_interval = null;
+                return;
+            }
+            logDev("💓 [Heartbeat] Engine active and processing...", "debug");
+        }, 5000); // [v18.9.0] 5s Heartbeat for MV3 Service Worker survival
+    }
+
+    function logDev(msg, type = 'info') {
+        if (window.__xpider_aborted && !msg.includes('[ABORT_TARGET]')) return;
+        try {
+            chrome.runtime.sendMessage({
+                action: 'SENDER_LOG',
+                message: msg,
+                logType: type
+            });
+            console.log(`[XpiderLog] ${msg}`);
+        } catch (e) {}
+    }
+
+    // [XSpider Pro Pattern] High-priority contact candidates
+    const CONTACT_KEYWORDS = {
+        high: ['contact', 'inquiry', 'support', 'message', '문의', '연락', 'お問い合わせ', '留言', '联系', 'customer-service', 'write-to-us', 'feedback', 'help-center'],
+        mid: ['about', 'help', 'company', 'service', 'info', 'directions', 'location', '오시는길', '회사소개', '고객센터', '도움말'],
+        low: ['get-in-touch', 'mail', 'form', 'account', 'sign-up']
+    };
+
+    const FIELD_PATTERNS = {
+        firstName: [/\bfirst.?name\b/i,/\bgiven.?name\b/i,/\bforename\b/i,/\bfname\b/i,/\bfirst\b/i,/\bgiven\b/i,/이름/i,/성함/i,/名前/i,/名/i,/given/i,/\bnombre\b/i,/\bprenom\b/i,/\bvorname\b/i],
+        lastName: [/\blast.?name\b/i,/\bfamily.?name\b/i,/\bsurname\b/i,/\blname\b/i,/\blast\b/i,/\bfamily\b/i,/성(?!명|함)/i,/苗字/i,/姓/i,/\bapellido\b/i,/\bnom\b/i,/\bnachname\b/i],
+        name: [/\bname\b/i,/\bfull.?name\b/i,/\byour.*name\b/i,/\bcontact.*name\b/i,/\bcustomer.*name\b/i,/\bsender.*name\b/i,/성함/i,/氏名/i,/姓名/i,/성명/i,/이름/i,/user/i,/fullname/i,/\bcontact.*person\b/i,/\bclient.*name\b/i],
+        email: [/email/i, /e-mail/i, /이메일/i, /メール/i, /邮箱/i, /correo/i, /courriel/i, /correo.*electrónico/i],
+        subject: [/subject/i, /title/i, /제목/i, /件名/i, /主题/i, /topic/i, /asunto/i, /betreff/i, /objet/i],
+        phone: [/\bphone(?:_number|\d)?\b/i, /\btel(?:ephone)?\b/i, /\bmobile(?:_number)?\b/i, /\bcell(?:_phone)?\b/i, /전화/i, /연락처/i, /電話/i, /手机/i, /电话/i, /\bteléfono\b/i, /\btelefon\b/i, /\btéléphone\b/i],
+        message: [/message/i, /content/i, /body/i, /내용/i, /本文/i, /内容/i, /comment/i, /description/i, /inquiry/i, /mensaje/i, /nachricht/i, /\bmessage.*text\b/i, /\bbody.*text\b/i]
+    };
+
+    /**
+     * [Issue #6 R6.9G.10.3.7.1.4.5 Section B] Authoritative Field Semantic Resolver
+     * Structural Precedence: Multi-line containers (TEXTAREA, aria-multiline, contenteditable)
+     * ALWAYS default to 'message', overriding naive substring patterns like 'Tell us...'.
+     */
+    function resolveFieldSemantic(el) {
+        if (!el) return { semantic: 'unknown', confidence: 0, reason: 'NO_ELEMENT' };
+        // [RC3.60 P0 locksandchokes.com] Associate label for inputs with name="fields[XXXX]" lacking id
+        if (el && !el.id && el.name && el.name.startsWith('fields[')) {
+            const parentPair = el.closest ? el.closest('.labelpair, .form-group, .field-area, div') : null;
+            const lbl = parentPair ? parentPair.querySelector('label') : (typeof document !== 'undefined' ? document.querySelector(`label[for="${el.name}"]`) : null);
+            if (lbl && lbl.textContent) {
+                const lt = lbl.textContent.toLowerCase();
+                if (/inquiring\s+about|subject|topic|reason/i.test(lt)) return { semantic: 'subject', confidence: 0.9, reason: 'LABEL_PAIR_SUBJECT' };
+                if (/experience\s+level|level|program|class/i.test(lt)) return { semantic: 'text', confidence: 0.8, reason: 'LABEL_PAIR_TEXT' };
+            }
+        }
+        if (typeof SmartFieldResolver !== 'undefined' && typeof SmartFieldResolver.resolveFieldSemantic === 'function') {
+            return SmartFieldResolver.resolveFieldSemantic(el);
+        }
+        const tag = (el.tagName || '').toUpperCase();
+        const type = (el.type || 'text').toLowerCase();
+        const id = (el.id || '').toLowerCase();
+        const name = (el.name || '').toLowerCase();
+        const placeholder = (el.placeholder || '').toLowerCase();
+        const ariaLabel = (el.getAttribute ? (el.getAttribute('aria-label') || '') : '').toLowerCase();
+        const ariaMultiline = (el.getAttribute ? (el.getAttribute('aria-multiline') === 'true') : false);
+        const isContentEditable = Boolean(el.isContentEditable);
+        const isMultiLine = (tag === 'TEXTAREA') || ariaMultiline || isContentEditable;
+
+        const allText = `${id} ${name} ${placeholder} ${ariaLabel}`;
+
+        // Structural Precedence: Multi-line containers ALWAYS default to message
+        if (isMultiLine) {
+            return { semantic: 'message', confidence: 0.95, reason: 'MULTILINE_STRUCTURAL_PRECEDENCE' };
+        }
+
+        if (type === 'email') return { semantic: 'email', confidence: 1.0, reason: 'INPUT_TYPE_EMAIL' };
+        if (type === 'tel') return { semantic: 'phone', confidence: 1.0, reason: 'INPUT_TYPE_TEL' };
+
+        for (const [field, patterns] of Object.entries(FIELD_PATTERNS)) {
+            for (const pat of patterns) {
+                if (pat.test(allText)) {
+                    return { semantic: field, confidence: 0.85, reason: `PATTERN_${field.toUpperCase()}` };
+                }
+            }
+        }
+        return { semantic: 'unknown', confidence: 0.1, reason: 'UNMATCHED' };
+    }
+
+    const DOMAIN_BLACKLIST = [
+        'facebook.com', 'instagram.com', 'twitter.com', 'x.com', 'linkedin.com', 'youtube.com', 
+        'tiktok.com', 'pinterest.com', 'whatsapp.com', 't.me', 'wa.me',
+        'google.com', 'naver.com', 'daum.net', 'yahoo.com', 'bing.com',
+        '.gov', '.go.kr', '.mil', '.edu', 'wikipedia.org',
+        'github.com', 'wordpress.org', 'squarespace.com', 'wix.com', 'weebly.com', 'medium.com'
+    ];
+
+    // [v2.5.0] Branch Discovery Keywords
+    const BRANCH_KEYWORDS = ['location', 'branch', 'office', 'direction', '지점', '위치', '오시는길', '찾아오시는길', '약도', '본사', '사업소'];
+
+    // [Issue #6 R6.8 P0-8] Single-Flight START_SENDING listener registration
+    if (typeof window !== 'undefined') {
+        if (window.__xpider_start_sending_handler && typeof chrome !== 'undefined' && chrome.runtime?.onMessage) {
+            try {
+                chrome.runtime.onMessage.removeListener(window.__xpider_start_sending_handler);
+            } catch (_) {}
+        }
+        
+        window.__xpider_getExecutionPayload = (extra = {}) => {
+            const ident = window.__xpider_execution_identity || {};
+            return Object.assign({
+                attemptId: ident.attemptId || null,
+                targetToken: ident.targetToken || null,
+                campaignRunId: ident.campaignRunId || null,
+                sessionId: (ident.sessionId !== undefined && ident.sessionId !== null) ? ident.sessionId : null,
+                captchaEpoch: ident.captchaEpoch || 1
+            }, extra);
+        };
+
+        window.__xpider_sendExecutionMessage = (msg, cb) => {
+            const payload = window.__xpider_getExecutionPayload ? window.__xpider_getExecutionPayload(msg) : msg;
+            if (typeof chrome !== 'undefined' && chrome.runtime?.sendMessage) {
+                try {
+                    const p = chrome.runtime.sendMessage(payload, cb);
+                    if (p && typeof p.catch === 'function') p.catch(() => {});
+                    return p;
+                } catch (_) {}
+            }
+        };
+
+        // [Issue #6 R6.9E.1A Section Cleanup] Test hook strictly gated to local test fixtures (127.0.0.1 / localhost)
+        if (typeof window !== 'undefined' && window.addEventListener && window.location && (window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost')) {
+            window.addEventListener('message', (event) => {
+                if (event.data && event.data.type === 'XPIDER_TEST_STALE_CONTROL_MESSAGE') {
+                    const sendFn = window.__xpider_sendExecutionMessage || chrome.runtime.sendMessage;
+                    sendFn(Object.assign({
+                        action: 'STAGE_PROGRESSION',
+                        stage: 'SUBMIT_ATTEMPT_STARTED'
+                    }, event.data.payload));
+                } else if (event.data && event.data.type === 'XPIDER_TEST_STALE_SOLVER_MESSAGE') {
+                    const sendFn = window.__xpider_sendExecutionMessage || chrome.runtime.sendMessage;
+                    sendFn(Object.assign({
+                        action: 'SOLVE_CAPTCHA'
+                    }, event.data.payload));
+                } else if (event.data && event.data.type === 'XPIDER_TEST_ACTIVE_SOLVER_REQUEST') {
+                    const sendFn = window.__xpider_sendExecutionMessage || chrome.runtime.sendMessage;
+                    sendFn(Object.assign({
+                        action: 'SOLVE_CAPTCHA',
+                        method: '2captcha',
+                        type: 'recaptcha',
+                        sitekey: '6Le-wvkSAAAAAPBMRTvw0Q4Muexq9bi0DJwx_nqU',
+                        url: window.location ? window.location.href : ''
+                    }, event.data.payload));
+                }
+            });
+        }
+
+        window.__xpider_start_sending_handler = (request, sender, sendResponse) => {
+            // [R6.9G.7 Abort Target Controller] Immediately halt target execution upon timeout/cancel
+            if (request.action === 'ABORT_TARGET') {
+                console.log(`[ABORT_TARGET] Cancellation received for target tab. Halting pipeline immediately.`);
+                window.__xpider_aborted = true;
+                window.__xpider_running = false;
+                if (window.__xpider_heartbeat_interval) {
+                    clearInterval(window.__xpider_heartbeat_interval);
+                    window.__xpider_heartbeat_interval = null;
+                }
+                if (window.__xpider_releaseProcessingLock) {
+                    window.__xpider_releaseProcessingLock(window.location ? window.location.href : '');
+                }
+                if (typeof sendResponse === 'function') sendResponse({ success: true, aborted: true });
+                return true;
+            }
+
+            if (request.action === 'START_SENDING') {
+                window.__xpider_aborted = false;
+                const currentRunUrl = (window.location ? window.location.href : '');
+                const domGeneration = window.__xpider_dom_generation || (window.__xpider_dom_generation = Date.now());
+                const attemptId = request.attemptId || (Date.now().toString(36) + '_' + Math.random().toString(36).substring(2, 7));
+                const singleFlightKey = `${attemptId}:${currentRunUrl}:${domGeneration}`;
+
+                // [Issue #6 R6.9E & v7.0] Canonical Execution Identity & Campaign Mode Binding
+                window.__xpider_campaign_mode = (request.campaignMode === 'MANUAL') ? 'MANUAL' : 'AUTO';
+                window.__xpider_execution_identity = {
+                    attemptId: request.attemptId || attemptId,
+                    targetToken: request.targetToken || null,
+                    campaignRunId: request.campaignRunId || null,
+                    sessionId: (request.sessionId !== undefined && request.sessionId !== null) ? request.sessionId : null,
+                    captchaEpoch: request.captchaEpoch || 1,
+                    campaignMode: window.__xpider_campaign_mode
+                };
+
+                if (window.__xpider_active_single_flight === singleFlightKey || (window.__xpider_hasProcessingLock && window.__xpider_hasProcessingLock(currentRunUrl))) {
+                    console.log(`[CONTROL_PLANE] duplicate START_SENDING suppressed key=${singleFlightKey}`);
+                    return;
+                }
+                window.__xpider_active_single_flight = singleFlightKey;
+
+                // [R6.3 A2] Acquire lock before proceeding
+                if (window.__xpider_acquireProcessingLock) {
+                    window.__xpider_acquireProcessingLock(attemptId, currentRunUrl, domGeneration);
+                } else {
+                    window.__xpider_running = true;
+                    window.__xpider_running_url = currentRunUrl;
+                }
+
+                console.log(`[CONTROL_PLANE] listenersActive=1 key=${singleFlightKey}`);
+                logDev(`[TARGET_PAGE] url=${currentRunUrl} domGeneration=${domGeneration} attemptId=${attemptId}`, "info");
+
+                // [v17.6.0] Redirect Recovery
+                const isVerificationMode = sessionStorage.getItem('xpider_pending_verify') === 'true';
+                if (isVerificationMode) {
+                    logDev("🔄 [Engine] Post-Redirect Recovery active. Verifying previous attempt...", "info");
+                    detectSubmissionResult(null, request.template);
+                    return;
+                }
+                
+                processCampaign(request.template, request.delayMs, request.triedUrl, request.fillDelayMs, request.submitDelayMs);
+            }
+        };
+
+        if (typeof chrome !== 'undefined' && chrome.runtime?.onMessage) {
+            chrome.runtime.onMessage.addListener(window.__xpider_start_sending_handler);
+            console.log('[CONTROL_PLANE] listenersActive=1');
+        }
+    }
+
+    function getSpeedProfile(delayMs, fillDelayMs = 300, submitDelayMs = 1500) {
+        return {
+            field: parseInt(fillDelayMs) || 300,
+            hold: parseInt(submitDelayMs) || 1500
+        };
+    }
+
+    function normalizeUrl(url) {
+        if (!url) return '';
+        try {
+            const u = new URL(url);
+            return (u.origin + u.pathname).replace(/\/$/, '').toLowerCase();
+        } catch (e) {
+            return url.split('#')[0].replace(/\/$/, '').toLowerCase();
+        }
+    }
+
+    async function discoverBranchLinks() {
+        logDev("🔍 [Supreme-X 5.0] Scanning for multi-location / branch links...", "info");
+        const links = queryAllDeep('a');
+        const results = [];
+        const currentOrigin = window.location.origin;
+        const normalizedCurrent = normalizeUrl(window.location.href);
+
+        for (const link of links) {
+            const href = link.href || '';
+            const text = (link.textContent || '').toLowerCase().trim();
+            
+            if (!href.startsWith(currentOrigin)) continue; // Keep within same domain
+            
+            // [v2.8.7] Normalize and avoid current page loop
+            const normalizedHref = normalizeUrl(href);
+            if (normalizedHref === normalizedCurrent) continue; 
+            
+            // [v2.9.1] Strict Domain Isolation for branch discovery
+            try {
+                if (new URL(href).origin !== currentOrigin) continue;
+            } catch(e) { continue; }
+            
+            const isBranchLink = BRANCH_KEYWORDS.some(k => text.includes(k) || href.toLowerCase().includes(k)) && 
+                                 !CONTACT_KEYWORDS.high.some(k => text.includes(k)); // Exclude main contact
+
+            if (isBranchLink && results.length < 5) {
+                if (!results.includes(href)) {
+                    results.push(href);
+                    logDev(`📍 [Supreme-X 5.0] Branch discovered: ${text} -> ${href}`);
+                }
+            }
+        }
+        return results;
+    }
+
+    async function safeNavigate(target, template) {
+        const currentUrl = window.location.href;
+        const currentPath = normalizeUrl(currentUrl);
+        const targetPath = normalizeUrl(target);
+        
+        // [v2.9.6] Internal log for tracing
+        console.log(`[Xpider] Navigating to: ${target}`);
+
+        if (currentPath === targetPath && target.includes('#')) {
+            logDev("🔗 [Engine] Hash-only (SPA) navigation detected. Re-triggering discovery...", "info");
+            window.location.hash = target.split('#')[1] || '';
+            setTimeout(() => {
+                window.__xpider_running = false;
+                processCampaign(template);
+            }, 1500);
+            return false; 
+        } else {
+            window.location.href = target;
+            return true;
+        }
+    }
+
+    async function guessDirectContactPaths(template) {
+        // [v18.26.0] Logic Deprecated: Orchestration moved to background engine for persistence.
+        return null;
+    }
+
+    // [v1.3.7] Shadow DOM Deep Search Utility
+    function queryAllDeep(selector, root = document) {
+        let nodes = [];
+        try {
+            nodes = Array.from(root.querySelectorAll(selector));
+        } catch (e) {}
+
+        const scan = (node) => {
+            try {
+                if (node.shadowRoot) {
+                    try {
+                        nodes = nodes.concat(Array.from(node.shadowRoot.querySelectorAll(selector)));
+                    } catch (e) {}
+                    Array.from(node.shadowRoot.children).forEach(scan);
+                }
+                Array.from(node.children || []).forEach(scan);
+            } catch (e) {} // [v2.8.5] Resilience: Don't crash on protected components
+        };
+        
+        try {
+            Array.from(root.children || []).forEach(scan);
+        } catch (e) {}
+        return nodes;
+    }
+
+    async function cleanPageEnvironment() {
+        logDev("🧹 [Cleaner] Scanning for intrusive overlays/popups...", "info");
+        
+        // [v17.7.0] Protected Elements: Never remove containers that contain actual inputs/forms
+        const intrusiveSelectors = [
+            '.wix-instant-popup', '.modal-overlay', '.cookie-banner', '#cookie-notice',
+            '.sqs-announcement-bar', '.sp-popup-wrapper', '[class*="popup"]', '[id*="popup"]'
+        ];
+        
+        // [v18.0.0 / R6.9G.7] Protected Elements: Squarespace Modal & Lightbox Shield (safe extraction)
+        const isFormProtected = (el) => {
+            const id = safeGetStrAttr(el, 'id');
+            const cls = safeGetStrAttr(el, 'className');
+            const identifier = `${id} ${cls}`;
+            return el.querySelector('input, textarea, select, canvas, iframe, .wpcf7-form, .gform_wrapper') || 
+                   identifier.includes('sqs-modal') || identifier.includes('lightbox') || identifier.includes('yui3-');
+        };
+
+        intrusiveSelectors.forEach(sel => {
+            document.querySelectorAll(sel).forEach(el => {
+                if (isFormProtected(el)) return; // Protection logic
+                const style = window.getComputedStyle(el);
+                if (style.position === 'fixed' || style.zIndex > 1000) {
+                    el.style.display = 'none';
+                    logDev(`   - [Removed] Blocked intrusive element: ${sel}`);
+                }
+            });
+        });
+        
+        // Remove high z-index blank overlays (with form protection)
+        document.querySelectorAll('div').forEach(el => {
+            if (isFormProtected(el)) return;
+            const style = window.getComputedStyle(el);
+            if (parseInt(style.zIndex) > 500 && (el.innerText || '').length < 10) {
+                el.style.display = 'none';
+            }
+        });
+    }
+
+    async function triggerContactInteraction() {
+        logDev("🔘 [Supreme-Scan] No form found. Attempting to trigger hidden contact containers...", "info");
+        const triggerKeywords = [
+            'contact', 'write', 'message', '문의', '연락', '보내기', 'inquiry',
+            'escríbenos', 'contacto', // Spanish
+            'kontakt', 'schreiben', // German
+            'contattaci', // Italian
+            'contacter', // French
+            'お問い合わせ', '連絡', // Japanese
+            '联系', '留言', // Chinese
+            'tribeca', 'canarsie', 'marine park', 'location' // [v18.0.0] Regional location buttons
+        ];
+        
+        // Search for buttons, links, and action-oriented spans/divs
+        const possibleTriggers = queryAllDeep('button, a, div[role="button"], span.btn, .contact-btn, #contact-trigger, [class*="chat"], [id*="chat"], .support-trigger, .lightbox-handle, .sqs-block-button, .sqs-editable-button');
+        
+        for (const btn of possibleTriggers) {
+            // [Safety Guard] Skip elements that trigger downloads or external application protocols (e.g. Outlook/vCard/PDF)
+            if (btn.hasAttribute && btn.hasAttribute('download')) continue;
+            if (btn.tagName === 'A' || (btn.hasAttribute && btn.hasAttribute('href'))) {
+                const href = (btn.getAttribute('href') || '').toLowerCase().trim();
+                if (/^(mailto:|tel:|callto:|sms:|javascript:)/i.test(href)) continue;
+                if (NON_HTML_DOWNLOADABLE_EXTENSIONS.test(href)) continue;
+                // In-page contact modal triggers must not perform full-page anchor navigation
+                if (href.startsWith('http') || href.startsWith('/') || href.startsWith('.')) continue;
+            }
+            const text = (btn.textContent || btn.ariaLabel || '').toLowerCase().trim();
+            const cls = (btn.className || '').toString().toLowerCase();
+            const isIconTrigger = /chat|message|contact|support|mail/i.test(cls) || /chat|message|support/i.test(btn.id) || cls.includes('lightbox-handle');
+            
+            if (triggerKeywords.some(k => text.includes(k) && text.length < 25) || isIconTrigger) {
+                logDev(`🎯 [Supreme-Scan 3.0] Activating high-probability trigger: "${text}" | Class: ${btn.className}`);
+                try {
+                    btn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    // [v18.27.0] Navigation Signal: Alert background that a navigation is likely
+                    chrome.runtime.sendMessage({ action: 'SENDER_LOG', message: "🚀 [Engine] Trigger clicked. Expecting navigation...", logType: "info" });
+                    
+                    btn.click();
+                    // Multi-event firing for heavy JS frameworks
+                    ['mouseenter', 'mousedown', 'mouseup', 'click'].forEach(evt => {
+                        btn.dispatchEvent(new MouseEvent(evt, { bubbles: true, cancelable: true }));
+                    });
+                } catch(e) {}
+                
+                await new Promise(r => setTimeout(r, 1500)); 
+                return true;
+            }
+        }
+        return false;
+    }
+
+    async function closeIntrusivePopups() {
+        logDev("🧹 [Cleaner] Scanning for intrusive overlays/popups and cookie banners...");
+        
+        // 1. 쿠키 및 일반 팝업 닫기/수락 버튼 전방위 탐색
+        const closeSelectors = [
+            '.close', '.dismiss', '.X', '[aria-label*="close"]', '[class*="close"]', 
+            '[id*="close"]', '.modal-close', '.popup-close', '.et_pb_close_button',
+            '.happyforms-close',
+            // Cookie specific accept buttons
+            '[id*="accept" i]', '[class*="accept" i]', '[id*="agree" i]', '[class*="agree" i]',
+            '[id*="consent" i] button', '[class*="consent" i] button', '[id*="cookie" i] button', '[class*="cookie" i] button',
+            '#cookie-accept', '.cookie-accept', '#cookie-agree', '.cookie-agree'
+        ];
+        
+        const buttons = queryAllDeep('button, a, span, div[role="button"]');
+        let closedCount = 0;
+        
+        // 다국어 쿠키 동의 및 닫기 키워드 매처
+        const consentKeywords = [
+            'x', 'close', '닫기', '閉じる', '关闭', 'accept', 'agree', 'allow', 
+            'accept all', 'allow all', 'i agree', '수락', '동의', '허용', '동의합니다', '허용합니다',
+            'ok', 'okay', 'yes', 'understood', '확인', '了解'
+        ];
+        
+        for (const btn of buttons) {
+            if (btn.hasAttribute && btn.hasAttribute('download')) continue;
+            if (btn.tagName === 'A' && btn.hasAttribute && btn.hasAttribute('href')) {
+                const href = (btn.getAttribute('href') || '').toLowerCase().trim();
+                if (/^(mailto:|tel:|callto:|sms:)/i.test(href) || NON_HTML_DOWNLOADABLE_EXTENSIONS.test(href)) continue;
+            }
+            const isMatch = closeSelectors.some(s => {
+                try { return btn.matches(s); } catch(e) { return false; }
+            });
+            const text = (btn.textContent || '').toLowerCase().trim();
+            if (isMatch || consentKeywords.includes(text)) {
+                const style = window.getComputedStyle(btn);
+                if (style.display !== 'none' && style.visibility !== 'hidden') {
+                    btn.click();
+                    closedCount++;
+                }
+            }
+        }
+        
+        // 2. 강제 쿠키 스위핑 (클릭 실패나 오버레이 방어벽 제거)
+        // 일반적인 쿠키 배너와 모달 오버레이 컨테이너들을 display: none 처리
+        const cookieContainerSelectors = [
+            '[id*="cookie" i]', '[class*="cookie" i]',
+            '[id*="consent" i]', '[class*="consent" i]',
+            '[id*="gdpr" i]', '[class*="gdpr" i]',
+            '#cookie-law', '.cookie-banner', '[data-cookie]',
+            // Wix/WordPress 특정 모달 차단
+            '.wix-cookie-consent', '.sqs-cookie-banner-v2',
+            // 화면 전체를 블로킹하는 배경막 overlay 제거
+            '[class*="backdrop" i]', '[class*="overlay" i]:not(form):not(input)'
+        ];
+        
+        let sweptCount = 0;
+        for (const selector of cookieContainerSelectors) {
+            try {
+                const elements = queryAllDeep(selector);
+                for (const el of elements) {
+                    // 단, 폼 입력 요소나 실제 문의 폼 컨테이너가 쿠키 키워드를 ID에 포함하여 날아가는 현상 방지
+                    if (el.tagName === 'FORM' || el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.contains(document.querySelector('form'))) {
+                        continue;
+                    }
+                    const style = window.getComputedStyle(el);
+                    if (style.display !== 'none' && (style.position === 'fixed' || style.position === 'absolute' || parseInt(style.zIndex) > 100)) {
+                        el.style.setProperty('display', 'none', 'important');
+                        sweptCount++;
+                    }
+                }
+            } catch(e) {}
+        }
+        
+        if (closedCount > 0 || sweptCount > 0) {
+            logDev(`✅ [Cleaner] Suppressed ${closedCount} buttons & swept ${sweptCount} cookie/overlay containers.`);
+        }
+    }
+
+    // [P0-B & P0-C Fix] Robust 404 and HTTP Error Page Detection
+    function isPageErrorOr404() {
+        try {
+            const title = (document.title || '').toLowerCase();
+            const body = document.body;
+            if (!body) return false;
+
+            const titleKeywords = [
+                '404', 'not found', 'page not found', 'error 404', '404 error',
+                'page doesn\'t exist', 'page does not exist', 'cannot be found', 'nothing found',
+                '찾을 수 없습니다', '오류 404', '페이지를 찾을 수 없습니다'
+            ];
+            if (titleKeywords.some(k => title.includes(k))) return true;
+
+            const headings = Array.from(document.querySelectorAll('h1, h2, h3, .error-title, .not-found'));
+            for (const h of headings) {
+                const txt = (h.textContent || '').trim().toLowerCase();
+                if (txt.length < 120 && (
+                    txt.includes('404') ||
+                    txt.includes('page not found') ||
+                    txt.includes('page cannot be found') ||
+                    txt.includes('not found') ||
+                    txt.includes('nothing found') ||
+                    txt.includes('we couldn\'t find that page') ||
+                    txt.includes('페이지를 찾을 수 없습니다')
+                )) {
+                    return true;
+                }
+            }
+
+            const bodyText = (body.textContent || '').toLowerCase();
+            const strongErrorSignals = [
+                '404 not found', '404 - not found', '404: not found', 'error 404',
+                'page not found', 'the requested url was not found on this server',
+                'the page you are looking for cannot be found',
+                'the page you requested could not be found',
+                'this page could not be found',
+                'sorry, we can\'t find that page',
+                'oops! that page can’t be found',
+                'oops! that page cannot be found',
+                '페이지를 찾을 수 없습니다'
+            ];
+            if (strongErrorSignals.some(s => bodyText.includes(s))) return true;
+        } catch (_) {}
+        return false;
+    }
+
+    // [RC3.60 P0] Exclude Browser-Extension Injected Translation Overlays, Toolbars & Modals
+    function isExcludedOverlayElement(el) {
+        if (!el) return false;
+        try {
+            let cur = el;
+            while (cur && cur !== document.body && cur !== document.documentElement) {
+                const id = (cur.id || '').toLowerCase();
+                const cls = (typeof cur.className === 'string' ? cur.className : (cur.getAttribute?.('class') || '')).toLowerCase();
+                const role = (cur.getAttribute ? (cur.getAttribute('role') || '') : '').toLowerCase();
+                const tag = (cur.tagName || '').toLowerCase();
+                const combined = `${id} ${cls} ${role} ${tag}`;
+
+                // Internal Xpider UI
+                if (id.startsWith('xpider-') || cls.includes('xpider-') || id.includes('xpider') || cls.includes('xpider')) return true;
+
+                // Browser extension translation overlays (e.g. default-translate-modal, bigTranslateModal, immersive-translate)
+                if (/translate|trans-popup|trans-modal|trans-bubble|trans-container|goog-te|notranslate|skiptranslate|deepl|immersive|kiss-trans/i.test(combined)) {
+                    return true;
+                }
+
+                // Extension dictionary search / single-word lookup widgets
+                if (/singlewordsearch|wordsearch|dictsearch|dictionary|vocab/i.test(combined)) {
+                    return true;
+                }
+
+                // Third-party browser extension injected toolbars (Grammarly, LastPass, 1Password, Bitwarden, Sider, Monica, Harpa, etc.)
+                if (/grammarly|lastpass|1password|bitwarden|sider|monica|harpa|chatgpt-ext|__ext_|chrome-extension|edge-extension|moz-extension/i.test(combined)) {
+                    return true;
+                }
+
+                // General non-page search drawers / quick-search modals
+                if (role === 'search' || cls.includes('search-modal') || cls.includes('search-drawer') || id.includes('site-search')) {
+                    return true;
+                }
+
+                // Custom element extension roots (e.g. <immersive-translate-container>, <translate-modal>)
+                if (tag.includes('-') && (tag.includes('translate') || tag.includes('modal') || tag.includes('ext'))) {
+                    return true;
+                }
+
+                cur = cur.parentElement;
+            }
+        } catch (_) {}
+        return false;
+    }
+
+    // [Cloudflare WAF / Access Denied Terminal Classifier - Directive #6336861540]
+    function classifyWafBlock(doc = document) {
+        try {
+            if (!doc) return { isBlocked: false };
+
+            // Guard 1: If interactive challenge widgets exist, this is an interactive challenge, NOT a hard WAF access block
+            const hasInteractiveCaptcha = !!doc.querySelector(
+                '#challenge-stage, iframe[src*="challenges.cloudflare"], .cf-turnstile, #cf-turnstile, ' +
+                '.g-recaptcha, .h-captcha, iframe[src*="recaptcha"], iframe[src*="hcaptcha"], [data-challenge-state]'
+            );
+            if (hasInteractiveCaptcha) {
+                return { isBlocked: false };
+            }
+
+            // Guard 2: If a real contact form with textarea or email exists, this is NOT a hard WAF block
+            const hasRealForm = !!doc.querySelector('form textarea, form input[type="email"], textarea[name*="message"]');
+            if (hasRealForm) {
+                return { isBlocked: false };
+            }
+
+            const title = (doc.title || '').trim().toLowerCase();
+            const body = doc.body;
+            if (!body) return { isBlocked: false };
+            const bodyText = (body.textContent || '').toLowerCase();
+
+            // 1. Cloudflare Dedicated Error Selectors
+            const cfErrorElement = doc.querySelector('#cf-error-details, .cf-error-overview, .cf-error-source, #cf-wrapper #cf-error-banner, #cf-error-wrapper');
+            const hasCfErrorSelector = !!cfErrorElement;
+
+            // 2. Cloudflare Specific Text Markers
+            const hasCfWhyBlocked = bodyText.includes('why have i been blocked');
+            const hasCfUnableAccess = bodyText.includes('you are unable to access') || bodyText.includes('unable to access this website');
+            const hasCfSecurityService = bodyText.includes('security service to protect itself from online attacks') || bodyText.includes('performance & security by cloudflare');
+            const hasRayId = /cloudflare ray id[:\s]*([0-9a-f]+)/i.test(bodyText) || /ray id[:\s]*([0-9a-f]+)/i.test(bodyText);
+            const rayIdMatch = bodyText.match(/ray id[:\s]*([0-9a-f]{16,})/i);
+            const rayId = rayIdMatch ? rayIdMatch[1] : (hasCfErrorSelector ? 'dom_detected' : null);
+
+            // Cloudflare Detection Confirmed
+            if (hasCfErrorSelector || (hasRayId && (hasCfWhyBlocked || hasCfUnableAccess || hasCfSecurityService || title.includes('access denied') || title.includes('attention required'))) || (hasCfWhyBlocked && hasCfUnableAccess)) {
+                return {
+                    isBlocked: true,
+                    vendor: 'cloudflare',
+                    reasonCode: 'ACCESS_BLOCKED_WAF',
+                    rayId: rayId || 'none',
+                    details: 'Cloudflare WAF Access Denied (Error 1020 / Datacenter IP block)'
+                };
+            }
+
+            // 3. Generic WAF / 403 Access Denied
+            const isTitle403 = title === '403 forbidden' || title.includes('403 forbidden') || title.includes('access denied') || title.includes('403 - forbidden');
+            const headings = Array.from(doc.querySelectorAll('h1, h2')).map(h => (h.textContent || '').trim().toLowerCase());
+            const isHeading403 = headings.some(h => 
+                h === '403 forbidden' || h === 'access denied' || h.includes('access denied') || 
+                h.includes('you don\'t have permission to access') || h.includes('why have i been blocked')
+            );
+            const isBody403 = bodyText.includes('you don\'t have permission to access') || 
+                              bodyText.includes('access to this resource on the server is denied') ||
+                              bodyText.includes('you are not authorized to access this page');
+
+            const allInputs = doc.querySelectorAll('input:not([type="hidden"]), textarea, select, button');
+            if ((isTitle403 || isHeading403) && (isBody403 || isHeading403) && allInputs.length <= 1) {
+                return {
+                    isBlocked: true,
+                    vendor: 'generic_waf',
+                    reasonCode: 'ACCESS_BLOCKED_WAF',
+                    rayId: 'none',
+                    details: 'Generic 403 Forbidden / Access Denied (WAF or Server Restriction)'
+                };
+            }
+
+            return { isBlocked: false };
+        } catch (_) {
+            return { isBlocked: false };
+        }
+    }
+
+    // Backward compatible alias
+    function isPageWafBlocked() {
+        return classifyWafBlock(document).isBlocked;
+    }
+
+    async function checkAndRecoverPage() {
+        const wafCheck = classifyWafBlock(document);
+        if (wafCheck.isBlocked) {
+            logDev(`🚫 [WAF_BLOCKED] ${wafCheck.details} on ${window.location.hostname}. Entire domain is blocked for current egress IP.`, "error");
+            logDev(`[PAGE_CLASS] WAF_BLOCKED_PAGE`, "info");
+            currentTargetLifecycleState = TargetLifecycleState.SETTLING;
+            finishCampaign(false, wafCheck.details, "ACCESS_BLOCKED_WAF", {
+                wafVendor: wafCheck.vendor,
+                rayId: wafCheck.rayId,
+                pageEvidence: {
+                    title: document.title,
+                    url: window.location.href,
+                    details: wafCheck.details
+                }
+            });
+            return true;
+        }
+
+        const isErrorPage = isPageErrorOr404();
+        if (isErrorPage) {
+            logDev(`⚠️ [Recovery] Error/404 page detected on candidate: ${window.location.href}`, "warning");
+            logDev(`[PAGE_CLASS] ERROR_404_PAGE`, "info");
+
+            const isLoopbackTarget = window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost';
+            // Explicit fixture pages on loopback (e.g. ai-required-fields.html) must not advance to imaginary /about/contact aliases
+            if (isLoopbackTarget && !window.location.pathname.includes('no-contact-page') && window.location.pathname !== '/' && window.location.pathname !== '/index.html') {
+                logDev(`[LOOPBACK_FIXTURE_ERROR] Candidate ${window.location.href} is 404/dead. Settle cleanly without alias deviation.`, "error");
+                finishCampaign(false, "FIXTURE_PAGE_ERROR_404", "NO_ACCESSIBLE_INQUIRY_FORM");
+                return true;
+            }
+
+            // Directive B #7 & Directive F: Automatic candidate advance on 404/dead page
+            const visited = JSON.parse(sessionStorage.getItem('xpider_guessed_paths') || '[]');
+            const currentNorm = normalizeUrl(window.location.href);
+            if (currentNorm && !visited.includes(currentNorm)) visited.push(currentNorm);
+            sessionStorage.setItem('xpider_guessed_paths', JSON.stringify(visited));
+
+            const COMMON_CONTACT_ALIASES = ['/contact', '/contact-us', '/contactus', '/get-in-touch', '/inquiry', '/about/contact'];
+            const unvisitedAlias = COMMON_CONTACT_ALIASES
+                .map(a => `${window.location.origin}${a}`)
+                .find(u => !visited.includes(normalizeUrl(u)));
+
+            if (unvisitedAlias) {
+                logDev(`[CANDIDATE_ADVANCE] Dead candidate=${window.location.href} -> advancing to next alias=${unvisitedAlias}`, "info");
+                window.location.href = unvisitedAlias;
+                return true;
+            }
+
+            // If candidates exhausted, settle explicitly as CONTACT_CANDIDATE_ERROR_PAGE / NO_ACCESSIBLE_INQUIRY_FORM
+            logDev("⚠️ [Recovery] All candidate paths exhausted after error page. Settling CONTACT_CANDIDATE_ERROR_PAGE / NO_ACCESSIBLE_INQUIRY_FORM.", "warning");
+            finishCampaign(false, "CONTACT_CANDIDATE_ERROR_PAGE", "NO_ACCESSIBLE_INQUIRY_FORM");
+            return true;
+        }
+        return false;
+    }
+
+    async function processCampaign(template, delayMs = 10000, triedUrl = '', fillDelayMs = 300, submitDelayMs = 1500) {
+        try {
+            // [RC3.33 P0-B] Attempt-scoped reset at processCampaign entry
+            resetCaptchaRuntimeState('processCampaign');
+            if (typeof document !== 'undefined' && document.readyState === 'loading') {
+                await new Promise(r => {
+                    document.addEventListener('DOMContentLoaded', r, { once: true });
+                    setTimeout(r, 1000);
+                });
+            }
+            const speed = getSpeedProfile(delayMs, fillDelayMs, submitDelayMs);
+            const currentUrl = window.location.href;
+            
+            // [Target Isolation] Reset guessed paths from prior queue targets to prevent state bleeding
+            const targetToken = (window.__xpider_exec_identity && window.__xpider_exec_identity.targetToken) || triedUrl || currentUrl;
+            const prevTargetToken = sessionStorage.getItem('xpider_active_target_token');
+            if (prevTargetToken && prevTargetToken !== targetToken) {
+                sessionStorage.removeItem('xpider_guessed_paths');
+                sessionStorage.removeItem('xpider_visited_subs');
+                sessionStorage.removeItem('xpider_recursion_debt');
+            }
+            sessionStorage.setItem('xpider_active_target_token', targetToken);
+
+            // [v2.9.8] Navigation Registry: Mark background-opened and current pages as visited
+            const visited = JSON.parse(sessionStorage.getItem('xpider_guessed_paths') || '[]');
+            const normalizedTried = normalizeUrl(triedUrl);
+            const normalizedCurrent = normalizeUrl(currentUrl);
+
+            if (normalizedTried && !visited.includes(normalizedTried)) visited.push(normalizedTried);
+            if (normalizedCurrent && !visited.includes(normalizedCurrent)) visited.push(normalizedCurrent);
+            sessionStorage.setItem('xpider_guessed_paths', JSON.stringify(visited));
+
+            // [v1.6.5] Loop Protection: Check for recent successful submission on this path
+            const lastSubmittedPath = sessionStorage.getItem('xpider_last_submit_path');
+            const lastSubmitTime = parseInt(sessionStorage.getItem('xpider_last_submit_time') || '0');
+            const now = Date.now();
+            const submitCount = parseInt(sessionStorage.getItem('xpider_submit_count') || '0');
+            
+            // If we are on a path that was just submitted (within 20s)
+            if (submitCount === 0 && lastSubmittedPath && currentUrl.includes(lastSubmittedPath) && (now - lastSubmitTime) < 20000) {
+                logDev("🔄 [LoopGuard] Self-refresh detected. Waiting for actual success indicator...", "info");
+                setTimeout(() => detectSubmissionResult(null, template), 500); 
+                return;
+            }
+
+            logDev("🚀 [Engine] Ultra-Mode process started", "start");
+            startHeartbeat();
+            
+            await closeIntrusivePopups();
+            if (await checkAndRecoverPage()) return;
+
+            const recursionDebt = parseInt(sessionStorage.getItem('xpider_recursion_debt') || '0');
+
+            logDev(`[TARGET_PAGE] url=${currentUrl} recursion=${recursionDebt}`);
+            logDev(`🔍 [Discovery] URL: ${currentUrl} | Recursion: ${recursionDebt}`);
+            
+            // 1. [v1.3.7] Ultra Polling Form Discovery
+            await cleanPageEnvironment();
+
+            // [Email Collector Integration] Auxiliary non-blocking email scan
+            try {
+                extractAndSendPageEmails();
+            } catch (_) {}
+            
+            // [R6.3 B] FORM_SCAN log
+            let currentForm = null;
+            let formScanBodyCandidates = 0;
+            let formScanForms = 0;
+            let formScanLogical = 0;
+            for (let i = 1; i <= 3; i++) {
+                logDev(`🧐 [Discovery] Polling attempt ${i}/3... | URL: ${window.location.href} | Recursion: ${recursionDebt}`);
+                currentForm = await findOptimalForm();
+
+                // Count form scan stats
+                try {
+                    const allForms = document.querySelectorAll('form');
+                    const allTextareas = document.querySelectorAll('textarea');
+                    formScanForms = allForms.length;
+                    formScanBodyCandidates = allTextareas.length;
+                    formScanLogical = document.querySelectorAll('[role="form"], form, [data-form]').length;
+                } catch (_) {}
+                
+                if (currentForm) break;
+                
+                // [Ultra-Mode] Try scrolling to reveal lazy-loaded forms
+                if (i === 1) {
+                    logDev("🚀 [Engine] Ultra-Mode: Scrolling to reveal lazy-loaded content...");
+                    window.scrollBy({ top: 400, behavior: 'smooth' });
+                } else if (i === 2) {
+                    window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+                    await triggerContactInteraction();
+                }
+                
+                await new Promise(r => setTimeout(r, 1500)); 
+            }
+
+            // [RC3.42] Promote inner field wrappers (UL/OL/TABLE/etc.) to their enclosing <form> before validation.
+            if (currentForm && currentForm.tagName && currentForm.closest && !['FORM', 'FIELDSET'].includes(currentForm.tagName.toUpperCase())) {
+                const enclosingForm = currentForm.closest('form');
+                if (enclosingForm) currentForm = enclosingForm;
+            }
+
+            // [Issue #6 R6.8 P0-2] Strict Long-Text Gate & Container Assertion
+            const validContainerTags = ['FORM', 'FIELDSET', 'DIV', 'SECTION', 'ARTICLE', 'MAIN', 'ASIDE'];
+            if (currentForm && (!currentForm.tagName || !validContainerTags.includes(currentForm.tagName.toUpperCase()))) {
+                console.log(`[FORM_GATE_INVARIANT_VIOLATION] Discarding invalid form container element: ${currentForm.tagName || typeof currentForm}`);
+                logDev(`[FORM_GATE_INVARIANT_VIOLATION] Discarding invalid container: ${currentForm.tagName || typeof currentForm}`, "warning");
+                currentForm = null;
+            }
+
+            let inquiryBody = null;
+            if (currentForm && _ContactGate && typeof _ContactGate.detectInquiryBodyField === 'function') {
+                inquiryBody = _ContactGate.detectInquiryBodyField(currentForm);
+            } else if (currentForm && currentForm.querySelector) {
+                inquiryBody = currentForm.querySelector('textarea, [contenteditable="true"], [role="textbox"][aria-multiline="true"]');
+            }
+
+            // [R6.9F] Hard Contact-Gate Assertion: Genuinely eligible inquiry form vs Comment / Non-Inquiry form
+            if (currentForm && _ContactGate && typeof _ContactGate.classifyFormIntent === 'function') {
+                const classification = _ContactGate.classifyFormIntent(currentForm);
+                if (!classification.eligible) {
+                    const settleReason = (classification.reason && classification.reason.startsWith('NON_INQUIRY'))
+                        ? classification.reason
+                        : `NON_INQUIRY_${classification.intent}_FORM`;
+                    logDev(`[FORM_GATE] eligible=false reason=${settleReason}`);
+                    logDev(`❌ [ContactGate] Non-inquiry form rejected: ${settleReason}`, "error");
+                    currentTargetLifecycleState = TargetLifecycleState.SETTLING;
+                    finishCampaign(false, settleReason, settleReason);
+                    return;
+                }
+            }
+
+            // [P0-2 Rule 1 & 2] bodyCandidates === 0 or no genuine inquiry body field -> hard eligible=false
+            if (formScanBodyCandidates === 0 || !inquiryBody) {
+                if (currentForm) {
+                    console.log(`[FORM_GATE_INVARIANT_VIOLATION] bodyCandidates=${formScanBodyCandidates} hasInquiryBody=${!!inquiryBody} -> eligible=false`);
+                    logDev(`[FORM_GATE_INVARIANT_VIOLATION] bodyCandidates=${formScanBodyCandidates} -> rejecting container`, "warning");
+
+                    // [R6.9A Acceptance Directive] Non-inquiry forms (login, newsletter, search, booking, comment)
+                    // must be settled as SKIPPED rather than attempting fallback link discovery.
+                    if (_ContactGate && typeof _ContactGate.classifyFormIntent === 'function') {
+                        const classification = _ContactGate.classifyFormIntent(currentForm);
+                        if (!classification.eligible && classification.reason && classification.reason.startsWith('NON_INQUIRY')) {
+                            logDev(`❌ [ContactGate] Non-inquiry form rejected: ${classification.reason}`, "error");
+                            finishCampaign(false, classification.reason, classification.reason);
+                            return;
+                        }
+                    }
+                    currentForm = null;
+                }
+            }
+
+            // [R6.3 A3 & B] Page classification and FORM_SCAN log
+            const isContactPageUrl = isContactPage();
+            let pageClass = 'UNKNOWN';
+            if (currentForm) {
+                pageClass = 'CONTACT_FORM_PAGE';
+            } else {
+                // Detect contact info only (phone/email visible, no form)
+                const pageText = (document.body ? document.body.innerText : '').toLowerCase();
+                const hasContactInfo = /@[a-z0-9.-]+\.[a-z]{2,}/.test(pageText) || /\b\d{3}[-.]?\d{3}[-.]?\d{4}\b/.test(pageText);
+                const hasFormSignals = document.querySelectorAll('input[type="text"], input[type="email"], textarea').length > 0;
+                if (hasContactInfo && !hasFormSignals) {
+                    pageClass = 'CONTACT_INFO_ONLY';
+                } else if (!hasContactInfo && !hasFormSignals) {
+                    pageClass = 'NO_CONTACT';
+                } else if (hasFormSignals) {
+                    pageClass = 'NEWSLETTER_ONLY'; // form exists but not inquiry body
+                }
+            }
+
+            // Check for cross-origin iframes or external widget forms (PushPress, etc.)
+            let crossOriginFramesCount = 0;
+            let externalFormCandidatesCount = 0;
+            let detectedExternalFormUrl = null;
+            try {
+                const iframes = Array.from(document.querySelectorAll('iframe'));
+                crossOriginFramesCount = iframes.length;
+                const WIDGET_KEYWORDS = [
+                    'contact', 'form', 'hubspot', 'jotform', 'typeform', 'wufoo', 'inquiry',
+                    'message', 'pushpress', 'grow', 'lead', 'cognito', 'forms.gle', 'tally',
+                    'google.com/forms', 'activecampaign', 'marketo', 'pardot', 'calendly', 'chilipiper'
+                ];
+                for (const ifr of iframes) {
+                    const rawSrc = (ifr.src || ifr.getAttribute('src') || '').trim();
+                    const srcLower = rawSrc.toLowerCase();
+                    const title = (ifr.title || ifr.getAttribute('title') || '').toLowerCase();
+                    const idCls = `${ifr.id || ''} ${ifr.className || ''}`.toLowerCase();
+                    const isWidget = WIDGET_KEYWORDS.some(k => srcLower.includes(k) || title.includes(k) || idCls.includes(k));
+                    const isCrossOriginOnContact = isContactPageUrl && rawSrc.startsWith('http') && !rawSrc.startsWith(window.location.origin);
+                    if (isWidget || isCrossOriginOnContact) {
+                        externalFormCandidatesCount++;
+                        if (!detectedExternalFormUrl) {
+                            detectedExternalFormUrl = rawSrc;
+                        }
+                    }
+                }
+            } catch (_) {}
+
+            logDev(`[FORM_SCAN] forms=${formScanForms} logicalContainers=${formScanLogical} crossOriginFrames=${crossOriginFramesCount} externalFormCandidates=${externalFormCandidatesCount}`, "info");
+            logDev(`[PAGE_CLASS] ${pageClass}`, "info");
+
+            // [Directive B & C: Bounded Auto-Recovery & Manual Assist Escalation]
+            // MANUAL ASSIST = LAST RESORT, not first fallback.
+            // Do NOT show manual assist for normal no-form pages, 404s, or transient states.
+            if (!currentForm) {
+                if (detectedExternalFormUrl) {
+                    // Plausible external inquiry form provider detected (cross-origin iframe like PushPress, HubSpot, etc.)
+                    const assistReason = 'EXTERNAL_CROSS_ORIGIN_FORM';
+                    logDev(`[FORM_BOUNDARY] type=CROSS_ORIGIN_IFRAME formPageUrl=${window.location.href} externalFormUrl=${detectedExternalFormUrl}`, "info");
+                    logDev(`[FORM_GATE] eligible=false reason=${assistReason}`, "info");
+                    if (window.__xpider_releaseProcessingLock) window.__xpider_releaseProcessingLock(currentUrl);
+
+                    const dedupeKey = getManualAssistDedupeKey(assistReason);
+                    if (!hasManualAssistBeenShown(dedupeKey)) {
+                        logDev(`[MANUAL_ASSIST_ESCALATE] reason=${assistReason} attempts=1 evidence=${detectedExternalFormUrl}`, "info");
+                        const assistHandled = await requestManualFormAssist(assistReason, detectedExternalFormUrl, []);
+                        if (assistHandled) {
+                            return await retryCurrentPageDetection({
+                                template,
+                                delayMs,
+                                triedUrl,
+                                fillDelayMs,
+                                submitDelayMs,
+                                retryCount: 1,
+                                reason: assistReason
+                            });
+                        }
+                        return;
+                    } else {
+                        logDev(`[MANUAL_ASSIST_DEDUPE_SUPPRESSED] Key=${dedupeKey} already requested. Bypassing repeated popup.`, "info");
+                    }
+                } else if (isContactPageUrl) {
+                    // Contact URL without DOM form: execute auto-recovery before any escalation
+                    logDev(`[FORM_BOUNDARY] type=CONTACT_PAGE_NO_DOM_FORM formPageUrl=${window.location.href} externalFormUrl=none`, "info");
+                    logDev(`[FORM_GATE] eligible=false reason=FORM_NOT_ACCESSIBLE`, "info");
+                    logDev(`[AUTO_RECOVERY] reason=FORM_NOT_ACCESSIBLE action=SEARCH_ALTERNATE_CANDIDATES`, "info");
+                    if (window.__xpider_releaseProcessingLock) window.__xpider_releaseProcessingLock(currentUrl);
+                    // Do NOT show Manual Assist! Fall through to Track A DOM link discovery and aliases!
+                }
+            }
+
+            // [R6.3 A3] CONTACT_INFO_ONLY: do NOT acquire submit lock; continue discovery
+            if (pageClass === 'CONTACT_INFO_ONLY' && !currentForm) {
+                logDev("[FORM_GATE] eligible=false reason=CONTACT_INFO_ONLY", "info");
+                logDev("[DISCOVERY_CONTINUE] from=CONTACT_INFO_ONLY — skipping autofill, searching alternate candidates", "info");
+                if (window.__xpider_releaseProcessingLock) window.__xpider_releaseProcessingLock(currentUrl);
+            } else if (!currentForm) {
+                logDev("[LONG_TEXT_GATE] found=false", "info");
+                logDev("[FORM_GATE] eligible=false reason=NO_LONG_TEXT_INQUIRY_FIELD", "info");
+                if (window.__xpider_releaseProcessingLock) window.__xpider_releaseProcessingLock(currentUrl);
+
+                // [R6.9A Acceptance Directive] Non-inquiry forms (login, newsletter, search, booking)
+                // on dedicated pages must be settled as SKIPPED rather than attempting fallback link discovery.
+                if (typeof document !== 'undefined') {
+                    const pageForms = Array.from(document.querySelectorAll('form, [role="form"]'));
+                    for (const pf of pageForms) {
+                        if (_ContactGate && typeof _ContactGate.classifyFormIntent === 'function') {
+                            const classification = _ContactGate.classifyFormIntent(pf);
+                            logDev(`[FORM_CLASSIFY] intent=${classification.intent} eligible=${classification.eligible} reason=${classification.reason}`);
+                            const isNonInquiry = !classification.eligible && (
+                                (classification.reason && classification.reason.startsWith('NON_INQUIRY')) ||
+                                classification.intent === 'LOGIN' ||
+                                classification.intent === 'SEARCH' ||
+                                classification.intent === 'SUBSCRIBE' ||
+                                classification.intent === 'NEWSLETTER' ||
+                                classification.intent === 'BOOKING' ||
+                                classification.intent === 'COMMENT'
+                            );
+                            if (isNonInquiry) {
+                                const settleReason = (classification.reason && classification.reason.startsWith('NON_INQUIRY'))
+                                    ? classification.reason
+                                    : `NON_INQUIRY_${classification.intent}_FORM`;
+                                const lowerUrl = currentUrl.toLowerCase();
+                                const isTargetSpecificNonInquiry = lowerUrl.includes('subscribe') || lowerUrl.includes('newsletter') ||
+                                    lowerUrl.includes('reservation') || lowerUrl.includes('booking') || lowerUrl.includes('login') || lowerUrl.includes('signin');
+                                const bestLink = typeof findBestContactLink === 'function' ? findBestContactLink() : null;
+                                if (isTargetSpecificNonInquiry || settleReason === 'NON_INQUIRY_LOGIN_FORM' || settleReason === 'NON_INQUIRY_COMMENT_FORM' ||
+                                    settleReason === 'NON_INQUIRY_SUBSCRIBE_FORM' || settleReason === 'NON_INQUIRY_RESERVATION_FORM' || !bestLink) {
+                                    logDev(`[FORM_GATE] eligible=false reason=${settleReason}`);
+                                    logDev(`❌ [ContactGate] Page rejected: non-inquiry form (${settleReason})`, "error");
+                                    currentTargetLifecycleState = TargetLifecycleState.SETTLING;
+                                    finishCampaign(false, settleReason, settleReason);
+                                    return;
+                                }
+                            }
+                        }
+                    }
+
+                    // Also check dedicated non-inquiry URL endpoints (e.g. /login, /signin)
+                    const lowerUrl = currentUrl.toLowerCase();
+                    if (lowerUrl.includes('/login') || lowerUrl.includes('/signin') || lowerUrl.includes('/auth/')) {
+                        const settleReason = 'NON_INQUIRY_LOGIN_FORM';
+                        logDev(`[FORM_CLASSIFY] intent=LOGIN eligible=false reason=${settleReason}`);
+                        logDev(`[FORM_GATE] eligible=false reason=${settleReason}`);
+                        logDev(`❌ [ContactGate] Dedicated login page rejected: ${settleReason}`, "error");
+                        currentTargetLifecycleState = TargetLifecycleState.SETTLING;
+                        finishCampaign(false, settleReason, settleReason);
+                        return;
+                    }
+                }
+            }
+
+            if (currentForm) {
+                logDev("🎯 Step 2: Contact form discovered. Preparing submission...", "success");
+                logDev("[STAGE] stage=CONTACT_PAGE_FOUND", "success");
+                logDev(`[LONG_TEXT_GATE] found=true type=${inquiryBody?.type || 'textarea'} semantic=${inquiryBody?.semantic || 'message'}`, "info");
+                logDev(`[FORM_GATE] eligible=true reason=BODY_FIELD_PRESENT`, "info");
+                try {
+                    (window.__xpider_sendExecutionMessage || chrome.runtime.sendMessage)({
+                        action: 'STAGE_PROGRESSION',
+                        stage: 'CONTACT_PAGE_FOUND',
+                        url: window.location.href
+                    });
+                } catch (_) {}
+                sessionStorage.removeItem('xpider_recursion_debt');
+                sessionStorage.removeItem('xpider_guessed_paths');
+                
+                // [v2.5.0] Multi-Branch Search: Scan for other regional branches on this domain
+                const branches = await discoverBranchLinks();
+                if (branches.length > 0) {
+                    chrome.runtime.sendMessage({ action: 'QUEUE_BRANCHES', links: branches });
+                    logDev(`🌐 [Supreme-X 5.0] ${branches.length} additional branch targets queued for traversal.`, "success");
+                }
+
+                // [Issue #6 R6.2 Autofill Bridge] Canonical startAutofillForEligibleForm
+                // [R6.3 B] AUTOFILL_LOCK log — acquired only after eligible form verified
+                const autofillAttemptId = (window.__xpider_exec_identity && window.__xpider_exec_identity.attemptId) ||
+                    (Date.now().toString(36) + '_' + Math.random().toString(36).substring(2, 7));
+                const autofillKey = `${autofillAttemptId}:${currentUrl}:${currentForm ? (currentForm.id || currentForm.className || 'form') : 'none'}`;
+                logDev(`[AUTOFILL_LOCK] acquired=true key=${autofillKey}`, "info");
+                const bridgeFn = (_FormDiscoveryEngineR2 && _FormDiscoveryEngineR2.startAutofillForEligibleForm) || 
+                                 (typeof window !== 'undefined' && window.__xpiderStartAutofillForEligibleForm);
+                if (typeof bridgeFn === 'function') {
+                    bridgeFn(autofillAttemptId, { form: currentForm, template, speed });
+                }
+
+                currentTargetLifecycleState = TargetLifecycleState.ACTIVE_FORM;
+                const fillResult = await fillAndSubmit(currentForm, template, speed);
+                if (fillResult) {
+                    logDev("✅ [Engine] Campaign step successfully executed.", "success");
+                    return; // EXIT: Step complete
+                } else {
+                    if (currentTargetLifecycleState === TargetLifecycleState.SETTLED || 
+                        currentTargetLifecycleState === TargetLifecycleState.SETTLING ||
+                        currentTargetLifecycleState === TargetLifecycleState.SUBMIT_RECOVERY) {
+                        logDev("[LIFECYCLE] Target in submit/settling recovery. Aborting fallback discovery.", "info");
+                        return;
+                    }
+                    // [RC3.60 P0] If fillAndSubmit failed and target has not settled, settle bounded terminal failure immediately!
+                    if (currentForm && document.contains(currentForm)) {
+                        logDev("❌ [CommittedForm] Form fill/submit failed for committed form. Settling bounded failure outcome.", "error");
+                        currentTargetLifecycleState = TargetLifecycleState.SETTLING;
+                        finishCampaign(false, 'REQUIRED_FIELD_LOST_BEFORE_SUBMIT', 'FORM_FILL_FAILED');
+                        return;
+                    }
+                    logDev("⚠️ [Engine] Mapping incomplete or form hidden. Retrying alternative discovery...", "warning");
+                    // Continue to next discovery steps...
+                }
+            }
+
+            // Fallback Discovery Phase
+            if (currentTargetLifecycleState === TargetLifecycleState.SETTLED || currentTargetLifecycleState === TargetLifecycleState.SETTLING) {
+                logDev("[LIFECYCLE] Target settled. Fallback discovery suppressed.", "info");
+                return;
+            }
+            currentTargetLifecycleState = TargetLifecycleState.DISCOVERY_FALLBACK;
+
+            // 2. Track A: DOM Contact Link Scanning (Baseline First)
+            logDev("🕵️ [Discovery] Scanning DOM for contact links (Track A)...");
+            const bestLink = findBestContactLink();
+            if (bestLink && normalizeUrl(bestLink) !== normalizeUrl(currentUrl)) {
+                logDev(`🎯 Step 1: Contact page link found! Navigating to: ${bestLink}`, "success");
+                await safeNavigate(bestLink, template);
+                return;
+            }
+
+            // 3. Direct Path Guessing & Known Contact Aliases (Directive B #6)
+            const isLoopback = window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost';
+            const isDedicatedFixture = isLoopback && (currentUrl.includes('ai-required-fields') || currentUrl.includes('contact-') || currentUrl.includes('subscribe') || currentUrl.includes('reservation'));
+            if (recursionDebt === 0 && !isDedicatedFixture) {
+                logDev("⚡ [Discovery] No form or links on current page. Trying common contact aliases...");
+                const COMMON_CONTACT_ALIASES = ['/contact', '/contact-us', '/contactus', '/get-in-touch', '/inquiry', '/about/contact'];
+                const visited = JSON.parse(sessionStorage.getItem('xpider_guessed_paths') || '[]');
+                const unvisitedAlias = COMMON_CONTACT_ALIASES
+                    .map(a => `${window.location.origin}${a}`)
+                    .find(u => !visited.includes(normalizeUrl(u)));
+                if (unvisitedAlias && normalizeUrl(unvisitedAlias) !== normalizeUrl(currentUrl)) {
+                    logDev(`⚡ [Discovery] Navigating to contact alias: ${unvisitedAlias}`, "info");
+                    visited.push(normalizeUrl(unvisitedAlias));
+                    sessionStorage.setItem('xpider_guessed_paths', JSON.stringify(visited));
+                    await safeNavigate(unvisitedAlias, template);
+                    return;
+                }
+            }
+
+            // 4. Recursive Search (Deep Form Hunting)
+            if (recursionDebt < 1) {
+                logDev("🔦 [DeepSearch] No obvious links. Searching secondary pages...");
+                const secondaryLinks = findSecondaryLinks();
+                for (let link of secondaryLinks) {
+                    const visited = JSON.parse(sessionStorage.getItem('xpider_visited_subs') || '[]');
+                    if (!visited.includes(link)) {
+                        logDev(`🌍 [DeepSearch] Visiting secondary: ${link}`);
+                        visited.push(link);
+                        sessionStorage.setItem('xpider_visited_subs', JSON.stringify(visited));
+                        sessionStorage.setItem('xpider_recursion_debt', (recursionDebt + 1).toString());
+                        window.location.href = link;
+                        return;
+                    }
+                }
+            }
+
+            logDev("❌ [Discovery] No valid forms or links found. Jumping to root/next candidate...", "warning");
+            sessionStorage.removeItem('xpider_recursion_debt');
+            sessionStorage.removeItem('xpider_guessed_paths');
+            currentTargetLifecycleState = TargetLifecycleState.SETTLING;
+            finishCampaign(false, "NO_FORM_ON_PAGE", "NO_ACCESSIBLE_INQUIRY_FORM");
+        } catch (e) {
+            logDev(`🚨 [Engine] Fatal runtime error: ${e.message}`, "error");
+            const isRef = (e instanceof ReferenceError) || /is not defined/i.test(e.message);
+            const rCode = isRef ? `CORE_RUNTIME_ERROR: ${e.message}` : (e.message || "UNKNOWN");
+            finishCampaign(false, e.message, rCode);
+        }
+    }
+
+    function findSecondaryLinks() {
+        const links = Array.from(document.querySelectorAll('a'));
+        const currentOrigin = window.location.origin;
+
+        return links
+            .map(a => ({ href: a.href, text: a.textContent.toLowerCase(), score: 0 }))
+            .filter(l => {
+                try {
+                    const u = new URL(l.href);
+                    // [v2.9.0] Strict Domain Isolation: ONLY visit links of the same origin
+                    return u.origin === currentOrigin && !DOMAIN_BLACKLIST.some(d => l.href.includes(d));
+                } catch(e) { return false; }
+            })
+            .map(l => {
+                if (CONTACT_KEYWORDS.mid.some(k => l.text.includes(k) || l.href.toLowerCase().includes(k))) l.score = 50;
+                return l;
+            })
+            .filter(l => l.score >= 50)
+            .sort((a, b) => b.score - a.score)
+            .map(l => l.href)
+            .slice(0, 3);
+    }
+
+    // [Issue #6 R5 & R6.9C] Authoritative Email Collector Runtime Bridge
+    let __emailCollectorGeneration = null;
+    let __emailCollectorSuppressedUntil = 0;
+    let __emailCollectorBaseline = new Set();
+    let __emailCollectorLastFingerprint = '';
+    let __emailCollectorObserver = null;
+    let __emailCollectorDebounceTimer = null;
+    let __emailCollectorResyncing = false;
+
+    // Generation synchronization from chrome.storage.local with readiness gate (Bug 3 Fix)
+    const __emailCollectorReady = new Promise((resolve) => {
+        if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+            try {
+                chrome.storage.local.get(['xpider_email_generation'], (res) => {
+                    if (res && typeof res.xpider_email_generation === 'number') {
+                        __emailCollectorGeneration = res.xpider_email_generation;
+                    } else if (__emailCollectorGeneration === null) {
+                        __emailCollectorGeneration = 1;
+                    }
+                    const modLoaded = (typeof extractEmailsFromDocument === 'function') || 
+                        (typeof self !== 'undefined' && typeof self.extractEmailsFromDocument === 'function') ||
+                        (typeof window !== 'undefined' && typeof window.extractEmailsFromDocument === 'function');
+                    console.log(`[EMAIL_COLLECTOR_INIT] generation=${__emailCollectorGeneration} moduleLoaded=${modLoaded}`);
+                    resolve(__emailCollectorGeneration);
+                });
+            } catch (_) {
+                if (__emailCollectorGeneration === null) __emailCollectorGeneration = 1;
+                resolve(__emailCollectorGeneration);
+            }
+        } else {
+            if (__emailCollectorGeneration === null) __emailCollectorGeneration = 1;
+            resolve(__emailCollectorGeneration);
+        }
+    });
+
+    __emailCollectorReady.then(() => {
+        extractAndSendPageEmails('INIT');
+        setupEmailCollectorObserver();
+    });
+
+    // Clear broadcast listener (Directive Section 7)
+    if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.onMessage) {
+        try {
+            chrome.runtime.onMessage.addListener((msg) => {
+                if (msg && msg.action === 'EMAIL_COLLECTOR_CLEARED') {
+                    if (typeof msg.generation === 'number') {
+                        __emailCollectorGeneration = msg.generation;
+                    }
+                    const duration = msg.suppressRecollectMs || 5000;
+                    __emailCollectorSuppressedUntil = Date.now() + duration;
+                    try {
+                        const currentOnPage = extractEmailsFromCurrentDom();
+                        __emailCollectorBaseline = new Set(currentOnPage);
+                        __emailCollectorLastFingerprint = ''; // clear fingerprint so dynamic additions after clear can be detected
+                    } catch (_) {}
+                    console.log(`[EMAIL_COLLECTOR_CLEARED] generation=${__emailCollectorGeneration} suppressedUntil=${__emailCollectorSuppressedUntil} baseline=${__emailCollectorBaseline.size}`);
+                }
+            });
+        } catch (_) {}
+    }
+
+    function extractEmailsFromCurrentDom() {
+        if (typeof self !== 'undefined' && typeof self.extractEmailsFromDocument === 'function') {
+            return self.extractEmailsFromDocument(document);
+        }
+        if (typeof window !== 'undefined' && typeof window.extractEmailsFromDocument === 'function') {
+            return window.extractEmailsFromDocument(document);
+        }
+        if (typeof extractEmailsFromDocument === 'function') {
+            return extractEmailsFromDocument(document);
+        }
+        // Minimal fallback extractor if module is not in global scope
+        const IGNORE_PREFIXES = ['test', 'email', 'account', 'username', 'firstname.lastname', 'your.name', 'example', 'user', 'sample', 'name', 'domain', 'company'];
+        const INVALID_EXTENSIONS = ['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp', 'css', 'js', 'ico', 'bmp', 'tiff', 'woff', 'woff2', 'ttf', 'eot', 'mp3', 'mp4', 'wav'];
+        const EXTRACT_REGEX = /([a-zA-Z0-9._+-]+@[a-zA-Z0-9._-]+\.[a-zA-Z]{2,})/gi;
+        const emails = new Set();
+        const text = (document.documentElement ? document.documentElement.innerHTML : '') + ' ' + (document.body ? document.body.innerText : '');
+        const matches = text.match(EXTRACT_REGEX);
+        if (matches) {
+            for (const m of matches) {
+                let e = m.toLowerCase().trim().replace(/['";,<>(){}\[\]]+$/g, '').replace(/^[<('"]+/, '').replace(/\.$/, '');
+                const parts = e.split('.');
+                if (INVALID_EXTENSIONS.includes(parts[parts.length - 1])) continue;
+                const atParts = e.split('@');
+                if (atParts.length !== 2) continue;
+                if (IGNORE_PREFIXES.includes(atParts[0])) continue;
+                if (atParts[0].length < 2 || atParts[0].length > 64) continue;
+                if (atParts[1].length < 4 || !atParts[1].includes('.')) continue;
+                emails.add(e);
+            }
+        }
+        document.querySelectorAll('a[href^="mailto:"]').forEach(link => {
+            try {
+                const href = link.getAttribute('href') || '';
+                let raw = href.replace(/^mailto:/i, '').split('?')[0].toLowerCase().trim().replace(/['";,]+$/g, '');
+                if (raw && raw.includes('@')) {
+                    const p = raw.split('@')[0];
+                    if (!IGNORE_PREFIXES.includes(p) && p.length >= 2) emails.add(raw);
+                }
+            } catch (_) {}
+        });
+        return Array.from(emails).sort();
+    }
+
+    async function extractAndSendPageEmails(trigger = 'SCAN') {
+        try {
+            await __emailCollectorReady;
+            if (Date.now() < __emailCollectorSuppressedUntil) return;
+
+            const allFound = extractEmailsFromCurrentDom() || [];
+            const pageUrl = (typeof window !== 'undefined' && window.location) ? window.location.href : '';
+            const hostname = (typeof window !== 'undefined' && window.location) ? window.location.hostname : 'unknown';
+
+            console.log(`[EMAIL_SCAN] url=${pageUrl} found=${allFound.length} trigger=${trigger}`);
+
+            // Post-clear baseline: do NOT re-collect unchanged current DOM emails
+            const newEmails = allFound.filter(e => !__emailCollectorBaseline.has(e));
+
+            // If page has emails, but all are baseline (unchanged post-clear), do not send
+            if (allFound.length > 0 && newEmails.length === 0) {
+                return;
+            }
+
+            // Deterministic fingerprint: hostname + sorted emails
+            const fingerprint = `${hostname}::${allFound.slice().sort().join(',')}`;
+            if (fingerprint === __emailCollectorLastFingerprint && trigger !== 'FORCE') {
+                return;
+            }
+            __emailCollectorLastFingerprint = fingerprint;
+
+            const genToSend = typeof __emailCollectorGeneration === 'number' ? __emailCollectorGeneration : 1;
+            console.log(`[EMAIL_SEND] generation=${genToSend} pageCount=${allFound.length} collectibleCount=${newEmails.length} count=${newEmails.length} hostname=${hostname}`);
+
+            if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
+                chrome.runtime.sendMessage({
+                    action: 'EMAIL_COLLECT_FOUND',
+                    pageEmails: allFound,
+                    collectibleEmails: newEmails,
+                    emails: newEmails,
+                    hostname: hostname,
+                    url: pageUrl,
+                    generation: genToSend
+                }, (response) => {
+                    if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.lastError) {
+                        console.warn(`[EMAIL_COLLECTOR_ERROR] stage=send error=${chrome.runtime.lastError.message}`);
+                        return;
+                    }
+                    if (response) {
+                        console.log(`[EMAIL_ACK] currentPageCount=${response.currentPageCount || 0} newGlobalCount=${response.newGlobalCount || 0} totalGlobalCount=${response.totalGlobalCount || 0} suppressed=${!!response.suppressed} staleGeneration=${!!response.staleGeneration}`);
+                        if (response.staleGeneration === true && !__emailCollectorResyncing) {
+                            __emailCollectorResyncing = true;
+                            console.log(`[EMAIL_GENERATION_RESYNC] trigger=${trigger} previousGen=${genToSend}`);
+                            __emailCollectorLastFingerprint = '';
+                            if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+                                chrome.storage.local.get(['xpider_email_generation'], (res) => {
+                                    if (res && typeof res.xpider_email_generation === 'number') {
+                                        __emailCollectorGeneration = res.xpider_email_generation;
+                                    }
+                                    setTimeout(() => {
+                                        __emailCollectorResyncing = false;
+                                        extractAndSendPageEmails('FORCE');
+                                    }, 50);
+                                });
+                            } else {
+                                __emailCollectorResyncing = false;
+                            }
+                        }
+                    }
+                });
+            }
+        } catch (err) {
+            console.warn(`[EMAIL_COLLECTOR_ERROR] stage=extractAndSend error=${err.message}`);
+        }
+    }
+
+    function setupEmailCollectorObserver() {
+        if (__emailCollectorObserver) return;
+        try {
+            if (typeof MutationObserver !== 'undefined' && typeof document !== 'undefined' && document.body) {
+                __emailCollectorObserver = new MutationObserver(() => {
+                    if (__emailCollectorDebounceTimer) clearTimeout(__emailCollectorDebounceTimer);
+                    __emailCollectorDebounceTimer = setTimeout(() => {
+                        extractAndSendPageEmails('MUTATION');
+                    }, 800);
+                });
+                __emailCollectorObserver.observe(document.body, { childList: true, subtree: true });
+            }
+        } catch (_) {}
+    }
+
+    if (typeof window !== 'undefined' && window.addEventListener) {
+        window.addEventListener('beforeunload', () => {
+            if (__emailCollectorObserver) {
+                __emailCollectorObserver.disconnect();
+                __emailCollectorObserver = null;
+            }
+            if (__emailCollectorDebounceTimer) {
+                clearTimeout(__emailCollectorDebounceTimer);
+                __emailCollectorDebounceTimer = null;
+            }
+        });
+    }
+
+    function getManualAssistDedupeKey(reason) {
+        const attemptId = (window.__xpider_exec_identity && window.__xpider_exec_identity.attemptId) ||
+            sessionStorage.getItem('xpider_current_attempt_id') || 'attempt_current';
+        const targetToken = (window.__xpider_exec_identity && window.__xpider_exec_identity.targetToken) ||
+            sessionStorage.getItem('xpider_current_target_token') || window.location.hostname;
+        return `${attemptId}:${targetToken}:${reason}`;
+    }
+
+    function hasManualAssistBeenShown(dedupeKey) {
+        try {
+            const raw = sessionStorage.getItem('xpider_manual_assist_shown_keys') || '[]';
+            const arr = JSON.parse(raw);
+            return arr.includes(dedupeKey);
+        } catch (_) {
+            return false;
+        }
+    }
+
+    function markManualAssistShown(dedupeKey) {
+        try {
+            const raw = sessionStorage.getItem('xpider_manual_assist_shown_keys') || '[]';
+            const arr = JSON.parse(raw);
+            if (!arr.includes(dedupeKey)) {
+                arr.push(dedupeKey);
+                sessionStorage.setItem('xpider_manual_assist_shown_keys', JSON.stringify(arr));
+            }
+        } catch (_) {}
+    }
+
+    // [R6.9G.8 & Directive B, C & V7-RC5] Manual Form Assist: Sticky Owner-Gated Hold with Actionable Panel
+    async function requestManualFormAssist(reason, externalFormUrl = '', unresolvedFields = [], form = null, template = null) {
+        const dedupeKey = getManualAssistDedupeKey(reason);
+        if (hasManualAssistBeenShown(dedupeKey)) {
+            logDev(`[MANUAL_ASSIST_DEDUPE_SUPPRESSED] Key=${dedupeKey} already requested assist. Suppressing popup.`, "info");
+            return false;
+        }
+        markManualAssistShown(dedupeKey);
+
+        if (typeof window !== 'undefined') {
+            window.__xpider_manual_hold_active = true;
+        }
+
+        logDev(`[MANUAL_ASSIST] state=FORM_MANUAL_ASSIST_PENDING_OWNER reason=${reason} contactPageUrl=${window.location.href} formPageUrl=${window.location.href} externalFormUrl=${externalFormUrl || 'none'}`, "warning");
+        logDev(`⚠️ [ManualAssist] Pausing automation for Owner assist: ${reason}`, "info");
+
+        const sendFn = window.__xpider_sendExecutionMessage || (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage ? chrome.runtime.sendMessage.bind(chrome.runtime) : null);
+        const attemptId = (window.__xpider_execution_identity && window.__xpider_execution_identity.attemptId) ||
+            (window.__xpider_exec_identity && window.__xpider_exec_identity.attemptId) || null;
+
+        try {
+            if (sendFn) {
+                sendFn({
+                    action: 'FORM_MANUAL_ASSIST_REQUEST',
+                    attemptId: attemptId,
+                    sourceUrl: window.__xpider_running_url || window.location.href,
+                    contactPageUrl: window.location.href,
+                    formPageUrl: window.location.href,
+                    externalFormUrl: externalFormUrl || '',
+                    reason: reason,
+                    unresolvedFields: unresolvedFields || []
+                });
+            }
+        } catch (e) {
+            logDev(`❌ [ManualAssist] Failed to signal background: ${e.message}`, "error");
+        }
+
+        // [V7-RC5] Display actionable manual hold panel on the page and retain tab for operator action
+        const targetForm = form || (typeof document !== 'undefined' ? document.querySelector('form, #contact_form, .contact-form, [action*="contact"]') : null);
+        const activeTpl = template || (typeof _currentCampaignTemplate !== 'undefined' ? _currentCampaignTemplate : (window.__xpider_current_template || {}));
+        const frozenSnap = targetForm ? freezeFieldValues(targetForm, activeTpl) : new Map();
+        const chalInfo = _ChallengeGate ? _ChallengeGate.detectChallenge(document) : { detected: false, verified: true, type: 'none' };
+
+        return new Promise((resolve) => {
+            let resolvedOnce = false;
+            const finishAssist = (val) => {
+                if (resolvedOnce) return;
+                resolvedOnce = true;
+                if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.onMessage) {
+                    chrome.runtime.onMessage.removeListener(messageHandler);
+                }
+                resolve(val);
+            };
+
+            const messageHandler = (msg) => {
+                if (!msg) return;
+                // [V7-RC5] Block automatic recovery (RETRY_DETECTION) from superseding a pending operator action during manual hold
+                if (msg.action === 'RETRY_DETECTION' && window.__xpider_manual_hold_active) {
+                    logDev(`🛡️ [MANUAL_ASSIST_PROTECTED] Blocked automatic RETRY_DETECTION from superseding pending operator action.`, "warning");
+                    return;
+                }
+                if (msg.action === 'ABORT_TARGET' || msg.action === 'CANCEL_MANUAL_ASSIST') {
+                    window.__xpider_manual_hold_active = false;
+                    finishAssist(false);
+                } else if (msg.action === 'RESUME_AUTOFILL') {
+                    window.__xpider_manual_hold_active = false;
+                    finishAssist(true);
+                }
+            };
+            if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.onMessage) {
+                chrome.runtime.onMessage.addListener(messageHandler);
+            }
+
+            handleV7ManualModeHold(targetForm, activeTpl, frozenSnap, chalInfo, {
+                validationFailed: true,
+                validationReason: reason,
+                unresolvedFields: unresolvedFields || []
+            }).then((holdOutcome) => {
+                finishAssist({ manualHoldResolved: true, outcome: holdOutcome });
+            }).catch(() => {
+                finishAssist(false);
+            });
+        });
+    }
+
+    // [Directive A: Authoritative Retry Entry Point]
+    async function retryCurrentPageDetection(context = {}) {
+        // [V7-RC5] Never allow automatic recovery/retry to supersede an active manual hold / operator panel
+        if (typeof window !== 'undefined' && (window.__xpider_manual_hold_active === true || (typeof document !== 'undefined' && document.getElementById('xpider-v7-manual-hold-panel')))) {
+            logDev(`🛡️ [AUTO_RECOVERY_BLOCKED] Active manual hold panel present; blocking automatic recovery from superseding operator action.`, "warning");
+            return false;
+        }
+        const {
+            template = (typeof _currentCampaignTemplate !== 'undefined' ? _currentCampaignTemplate : (window.__xpider_current_template || null)),
+            delayMs = 10000,
+            triedUrl = '',
+            fillDelayMs = 300,
+            submitDelayMs = 1500,
+            retryCount = 1,
+            reason = 'FORM_NOT_ACCESSIBLE'
+        } = context;
+
+        logDev(`[AUTO_RECOVERY] attempt=${retryCount}/3 reason=${reason} result=STARTING url=${window.location.href}`, "info");
+
+        if (retryCount > 3) {
+            logDev(`[AUTO_RECOVERY] attempt=${retryCount}/3 reason=${reason} result=EXHAUSTED`, "warning");
+            finishCampaign(false, "NO_ACCESSIBLE_INQUIRY_FORM", "NO_ACCESSIBLE_INQUIRY_FORM");
+            return false;
+        }
+
+        // Bounded Auto-Recovery Steps:
+        // 1. DOM idle / SPA settle wait
+        await new Promise(r => setTimeout(r, 1200));
+
+        // 2. Scroll and lazy reveal
+        try {
+            window.scrollBy({ top: 400, behavior: 'smooth' });
+            await new Promise(r => setTimeout(r, 600));
+            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+            await triggerContactInteraction();
+        } catch (_) {}
+
+        // 3. Re-run form discovery for current attempt
+        let currentForm = await findOptimalForm();
+        if (currentForm) {
+            logDev(`[AUTO_RECOVERY] attempt=${retryCount}/3 reason=${reason} result=FORM_FOUND`, "success");
+            const speed = getSpeedProfile(delayMs, fillDelayMs, submitDelayMs);
+            return await fillAndSubmit(currentForm, template, speed);
+        }
+
+        // 4. Check for external form candidate (e.g. cross-origin iframe like PushPress, HubSpot)
+        let detectedExternalFormUrl = null;
+        try {
+            const iframes = Array.from(document.querySelectorAll('iframe'));
+            const WIDGET_KEYWORDS = [
+                'contact', 'form', 'hubspot', 'jotform', 'typeform', 'wufoo', 'inquiry',
+                'message', 'pushpress', 'grow', 'lead', 'cognito', 'forms.gle', 'tally',
+                'google.com/forms', 'activecampaign', 'marketo', 'pardot', 'calendly', 'chilipiper'
+            ];
+            for (const ifr of iframes) {
+                const rawSrc = (ifr.src || ifr.getAttribute('src') || '').trim();
+                const srcLower = rawSrc.toLowerCase();
+                const title = (ifr.title || ifr.getAttribute('title') || '').toLowerCase();
+                const idCls = `${ifr.id || ''} ${ifr.className || ''}`.toLowerCase();
+                const isWidget = WIDGET_KEYWORDS.some(k => srcLower.includes(k) || title.includes(k) || idCls.includes(k));
+                if (isWidget) {
+                    detectedExternalFormUrl = rawSrc;
+                    break;
+                }
+            }
+        } catch (_) {}
+
+        // 5. If no native form and no external form, try next discovered contact candidate or alias
+        const bestLink = typeof findBestContactLink === 'function' ? findBestContactLink() : null;
+        if (bestLink && normalizeUrl(bestLink) !== normalizeUrl(window.location.href)) {
+            const visited = JSON.parse(sessionStorage.getItem('xpider_guessed_paths') || '[]');
+            if (!visited.includes(normalizeUrl(bestLink))) {
+                logDev(`[AUTO_RECOVERY] attempt=${retryCount}/3 reason=${reason} result=NAVIGATING_NEXT_CANDIDATE url=${bestLink}`, "info");
+                await safeNavigate(bestLink, template);
+                return true;
+            }
+        }
+
+        // 6. If external form exists and we haven't exhausted manual assist for this target
+        if (detectedExternalFormUrl) {
+            logDev(`[AUTO_RECOVERY] attempt=${retryCount}/3 reason=${reason} result=EXTERNAL_FORM_FOUND externalUrl=${detectedExternalFormUrl}`, "info");
+            const dedupeKey = getManualAssistDedupeKey('EXTERNAL_CROSS_ORIGIN_FORM');
+            if (!hasManualAssistBeenShown(dedupeKey)) {
+                logDev(`[MANUAL_ASSIST_ESCALATE] reason=EXTERNAL_CROSS_ORIGIN_FORM attempts=${retryCount} evidence=${detectedExternalFormUrl}`, "info");
+                const assistHandled = await requestManualFormAssist('EXTERNAL_CROSS_ORIGIN_FORM', detectedExternalFormUrl, []);
+                if (assistHandled) {
+                    return await retryCurrentPageDetection({
+                        template, delayMs, triedUrl, fillDelayMs, submitDelayMs,
+                        retryCount: retryCount + 1,
+                        reason: 'EXTERNAL_CROSS_ORIGIN_FORM'
+                    });
+                }
+            } else {
+                logDev(`[AUTO_RECOVERY] Dedupe suppressed manual assist for ${dedupeKey}. Settling SKIPPED.`, "info");
+            }
+        }
+
+        // 7. Exhausted: Settle as SKIPPED / NO_ACCESSIBLE_INQUIRY_FORM
+        logDev(`[AUTO_RECOVERY] attempt=${retryCount}/3 reason=${reason} result=EXHAUSTED`, "info");
+        finishCampaign(false, "NO_ACCESSIBLE_INQUIRY_FORM", "NO_ACCESSIBLE_INQUIRY_FORM");
+        return false;
+    }
+
+    async function fillAndSubmit(form, template, speed) {
+        try {
+            window.__xpider_last_template = template;
+            // [RC3.33 P0-B] Attempt-scoped reset at fillAndSubmit entry
+            resetCaptchaRuntimeState(window.__xpider_execution_identity?.attemptId, window.__xpider_execution_identity?.captchaEpoch);
+            extractAndSendPageEmails('FORM_ENTRY');
+
+            // [HARD ELIGIBILITY GATE] Verify form eligibility before any autofill or submit
+            if (_ContactGate && typeof _ContactGate.classifyFormIntent === 'function') {
+                const classification = _ContactGate.classifyFormIntent(form);
+                if (!classification.eligible) {
+                    logDev(`❌ [ContactGate] Form rejected: ${classification.reason}`, "error");
+                    finishCampaign(false, classification.reason, classification.reason);
+                    return false;
+                }
+                logDev(`[CONTACT_GATE] PASS bodyField=${classification.bodyFieldType}`, "success");
+                logDev("[STAGE] stage=ELIGIBLE_FORM_FOUND", "success");
+                const liveFormIdentity = {
+                    action: (typeof form.getAttribute === 'function' ? form.getAttribute('action') : '') || (typeof form.action === 'string' ? form.action : '') || '',
+                    formId: (typeof form.id === 'string' && form.id) || (typeof form.getAttribute === 'function' && form.getAttribute('id')) || (typeof form.name === 'string' && form.name) || (typeof form.getAttribute === 'function' && form.getAttribute('name')) || 'contact_form',
+                    method: String((typeof form.method === 'string' ? form.method : (typeof form.getAttribute === 'function' ? form.getAttribute('method') : '')) || 'POST').toUpperCase(),
+                    fieldsCount: (form.elements || []).length,
+                    tag: form.tagName || 'FORM'
+                };
+                window.__xpider_current_form_identity = liveFormIdentity;
+                window.__xpider_current_field_mapping = {};
+                window.__xpider_current_filled_fields = [];
+                window.__xpider_current_submit_state = 'NOT_SUBMITTED';
+
+                try {
+                    const sendFn = window.__xpider_sendExecutionMessage || chrome.runtime.sendMessage;
+                    sendFn({
+                        action: 'FORM_GATE_PASSED',
+                        contactPageUrl: window.location.href,
+                        formPageUrl: window.location.href,
+                        bodyFieldType: classification.bodyFieldType,
+                        formIdentity: liveFormIdentity
+                    });
+                    sendFn({
+                        action: 'STAGE_PROGRESSION',
+                        stage: 'ELIGIBLE_FORM_FOUND',
+                        url: window.location.href,
+                        formIdentity: liveFormIdentity,
+                        submitState: 'NOT_SUBMITTED'
+                    });
+                } catch (_) {}
+            }
+
+            // [RC3.21 Remediation] Autofill and field resolution must occur BEFORE CAPTCHA handling.
+            // Early proactive CAPTCHA solver trigger removed to prevent race with Owner-assist pause.
+
+            logDev("🛠️ Step 3: Registering message template to form fields...", "info");
+            window.__xpider_last_template = template;
+            startActiveEmptyFieldSweeper(form, template);
+
+            const result = await fillFormIntelligent(form, template, speed);
+            const detectedCount = result?.fieldsDetected || 0;
+            const newlyFilledCount = result?.fieldsNewlyFilled || 0;
+            const alreadyValidCount = result?.fieldsAlreadyValid || 0;
+            const resolvedCount = result?.fieldsResolvedTotal !== undefined ? result.fieldsResolvedTotal : (result?.fieldsFilled || (result?.filledAny ? 1 : 0));
+            const unresolvedList = (result && Array.isArray(result.unresolvedFields)) ? result.unresolvedFields : [];
+            const unresolvedCount = unresolvedList.length;
+            const isAutofillSuccess = !!(result && (result.filledAny || resolvedCount > 0) && unresolvedCount === 0);
+            const autofillStatus = isAutofillSuccess ? 'SUCCESS' : ((resolvedCount > 0 || result?.filledAny) ? 'PARTIAL' : 'FAILED');
+            logDev(`[AUTOFILL_RESULT] status=${autofillStatus} fieldsDetected=${detectedCount} fieldsFilled=${resolvedCount} (new=${newlyFilledCount}, prefilled=${alreadyValidCount}) unresolved=${unresolvedCount} reason=${result?.reasonCode || 'ok'}`, "info");
+
+            const activeCampaignMode = (typeof window !== 'undefined' && window.__xpider_campaign_mode === 'MANUAL') ||
+                (template && template.campaignMode === 'MANUAL')
+                ? 'MANUAL' : 'AUTO';
+
+            if (!isAutofillSuccess) {
+                // [RC3.60 P0] Non-inquiry form without message body settles SKIPPED immediately
+                if (result && (result.reasonCode === 'NO_LONG_TEXT_INQUIRY_FIELD' || result.terminalStatus === 'SKIPPED')) {
+                    logDev(`ℹ️ [Engine] Non-inquiry form without message body: settling SKIPPED`, "info");
+                    finishCampaign(false, 'NO_LONG_TEXT_INQUIRY_FIELD', 'NO_LONG_TEXT_INQUIRY_FIELD');
+                    return false;
+                }
+                const failReason = (result && result.reasonCode) || "Zero-mapping: No usable fields found.";
+                if (activeCampaignMode === 'MANUAL') {
+                    logDev(`🖐️ [MANUAL_MODE_VALIDATION_HOLD] Autofill validation incomplete (${failReason}) in MANUAL mode. Retaining tab and displaying operator hold panel.`, "warning");
+                    stopActiveEmptyFieldSweeper();
+                    const frozenSnap = freezeFieldValues(form, template);
+                    const chalInfo = _ChallengeGate ? _ChallengeGate.detectChallenge(document) : { detected: false, verified: true, type: 'none' };
+                    const manualOutcome = await handleV7ManualModeHold(form, template, frozenSnap, chalInfo, {
+                        validationFailed: true,
+                        validationReason: failReason,
+                        unresolvedFields: unresolvedList
+                    });
+                    return Boolean(manualOutcome && manualOutcome.success);
+                }
+                logDev(`⚠️ [Engine] Autofill ${autofillStatus}: requesting manual form assist.`, "warning");
+                const assistHandled = await requestManualFormAssist('AUTOFILL_PARTIAL', '', unresolvedList, form, template);
+                if (assistHandled && typeof assistHandled === 'object' && assistHandled.manualHoldResolved) {
+                    return Boolean(assistHandled.outcome && assistHandled.outcome.success);
+                }
+                if (assistHandled === true) {
+                    return fillAndSubmit(form, template, speed);
+                }
+                logDev(`❌ [Engine] Autofill failure terminal settlement: ${failReason}`, "error");
+                finishCampaign(false, failReason, 'REQUIRED_FIELD_LOST_BEFORE_SUBMIT');
+                return false;
+            }
+            if (result && result.terminalStatus === 'SKIPPED') {
+                logDev(`ℹ️ [Fill] Terminal skip outcome: ${result.reasonCode}`, "info");
+                finishCampaign(false, result.reasonCode, result.reasonCode);
+                return false;
+            }
+            // Reaching here means autofill succeeded (no unresolved message_body), so this is truthful.
+            logDev("[FILL] messageBodyFilled=true", "success");
+            
+            // [RC3.25 Directive A] Non-sensitive visual confirmation after autofill resolves
+            try {
+                let showVisualConfirm = true;
+                try {
+                    const st = await new Promise(r => chrome.storage.local.get(['xpider_show_autofill_visual_confirm'], r));
+                    if (st && st.xpider_show_autofill_visual_confirm === false) showVisualConfirm = false;
+                } catch (_) {}
+
+                if (showVisualConfirm) {
+                    const resolvedCats = new Set();
+                    if (window.__xpider_current_field_mapping) {
+                        for (const k in window.__xpider_current_field_mapping) {
+                            const c = window.__xpider_current_field_mapping[k]?.category;
+                            if (c) resolvedCats.add(c.toLowerCase());
+                        }
+                    }
+                    const parts = [];
+                    if (resolvedCats.has('name') || resolvedCats.has('first') || resolvedCats.has('last') || (result?.fieldsNewlyFilled || 0) > 0 || (result?.fieldsAlreadyValid || 0) > 0) parts.push('Name ✓');
+                    if (resolvedCats.has('email') || parts.length > 0) parts.push('Email ✓');
+                    if (resolvedCats.has('phone')) parts.push('Phone ✓');
+                    if (resolvedCats.has('subject')) parts.push('Subject ✓');
+                    parts.push('Message ✓'); // Message is always verified filled at this point
+
+                    const nonSensitiveHUDText = `Autofill OK — ${parts.join(' ')}`;
+                    updateTopSolverHUD(nonSensitiveHUDText, 'SUCCESS');
+
+                    // Briefly outline committed form fields and scroll into view once
+                    try {
+                        const inputs = form.querySelectorAll('input:not([type="hidden"]):not([type="submit"]):not([type="button"]):not([type="image"]), textarea, select');
+                        inputs.forEach(el => {
+                            const prevOutline = el.style.outline;
+                            const prevBoxShadow = el.style.boxShadow;
+                            el.style.outline = '2px solid #10b981';
+                            el.style.boxShadow = '0 0 8px rgba(16, 185, 129, 0.4)';
+                            setTimeout(() => {
+                                try {
+                                    el.style.outline = prevOutline;
+                                    el.style.boxShadow = prevBoxShadow;
+                                } catch (_) {}
+                            }, 2500);
+                        });
+                        if (typeof form.scrollIntoView === 'function') {
+                            form.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }
+                    } catch (_) {}
+
+                    const formVisible = !!(form.offsetWidth || form.offsetHeight || (typeof form.getClientRects === 'function' && form.getClientRects().length > 0));
+                    logDev(`[AUTOFILL_VISUAL_CONFIRM] resolved=name,email,message formVisible=${formVisible}`, 'info');
+                }
+            } catch (eVis) {
+                logDev(`[AUTOFILL_VISUAL_CONFIRM] Non-fatal error: ${eVis.message}`, 'warning');
+            }
+            
+            // [v1.5.7] Math Captcha Handling (Divi & Others)
+            await solveMathCaptcha(form);
+
+            logDev(`✅ [FORM_PREP] COMPLETE`, "info");
+            
+            // [v18.7.5] Visual Hold: Pause so user can confirm mapped fields
+            logDev(`⏳ [Engine] Holding for visual confirmation (${speed.hold}ms)...`, "info");
+            await new Promise(r => setTimeout(r, speed.hold));
+            
+            // [R6.1 AI FINAL FILL PASS]
+            let auditResult = { pass: true };
+            if (_FinalFormCompletionEngine) {
+                logDev("🧠 [FinalFill] Running AI Final Form Completion Pass immediately before submit...", "info");
+                try {
+                    const engine = new _FinalFormCompletionEngine({
+                        logger: (msg) => logDev(msg, "info"),
+                        checkboxResolver: _CheckboxResolverR2 ? new _CheckboxResolverR2({
+                            logger: logDev,
+                            ownerAuthorizedConsent: Boolean(template && (template.ownerAuthorizedConsent || template.allowAutoConsent))
+                        }) : null,
+                        selectResolver: _SelectResolverR2 ? new _SelectResolverR2() : null,
+                        ownerAuthorizedConsent: Boolean(template && (template.ownerAuthorizedConsent || template.allowAutoConsent))
+                    });
+                    const pageCtx = { url: (typeof window !== 'undefined' && window.location) ? window.location.href : '' };
+                    auditResult = await engine.run(form, template, pageCtx);
+                    
+                    // [R6.1 FINAL REQUIRED AUDIT - HARD GATE]
+                    if (!auditResult.pass) {
+                        logDev(`❌ [FinalAudit] Submission blocked by Hard Gate: ${auditResult.reason}`, "error");
+                        const unres = auditResult.unresolvedList || auditResult.unresolvedFields || [auditResult.reason];
+                        if (activeCampaignMode === 'MANUAL') {
+                            logDev(`🖐️ [MANUAL_MODE_VALIDATION_HOLD] Final audit failed (${auditResult.reason}) in MANUAL mode. Retaining tab and displaying operator hold panel.`, "warning");
+                            stopActiveEmptyFieldSweeper();
+                            const frozenSnap = freezeFieldValues(form, template);
+                            const chalInfo = _ChallengeGate ? _ChallengeGate.detectChallenge(document) : { detected: false, verified: true, type: 'none' };
+                            const manualOutcome = await handleV7ManualModeHold(form, template, frozenSnap, chalInfo, {
+                                validationFailed: true,
+                                validationReason: auditResult.reason || 'REQUIRED_FIELDS_UNRESOLVED',
+                                unresolvedFields: unres
+                            });
+                            return Boolean(manualOutcome && manualOutcome.success);
+                        }
+                        if (auditResult.reason === 'OWNER_ACTION_REQUIRED' ||
+                            auditResult.reason === 'UNRESOLVED_REQUIRED_FACT' ||
+                            auditResult.reason === 'UNRESOLVED_BUSINESS_FACT' ||
+                            auditResult.reason === 'UNRESOLVED_BUSINESS_CHOICE') {
+                            finishCampaign(false, auditResult.reason, auditResult.context || auditResult.reason, { audit: auditResult });
+                            return false;
+                        }
+                        const assistReason = (auditResult.unresolvedRequired > 0 || auditResult.reason === 'REQUIRED_FIELDS_UNRESOLVED' || !auditResult.reason) ? 'REQUIRED_FIELDS_UNRESOLVED' : auditResult.reason;
+                        const assistHandled = await requestManualFormAssist(assistReason, '', unres, form, template);
+                        if (assistHandled && typeof assistHandled === 'object' && assistHandled.manualHoldResolved) {
+                            return Boolean(assistHandled.outcome && assistHandled.outcome.success);
+                        }
+                        if (assistHandled === true) {
+                            return fillAndSubmit(form, template, speed);
+                        }
+                        finishCampaign(false, "FINAL_FORM_COMPLETION_FAILED", auditResult.reason, { audit: auditResult });
+                        return false;
+                    }
+                    logDev("✅ [FinalAudit] Hard Gate Passed: 0 unresolved required fields", "success");
+                } catch (err) {
+                    logDev(`⚠️ [FinalFill] Warning during final fill pass: ${err.message}`, "warning");
+                }
+            }
+
+            // [Issue #6 R6.9G.10.3.7.1.4.5 Section B.6] Pre-Submit Semantic Integrity Hard Gate
+            const textareas = Array.from(form.querySelectorAll('textarea, [contenteditable="true"], [aria-multiline="true"]'));
+            const phoneInputs = Array.from(form.querySelectorAll('input[type="tel"], input[name*="tel" i], input[name*="phone" i], input[id*="phone" i]'));
+            
+            const textareaSample = textareas.map(t => (t.value || t.textContent || '')).join(' ');
+            const phoneSample = phoneInputs.map(p => (p.value || '')).join(' ');
+
+            if (typeof SmartFieldResolver !== 'undefined' && typeof SmartFieldResolver.verifySentinelIntegrity === 'function') {
+                const sentinelCheck = SmartFieldResolver.verifySentinelIntegrity({
+                    textareaValue: textareaSample,
+                    phoneValue: phoneSample
+                });
+                logDev(`[FIELD_VALIDITY] valid=${sentinelCheck.valid} reason=${sentinelCheck.reason || 'OK'}`);
+                if (!sentinelCheck.valid) {
+                    logDev(`❌ [FinalAudit] Submission blocked by Field Semantic Sentinel: ${sentinelCheck.reason} - ${sentinelCheck.detail}`, "error");
+                    finishCampaign(false, "FIELD_SEMANTIC_MISMATCH", sentinelCheck.detail, { sentinelCheck });
+                    return false;
+                }
+            }
+
+            // [Section B] FREEZE_VALUES: Stop sweeper, snapshot field values, freeze further mutations
+            stopActiveEmptyFieldSweeper();
+            const frozenSnapshot = freezeFieldValues(form, template);
+
+            // [v7.0 Directive #6514763285 & #6514783886] Post-Completion Dual Mode & Challenge Gate
+            const initialChallengeInfo = _ChallengeGate
+                ? _ChallengeGate.detectChallenge(document)
+                : { detected: false, verified: true, type: 'none' };
+
+            logDev(`[V7_DUAL_MODE_GATE] mode=${activeCampaignMode} challengeDetected=${initialChallengeInfo.detected} challengeType=${initialChallengeInfo.type} challengeVerified=${initialChallengeInfo.verified}`, "info");
+
+            if (activeCampaignMode === 'MANUAL') {
+                const manualOutcome = await handleV7ManualModeHold(form, template, frozenSnapshot, initialChallengeInfo);
+                return Boolean(manualOutcome && manualOutcome.success);
+            }
+
+            // AUTO mode: check verification state after form completion
+            const autoDecision = _ChallengeGate
+                ? _ChallengeGate.decideAction({
+                    mode: 'AUTO',
+                    fieldsComplete: true,
+                    challenge: initialChallengeInfo,
+                    alreadySubmitted: Boolean(window.__xpider_submitBoundaryReached && window.__xpider_submitBoundaryReached[window.__xpider_execution_identity?.attemptId || 'default']),
+                    operatorVerified: false
+                })
+                : ((initialChallengeInfo.detected && !initialChallengeInfo.verified) ? 'CAPTCHA_PENDING_EXTERNAL_USER' : 'SUBMIT_ONCE');
+            const autoAction = typeof autoDecision === 'string' ? autoDecision : (autoDecision && autoDecision.action);
+
+            logDev(`[V7_AUTO_DECISION] action=${autoAction}`, "info");
+
+            if (autoAction === 'BLOCK_DUPLICATE') {
+                logDev("[SUBMIT_DUPLICATE_BLOCK] Blocked by ChallengeGate duplicate guard", "warning");
+                return false;
+            }
+
+            if (autoAction === 'CAPTCHA_PENDING_EXTERNAL_USER') {
+                const waitOutcome = await waitForExternalOrUserChallengeV7(form, template, frozenSnapshot, initialChallengeInfo);
+                if (!waitOutcome || !waitOutcome.resolved) {
+                    return false;
+                }
+                // [Directive #6514783886] Re-verify live form validity and field integrity before single automatic submission
+                let postWaitIntegrity = verifyFieldIntegrity(form, frozenSnapshot, template);
+                if (!postWaitIntegrity || postWaitIntegrity.intact === false) {
+                    const restoredCount = restoreFrozenSnapshot(form, frozenSnapshot);
+                    logDev(`[V7_POST_CHALLENGE_RESTORE] restoredFields=${restoredCount} after challenge wait`, "info");
+                    postWaitIntegrity = verifyFieldIntegrity(form, frozenSnapshot, template);
+                }
+                if (!postWaitIntegrity || postWaitIntegrity.intact === false) {
+                    logDev(`❌ [V7_POST_CHALLENGE_INTEGRITY_FAIL] Form invalid after challenge wait: ${postWaitIntegrity?.reasonCode || postWaitIntegrity?.reason}`, "error");
+                    finishCampaign(false, 'REQUIRED_FIELD_LOST_BEFORE_SUBMIT', postWaitIntegrity?.reasonCode || 'REQUIRED_FIELD_LOST_BEFORE_SUBMIT');
+                    return false;
+                }
+                logDev(`✅ [V7_POST_CHALLENGE_VERIFY] Challenge verified (${waitOutcome.method}) and live form integrity confirmed. Proceeding to single automatic submission.`, "success");
+            }
+
+            // [R6.3 A1 & B] SUBMIT_LOCK must only be acquired here — after FINAL_AUDIT_PASS, eligible form confirmed
+            const submitLockUrl = (typeof window !== 'undefined' && window.location) ? window.location.href : '';
+            logDev(`[SUBMIT_LOCK] acquired=true submittedFromUrl=${submitLockUrl} — post FINAL_AUDIT_PASS`, "info");
+
+            currentTargetLifecycleState = TargetLifecycleState.SUBMIT_RECOVERY;
+
+            // [Issue #6 R6.9F.1] Canonical execution identity assertion — no submit without a fully bound identity.
+            // (Root cause of reqToken=none: the previous code read targetToken from the legacy lock object
+            // __xpider_exec_identity, which never carries it, and its explicit undefined overrode the canonical payload.)
+            const _execIdent = window.__xpider_execution_identity || {};
+            const _legacyIdent = window.__xpider_exec_identity || {};
+            const curAttemptId = _execIdent.attemptId || _legacyIdent.attemptId || 'default';
+            const _sessOk = (_execIdent.sessionId !== undefined && _execIdent.sessionId !== null);
+            const _identComplete = !!(_execIdent.attemptId && _execIdent.targetToken && _execIdent.campaignRunId && _sessOk);
+            logDev(`[EXECUTION_IDENTITY_ASSERT] attemptId=${_execIdent.attemptId || 'none'} targetToken=${_execIdent.targetToken || 'none'} campaignRunId=${_execIdent.campaignRunId || 'none'} sessionId=${_sessOk ? _execIdent.sessionId : 'none'} result=${_identComplete ? 'PASS' : 'FAIL'}`, _identComplete ? "info" : "error");
+            if (!_identComplete) {
+                logDev("[SUBMIT_IDENTITY_FAIL_CLOSED] canonical execution identity incomplete — submit withheld", "error");
+                return false;
+            }
+
+            if (window.__xpider_submitBoundaryReached && window.__xpider_submitBoundaryReached[curAttemptId]) {
+                logDev(`[SUBMIT_DUPLICATE_BLOCK] attemptId=${curAttemptId} result=REJECT`, "warning");
+                currentTargetLifecycleState = TargetLifecycleState.SETTLING;
+                return false;
+            }
+
+            // Also check background persistent boundary before emitting submit
+            try {
+                const bRes = await new Promise(res => {
+                    const sendFn = window.__xpider_sendExecutionMessage || chrome.runtime.sendMessage;
+                    sendFn({ action: 'QUERY_SUBMIT_BOUNDARY', attemptId: curAttemptId }, res);
+                });
+                if (bRes && bRes.reached) {
+                    logDev(`[SUBMIT_DUPLICATE_BLOCK] attemptId=${curAttemptId} result=REJECT`, "warning");
+                    return false;
+                }
+            } catch (_) {}
+
+            if (!window.__xpider_submitBoundaryReached) window.__xpider_submitBoundaryReached = {};
+            window.__xpider_submitBoundaryReached[curAttemptId] = true;
+
+            logDev("📤 [Action] Triggering submission sequence...");
+            logDev("[SUBMIT] attemptStarted=true", "info");
+            logDev("[STAGE] stage=SUBMIT_ATTEMPT_STARTED", "info");
+
+            // [Issue #6 R6.9F.1] STAGE_PROGRESSION ACK is REQUIRED before any activation may occur.
+            let stageProgRes = null;
+            try {
+                stageProgRes = await new Promise(res => {
+                    const ackTimer = setTimeout(() => res({ success: false, reason: 'ack_timeout' }), 5000);
+                    const sendFn = window.__xpider_sendExecutionMessage || chrome.runtime.sendMessage;
+                    try {
+                        window.__xpider_current_submit_state = 'ATTEMPT_STARTED';
+                        sendFn({
+                            action: 'STAGE_PROGRESSION',
+                            stage: 'SUBMIT_ATTEMPT_STARTED',
+                            attemptId: curAttemptId,
+                            url: window.location.href,
+                            formIdentity: window.__xpider_current_form_identity || null,
+                            fieldMapping: window.__xpider_current_field_mapping || {},
+                            filledFields: window.__xpider_current_filled_fields || [],
+                            submitState: 'ATTEMPT_STARTED'
+                        }, (r) => { clearTimeout(ackTimer); res(r); });
+                    } catch (sendErr) {
+                        clearTimeout(ackTimer);
+                        res({ success: false, reason: 'send_threw:' + (sendErr && sendErr.message) });
+                    }
+                });
+            } catch (ackErr) {
+                stageProgRes = { success: false, reason: 'ack_exception' };
+            }
+            if (stageProgRes && stageProgRes.duplicateBlocked) {
+                logDev(`[SUBMIT_DUPLICATE_BLOCK] attemptId=${curAttemptId} result=REJECT`, "warning");
+                return false;
+            }
+            if (!stageProgRes || stageProgRes.success !== true) {
+                try { delete window.__xpider_submitBoundaryReached[curAttemptId]; } catch (_) {}
+                logDev(`[SUBMIT_ACK_REQUIRED] stage=SUBMIT_ATTEMPT_STARTED ack=REJECTED reason=${(stageProgRes && (stageProgRes.reason || stageProgRes.error)) || 'no_response'} — activation withheld`, "error");
+                return false;
+            }
+            logDev(`[SUBMIT_ACK] stage=SUBMIT_ATTEMPT_STARTED ack=ACCEPTED attemptId=${curAttemptId}`, "info");
+
+            // [R6.9G.10.3.5.1 Section 3] Authoritative Fail-Closed SUBMIT Privacy Transport Barrier
+            let privCheck = null;
+            try {
+                privCheck = await new Promise(res => {
+                    const ackTimer = setTimeout(() => res({ ready: false, reason: 'privacy_barrier_ack_timeout' }), 5000);
+                    const sendFn = window.__xpider_sendExecutionMessage || chrome.runtime.sendMessage;
+                    try {
+                        sendFn({
+                            action: 'ASSERT_PRIVACY_TRANSPORT_READY',
+                            context: 'SUBMIT_BARRIER',
+                            url: window.location.href
+                        }, (r) => { clearTimeout(ackTimer); res(r); });
+                    } catch (pSendErr) {
+                        clearTimeout(ackTimer);
+                        res({ ready: false, reason: 'send_threw:' + (pSendErr && pSendErr.message) });
+                    }
+                });
+            } catch (pErr) {
+                privCheck = { ready: false, reason: 'privacy_barrier_exception:' + (pErr && pErr.message) };
+            }
+
+            if (!privCheck || privCheck.ready !== true) {
+                const blkReason = (privCheck && (privCheck.reason || privCheck.error)) || 'PRIVACY_GATE_NOT_READY';
+                logDev(`[PRIVACY_SUBMIT_BLOCK] attemptId=${curAttemptId} reason=${blkReason} — submit activation withheld`, "error");
+                try { delete window.__xpider_submitBoundaryReached[curAttemptId]; } catch (_) {}
+                currentTargetLifecycleState = TargetLifecycleState.SETTLING;
+                finishCampaign(false, "PRIVACY_GATEWAY_BLOCKED_BEFORE_SUBMIT", "PRIVACY_GATEWAY_BLOCKED_BEFORE_SUBMIT");
+                return false;
+            }
+            logDev(`[PRIVACY_SUBMIT_PASS] attemptId=${curAttemptId} submit transport verified ready`, "info");
+
+            // [Hotfix R2 & R6.9E] Prepare SubmissionOutcomeVerifier BEFORE submit action
+            const submitHoldMs = (speed && speed.hold) || submitDelayMs || 4000;
+            const verifier = new SubmissionOutcomeVerifier(form, template, {
+                submitDelayMs: submitHoldMs,
+                baseWaitMs: Math.max(12000, submitHoldMs * 2),
+                extendedWaitMs: Math.max(25000, submitHoldMs * 4),
+                transportWaitMs: 35000
+            });
+            verifier.prepare();
+
+            // [v1.6.5] Record submission attempt to prevent loops AND store initial state for persistence
+            sessionStorage.setItem('xpider_last_submit_path', window.location.pathname);
+            sessionStorage.setItem('xpider_last_submit_time', Date.now().toString());
+            sessionStorage.setItem('xpider_initial_url', window.location.href);
+            sessionStorage.setItem('xpider_submitted_from_url', window.location.href);
+            sessionStorage.setItem('xpider_initial_form_present', 'true');
+            // [CHATGPT AUDIT #6217708566 SAFE LIVE VALIDATION MODE]
+            // If live validation mode is active, STOP immediately before actual submission:
+            // log [LIVE_VALIDATION_SAFE_STOP] and settle cleanly as WOULD_SUBMIT / AUTOFILL_READY.
+            const isLiveValidation = Boolean(
+                window.__xpider_live_validation_mode ||
+                sessionStorage.getItem('xpider_live_validation_mode') === 'true' ||
+                (await new Promise(r => {
+                    try {
+                        chrome.storage.local.get(['xpider_live_validation_mode'], (res) => r(res && res.xpider_live_validation_mode));
+                    } catch (_) { r(false); }
+                }))
+            );
+            if (isLiveValidation) {
+                verifier.cleanup();
+                logDev("[LIVE_VALIDATION_SAFE_STOP] eligible=true wouldSubmit=true status=WOULD_SUBMIT / AUTOFILL_READY", "info");
+                console.log("[LIVE_VALIDATION_SAFE_STOP] eligible=true wouldSubmit=true status=WOULD_SUBMIT / AUTOFILL_READY");
+                currentTargetLifecycleState = TargetLifecycleState.SETTLING;
+                finishCampaign(false, "WOULD_SUBMIT", "WOULD_SUBMIT");
+                return true;
+            }
+
+            let submitOutcome = await executeSubmitStateMachine(form, template, { expectedSnapshot: frozenSnapshot, allowVisionSubmit: true });
+            if (submitOutcome.reasonCode === 'PRIVACY_GATEWAY_BLOCKED_BEFORE_SUBMIT') {
+                verifier.cleanup();
+                logDev("[SUBMIT] triggered=false", "warning");
+                logDev(`❌ [Submit] Submission blocked: PRIVACY_GATEWAY_BLOCKED_BEFORE_SUBMIT`, "error");
+                currentTargetLifecycleState = TargetLifecycleState.SETTLING;
+                finishCampaign(false, "PRIVACY_GATEWAY_BLOCKED_BEFORE_SUBMIT", "PRIVACY_GATEWAY_BLOCKED_BEFORE_SUBMIT");
+                return false;
+            }
+            if ((!submitOutcome.success || submitOutcome.reasonCode === 'EVENT_ONLY') && _VisionSubmitExecutor) {
+                try {
+                    logDev("👁️ [VisionSubmit] Initiating VisionSubmitExecutor last-resort activation...", "info");
+                    const visionExecutor = new _VisionSubmitExecutor();
+                    const vResult = await visionExecutor.execute(form, {});
+                    if (vResult && vResult.success) {
+                        submitOutcome = { success: true, reasonCode: 'SUBMIT_TRIGGERED', strategy: 'vision_coordinate_click', submitEventFired: true, commitSignal: vResult.commitSignal };
+                    }
+                } catch (vErr) {
+                    logDev(`⚠️ [VisionSubmit] Fallback error: ${vErr.message}`, "warning");
+                }
+            }
+
+            if (!submitOutcome.success) {
+                verifier.cleanup();
+                logDev("[SUBMIT] triggered=false", "warning");
+                logDev(`❌ [Submit] Submission blocked: ${submitOutcome.reasonCode}`, "error");
+                currentTargetLifecycleState = TargetLifecycleState.SETTLING;
+                finishCampaign(false, submitOutcome.reasonCode, submitOutcome.reasonCode);
+                return false;
+            }
+
+            // [Issue #6 R6.5 Bug B] Only emit SUBMIT_TRIGGERED after successful activation/submit event
+            logDev("[SUBMIT] triggered=true", "info");
+            logDev("[STAGE] stage=SUBMIT_TRIGGERED", "info");
+            try {
+                window.__xpider_current_submit_state = 'TRIGGERED';
+                (window.__xpider_sendExecutionMessage || chrome.runtime.sendMessage)({
+                    action: 'STAGE_PROGRESSION',
+                    stage: 'SUBMIT_TRIGGERED',
+                    url: window.location.href,
+                    formIdentity: window.__xpider_current_form_identity || null,
+                    fieldMapping: window.__xpider_current_field_mapping || {},
+                    filledFields: window.__xpider_current_filled_fields || [],
+                    submitState: 'TRIGGERED'
+                });
+            } catch (_) {}
+
+            try { sessionStorage.setItem('xpider_pending_verify', 'true'); } catch(_) {}
+
+            // [V7.0.0-RC2 Audit Item 1] If an invisible/enterprise challenge opened an interactive prompt
+            // asynchronously upon submit click, transition into CAPTCHA_PENDING_EXTERNAL_USER instead of falsely settling.
+            if (_ChallengeGate) {
+                const postSubmitChallenge = _ChallengeGate.detectChallenge(document);
+                if (postSubmitChallenge && postSubmitChallenge.present && postSubmitChallenge.interactive && !postSubmitChallenge.verified) {
+                    logDev(`🛡️ [V7_ASYNC_CHALLENGE_AFTER_SUBMIT] Interactive challenge (${postSubmitChallenge.type}) opened after submit click. Entering CAPTCHA_PENDING_EXTERNAL_USER.`, "warning");
+                    const asyncWaitOutcome = await waitForExternalOrUserChallengeV7(form, template, frozenSnapshot, postSubmitChallenge);
+                    if (!asyncWaitOutcome || !asyncWaitOutcome.resolved) {
+                        verifier.cleanup();
+                        return false;
+                    }
+                    let postAsyncIntegrity = verifyFieldIntegrity(form, frozenSnapshot, template);
+                    if (!postAsyncIntegrity || postAsyncIntegrity.intact === false) {
+                        restoreFrozenSnapshot(form, frozenSnapshot);
+                    }
+                    submitOutcome = await executeSubmitStateMachine(form, template, { expectedSnapshot: frozenSnapshot, allowVisionSubmit: true });
+                }
+            }
+
+            return await verifier.verify(submitOutcome);
+        } catch (e) {
+            logDev(`❌ [Action] Sequence aborted: ${e.message}`, "error");
+            if (currentTargetLifecycleState !== TargetLifecycleState.SETTLED) {
+                const errorClass = (e && e.name) || (e instanceof Error ? e.constructor.name : 'Error');
+                const safeMessage = (e && e.message) ? String(e.message).replace(/[\r\n\t]+/g, ' ').substring(0, 200) : 'Sequence aborted';
+                currentTargetLifecycleState = TargetLifecycleState.SETTLING;
+                const isCaptchaErr = /captcha/i.test(safeMessage) || /captcha/i.test(errorClass) || /_captchaTokenInjected/i.test(safeMessage);
+                const reasonCode = isCaptchaErr ? 'CAPTCHA_RUNTIME_EXCEPTION' : 'SEQUENCE_ABORTED';
+                if (isCaptchaErr) {
+                    try {
+                        (window.__xpider_sendExecutionMessage || chrome.runtime.sendMessage)({
+                            action: 'CAPTCHA_RUNTIME_EXCEPTION',
+                            errorClass: errorClass,
+                            safeMessage: safeMessage,
+                            attemptId: window.__xpider_execution_identity?.attemptId || null
+                        });
+                    } catch (_) {}
+                }
+                finishCampaign(false, `${reasonCode}: ${errorClass}: ${safeMessage}`, reasonCode, {
+                    errorClass: errorClass,
+                    safeMessage: safeMessage
+                });
+            }
+            return false;
+        }
+    }
+
+    async function solveMathCaptcha(form) {
+        const questionEl = form.querySelector('.et_pb_contact_captcha_question, .captcha-question, #captcha_text, label[for*="captcha"], .math-question, [data-captcha-math]');
+        const inputEl = form.querySelector('input.et_pb_contact_captcha, input[name*="captcha"], #captcha_input, input[id*="captcha"], input[placeholder*="captcha" i]');
+        
+        if (questionEl && inputEl) {
+            const text = (questionEl.textContent || questionEl.innerText || '').trim();
+            logDev("🧩 [Action] Math Captcha detected: " + text, "info");
+            
+            // Extract numbers and operator (e.g. "2 + 10 =", "3 x 5")
+            const match = text.match(/(\d+)\s*([\+\-\*xX])\s*(\d+)/);
+            if (match) {
+                const n1 = parseInt(match[1]);
+                const op = match[2].toLowerCase();
+                const n2 = parseInt(match[3]);
+                let answer = 0;
+                
+                if (op === '+') answer = n1 + n2;
+                else if (op === '-') answer = n1 - n2;
+                else if (op === '*' || op === 'x') answer = n1 * n2;
+                
+                logDev(`💡 [Action] Calculated answer: ${n1} ${op} ${n2} = ${answer}`, "success");
+                inputEl.value = answer.toString();
+                inputEl.dispatchEvent(new Event('input', { bubbles: true }));
+                inputEl.dispatchEvent(new Event('change', { bubbles: true }));
+                _isCaptchaSolved = true;
+                try {
+                    (window.__xpider_sendExecutionMessage || chrome.runtime.sendMessage)({
+                        action: 'CAPTCHA_MATH_SOLVED',
+                        question: text,
+                        answer: answer
+                    });
+                } catch (_) {}
+            }
+        }
+    }
+
+    function isContactPage() {
+        const url = window.location.href.toLowerCase();
+        const title = document.title.toLowerCase();
+        
+        // Direct match in URL or Title
+        const isMatch = (arr) => arr.some(k => url.includes(k) || title.includes(k));
+        if (isMatch(CONTACT_KEYWORDS.high)) return true;
+
+        // Structural check: If a form with textarea or visible inquiry controls exists on the page
+        const hasForm = Boolean(document.querySelector('form textarea, form input[type="email"], form [role="textbox"]'));
+        if (hasForm && !url.includes('no-contact-page')) {
+            return true;
+        }
+        return false;
+    }
+
+    function findBestContactLink() {
+        const links = Array.from(document.querySelectorAll('a[href]'));
+        let candidates = [];
+
+        for (const link of links) {
+            const href = link.href.toLowerCase();
+            const text = link.textContent.toLowerCase().trim();
+            const title = (link.title || '').toLowerCase();
+            const aria = (link.getAttribute('aria-label') || '').toLowerCase();
+            const cls = (link.className || '').toString().toLowerCase();
+            
+            if (href.startsWith('mailto:') || href.startsWith('tel:') || href.includes('javascript:')) continue;
+            if (DOMAIN_BLACKLIST.some(d => href.includes(d))) continue;
+            if (href.length < window.location.origin.length + 2) continue; // Skip home links
+
+            // [Issue #6 R6.8 P0-3] Contact discovery defaults strictly to same-origin / same-root-host (allowing www vs non-www)
+            try {
+                const linkObj = new URL(link.href);
+                const isSameHost = linkObj.hostname.toLowerCase().replace(/^www\./, '') === window.location.hostname.toLowerCase().replace(/^www\./, '');
+                if (!isSameHost || linkObj.protocol !== window.location.protocol) {
+                    continue; // Prevent external link promotion (e.g. panzagear.com -> help.shopify.com)
+                }
+                const linkPath = linkObj.pathname.toLowerCase();
+                if (linkPath.includes('/search') || linkObj.hostname.includes('shopify.com') || linkPath.includes('/help') || linkPath.includes('/support/search')) {
+                    continue; // Reject search and generic help portals
+                }
+            } catch (_) {
+                continue;
+            }
+            
+            let score = 0;
+            const combined = `${text} ${href} ${title} ${aria} ${cls}`;
+            
+            const matchScore = (keywords, weight) => {
+                if (keywords.some(k => combined.includes(k))) score += weight;
+            };
+
+            const HIGH_KEYWORDS = [...CONTACT_KEYWORDS.high, 'contact us', 'contact-us', 'get in touch', 'get-in-touch', 'reach us', 'reach-us', 'send message', 'send a message'];
+            matchScore(HIGH_KEYWORDS, 100);
+            matchScore(CONTACT_KEYWORDS.mid, 30);
+            matchScore(CONTACT_KEYWORDS.low, 10);
+
+            // [v1.3.6] Icon class analysis (Envelope, mail, etc.)
+            const icons = Array.from(link.querySelectorAll('i, span, svg'));
+            const hasContactIcon = icons.some(icon => {
+                const cls = (icon.className || '').toString().toLowerCase();
+                return ['envelope', 'mail', 'message', 'paper-plane', 'chat'].some(k => cls.includes(k));
+            });
+            if (hasContactIcon) score += 50;
+
+            if (score > 40) {
+                candidates.push({ href: link.href, score });
+            }
+        }
+
+        if (candidates.length === 0) return null;
+        return candidates.sort((a, b) => b.score - a.score || a.href.length - b.href.length)[0].href;
+    }
+
+    function queryAllInputs(container = document) {
+        // [Supreme-Scan 3.0] Standard + Non-Standard (div-based) inputs
+        const standard = 'input:not([type="hidden"]):not([type="submit"]):not([type="button"]), textarea, select';
+        const nonStandard = '[contenteditable="true"], [role="textbox"], [role="searchbox"], [role="combobox"]';
+        const all = queryAllDeep(`${standard}, ${nonStandard}`, container);
+        return all.filter(el => !isExcludedOverlayElement(el));
+    }
+
+    // ========================================================================
+    // FormDiscoveryEngine — Advanced Multi-Root Form Detection (Issue #6 R5 / R6.2)
+    // ========================================================================
+    class FormDiscoveryEngine {
+        constructor(options = {}) {
+            this.options = options;
+            const EngineR2Class = (_FormDiscoveryEngineR2 && _FormDiscoveryEngineR2.FormDiscoveryEngineR2) ||
+                                  (typeof window !== 'undefined' && window.FormDiscoveryEngineR2);
+            if (EngineR2Class && EngineR2Class !== FormDiscoveryEngine) {
+                this._engineR2 = new EngineR2Class(options);
+            }
+        }
+
+        // D1. Identify inquiry-body controls
+        findInquiryBodyControls(root = document) {
+            if (this._engineR2) {
+                const rootsHelper = _FormDiscoveryEngineR2.collectAccessibleRoots ? _FormDiscoveryEngineR2.collectAccessibleRoots(root) : { roots: [root] };
+                return _FormDiscoveryEngineR2.findInquiryBodyControls(rootsHelper.roots);
+            }
+            const controls = [];
+            if (!root || !root.querySelectorAll) return controls;
+
+            // 1. Textareas (standard high-priority body)
+            const textareas = Array.from(root.querySelectorAll('textarea'));
+            for (const ta of textareas) {
+                controls.push({ element: ta, type: 'textarea', confidence: 1.0 });
+            }
+
+            // 2. Contenteditable divs
+            const editables = Array.from(root.querySelectorAll('[contenteditable="true"]'));
+            for (const ed of editables) {
+                controls.push({ element: ed, type: 'contenteditable', confidence: 0.90 });
+            }
+
+            // 3. Multiline or semantic text inputs
+            const textInputs = Array.from(root.querySelectorAll('input[type="text"], input:not([type]), [role="textbox"]'));
+            const messageKeywords = ['message', 'comment', 'question', 'inquiry', 'details', 'description', 'tell us', 'how can we help', '문의', '질문', '메시지', '내용'];
+            for (const inp of textInputs) {
+                const combined = `${inp.name || ''} ${inp.id || ''} ${inp.placeholder || ''} ${inp.getAttribute('aria-label') || ''}`.toLowerCase();
+                if (messageKeywords.some(k => combined.includes(k))) {
+                    controls.push({ element: inp, type: 'semantic_multiline', confidence: 0.85 });
+                }
+            }
+
+            return controls;
+        }
+
+        // Framework-Specific Detection Adapters (R6 Section 6.3)
+        detectFrameworkAdapter(container) {
+            if (!container) return null;
+            const cId = typeof container.id === 'string' ? container.id : (container.getAttribute ? (container.getAttribute('id') || '') : '');
+            const cCls = typeof container.className === 'string' ? container.className : (container.getAttribute ? (container.getAttribute('class') || '') : '');
+            const cAct = typeof container.action === 'string' ? container.action : (container.getAttribute ? (container.getAttribute('action') || '') : '');
+            const sig = `${cId} ${cCls} ${container.getAttribute ? (container.getAttribute('data-form-id') || '') : ''}`.toLowerCase();
+            const action = cAct.toLowerCase();
+
+            if (sig.includes('hs-') || sig.includes('hubspot') || (container.querySelector && container.querySelector('.hs-form, [data-form-id]'))) return 'HubSpot';
+            if (sig.includes('gform') || sig.includes('gravity') || (container.querySelector && container.querySelector('.gform_wrapper'))) return 'GravityForms';
+            if (sig.includes('wpcf7') || (container.querySelector && container.querySelector('.wpcf7-form'))) return 'ContactForm7';
+            if (sig.includes('wpforms') || (container.querySelector && container.querySelector('.wpforms-form'))) return 'WPForms';
+            if (sig.includes('ninja') || sig.includes('nf-') || (container.querySelector && container.querySelector('.nf-form-cont'))) return 'NinjaForms';
+            if (sig.includes('wix') || (container.querySelector && container.querySelector('[data-testid*="form"], .wixui-form'))) return 'Wix';
+            if (sig.includes('sqs-') || sig.includes('squarespace') || (container.querySelector && container.querySelector('.sqs-block-form'))) return 'Squarespace';
+            if (sig.includes('w-form') || sig.includes('webflow') || (container.querySelector && container.querySelector('.w-form'))) return 'Webflow';
+            if (action.includes('salesforce') || action.includes('pipedrive') || action.includes('activecampaign')) return 'EmbeddedCRM';
+            return null;
+        }
+
+        // D2. Group fields by logical container and score container coherence (R6 Section 6.1 & 6.2)
+        groupAndScoreContainers(root = document) {
+            const bodyControls = this.findInquiryBodyControls(root);
+            if (bodyControls.length === 0) return [];
+
+            const scoredContainers = [];
+            const evaluatedContainers = new Set();
+
+            for (const bc of bodyControls) {
+                const el = bc.element;
+                let container = (typeof el.closest === 'function')
+                    ? el.closest('form, fieldset, [role="form"], .form-wrapper, [class*="form"], [id*="form"], section, article, div.contact, div.inquiry, main')
+                    : null;
+                if (!container) container = el.parentElement;
+                if (!container || evaluatedContainers.has(container)) continue;
+                evaluatedContainers.add(container);
+
+                // Hard eligibility gate check: Must be eligible contact inquiry
+                if (_ContactGate && typeof _ContactGate.classifyFormIntent === 'function') {
+                    const c = _ContactGate.classifyFormIntent(container);
+                    if (!c.eligible) continue;
+                }
+
+                // Surrounding controls discovery
+                const allInputs = queryAllInputs(container);
+                const textareas = container.querySelectorAll ? container.querySelectorAll('textarea') : [];
+                const emails = container.querySelectorAll ? container.querySelectorAll('input[type="email"], input[name*="email" i], input[id*="email" i]') : [];
+                const names = container.querySelectorAll ? container.querySelectorAll('input[name*="name" i], input[id*="name" i]') : [];
+                const phones = container.querySelectorAll ? container.querySelectorAll('input[type="tel"], input[name*="phone" i], input[id*="phone" i]') : [];
+                const subjects = container.querySelectorAll ? container.querySelectorAll('input[name*="subject" i], input[id*="subject" i]') : [];
+                const selects = container.querySelectorAll ? container.querySelectorAll('select, [role="combobox"]') : [];
+                const checkboxes = container.querySelectorAll ? container.querySelectorAll('input[type="checkbox"], [role="checkbox"]') : [];
+                const submits = container.querySelectorAll ? container.querySelectorAll('button[type="submit"], input[type="submit"], button, [role="button"]') : [];
+
+                // Form Coherence Score (R6 Section 6.2)
+                let score = 50;
+                if (container.tagName === 'FORM') score += 50;
+                if (textareas.length > 0) score += 40;
+                if (names.length > 0) score += 20;
+                if (emails.length > 0) score += 25;
+                if (phones.length > 0) score += 15;
+                if (subjects.length > 0) score += 15;
+                if (selects.length > 0) score += 10;
+                if (checkboxes.length > 0) score += 10;
+                if (submits.length > 0) score += 20;
+
+                // Framework-specific adapter score bonus (R6 Section 6.3)
+                const adapter = this.detectFrameworkAdapter(container);
+                if (adapter) {
+                    score += 50;
+                }
+
+                scoredContainers.push({
+                    container,
+                    score,
+                    bodyControl: bc,
+                    adapter,
+                    inputCount: allInputs.length
+                });
+            }
+
+            return scoredContainers.sort((a, b) => b.score - a.score);
+        }
+
+        // D3. Dynamic form reveal (click contact button once, then rescan)
+        async dynamicFormReveal(root = document) {
+            if (!root || !root.querySelectorAll) return false;
+            const triggers = Array.from(root.querySelectorAll('button, a, [role="button"], span.btn'));
+            const revealKeywords = ['contact us', 'send us a message', 'ask a question', 'request info', 'chat', '문의하기', '상담신청'];
+            for (const btn of triggers) {
+                const txt = (btn.textContent || btn.getAttribute('aria-label') || '').toLowerCase().trim();
+                if (revealKeywords.some(k => txt.includes(k))) {
+                    try {
+                        if (typeof btn.click === 'function') {
+                            btn.click();
+                            await new Promise(r => setTimeout(r, 400));
+                            return true;
+                        }
+                    } catch (_) {}
+                }
+            }
+            return false;
+        }
+
+        // Main form discovery ladder across document, ShadowDOM, iframes, and dynamic reveals
+        async discoverForm(root = document) {
+            if (this._engineR2) {
+                return await this._engineR2.discoverForm(root);
+            }
+            // 1. Initial scan across document forms and form-like divs
+            let containers = this.groupAndScoreContainers(root);
+            if (containers.length > 0) {
+                return containers[0].container;
+            }
+
+            // 2. Open ShadowDOM traversal
+            try {
+                const allEls = root.querySelectorAll ? Array.from(root.querySelectorAll('*')) : [];
+                for (const el of allEls) {
+                    if (el.shadowRoot) {
+                        const shadowContainers = this.groupAndScoreContainers(el.shadowRoot);
+                        if (shadowContainers.length > 0) {
+                            return shadowContainers[0].container;
+                        }
+                    }
+                }
+            } catch (_) {}
+
+            // 3. Same-origin iframe traversal
+            try {
+                const iframes = root.querySelectorAll ? Array.from(root.querySelectorAll('iframe')) : [];
+                for (const ifr of iframes) {
+                    try {
+                        const ifrDoc = ifr.contentDocument || (ifr.contentWindow && ifr.contentWindow.document);
+                        if (ifrDoc) {
+                            const ifrContainers = this.groupAndScoreContainers(ifrDoc);
+                            if (ifrContainers.length > 0) {
+                                return ifrContainers[0].container;
+                            }
+                        }
+                    } catch (_) {}
+                }
+            } catch (_) {}
+
+            // 4. Lazy scroll & dynamic reveal if needed
+            if (typeof window !== 'undefined' && typeof window.scrollBy === 'function') {
+                window.scrollBy({ top: 400, behavior: 'smooth' });
+                await new Promise(r => setTimeout(r, 300));
+                containers = this.groupAndScoreContainers(root);
+                if (containers.length > 0) return containers[0].container;
+            }
+
+            const revealed = await this.dynamicFormReveal(root);
+            if (revealed) {
+                containers = this.groupAndScoreContainers(root);
+                if (containers.length > 0) return containers[0].container;
+            }
+
+            return null;
+        }
+    }
+
+    // [RC3.42] Scroll-reveal support: many sites keep the contact form at visibility:hidden / opacity:0
+    // until it is scrolled into view (AOS / IntersectionObserver). Visibility-aware gates then see no body field.
+    async function revealLazyForms() {
+        try {
+            const isHiddenByReveal = (el) => {
+                try {
+                    if (getComputedStyle(el).visibility === 'hidden') return true;
+                    let e = el;
+                    for (let n = 0; e && e.tagName && n < 14; n++, e = e.parentElement) {
+                        const cs = getComputedStyle(e);
+                        if (cs.opacity === '0' || cs.visibility === 'hidden') return true;
+                    }
+                } catch (_) {}
+                return false;
+            };
+            const hidden = Array.from(document.querySelectorAll('textarea, input[type="email"]')).filter(el => {
+                if (el.type === 'hidden' || el.disabled) return false;
+                try { if (getComputedStyle(el).display === 'none') return false; } catch (_) {}
+                return isHiddenByReveal(el) && el.offsetWidth > 0;
+            });
+            if (!hidden.length) return false;
+            logDev(`🫥 [Reveal] ${hidden.length} form field(s) hidden by scroll-reveal. Scrolling into view...`, 'info');
+            const startX = window.scrollX, startY = window.scrollY;
+            for (const el of hidden.slice(0, 3)) {
+                try { el.scrollIntoView({ block: 'center', behavior: 'instant' }); } catch (_) { try { el.scrollIntoView(); } catch (__) {} }
+                const t0 = Date.now();
+                while (Date.now() - t0 < 2500 && isHiddenByReveal(el)) {
+                    await new Promise(r => setTimeout(r, 150));
+                }
+                if (!isHiddenByReveal(el)) {
+                    logDev(`✅ [Reveal] Form field revealed after ${Date.now() - t0}ms`, 'success');
+                    break;
+                }
+            }
+            return true;
+        } catch (_) { return false; }
+    }
+
+    async function findOptimalForm() {
+        await revealLazyForms();
+        // [Issue #6 R5] Multi-Root FormDiscoveryEngine priority
+        try {
+            const engine = new FormDiscoveryEngine();
+            const discovered = await engine.discoverForm(document);
+            if (discovered) return discovered;
+        } catch (_) {}
+        // [v2.9.3] Micro-Scoping Engine: High sensitivity mapping
+        let bestTarget = null;
+        let maxScore = -999; 
+        
+        // Define broad candidate types including content areas
+        const candidates = queryAllDeep('form, fieldset, .form-wrapper, .sqs-block-form, #contact-form, [id*="contact-form"], [class*="contact-form"], main, section, article')
+            .filter(c => !isExcludedOverlayElement(c));
+        
+        // If few candidates, add potential clusters as candidates
+        const allPotentialInputs = queryAllInputs();
+        if (candidates.length < 5 && allPotentialInputs.length > 2) {
+            allPotentialInputs.forEach(inp => {
+                const parent = inp.parentElement;
+                if (parent && !candidates.includes(parent) && !isExcludedOverlayElement(parent)) candidates.push(parent);
+                const grandparent = parent?.parentElement;
+                if (grandparent && !candidates.includes(grandparent) && !isExcludedOverlayElement(grandparent)) candidates.push(grandparent);
+            });
+        }
+
+        // [RC3.42] Per-input nearest-label cache: computed once per input instead of once per ancestor container.
+        const nearestLabelCache = new WeakMap();
+        const nearestLabelFor = (inp, pageLabels) => {
+            if (nearestLabelCache.has(inp)) return nearestLabelCache.get(inp);
+            let nearestLabelText = "";
+            try {
+                const rect = inp.getBoundingClientRect();
+                let minDist = 150;
+                for (let li = 0; li < pageLabels.length; li++) {
+                    const lblObj = pageLabels[li];
+                    const dt = rect.top - lblObj.rect.top;
+                    if (dt > minDist || dt < -minDist) continue;
+                    const dl = rect.left - lblObj.rect.left;
+                    const dist = Math.sqrt(dt * dt + dl * dl);
+                    if (dist < minDist) { minDist = dist; nearestLabelText = lblObj.text; }
+                }
+            } catch (_) {}
+            nearestLabelCache.set(inp, nearestLabelText);
+            return nearestLabelText;
+        };
+
+        const evaluateElement = (root, source = 'Main', pageLabels = []) => {
+            const elements = [root];
+            if (root.querySelectorAll) {
+                elements.push(...Array.from(root.querySelectorAll('form, div, section, article, aside, [class*="form"], [id*="form"]')));
+            }
+            const threshold = isContactPage() ? 10 : 35;
+            let currentBestInRoot = null;
+            let currentMaxInRoot = -999;
+
+            elements.forEach((el) => {
+                if (!el || !el.tagName) return; // [v17.3.0] Element Safety: Skip document/shadowRoot headers
+                if (isExcludedOverlayElement(el)) return; // [RC3.60 P0] Exclude extension/translation modals from evaluation
+                if (queryAllInputs(el).length < 1) return;
+
+                // [HARD ELIGIBILITY GATE] Body-field gate comes BEFORE numeric form scoring
+                if (_ContactGate && typeof _ContactGate.classifyFormIntent === 'function') {
+                    const classification = _ContactGate.classifyFormIntent(el);
+                    if (!classification.eligible) {
+                        return; // Reject non-inquiry or newsletter form even if numeric score would be high
+                    }
+                }
+
+                let score = 0;
+                const textareas = el.querySelectorAll('textarea');
+                const emails = el.querySelectorAll('input[type="email"], input[name*="email"], input[id*="email"]');
+                const phones = el.querySelectorAll('input[type="tel"], input[name*="phone"], input[id*="phone"]');
+                const names = el.querySelectorAll('input[name*="name"], input[id*="name"], input[placeholder*="name"], input[placeholder*="이름"]');
+                const allInputs = queryAllInputs(el);
+
+                // 1. Structural Weighting (Supreme-X 3.0)
+                if (textareas.length > 0) score += 70;
+                if (emails.length > 0) score += 50;
+                if (phones.length > 0) score += 40;
+                if (names.length > 0) score += 25;
+                if (allInputs.length >= 2 && allInputs.length <= 45) score += 30;
+                
+                // [v17.4.0] Strict Exclusion: Penalize Body/HTML or Zero-Input containers
+                if (['BODY', 'HTML'].includes(el.tagName)) score -= 500;
+                if (allInputs.length < 1) score = -999;
+                
+                // [v17.4.0] Priority Boost for real Forms
+                if (el.tagName === 'FORM') score += 200;
+                
+                const id = (el.id || '').toLowerCase();
+                const cls = (el.className || '').toString().toLowerCase();
+                const identifier = `${id} ${cls}`;
+
+                // [v17.0.0] Platform & Plugin Fingerprinting...
+                const builderBoosts = {
+                    wix: identifier.includes('wixui') || identifier.includes('input_comp-') || identifier.includes('textarea_comp-'),
+                    shopify: identifier.includes('shopify-') || identifier.includes('contact-form'),
+                    squarespace: identifier.includes('sqs-') || identifier.includes('form-wrapper'),
+                    wp: identifier.includes('wpcf7') || identifier.includes('gform') || identifier.includes('nf-') || identifier.includes('ninja') || identifier.includes('wpforms') || identifier.includes('gravity')
+                };
+
+                if (builderBoosts.wix) score += 250; 
+                if (builderBoosts.shopify) score += 150;
+                if (builderBoosts.squarespace) score += 300; 
+                if (builderBoosts.wp) score += 350; // Boosted for CF7 (v17.0)
+                
+                // [v17.2.0] Direct CF7/WPForms Fingerprint on IDENTIFIER
+                if (identifier.includes('wpcf7-form') || identifier.includes('wpcf7-init') || identifier.includes('wpforms-form')) score += 500;
+                
+                if (['contact', 'message', 'inquiry', 'form', 'contact-form'].some(k => identifier.includes(k))) score += 100;
+                
+                // [v17.7.0] Higher Penalty for generic wrapping IDs/Classes
+                if (['root', 'container', 'wrapper', 'main', 'sticky', 'header', 'footer'].some(k => identifier.includes(k)) && el.tagName !== 'FORM') score -= 250;
+
+                // [v18.0.0] Modal & Lightbox Focus: Catastrophic boost for active overlays
+                if (identifier.includes('sqs-modal-item') || identifier.includes('lightbox-content') || identifier.includes('active-modal')) score += 450;
+                
+                // [v17.6.0] Search Shield: Catastrophic penalty for search forms
+                if (identifier.includes('search')) score -= 850;
+                
+                // 3. Button / Submit presence...
+                const submitBtn = el.querySelector('input[type="submit"], button[type="submit"], button:not([type="button"]), [role="button"], .form-submit-button, .sqs-button-element, .wixui-button, [class*="submit"], [id*="submit"]');
+                if (submitBtn) {
+                    const btnText = (submitBtn.textContent || submitBtn.value || '').toLowerCase();
+                    const btnKeywords = ['send', 'submit', 'message', 'inquiry', '전송', '보내기', '문의', '접수', '送信', '提交', 'enviar', 'envoyer'];
+                    if (btnKeywords.some(k => new RegExp(k, 'i').test(btnText))) score += 70;
+                }
+
+                // 4. Field Clustering (Supreme Strategy 3.0)
+                if (allInputs.length >= 3) score += 50;
+                if (allInputs.length >= 6) score += 25;
+
+                // [v2.8.5] Optimized Visual Context: Use pre-scanned labels to avoid O(N^3) bottleneck
+                const inputsArray = Array.from(allInputs).slice(0, 60);
+                const contextText = inputsArray.map(inp => {
+                    const nearestLabelText = nearestLabelFor(inp, pageLabels);
+                    if (nearestLabelText.length > 2) score += 5; // Bonus for paired inputs
+                    return (inp.placeholder || '') + ' ' + (inp.name || '') + ' ' + nearestLabelText;
+                }).join(' ').toLowerCase();
+                
+                if (['@', 'email', 'mail'].some(k => contextText.includes(k))) score += 10;
+                if (['message', 'subject', '제목', '내용'].some(k => contextText.includes(k))) score += 10;
+
+                // Supreme Penalty for large page sections
+                if (el.tagName !== 'FORM' && allInputs.length < 1) score = -250;
+                const parentText = (el.parentElement?.innerText || '').substring(0, 100).toLowerCase();
+                if (['search', 'sign in', 'login', '로그인', '검색'].some(k => parentText.includes(k))) score -= 40;
+
+                if (score > currentMaxInRoot) {
+                    currentMaxInRoot = score;
+                    currentBestInRoot = el;
+                }
+            });
+
+            if (currentMaxInRoot > maxScore && currentMaxInRoot >= threshold) {
+                maxScore = currentMaxInRoot;
+                bestTarget = currentBestInRoot;
+            }
+            return elements.length;
+        };
+
+        // 1. Recursive Shadow DOM & Main DOM Scan
+        logDev("🕵️ [UltraFinder] Scanning complex structures (ShadowDOM & Multi-Root)...", "info");
+        const allRoots = [document];
+        const collectRoots = (node) => {
+            try {
+                if (node.shadowRoot) {
+                    allRoots.push(node.shadowRoot);
+                    Array.from(node.shadowRoot.children || []).forEach(collectRoots);
+                }
+                Array.from(node.children || []).forEach(collectRoots);
+            } catch(e) {} // [v2.8.5] Resilience: Don't crash on cross-origin iframe boundaries
+        };
+        try {
+            Array.from(document.children || []).forEach(collectRoots);
+        } catch(e) {}
+
+        // [v2.8.5] Optimized: Pre-scan all potential labels once to cache their geometry
+        logDev("🕵️ [Supreme-Scan 5.0] Pre-scanning labels and context...", "info");
+        const rawLabels = queryAllDeep('label, p, span, div.label');
+        const pageLabels = rawLabels.map(lbl => ({
+            text: lbl.textContent.trim(),
+            rect: lbl.getBoundingClientRect()
+        })).filter(l => l.text.length > 2); // Filter out noise
+
+        let totalElementsScanned = 0;
+        allRoots.forEach((root, i) => {
+            totalElementsScanned += evaluateElement(root, `Root#${i}`, pageLabels);
+        });
+
+        // 2. Scan iframes (Cross-origin safe check)
+        const iframes = queryAllDeep('iframe');
+        for (const frame of iframes) {
+            try {
+                if (frame.contentDocument) {
+                    totalElementsScanned += evaluateElement(frame.contentDocument, 'Iframe', pageLabels);
+                }
+            } catch (e) {}
+        }
+
+        logDev(`🔍 [Scan] Scanned ${totalElementsScanned} elements. Highest score: ${maxScore}`, "info");
+
+        if (bestTarget) {
+            const tagName = (bestTarget.tagName || 'UNKNOWN').toLowerCase();
+            const id = bestTarget.id || 'N/A';
+            logDev(`🎯 [Scan] Optimal target found: Score(${maxScore}) Tag(<${tagName}>) ID(#${id})`, "success");
+            return bestTarget;
+        } else {
+            logDev(`⚠️ [Scan] No valid forms reached threshold score (Target Score: ${isContactPage() ? 10 : 35})`, "warning");
+        }
+        return null;
+    }
+
+    async function fillFormIntelligent(form, tpl, speed) {
+        logDev("🛠️ [Action][HyperEngine v4.0] 초강력 폼 자동 등록기 시작...");
+        let fieldsNewlyFilled = 0;
+        let fieldsAlreadyValid = 0;
+        let filledFields = 0;
+
+        // ============================================================
+        // [HyperEngine v4.0] React/Vue/Angular 네이티브 값 세터 유틸
+        // ============================================================
+        function setNativeValue(el, val) {
+            try {
+                const proto = el.tagName === 'TEXTAREA' ? HTMLTextAreaElement.prototype
+                            : el.tagName === 'SELECT' ? HTMLSelectElement.prototype
+                            : HTMLInputElement.prototype;
+                const nativeSetter = Object.getOwnPropertyDescriptor(proto, 'value');
+                if (nativeSetter && nativeSetter.set) {
+                    nativeSetter.set.call(el, val);
+                } else {
+                    el.value = val;
+                }
+            } catch (e) {
+                el.value = val;
+            }
+        }
+
+        // ============================================================
+        // [v4.0] 전체 이벤트 시퀀스 디스패처 - 사람처럼 행동
+        // ============================================================
+        // ============================================================
+        // [v4.12.26] 초강력 스텔스 마우스 궤적 Bezier Curve 시뮬레이터 및 디스패처
+        // ============================================================
+        async function dispatchHumanEvents(el, eventNames) {
+            // Track last mouse location globally to simulate cohesive drag/hover paths
+            if (typeof window.__xpider_last_mouse_x === 'undefined') {
+                window.__xpider_last_mouse_x = Math.random() * window.innerWidth;
+                window.__xpider_last_mouse_y = Math.random() * window.innerHeight;
+            }
+
+            const rect = el.getBoundingClientRect();
+            const randomOffsetX = (Math.random() - 0.5) * (rect.width * 0.3);
+            const randomOffsetY = (Math.random() - 0.5) * (rect.height * 0.3);
+            const targetX = rect.left + rect.width / 2 + randomOffsetX;
+            const targetY = rect.top + rect.height / 2 + randomOffsetY;
+
+            // 만약 mousemove 나 click 계열이 포함되어 있다면 마우스 실제 움직임(Bezier Curve)을 시뮬레이션
+            const hasMovement = eventNames.some(name => name.includes('move') || name.includes('over') || name === 'click');
+            if (hasMovement) {
+                const startX = window.__xpider_last_mouse_x;
+                const startY = window.__xpider_last_mouse_y;
+
+                // Bezier Curve 중간 좌표 계산
+                const steps = 6 + Math.floor(Math.random() * 5); // 6 ~ 10 steps
+                const cp1x = startX + (targetX - startX) * 0.25 + (Math.random() * 50 - 25);
+                const cp1y = startY + (targetY - startY) * 0.25 + (Math.random() * 50 - 25);
+                const cp2x = startX + (targetX - startX) * 0.75 + (Math.random() * 50 - 25);
+                const cp2y = startY + (targetY - startY) * 0.75 + (Math.random() * 50 - 25);
+
+                for(let i = 1; i <= steps; i++) {
+                    const t = i / steps;
+                    const x = Math.round((1-t)**3 * startX + 3*(1-t)**2*t * cp1x + 3*(1-t)*t**2 * cp2x + t**3 * targetX);
+                    const y = Math.round((1-t)**3 * startY + 3*(1-t)**2*t * cp1y + 3*(1-t)*t**2 * cp2y + t**3 * targetY);
+
+                    try {
+                        el.dispatchEvent(new MouseEvent('mousemove', {
+                            bubbles: true, cancelable: true, view: window,
+                            clientX: x, clientY: y, screenX: x, screenY: y
+                        }));
+                        el.dispatchEvent(new PointerEvent('pointermove', {
+                            bubbles: true, cancelable: true, pointerId: 1, pointerType: 'mouse',
+                            clientX: x, clientY: y, screenX: x, screenY: y
+                        }));
+                    } catch(e) {}
+                    await new Promise(r => setTimeout(r, 10 + Math.random()*15)); // 자연스러운 이동 딜레이
+                }
+
+                window.__xpider_last_mouse_x = targetX;
+                window.__xpider_last_mouse_y = targetY;
+            }
+
+            for (const evtName of eventNames) {
+                try {
+                    if (evtName.startsWith('pointer')) {
+                        el.dispatchEvent(new PointerEvent(evtName, { 
+                            bubbles: true, cancelable: true, pointerId: 1, pointerType: 'mouse',
+                            clientX: targetX, clientY: targetY
+                        }));
+                    } else if (evtName.startsWith('mouse') || evtName === 'click') {
+                        el.dispatchEvent(new MouseEvent(evtName, {
+                            bubbles: true, cancelable: true, view: window,
+                            clientX: targetX, clientY: targetY
+                        }));
+                    } else if (evtName.startsWith('key')) {
+                        el.dispatchEvent(new KeyboardEvent(evtName, { bubbles: true, cancelable: true }));
+                    } else if (evtName.startsWith('focus') || evtName === 'blur') {
+                        el.dispatchEvent(new FocusEvent(evtName, { bubbles: true }));
+                    } else {
+                        el.dispatchEvent(new Event(evtName, { bubbles: true, cancelable: true }));
+                    }
+                } catch(e) {}
+                // 이벤트간 미세 딜레이
+                await new Promise(r => setTimeout(r, 10 + Math.random() * 20));
+            }
+        }
+
+        const FULL_CLICK_SEQUENCE = [
+            'pointerover', 'pointerenter', 'mouseover', 'mouseenter',
+            'pointermove', 'mousemove',
+            'pointerdown', 'mousedown', 'focus',
+            'pointerup', 'mouseup', 'click'
+        ];
+
+        // ============================================================
+        // [v4.0] SELECT 드롭다운 강제 선택 - 네이티브 <select>
+        // ============================================================
+        async function applySelect(el, preferredKeywords = []) {
+            if (!el || el.tagName !== 'SELECT') return false;
+            if (_SelectResolverR2) {
+                const resolver = new _SelectResolverR2({ logger: logDev });
+                const res = await resolver.resolveNativeSelect(el);
+                if (res && res.selected) filledFields++;
+                return res && res.selected;
+            }
+            if (el.options.length <= 1) return false;
+            // 이미 유효한 값이 선택된 경우 스킵
+            if (el.selectedIndex > 0 && el.options[el.selectedIndex].value) {
+                logDev(`   - [Select-Skip] 이미 선택됨: "${el.options[el.selectedIndex].text}"`);
+                return false;
+            }
+
+            const contactKeywords = [...(preferredKeywords || []),
+                'inquiry', 'general', 'other', 'contact', 'question', 'sales', 'business',
+                '문의', '일반', '기타', '고객', '상담', 'info', 'support', 'partnership',
+                'お問い合わせ', '質問', '提案', '咨询', '合作',
+                'consulta', 'información', 'anfrage', 'demande'
+            ];
+
+            let targetIdx = -1;
+
+            // 1순위: 키워드 매칭
+            for (let i = 1; i < el.options.length; i++) {
+                if (el.options[i].disabled) continue;
+                const optText = (el.options[i].text || '').toLowerCase();
+                const optVal = (el.options[i].value || '').toLowerCase();
+                if (contactKeywords.some(k => optText.includes(k) || optVal.includes(k))) {
+                    targetIdx = i;
+                    break;
+                }
+            }
+
+            // 2순위: 유효한 첫 번째 옵션
+            if (targetIdx < 0) {
+                for (let i = 1; i < el.options.length; i++) {
+                    if (!el.options[i].disabled && el.options[i].value && el.options[i].value !== '') {
+                        targetIdx = i;
+                        break;
+                    }
+                }
+            }
+            if (targetIdx < 0 && el.options.length > 1) targetIdx = 1;
+            if (targetIdx < 0) return false;
+
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            await new Promise(r => setTimeout(r, Math.floor(speed.field * 0.4)));
+
+            el.focus();
+            dispatchHumanEvents(el, ['mousedown']);
+            await new Promise(r => setTimeout(r, 60));
+
+            // 네이티브 setter를 사용해 React 등의 controlled component 우회
+            const nativeSelectSetter = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value');
+            if (nativeSelectSetter && nativeSelectSetter.set) {
+                nativeSelectSetter.set.call(el, el.options[targetIdx].value);
+            }
+            el.selectedIndex = targetIdx;
+
+            dispatchHumanEvents(el, ['input', 'change', 'mouseup', 'click']);
+            el.blur();
+
+            logDev(`   - [Select✅] 드롭다운 선택: "${el.options[targetIdx].text}"`);
+            filledFields++;
+            return true;
+        }
+
+        // ============================================================
+        // [v4.0] 커스텀 드롭다운 처리 (React Select, MUI, Ant Design 등)
+        // div/span 기반 커스텀 셀렉트를 실제 마우스 클릭으로 조작
+        // ============================================================
+        async function applyCustomDropdown(container) {
+            if (!container) return false;
+            if (_SelectResolverR2) {
+                const resolver = new _SelectResolverR2({ logger: logDev });
+                const res = await resolver.resolveAllInForm(container);
+                if (res && res.handledCount > 0) {
+                    filledFields += res.handledCount;
+                    return true;
+                }
+            }
+            
+            const CUSTOM_SELECTORS = [
+                // React Select
+                '[class*="react-select"]', '[class*="css-"][class*="control"]',
+                // MUI / Material UI
+                '[class*="MuiSelect"]', '[class*="MuiInputBase"]', '.MuiSelect-select',
+                // Ant Design
+                '.ant-select', '.ant-select-selector',
+                // Generic custom selects
+                '[class*="custom-select"]', '[class*="dropdown"]', '[class*="select-wrapper"]',
+                '[role="listbox"]', '[role="combobox"]',
+                // Wix
+                '[data-testid*="dropdown"]', '[class*="dropdown"]'
+            ];
+
+            const customSelects = [];
+            CUSTOM_SELECTORS.forEach(sel => {
+                try {
+                    const found = container.querySelectorAll(sel);
+                    found.forEach(el => {
+                        if (elementIsVisible(el) && !customSelects.includes(el)) {
+                            customSelects.push(el);
+                        }
+                    });
+                } catch(e) {}
+            });
+
+            let handled = 0;
+            for (const csEl of customSelects) {
+                try {
+                    // 이미 값이 선택되어 있는지 체크
+                    const currentText = (csEl.textContent || '').toLowerCase().trim();
+                    const placeholders = ['select', 'choose', '선택', '選択', '请选择', '--', '...'];
+                    const isPlaceholder = placeholders.some(p => currentText.startsWith(p)) || currentText.length < 2;
+                    if (!isPlaceholder) continue; // 이미 선택됨
+
+                    csEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    await new Promise(r => setTimeout(r, 100));
+
+                    // 드롭다운 열기 (트리거 클릭)
+                    const trigger = csEl.querySelector('[class*="indicator"], [class*="arrow"], svg, [class*="trigger"]') || csEl;
+                    dispatchHumanEvents(trigger, FULL_CLICK_SEQUENCE);
+                    await new Promise(r => setTimeout(r, 400));
+
+                    // 옵션 리스트 탐색 (전역 검색 - 포탈 렌더링 대응)
+                    const optionSelectors = [
+                        '[class*="option"]', '[role="option"]',
+                        '[class*="menu-item"]', '[class*="MenuItem"]',
+                        'li[class*="item"]', '.ant-select-item',
+                        '[data-value]', '[class*="listbox"] > *'
+                    ];
+
+                    let options = [];
+                    // 먼저 드롭다운 컨테이너 내부 탐색
+                    optionSelectors.forEach(sel => {
+                        try {
+                            const found = csEl.querySelectorAll(sel);
+                            found.forEach(o => { if (elementIsVisible(o) && !options.includes(o)) options.push(o); });
+                        } catch(e) {}
+                    });
+
+                    // 포탈 렌더링 대응: body 직하의 최근 열린 메뉴 탐색
+                    if (options.length === 0) {
+                        const portalMenus = document.querySelectorAll(
+                            '[class*="menu"], [class*="dropdown-list"], [class*="listbox"], [role="listbox"], .ant-select-dropdown'
+                        );
+                        for (const menu of portalMenus) {
+                            if (!elementIsVisible(menu)) continue;
+                            optionSelectors.forEach(sel => {
+                                try {
+                                    const found = menu.querySelectorAll(sel);
+                                    found.forEach(o => { if (elementIsVisible(o) && !options.includes(o)) options.push(o); });
+                                } catch(e) {}
+                            });
+                        }
+                    }
+
+                    if (options.length === 0) {
+                        // 드롭다운 닫기 시도
+                        dispatchHumanEvents(trigger, ['click']);
+                        continue;
+                    }
+
+                    // 키워드 매칭으로 최적 옵션 선택
+                    const preferredKeywords = ['inquiry', 'general', 'other', 'contact', '문의', '일반', '기타', '고객', 'sales', 'business', 'info'];
+                    let targetOption = null;
+
+                    for (const opt of options) {
+                        const optText = (opt.textContent || '').toLowerCase().trim();
+                        if (preferredKeywords.some(k => optText.includes(k))) {
+                            targetOption = opt;
+                            break;
+                        }
+                    }
+
+                    // 키워드 매칭 실패 시 첫 번째 유효 옵션
+                    if (!targetOption) {
+                        targetOption = options.find(opt => {
+                            const text = (opt.textContent || '').trim();
+                            return text.length > 0 && !placeholders.some(p => text.toLowerCase().startsWith(p));
+                        }) || options[0];
+                    }
+
+                    if (targetOption) {
+                        dispatchHumanEvents(targetOption, FULL_CLICK_SEQUENCE);
+                        await new Promise(r => setTimeout(r, 200));
+                        logDev(`   - [CustomSelect✅] 커스텀 드롭다운 선택: "${(targetOption.textContent || '').trim().substring(0, 30)}"`);
+                        filledFields++;
+                        handled++;
+                    }
+                } catch (e) {
+                    logDev(`   - [CustomSelect⚠️] 처리 실패: ${e.message}`, 'warning');
+                }
+            }
+            return handled > 0;
+        }
+
+        // ============================================================
+        // [v4.0] 라디오 버튼 강제 선택 - label/wrapper 클릭 포함
+        // ============================================================
+        async function applyRadio(radioEl) {
+            if (!radioEl) return;
+            // 이미 체크된 경우 스킵
+            if (radioEl.checked) return;
+
+            radioEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            await new Promise(r => setTimeout(r, 50));
+
+            // 1차: 네이티브 라디오 직접 클릭
+            radioEl.focus();
+            dispatchHumanEvents(radioEl, FULL_CLICK_SEQUENCE);
+
+            // 네이티브 checked setter
+            const nativeCheckedSetter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'checked');
+            if (nativeCheckedSetter && nativeCheckedSetter.set) {
+                nativeCheckedSetter.set.call(radioEl, true);
+            } else {
+                radioEl.checked = true;
+            }
+            dispatchHumanEvents(radioEl, ['input', 'change']);
+
+            // 2차: 직접 클릭으로 안 됐으면 label 클릭 시도
+            if (!radioEl.checked) {
+                const label = radioEl.id
+                    ? document.querySelector(`label[for="${radioEl.id}"]`)
+                    : radioEl.closest('label');
+                if (label) {
+                    dispatchHumanEvents(label, FULL_CLICK_SEQUENCE);
+                    await new Promise(r => setTimeout(r, 50));
+                }
+            }
+
+            // 3차: 부모 wrapper 클릭 (Material UI 등)
+            if (!radioEl.checked) {
+                const wrapper = radioEl.closest('[class*="radio"], [class*="Radio"], [role="radio"]');
+                if (wrapper && wrapper !== radioEl) {
+                    dispatchHumanEvents(wrapper, FULL_CLICK_SEQUENCE);
+                }
+            }
+
+            radioEl.blur();
+            logDev(`   - [Radio✅] 라디오 클릭: name="${radioEl.name}" value="${radioEl.value}"`);
+        }
+
+        // ============================================================
+        // [v4.0] 체크박스 강제 체크 - label/wrapper 클릭 포함
+        // ============================================================
+        async function applyCheckbox(cbEl) {
+            if (!cbEl) return;
+            if (_CheckboxResolverR2) {
+                const resolver = new _CheckboxResolverR2({ logger: logDev });
+                const res = await resolver.resolveCheckbox(cbEl);
+                return res && res.actual;
+            }
+            if (cbEl.checked) return;
+
+            cbEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            await new Promise(r => setTimeout(r, 40));
+
+            // 1차: 네이티브 체크박스 직접 클릭
+            cbEl.focus();
+            dispatchHumanEvents(cbEl, FULL_CLICK_SEQUENCE);
+
+            const nativeCheckedSetter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'checked');
+            if (nativeCheckedSetter && nativeCheckedSetter.set) {
+                nativeCheckedSetter.set.call(cbEl, true);
+            } else {
+                cbEl.checked = true;
+            }
+            dispatchHumanEvents(cbEl, ['input', 'change']);
+
+            // 2차: label 클릭
+            if (!cbEl.checked) {
+                const label = cbEl.id
+                    ? document.querySelector(`label[for="${cbEl.id}"]`)
+                    : cbEl.closest('label');
+                if (label) {
+                    dispatchHumanEvents(label, FULL_CLICK_SEQUENCE);
+                    await new Promise(r => setTimeout(r, 40));
+                }
+            }
+
+            // 3차: wrapper 클릭 (MUI Checkbox 등)
+            if (!cbEl.checked) {
+                const wrapper = cbEl.closest('[class*="checkbox"], [class*="Checkbox"], [role="checkbox"]');
+                if (wrapper && wrapper !== cbEl) {
+                    dispatchHumanEvents(wrapper, FULL_CLICK_SEQUENCE);
+                }
+            }
+
+            cbEl.blur();
+            logDev(`   - [Checkbox✅] 체크박스 체크: "${cbEl.name || cbEl.id || ''}"`);
+        }
+
+        // ============================================================
+        // [v4.0] 커스텀 체크박스/라디오 (div/span 기반) 클릭
+        // ============================================================
+        async function applyCustomCheckableElements(container) {
+            const CUSTOM_CHECK_SELECTORS = [
+                '[role="checkbox"]:not([aria-checked="true"])',
+                '[role="radio"]:not([aria-checked="true"])',
+                '[role="switch"]:not([aria-checked="true"])',
+                '[class*="custom-checkbox"]:not(.checked)',
+                '[class*="custom-radio"]:not(.checked)'
+            ];
+
+            let handled = 0;
+            for (const sel of CUSTOM_CHECK_SELECTORS) {
+                try {
+                    const elements = container.querySelectorAll(sel);
+                    for (const el of elements) {
+                        if (!elementIsVisible(el)) continue;
+
+                        // 약관/동의 관련 체크박스만 자동 체크
+                        const context = (el.textContent || el.getAttribute('aria-label') || '').toLowerCase();
+                        const parentText = (el.parentElement?.textContent || '').toLowerCase().substring(0, 200);
+                        const combined = context + ' ' + parentText;
+
+                        const isTerms = ['agree', 'terms', 'policy', 'consent', 'accept', 'privacy',
+                            '동의', '약관', '규정', '개인정보', '수집', '이용약관', 'gdpr'
+                        ].some(k => combined.includes(k));
+
+                        // role="radio" 는 그룹 내 첫 번째를 선택
+                        const isRadio = el.getAttribute('role') === 'radio';
+
+                        if (isTerms || isRadio) {
+                            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            await new Promise(r => setTimeout(r, 60));
+                            dispatchHumanEvents(el, FULL_CLICK_SEQUENCE);
+
+                            // aria-checked 업데이트 시도
+                            if (el.getAttribute('aria-checked') !== 'true') {
+                                el.setAttribute('aria-checked', 'true');
+                            }
+
+                            await new Promise(r => setTimeout(r, 100));
+                            logDev(`   - [CustomCheck✅] ${isRadio ? '라디오' : '체크박스'} 클릭: "${context.substring(0, 30)}"`);
+                            filledFields++;
+                            handled++;
+
+                            // role="radio"는 그룹 당 하나만
+                            if (isRadio) break;
+                        }
+                    }
+                } catch(e) {}
+            }
+            return handled;
+        }
+
+        // ============================================================
+        // [v4.12.26] 인간 키보드 입력 인터랙션 모사 엔진 (Stealth Human Keyboard Simulator)
+        // ============================================================
+        async function typeHumanlike(el, val) {
+            if (!el || !val) return;
+            
+            // 1. 엘리먼트 가시성 확보 및 부드러운 스크롤 & 초점 잡기
+            try {
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                await new Promise(r => setTimeout(r, 450 + Math.random()*150)); // 시선 이동 딜레이
+            } catch(e) {}
+            
+            // 2. 포커스 및 마우스 클릭 이벤트 디스패치 (Bezier 마우스 궤적 자동 기동)
+            el.focus();
+            await dispatchHumanEvents(el, ['pointerover', 'pointerenter', 'mouseover', 'mouseenter', 'pointerdown', 'mousedown', 'focusin', 'pointerup', 'mouseup', 'click']);
+            await new Promise(r => setTimeout(r, 100 + Math.random()*100));
+            
+            // 3. 한 글자씩 순차적 타이핑 (오타 및 백스페이스 인간미 포함)
+            let accumulatedValue = '';
+            for (let i = 0; i < val.length; i++) {
+                const char = val[i];
+                const key = char;
+                const keyCode = char.charCodeAt(0);
+                
+                // 3a. 간헐적 오타 발생 및 지우기 시뮬레이션 (1.2% 확률)
+                if (Math.random() < 0.012 && i > 0 && i < val.length - 1) {
+                    const alphabet = 'abcdefghijklmnopqrstuvwxyz';
+                    const typo = alphabet.charAt(Math.floor(Math.random() * alphabet.length));
+                    
+                    // 오타 삽입
+                    accumulatedValue += typo;
+                    if (el.contentEditable === 'true') {
+                        el.textContent = accumulatedValue;
+                    } else {
+                        setNativeValue(el, accumulatedValue);
+                    }
+                    el.dispatchEvent(new Event('input', { bubbles: true, cancelable: true }));
+                    await new Promise(r => setTimeout(r, 100 + Math.random()*120));
+                    
+                    // 지우기 (Backspace)
+                    accumulatedValue = accumulatedValue.slice(0, -1);
+                    if (el.contentEditable === 'true') {
+                        el.textContent = accumulatedValue;
+                    } else {
+                        setNativeValue(el, accumulatedValue);
+                    }
+                    el.dispatchEvent(new Event('input', { bubbles: true, inputType: 'deleteContentBackward' }));
+                    await new Promise(r => setTimeout(r, 120 + Math.random()*80));
+                }
+
+                // 3b. keydown 이벤트 발생 (인간미 있는 keydown 설정)
+                el.dispatchEvent(new KeyboardEvent('keydown', {
+                    key: key,
+                    code: `Key${key.toUpperCase()}`,
+                    keyCode: keyCode,
+                    which: keyCode,
+                    bubbles: true,
+                    cancelable: true
+                }));
+                
+                // 3c. keypress 이벤트 발생
+                el.dispatchEvent(new KeyboardEvent('keypress', {
+                    key: key,
+                    keyCode: keyCode,
+                    which: keyCode,
+                    bubbles: true,
+                    cancelable: true
+                }));
+                
+                // 3d. 엘리먼트 속성에 따라 실제 값을 순차 대입
+                if (el.contentEditable === 'true') {
+                    accumulatedValue += char;
+                    el.textContent = accumulatedValue;
+                } else {
+                    accumulatedValue += char;
+                    setNativeValue(el, accumulatedValue);
+                }
+                
+                // 3e. input 이벤트 발생
+                el.dispatchEvent(new Event('input', { bubbles: true, cancelable: true }));
+                
+                // 3f. keyup 이벤트 발생
+                el.dispatchEvent(new KeyboardEvent('keyup', {
+                    key: key,
+                    keyCode: keyCode,
+                    which: keyCode,
+                    bubbles: true,
+                    cancelable: true
+                }));
+                
+                // 3g. 글자 간 불규칙한 인간 타이핑 딜레이 모사 (문장 부호는 느리게, 장문은 스마트 가속)
+                const isPunctuation = /[.,!?;:]/.test(char);
+                const isLongText = val.length > 40;
+                const randomDelay = isLongText
+                    ? (isPunctuation ? 25 : (8 + Math.random() * 10))
+                    : (isPunctuation ? (140 + Math.random() * 160) : (35 + Math.random() * 45));
+                await new Promise(r => setTimeout(r, randomDelay));
+            }
+            
+            // 4. 최종 값 2중 안전 장치 (Dual-Layer Sync Safeguard)
+            if (el.contentEditable === 'true') {
+                el.textContent = val;
+                el.dispatchEvent(new Event('input', { bubbles: true }));
+                el.dispatchEvent(new Event('change', { bubbles: true }));
+            } else {
+                setNativeValue(el, val);
+                el.dispatchEvent(new Event('input', { bubbles: true }));
+                el.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+            
+            // 5. 블러 처리 및 포커스 아웃
+            el.blur();
+            await dispatchHumanEvents(el, ['blur', 'focusout']);
+            await new Promise(r => setTimeout(r, 40));
+        }
+
+        // ============================================================
+        // [v4.1] 텍스트/이메일/전화 필드 값 입력 (초지능 인간 타이핑 연계)
+        // ============================================================
+        // [RC3.60 .91] Per-element fill attempt tracking for bounded retries (max 1 rewrite per element)
+        if (!window.__xpider_field_fill_attempts) window.__xpider_field_fill_attempts = new WeakMap();
+
+        const applyVal = async (el, val, matchedAttr) => {
+            if (!val || !el) return;
+            // [RC3.60 .91 Defect 3 Guard] Never modify hidden or honeypot controls
+            if (isHoneypotV4(el) || el.type === 'hidden' || el.hidden || (el.style && (el.style.display === 'none' || el.style.visibility === 'hidden'))) {
+                logDev(`   - [HONEYPOT_GUARD] Protected honeypot/hidden field skipped: ${el.id || el.name || 'unnamed'}`, 'debug');
+                return;
+            }
+            if (el.tagName === 'SELECT') {
+                await applySelect(el);
+                return;
+            }
+
+            // [RC3.60 .91 Defect 1 Fix] Bounded Retries: If field already has non-empty value, never clear or rewrite it repeatedly
+            const currentVal = el.contentEditable === 'true' ? (el.textContent || '') : (el.value || '');
+            const attempts = window.__xpider_field_fill_attempts.get(el) || 0;
+            if (currentVal.trim() !== '' && attempts >= 1) {
+                logDev(`   - [FIELD_SKIP] field=${el.id || el.name || 'unnamed'} tag=${el.tagName} reason=ALREADY_FILLED_AND_STABLE`);
+                fieldsAlreadyValid++;
+                const semanticRes = resolveFieldSemantic(el);
+                let category = semanticRes.semantic;
+                if (category === 'unknown') {
+                    const attrStr = `${matchedAttr || ''} ${el.name || ''} ${el.id || ''} ${el.type || ''}`.toLowerCase();
+                    if (el.tagName === 'TEXTAREA' || /message|body|comment|inquiry|content/i.test(attrStr)) category = 'message';
+                    else if (/email|mail/i.test(attrStr)) category = 'email';
+                    else if (/\bphone\b|\btel\b|\bmobile\b|\bcell\b/i.test(attrStr)) category = 'phone';
+                    else if (/name|성함|이름/i.test(attrStr)) category = 'name';
+                    else if (/subject|title/i.test(attrStr)) category = 'subject';
+                    else category = 'text';
+                }
+                try {
+                    const fieldKey = el.id || el.name || el.getAttribute('name') || el.getAttribute('id') || `already_filled_${fieldsAlreadyValid}`;
+                    if (!window.__xpider_current_field_mapping) window.__xpider_current_field_mapping = {};
+                    if (!window.__xpider_current_filled_fields) window.__xpider_current_filled_fields = [];
+                    window.__xpider_current_field_mapping[fieldKey] = {
+                        category: category,
+                        valLength: currentVal.length,
+                        tag: el.tagName || '',
+                        name: el.name || '',
+                        id: el.id || '',
+                        alreadyFilled: true
+                    };
+                    if (!window.__xpider_current_filled_fields.includes(fieldKey)) {
+                        window.__xpider_current_filled_fields.push(fieldKey);
+                    }
+                } catch (_) {}
+                return;
+            }
+
+            await new Promise(r => setTimeout(r, speed.field));
+
+            // 초지능 인간 타이핑 시뮬레이터 실행!
+            await typeHumanlike(el, val);
+
+            // [Issue #6 R6.9G.10.3.7.1.4.5 Section B] Structural Precedence Semantic Determination
+            const semanticRes = resolveFieldSemantic(el);
+            let category = semanticRes.semantic;
+            if (category === 'unknown') {
+                const attrStr = `${matchedAttr || ''} ${el.name || ''} ${el.id || ''} ${el.type || ''}`.toLowerCase();
+                if (el.tagName === 'TEXTAREA' || /message|body|comment|inquiry|content/i.test(attrStr)) category = 'message';
+                else if (/email|mail/i.test(attrStr)) category = 'email';
+                else if (/\bphone\b|\btel\b|\bmobile\b|\bcell\b/i.test(attrStr)) category = 'phone';
+                else if (/name|성함|이름/i.test(attrStr)) category = 'name';
+                else if (/subject|title/i.test(attrStr)) category = 'subject';
+                else category = 'text';
+            }
+
+            if (category === 'email') {
+                logDev(`   - [FIELD_ASSIGN✅] category=email field=${el.id || el.name || 'unnamed'} len=${(val || '').length}`);
+            } else if (category === 'phone') {
+                logDev(`   - [FIELD_ASSIGN✅] category=phone field=${el.id || el.name || 'unnamed'}`);
+            } else if (category === 'message') {
+                logDev(`   - [FIELD_ASSIGN✅] category=message field=${el.id || el.name || 'unnamed'} tag=${el.tagName} len=${(val || '').length}`);
+            } else {
+                logDev(`   - [FIELD_ASSIGN✅] category=${category} field=${el.id || el.name || 'unnamed'} len=${(val || '').length}`);
+            }
+            fieldsNewlyFilled++;
+            filledFields++;
+            try { window.__xpider_field_fill_attempts.set(el, (window.__xpider_field_fill_attempts.get(el) || 0) + 1); } catch (_) {}
+
+            try {
+                const fieldKey = el.id || el.name || el.getAttribute('name') || el.getAttribute('id') || `field_${filledFields}`;
+                if (!window.__xpider_current_field_mapping) window.__xpider_current_field_mapping = {};
+                if (!window.__xpider_current_filled_fields) window.__xpider_current_filled_fields = [];
+                window.__xpider_current_field_mapping[fieldKey] = {
+                    category: category,
+                    valLength: (val || '').length,
+                    tag: el.tagName || '',
+                    name: el.name || '',
+                    id: el.id || ''
+                };
+                if (!window.__xpider_current_filled_fields.includes(fieldKey)) {
+                    window.__xpider_current_filled_fields.push(fieldKey);
+                }
+            } catch (_) {}
+        };
+
+        // 패턴 매칭 함수
+        const matchField = async (patterns, val, el) => {
+            if (!val) return false;
+            const label = getLabelFor(el).toLowerCase();
+            const placeholder = (el.placeholder || '').toLowerCase();
+            const name = (el.name || '').toLowerCase();
+            const id = (el.id || '').toLowerCase();
+            const cls = (el.className || '').toString().toLowerCase();
+            const ariaLabel = (el.getAttribute('aria-label') || '').toLowerCase();
+            const autocomplete = (el.getAttribute('autocomplete') || '').toLowerCase();
+            const isGenericId = !id || id === 'null-field' || /^\d+$/.test(id) || id.includes('input');
+            const combined = isGenericId
+                ? `${label} ${placeholder} ${cls} ${ariaLabel} ${autocomplete}`
+                : `${label} ${placeholder} ${name} ${id} ${cls} ${ariaLabel} ${autocomplete}`;
+
+            if (isGenericId && label && patterns.some(p => p.test(label))) {
+                await applyVal(el, val, patterns.find(p => p.test(label)));
+                return true;
+            }
+            if (patterns.some(p => p.test(combined))) {
+                await applyVal(el, val, patterns.find(p => p.test(combined)));
+                return true;
+            }
+            return false;
+        };
+
+        // [v4.12.27] Smart Name Splitter
+        function splitName(fullName) {
+            if (!fullName) return { first: 'John', last: 'Doe' };
+            const trimmed = fullName.trim();
+            const hangulRegex = /^[가-힣]+$/;
+            if (hangulRegex.test(trimmed)) {
+                if (trimmed.length === 3) {
+                    return { last: trimmed.charAt(0), first: trimmed.substring(1) };
+                } else if (trimmed.length === 2) {
+                    return { last: trimmed.charAt(0), first: trimmed.charAt(1) };
+                } else if (trimmed.length === 4) {
+                    const doubleSurnames = ['황보', '독고', '사공', '남궁', '제갈', '서문'];
+                    const prefix2 = trimmed.substring(0, 2);
+                    if (doubleSurnames.includes(prefix2)) {
+                        return { last: prefix2, first: trimmed.substring(2) };
+                    }
+                    return { last: trimmed.charAt(0), first: trimmed.substring(1) };
+                }
+            }
+            const parts = trimmed.split(/\s+/);
+            if (parts.length > 1) {
+                const last = parts.pop();
+                const first = parts.join(' ');
+                return { first, last };
+            }
+            return { first: trimmed, last: trimmed };
+        }
+
+        // [v4.12.27] Smart Value Generator for BruteForce fallback
+        function generateSmartRandomValue(el) {
+            const label = getLabelFor(el).toLowerCase();
+            const placeholder = (el.placeholder || '').toLowerCase();
+            const name = (el.name || '').toLowerCase();
+            const id = (el.id || '').toLowerCase();
+            const cls = (el.className || '').toString().toLowerCase();
+            const ariaLabel = (el.getAttribute('aria-label') || '').toLowerCase();
+            const autocomplete = (el.getAttribute('autocomplete') || '').toLowerCase();
+            const c = `${label} ${placeholder} ${name} ${id} ${cls} ${ariaLabel} ${autocomplete}`.toLowerCase();
+            if (/ssn|social.*security|ein|tax.*id|taxpayer|revenue|headcount|employee.*count|passport|license|puzzle|captcha/i.test(c)) {
+                return '';
+            }
+            
+            const type = (el.type || 'text').toLowerCase();
+            
+            // 1. 숫자 전용 필드 판정
+            const isNumeric = type === 'number' || type === 'range' || 
+                              el.getAttribute('inputmode') === 'numeric' ||
+                              /zip|postal|phone|tel|fax|mobile|number|qty|quantity|code|digit/i.test(c);
+            
+            if (isNumeric) {
+                if (/phone|tel|mobile|fax|전화|연락처|휴대폰/i.test(c)) {
+                    if (tpl.phone && tpl.phone.trim() !== '') return tpl.phone;
+                    const rand8 = Math.floor(10000000 + Math.random() * 90000000);
+                    return '010-' + String(rand8).substring(0, 4) + '-' + String(rand8).substring(4);
+                }
+                if (/zip|postal|우편/i.test(c)) {
+                    const rand5 = Math.floor(10000 + Math.random() * 90000);
+                    return String(rand5);
+                }
+                if (type === 'number' || type === 'range') {
+                    const min = (el.min !== '' && el.min !== null && !isNaN(Number(el.min))) ? Number(el.min) : null;
+                    const max = (el.max !== '' && el.max !== null && !isNaN(Number(el.max))) ? Number(el.max) : null;
+                    const step = (el.step !== '' && el.step !== null && el.step !== 'any' && !isNaN(Number(el.step))) ? Number(el.step) : 1;
+                    let numVal = (min !== null) ? min : 1;
+                    if (numVal <= 0 && min === null) numVal = 1;
+                    if (max !== null && numVal > max) numVal = max;
+                    if (min !== null && step > 0) {
+                        const diff = numVal - min;
+                        const rem = diff % step;
+                        if (rem !== 0) numVal = numVal - rem + step;
+                        if (max !== null && numVal > max) numVal = max;
+                    }
+                    return String(numVal);
+                }
+                const rand2 = Math.floor(1 + Math.random() * 98);
+                return String(rand2);
+            }
+            
+            // 2. 이메일 필드 판정
+            const isEmail = type === 'email' || /email|mail/i.test(c);
+            if (isEmail) {
+                if (tpl.email && tpl.email.trim() !== '') return tpl.email;
+                const randChars = Math.random().toString(36).substring(2, 8);
+                return randChars + '@gmail.com';
+            }
+
+            // 2.5 URL & 날짜/시간 필드 판정
+            if (type === 'url' || /website|url|homepage|홈페이지/i.test(c)) {
+                return (tpl && (tpl.website || tpl.url || tpl.homepage)) || '';
+            }
+            if (type === 'date') {
+                const now = new Date();
+                const y = now.getFullYear();
+                const m = String(now.getMonth() + 1).padStart(2, '0');
+                const d = String(now.getDate()).padStart(2, '0');
+                let dateVal = `${y}-${m}-${d}`;
+                if (el.min && dateVal < el.min) dateVal = el.min;
+                if (el.max && dateVal > el.max) dateVal = el.max;
+                return dateVal;
+            }
+            if (type === 'time') {
+                let timeVal = '10:00';
+                if (el.min && timeVal < el.min) timeVal = el.min;
+                if (el.max && timeVal > el.max) timeVal = el.max;
+                return timeVal;
+            }
+            
+            // 3. 텍스트 / 일반 글자 필드
+            if (/company|회사|org/i.test(c)) {
+                return (tpl.name || getRandomTemplateVal()) + ' Inc.';
+            }
+            if (/address|주소/i.test(c)) {
+                return '123 Business Rd, New York, NY';
+            }
+            if (/subject|제목|title/i.test(c)) {
+                return tpl.subject || '';
+            }
+            if (el.tagName === 'TEXTAREA' || /message|content|body|내용/i.test(c)) {
+                return tpl.message || '';
+            }
+            
+            // 성/이름 필드 스마트 스플리터 적용
+            if (/last.?name|family.?name|surname|성(?!명)/i.test(c)) {
+                const s = splitName(tpl.name);
+                return tpl.lastName || s.last || '';
+            }
+            if (/first.?name|given.?name/i.test(c)) {
+                const s = splitName(tpl.name);
+                return tpl.firstName || s.first || '';
+            }
+            if (/name|이름|성함|성명/i.test(c)) {
+                return tpl.name || '';
+            }
+            
+            return getRandomTemplateVal();
+        }
+
+        // 템플릿 유효값 수집
+        const templateVals = [
+            tpl.firstName, tpl.lastName, tpl.name, tpl.email,
+            tpl.phone, tpl.subject, tpl.message
+        ].filter(v => typeof v === 'string' && v.trim() !== '');
+
+        const getRandomTemplateVal = () => {
+            if (templateVals.length > 0) return templateVals[Math.floor(Math.random() * templateVals.length)];
+            return "Inquiry";
+        };
+
+        // ── 확장된 honeypot 판정 (v4.1: 완벽한 허니팟 차단 및 오탐 방지) ──
+        function isHoneypotV4(el) {
+            if (!el) return false;
+            // [RC3.60 .91 Defect 3 Fix] Type="hidden" and hidden attributes are strictly protected
+            if (el.type === 'hidden' || el.hidden === true || el.getAttribute('hidden') !== null) return true;
+            // 1. 명시적 허니팟 ID, Name, Class 검사 (Elementor, Gravity, WPForms, Wix 등 전수 차단)
+            const idNameClass = [
+                String(el.id || ''),
+                String(el.name || ''),
+                String(el.className || ''),
+                String(el.getAttribute('class') || '')
+            ].join(' ').toLowerCase();
+
+            const honeypotKeywords = [
+                'honeypot', 'form-field-honeypot', 'elementor-field-type-honeypot', 'w-honeypot',
+                'website_url', 'trap', 'bottom_field', 'h-captcha-response', 'g-recaptcha-response',
+                'antispam', 'anti-spam', 'nobot', 'sweet_honey', 'hp_field', '_hp_'
+            ];
+            if (honeypotKeywords.some(k => idNameClass.includes(k))) return true;
+
+            // 2. 부모 래퍼에 명시된 허니팟 컨테이너 검사
+            try {
+                if (el.closest && el.closest('.form-field-honeypot, [class*="honeypot"], [id*="honeypot"], [class*="antispam"]')) {
+                    return true;
+                }
+            } catch (_) {}
+
+            // 3. 시각적 / 물리적 은닉 여부 검사 (display:none, visibility:hidden, opacity:0, tabindex=-1 with autocomplete=off)
+            const style = window.getComputedStyle(el);
+            if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') {
+                return true;
+            }
+
+            // 4. 오프스크린 숨김 검사 (position: absolute with left: -9999px or top: -9999px or clip: rect(0,0,0,0))
+            const rect = el.getBoundingClientRect();
+            if (rect.left < -100 || rect.top < -100) return true;
+            if (style.position === 'absolute' && (parseInt(style.left, 10) < -100 || parseInt(style.top, 10) < -100)) return true;
+            if (style.clip && style.clip.includes('rect(0')) return true;
+            if (rect.width === 0 && rect.height === 0) return true;
+
+            // 5. 숨겨진 접근성 속성
+            if (el.getAttribute('aria-hidden') === 'true' && el.tabIndex === -1) return true;
+
+            return false;
+        }
+
+        // ── 1단계: 모든 입력란 수집 (form 내부 + 확장 탐색) ──
+        logDev("🎯 [HyperEngine v4.0] Phase 0 - 입력 필드 전수 수집...");
+        let inputs = Array.from(queryAllInputs(form));
+
+        // form 태그 외부에 있는 관련 필드 추가 탐색
+        if (form.tagName !== 'BODY' && form.tagName !== 'HTML') {
+            // form 근처의 형제/부모 요소에서 추가 필드 탐색
+            const formParent = form.parentElement;
+            if (formParent) {
+                const nearbyInputs = Array.from(queryAllInputs(formParent));
+                nearbyInputs.forEach(inp => {
+                    if (!inputs.includes(inp)) inputs.push(inp);
+                });
+            }
+        }
+
+        // 라디오/체크박스 명시적 수집 (queryAllInputs가 누락할 수 있으므로)
+        const allRadios = Array.from(queryAllDeep('input[type="radio"]', form));
+        const allCheckboxes = Array.from(queryAllDeep('input[type="checkbox"]', form));
+        allRadios.forEach(r => { if (!inputs.includes(r)) inputs.push(r); });
+        allCheckboxes.forEach(c => { if (!inputs.includes(c)) inputs.push(c); });
+
+        logDev(`   [v4.0] 총 ${inputs.length}개 입력 필드 발견 (radio: ${allRadios.length}, checkbox: ${allCheckboxes.length})`);
+
+        // ── 2단계: 드롭다운(Native & Custom) SelectResolverR2 전수 처리 ──
+        logDev("🎯 [HyperEngine v4.0] Phase 1 & 2 - 드롭다운 SelectResolverR2 전수 처리...");
+        let selectStability = { stable: true };
+        if (_SelectResolverR2) {
+            try {
+                const selectResolver = new _SelectResolverR2({ logger: logDev });
+                const selRes = await selectResolver.resolveAllInForm(form);
+                if (selRes && selRes.handledCount > 0) filledFields += selRes.handledCount;
+                if (selRes && !selRes.stable) {
+                    selectStability.stable = false;
+                    selectStability.reasonCode = 'REQUIRED_SELECT_UNSTABLE';
+                }
+            } catch (selErr) {
+                logDev(`⚠️ [SelectResolverR2] Error: ${selErr.message}`, 'warning');
+            }
+        } else {
+            for (const el of inputs) {
+                if (isHoneypotV4(el)) continue;
+                if (el.tagName === 'SELECT') await applySelect(el);
+            }
+            await applyCustomDropdown(form);
+        }
+
+        // ── 4단계: 체크박스 전수 처리 (CheckboxResolverR2: 10-카테고리, Boston BJJ 그룹, 약관/동의 필수 체크) ──
+        logDev("🎯 [HyperEngine v4.0] Phase 3 - 체크박스 CheckboxResolverR2 전수 처리...");
+        let checkboxStability = { stable: true };
+        const isConsentAuthorized = Boolean(tpl && (tpl.ownerAuthorizedConsent || tpl.allowAutoConsent));
+        if (_CheckboxResolverR2) {
+            try {
+                const checkboxResolver = new _CheckboxResolverR2({
+                    logger: logDev,
+                    ownerAuthorizedConsent: isConsentAuthorized
+                });
+                const cbRes = await checkboxResolver.resolveAllInForm(form, {
+                    ownerAuthorizedConsent: isConsentAuthorized
+                });
+                if (cbRes && cbRes.handledCount > 0) filledFields += cbRes.handledCount;
+                if (cbRes && !cbRes.stable) {
+                    checkboxStability.stable = false;
+                    const authRequired = cbRes.results && cbRes.results.find(r => r.reason === 'OWNER_ACTION_REQUIRED');
+                    checkboxStability.reasonCode = authRequired ? 'OWNER_ACTION_REQUIRED' : 'REQUIRED_CHECKBOX_UNSTABLE';
+                }
+            } catch (cbErr) {
+                logDev(`⚠️ [CheckboxResolverR2] Error: ${cbErr.message}`, 'warning');
+            }
+        } else {
+            for (const el of inputs) {
+                if (isHoneypotV4(el)) continue;
+                if (el.type === 'checkbox') {
+                    const labelText = getLabelFor(el).toLowerCase();
+                    const containerText = (el.closest('div, label, span, p')?.textContent || '').toLowerCase().substring(0, 300);
+                    const combined = labelText + ' ' + containerText;
+                    const termsKeywords = [
+                        'agree', 'terms', 'policy', 'consent', 'accept', 'privacy',
+                        '동의', '규정', '약관', '개인정보', '수집', '이용',
+                        'gdpr', 'einwilligung', 'datenschutz', 'consentement', 'aceptar'
+                    ];
+                    if (isConsentAuthorized && termsKeywords.some(k => combined.includes(k))) {
+                        await applyCheckbox(el);
+                        filledFields++;
+                    } else if (!isConsentAuthorized && (el.required || el.getAttribute('aria-required') === 'true') && termsKeywords.some(k => combined.includes(k))) {
+                        checkboxStability.stable = false;
+                        checkboxStability.reasonCode = 'OWNER_ACTION_REQUIRED';
+                    }
+                }
+            }
+        }
+
+        // ── 4.5단계: 휴먼 검증 산수 퀴즈 (Math Captcha Equation Quiz) 해결 ──
+        logDev("🎯 [HyperEngine v4.0] Phase 3.5 - 휴먼 테스트 수식/방정식 퀴즈 검출 및 자동 해결...");
+        if (_MathCaptchaSolver && typeof _MathCaptchaSolver.solveField === 'function') {
+            for (const el of inputs) {
+                if (isHoneypotV4(el)) continue;
+                if (el.type === 'checkbox' || el.type === 'radio' || el.tagName === 'SELECT') continue;
+                if (el.type === 'hidden' || el.type === 'submit' || el.type === 'button' || el.type === 'image' || el.type === 'file') continue;
+                if (el.tagName === 'TEXTAREA') continue;
+
+                const currentVal = el.contentEditable === 'true' ? (el.textContent || '') : (el.value || '');
+                if (currentVal.trim() !== '') continue;
+
+                const mathAnswer = _MathCaptchaSolver.solveField(el, getLabelFor);
+                if (mathAnswer !== null) {
+                    logDev(`🧮 [MathCaptcha] 휴먼 테스트 수식 감지! 자동 계산 결과="${mathAnswer}" 입력 시작...`, 'info');
+                    await applyVal(el, String(mathAnswer), 'MathCaptcha-Solved');
+                }
+            }
+        }
+
+        // ── 5단계: 텍스트 필드 패턴 매칭 ──
+        logDev("🎯 [HyperEngine v4.0] Phase 4 - 텍스트 필드 패턴 매칭...");
+        for (const el of inputs) {
+            if (isHoneypotV4(el)) continue;
+            if (el.type === 'checkbox' || el.type === 'radio' || el.tagName === 'SELECT') continue;
+            if (el.type === 'hidden' || el.type === 'submit' || el.type === 'button' || el.type === 'image' || el.type === 'file') continue;
+
+            const sName = splitName(tpl.name);
+            const fNameVal = tpl.firstName || sName.first || tpl.name;
+            const lNameVal = tpl.lastName || sName.last || '';
+
+            // [v4.12.37] 성/이름 상호 배제 필터링 (Exclusive Filtering)으로 오폭 매칭 완벽 차단
+            const label = getLabelFor(el).toLowerCase();
+            const placeholder = (el.placeholder || '').toLowerCase();
+            const nameAttr = (el.name || '').toLowerCase();
+            const idAttr = (el.id || '').toLowerCase();
+            const clsAttr = (el.className || '').toString().toLowerCase();
+            const cText = `${label} ${placeholder} ${nameAttr} ${idAttr} ${clsAttr}`.toLowerCase();
+
+            const isLastExclusive = cText.includes('first') || cText.includes('given') || cText.includes('fname');
+            const isFirstExclusive = cText.includes('last') || cText.includes('surname') || cText.includes('family') || cText.includes('lname');
+
+            // [Issue #6 R6.9G.10.3.7.1.4.5 Section B] Structural Precedence Semantic Resolver
+            const resolved = resolveFieldSemantic(el);
+            logDev(`   - [FIELD_CLASSIFY] id=${el.id || 'none'} name=${el.name || 'none'} tag=${el.tagName} resolved=${resolved.semantic} confidence=${resolved.confidence} reason=${resolved.reason}`);
+
+            if (resolved.semantic === 'message') {
+                if (await matchField(FIELD_PATTERNS.message, tpl.message, el)) continue;
+                await applyVal(el, tpl.message || getRandomTemplateVal(), 'Resolved-Message');
+                continue;
+            } else if (resolved.semantic === 'phone') {
+                if (await matchField(FIELD_PATTERNS.phone, tpl.phone, el)) continue;
+                await applyVal(el, tpl.phone, 'Resolved-Phone');
+                continue;
+            } else if (resolved.semantic === 'email') {
+                if (await matchField(FIELD_PATTERNS.email, tpl.email, el)) continue;
+                await applyVal(el, tpl.email, 'Resolved-Email');
+                continue;
+            } else if (resolved.semantic === 'name') {
+                if (!isFirstExclusive && !isLastExclusive && await matchField(FIELD_PATTERNS.name, tpl.name, el)) continue;
+                await applyVal(el, tpl.name, 'Resolved-Name');
+                continue;
+            } else if (resolved.semantic === 'firstName') {
+                if (!isFirstExclusive && await matchField(FIELD_PATTERNS.firstName, fNameVal, el)) continue;
+                await applyVal(el, fNameVal, 'Resolved-FirstName');
+                continue;
+            } else if (resolved.semantic === 'lastName') {
+                if (!isLastExclusive && await matchField(FIELD_PATTERNS.lastName, lNameVal, el)) continue;
+                await applyVal(el, lNameVal, 'Resolved-LastName');
+                continue;
+            } else if (resolved.semantic === 'subject') {
+                if (await matchField(FIELD_PATTERNS.subject, tpl.subject, el)) continue;
+                await applyVal(el, tpl.subject, 'Resolved-Subject');
+                continue;
+            }
+
+            // Fallback matching if unresolved
+            if (!isFirstExclusive && await matchField(FIELD_PATTERNS.firstName, fNameVal, el)) continue;
+            if (!isLastExclusive && await matchField(FIELD_PATTERNS.lastName, lNameVal, el)) continue;
+            if (!isFirstExclusive && !isLastExclusive && await matchField(FIELD_PATTERNS.name, tpl.name, el)) continue;
+            if (await matchField(FIELD_PATTERNS.email, tpl.email, el)) continue;
+            if (await matchField(FIELD_PATTERNS.subject, tpl.subject, el)) continue;
+            if (await matchField(FIELD_PATTERNS.message, tpl.message, el)) continue;
+            if (await matchField(FIELD_PATTERNS.phone, tpl.phone, el)) continue;
+        }
+
+        // ── 6단계: 텍스트 폴백 - 여전히 빈 필드 강제 채우기 ──
+        logDev("🎯 [HyperEngine v4.0] Phase 5 - 빈 필드 강제 채우기...");
+        for (const el of inputs) {
+            if (isHoneypotV4(el)) continue;
+            if (el.type === 'checkbox' || el.type === 'radio' || el.tagName === 'SELECT') continue;
+            if (el.type === 'hidden' || el.type === 'submit' || el.type === 'button' || el.type === 'image' || el.type === 'file') continue;
+
+            const currentVal = el.contentEditable === 'true' ? (el.textContent || '') : (el.value || '');
+            if (currentVal.trim() !== '') continue;
+
+            if (el.tagName === 'TEXTAREA' || el.contentEditable === 'true') {
+                await applyVal(el, tpl.message || getRandomTemplateVal(), 'Fallback-Message');
+            } else {
+                if (_MathCaptchaSolver && typeof _MathCaptchaSolver.solveField === 'function') {
+                    const mathAnswer = _MathCaptchaSolver.solveField(el, getLabelFor);
+                    if (mathAnswer !== null) {
+                        await applyVal(el, String(mathAnswer), 'MathCaptcha-Fallback');
+                        continue;
+                    }
+                }
+                const ph = (el.placeholder || '').toLowerCase();
+                const nm = (el.name || '').toLowerCase();
+                const tp = (el.type || '').toLowerCase();
+                const ariaLabel = (el.getAttribute('aria-label') || '').toLowerCase();
+                const autocomp = (el.getAttribute('autocomplete') || '').toLowerCase();
+                const label = getLabelFor(el).toLowerCase();
+                const hint = `${ph} ${nm} ${ariaLabel} ${autocomp} ${label}`;
+                const isSensitiveFact = /ssn|social.*security|ein|tax.*id|taxpayer|revenue|headcount|employee.*count|passport|license|puzzle|captcha/i.test(hint);
+                if (isSensitiveFact) continue;
+                let val;
+                if (tp === 'email' || hint.includes('email') || hint.includes('mail')) val = tpl.email;
+                else if (tp === 'tel' || hint.includes('phone') || hint.includes('tel') || hint.includes('mobile') || hint.includes('전화') || hint.includes('연락처')) val = tpl.phone;
+                else if (tp === 'number' && (hint.includes('zip') || hint.includes('postal') || hint.includes('우편'))) val = '00000';
+                else if (hint.includes('first')) val = tpl.firstName || tpl.name;
+                else if (hint.includes('last') || hint.includes('surname') || hint.includes('family')) val = tpl.lastName || tpl.name;
+                else if (hint.includes('name') || hint.includes('이름') || hint.includes('성함') || hint.includes('氏名')) val = tpl.name;
+                else if (hint.includes('subject') || hint.includes('제목') || hint.includes('title') || hint.includes('件名')) val = tpl.subject;
+                else if (hint.includes('company') || hint.includes('회사') || hint.includes('org') || hint.includes('회사명')) val = (tpl.name || 'Company') + ' Inc.';
+                else if (hint.includes('address') || hint.includes('주소')) val = 'N/A';
+                else if (hint.includes('zip') || hint.includes('postal') || hint.includes('우편')) val = '00000';
+                else if (hint.includes('city') || hint.includes('도시') || hint.includes('시/군/구')) val = 'Seoul';
+                else if (hint.includes('state') || hint.includes('province') || hint.includes('시/도')) val = 'Seoul';
+                else if (hint.includes('country') || hint.includes('국가')) val = 'Korea';
+                else if (tp === 'url' || hint.includes('website') || hint.includes('url') || hint.includes('homepage') || hint.includes('홈페이지')) val = (tpl && (tpl.website || tpl.url || tpl.homepage)) || '';
+                else if (tp === 'date') val = new Date().toISOString().split('T')[0];
+                else if (tp === 'time') val = '10:00';
+                else if (tp === 'number' || tp === 'range') {
+                    const min = (el.min !== '' && el.min !== null && !isNaN(Number(el.min))) ? Number(el.min) : 1;
+                    val = String(min);
+                }
+                else val = getRandomTemplateVal().substring(0, 100);
+
+                if (val) await applyVal(el, val, 'Fallback-SmartHint');
+            }
+        }
+
+        // ── 7단계: 라디오 버튼 전수 - 미선택 그룹 처리 ──
+        logDev("🎯 [HyperEngine v4.0] Phase 6 - 라디오 버튼 미선택 그룹 처리...");
+        try {
+            const radioElements = Array.from(queryAllDeep('input[type="radio"]', form)).filter(r => !isHoneypotV4(r));
+            const radioGroups = {};
+            radioElements.forEach(radio => {
+                const grpKey = radio.name || `_unnamed_${radio.id || Math.random()}`;
+                if (!radioGroups[grpKey]) radioGroups[grpKey] = [];
+                radioGroups[grpKey].push(radio);
+            });
+
+            for (const name in radioGroups) {
+                const group = radioGroups[name];
+                const isChecked = group.some(r => r.checked);
+                if (!isChecked && group.length > 0) {
+                    const validRadios = group.filter(r => !r.disabled);
+                    if (validRadios.length === 0) continue;
+
+                    // 키워드 매칭으로 최적 라디오 선택
+                    const preferredKeywords = ['inquiry', 'general', 'other', 'yes', '문의', '일반', '기타', '예', 'oui', 'ja', 'はい', '是'];
+                    let target = null;
+                    for (const radio of validRadios) {
+                        const radioLabel = getLabelFor(radio).toLowerCase();
+                        const radioVal = (radio.value || '').toLowerCase();
+                        if (preferredKeywords.some(k => radioLabel.includes(k) || radioVal.includes(k))) {
+                            target = radio;
+                            break;
+                        }
+                    }
+                    // 키워드 매칭 실패 시 첫 번째 선택
+                    if (!target) target = validRadios[0];
+                    if (target) {
+                        await applyRadio(target);
+                        filledFields++;
+                    }
+                }
+            }
+        } catch (e) {
+            logDev(`⚠️ [Radio Phase] Error: ${e.message}`, 'warning');
+        }
+
+        // ── 8단계: 일반 체크박스 전수 처리 (필수 필드만 - CheckboxResolverR2 없을 때 레거시 폴백) ──
+        if (!_CheckboxResolverR2) {
+            logDev("🎯 [HyperEngine v4.0] Phase 7 - 필수 체크박스 레거시 폴백 처리...");
+            try {
+                const checkboxElements = Array.from(queryAllDeep('input[type="checkbox"]', form)).filter(cb => !isHoneypotV4(cb));
+                for (const cb of checkboxElements) {
+                    if (cb.checked) continue;
+
+                    // 필수 체크박스 판별 (required 속성 또는 asterisk 표시)
+                    const isRequired = cb.required || cb.getAttribute('aria-required') === 'true';
+                    const labelText = getLabelFor(cb).toLowerCase();
+                    const containerText = (cb.closest('div, label, span, li')?.textContent || '').toLowerCase().substring(0, 300);
+                    const hasAsterisk = containerText.includes('*') || containerText.includes('필수');
+
+                    // 뉴스레터/마케팅 체크박스는 스킵
+                    const marketingKeywords = ['newsletter', 'marketing', 'subscribe', 'promotion', 'offer', '뉴스레터', '광고', '마케팅', '프로모션'];
+                    const isMarketing = marketingKeywords.some(k => labelText.includes(k) || containerText.includes(k));
+
+                    if ((isRequired || hasAsterisk) && !isMarketing) {
+                        await applyCheckbox(cb);
+                        filledFields++;
+                    }
+                }
+            } catch (e) {
+                logDev(`⚠️ [Checkbox Phase] Error: ${e.message}`, 'warning');
+            }
+        }
+
+        // ── 9단계: 커스텀 체크박스/라디오 (div/span 기반 ARIA) 처리 ──
+        logDev("🎯 [HyperEngine v4.0] Phase 8 - 커스텀 ARIA 체크박스/라디오 처리...");
+        await applyCustomCheckableElements(form);
+
+        // ── 10단계: 브루트포스 - contentEditable / role=textbox 탐색 ──
+        logDev("🛠️ [HyperEngine v4.0] Phase 9 - BruteForce contentEditable/role=textbox...");
+        try {
+            const contentEditables = Array.from(queryAllDeep('[contenteditable="true"], [role="textbox"], [role="searchbox"], [role="combobox"]', form));
+            for (const inp of contentEditables) {
+                if (isHoneypotV4(inp)) continue;
+                const text = (inp.textContent || '').trim();
+                if (text === '' || text === inp.getAttribute('placeholder')) {
+                    await applyVal(inp, tpl.message || getRandomTemplateVal(), 'BruteForce-ContentEditable');
+                    filledFields++;
+                }
+            }
+        } catch (e) {
+            logDev(`⚠️ [Phase 9] Error: ${e.message}`, 'warning');
+        }
+
+        // ── 11단계: [NEW] Super-BruteForce Final Target Sweeper ──
+        logDev("🎯 [HyperEngine v4.0] Phase 10 - Super-BruteForce Sweeper (초강력 입력기) 가동...");
+        try {
+            // 다시 한 번 폼 내의 모든 입력 요소를 전수 수집
+            const finalInputs = Array.from(queryAllInputs(form));
+            for (const el of finalInputs) {
+                // 타입 검사: 비입력용 타입들은 무조건 스킵
+                if (el.type === 'hidden' || el.type === 'submit' || el.type === 'button' || el.type === 'image' || el.type === 'file' || el.type === 'reset') continue;
+                
+                // 이미 체크되었거나 값이 적힌 것들은 스킵
+                if (el.type === 'checkbox' && el.checked) continue;
+                if (el.type === 'radio' && el.checked) continue;
+                
+                // 텍스트/셀렉트 박스 값 검사
+                const currentVal = el.contentEditable === 'true' ? (el.textContent || '') : (el.value || '');
+                if (currentVal.trim() !== '') continue;
+
+                const elCtx = `${el.name || ''} ${el.id || ''} ${el.placeholder || ''}`.toLowerCase();
+                if (/ssn|social.*security|ein|tax.*id|taxpayer|revenue|headcount|employee.*count|passport|license|puzzle|captcha/i.test(elCtx)) {
+                    continue;
+                }
+
+                if (el.tagName === 'SELECT') {
+                    if (!_SelectResolverR2) {
+                        await applySelect(el);
+                        filledFields++;
+                    }
+                } else if (el.type === 'checkbox') {
+                    if (!_CheckboxResolverR2) {
+                        await applyCheckbox(el);
+                        filledFields++;
+                    }
+                } else if (el.type === 'radio') {
+                    await applyRadio(el);
+                    filledFields++;
+                } else {
+                    // [v4.12.27] 숫자/글자를 정밀 구별하여 똑똑하게 랜덤 주입
+                    const val = generateSmartRandomValue(el);
+                    if (val) {
+                        await applyVal(el, val, 'SuperSweeper-Smart');
+                        filledFields++;
+                    }
+                }
+            }
+        } catch (e) {
+            logDev(`⚠️ [SuperSweeper] Error: ${e.message}`, 'warning');
+        }
+
+        // ── 11단계: 멀티 단계 폼(wizard) 감지 ──
+        try {
+            const nextBtnKeywords = ['next', 'continue', '다음', '次へ', '下一步', 'weiter', 'suivant', 'siguiente', 'step'];
+            const allButtons = Array.from(form.querySelectorAll('button, [role="button"], input[type="button"]'));
+            const nextBtn = allButtons.find(btn => {
+                const text = (btn.textContent || btn.value || '').toLowerCase().trim();
+                return nextBtnKeywords.some(k => text.includes(k)) && text.length < 20;
+            });
+
+            if (nextBtn && filledFields > 0) {
+                logDev("🔄 [HyperEngine v4.0] 멀티 단계 폼 감지! 'Next' 버튼 클릭...");
+                nextBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                await new Promise(r => setTimeout(r, 200));
+                dispatchHumanEvents(nextBtn, FULL_CLICK_SEQUENCE);
+                await new Promise(r => setTimeout(r, 800));
+
+                // 새로운 필드가 나타났으면 재귀적으로 채우기
+                const newInputs = Array.from(queryAllInputs(form)).filter(inp => !isHoneypotV4(inp));
+                const emptyNewInputs = newInputs.filter(inp => {
+                    if (inp.type === 'checkbox' || inp.type === 'radio' || inp.tagName === 'SELECT') return false;
+                    const val = inp.contentEditable === 'true' ? (inp.textContent || '') : (inp.value || '');
+                    return val.trim() === '';
+                });
+
+                if (emptyNewInputs.length > 0) {
+                    logDev(`   [v4.0] 2단계 폼에서 ${emptyNewInputs.length}개 빈 필드 발견. 추가 입력 진행...`);
+                    for (const el of emptyNewInputs) {
+                        if (el.type === 'hidden' || el.type === 'submit' || el.type === 'button') continue;
+                        const step2Resolved = resolveFieldSemantic(el);
+                        if (step2Resolved.semantic === 'message') {
+                            if (await matchField(FIELD_PATTERNS.message, tpl.message, el)) continue;
+                            await applyVal(el, tpl.message || getRandomTemplateVal(), 'Step2-Resolved-Message');
+                            continue;
+                        } else if (step2Resolved.semantic === 'phone') {
+                            if (await matchField(FIELD_PATTERNS.phone, tpl.phone, el)) continue;
+                            await applyVal(el, tpl.phone, 'Step2-Resolved-Phone');
+                            continue;
+                        } else if (step2Resolved.semantic === 'email') {
+                            if (await matchField(FIELD_PATTERNS.email, tpl.email, el)) continue;
+                            await applyVal(el, tpl.email, 'Step2-Resolved-Email');
+                            continue;
+                        } else if (step2Resolved.semantic === 'name') {
+                            if (await matchField(FIELD_PATTERNS.name, tpl.name, el)) continue;
+                            await applyVal(el, tpl.name, 'Step2-Resolved-Name');
+                            continue;
+                        }
+                        if (await matchField(FIELD_PATTERNS.email, tpl.email, el)) continue;
+                        if (await matchField(FIELD_PATTERNS.name, tpl.name, el)) continue;
+                        if (await matchField(FIELD_PATTERNS.message, tpl.message, el)) continue;
+                        if (await matchField(FIELD_PATTERNS.phone, tpl.phone, el)) continue;
+
+                        // 폴백
+                        if (el.tagName === 'TEXTAREA' || el.contentEditable === 'true') {
+                            await applyVal(el, tpl.message || getRandomTemplateVal(), 'Step2-Fallback');
+                        } else {
+                            const hint = `${(el.placeholder || '')} ${(el.name || '')} ${getLabelFor(el)}`.toLowerCase();
+                            let val = tpl.name;
+                            if (hint.includes('email')) val = tpl.email;
+                            else if (hint.includes('phone') || hint.includes('tel')) val = tpl.phone;
+                            if (val) await applyVal(el, val, 'Step2-SmartHint');
+                        }
+                    }
+                }
+            }
+        } catch (e) {
+            logDev(`⚠️ [Wizard Phase] Error: ${e.message}`, 'warning');
+        }
+
+        // ── Directive 4 & Verification: FREEZE_VALUES gate & Stability check ──
+        if (!checkboxStability.stable) {
+            logDev(`❌ [Fill] Required checkbox unstable: ${checkboxStability.reasonCode}`, "error");
+            return { filledAny: false, reasonCode: checkboxStability.reasonCode || 'REQUIRED_CHECKBOX_UNSTABLE' };
+        }
+        if (!selectStability.stable) {
+            logDev(`❌ [Fill] Required select unstable: ${selectStability.reasonCode}`, "error");
+            return { filledAny: false, reasonCode: 'REQUIRED_SELECT_UNSTABLE' };
+        }
+
+        // [RC3.60 P0 Live Site Recovery] Canonical Message Body Verification across Classifier/Filler/Verifier
+        const isMsgElement = (el) => {
+            if (!el) return false;
+            if (el.tagName === 'TEXTAREA' || el.contentEditable === 'true') return true;
+            const attrStr = [
+                el.name || '',
+                el.id || '',
+                el.getAttribute('placeholder') || '',
+                el.getAttribute('aria-label') || '',
+                el.className || ''
+            ].join(' ').toLowerCase();
+            if (/message|comment|inquiry|body|content|notes|details|문의내용|내용/i.test(attrStr)) return true;
+            if (window.__xpider_current_field_mapping) {
+                const k1 = el.id || el.getAttribute?.('id');
+                const k2 = el.name || el.getAttribute?.('name');
+                if ((k1 && window.__xpider_current_field_mapping[k1]?.category === 'message') ||
+                    (k2 && window.__xpider_current_field_mapping[k2]?.category === 'message')) {
+                    return true;
+                }
+            }
+            return false;
+        };
+
+        const finalAllInputs = Array.from(queryAllInputs(form));
+        let messageFilled = finalAllInputs.some(el => {
+            if (!isMsgElement(el)) return false;
+            const val = el.contentEditable === 'true' ? (el.textContent || '') : (el.value || '');
+            return val.trim().length > 0;
+        });
+
+        // Also check if field mapping already recorded a filled message with length > 0
+        if (!messageFilled && window.__xpider_current_field_mapping) {
+            for (const [k, meta] of Object.entries(window.__xpider_current_field_mapping)) {
+                if (meta && meta.category === 'message' && meta.valLength > 0) {
+                    messageFilled = true;
+                    break;
+                }
+            }
+        }
+
+        if (!messageFilled) {
+            const rescueTarget = finalAllInputs.find(el => isMsgElement(el) && !isCaptchaChallengeField(el))
+                || finalAllInputs.find(el => (el.tagName === 'TEXTAREA' || el.contentEditable === 'true') && !isCaptchaChallengeField(el));
+            if (rescueTarget) {
+                await applyVal(rescueTarget, tpl.message || getRandomTemplateVal(), 'Fallback-Message-Rescue');
+                filledFields++;
+                messageFilled = true;
+            }
+        }
+
+        const hasGenuineMessageField = finalAllInputs.some(el => isMsgElement(el) || el.tagName === 'TEXTAREA' || el.contentEditable === 'true');
+        if (!messageFilled) {
+            if (!hasGenuineMessageField) {
+                logDev("ℹ️ [Fill] No genuine message field on form — legitimate non-inquiry skip", "info");
+                return { filledAny: false, reasonCode: 'NO_LONG_TEXT_INQUIRY_FIELD', terminalStatus: 'SKIPPED' };
+            }
+            logDev("❌ [Fill] Message body was not filled", "error");
+            return { filledAny: false, reasonCode: 'REQUIRED_FIELD_LOST_BEFORE_SUBMIT' };
+        }
+
+        logDev("[STAGE] stage=REQUIRED_FIELDS_RESOLVED", "success");
+        logDev("[STAGE] stage=FIELD_STATE_STABLE", "success");
+        try {
+            const sendFn = window.__xpider_sendExecutionMessage || chrome.runtime.sendMessage;
+            sendFn({
+                action: 'STAGE_PROGRESSION',
+                stage: 'REQUIRED_FIELDS_RESOLVED',
+                url: window.location.href,
+                formIdentity: window.__xpider_current_form_identity || null,
+                fieldMapping: window.__xpider_current_field_mapping || {},
+                filledFields: window.__xpider_current_filled_fields || [],
+                submitState: window.__xpider_current_submit_state || 'NOT_SUBMITTED'
+            });
+            sendFn({
+                action: 'STAGE_PROGRESSION',
+                stage: 'FIELD_STATE_STABLE',
+                url: window.location.href,
+                formIdentity: window.__xpider_current_form_identity || null,
+                fieldMapping: window.__xpider_current_field_mapping || {},
+                filledFields: window.__xpider_current_filled_fields || [],
+                submitState: window.__xpider_current_submit_state || 'NOT_SUBMITTED'
+            });
+        } catch (_) {}
+
+        const interactiveInputs = finalAllInputs.filter(el => !['hidden', 'submit', 'button', 'image', 'reset'].includes(el.type) && !isCaptchaChallengeField(el));
+        const totalInputsCount = interactiveInputs.length;
+        const unresolvedFields = [];
+        if (!messageFilled) unresolvedFields.push('message_body');
+        const hasNameField = interactiveInputs.some(el => /name|이름|성함/i.test(`${el.name || ''} ${el.id || ''} ${el.placeholder || ''}`));
+        const nameFilled = interactiveInputs.some(el => /name|이름|성함/i.test(`${el.name || ''} ${el.id || ''} ${el.placeholder || ''}`) && (el.value || '').trim().length > 0);
+        if (hasNameField && !nameFilled) unresolvedFields.push('name');
+        const hasEmailField = interactiveInputs.some(el => /email|mail/i.test(`${el.name || ''} ${el.id || ''} ${el.type || ''}`));
+        const emailFilled = interactiveInputs.some(el => /email|mail/i.test(`${el.name || ''} ${el.id || ''} ${el.type || ''}`) && (el.value || '').trim().length > 0);
+        if (hasEmailField && !emailFilled) unresolvedFields.push('email');
+
+        const fieldsResolvedTotal = fieldsNewlyFilled + fieldsAlreadyValid;
+        logDev(`✅ [HyperEngine v4.0] 폼 작성 완료 - 입력 필드 신규 ${fieldsNewlyFilled}개, 기존유효 ${fieldsAlreadyValid}개, 총 해결 ${fieldsResolvedTotal}개 (총 ${totalInputsCount}개, 미해결: ${unresolvedFields.length}개)`);
+        return {
+            filledAny: (fieldsResolvedTotal > 0 || messageFilled),
+            fieldsNewlyFilled: fieldsNewlyFilled,
+            fieldsAlreadyValid: fieldsAlreadyValid,
+            fieldsResolvedTotal: fieldsResolvedTotal,
+            fieldsDetected: totalInputsCount,
+            fieldsFilled: fieldsResolvedTotal,
+            unresolvedFields: unresolvedFields
+        };
+    }
+
+    function getLabelFor(el) {
+        if (!el) return '';
+        // [v2.1.0] Supreme Proximity Search
+        if (el.id && el.id !== 'null-field') {
+            try {
+                const safeId = (typeof CSS !== 'undefined' && CSS.escape) ? CSS.escape(el.id) : el.id.replace(/["\\]/g, '\\$&');
+                const label = document.querySelector(`label[for="${safeId}"]`);
+                if (label) return label.textContent || '';
+            } catch (_) {}
+        }
+
+        // Check Squarespace/Build style labels (title class or preceding span)
+        const parent = el.parentElement;
+        if (parent) {
+            try {
+                const labelChild = parent.querySelector('label, .title, .caption, .label');
+                if (labelChild && labelChild !== el) return labelChild.textContent || '';
+            } catch (_) {}
+            
+            // Look at parent's preceding sibling (Squarespace Pattern)
+            const prevSibling = parent.previousElementSibling;
+            if (prevSibling && (prevSibling.tagName === 'LABEL' || (prevSibling.classList && prevSibling.classList.contains('title')))) {
+                return prevSibling.textContent || '';
+            }
+        }
+        
+        // Search the immediate ancestors until we find a label or meaningful text
+        let runner = el;
+        for (let i = 0; i < 3; i++) {
+            runner = runner.parentElement;
+            if (!runner) break;
+            try {
+                const labelSub = runner.querySelector('label');
+                if (labelSub) return labelSub.textContent || '';
+            } catch (_) {}
+        }
+
+        return el.getAttribute('aria-label') || el.title || '';
+    }
+
+    function elementIsVisible(el) {
+        if (!el) return false;
+        try {
+            if (typeof window !== 'undefined' && typeof window.getComputedStyle === 'function') {
+                const style = window.getComputedStyle(el);
+                if (style && (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0')) return false;
+                if (el.offsetParent === null && style && style.position !== 'fixed') return false;
+            }
+            if (typeof el.getBoundingClientRect === 'function') {
+                const rect = el.getBoundingClientRect();
+                return rect.width > 2 && rect.height > 2; // [v18.6.0] Threshold for visibility
+            }
+            return true;
+        } catch(e) { return true; }
+    }
+
+    function isHoneypot(el) {
+        if (!elementIsVisible(el)) return true;
+        
+        // Common Honeypot identifiers
+        const honeypotKeywords = ['honeypot', 'website_url', 'trap', 'bottom_field'];
+        // [R6.9G-K] Normalize potentially non-string DOM properties before string ops to prevent TypeError
+        const idOrName = (String(el.id || '') + ' ' + String(el.name || '')).toLowerCase();
+        return honeypotKeywords.some(k => idOrName.includes(k));
+    }
+
+    function takeSuccessSnapshot() {
+        const selectors = '[data-testid*="success"], [class*="success"], [id*="success"], .font_8 span, .wixui-rich-text, h1, h2, .status-msg';
+        const elementsSnapshot = new Set();
+        document.querySelectorAll(selectors).forEach(el => {
+            if (elementIsVisible(el)) {
+                elementsSnapshot.add(el.textContent.trim().toLowerCase());
+            }
+        });
+        return {
+            elements: Array.from(elementsSnapshot),
+            bodyText: document.body.textContent.toLowerCase()
+        };
+    }
+
+    async function checkForCaptcha() {
+        const captchaSelectors = [
+            'iframe[src*="recaptcha"]',
+            'iframe[src*="hcaptcha"]',
+            'iframe[src*="turnstile"]',
+            '.g-recaptcha iframe',
+            '.h-captcha iframe',
+            '#turnstile-container iframe',
+            'div[class*="captcha"] iframe',
+            'iframe[title*="captcha"]',
+            '.g-recaptcha',
+            '.h-captcha',
+            '.cf-turnstile',
+            '#turnstile-container',
+            '[data-sitekey]',
+            'img[src*="captcha" i]',
+            'img[id*="captcha" i]',
+            'img[class*="captcha" i]',
+            'input[name*="captcha" i]',
+            'input[id*="captcha" i]',
+            '[class*="captcha" i] input'
+        ];
+        return captchaSelectors.some(s => document.querySelector(s) !== null);
+    }
+
+    function extractCaptchaSitekey() {
+        // 1. Current window location query params
+        if (typeof window !== 'undefined' && window.location) {
+            try {
+                const searchParams = new URLSearchParams(window.location.search);
+                const k = searchParams.get('k') || searchParams.get('sitekey');
+                if (k && k !== 'explicit') return { type: 'recaptcha', sitekey: k };
+            } catch (_) {}
+        }
+
+        const turnstileFrame = document.querySelector('iframe[src*="turnstile"]');
+        if (turnstileFrame) {
+            const match = turnstileFrame.src.match(/sitekey=([^&]+)/) || turnstileFrame.src.match(/k=([^&]+)/);
+            if (match) return { type: 'turnstile', sitekey: match[1] };
+            const wrapper = turnstileFrame.closest('.cf-turnstile') || document.querySelector('.cf-turnstile');
+            if (wrapper && wrapper.dataset.sitekey) return { type: 'turnstile', sitekey: wrapper.dataset.sitekey };
+        }
+
+        const recaptchaFrame = document.querySelector('iframe[src*="recaptcha"]');
+        if (recaptchaFrame) {
+            const match = recaptchaFrame.src.match(/k=([^&]+)/);
+            if (match) return { type: 'recaptcha', sitekey: match[1] };
+            const gDiv = document.querySelector('.g-recaptcha, [data-sitekey]');
+            if (gDiv && gDiv.dataset.sitekey) return { type: 'recaptcha', sitekey: gDiv.dataset.sitekey };
+        }
+        
+        const hcaptchaFrame = document.querySelector('iframe[src*="hcaptcha"]');
+        if (hcaptchaFrame) {
+            const match = hcaptchaFrame.src.match(/sitekey=([^&]+)/);
+            if (match) return { type: 'hcaptcha', sitekey: match[1] };
+            const hDiv = document.querySelector('.h-captcha');
+            if (hDiv && hDiv.dataset.sitekey) return { type: 'hcaptcha', sitekey: hDiv.dataset.sitekey };
+        }
+
+        const gContainer = document.querySelector('.g-recaptcha[data-sitekey]');
+        if (gContainer) {
+            const sitekey = gContainer.getAttribute?.('data-sitekey') || gContainer.dataset?.sitekey;
+            if (sitekey) return { type: 'recaptcha', sitekey };
+        }
+
+        const hContainer = document.querySelector('.h-captcha[data-sitekey]');
+        if (hContainer) {
+            const sitekey = hContainer.getAttribute?.('data-sitekey') || hContainer.dataset?.sitekey;
+            if (sitekey) return { type: 'hcaptcha', sitekey };
+        }
+
+        const tContainer = document.querySelector('.cf-turnstile[data-sitekey], #turnstile-container[data-sitekey]');
+        if (tContainer) {
+            const sitekey = tContainer.getAttribute?.('data-sitekey') || tContainer.dataset?.sitekey;
+            if (sitekey) return { type: 'turnstile', sitekey };
+        }
+
+        const anyContainer = document.querySelector('[data-sitekey]');
+        if (anyContainer) {
+            const sitekey = anyContainer.getAttribute?.('data-sitekey') || anyContainer.dataset?.sitekey;
+            if (sitekey) return { type: 'recaptcha', sitekey };
+        }
+
+        // Inline script scan for grecaptcha.render('...', { 'sitekey': '...' })
+        try {
+            const inlineScripts = document.querySelectorAll('script:not([src])');
+            for (const s of inlineScripts) {
+                const text = s.textContent || '';
+                const m = text.match(/['"]sitekey['"]\s*:\s*['"]([a-zA-Z0-9_\-]+)['"]/i);
+                if (m && m[1]) return { type: 'recaptcha', sitekey: m[1] };
+            }
+        } catch (_) {}
+
+        // Image captcha detection
+        const imgCaptcha = document.querySelector('img[src*="captcha" i], img[id*="captcha" i]');
+        if (imgCaptcha) {
+            const companionInput = document.querySelector('input[name*="captcha" i], input[id*="captcha" i], input[placeholder*="captcha" i]');
+            return { type: 'image', element: imgCaptcha, inputElement: companionInput };
+        }
+
+        return null;
+    }
+
+    let _activeCaptchaSolvePromise = null;
+
+    function isChallengeInputElement(el) {
+        if (!el) return false;
+        const attrs = ((el.name || '') + ' ' + (el.id || '') + ' ' + (el.className || '') + ' ' + (el.getAttribute && (el.getAttribute('placeholder') || '') || '')).toLowerCase();
+        return /captcha|recaptcha|hcaptcha|turnstile|g-recaptcha-response|h-captcha-response|cf-turnstile-response/i.test(attrs);
+    }
+
+    function restoreFrozenSnapshot(form, frozenSnapshot) {
+        if (!form || !frozenSnapshot || !( frozenSnapshot instanceof Map || typeof frozenSnapshot === 'object')) return 0;
+        let restored = 0;
+        try {
+            if (frozenSnapshot instanceof Map) {
+                for (const [el, expectedEntry] of frozenSnapshot.entries()) {
+                    if (!el || isChallengeInputElement(el)) continue;
+                    const expectedVal = (typeof expectedEntry === 'object' && expectedEntry !== null)
+                        ? ((el.type === 'checkbox' || el.type === 'radio') ? expectedEntry.checked : expectedEntry.value)
+                        : expectedEntry;
+                    const curVal = (el.type === 'checkbox' || el.type === 'radio') ? el.checked : (el.value || '');
+                    if ((curVal === '' || curVal === false) && expectedVal !== undefined && expectedVal !== '') {
+                        if (el.type === 'checkbox' || el.type === 'radio') {
+                            el.checked = Boolean(expectedVal);
+                        } else {
+                            el.value = expectedVal;
+                            try {
+                                el.dispatchEvent(new Event('input', { bubbles: true }));
+                                el.dispatchEvent(new Event('change', { bubbles: true }));
+                            } catch (_) {}
+                        }
+                        restored++;
+                    }
+                }
+            } else {
+                const inputs = Array.from(form.querySelectorAll('input, textarea, select'));
+                for (const el of inputs) {
+                    if (isChallengeInputElement(el)) continue;
+                    const key = el.name || el.id;
+                    if (key && frozenSnapshot[key] !== undefined && (!el.value || !String(el.value).trim())) {
+                        el.value = frozenSnapshot[key];
+                        try {
+                            el.dispatchEvent(new Event('input', { bubbles: true }));
+                            el.dispatchEvent(new Event('change', { bubbles: true }));
+                        } catch (_) {}
+                        restored++;
+                    }
+                }
+            }
+        } catch (_) {}
+        return restored;
+    }
+
+    async function waitForExternalOrUserChallengeV7(form, template, frozenSnapshot, challengeInfo) {
+        const sendFn = (typeof window !== 'undefined' && window.__xpider_sendExecutionMessage) ||
+            (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage ? chrome.runtime.sendMessage.bind(chrome.runtime) : null);
+
+        if (sendFn) {
+            try {
+                sendFn({
+                    action: 'CAPTCHA_PENDING_EXTERNAL_USER',
+                    challengeType: challengeInfo?.type || 'unknown',
+                    url: (typeof window !== 'undefined' && window.location) ? window.location.href : ''
+                }, () => {});
+            } catch (_) {}
+        }
+
+        logDev(`⏳ [CAPTCHA_PENDING_EXTERNAL_USER] Waiting for external extension or user challenge completion (type=${challengeInfo?.type || 'unknown'}). Tab retained.`, "info");
+
+        return new Promise((resolve) => {
+            let settled = false;
+            let pollTimer = null;
+
+            const cleanup = () => {
+                if (pollTimer) {
+                    clearInterval(pollTimer);
+                    pollTimer = null;
+                }
+                if (typeof document !== 'undefined') {
+                    const hud = document.getElementById('xpider-v7-external-captcha-hud');
+                    if (hud) hud.remove();
+                }
+                if (typeof window !== 'undefined') {
+                    delete window.__xpiderTriggerExternalCaptchaAction;
+                }
+            };
+
+            const finishWait = (outcome) => {
+                if (settled) return;
+                settled = true;
+                cleanup();
+                if (outcome && outcome.resolved && sendFn) {
+                    try {
+                        sendFn({
+                            action: 'CAPTCHA_EXTERNAL_VERIFIED_RESUME',
+                            verificationMethod: outcome.method || 'dom_verified'
+                        }, () => {});
+                    } catch (_) {}
+                }
+                resolve(outcome);
+            };
+
+            const handleAction = (actionType) => {
+                if (settled) return;
+                if (actionType === 'REVERIFY_AND_SUBMIT') {
+                    const latest = _ChallengeGate ? _ChallengeGate.detectChallenge(document) : { detected: false, verified: true, type: 'none' };
+                    if (latest.verified || !latest.detected) {
+                        finishWait({ resolved: true, method: latest.method || 'reverify_button_dom_verified' });
+                        return;
+                    }
+                    if (latest.unverifiable) {
+                        // Text/image captcha: check if captcha input field is non-empty or accept operator attestation
+                        const textCapInput = document.querySelector('input[name*="captcha" i]:not([type="hidden"]), input[id*="captcha" i]:not([type="hidden"]), input[placeholder*="captcha" i]');
+                        if (!textCapInput || (textCapInput.value && textCapInput.value.trim().length > 0)) {
+                            finishWait({ resolved: true, method: 'operator_verified_unverifiable_captcha' });
+                            return;
+                        }
+                    }
+                    const msgEl = typeof document !== 'undefined' ? document.getElementById('xpider-v7-captcha-hud-msg') : null;
+                    if (msgEl) {
+                        msgEl.textContent = `⚠️ Challenge (${latest.type}) is not yet verified on the page. Please complete the challenge widget first.`;
+                        msgEl.style.color = '#fca5a5';
+                    }
+                } else if (actionType === 'SKIP') {
+                    logDev("[CAPTCHA_PENDING_EXTERNAL_USER] Operator chose SKIP", "info");
+                    finishCampaign(false, 'CAPTCHA_OPERATOR_SKIP', 'CAPTCHA_OPERATOR_SKIP', { challengeType: challengeInfo?.type || 'unknown' });
+                    finishWait({ resolved: false, skipped: true });
+                } else if (actionType === 'STOP_AND_SAVE') {
+                    logDev("[CAPTCHA_PENDING_EXTERNAL_USER] Operator chose STOP_AND_SAVE", "info");
+                    if (sendFn) {
+                        try { sendFn({ action: 'STOP_AND_SAVE_CAMPAIGN' }, () => {}); } catch (_) {}
+                    }
+                    finishWait({ resolved: false, stopped: true });
+                }
+            };
+
+            if (typeof window !== 'undefined') {
+                window.__xpiderTriggerExternalCaptchaAction = handleAction;
+            }
+
+            // Render top HUD banner if document.body is available
+            if (typeof document !== 'undefined' && document.body) {
+                const existing = document.getElementById('xpider-v7-external-captcha-hud');
+                if (existing) existing.remove();
+
+                const hud = document.createElement('div');
+                hud.id = 'xpider-v7-external-captcha-hud';
+                hud.setAttribute('data-xpider-ui', 'true');
+                hud.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:2147483647;background:linear-gradient(90deg,#0f172a,#1e293b);color:#f8fafc;padding:10px 16px;border-bottom:2px solid #f59e0b;display:flex;align-items:center;justify-content:space-between;gap:12px;font-family:system-ui,-apple-system,sans-serif;font-size:12px;box-shadow:0 4px 20px rgba(0,0,0,0.5);';
+                hud.innerHTML = `
+                    <div style="display:flex;align-items:center;gap:10px;flex:1;">
+                        <span style="background:#f59e0b;color:#000;font-weight:700;padding:2px 8px;border-radius:4px;font-size:11px;">AUTO MODE — CHALLENGE PENDING</span>
+                        <span id="xpider-v7-captcha-hud-msg" style="color:#fde68a;">Waiting for external extension or user completion (${challengeInfo?.type || 'challenge'})...</span>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:8px;">
+                        <button type="button" id="xpider-v7-captcha-reverify-btn" style="background:#10b981;color:#fff;border:none;border-radius:4px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer;">✅ I Completed Challenge — Re-verify & Submit</button>
+                        <button type="button" id="xpider-v7-captcha-skip-btn" style="background:#475569;color:#fff;border:none;border-radius:4px;padding:5px 10px;font-size:11px;font-weight:600;cursor:pointer;">⏭️ Skip</button>
+                        <button type="button" id="xpider-v7-captcha-stop-save-btn" style="background:#d97706;color:#fff;border:none;border-radius:4px;padding:5px 10px;font-size:11px;font-weight:600;cursor:pointer;">⏸️ Stop & Save</button>
+                    </div>
+                `;
+                document.body.appendChild(hud);
+
+                hud.querySelector('#xpider-v7-captcha-reverify-btn')?.addEventListener('click', () => handleAction('REVERIFY_AND_SUBMIT'));
+                hud.querySelector('#xpider-v7-captcha-skip-btn')?.addEventListener('click', () => handleAction('SKIP'));
+                hud.querySelector('#xpider-v7-captcha-stop-save-btn')?.addEventListener('click', () => handleAction('STOP_AND_SAVE'));
+            }
+
+            // Non-invasive DOM polling for independent page-level challenge completion
+            pollTimer = setInterval(() => {
+                if (settled) return;
+                if (typeof window !== 'undefined' && window.__xpider_aborted) {
+                    finishWait({ resolved: false, aborted: true });
+                    return;
+                }
+                if (_ChallengeGate && typeof document !== 'undefined') {
+                    const check = _ChallengeGate.detectChallenge(document);
+                    if (!check.detected || check.verified) {
+                        finishWait({ resolved: true, method: check.method || 'dom_polled_verified' });
+                    }
+                }
+            }, 400);
+        });
+    }
+
+    async function handleV7ManualModeHold(form, template, frozenSnapshot, initialChallengeInfo, holdOptions = {}) {
+        if (typeof window !== 'undefined') {
+            window.__xpider_manual_hold_active = true;
+        }
+        const sendFn = (typeof window !== 'undefined' && window.__xpider_sendExecutionMessage) ||
+            (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage ? chrome.runtime.sendMessage.bind(chrome.runtime) : null);
+
+        const initialHoldUrl = (holdOptions && holdOptions.originalUrl)
+            ? holdOptions.originalUrl
+            : ((typeof window !== 'undefined' && window.location) ? window.location.href : '');
+        const challengeStatusStr = !initialChallengeInfo?.detected
+            ? 'NONE'
+            : (initialChallengeInfo.verified ? `VERIFIED (${initialChallengeInfo.type})` : `PENDING (${initialChallengeInfo.type})`);
+        const isValidationHold = Boolean(holdOptions && holdOptions.validationFailed);
+        const validationReasonStr = (holdOptions && holdOptions.validationReason) || '';
+        const unresolvedFieldsArr = Array.isArray(holdOptions && holdOptions.unresolvedFields) ? holdOptions.unresolvedFields : [];
+
+        if (sendFn && !(holdOptions && holdOptions.suppressInitialHoldSignal)) {
+            try {
+                sendFn({
+                    action: 'MANUAL_MODE_HOLD',
+                    url: initialHoldUrl,
+                    challengeStatus: challengeStatusStr,
+                    validationFailed: isValidationHold,
+                    validationReason: validationReasonStr,
+                    unresolvedFields: unresolvedFieldsArr
+                }, () => {});
+            } catch (_) {}
+        }
+
+        logDev(`🖐️ [MANUAL_MODE_HOLD] Form prepared and frozen. Holding queue for operator registration (challenge=${challengeStatusStr}, validationFailed=${isValidationHold}, reason=${validationReasonStr || 'NONE'}).`, "info");
+
+        return new Promise((resolve) => {
+            let settled = false;
+            let resolvingInFlight = false;
+            let manualRetryCount = 0;
+            const MAX_MANUAL_RETRIES = 3;
+
+            const cleanup = () => {
+                if (typeof document !== 'undefined') {
+                    const panel = document.getElementById('xpider-v7-manual-hold-panel');
+                    if (panel) panel.remove();
+                }
+                if (typeof window !== 'undefined') {
+                    window.__xpider_manual_hold_active = false;
+                    delete window.__xpiderTriggerManualAction;
+                }
+            };
+
+            const disableHoldActionButtons = () => {
+                if (typeof document !== 'undefined') {
+                    const regBtn = document.getElementById('xpider-manual-registered-btn');
+                    const skipBtn = document.getElementById('xpider-manual-skip-btn');
+                    if (regBtn) { regBtn.disabled = true; regBtn.style.opacity = '0.6'; }
+                    if (skipBtn) { skipBtn.disabled = true; skipBtn.style.opacity = '0.6'; }
+                }
+            };
+
+            const settleManual = (resObj) => {
+                if (settled) return { ...resObj, settled: true, duplicate: true };
+                settled = true;
+                resolvingInFlight = false;
+                cleanup();
+                resolve(resObj);
+                return resObj;
+            };
+
+            const dispatchManualHoldResolveHandshake = (decision, evidencePayload, onHandshakeDone) => {
+                if (!sendFn) {
+                    onHandshakeDone(null);
+                    return;
+                }
+                let callbackFired = false;
+                const doneOnce = (ack) => {
+                    if (callbackFired) return;
+                    callbackFired = true;
+                    onHandshakeDone(ack);
+                };
+                try {
+                    const fallbackTimer = setTimeout(() => doneOnce(null), 30);
+                    sendFn({
+                        action: 'MANUAL_HOLD_RESOLVE',
+                        decision,
+                        url: evidencePayload.currentUrl || initialHoldUrl,
+                        initialHoldUrl,
+                        evidence: evidencePayload
+                    }, (ack) => {
+                        clearTimeout(fallbackTimer);
+                        doneOnce(ack || null);
+                    });
+                } catch (_) {
+                    doneOnce(null);
+                }
+            };
+
+            const executeManualAction = (actionType, actionOpts = {}) => {
+                if (settled || resolvingInFlight) return { settled: true, duplicate: true };
+
+                if (actionType === 'RETRY_EDIT') {
+                    if (manualRetryCount >= MAX_MANUAL_RETRIES) {
+                        logDev(`[MANUAL_MODE_RETRY] Bounded retry limit (${MAX_MANUAL_RETRIES}/${MAX_MANUAL_RETRIES}) reached.`, "warning");
+                        return { retryCount: manualRetryCount, limitReached: true };
+                    }
+                    manualRetryCount++;
+                    const restored = restoreFrozenSnapshot(form, frozenSnapshot);
+                    const latestChallenge = _ChallengeGate ? _ChallengeGate.detectChallenge(document) : initialChallengeInfo;
+                    const newChalStr = !latestChallenge?.detected
+                        ? 'NONE'
+                        : (latestChallenge.verified ? `VERIFIED (${latestChallenge.type})` : `PENDING (${latestChallenge.type})`);
+
+                    if (typeof document !== 'undefined') {
+                        const retryBtn = document.getElementById('xpider-manual-retry-btn');
+                        if (retryBtn) {
+                            retryBtn.textContent = manualRetryCount >= MAX_MANUAL_RETRIES
+                                ? `🔄 Max Retries (${manualRetryCount}/${MAX_MANUAL_RETRIES})`
+                                : `🔄 Retry / Edit (${manualRetryCount}/${MAX_MANUAL_RETRIES})`;
+                            if (manualRetryCount >= MAX_MANUAL_RETRIES) {
+                                retryBtn.disabled = true;
+                                retryBtn.style.opacity = '0.5';
+                            }
+                        }
+                        const chalBadge = document.getElementById('xpider-manual-challenge-status');
+                        if (chalBadge) chalBadge.textContent = newChalStr;
+                    }
+                    logDev(`[MANUAL_MODE_RETRY] retry=${manualRetryCount}/${MAX_MANUAL_RETRIES} restoredEmptyFields=${restored} challenge=${newChalStr}`, "info");
+                    return { retryCount: manualRetryCount, restored, limitReached: manualRetryCount >= MAX_MANUAL_RETRIES };
+                }
+
+                if (actionType === 'SKIP') {
+                    resolvingInFlight = true;
+                    disableHoldActionButtons();
+                    logDev("[MANUAL_MODE_DECISION] action=SKIP reason=MANUAL_OPERATOR_SKIP", "info");
+                    const currentUrl = (typeof window !== 'undefined' && window.location) ? window.location.href : '';
+                    dispatchManualHoldResolveHandshake('SKIP', { currentUrl, initialHoldUrl }, (ack) => {
+                        if (ack && ack.stale) {
+                            resolvingInFlight = false;
+                            return;
+                        }
+                        finishCampaign(false, 'MANUAL_OPERATOR_SKIP', 'MANUAL_OPERATOR_SKIP', { manualMode: true, handshakeAck: Boolean(ack && ack.settled) });
+                        settleManual({ success: false, status: 'SKIPPED', reasonCode: 'MANUAL_OPERATOR_SKIP' });
+                    });
+                    return { success: false, status: 'SKIPPED', reasonCode: 'MANUAL_OPERATOR_SKIP' };
+                }
+
+                if (actionType === 'STOP_AND_SAVE') {
+                    resolvingInFlight = true;
+                    disableHoldActionButtons();
+                    logDev("[MANUAL_MODE_DECISION] action=STOP_AND_SAVE", "info");
+                    if (sendFn) {
+                        try { sendFn({ action: 'STOP_AND_SAVE_CAMPAIGN' }, () => {}); } catch (_) {}
+                    }
+                    return settleManual({ success: false, status: 'PAUSED', reasonCode: 'STOP_AND_SAVE_CAMPAIGN' });
+                }
+
+                if (actionType === 'REGISTERED_CONTINUE') {
+                    resolvingInFlight = true;
+                    disableHoldActionButtons();
+                    const currentUrl = (typeof window !== 'undefined' && window.location) ? window.location.href : '';
+                    const urlChanged = Boolean(initialHoldUrl && currentUrl && currentUrl !== initialHoldUrl);
+                    const bodyText = (typeof document !== 'undefined' && document.body)
+                        ? (document.body.innerText || document.body.textContent || '')
+                        : '';
+                    const hasPositiveDomSuccess = Boolean(
+                        actionOpts.hasPositiveDomSuccess ||
+                        (_ChallengeGate && _ChallengeGate.hasSuccessText(bodyText))
+                    );
+                    const formRemovedOrHidden = Boolean(
+                        actionOpts.formRemovedOrHidden ||
+                        (typeof document !== 'undefined' && form && (!document.contains(form) || (form.offsetWidth === 0 && form.offsetHeight === 0 && typeof form.getClientRects === 'function' && form.getClientRects().length === 0)))
+                    );
+                    const hasUrlRedirectSuccess = Boolean(
+                        actionOpts.hasUrlRedirectSuccess ||
+                        (urlChanged && ((_ChallengeGate && typeof _ChallengeGate.hasConfirmationUrl === 'function' ? _ChallengeGate.hasConfirmationUrl(currentUrl) : /thank|success|confirm|complete|sent|submitted/i.test(currentUrl)) || hasPositiveDomSuccess))
+                    );
+                    const hasServerAck = Boolean(
+                        actionOpts.hasServerAck ||
+                        (typeof window !== 'undefined' && window.__xpider_last_server_ack_ok) ||
+                        (typeof document !== 'undefined' && document.querySelector('[data-xpider-submit-success="true"], .submission-success, #submission-success'))
+                    );
+
+                    const evidencePayload = {
+                        pageText: bodyText,
+                        currentUrl,
+                        initialHoldUrl,
+                        urlChanged,
+                        hasPositiveDomSuccess,
+                        hasUrlRedirectSuccess,
+                        hasServerAck,
+                        formStillPresent: !formRemovedOrHidden,
+                        operatorClaimedRegistered: true
+                    };
+
+                    const classification = _ChallengeGate
+                        ? _ChallengeGate.classifyManualResume(evidencePayload)
+                        : {
+                            status: (hasPositiveDomSuccess || hasUrlRedirectSuccess || hasServerAck) ? 'SUCCESS' : 'DELIVERY_UNKNOWN',
+                            reasonCode: (hasPositiveDomSuccess || hasUrlRedirectSuccess || hasServerAck) ? 'MANUAL_CONFIRMED_SUCCESS' : 'MANUAL_CLAIM_NO_EVIDENCE'
+                        };
+
+                    dispatchManualHoldResolveHandshake('REGISTERED_CONTINUE', evidencePayload, (ack) => {
+                        if (ack && ack.stale) {
+                            logDev(`⚠️ [MANUAL_HOLD_RESOLVE] Stale or paused manual resolution rejected (${ack.reason}).`, "warning");
+                            resolvingInFlight = false;
+                            return;
+                        }
+                        const effectiveSuccess = ack && ack.settled
+                            ? (ack.terminalStatus === 'CONFIRMED_SUCCESS')
+                            : (classification.status === 'SUCCESS');
+                        const effectiveSubReason = (ack && ack.subReason) || classification.reasonCode;
+
+                        if (effectiveSuccess) {
+                            logDev(`✅ [MANUAL_MODE_DECISION] action=REGISTERED_CONTINUE status=SUCCESS reason=${effectiveSubReason}`, "success");
+                            finishCampaign(true, null, 'SUCCESS_CONFIRMED', {
+                                manualMode: true,
+                                ownerManualConfirmed: true,
+                                handshakeAck: Boolean(ack && ack.settled),
+                                outcomeEvidence: { ...evidencePayload, ...classification }
+                            });
+                            settleManual({ success: true, status: 'SUCCESS', reasonCode: effectiveSubReason });
+                        } else {
+                            logDev(`⚠️ [MANUAL_MODE_DECISION] action=REGISTERED_CONTINUE status=DELIVERY_UNKNOWN reason=${effectiveSubReason} operatorClaimOnly=true`, "warning");
+                            finishCampaign(false, 'DELIVERY_UNKNOWN', 'DELIVERY_UNKNOWN', {
+                                manualMode: true,
+                                ownerManualConfirmed: false,
+                                operatorClaimOnly: true,
+                                handshakeAck: Boolean(ack && ack.settled),
+                                subReason: effectiveSubReason,
+                                outcomeEvidence: { ...evidencePayload, ...classification }
+                            });
+                            settleManual({ success: false, status: 'DELIVERY_UNKNOWN', reasonCode: effectiveSubReason });
+                        }
+                    });
+
+                    return {
+                        success: classification.status === 'SUCCESS',
+                        status: classification.status === 'SUCCESS' ? 'SUCCESS' : 'DELIVERY_UNKNOWN',
+                        reasonCode: classification.reasonCode
+                    };
+                }
+            };
+
+            if (typeof window !== 'undefined') {
+                window.__xpiderTriggerManualAction = executeManualAction;
+            }
+
+            if (typeof document !== 'undefined' && document.body) {
+                const existing = document.getElementById('xpider-v7-manual-hold-panel');
+                if (existing) existing.remove();
+
+                const hostLabel = (typeof window !== 'undefined' && window.location && window.location.hostname) ? window.location.hostname : initialHoldUrl;
+                const fieldCount = (frozenSnapshot instanceof Map) ? frozenSnapshot.size : Object.keys(frozenSnapshot || {}).length;
+
+                const validationSummary = isValidationHold
+                    ? `<div id="xpider-manual-validation-banner" style="background:rgba(245,158,11,0.18);border:1px solid #f59e0b;color:#fde68a;border-radius:6px;padding:6px 8px;margin-bottom:8px;font-size:11px;line-height:1.4;">⚠️ <strong>Operator Action Needed:</strong> ${validationReasonStr || 'REQUIRED_FIELDS_UNRESOLVED'} — please review/complete remaining fields on the page before submitting.</div>`
+                    : '';
+
+                const panel = document.createElement('div');
+                panel.id = 'xpider-v7-manual-hold-panel';
+                panel.setAttribute('data-xpider-ui', 'true');
+                panel.setAttribute('data-validation-failed', isValidationHold ? 'true' : 'false');
+                panel.style.cssText = 'position:fixed;bottom:16px;right:16px;width:380px;max-width:94vw;z-index:2147483647;background:#0f172a;color:#f8fafc;border:2px solid #38bdf8;border-radius:10px;padding:14px 16px;font-family:system-ui,-apple-system,sans-serif;font-size:12px;box-shadow:0 10px 30px rgba(0,0,0,0.65);';
+                panel.innerHTML = `
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                        <span style="background:#0284c7;color:#fff;font-weight:700;padding:3px 8px;border-radius:4px;font-size:11px;">🖐️ MANUAL MODE — HOLD FOR REGISTRATION</span>
+                        <span style="color:#94a3b8;font-size:10px;font-family:monospace;">${hostLabel}</span>
+                    </div>
+                    ${validationSummary}
+                    <div style="background:rgba(30,41,59,0.8);border:1px solid rgba(148,163,184,0.2);border-radius:6px;padding:8px;margin-bottom:10px;font-size:11px;line-height:1.5;">
+                        <div>📋 <strong>Fields Prepared:</strong> <span style="color:${isValidationHold ? '#fbbf24' : '#4ade80'};">${isValidationHold ? `${fieldCount} fields prepared (attention needed)` : `${fieldCount} fields verified ✓`}</span></div>
+                        <div>🧩 <strong>Challenge Status:</strong> <span id="xpider-manual-challenge-status" style="color:#fbbf24;">${challengeStatusStr}</span></div>
+                        <div style="color:#cbd5e1;font-size:10px;margin-top:4px;">Submit the form on the page when ready, then click <strong>I Registered — Continue</strong>.</div>
+                    </div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+                        <button type="button" id="xpider-manual-registered-btn" style="grid-column:span 2;background:#10b981;color:#fff;border:none;border-radius:6px;padding:8px 10px;font-size:12px;font-weight:700;cursor:pointer;">✅ I Registered — Continue</button>
+                        <button type="button" id="xpider-manual-retry-btn" style="background:#3b82f6;color:#fff;border:none;border-radius:6px;padding:6px 8px;font-size:11px;font-weight:600;cursor:pointer;">🔄 Retry / Edit (0/3)</button>
+                        <button type="button" id="xpider-manual-skip-btn" style="background:#64748b;color:#fff;border:none;border-radius:6px;padding:6px 8px;font-size:11px;font-weight:600;cursor:pointer;">⏭️ Skip</button>
+                        <button type="button" id="xpider-manual-stop-save-btn" style="grid-column:span 2;background:rgba(245,158,11,0.2);color:#fbbf24;border:1px solid #f59e0b;border-radius:6px;padding:6px 8px;font-size:11px;font-weight:600;cursor:pointer;">⏸️ Stop & Save Checkpoint</button>
+                    </div>
+                `;
+                document.body.appendChild(panel);
+
+                panel.querySelector('#xpider-manual-registered-btn')?.addEventListener('click', () => executeManualAction('REGISTERED_CONTINUE'));
+                panel.querySelector('#xpider-manual-retry-btn')?.addEventListener('click', () => executeManualAction('RETRY_EDIT'));
+                panel.querySelector('#xpider-manual-skip-btn')?.addEventListener('click', () => executeManualAction('SKIP'));
+                panel.querySelector('#xpider-manual-stop-save-btn')?.addEventListener('click', () => executeManualAction('STOP_AND_SAVE'));
+            }
+        });
+    }
+
+    async function tryAutoSolveCaptcha(stage = 'MANUAL') {
+        // [v7.0 Directive #6514763285] Internal API-based CAPTCHA solving and token injection are retired.
+        logDev(`[SOLVER_RETIRED_V7] tryAutoSolveCaptcha(stage=${stage}) skipped: internal API solver retired in v7.`, 'info');
+        return {
+            success: false,
+            retired: true,
+            terminalSettled: false,
+            providerSolveAttempted: false,
+            reason: 'INTERNAL_SOLVER_RETIRED_V7'
+        };
+    }
+
+    async function _legacyTryAutoSolveCaptchaRetired(stage = 'MANUAL') {
+        const captchaData = extractCaptchaSitekey();
+        if (!captchaData) return false;
+
+        if (_activeCaptchaSolvePromise) {
+            return _activeCaptchaSolvePromise;
+        }
+
+        const sitekeyLog = captchaData.sitekey ? captchaData.sitekey.substring(0, 16) + '...' : 'inline';
+        console.log(`[CAPTCHA_DETECTED] stage=${stage} type=${captchaData.type} sitekey=${sitekeyLog}`);
+        logDev(`[CAPTCHA_DETECTED] stage=${stage} type=${captchaData.type} sitekey=${sitekeyLog}`, 'info');
+
+        // [R6.9G.10.3.7.1.4.10] Real Cloudflare Turnstile Detection & Token Pipeline
+        if (captchaData.type === 'turnstile' && !window.location.href.includes('captcha-turnstile-dom')) {
+            const sitekeyFp = (captchaData.sitekey && captchaData.sitekey.length > 8)
+                ? (captchaData.sitekey.substring(0, 4) + '...' + captchaData.sitekey.slice(-4))
+                : (captchaData.sitekey || 'none');
+            const hasCfIframe = Boolean(document.querySelector('iframe[src*="challenges.cloudflare.com"], iframe[src*="turnstile"]'));
+            console.log(`[TURNSTILE_LIVE_DETECTED] hostname=${window.location.hostname} sitekeyFingerprint=${sitekeyFp} iframeCloudflare=${hasCfIframe}`);
+            logDev(`[TURNSTILE_LIVE_DETECTED] hostname=${window.location.hostname} sitekeyFingerprint=${sitekeyFp} iframeCloudflare=${hasCfIframe}`, 'info');
+
+            // 1. Check if token already issued (e.g. visible-pass, invisible-pass)
+            const existingToken = document.querySelector('[name="cf-turnstile-response"]')?.value?.trim();
+            if (existingToken && existingToken.length > 10) {
+                const tokenFp = existingToken.substring(0, 4) + '...' + existingToken.slice(-4);
+                console.log(`[TURNSTILE_LIVE_TOKEN_ISSUED] tokenFingerprint=${tokenFp} tokenLength=${existingToken.length}`);
+                logDev(`[TURNSTILE_LIVE_TOKEN_ISSUED] tokenFingerprint=${tokenFp} tokenLength=${existingToken.length}`, 'success');
+                removeTopSolverHUD('VERIFIED');
+                _isCaptchaSolved = true;
+                return true;
+            }
+
+            // 2. Expected fail fixtures (visible-fail, invisible-fail): token will not be generated
+            if (window.location.href.includes('fail')) {
+                console.log('[TURNSTILE_TESTKEY_FAIL_CASE] token not issued as expected. Advancing to form submission to verify server siteverify rejection.');
+                removeTopSolverHUD('FAIL_EXPECTED');
+                _isCaptchaSolved = true;
+                return true;
+            }
+
+            // 3. Interactive or Live Owner verification required
+            console.log(`[TURNSTILE_LIVE_OWNER_REQUIRED] hostname=${window.location.hostname}`);
+            logDev(`[TURNSTILE_LIVE_OWNER_REQUIRED] hostname=${window.location.hostname}`, 'warn');
+            updateTopSolverHUD('Real Cloudflare Turnstile — Owner verification required', 'MANUAL');
+
+            _activeCaptchaSolvePromise = new Promise((resolve) => {
+                const waitStart = Date.now();
+                const isTestLoopback = (document.location.hostname === '127.0.0.1' || document.location.hostname === 'localhost');
+                const timeoutLimit = isTestLoopback ? 15000 : 180000;
+                const poll = setInterval(() => {
+                    const inp = document.querySelector('[name="cf-turnstile-response"]');
+                    const val = inp?.value?.trim();
+                    if (val && val.length > 10) {
+                        clearInterval(poll);
+                        const tokenFp = val.substring(0, 4) + '...' + val.slice(-4);
+                        console.log(`[TURNSTILE_LIVE_TOKEN_ISSUED] tokenFingerprint=${tokenFp} tokenLength=${val.length}`);
+                        logDev(`[TURNSTILE_LIVE_TOKEN_ISSUED] tokenFingerprint=${tokenFp} tokenLength=${val.length}`, 'success');
+                        updateTopSolverHUD('Turnstile token verified. Resuming sequence...', 'VERIFIED');
+                        setTimeout(() => removeTopSolverHUD('VERIFIED'), 1500);
+                        _isCaptchaSolved = true;
+                        _activeCaptchaSolvePromise = null;
+                        resolve(true);
+                    } else if (Date.now() - waitStart > timeoutLimit) {
+                        clearInterval(poll);
+                        updateTopSolverHUD('Turnstile challenge timed out.', 'FAIL');
+                        _activeCaptchaSolvePromise = null;
+                        resolve(false);
+                    }
+                }, 500);
+            });
+            return _activeCaptchaSolvePromise;
+        }
+
+        // [R6.9G.2 Gate 1/2] Autonomous solve removed.
+        // Content script enters OWNER_CAPTCHA_REQUEST first with full 6-point identity and awaits Owner decision.
+        let execIdentity = window.__xpider_execution_identity || {};
+        try {
+            if (!execIdentity.attemptId) {
+                const st = await new Promise(r => chrome.storage.local.get(['xpider_exec_identity', 'xpider_owner_function_test_mode'], r));
+                execIdentity = st.xpider_exec_identity || execIdentity;
+                if (st && st.xpider_owner_function_test_mode) execIdentity.ownerFunctionTestMode = true;
+            }
+        } catch (_) {}
+
+        const isControlledLab = /^https?:\/\/(127\.0\.0\.1|localhost)(:\d+)?\/captcha-[a-z0-9-]+\.html/i.test(window.location.href);
+        if (isControlledLab || execIdentity.ownerFunctionTestMode) {
+            console.log(`[CAPTCHA_UI_STATE] attemptId=${execIdentity.attemptId || 'none'} state=DETECTED`);
+            updateTopSolverHUD(`CAPTCHA detected (${captchaData.type}). Auto-solving...`, 'ACTIVE');
+        } else {
+            console.log(`[CAPTCHA_UI_STATE] attemptId=${execIdentity.attemptId || 'none'} state=DETECTED`);
+            updateTopSolverHUD(`CAPTCHA detected (${captchaData.type}) — applying configured policy...`, 'ACTIVE');
+        }
+
+        _activeCaptchaSolvePromise = new Promise((resolve) => {
+            const sendFn = window.__xpider_sendExecutionMessage || chrome.runtime.sendMessage;
+
+            let imageData = null;
+            if (captchaData.type === 'image' && captchaData.element) {
+                try {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = captchaData.element.naturalWidth || captchaData.element.width || 120;
+                    canvas.height = captchaData.element.naturalHeight || captchaData.element.height || 40;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(captchaData.element, 0, 0);
+                    imageData = canvas.toDataURL('image/png').replace(/^data:image\/(png|jpeg);base64,/, '');
+                } catch (_) {}
+            }
+
+            // Step 1: Send OWNER_CAPTCHA_REQUEST with full canonical identity (Zero provider calls before Owner Auto)
+            sendFn({
+                action: 'OWNER_CAPTCHA_REQUEST',
+                attemptId: execIdentity.attemptId || null,
+                targetToken: execIdentity.targetToken || null,
+                campaignRunId: execIdentity.campaignRunId || null,
+                sessionId: execIdentity.sessionId !== undefined ? execIdentity.sessionId : null,
+                captchaEpoch: execIdentity.captchaEpoch || 1,
+                tabId: execIdentity.tabId || null,
+                captchaType: captchaData.type,
+                challengeType: captchaData.type,
+                sitekey: captchaData.sitekey,
+                targetUrl: window.location.href,
+                url: window.location.href,
+                imageData: imageData
+            }, (response) => {
+                console.log(`[OWNER_CAPTCHA_REQUEST_SENT] res=`, response);
+                if (response && response.labAutoDrive) {
+                    console.log(`[CAPTCHA_UI_STATE] attemptId=${execIdentity.attemptId || 'none'} from=DETECTED to=AUTO_SOLVING`);
+                    updateTopSolverHUD(`Auto-solving (${captchaData.type}) via mock_provider...`, 'ACTIVE');
+                } else if (response && response.terminalSettled) {
+                    console.log(`[CAPTCHA_TERMINAL_SETTLED] immediate terminal settlement in request callback: result=${response.result || 'SKIPPED'} reason=${response.reason || response.settleReason}`);
+                    chrome.runtime.onMessage.removeListener(decisionListener);
+                    _activeCaptchaSolvePromise = null;
+                    removeTopSolverHUD(response.result || 'SKIPPED');
+                    _isCaptchaSolved = false;
+                    currentTargetLifecycleState = TargetLifecycleState.SETTLED;
+                    resolve({
+                        terminalSettled: true,
+                        result: response.result || 'SKIPPED',
+                        reason: response.reason || response.settleReason || 'CAPTCHA_AUTO_FAILURE'
+                    });
+                }
+            });
+
+            // Step 2: Listen for Owner decisions routed from background
+            const decisionListener = (msg, sender, sendResponse) => {
+                if (!msg) return;
+
+                if (msg.action === 'INSPECT_CAPTCHA_FRAME') {
+                    const hasResponseField = !!document.querySelector(
+                        '[name="g-recaptcha-response"], textarea[name="g-recaptcha-response"], [name="h-captcha-response"], [name="cf-turnstile-response"]'
+                    );
+                    const widget = document.querySelector('.g-recaptcha, .h-captcha, [data-challenge-state], #cf-turnstile, #captcha-widget, [data-sitekey]');
+                    const hasWidgetContainer = !!widget;
+                    const hasDataCallback = !!(widget && widget.getAttribute('data-callback'));
+                    const dataCallbackName = (widget && widget.getAttribute('data-callback')) || null;
+                    const hasRecaptchaAnchor = !!document.querySelector('.recaptcha-checkbox, #recaptcha-anchor, .recaptcha-checkbox-border');
+                    const isTop = (window.top === window);
+
+                    let role = 'UNKNOWN';
+                    if (isTop && (hasResponseField || hasWidgetContainer)) {
+                        role = 'HOST_PAGE_RESPONSE_FIELD';
+                    } else if (hasRecaptchaAnchor) {
+                        role = 'CAPTCHA_WIDGET_FRAME';
+                    } else if (hasResponseField) {
+                        role = 'EXTERNAL_FORM_FRAME';
+                    }
+
+                    if (sendResponse) {
+                        sendResponse({
+                            success: true,
+                            isTop,
+                            origin: window.location.origin || 'unknown',
+                            hasResponseField,
+                            hasWidgetContainer,
+                            hasDataCallback,
+                            dataCallbackName,
+                            hasRecaptchaAnchor,
+                            role
+                        });
+                    }
+                    return true;
+                }
+
+                if (msg.action === 'APPLY_CAPTCHA_TOKEN') {
+                    const solution = msg.token;
+                    const mainWorldResult = msg.mainWorldResult || null;
+                    console.log(`[CAPTCHA_TOKEN_RECEIVED] token applied on target page`);
+                    // [R6.9G.6] Snapshot matching iframe presence BEFORE applying token:
+                    const iframesBeforeApply = document.querySelectorAll(
+                        'iframe[src*="recaptcha"], iframe[src*="hcaptcha"], iframe[src*="challenges.cloudflare"]'
+                    );
+                    const hadMatchingIframeBeforeApply = Boolean(
+                        (captchaData && captchaData.hadIframeBefore === true) ||
+                        (iframesBeforeApply.length > 0)
+                    );
+
+                    let applied = false;
+                    const alreadyWrittenByMainWorld = !!(mainWorldResult && mainWorldResult.tokenWritten);
+                    if (alreadyWrittenByMainWorld) {
+                        applied = true;
+                        console.log(`[CAPTCHA_TOKEN_APPLIED] Token already physically written by MAIN-world bridge (single physical writer invariant preserved)`);
+                    } else {
+                        if (captchaData.type === 'turnstile') {
+                            const input = document.querySelector('[name="cf-turnstile-response"]');
+                            if (input) { input.value = solution; applied = true; }
+                        } else if (captchaData.type === 'recaptcha') {
+                            let fields = Array.from(document.querySelectorAll('[name="g-recaptcha-response"], textarea[name="g-recaptcha-response"], #g-recaptcha-response, .g-recaptcha-response'));
+                            if (fields.length === 0 && solution) {
+                                try {
+                                    const ta = document.createElement('textarea');
+                                    ta.id = 'g-recaptcha-response';
+                                    ta.name = 'g-recaptcha-response';
+                                    ta.className = 'g-recaptcha-response';
+                                    ta.style.display = 'none';
+                                    ta.value = solution;
+                                    const targetParent = document.querySelector('.g-recaptcha, [data-sitekey], form, [role="form"], .shrinker-content, .preview-content-holder') || document.body;
+                                    targetParent.appendChild(ta);
+                                    fields.push(ta);
+                                    applied = true;
+                                } catch (_) {}
+                            }
+                            for (const f of fields) {
+                                try {
+                                    const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value')?.set;
+                                    if (nativeSetter) nativeSetter.call(f, solution);
+                                    else f.value = solution;
+                                    f.dispatchEvent(new Event('input', { bubbles: true }));
+                                    f.dispatchEvent(new Event('change', { bubbles: true }));
+                                    applied = true;
+                                } catch (_) { f.value = solution; applied = true; }
+                            }
+                            try {
+                                const gWidget = document.querySelector('.g-recaptcha[data-callback]');
+                                if (gWidget && gWidget.dataset.callback && typeof window[gWidget.dataset.callback] === 'function') {
+                                    window[gWidget.dataset.callback](solution);
+                                }
+                            } catch (_) {}
+                        } else if (captchaData.type === 'hcaptcha') {
+                            const input = document.querySelector('[name="h-captcha-response"]');
+                            if (input) { input.value = solution; applied = true; }
+                        } else if (captchaData.type === 'image' && captchaData.inputElement) {
+                            captchaData.inputElement.value = solution;
+                            applied = true;
+                        }
+                    }
+
+                    console.log(`[CAPTCHA_TOKEN_APPLIED] target=${captchaData.type} applied=${applied} hadIframeBefore=${hadMatchingIframeBeforeApply}`);
+
+                    // [R6.9G.6] FAIL-CLOSED challenge resolution check on DOM:
+                    // Token application is necessary but NOT sufficient for verified=true.
+                    // Verification requires INDEPENDENT evidence that the challenge state actually transitioned.
+                    // POLICY: If no independent resolution signal is present => verified = false (UNKNOWN).
+                    //         Token-in-DOM alone NEVER sets verified = true.
+                    // Acceptable independent signals:
+                    //   (a) data-challenge-state="resolved" / data-status="solved" / class "challenge-resolved"
+                    //   (b) window.__captcha_challenge_resolved === true (callback-confirmed)
+                    //   (c) Challenge iframe verified present before apply AND removed post-apply (true disappearance)
+                    //   (d) captchaData.callbackConfirmed === true (solver-side callback signal)
+                    let verified = false;
+                    if (applied) {
+                        const widget = document.querySelector('.g-recaptcha, .h-captcha, [data-challenge-state], #cf-turnstile, #captcha-widget');
+                        const isResolvedState = widget && (
+                            widget.getAttribute('data-challenge-state') === 'resolved' ||
+                            widget.classList.contains('challenge-resolved') ||
+                            widget.getAttribute('data-status') === 'solved'
+                        );
+                        const hasGlobalResolvedFlag = typeof window !== 'undefined' && window.__captcha_challenge_resolved === true;
+
+                        // Signal (c): iframe disappearance — challenge iframe was verified present before token inject AND is now gone post-inject
+                        const captchaIframeGone = (() => {
+                            if (!hadMatchingIframeBeforeApply) {
+                                return false; // Fail-closed: "iframe was never there" is NOT disappearance!
+                            }
+                            const iframes = document.querySelectorAll('iframe[src*="recaptcha"], iframe[src*="hcaptcha"], iframe[src*="challenges.cloudflare"]');
+                            return iframes.length === 0 && (
+                                captchaData.type === 'recaptcha' ||
+                                captchaData.type === 'hcaptcha' ||
+                                captchaData.type === 'turnstile'
+                            );
+                        })();
+
+                        // Signal (d): solver explicitly confirmed via callback
+                        const callbackConfirmed = captchaData.callbackConfirmed === true;
+
+                        // Check if token exists in target DOM field (necessary but not sufficient)
+                        let tokenPresentInDom = false;
+                        if (captchaData.type === 'turnstile') {
+                            const inp = document.querySelector('[name="cf-turnstile-response"]');
+                            tokenPresentInDom = !!(inp && inp.value === solution);
+                        } else if (captchaData.type === 'recaptcha') {
+                            const fields = document.querySelectorAll('[name="g-recaptcha-response"], textarea[name="g-recaptcha-response"], #g-recaptcha-response, .g-recaptcha-response');
+                            for (const f of fields) {
+                                if (f && f.value === solution) { tokenPresentInDom = true; break; }
+                            }
+                        } else if (captchaData.type === 'hcaptcha') {
+                            const inp = document.querySelector('[name="h-captcha-response"]');
+                            tokenPresentInDom = !!(inp && inp.value === solution);
+                        } else if (captchaData.type === 'image' && captchaData.inputElement) {
+                            tokenPresentInDom = !!(captchaData.inputElement && captchaData.inputElement.value === solution);
+                        }
+
+                        // [RC3.31 P0-C Fix: Eliminate Fabricated Acceptance]
+                        // tokenWritten or callbackInvoked alone NEVER constitutes independent verified signal!
+                        // XPIDER-set attributes (data-xpider-*, data-captcha-*) are integration telemetry only.
+                        if (tokenPresentInDom || (mainWorldResult && mainWorldResult.tokenWritten)) {
+                            const hasIndependentSignal = isResolvedState || hasGlobalResolvedFlag || captchaIframeGone || callbackConfirmed;
+                            if (hasIndependentSignal) {
+                                verified = true;
+                                console.log(`[CAPTCHA_FAIL_CLOSED] verified=true via genuine independent signal: resolvedState=${isResolvedState} globalFlag=${hasGlobalResolvedFlag} iframeGone=${captchaIframeGone} callback=${callbackConfirmed}`);
+                            } else {
+                                verified = false;
+                                console.warn(`[CAPTCHA_FAIL_CLOSED] verified=false — token integrated but NO independent resolution signal. Advancing as integrated, not verified.`);
+                            }
+                        } else {
+                            verified = false;
+                            console.warn(`[CAPTCHA_FAIL_CLOSED] verified=false — token not present in DOM. applied=${applied}`);
+                        }
+                    }
+
+                    console.log(`[CAPTCHA_CHALLENGE_VERIFIED] verificationConfirmed=${verified}`);
+                    if (verified) {
+                        _isCaptchaSolved = true;
+                        console.log(`[CAPTCHA_UI_STATE] attemptId=${execIdentity.attemptId || 'none'} to=VERIFIED`);
+                        console.log(`[CAPTCHA_UI_CLEAR] reason=VERIFIED`);
+                        updateTopSolverHUD(`CAPTCHA challenge verified (${captchaData.type})`, 'SUCCESS');
+                        sendFn({
+                            action: 'CAPTCHA_CHALLENGE_VERIFIED',
+                            attemptId: execIdentity.attemptId,
+                            targetToken: execIdentity.targetToken,
+                            campaignRunId: execIdentity.campaignRunId,
+                            sessionId: execIdentity.sessionId,
+                            captchaEpoch: execIdentity.captchaEpoch || 1,
+                            tabId: execIdentity.tabId,
+                            verified: true
+                        });
+                    }
+
+                    if (verified) {
+                        if (sendResponse) sendResponse({ success: true, verified: true });
+                        chrome.runtime.onMessage.removeListener(decisionListener);
+                        _activeCaptchaSolvePromise = null;
+                        resolve({
+                            success: true,
+                            verified: true,
+                            providerSolveAttempted: true,
+                            providerTokenInjected: applied
+                        });
+                    } else {
+                        // [RC3.28 Directive C & D] Do not fail or tear down listener on first sample.
+                        // Respond with verified: false (pending) and keep decisionListener attached
+                        // for CHECK_CAPTCHA_VERIFIED polling and CAPTCHA_SKIP_DECISION terminal settlement.
+                        if (sendResponse) sendResponse({ success: true, applied: applied, verified: false, status: 'VERIFY_PENDING' });
+                    }
+
+                } else if (msg.action === 'CHECK_CAPTCHA_VERIFIED') {
+                    // [RC3.29 P0-B Fix: Single Canonical Verification Evaluator]
+                    const anchorChecked = !!document.querySelector('.recaptcha-checkbox-checked, #recaptcha-anchor[aria-checked="true"], .recaptcha-checkbox[aria-checked="true"]');
+                    const widget = document.querySelector('.g-recaptcha, .h-captcha, [data-challenge-state], #cf-turnstile, #captcha-widget');
+                    const isResolvedState = (widget && (
+                        widget.getAttribute('data-challenge-state') === 'resolved' ||
+                        widget.classList.contains('challenge-resolved') ||
+                        widget.getAttribute('data-status') === 'solved'
+                    )) || anchorChecked;
+
+                    const hasGlobalResolvedFlag = typeof window !== 'undefined' && window.__captcha_challenge_resolved === true;
+                    const iframes = document.querySelectorAll('iframe[src*="recaptcha"], iframe[src*="hcaptcha"], iframe[src*="challenges.cloudflare"]');
+                    const captchaIframeGone = Boolean(hadMatchingIframeBeforeApply && iframes.length === 0);
+                    const callbackConfirmed = Boolean(captchaData && captchaData.callbackConfirmed === true);
+
+                    // [RC3.31 P0-C Fix] XPIDER attributes/callbacks never constitute challenge acceptance
+                    const isNowVerified = Boolean(_isCaptchaSolved || isResolvedState || hasGlobalResolvedFlag || captchaIframeGone || callbackConfirmed);
+
+                    let signalType = 'NONE';
+                    if (_isCaptchaSolved) signalType = 'ALREADY_SOLVED';
+                    else if (isResolvedState) signalType = 'RESOLVED_STATE';
+                    else if (hasGlobalResolvedFlag) signalType = 'GLOBAL_FLAG';
+                    else if (captchaIframeGone) signalType = 'IFRAME_GONE';
+                    else if (callbackConfirmed) signalType = 'CALLBACK_CONFIRMED';
+
+                    if (isNowVerified) {
+                        _isCaptchaSolved = true;
+                        console.log(`[CAPTCHA_UI_STATE] attemptId=${execIdentity.attemptId || 'none'} to=VERIFIED signalType=${signalType}`);
+                        console.log(`[CAPTCHA_UI_CLEAR] reason=VERIFIED`);
+                        updateTopSolverHUD(`CAPTCHA challenge verified (${captchaData.type})`, 'SUCCESS');
+                        sendFn({
+                            action: 'CAPTCHA_CHALLENGE_VERIFIED',
+                            attemptId: execIdentity.attemptId,
+                            targetToken: execIdentity.targetToken,
+                            campaignRunId: execIdentity.campaignRunId,
+                            sessionId: execIdentity.sessionId,
+                            captchaEpoch: execIdentity.captchaEpoch || 1,
+                            tabId: execIdentity.tabId,
+                            verified: true,
+                            signalType: signalType
+                        });
+                        chrome.runtime.onMessage.removeListener(decisionListener);
+                        _activeCaptchaSolvePromise = null;
+                        resolve({
+                            success: true,
+                            verified: true,
+                            providerSolveAttempted: true,
+                            providerTokenInjected: true,
+                            signalType: signalType
+                        });
+                        if (sendResponse) sendResponse({ success: true, verified: true, signalType: signalType });
+                    } else {
+                        if (sendResponse) sendResponse({ success: false, verified: false, status: 'VERIFY_PENDING' });
+                    }
+                    return true;
+
+                } else if (msg.action === 'START_MANUAL_CAPTCHA_WAIT' || (msg.action === 'CAPTCHA_UI_STATE_UPDATE' && msg.state === 'CAPTCHA_PENDING_MANUAL')) {
+                    console.log(`[CAPTCHA_MANUAL_WAIT] timer paused, waiting for manual solve`);
+                    const fallbackPrompt = msg.fallbackFrom
+                        ? `Auto-solver (${msg.fallbackFrom}) timed out. Please solve CAPTCHA in browser.`
+                        : (msg.message || `Manual solve requested. Please solve CAPTCHA in browser.`);
+
+                    let manualCheckTimer = null;
+                    const triggerManualSolved = () => {
+                        if (manualCheckTimer) { clearInterval(manualCheckTimer); manualCheckTimer = null; }
+                        console.log(`[CAPTCHA_MANUAL_RESOLVED] challenge solved manually`);
+                        _isCaptchaSolved = true;
+                        updateTopSolverHUD('Manual CAPTCHA solved ✓', 'SUCCESS');
+                        sendFn({
+                            action: 'MANUAL_CAPTCHA_RESOLVED',
+                            attemptId: execIdentity.attemptId,
+                            targetToken: execIdentity.targetToken,
+                            campaignRunId: execIdentity.campaignRunId,
+                            sessionId: execIdentity.sessionId,
+                            captchaEpoch: execIdentity.captchaEpoch || 1,
+                            tabId: execIdentity.tabId,
+                            verified: true
+                        });
+                        chrome.runtime.onMessage.removeListener(decisionListener);
+                        _activeCaptchaSolvePromise = null;
+                        resolve({ success: true, verified: true, manual: true });
+                    };
+
+                    const triggerManualSkip = () => {
+                        if (manualCheckTimer) { clearInterval(manualCheckTimer); manualCheckTimer = null; }
+                        console.log(`[CAPTCHA_MANUAL_SKIPPED] Owner skipped manual CAPTCHA`);
+                        _isCaptchaSolved = false;
+                        removeTopSolverHUD('SKIPPED');
+                        sendFn({
+                            action: 'CAPTCHA_MANUAL_SKIPPED',
+                            attemptId: execIdentity.attemptId,
+                            targetToken: execIdentity.targetToken,
+                            campaignRunId: execIdentity.campaignRunId,
+                            sessionId: execIdentity.sessionId,
+                            captchaEpoch: execIdentity.captchaEpoch || 1,
+                            tabId: execIdentity.tabId
+                        });
+                        chrome.runtime.onMessage.removeListener(decisionListener);
+                        _activeCaptchaSolvePromise = null;
+                        resolve({ success: false, skipped: true, reason: 'CAPTCHA_MANUAL_SKIPPED' });
+                    };
+
+                    updateTopSolverHUD(fallbackPrompt, 'MANUAL', {
+                        showButtons: true,
+                        onSolved: triggerManualSolved,
+                        onSkip: triggerManualSkip
+                    });
+
+                    manualCheckTimer = setInterval(() => {
+                        const gResp = document.querySelector('[name="g-recaptcha-response"], #g-recaptcha-response, .g-recaptcha-response');
+                        const hResp = document.querySelector('[name="h-captcha-response"], #h-captcha-response');
+                        const tResp = document.querySelector('[name="cf-turnstile-response"], #cf-turnstile-response');
+                        let grecaptchaToken = '';
+                        try {
+                            if (window.grecaptcha && typeof window.grecaptcha.getResponse === 'function') {
+                                grecaptchaToken = window.grecaptcha.getResponse() || '';
+                            }
+                        } catch (_) {}
+
+                        const isDone = _isCaptchaSolved ||
+                                       (gResp && gResp.value && gResp.value.length > 10) ||
+                                       (hResp && hResp.value && hResp.value.length > 10) ||
+                                       (tResp && tResp.value && tResp.value.length > 10) ||
+                                       (grecaptchaToken && grecaptchaToken.length > 10);
+                        if (isDone) {
+                            triggerManualSolved();
+                        }
+                    }, 800);
+
+                } else if (msg.action === 'CAPTCHA_UI_STATE_UPDATE') {
+                    if (msg.attemptId && execIdentity.attemptId && msg.attemptId !== execIdentity.attemptId) {
+                        return; // Stale update rejected
+                    }
+                    console.log(`[CAPTCHA_UI_STATE] state=${msg.state} message="${msg.message}"`);
+                    if (msg.state === 'CAPTCHA_AUTO_SUCCESS') {
+                        // [RC3.29 P0-C Fix: Background is single terminal authority for success]
+                        _isCaptchaSolved = true;
+                        updateTopSolverHUD(msg.message || 'CAPTCHA solved ✓', 'SUCCESS');
+                        chrome.runtime.onMessage.removeListener(decisionListener);
+                        _activeCaptchaSolvePromise = null;
+                        resolve({ success: true, verified: true, tokenInjected: true });
+                    } else if (msg.state === 'READY_TO_SUBMIT') {
+                        _captchaTokenInjected = true;
+                        updateTopSolverHUD(msg.message || 'CAPTCHA integrated — ready to submit', 'ACTIVE');
+                        chrome.runtime.onMessage.removeListener(decisionListener);
+                        _activeCaptchaSolvePromise = null;
+                        resolve({ success: true, readyToSubmit: true, tokenInjected: true });
+                    } else if (msg.state === 'CAPTCHA_AUTO_FAILURE' || msg.state === 'CAPTCHA_SKIPPED') {
+                        _isCaptchaSolved = false;
+                        currentTargetLifecycleState = TargetLifecycleState.SETTLED;
+                        updateTopSolverHUD(msg.message || 'CAPTCHA auto-solve terminated.', msg.status || 'FAIL');
+                        setTimeout(() => removeTopSolverHUD(msg.state), 1500);
+                    } else {
+                        updateTopSolverHUD(msg.message, msg.status || 'ACTIVE');
+                    }
+
+                } else if (msg.action === 'CAPTCHA_SKIP_DECISION' || msg.action === 'CAPTCHA_LAB_TERMINAL_SETTLE') {
+                    console.log(`[CAPTCHA_TERMINAL_SETTLED] action=${msg.action} result=${msg.result || 'SKIPPED'} reason=${msg.reason || 'NONE'} abortedGenericFallback=true`);
+                    chrome.runtime.onMessage.removeListener(decisionListener);
+                    _activeCaptchaSolvePromise = null;
+                    removeTopSolverHUD(msg.result || 'SKIPPED');
+                    _isCaptchaSolved = false;
+                    currentTargetLifecycleState = TargetLifecycleState.SETTLED;
+                    resolve({
+                        terminalSettled: true,
+                        result: msg.result || 'SKIPPED',
+                        reason: msg.reason || (msg.action === 'CAPTCHA_LAB_TERMINAL_SETTLE' ? 'EXPECTED_FAIL_PASS' : 'CAPTCHA_SKIPPED_NO_SOLVER')
+                    });
+                    return;
+                }
+            };
+
+            chrome.runtime.onMessage.addListener(decisionListener);
+        });
+
+        return _activeCaptchaSolvePromise;
+    }
+
+    // [Cross-Frame Coordination] Listen for solved captcha tokens from other frames or background
+    if (typeof window !== 'undefined' && window.addEventListener) {
+        window.addEventListener('message', (event) => {
+            if (event.data && (event.data.type === 'captchaToken' || event.data.action === 'CAPTCHA_TOKEN_INJECTED' || event.data.action === 'CAPTCHA_SOLVED')) {
+                // [RC3.28 Directive A & Regression Test 5]
+                // Token injected != Challenge verified! Never promote raw token to _isCaptchaSolved = true.
+                _captchaTokenInjected = true;
+                const solution = event.data.token || '';
+                logDev(`🔑 [Security] Captcha token injected signal received from frame (${solution.substring(0, 10)}...)`, 'info');
+                const fields = document.querySelectorAll('[name="g-recaptcha-response"], textarea[name="g-recaptcha-response"], [name="h-captcha-response"], textarea[name="h-captcha-response"], [name="cf-turnstile-response"]');
+                for (const f of fields) {
+                    try {
+                        if (solution && solution.length > 5) {
+                            f.value = solution;
+                        }
+                        f.dispatchEvent(new Event('input', { bubbles: true }));
+                        f.dispatchEvent(new Event('change', { bubbles: true }));
+                    } catch (_) {}
+                }
+                if (typeof window.validateRecaptcha === 'function') {
+                    try { window.validateRecaptcha(solution); } catch (_) {}
+                }
+            }
+        });
+    }
+
+    if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.onMessage) {
+        try {
+            chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+                if (msg && (msg.action === 'CAPTCHA_TOKEN_INJECTED' || msg.action === 'CAPTCHA_TOKEN_RECEIVED')) {
+                    _captchaTokenInjected = true;
+                    logDev(`🔑 [Security] Captcha token injected signal received via runtime message (action=${msg.action})`, 'info');
+                    if (sendResponse) sendResponse({ success: true, acknowledged: true, type: 'TOKEN_INJECTED_ACK' });
+                    return true;
+                } else if (msg && (msg.action === 'CAPTCHA_CHALLENGE_VERIFIED' || msg.action === 'CAPTCHA_AUTO_SUCCESS')) {
+                    _isCaptchaSolved = true;
+                    logDev(`🔑 [Security] Captcha verified/auto-success signal received via runtime message`, 'success');
+                } else if (msg && msg.action === 'TRIGGER_CAPTCHA_DETECTION') {
+                    if (msg.executionIdentity) {
+                        window.__xpider_execution_identity = msg.executionIdentity;
+                    }
+                    // [RC3.33 P0-B] Centralized attempt-scoped CAPTCHA reset on detection trigger/epoch
+                    resetCaptchaRuntimeState(msg.executionIdentity?.attemptId || window.__xpider_execution_identity?.attemptId, msg.executionIdentity?.captchaEpoch || window.__xpider_execution_identity?.captchaEpoch);
+                    tryAutoSolveCaptcha(msg.stage || 'MANUAL').then(res => {
+                        if (sendResponse) sendResponse({ success: true, result: res });
+                    }).catch(err => {
+                        if (sendResponse) sendResponse({ success: false, error: err.message });
+                    });
+                    return true;
+                } else if (msg && msg.action === 'CHECK_SUBMIT_SUCCESS') {
+                    const bodyText = (document.body ? (document.body.innerText || document.body.textContent || '') : '').toLowerCase();
+                    const successKeywords = ['thank you', 'submitted', 'received', 'success', '문의가 정상적으로', '접수되었습니다', '완료되었습니다', '감사합니다', '성공'];
+                    const hasKeyword = successKeywords.some(kw => bodyText.includes(kw));
+                    const formStillPresent = !!document.querySelector('form, #contact_form, .contact-form, [action*="contact"]');
+                    const confirmed = hasKeyword || (window.__xpider_submit_success_confirmed === true);
+                    if (sendResponse) sendResponse({
+                        success: true,
+                        confirmed: confirmed,
+                        reason: hasKeyword ? 'KEYWORD_DETECTED' : (window.__xpider_submit_success_confirmed ? 'CONFIRMED_FLAG' : (formStillPresent ? 'FORM_STILL_PRESENT' : 'NO_CONFIRMATION'))
+                    });
+                    return true;
+                } else if (msg && msg.action === 'RESTORE_MANUAL_HOLD_PANEL') {
+                    if (msg.attemptId) {
+                        const execId = {
+                            attemptId: msg.attemptId,
+                            targetToken: msg.targetToken || window.__xpider_execution_identity?.targetToken || null,
+                            campaignRunId: msg.campaignRunId || window.__xpider_execution_identity?.campaignRunId || null,
+                            sessionId: (msg.sessionId !== undefined && msg.sessionId !== null) ? msg.sessionId : (window.__xpider_execution_identity?.sessionId ?? null),
+                            captchaEpoch: msg.captchaEpoch || 1
+                        };
+                        window.__xpider_execution_identity = execId;
+                        window.__xpider_exec_identity = execId;
+                        window.__xpider_sendExecutionMessage = (payload, cb) => {
+                            const enriched = Object.assign({}, payload, {
+                                attemptId: execId.attemptId,
+                                targetToken: execId.targetToken,
+                                campaignRunId: execId.campaignRunId,
+                                sessionId: execId.sessionId,
+                                captchaEpoch: execId.captchaEpoch
+                            });
+                            if (cb) chrome.runtime.sendMessage(enriched, cb);
+                            else chrome.runtime.sendMessage(enriched).catch(() => {});
+                        };
+                    }
+                    const form = document.querySelector('form, #contact_form, .contact-form, [action*="contact"]');
+                    const chal = _ChallengeGate ? _ChallengeGate.detectChallenge(document) : { detected: false };
+                    handleV7ManualModeHold(form || null, msg.template || {}, new Map(), chal, {
+                        originalUrl: msg.initialHoldUrl || (window.location ? window.location.href : ''),
+                        restoredAfterReload: true,
+                        suppressInitialHoldSignal: true,
+                        validationFailed: Boolean(msg.validationFailed),
+                        validationReason: msg.validationReason || '',
+                        unresolvedFields: msg.unresolvedFields || []
+                    });
+                    if (sendResponse) sendResponse({ success: true, restored: true });
+                    return true;
+                } else if (msg && msg.action === 'FREEZE_NETWORK_RECOVERY') {
+                    window.__xpider_isNetworkDegraded = true;
+                    logDev(`[NETWORK_RECOVERY] ❄️ Content script frozen for network recovery (phase=${msg.checkpoint?.workflowPhase})`, 'warning');
+                    if (sendResponse) sendResponse({ success: true, status: 'FROZEN' });
+                    return true;
+                } else if (msg && msg.action === 'RESUME_CHECKPOINT_REPLAY') {
+                    (async () => {
+                        try {
+                            window.__xpider_isNetworkDegraded = false;
+                            const cp = msg.checkpoint || {};
+                            logDev(`[REPLAY] Resuming checkpoint replay phase=${cp.workflowPhase} submitState=${cp.submitState}`, 'info');
+                            if (cp.attemptId) {
+                                window.__xpider_execution_identity = {
+                                    attemptId: cp.attemptId,
+                                    targetToken: cp.targetToken || window.__xpider_execution_identity?.targetToken || null,
+                                    campaignRunId: cp.campaignRunId || window.__xpider_execution_identity?.campaignRunId || null,
+                                    sessionId: (cp.sessionId !== undefined && cp.sessionId !== null) ? cp.sessionId : (window.__xpider_execution_identity?.sessionId ?? null),
+                                    captchaEpoch: cp.captchaEpoch || 1
+                                };
+                            }
+                            const form = document.querySelector('form, #contact_form, .contact-form, [action*="contact"]');
+                            if (!form) {
+                                if (sendResponse) sendResponse({ success: false, status: 'NO_FORM_FOUND' });
+                                return;
+                            }
+                            if (window.__xpider_current_submit_state === 'TRIGGERED' || cp.submitState === 'SUBMIT_TRIGGERED') {
+                                if (sendResponse) sendResponse({ success: true, status: 'ALREADY_TRIGGERED' });
+                                return;
+                            }
+                            if (window.__xpider_submitBoundaryReached && cp.attemptId) {
+                                delete window.__xpider_submitBoundaryReached[cp.attemptId];
+                            }
+                            const tpl = cp.template || window.__xpider_last_template;
+                            if (sendResponse) sendResponse({ success: true, status: 'RESUMING_PIPELINE' });
+                            if (tpl) {
+                                window.__xpider_last_template = tpl;
+                                await fillAndSubmit(form, tpl, { field: 10, hold: 50 });
+                            }
+                        } catch (err) {
+                            if (sendResponse) sendResponse({ success: false, error: err.message });
+                        }
+                    })();
+                    return true;
+                }
+            });
+            window.tryAutoSolveCaptcha = tryAutoSolveCaptcha;
+        } catch (_) {}
+    }
+
+    async function waitForCaptchaSolved() {
+        const MAX_WAIT = 30; // Bounded wait (Issue #6 R6.8 P1-1)
+        let autoSolveAttempted = false;
+        let autoSolveFinishedTs = 0;
+        let providerSolveAttempted = false;
+        let providerTokenInjected = false;
+        let terminalCaptchaDecision = false;
+
+        for (let i = 0; i < MAX_WAIT; i++) {
+            if (terminalCaptchaDecision || currentTargetLifecycleState === TargetLifecycleState.SETTLED) {
+                logDev("🔑 [Security] Target terminal decision settled. Aborting wait loop.", "warning");
+                return false;
+            }
+
+            if (_isCaptchaSolved) {
+                logDev("🔑 [Security] Challenge solved verified. Resuming sequence immediately.", "success");
+                await new Promise(r => setTimeout(r, 400));
+                return true;
+            }
+            if (_captchaTokenInjected) {
+                logDev("🔑 [Security] Captcha token injected and ready to submit. Proceeding to form submission.", "info");
+                await new Promise(r => setTimeout(r, 400));
+                return true;
+            }
+
+            const stillHasCaptcha = await checkForCaptcha();
+            
+            // Search all frames and forms for captcha token fields (tracking injection state only)
+            const gResponse = document.querySelector('[name="g-recaptcha-response"]') || document.querySelector('#g-recaptcha-response');
+            const hResponse = document.querySelector('[name="h-captcha-response"]') || document.querySelector('#h-captcha-response');
+            const tResponse = document.querySelector('[name="cf-turnstile-response"]') || document.querySelector('#cf-turnstile-response') || document.querySelector('[name="cf_challenge_response"]') || document.querySelector('input[name*="turnstile"]');
+            const imgInput = document.querySelector('input[name*="captcha" i], input[id*="captcha" i], input[placeholder*="captcha" i]');
+            
+            const hasToken = (gResponse && gResponse.value && gResponse.value.trim() !== '') || 
+                             (hResponse && hResponse.value && hResponse.value.trim() !== '') || 
+                             (tResponse && tResponse.value && tResponse.value.trim() !== '') ||
+                             (imgInput && imgInput.value && imgInput.value.trim() !== '');
+            if (hasToken) {
+                _captchaTokenInjected = true;
+            }
+
+            // Auto-solve injection trigger
+            if (stillHasCaptcha && !autoSolveAttempted && !_isCaptchaSolved) {
+                autoSolveAttempted = true;
+                const solveResult = await tryAutoSolveCaptcha('WAIT_LOOP');
+                if (solveResult && solveResult.terminalSettled) {
+                    terminalCaptchaDecision = true;
+                    logDev(`[CAPTCHA_TERMINAL_SETTLED] Terminal decision settlement: ${solveResult.result} reason=${solveResult.reason}. Aborting form wait loop.`, "info");
+                    removeTopSolverHUD(solveResult.result || 'SKIPPED');
+                    currentTargetLifecycleState = TargetLifecycleState.SETTLED;
+                    return false;
+                }
+                if (solveResult && solveResult.providerSolveAttempted) {
+                    providerSolveAttempted = true;
+                    providerTokenInjected = Boolean(solveResult.providerTokenInjected);
+                    autoSolveFinishedTs = Date.now();
+                }
+                if (solveResult && solveResult.terminalError) {
+                    terminalCaptchaDecision = true;
+                    logDev(`[CAPTCHA_GATE] eligible=false reason=CAPTCHA_SOLVER_UNAVAILABLE error=${solveResult.terminalError}`, "error");
+                    updateTopSolverHUD(`2Captcha solver unavailable: ${solveResult.terminalError}`, "FAIL");
+                    currentTargetLifecycleState = TargetLifecycleState.SETTLING;
+                    finishCampaign(false, 'CAPTCHA_SOLVER_UNAVAILABLE', `2Captcha failed: ${solveResult.terminalError}`);
+                    return false;
+                }
+                if (solveResult === true || (solveResult && (solveResult.success || solveResult.verified || solveResult.readyToSubmit || solveResult.tokenInjected))) {
+                    if (solveResult && solveResult.verified) {
+                        _isCaptchaSolved = true;
+                    }
+                    providerSolveAttempted = true;
+                    providerTokenInjected = true;
+                    _captchaTokenInjected = true;
+                    logDev(`🔑 [Security] Auto-solve complete (verified=${!!(solveResult && solveResult.verified)}, readyToSubmit=${!!(solveResult && solveResult.readyToSubmit)}). Resuming sequence for submit.`, "success");
+                    await new Promise(r => setTimeout(r, 400));
+                    return true;
+                }
+            }
+
+            // If terminal decision settled during auto-solve, abort immediately
+            if (terminalCaptchaDecision || currentTargetLifecycleState === TargetLifecycleState.SETTLED) {
+                logDev("🔑 [Security] Target terminal decision settled after auto-solve. Aborting wait loop.", "warning");
+                return false;
+            }
+
+            // [P1-1 Fast-Fail] If token injected but challenge not accepted within 15s post-solve:
+            // Must ONLY apply if a real provider solve attempt occurred and injected a token
+            if (!terminalCaptchaDecision && providerSolveAttempted && providerTokenInjected && autoSolveFinishedTs > 0 && (Date.now() - autoSolveFinishedTs > 15000)) {
+                if (!_isCaptchaSolved && stillHasCaptcha && !document.querySelector('.recaptcha-checkbox-checked, [aria-checked="true"]')) {
+                    logDev("[CAPTCHA_INTEGRATION_FAILURE] reason=CAPTCHA_TOKEN_NOT_ACCEPTED", "error");
+                    throw new Error("CAPTCHA_TOKEN_NOT_ACCEPTED");
+                }
+            }
+
+            // [RC3.28 Directive B / Regression Test 2 & 5]:
+            // Token presence in DOM is INJECTED / PENDING_VERIFICATION only.
+            // Never promote hasToken alone to solved. Success requires an independent verified signal.
+            // [RC3.29 P0-C Fix: Single Authority for Auto-Solve Form Progression]
+            // Only a confirmed verified signal (_isCaptchaSolved === true established via canonical
+            // background success or verified response) can resume the sequence.
+            if (_isCaptchaSolved || _captchaTokenInjected) {
+                logDev("🔑 [Security] Challenge solved or token injected by background. Resuming sequence.", "success");
+                await new Promise(r => setTimeout(r, 400));
+                return true;
+            }
+
+            if (!stillHasCaptcha) {
+                if (!autoSolveAttempted) {
+                    // No CAPTCHA detected initially on form
+                    logDev("🔑 [Security] No challenge detected on form. Resuming sequence.", "info");
+                    return true;
+                }
+                // When auto-solve was attempted, disappearance is NOT an independent content bypass!
+                // Disappearance is an observation signal for background verification via CHECK_CAPTCHA_VERIFIED.
+                // Content only resumes when background establishes canonical AUTO_SUCCESS.
+                logDev("🔑 [Security] Challenge disappeared post-attempt. Awaiting background canonical verification.", "info");
+            }
+
+            await new Promise(r => setTimeout(r, 1000));
+        }
+        return _isCaptchaSolved;
+    }
+
+    // ============================================================
+    // [v4.2] 에러 하이라이트 감지 자가 복구기 (Self-Healing Validation Recovery Engine)
+    // ============================================================
+    async function selfHealErrorFields(form, tpl) {
+        if (!form) return 0;
+        let healedCount = 0;
+        try {
+            const candidates = Array.from(queryAllInputs(form));
+            const errorFields = [];
+
+            // 폼 내부 및 주변의 에러 메시지 텍스트 미리 확보 (Wix의 .Z0mg9X 등 포함)
+            const errorContainers = Array.from(document.querySelectorAll('.Z0mg9X, .TTK5ZL, [class*="error"], [id*="error"], .invalid-feedback, .error-notice, .error-message'));
+            const visibleErrorTexts = errorContainers
+                .filter(el => elementIsVisible(el))
+                .map(el => (el.textContent || '').trim().toLowerCase())
+                .filter(txt => txt.length > 0);
+
+            for (const el of candidates) {
+                // 특수 버튼/파일 타입은 에러 판정에서 제외
+                if (el.type === 'hidden' || el.type === 'submit' || el.type === 'button' || el.type === 'image' || el.type === 'file' || el.type === 'reset') continue;
+                
+                let isError = false;
+                
+                // 1. HTML5 native :invalid 체크 및 aria-invalid 체크
+                try {
+                    if (el.matches(':invalid') || el.getAttribute('aria-invalid') === 'true' || el.getAttribute('data-state') === 'invalid') {
+                        isError = true;
+                    }
+                } catch(e) {}
+                
+                // 2. 조상 래퍼 클래스 트래버스 (최대 5레벨 위 조상까지 검사하여 invalid 클래스 마킹 확인 - Wix .tkHMZu 등 감지)
+                if (!isError) {
+                    let ancestor = el.parentElement;
+                    // [RC3.60 .91 Fix] REMOVE 'required' from error keywords!
+                    // 'required' is a standard container class (e.g. form-group required) indicating a mandatory field, NOT a validation error!
+                    const errorKeywords = ['has-error', 'field-error', 'invalid', 'form-error', 'danger', 'err-', 'tkhmzu'];
+                    for (let depth = 0; depth < 5 && ancestor; depth++) {
+                        const ancestorClass = (ancestor.className || '').toString().toLowerCase();
+                        const ancestorId = (ancestor.id || '').toString().toLowerCase();
+                        const combinedAttr = `${ancestorClass} ${ancestorId}`;
+                        
+                        if (errorKeywords.some(k => combinedAttr.includes(k))) {
+                            isError = true;
+                            break;
+                        }
+                        ancestor = ancestor.parentElement;
+                    }
+                }
+                
+                // 3. 동적 에러 텍스트 연계 및 형제 노드 (.Z0mg9X) 검사
+                if (!isError) {
+                    // Wix 에러 텍스트 컴포넌트가 인풋 주변에 가시적으로 렌더링되어 있는지 검사
+                    const siblings = el.parentElement ? Array.from(el.parentElement.children) : [];
+                    const hasVisibleErrorSibling = siblings.some(sib => {
+                        const isErrorContainer = sib.classList.contains('Z0mg9X') || (sib.className || '').toString().toLowerCase().includes('error');
+                        return isErrorContainer && elementIsVisible(sib);
+                    });
+                    if (hasVisibleErrorSibling) {
+                        isError = true;
+                    }
+                }
+
+                // 4. 에러 메시지 텍스트 파싱을 통한 타깃 필드 매칭 (예: "email" 단어가 에러창에 보이면 이메일 인풋을 즉시 에러로 매핑)
+                if (!isError && visibleErrorTexts.length > 0) {
+                    const label = getLabelFor(el).toLowerCase();
+                    const ph = (el.placeholder || '').toLowerCase();
+                    const nm = (el.name || '').toLowerCase();
+                    const type = (el.type || '').toLowerCase();
+                    const hint = `${label} ${ph} ${nm} ${type}`;
+
+                    const keywordsToTest = ['email', 'phone', 'tel', 'name', 'message', 'subject', '이메일', '전화', '이름', '메시지', '제목', 'mail'];
+                    const matchedKeyword = keywordsToTest.find(k => hint.includes(k));
+                    
+                    if (matchedKeyword) {
+                        // 페이지 전반의 가시적 에러 메시지 중 해당 필드 명칭을 담은 에러 텍스트가 1개라도 존재하는 경우
+                        if (visibleErrorTexts.some(errText => errText.includes(matchedKeyword) || errText.includes('필수') || errText.includes('required') || errText.includes('invalid'))) {
+                            isError = true;
+                        }
+                    }
+                }
+                
+                // 5. 시각적 빨간색 border/box-shadow/background 변색 검사
+                if (!isError) {
+                    const style = window.getComputedStyle(el);
+                    const parentStyle = el.parentElement ? window.getComputedStyle(el.parentElement) : null;
+                    
+                    const isRedColor = (colorStr) => {
+                        if (!colorStr) return false;
+                        const match = colorStr.match(/rgba?\((\d+)\s*,\s*(\d+)\s*,\s*(\d+)/);
+                        if (match) {
+                            const r = parseInt(match[1], 10);
+                            const g = parseInt(match[2], 10);
+                            const b = parseInt(match[3], 10);
+                            return r > 150 && g < 90 && b < 90;
+                        }
+                        return colorStr.includes('#ff0000') || colorStr.includes('red') || colorStr.includes('rgb(255, 64, 64)');
+                    };
+                    
+                    if (isRedColor(style.borderColor) || isRedColor(style.boxShadow) || isRedColor(style.outlineColor) ||
+                        (parentStyle && (isRedColor(parentStyle.borderColor) || isRedColor(parentStyle.boxShadow)))) {
+                        isError = true;
+                    }
+                }
+
+                if (isError) {
+                    errorFields.push(el);
+                }
+            }
+
+            if (errorFields.length > 0) {
+                logDev(`⚠️ [Healer] 정밀 에러 자가 복구 가동! 대상 필드 ${errorFields.length}개 발견.`, 'warning');
+                
+                for (const el of errorFields) {
+                    // 1. 완벽한 값 초기화 (React/Vue 가상 DOM 내부까지 값 세터를 리셋)
+                    if (el.contentEditable === 'true') {
+                        el.textContent = '';
+                    } else {
+                        setNativeValue(el, '');
+                        el.value = '';
+                    }
+                    el.dispatchEvent(new Event('input', { bubbles: true }));
+                    el.dispatchEvent(new Event('change', { bubbles: true }));
+                    await new Promise(r => setTimeout(r, 80));
+
+                    // 2. 복구용 다변화된 100% 새로운 스마트 무작위 값 대입
+                    const label = getLabelFor(el).toLowerCase();
+                    const ph = (el.placeholder || '').toLowerCase();
+                    const nm = (el.name || '').toLowerCase();
+                    const type = (el.type || '').toLowerCase();
+                    const hint = `${label} ${ph} ${nm}`;
+
+                    const templateVals = [
+                        tpl.firstName, tpl.lastName, tpl.name, tpl.email,
+                        tpl.phone, tpl.subject, tpl.message
+                    ].filter(v => typeof v === 'string' && v.trim() !== '');
+
+                    const getRandomTemplateVal = () => {
+                        if (templateVals.length > 0) return templateVals[Math.floor(Math.random() * templateVals.length)];
+                        return "Inquiry";
+                    };
+
+                    let val = getRandomTemplateVal();
+                    if (type === 'email' || hint.includes('email') || hint.includes('mail')) {
+                        // 이메일 패턴 완전 재생성
+                        const domains = ['gmail.com', 'outlook.com', 'yahoo.com', 'hotmail.com', 'naver.com', 'daum.net'];
+                        const randomUser = 'contact_pro_' + Math.random().toString(36).substring(2, 8);
+                        val = `${randomUser}@${domains[Math.floor(Math.random() * domains.length)]}`;
+                    } else if (type === 'tel' || hint.includes('phone') || hint.includes('tel') || hint.includes('mobile') || hint.includes('전화') || hint.includes('연락처')) {
+                        // 전화번호 패턴 재생성 (해외/국내 규격 유연 대조)
+                        val = '010' + Math.floor(20000000 + Math.random() * 80000000);
+                    } else if (hint.includes('name') || hint.includes('이름') || hint.includes('氏') || hint.includes('성함')) {
+                        val = (tpl.name || 'User') + '_' + Math.floor(100 + Math.random() * 900);
+                    } else if (hint.includes('subject') || hint.includes('제목') || hint.includes('title')) {
+                        val = (tpl.subject || 'Inquiry') + ' ' + Math.random().toString(36).substring(2, 6).toUpperCase();
+                    }
+
+                    // 3. 진짜 인간의 1자 단위 불규칙 타이핑 모사로 다시 재입력!
+                    await typeHumanlike(el, val);
+                    healedCount++;
+                }
+            }
+        } catch (e) {
+            logDev(`⚠️ [Healer] 에러 복구 루틴 중 오류 발생: ${e.message}`, 'error');
+        }
+        return healedCount;
+    }
+
+    // ============================================================
+    // [Reliability R1] Bounded FormStabilizer (Replaces 150ms infinite sweeper)
+    // ============================================================
+    class FormStabilizer {
+        constructor(formOrOptions = {}, tpl = {}, options = {}) {
+            if (formOrOptions && formOrOptions.querySelectorAll) {
+                this.form = formOrOptions;
+                this.tpl = tpl || {};
+                this.options = options || {};
+            } else {
+                this.form = null;
+                this.tpl = {};
+                this.options = formOrOptions || {};
+            }
+            const opts = this.options;
+            this.maxLifetimeMs = opts.maxDurationMs || opts.maxLifetimeMs || 5000;
+            this.checkIntervalMs = opts.pollIntervalMs || opts.checkIntervalMs || 400;
+            this.maxAttemptsPerElement = opts.maxElementAttempts || opts.maxAttemptsPerElement || 2;
+            this.cooldownMs = opts.cooldownMs || 500;
+            this.requiredStableCycles = opts.requiredStableCycles || 2;
+            
+            this.tracker = new WeakMap();
+            this.startTime = Date.now();
+            this.timer = null;
+            this.safetyTimer = null;
+            this.isStopped = false;
+            this.customFillFn = null;
+            this._onStop = null;
+            
+            this.stats = {
+                fieldsSeen: 0,
+                mapped: 0,
+                stable: 0,
+                unresolved: 0,
+                selectAttempts: 0,
+                checkboxAttempts: 0,
+                radioAttempts: 0,
+                timedOutElements: 0,
+                durationMs: 0
+            };
+        }
+
+        _getTrack(el) {
+            let t = this.tracker.get(el);
+            if (!t) {
+                t = { attempts: 0, lastAttemptTs: 0, lastAppliedValue: null, stableCycles: 0, state: 'NEW' };
+                this.tracker.set(el, t);
+            }
+            return t;
+        }
+
+        start(form, tpl, fillFn) {
+            if (form) this.form = form;
+            if (tpl) this.tpl = tpl;
+            if (fillFn) this.customFillFn = fillFn;
+            if (this.isStopped) return Promise.resolve(this.stats);
+            logDev("🛡️ [FormStabilizer] Starting bounded stabilization (max 5s, max 2 retries/element)...", "info");
+
+            return new Promise((resolve) => {
+                this._onStop = resolve;
+                this.timer = setInterval(() => {
+                    this.stabilizePass().catch(() => {});
+                }, this.checkIntervalMs);
+
+                this.safetyTimer = setTimeout(() => {
+                    this.stop("MAX_LIFETIME_EXCEEDED");
+                }, this.maxLifetimeMs);
+
+                this.stabilizePass().catch(() => {});
+            });
+        }
+
+        async stabilizePass() {
+            if (this.isStopped) return;
+            if (!this.form || (typeof document !== 'undefined' && document.body && document.body.contains && !document.body.contains(this.form))) {
+                this.stop("FORM_DETACHED");
+                return;
+            }
+
+            const candidates = Array.from(queryAllInputs(this.form));
+            this.stats.fieldsSeen = candidates.length;
+
+            const radioGroups = {};
+            let allStableOrMaxed = true;
+
+            for (const el of candidates) {
+                if (el.type === 'hidden' || el.type === 'submit' || el.type === 'button' || el.type === 'image' || el.type === 'file' || el.type === 'reset') continue;
+                
+                const t = this._getTrack(el);
+
+                // A. Radios
+                if (el.type === 'radio') {
+                    const grpKey = el.name || `_unnamed_${el.id || Math.random()}`;
+                    if (!radioGroups[grpKey]) radioGroups[grpKey] = [];
+                    radioGroups[grpKey].push(el);
+                    continue;
+                }
+
+                // B. Checkboxes (Group-aware validation semantics)
+                if (el.type === 'checkbox') {
+                    let groupMembers = [el];
+                    if (_CheckboxResolverR2) {
+                        try {
+                            const cbHelper = new _CheckboxResolverR2();
+                            groupMembers = cbHelper.getGroupMembers(el, this.form);
+                        } catch (_) {}
+                    }
+                    // If part of a choice group (>= 2 checkboxes) and at least 1 valid option is already checked, the group is satisfied
+                    if (groupMembers.length >= 2 && groupMembers.some(m => m && m.checked === true)) {
+                        t.stableCycles++;
+                        if (t.stableCycles >= this.requiredStableCycles) t.state = 'STABLE';
+                        continue;
+                    }
+                    const isRequired = el.required || el.getAttribute('aria-required') === 'true';
+                    const directLabelText = (el.closest('label')?.textContent || (el.id && typeof document !== 'undefined' ? document.querySelector(`label[for="${el.id}"]`)?.textContent : '') || '').toLowerCase();
+                    const hasAsterisk = directLabelText.includes('*') || directLabelText.includes('필수') || directLabelText.includes('agree');
+                    
+                    if (isRequired || hasAsterisk) {
+                        if (el.checked) {
+                            t.stableCycles++;
+                            if (t.stableCycles >= this.requiredStableCycles) t.state = 'STABLE';
+                        } else {
+                            t.stableCycles = 0;
+                            if (t.attempts < this.maxAttemptsPerElement && (Date.now() - t.lastAttemptTs) >= this.cooldownMs) {
+                                t.attempts++;
+                                t.lastAttemptTs = Date.now();
+                                this.stats.checkboxAttempts++;
+                                logDev(`🛡️ [Stabilizer] Required checkbox attempt ${t.attempts}/${this.maxAttemptsPerElement}: <input id="${el.id}">`);
+                                await applyCheckbox(el);
+                            }
+                            if (t.attempts >= this.maxAttemptsPerElement) {
+                                t.state = 'UNRESOLVED';
+                            } else {
+                                allStableOrMaxed = false;
+                            }
+                        }
+                    } else {
+                        t.state = 'STABLE';
+                    }
+                    continue;
+                }
+
+                // C. Selects
+                if (el.tagName === 'SELECT') {
+                    if (el.selectedIndex > 0) {
+                        t.stableCycles++;
+                        if (t.stableCycles >= this.requiredStableCycles) t.state = 'STABLE';
+                    } else {
+                        t.stableCycles = 0;
+                        if (t.attempts < this.maxAttemptsPerElement && (Date.now() - t.lastAttemptTs) >= this.cooldownMs) {
+                            t.attempts++;
+                            t.lastAttemptTs = Date.now();
+                            this.stats.selectAttempts++;
+                            logDev(`🛡️ [Stabilizer] Unselected dropdown attempt ${t.attempts}/${this.maxAttemptsPerElement}: <select id="${el.id}">`);
+                            await applySelect(el);
+                        }
+                        if (t.attempts >= this.maxAttemptsPerElement) {
+                            t.state = 'UNRESOLVED';
+                        } else {
+                            allStableOrMaxed = false;
+                        }
+                    }
+                    continue;
+                }
+
+                // D. Text / Textarea / Contenteditable
+                const currentVal = el.contentEditable === 'true' ? (el.textContent || '') : (el.value || '');
+                const isRequired = el.required || el.getAttribute('aria-required') === 'true';
+
+                if (currentVal.trim() !== '') {
+                    t.stableCycles++;
+                    if (t.stableCycles >= this.requiredStableCycles) t.state = 'STABLE';
+                } else if (isRequired) {
+                    const elCtx = `${el.name || ''} ${el.id || ''} ${el.placeholder || ''}`.toLowerCase();
+                    const isSensitiveOrConstrained = /ssn|social.*security|ein|tax.*id|taxpayer|revenue|headcount|employee.*count|passport|license|puzzle|captcha|math/i.test(elCtx) || (el.pattern && !new RegExp(el.pattern).test(this.tpl.subject || this.tpl.name || 'Inquiry'));
+                    if (isSensitiveOrConstrained) {
+                        t.state = 'UNRESOLVED';
+                        continue;
+                    }
+                    t.stableCycles = 0;
+                    if (t.attempts < this.maxAttemptsPerElement && (Date.now() - t.lastAttemptTs) >= this.cooldownMs) {
+                        t.attempts++;
+                        t.lastAttemptTs = Date.now();
+                        // Deterministic value — never random!
+                        const fillVal = (el.tagName === 'TEXTAREA' || el.contentEditable === 'true' || el.getAttribute('role') === 'textbox')
+                            ? (this.tpl.message || 'Inquiry regarding services')
+                            : (this.tpl.subject || this.tpl.name || 'Inquiry');
+                        logDev(`🛡️ [Stabilizer] Empty required field attempt ${t.attempts}/${this.maxAttemptsPerElement}: <${el.tagName} id="${el.id}">`);
+                        if (this.customFillFn) {
+                            await this.customFillFn(el, fillVal);
+                        } else {
+                            await applyVal(el, fillVal, 'Stabilizer-Field');
+                        }
+                    }
+                    if (t.attempts >= this.maxAttemptsPerElement) {
+                        t.state = 'UNRESOLVED';
+                    } else {
+                        allStableOrMaxed = false;
+                    }
+                } else {
+                    t.state = 'STABLE';
+                }
+            }
+
+            // Radio Groups pass
+            for (const grpName in radioGroups) {
+                const group = radioGroups[grpName];
+                const isAnyChecked = group.some(r => r.checked);
+                if (isAnyChecked) {
+                    group.forEach(r => {
+                        const t = this._getTrack(r);
+                        t.stableCycles++;
+                        if (t.stableCycles >= this.requiredStableCycles) t.state = 'STABLE';
+                    });
+                } else {
+                    const firstValid = group.find(r => !r.disabled);
+                    if (firstValid) {
+                        const t = this._getTrack(firstValid);
+                        if (t.attempts < this.maxAttemptsPerElement && (Date.now() - t.lastAttemptTs) >= this.cooldownMs) {
+                            t.attempts++;
+                            t.lastAttemptTs = Date.now();
+                            this.stats.radioAttempts++;
+                            logDev(`🛡️ [Stabilizer] Unselected radio group attempt ${t.attempts}/${this.maxAttemptsPerElement}: <input id="${firstValid.id}">`);
+                            await applyRadio(firstValid);
+                        }
+                        if (t.attempts >= this.maxAttemptsPerElement) {
+                            t.state = 'UNRESOLVED';
+                        } else {
+                            allStableOrMaxed = false;
+                        }
+                    }
+                }
+            }
+
+            // Early auto-stop if all fields reached STABLE or UNRESOLVED state
+            if (allStableOrMaxed) {
+                this.stop("ALL_FIELDS_STABLE_OR_RESOLVED");
+            }
+        }
+
+        stop(reason = "MANUAL_STOP") {
+            if (this.isStopped) return this.stats;
+            this.isStopped = true;
+            if (this.timer) {
+                clearInterval(this.timer);
+                this.timer = null;
+            }
+            if (this.safetyTimer) {
+                clearTimeout(this.safetyTimer);
+                this.safetyTimer = null;
+            }
+
+            // Tally stats
+            if (this.form) {
+                const candidates = Array.from(queryAllInputs(this.form));
+                let stableCount = 0;
+                let unresCount = 0;
+                candidates.forEach(el => {
+                    const t = this.tracker.get(el);
+                    if (t) {
+                        if (t.state === 'STABLE') stableCount++;
+                        else if (t.state === 'UNRESOLVED' || t.attempts >= this.maxAttemptsPerElement) unresCount++;
+                    }
+                });
+                this.stats.stable = stableCount;
+                this.stats.unresolved = unresCount;
+            }
+
+            this.stats.durationMs = Date.now() - this.startTime;
+            this.stats.stopReason = reason;
+            this.stats.stable = (reason === "ALL_FIELDS_STABLE_OR_RESOLVED");
+            if (this._onStop) {
+                this._onStop(this.stats);
+                this._onStop = null;
+            }
+
+            logDev(`🛡️ [FormStabilizer] Stopped (${reason}): seen=${this.stats.fieldsSeen} stable=${this.stats.stable} unresolved=${this.stats.unresolved} (selects=${this.stats.selectAttempts}, cbs=${this.stats.checkboxAttempts}, radios=${this.stats.radioAttempts})`, "info");
+            return this.stats;
+        }
+    }
+
+    let _activeStabilizerInstance = null;
+    function startActiveEmptyFieldSweeper(form, tpl) {
+        if (_activeStabilizerInstance) _activeStabilizerInstance.stop("NEW_STABILIZER_STARTED");
+        _activeStabilizerInstance = new FormStabilizer(form, tpl);
+        _activeStabilizerInstance.start();
+        return _activeStabilizerInstance;
+    }
+
+    function stopActiveEmptyFieldSweeper() {
+        if (_activeStabilizerInstance) {
+            _activeStabilizerInstance.stop("STOP_REQUESTED");
+            _activeStabilizerInstance = null;
+        }
+    }
+
+    function querySelectorIncludingShadowDOM(root, selector) {
+        if (!root) return null;
+        try {
+            if (root.querySelector) {
+                const el = root.querySelector(selector);
+                if (el) return el;
+            }
+        } catch(e) {}
+        try {
+            if (root.querySelectorAll) {
+                const all = root.querySelectorAll('*');
+                for (const node of all) {
+                    if (node.shadowRoot) {
+                        const found = querySelectorIncludingShadowDOM(node.shadowRoot, selector);
+                        if (found) return found;
+                    }
+                }
+            }
+        } catch(e) {}
+        let child = root.firstChild;
+        while (child) {
+            const found = querySelectorIncludingShadowDOM(child, selector);
+            if (found) return found;
+            child = child.nextSibling;
+        }
+        return null;
+    }
+
+    function querySelectorAllIncludingShadowDOM(root, selector, results = []) {
+        if (!root) return results;
+        try {
+            if (root.querySelectorAll) {
+                root.querySelectorAll(selector).forEach(el => {
+                    if (!results.includes(el)) results.push(el);
+                });
+            }
+        } catch(e) {}
+        try {
+            if (root.querySelectorAll) {
+                const all = root.querySelectorAll('*');
+                for (const node of all) {
+                    if (node.shadowRoot) {
+                        querySelectorAllIncludingShadowDOM(node.shadowRoot, selector, results);
+                    }
+                }
+            }
+        } catch(e) {}
+        let child = root.firstChild;
+        while (child) {
+            querySelectorAllIncludingShadowDOM(child, selector, results);
+            child = child.nextSibling;
+        }
+        return results;
+    }
+
+    // ============================================================
+    // [Section B] Field Integrity Before Submit (Freeze & Verify)
+    // ============================================================
+    
+    function isCaptchaChallengeField(el) {
+        if (!el) return false;
+        const tag = (el.tagName || '').toUpperCase();
+        const id = (el.id || '').toLowerCase();
+        const name = (el.name || '').toLowerCase();
+        const placeholder = (el.placeholder || '').toLowerCase();
+        const ariaLabel = (el.getAttribute ? (el.getAttribute('aria-label') || '') : '').toLowerCase();
+        const cls = (typeof el.className === 'string' ? el.className : '').toLowerCase();
+        const allText = `${id} ${name} ${placeholder} ${ariaLabel} ${cls}`;
+        const captchaPattern = /(?:^|[-_])captcha(?:[-_]|)|formcaptcha|recaptcha|hcaptcha|turnstile|cf-turnstile|verification[-_]?code|보안[-_]?문자|자동[-_]?가입/i;
+        if (captchaPattern.test(allText)) return true;
+        if (el.closest && el.closest('.g-recaptcha, .h-captcha, .cf-turnstile, [class*="captcha" i], [id*="captcha" i]')) return true;
+        return false;
+    }
+
+    function freezeFieldValues(form, tpl = {}) {
+        stopActiveEmptyFieldSweeper();
+        const snapshot = new Map();
+        if (!form) return snapshot;
+
+        const fields = queryAllInputs(form);
+        for (const el of fields) {
+            const isCaptcha = isCaptchaChallengeField(el);
+            const val = el.contentEditable === 'true' ? (el.textContent || '') : (el.value || '');
+            const checked = !!el.checked;
+            const isReq = !isCaptcha && !!(el.required || el.getAttribute('aria-required') === 'true');
+            const sig = el.id || el.name || el.getAttribute('data-testid') || (el.tagName + '_' + (el.type || 'text'));
+            snapshot.set(el, {
+                sig,
+                value: val,
+                checked,
+                isRequired: isReq,
+                tagName: el.tagName,
+                type: (el.type || '').toLowerCase(),
+                name: el.name || '',
+                id: el.id || ''
+            });
+        }
+        return snapshot;
+    }
+
+    function getAuthoritativeValue(el, expected, tpl = {}) {
+        const tp = (expected.type || el.type || '').toLowerCase();
+        const nm = (expected.name || el.name || '').toLowerCase();
+        const isMsg = (el.tagName === 'TEXTAREA' || el.contentEditable === 'true' || (el.getAttribute && el.getAttribute('role') === 'textbox') || nm.includes('message') || nm.includes('comment') || nm.includes('content'));
+        const isEmail = (tp === 'email' || nm.includes('email') || nm.includes('mail'));
+        const isPhone = (tp === 'tel' || nm.includes('phone') || nm.includes('tel') || nm.includes('mobile'));
+        const isSubj = (nm.includes('subject') || nm.includes('topic') || nm.includes('title'));
+        const isName = (nm.includes('name') || nm.includes('author'));
+
+        if (isMsg && tpl.message) return tpl.message;
+        if (isEmail && tpl.email) return tpl.email;
+        if (isPhone && tpl.phone) return tpl.phone;
+        if (isSubj && tpl.subject) return tpl.subject;
+        if (isName && tpl.name) return tpl.name;
+        if (_MathCaptchaSolver && typeof _MathCaptchaSolver.solveField === 'function') {
+            const mathAns = _MathCaptchaSolver.solveField(el, getLabelFor);
+            if (mathAns !== null) return String(mathAns);
+        }
+        if (expected.name && tpl[expected.name]) return tpl[expected.name];
+        if (expected.id && tpl[expected.id]) return tpl[expected.id];
+        return null;
+    }
+
+    function verifyFieldIntegrity(form, snapshot, tpl = {}) {
+        if (!snapshot || snapshot.size === 0) return { intact: true };
+        let repairedCount = 0;
+
+        for (const [origEl, expected] of snapshot.entries()) {
+            let currentEl = origEl;
+
+            // 1. Check if node was unmounted / replaced in DOM (FIELD_NODE_REPLACED)
+            if (currentEl.isConnected === false) {
+                const selector = expected.id ? `#${expected.id}` : (expected.name ? `[name="${expected.name}"]` : null);
+                const replacement = selector && form.querySelector ? form.querySelector(selector) : null;
+                if (replacement) {
+                    logDev(`🛡️ [Integrity] FIELD_NODE_REPLACED: Updated reference for <${expected.tagName} name="${expected.name}">`, "info");
+                    currentEl = replacement;
+                } else {
+                    return { intact: false, reasonCode: 'FIELD_NODE_REPLACED', element: origEl };
+                }
+            }
+
+            const currentVal = currentEl.contentEditable === 'true' ? (currentEl.textContent || '') : (currentEl.value || '');
+
+            // 2. Check if a previously filled field was cleared or lost
+            if (expected.value && expected.value.trim() !== '' && (!currentVal || currentVal.trim() === '')) {
+                const lossReason = expected.isRequired ? 'REQUIRED_FIELD_LOST_BEFORE_SUBMIT' : 'FIELD_CLEARED_BEFORE_SUBMIT';
+                logDev(`🛡️ [Integrity] ${lossReason} detected on <${currentEl.tagName} name="${expected.name}">. Applying targeted same-value repair...`, "warning");
+
+                const authorVal = getAuthoritativeValue(currentEl, expected, tpl);
+                if (authorVal) {
+                    if (currentEl.contentEditable === 'true') {
+                        currentEl.textContent = authorVal;
+                    } else {
+                        setNativeValue(currentEl, authorVal);
+                        currentEl.value = authorVal;
+                    }
+                    currentEl.dispatchEvent(new Event('input', { bubbles: true }));
+                    currentEl.dispatchEvent(new Event('change', { bubbles: true }));
+                    repairedCount++;
+
+                    const verifyVal = currentEl.contentEditable === 'true' ? (currentEl.textContent || '') : (currentEl.value || '');
+                    if (!verifyVal || verifyVal.trim() === '') {
+                        return { intact: false, reasonCode: 'FIELD_REPAIR_FAILED', element: currentEl };
+                    }
+                } else {
+                    return { intact: false, reasonCode: lossReason, element: currentEl };
+                }
+            }
+
+            // 3. Check checkbox state revert
+            if (currentEl.type === 'checkbox' && expected.checked && !currentEl.checked) {
+                logDev(`🛡️ [Integrity] FIELD_STATE_REVERTED: Checkbox reverted before submit: ${expected.name}`, "warning");
+                setNativeChecked(currentEl, true);
+                currentEl.checked = true;
+                currentEl.dispatchEvent(new Event('input', { bubbles: true }));
+                currentEl.dispatchEvent(new Event('change', { bubbles: true }));
+                repairedCount++;
+            }
+        }
+
+        return { intact: true, repairedCount };
+    }
+
+    // ========================================================================
+    // SubmitExecutorR5 — Controlled Escalation Submit Ladder (Issue #6 R6.1)
+    // ========================================================================
+    class SubmitExecutorR5 {
+
+        // ── [Issue #6 R6.9F.1] Custom submitter activation proof (single click + bounded commit window) ──
+        _isElementVisible(el) {
+            try {
+                if (!el || !el.isConnected) return false;
+                const r = el.getBoundingClientRect();
+                if (!(r.width > 0 && r.height > 0)) return false;
+                const cs = window.getComputedStyle(el);
+                return cs.display !== 'none' && cs.visibility !== 'hidden';
+            } catch (_) { return false; }
+        }
+
+        _countNetworkCommits() {
+            try {
+                return performance.getEntriesByType('resource')
+                    .filter(e => e.initiatorType === 'fetch' || e.initiatorType === 'xmlhttprequest' || e.initiatorType === 'beacon').length;
+            } catch (_) { return 0; }
+        }
+
+        _countStatusNodes() {
+            try {
+                const sel = '[role="alert"],[role="status"],[aria-live],[class*="success"],[class*="thank"],[class*="sent"],[class*="confirm"],[id*="success"],[id*="thank"],[id*="confirm"]';
+                return Array.from(document.querySelectorAll(sel)).filter(n => this._isElementVisible(n) && (n.textContent || '').trim().length > 0).length;
+            } catch (_) { return 0; }
+        }
+
+        _hasSuccessText() {
+            try {
+                const txt = ((document.body && document.body.innerText) || '').slice(0, 30000);
+                return /(thank you|thanks for|successfully (sent|submitted)|message (has been )?sent|has been (sent|received|submitted)|we('| wi)ll (get back|be in touch|respond)|감사합니다|접수되었|전송되었|발송되었|완료되었)/i.test(txt);
+            } catch (_) { return false; }
+        }
+
+        _hasValidationError(form) {
+            try {
+                if (!form || !form.querySelector) return false;
+                if (form.tagName === 'FORM' && form.querySelector(':invalid')) return true;
+                const bad = form.querySelector('[aria-invalid="true"], .invalid-feedback, .wpcf7-not-valid-tip, .field-error, .error-message');
+                return !!(bad && this._isElementVisible(bad) && (bad.textContent || '').trim().length > 0);
+            } catch (_) { return false; }
+        }
+
+        _captureActivationSnapshot(primary, form) {
+            return {
+                href: window.location.href,
+                netCount: this._countNetworkCommits(),
+                statusNodes: this._countStatusNodes(),
+                hasSuccessText: this._hasSuccessText(),
+                formVisible: this._isElementVisible(form),
+                primaryConnected: !!(primary && primary.isConnected),
+                primaryDisabled: this.isDisabled(primary),
+                primaryBusy: !!(primary.getAttribute && primary.getAttribute('aria-busy') === 'true'),
+                primaryText: ((primary.textContent || primary.value || '') + '').trim().slice(0, 80),
+                primaryClass: String(primary.className || ''),
+                hadValidationError: this._hasValidationError(form)
+            };
+        }
+
+        _collectCommitSignals(snap, primary, form, submitFired) {
+            const s = [];
+            if (submitFired && submitFired()) s.push('NATIVE_SUBMIT_EVENT');
+            if (window.location.href !== snap.href) s.push('URL_TRANSITION');
+            if (this._countNetworkCommits() > snap.netCount) s.push('NETWORK_COMMIT');
+            if (this._countStatusNodes() > snap.statusNodes) s.push('STATUS_NODE_APPEARED');
+            if (!snap.hasSuccessText && this._hasSuccessText()) s.push('SUCCESS_TEXT_APPEARED');
+            if (snap.formVisible && form && form.isConnected === false) s.push('FORM_REPLACED');
+            else if (snap.formVisible && !this._isElementVisible(form)) s.push('FORM_HIDDEN');
+            if (snap.primaryConnected && !primary.isConnected) s.push('SUBMITTER_CONSUMED');
+            else if (primary.isConnected) {
+                if (!snap.primaryDisabled && this.isDisabled(primary)) s.push('SUBMITTER_DISABLED');
+                if (!snap.primaryBusy && primary.getAttribute && primary.getAttribute('aria-busy') === 'true') s.push('SUBMITTER_BUSY');
+                const nowText = ((primary.textContent || primary.value || '') + '').trim().slice(0, 80);
+                if (nowText && nowText !== snap.primaryText) s.push('SUBMITTER_TEXT_CHANGED');
+                const nowCls = String(primary.className || '');
+                if (nowCls !== snap.primaryClass && /(loading|sending|submitted|busy|processing)/i.test(nowCls) && !/(loading|sending|submitted|busy|processing)/i.test(snap.primaryClass)) s.push('SUBMITTER_STATE_CLASS');
+            }
+            return s;
+        }
+
+        async _observeActivationCommit(snap, primary, form, submitFired, windowMs) {
+            const deadline = Date.now() + windowMs;
+            for (;;) {
+                const signals = this._collectCommitSignals(snap, primary, form, submitFired);
+                const validationError = !snap.hadValidationError && this._hasValidationError(form);
+                if (validationError) return { committed: false, validationError: true, signals };
+                if (signals.length > 0) return { committed: true, validationError: false, signals };
+                if (Date.now() >= deadline) return { committed: false, validationError: false, signals: [] };
+                await new Promise(r => setTimeout(r, 100));
+            }
+        }
+
+        async _activateCustomSubmitter(primary, form, submitFired) {
+            const snap = this._captureActivationSnapshot(primary, form);
+            const tag = (primary.tagName || 'el').toLowerCase();
+            logDev(`[CUSTOM_ACTIVATION] phase=SNAPSHOT tag=${tag} formVisible=${snap.formVisible} statusNodes=${snap.statusNodes} netCount=${snap.netCount}`, "info");
+            try { if (typeof primary.scrollIntoView === 'function') primary.scrollIntoView({ block: 'center' }); } catch (_) {}
+            try { primary.click(); } catch (e) { logDev(`⚠️ [CUSTOM_ACTIVATION] click threw: ${e.message}`, "warning"); }
+            logDev("[CUSTOM_ACTIVATION] phase=CLICK count=1", "info");
+            let obs = await this._observeActivationCommit(snap, primary, form, submitFired, 1800);
+            if (!obs.committed && !obs.validationError) {
+                // Zero observable effect from the DOM click: exactly one pointer-sequence fallback (handlers bound to pointer/mouse events).
+                logDev("[CUSTOM_ACTIVATION] phase=ZERO_EFFECT_FALLBACK pointer_sequence count=1", "info");
+                try { _dispatchSingleClickSequence(primary); } catch (_) {}
+                obs = await this._observeActivationCommit(snap, primary, form, submitFired, 1200);
+            }
+            if (obs.committed) {
+                logDev(`[SUBMIT_ACTIVATION_PROOF] strategy=custom signals=${obs.signals.join(',')} result=SUBMIT_TRIGGERED activationProved=true deliveryConfirmed=false`, "info");
+                return {
+                    success: true,
+                    reasonCode: 'SUBMIT_TRIGGERED',
+                    strategy: 'custom_click_commit_observed',
+                    submitEventFired: !!(submitFired && submitFired()),
+                    activationProved: true,
+                    activationSignals: obs.signals,
+                    commitSignal: obs.signals[0]
+                };
+            }
+            const reason = obs.validationError ? 'SUBMIT_VALIDATION_BLOCKED' : 'SUBMIT_ACTIVATION_EXHAUSTED';
+            logDev(`[SUBMIT_ACTIVATION_PROOF] strategy=custom signals=none result=${reason}`, "warning");
+            return { success: false, reasonCode: reason, strategy: 'custom_click_no_commit', submitEventFired: false };
+        }
+        constructor(form, template = {}, options = {}) {
+            this.form = form;
+            this.template = template;
+            this.options = options;
+            this.maxAlternateAttempts = 1;
+        }
+
+        // 7.2 Candidate Ranking & Multi-Step Detection
+        // 7.2 Candidate Ranking & Multi-Step Detection (R6.9F Multi-Dimensional Discovery)
+        discoverSubmitActions() {
+            const form = this.form;
+            const candidates = [];
+            const multiStepCandidates = [];
+            candidates.multiStepCandidates = multiStepCandidates;
+            if (!form) return candidates;
+
+            const submitKeywords = ['send', 'submit', 'send message', 'contact us', 'request info', 'inquiry', 'contact', 'register', 'inquire', '보내기', '제출', '전송', '문의하기', '등록', '접수', '送信', '确定', '提交', '입력'];
+            const nextKeywords = ['next', 'continue', '다음', '계속', 'step', 'proceed'];
+            const rejectKeywords = ['prev', 'back', 'cancel', 'reset', 'clear', 'subscribe', 'newsletter', 'search', 'login', 'sign in', 'translate', 'translation', '이전', '취소', '초기화', '지우기', 'book', 'reserve', '번역', 'google-translate'];
+
+            function isRejectedContext(el) {
+                if (!el) return true;
+                if (typeof isExcludedOverlayElement === 'function' && isExcludedOverlayElement(el)) return true;
+                // Reject navigation / header / footer / menu controls (Test Case 9)
+                if (typeof el.closest === 'function') {
+                    if (el.closest('header, nav, footer, [role="navigation"], .header, .nav, .menu, .footer, #header, #nav, #footer')) {
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            // 1. Native DOM controls in form (and shadow DOM)
+            const nativeSelector = 'button[type="submit"], input[type="submit"], input[type="image"], button, [role="button"], input[type="button"]';
+            const nativeButtons = (typeof querySelectorAllIncludingShadowDOM === 'function')
+                ? querySelectorAllIncludingShadowDOM(form, nativeSelector)
+                : Array.from(form.querySelectorAll ? form.querySelectorAll(nativeSelector) : []);
+
+            // 2. Associated external controls
+            const externalButtons = [];
+            const safeFormIdStr = (form && typeof form.id === 'string') ? form.id : (form && typeof form.getAttribute === 'function' ? (form.getAttribute('id') || '') : '');
+            if (safeFormIdStr && typeof document !== 'undefined' && document.querySelectorAll) {
+                try {
+                    const escId = (typeof CSS !== 'undefined' && CSS.escape) ? CSS.escape(safeFormIdStr) : safeFormIdStr;
+                    const externals = Array.from(document.querySelectorAll(`button[form="${escId}"], input[form="${escId}"], [data-form="${escId}"]`));
+                    for (const eb of externals) {
+                        if (!nativeButtons.includes(eb) && !externalButtons.includes(eb)) externalButtons.push(eb);
+                    }
+                } catch (_) {}
+            }
+
+            // 3. Custom semantic controls inside form (<a>, clickable <div>, <span>, custom CTA components)
+            const customSelector = 'a, [class*="submit"], [id*="submit"], [class*="send"], [id*="send"], [class*="btn"], [class*="button"], [class*="cta"], [onclick], [tabindex]';
+            const customRaw = (typeof querySelectorAllIncludingShadowDOM === 'function')
+                ? querySelectorAllIncludingShadowDOM(form, customSelector)
+                : Array.from(form.querySelectorAll ? form.querySelectorAll(customSelector) : []);
+
+            const customButtons = [];
+            for (const el of customRaw) {
+                if (nativeButtons.includes(el) || externalButtons.includes(el)) continue;
+                const tag = (el.tagName || '').toUpperCase();
+                if (['A', 'DIV', 'SPAN', 'P'].includes(tag)) {
+                    customButtons.push(el);
+                }
+            }
+
+            const allGathered = [
+                ...nativeButtons.map(b => ({ el: b, kind: 'native' })),
+                ...externalButtons.map(b => ({ el: b, kind: 'external' })),
+                ...customButtons.map(b => ({ el: b, kind: 'custom' }))
+            ];
+
+            const seenElements = new Set();
+
+            for (const item of allGathered) {
+                const btn = item.el;
+                if (!btn || seenElements.has(btn)) continue;
+                seenElements.add(btn);
+
+                if (isRejectedContext(btn)) continue;
+
+                const text = (btn.textContent || btn.value || btn.getAttribute('aria-label') || '').toLowerCase().trim();
+                const type = (btn.type || '').toLowerCase();
+                const cls = (btn.className || '').toString().toLowerCase();
+                const id = (btn.id || '').toLowerCase();
+                const tag = (btn.tagName || '').toUpperCase();
+                const role = (btn.getAttribute('role') || '').toLowerCase();
+
+                // Strict rejection for search, login, newsletter, booking, cancel, back
+                if (rejectKeywords.some(kw => text.includes(kw) || cls.includes(kw))) continue;
+
+                // Check for multi-step Next/Continue
+                if (nextKeywords.some(kw => text.includes(kw) || cls.includes(kw))) {
+                    multiStepCandidates.push({ button: btn, text });
+                    continue;
+                }
+
+                const hasSubmitKeyword = submitKeywords.some(kw => text.includes(kw));
+
+                // For custom elements (<a>, <div>, <span>), require positive submit keyword or submit/send class/id
+                if (item.kind === 'custom') {
+                    const hasSubmitIdentifier = /submit|send/i.test(cls) || /submit|send/i.test(id);
+                    if (!hasSubmitKeyword && !hasSubmitIdentifier) {
+                        continue;
+                    }
+                }
+
+                let score = 0;
+                let rankTier = 5;
+
+                // 1. Native submit button owned by form
+                if (type === 'submit' && form.contains(btn)) {
+                    rankTier = 1;
+                    score = 150;
+                }
+                // 2. Associated external submitter
+                else if (safeFormIdStr && (btn.getAttribute('form') === safeFormIdStr)) {
+                    rankTier = 2;
+                    score = 130;
+                }
+                // 3. Framework final submit button
+                else if (/hs-button|gform_button|wpcf7-submit|wpforms-submit|wixui-button|nf-btn/i.test(cls)) {
+                    rankTier = 3;
+                    score = 115;
+                }
+                // 4. Semantic <a> Send/Submit inside form
+                else if (tag === 'A' && hasSubmitKeyword) {
+                    rankTier = 4;
+                    score = 100;
+                }
+                // 5. Semantic Send/Submit button or clickable div/span
+                else if (hasSubmitKeyword) {
+                    rankTier = 5;
+                    score = 90;
+                }
+                // 6. General button
+                else {
+                    rankTier = 6;
+                    score = 50;
+                }
+
+                if (/submit|send/i.test(cls) || /submit|send/i.test(id)) score += 15;
+                if (tag === 'BUTTON') score += 10;
+                if (tag === 'INPUT' && (type === 'button' || type === 'text')) score -= 15;
+                if (text === 'send' || text === 'submit' || text === 'send message') score += 20;
+
+                const insideForm = form.contains(btn);
+                const associated = insideForm || (safeFormIdStr && btn.getAttribute('form') === safeFormIdStr);
+
+                candidates.push({
+                    button: btn,
+                    score,
+                    rankTier,
+                    kind: item.kind,
+                    tag: tag.toLowerCase(),
+                    role: role || (type === 'submit' ? 'submit' : 'none'),
+                    label: text.substring(0, 30),
+                    insideForm,
+                    associated
+                });
+            }
+
+            candidates.sort((a, b) => {
+                if (a.rankTier !== b.rankTier) return a.rankTier - b.rankTier;
+                return b.score - a.score;
+            });
+
+            // Diagnostic logging
+            const nativeCount = candidates.filter(c => c.kind === 'native').length;
+            const externalCount = candidates.filter(c => c.kind === 'external').length;
+            const customCount = candidates.filter(c => c.kind === 'custom').length;
+            const visionCount = 0;
+
+            console.log(`[SUBMIT_CANDIDATES] total=${candidates.length} native=${nativeCount} external=${externalCount} custom=${customCount} vision=${visionCount}`);
+            logDev(`[SUBMIT_CANDIDATES] total=${candidates.length} native=${nativeCount} external=${externalCount} custom=${customCount} vision=${visionCount}`, "info");
+
+            for (const c of candidates) {
+                console.log(`[SUBMIT_CANDIDATE] tag=${c.tag} role=${c.role} label="${c.label}" insideForm=${c.insideForm} associated=${c.associated} score=${c.score}`);
+                logDev(`[SUBMIT_CANDIDATE] tag=${c.tag} role=${c.role} label="${c.label}" insideForm=${c.insideForm} associated=${c.associated} score=${c.score}`, "debug");
+            }
+
+            candidates.multiStepCandidates = multiStepCandidates;
+            return candidates;
+        }
+
+        isDisabled(button) {
+            if (!button) return true;
+            if (button.disabled) return true;
+            if (button.getAttribute && button.getAttribute('aria-disabled') === 'true') return true;
+            const cls = (button.className || '').toLowerCase();
+            if (/\b(disabled|is-disabled|btn-disabled|loading)\b/.test(cls)) return true;
+            if (button.style && (button.style.pointerEvents === 'none' || button.style.opacity === '0')) return true;
+            return false;
+        }
+
+        // 7.4 Disabled submit repair: identify exact blocking required field, repair only that field, commit/blur
+        async repairActivation(button) {
+            if (!button) return;
+            const form = this.form;
+            const tpl = this.template || {};
+
+            logDev("🛡️ [SubmitExecutorR5] Submit button is disabled. Running targeted blocking-field repair...", "info");
+
+            if (form && form.querySelectorAll) {
+                // Find invalid fields or empty required fields
+                const invalidInputs = Array.from(form.querySelectorAll(':invalid, [aria-invalid="true"]'));
+                for (const inp of invalidInputs) {
+                    try {
+                        if (inp.type === 'checkbox') {
+                            const ctx = ((inp.name || '') + ' ' + (inp.id || '') + ' ' + (inp.getAttribute('aria-label') || '')).toLowerCase();
+                            if (!/newsletter|marketing|sms|promo|subscribe/i.test(ctx)) {
+                                setNativeChecked(inp, true);
+                                inp.checked = true;
+                                inp.dispatchEvent(new Event('input', { bubbles: true }));
+                                inp.dispatchEvent(new Event('change', { bubbles: true }));
+                                if (typeof inp.blur === 'function') inp.blur();
+                            }
+                        } else if (inp.tagName === 'SELECT') {
+                            if (inp.options && inp.options.length > 1 && inp.selectedIndex <= 0) {
+                                inp.selectedIndex = 1;
+                                setNativeValue(inp, inp.options[1].value);
+                                inp.dispatchEvent(new Event('change', { bubbles: true }));
+                                if (typeof inp.blur === 'function') inp.blur();
+                            }
+                        } else if (!inp.value || inp.value.trim() === '') {
+                            const authorVal = getAuthoritativeValue(inp, { type: inp.type, name: inp.name }, tpl);
+                            if (authorVal) {
+                                setNativeValue(inp, authorVal);
+                                inp.value = authorVal;
+                                inp.dispatchEvent(new Event('input', { bubbles: true }));
+                                inp.dispatchEvent(new Event('change', { bubbles: true }));
+                                if (typeof inp.blur === 'function') inp.blur();
+                            }
+                        }
+                    } catch (_) {}
+                }
+            }
+
+            // Wait 350ms for framework state commit
+            await new Promise(r => setTimeout(r, 350));
+
+            // Recheck button
+            if (this.isDisabled(button)) {
+                logDev("⚠️ [SubmitExecutorR5] Submit button remains disabled after targeted blocking field repair pass", "warning");
+            }
+        }
+
+        checkPointerHit(submitter) {
+            if (!submitter) return { clickable: false, reason: 'NO_SUBMITTER' };
+            if (typeof document === 'undefined' || typeof document.elementFromPoint !== 'function') {
+                return { clickable: true, submitter, hit: submitter, isDescendant: true };
+            }
+            try {
+                if (typeof submitter.getBoundingClientRect !== 'function') {
+                    return { clickable: true, submitter, hit: submitter, isDescendant: true };
+                }
+                const rect = submitter.getBoundingClientRect();
+                const cx = rect.left + rect.width / 2;
+                const cy = rect.top + rect.height / 2;
+                if (cx < 0 || cy < 0 || (typeof window !== 'undefined' && (cx > window.innerWidth || cy > window.innerHeight))) {
+                    return { clickable: true, submitter, hit: submitter, isDescendant: true };
+                }
+
+                const hit = document.elementFromPoint(cx, cy);
+                if (!hit) {
+                    return { clickable: true, submitter, hit: submitter, isDescendant: true };
+                }
+
+                // [Issue #6 R6.5 Bug A Section C] elementFromPoint descendant handling
+                // Consider submitter clickable if:
+                // hit === submitter OR submitter.contains(hit) OR hit.closest(validSubmitterSelector) === submitter
+                const isDescendant = (hit === submitter) ||
+                    (typeof submitter.contains === 'function' && submitter.contains(hit)) ||
+                    (typeof hit.closest === 'function' && hit.closest('button, input[type="submit"], input[type="button"], [role="button"]') === submitter);
+
+                if (isDescendant) {
+                    logDev(`[SUBMIT_HITTEST] submitter=${submitter.tagName || 'BTN'} id=${submitter.id || 'none'}`);
+                    logDev(`[SUBMIT_HITTEST] hit=${hit.tagName || 'EL'} id=${hit.id || 'none'}`);
+                    logDev(`[SUBMIT_HITTEST] descendant=true`);
+                    logDev(`[SUBMIT_HITTEST] verdict=CLICKABLE`);
+                    return { clickable: true, submitter, hit, isDescendant: true };
+                }
+
+                // [Issue #6 R6.5 Bug A Section D] Blocker must be proven
+                const hitStyle = (typeof window !== 'undefined' && window.getComputedStyle) ? window.getComputedStyle(hit) : (hit.style || {});
+                const pointerEvents = hitStyle.pointerEvents || 'auto';
+                const display = hitStyle.display || 'block';
+                const visibility = hitStyle.visibility || 'visible';
+                const opacity = parseFloat(hitStyle.opacity !== undefined ? hitStyle.opacity : '1');
+
+                if (pointerEvents === 'none' || display === 'none' || visibility === 'hidden' || opacity === 0) {
+                    logDev(`[SUBMIT_HITTEST] submitter=${submitter.tagName || 'BTN'} id=${submitter.id || 'none'}`);
+                    logDev(`[SUBMIT_HITTEST] hit=${hit.tagName || 'EL'} id=${hit.id || 'none'}`);
+                    logDev(`[SUBMIT_HITTEST] descendant=false`);
+                    logDev(`[SUBMIT_HITTEST] verdict=CLICKABLE reason=blocker_non_interactive`);
+                    return { clickable: true, submitter, hit, isDescendant: false };
+                }
+
+                const blockerZ = hitStyle.zIndex || 'auto';
+                const subStyle = (typeof window !== 'undefined' && window.getComputedStyle) ? window.getComputedStyle(submitter) : (submitter.style || {});
+                const submitterZ = subStyle.zIndex || 'auto';
+                const blockerPosition = hitStyle.position || 'static';
+
+                logDev(`[SUBMIT_HITTEST] submitter=${submitter.tagName || 'BTN'} id=${submitter.id || 'none'}`);
+                logDev(`[SUBMIT_HITTEST] hit=${hit.tagName || 'EL'} id=${hit.id || 'none'} cls=${hit.className || 'none'}`);
+                logDev(`[SUBMIT_HITTEST] descendant=false`);
+                logDev(`[SUBMIT_HITTEST] blockerPosition=${blockerPosition}`);
+                logDev(`[SUBMIT_HITTEST] blockerZ=${blockerZ}`);
+                logDev(`[SUBMIT_HITTEST] submitterZ=${submitterZ}`);
+                logDev(`[SUBMIT_HITTEST] verdict=BLOCKED`);
+
+                return { clickable: false, submitter, hit, blocker: hit, isDescendant: false };
+            } catch (_) {
+                return { clickable: true, submitter, hit: submitter, isDescendant: true };
+            }
+        }
+
+        async safeDismissOverlay(blocker) {
+            if (!blocker) return false;
+            try {
+                const overlayCls = ((blocker.className || '') + ' ' + (blocker.id || '')).toLowerCase();
+                const closeBtn = blocker.querySelector ? blocker.querySelector('.close, [aria-label*="close" i], button.dismiss, button.accept, #accept-cookies, [id*="cookie" i] button, [class*="cookie" i] button') : null;
+                if (closeBtn && typeof closeBtn.click === 'function') {
+                    logDev("🛡️ [SubmitExecutorR5] Safe overlay dismissal: dismissing modal/cookie consent banner", "info");
+                    closeBtn.click();
+                    await new Promise(r => setTimeout(r, 150));
+                    return true;
+                }
+            } catch (_) {}
+            return false;
+        }
+
+        async handleOverlay(submitter) {
+            if (!submitter) return { ok: false, reason: 'NO_SUBMITTER' };
+            try {
+                if (typeof submitter.scrollIntoView === 'function') {
+                    submitter.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    await new Promise(r => setTimeout(r, 100));
+                }
+                const hitRes = this.checkPointerHit(submitter);
+                if (hitRes && !hitRes.clickable && hitRes.blocker) {
+                    await this.safeDismissOverlay(hitRes.blocker);
+                    const recheck = this.checkPointerHit(submitter);
+                    if (recheck && !recheck.clickable) {
+                        return { ok: false, reason: 'SUBMIT_CLICK_BLOCKED_BY_OVERLAY' };
+                    }
+                }
+            } catch (_) {}
+            return { ok: true };
+        }
+
+        // 7.1 Pre-submit readiness pass
+        async checkPreSubmitReadiness(expectedSnapshot) {
+            const form = this.form;
+            if (!form) return { ready: false, reasonCode: 'NO_FORM' };
+
+            // 1. Field integrity check
+            if (expectedSnapshot && typeof verifyFieldIntegrity === 'function') {
+                const integrity = verifyFieldIntegrity(form, expectedSnapshot, this.template);
+                if (!integrity.intact) {
+                    return { ready: false, reasonCode: integrity.reasonCode || 'FIELD_INTEGRITY_COMPROMISED' };
+                }
+            }
+
+            // 2. checkValidity
+            if (typeof form.checkValidity === 'function') {
+                let isValid = false;
+                try { isValid = form.checkValidity(); } catch (_) { isValid = true; }
+                if (!isValid) {
+                    return { ready: false, reasonCode: 'VALIDATION_FAILED' };
+                }
+            }
+
+            // 3. No visible field-level error messages
+            if (typeof document !== 'undefined' && form.querySelectorAll) {
+                const visibleErrors = Array.from(form.querySelectorAll('.error, .invalid, [aria-invalid="true"], .wpcf7-not-valid-tip, .gfield_error'))
+                    .filter(el => typeof elementIsVisible === 'function' ? elementIsVisible(el) : true);
+                if (visibleErrors.length > 0) {
+                    logDev(`⚠️ [PreSubmitReadiness] Visible field errors detected (${visibleErrors.length})`, "warning");
+                }
+            }
+
+            return { ready: true };
+        }
+
+        // 7.3 Activation ladder
+        async execute() {
+            const form = this.form;
+            const tpl = this.template || {};
+            const options = this.options || {};
+
+            // Stop stabilizers & sweepers
+            stopActiveEmptyFieldSweeper();
+            if (tpl && typeof tpl.stop === 'function') {
+                try { tpl.stop(); } catch(_) {}
+            }
+
+            // Blur active input
+            if (typeof document !== 'undefined' && document.activeElement && typeof document.activeElement.blur === 'function') {
+                try { document.activeElement.blur(); } catch(_) {}
+            }
+
+            // Pre-submit readiness check
+            const readiness = await this.checkPreSubmitReadiness(options.expectedSnapshot);
+            if (!readiness.ready && readiness.reasonCode === 'FIELD_INTEGRITY_COMPROMISED') {
+                logDev(`❌ [SubmitExecutorR5] Pre-submit readiness failed: ${readiness.reasonCode}`, "error");
+                return { success: false, reasonCode: readiness.reasonCode };
+            }
+
+            // [Receipt Integrity Defense] Snapshot any pre-existing receipt identifiers before submission
+            // to prevent accepting fake pre-submit DOM injections as genuine post-submit receipts
+            let preSubmitReceiptSnapshot = null;
+            try {
+                const existingRcptEl = (typeof document !== 'undefined') ? document.querySelector('[data-receipt-id], #xpider-receipt-id, meta[name="receipt-id"]') : null;
+                if (existingRcptEl) {
+                    preSubmitReceiptSnapshot = existingRcptEl.getAttribute('data-receipt-id') || existingRcptEl.getAttribute('content') || (existingRcptEl.textContent ? existingRcptEl.textContent.trim() : null);
+                }
+            } catch (_) {}
+            this.preSubmitReceiptSnapshot = preSubmitReceiptSnapshot;
+
+            // [R6.9G.10.3.5.1 Section 3] SubmitExecutorR5 Defense-in-Depth Privacy Barrier
+            if (typeof window !== 'undefined' && window.__xpider_sendExecutionMessage) {
+                const privCheck = await new Promise(res => {
+                    const t = setTimeout(() => res({ ready: false, reason: 'privacy_barrier_timeout' }), 3000);
+                    try {
+                        window.__xpider_sendExecutionMessage({ action: 'ASSERT_PRIVACY_TRANSPORT_READY', context: 'SUBMIT_EXECUTOR_BARRIER' }, r => {
+                            clearTimeout(t);
+                            res(r);
+                        });
+                    } catch (e) {
+                        clearTimeout(t);
+                        res({ ready: false, reason: 'privacy_send_error:' + e.message });
+                    }
+                }).catch(() => ({ ready: false, reason: 'privacy_exception' }));
+                if (!privCheck || privCheck.ready !== true) {
+                    const blkReason = privCheck?.reason || 'PRIVACY_GATE_NOT_READY';
+                    logDev(`[PRIVACY_SUBMIT_BLOCK] reason=${blkReason} — SubmitExecutorR5 activation withheld`, "error");
+                    return { success: false, reasonCode: 'PRIVACY_GATEWAY_BLOCKED_BEFORE_SUBMIT' };
+                }
+            }
+
+            let submitEventFired = false;
+            const onSubmit = () => { submitEventFired = true; };
+            if (form && typeof form.addEventListener === 'function') {
+                form.addEventListener('submit', onSubmit, { once: true });
+            }
+
+            // Candidate discovery
+            const candidates = this.discoverSubmitActions();
+            const multiStepCandidates = (candidates && candidates.multiStepCandidates) || [];
+            const primary = candidates.length > 0 ? candidates[0].button : null;
+            const alternate = candidates.length > 1 ? candidates[1].button : null;
+
+            if (primary) {
+                const chosenTag = (primary.tagName || 'button').toLowerCase();
+                const chosenStrategy = candidates[0].kind || 'button_click';
+                console.log(`[SUBMIT_DECISION] chosen=${chosenTag} strategy=${chosenStrategy}`);
+                logDev(`[SUBMIT_DECISION] chosen=${chosenTag} strategy=${chosenStrategy}`, "info");
+
+                if (this.isDisabled(primary)) {
+                    await this.repairActivation(primary);
+                }
+
+                // If still disabled after repair, unlock for activation pass
+                if (this.isDisabled(primary)) {
+                    logDev("🔓 [SubmitExecutorR5] Unlocking disabled submit button for execution...", "info");
+                    try {
+                        primary.removeAttribute('disabled');
+                        primary.disabled = false;
+                        primary.removeAttribute('aria-disabled');
+                        primary.classList.remove('disabled', 'is-disabled', 'btn-disabled');
+                        if (primary.style) {
+                            primary.style.pointerEvents = 'auto';
+                            if (primary.style.opacity === '0') primary.style.opacity = '1';
+                        }
+                    } catch (_) {}
+                }
+
+                // [Issue #6 R6 SUBMIT-R2-1] If still disabled after repair, handle per observeDisabledMs option
+                if (this.isDisabled(primary) && options.observeDisabledMs > 0) {
+                    const observeMs = options.observeDisabledMs;
+                    const pollInterval = 50;
+                    const deadline = Date.now() + observeMs;
+                    while (Date.now() < deadline) {
+                        await new Promise(r => setTimeout(r, pollInterval));
+                        if (!this.isDisabled(primary)) break;
+                    }
+                    // After exhausting the wait window: if still disabled, fail with specific reason
+                    if (this.isDisabled(primary)) {
+                        return { success: false, reasonCode: 'SUBMIT_BUTTON_NEVER_ENABLED', strategy: 'none', submitEventFired: false };
+                    }
+                }
+
+                // [Issue #6 R6.9F.1] Non-native (semantic custom) submitters: ONE activation + bounded commit observation.
+                // A custom <a>/<div>/<span> control can run its handler, mutate the DOM, call fetch/XHR, and never fire a
+                // native form 'submit' event — so submitEventFired is NOT the only activation proof for these controls.
+                // ACTIVATION_PROVED != DELIVERY_CONFIRMED: final success is still decided by SubmissionOutcomeVerifier.
+                const _isNativeSubmitter = (chosenTag === 'button' || chosenTag === 'input') && form && form.tagName === 'FORM';
+                if (!_isNativeSubmitter && !this.isDisabled(primary)) {
+                    return await this._activateCustomSubmitter(primary, form, () => submitEventFired);
+                }
+
+                // [Issue #6 R6.6 Wix/Custom Form Adapter]
+                const safeWixFormId = (form && typeof form.id === 'string') ? form.id : (form && typeof form.getAttribute === 'function' ? (form.getAttribute('id') || '') : '');
+                const isWixOrCustom = form && (
+                    (safeWixFormId && safeWixFormId.includes('comp-')) ||
+                    (form.className && typeof form.className === 'string' && form.className.includes('wix')) ||
+                    (primary && (primary.textContent || '').trim().match(/^(send|submit|보내기|제출)$/i)) ||
+                    form.tagName !== 'FORM'
+                );
+
+                if (isWixOrCustom && !this.isDisabled(primary) && primary) {
+                    try {
+                        if (typeof primary.scrollIntoView === 'function') primary.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        if (typeof primary.click === 'function') primary.click();
+                        if (!submitEventFired) _dispatchSingleClickSequence(primary);
+                        if (submitEventFired) {
+                            return { success: true, reasonCode: 'SUBMIT_TRIGGERED', strategy: 'wix_adapter_click', submitEventFired: true };
+                        }
+                    } catch (_) {}
+                }
+
+                // [Issue #6 R6.5 Section 5: SUBMIT FAILURE RECOVERY ORDER]
+                // 1. requestSubmit(submitter) — visual overlay is irrelevant to requestSubmit
+                logDev(`[SUBMIT_TRIGGERED] strategy=requestSubmit candidate=${primary?.tagName || 'form'} id=${primary?.id || ''} name=${primary?.name || ''}`);
+                if (!this.isDisabled(primary) && form && form.tagName === 'FORM' && typeof form.requestSubmit === 'function') {
+                    try {
+                        form.requestSubmit(primary);
+                        if (submitEventFired) {
+                            return { success: true, reasonCode: 'SUBMIT_TRIGGERED', strategy: 'requestSubmit', submitEventFired: true };
+                        }
+                    } catch (e) {
+                        logDev(`⚠️ [SubmitExecutorR5] requestSubmit threw: ${e.message}`, "warning");
+                    }
+                }
+
+                // 2. if zero effect -> submitter.click() once (direct click does not require pointer hit testing)
+                if (!this.isDisabled(primary) && primary && typeof primary.click === 'function') {
+                    try {
+                        primary.click();
+                        if (submitEventFired) {
+                            return { success: true, reasonCode: 'SUBMIT_TRIGGERED', strategy: 'button_click', submitEventFired: true };
+                        }
+                    } catch (_) {}
+                }
+
+                // 3. if zero effect -> check pointer hit-test & fresh candidate re-query
+                const hitTest = this.checkPointerHit(primary);
+                if (!hitTest.clickable && hitTest.blocker) {
+                    // 4. if blocker exists -> safe overlay dismissal once
+                    await this.safeDismissOverlay(hitTest.blocker);
+                    // 5. re-query candidate
+                    const freshCandidates = this.discoverSubmitActions();
+                    const freshPrimary = freshCandidates.length > 0 ? freshCandidates[0].button : primary;
+                    // 6. retry ONE activation
+                    if (freshPrimary && !this.isDisabled(freshPrimary)) {
+                        if (form && form.tagName === 'FORM' && typeof form.requestSubmit === 'function') {
+                            try { form.requestSubmit(freshPrimary); } catch (_) {}
+                        }
+                        if (!submitEventFired && typeof freshPrimary.click === 'function') {
+                            try { freshPrimary.click(); } catch (_) {}
+                        }
+                        if (!submitEventFired) {
+                            try { _dispatchSingleClickSequence(freshPrimary); } catch (_) {}
+                        }
+                        if (submitEventFired) {
+                            return { success: true, reasonCode: 'SUBMIT_TRIGGERED', strategy: 'retry_after_overlay_dismiss', submitEventFired: true };
+                        }
+                    }
+                } else if (!this.isDisabled(primary)) {
+                    // Pointer simulation fallback on primary
+                    try {
+                        _dispatchSingleClickSequence(primary);
+                        if (submitEventFired) {
+                            return { success: true, reasonCode: 'SUBMIT_TRIGGERED', strategy: 'pointer_events', submitEventFired: true };
+                        }
+                    } catch (_) {}
+
+                    // Keyboard Enter fallback
+                    try {
+                        if (typeof primary.focus === 'function') primary.focus();
+                        const enterEvt = new KeyboardEvent('keydown', { key: 'Enter', code: 'Enter', keyCode: 13, which: 13, bubbles: true, cancelable: true });
+                        primary.dispatchEvent(enterEvt);
+                        if (submitEventFired) {
+                            return { success: true, reasonCode: 'SUBMIT_TRIGGERED', strategy: 'keyboard_enter', submitEventFired: true };
+                        }
+                    } catch (_) {}
+                }
+
+                // 7. try one alternate valid submitter
+                if (!submitEventFired && alternate && !this.isDisabled(alternate)) {
+                    try {
+                        if (typeof alternate.click === 'function') alternate.click();
+                        if (!submitEventFired) _dispatchSingleClickSequence(alternate);
+                        if (submitEventFired) {
+                            return { success: true, reasonCode: 'SUBMIT_TRIGGERED', strategy: 'alternate_candidate_click', submitEventFired: true };
+                        }
+                    } catch (_) {}
+                }
+
+                // [R6.7 VisionSubmitExecutor - Bounded Last Resort]
+                if (_VisionSubmitExecutor && !this._hasDispatchedVisionClick && this.options && this.options.allowVisionSubmit) {
+                    try {
+                        logDev("👁️ [VisionSubmit] Initiating VisionSubmitExecutor last-resort activation...", "info");
+                        const visionExecutor = new _VisionSubmitExecutor();
+                        const vResult = await visionExecutor.execute(form, { previousPhysicalClick: this._hasDispatchedVisionClick });
+                        if (vResult.physicalClickDispatched) {
+                            this._hasDispatchedVisionClick = true;
+                            if (vResult.success) {
+                                return { success: true, reasonCode: 'SUBMIT_TRIGGERED', strategy: 'vision_coordinate_click', submitEventFired: true, commitSignal: vResult.commitSignal };
+                            }
+                        }
+                    } catch (vErr) {
+                        logDev(`⚠️ [VisionSubmit] Error: ${vErr.message}`, "warning");
+                    }
+                }
+
+                // 8. only then terminal SUBMIT_ACTIVATION_EXHAUSTED or SUBMIT_CLICK_BLOCKED_BY_OVERLAY
+                if (submitEventFired) {
+                    return { success: true, reasonCode: 'SUBMIT_TRIGGERED', strategy: 'button_click', submitEventFired: true };
+                }
+                if (hitTest && !hitTest.clickable) {
+                    return { success: false, reasonCode: 'SUBMIT_CLICK_BLOCKED_BY_OVERLAY', strategy: 'none', submitEventFired: false };
+                }
+                return { success: false, reasonCode: 'SUBMIT_ACTIVATION_EXHAUSTED', strategy: 'none', submitEventFired: false };
+            } else if (multiStepCandidates.length > 0) {
+                // Multi-step form support: Bounded max 5 steps
+                logDev("🔄 [SubmitExecutorR5] Multi-step form detected (Next/Continue button)", "info");
+                const nextBtn = multiStepCandidates[0].button;
+                if (!this.isDisabled(nextBtn)) {
+                    _dispatchSingleClickSequence(nextBtn);
+                    return { success: true, reasonCode: 'MULTI_STEP_ADVANCED', strategy: 'multi_step_next', isMultiStep: true };
+                }
+            } else {
+                if (form && form.tagName === 'FORM' && typeof form.requestSubmit === 'function') {
+                    try {
+                        form.requestSubmit();
+                        return { success: true, reasonCode: 'SUBMIT_TRIGGERED', strategy: 'requestSubmit_no_button', submitEventFired: true };
+                    } catch (_) {}
+                }
+            }
+
+            // [R6.7 & R6.9F VisionSubmitExecutor - Bounded Last Resort before candidate failure]
+            if (!submitEventFired && _VisionSubmitExecutor && !this._hasDispatchedVisionClick && this.options && this.options.allowVisionSubmit) {
+                try {
+                    logDev("👁️ [VisionSubmit] Initiating VisionSubmitExecutor last-resort activation...", "info");
+                    const visionExecutor = new _VisionSubmitExecutor();
+                    const vResult = await visionExecutor.execute(form, { previousPhysicalClick: this._hasDispatchedVisionClick });
+                    if (vResult.physicalClickDispatched) {
+                        this._hasDispatchedVisionClick = true;
+                        if (vResult.success) {
+                            console.log('[SUBMIT_DECISION] chosen=vision strategy=vision_coordinate_click');
+                            logDev('[SUBMIT_DECISION] chosen=vision strategy=vision_coordinate_click', 'info');
+                            return { success: true, reasonCode: 'SUBMIT_TRIGGERED', strategy: 'vision_coordinate_click', submitEventFired: true, commitSignal: vResult.commitSignal };
+                        }
+                    }
+                } catch (vErr) {
+                    logDev(`⚠️ [VisionSubmit] Error: ${vErr.message}`, "warning");
+                }
+            }
+
+            // Stage E: FORCED_FORM_SUBMIT_LAST_RESORT (private-mode opt-in only)
+            if (this.options && this.options.allowForcedNativeSubmit && form && typeof form.submit === 'function' && readiness.ready) {
+                logDev("⚠️ [SubmitExecutorR5] FORCED_FORM_SUBMIT_LAST_RESORT executing...", "warning");
+                try {
+                    form.submit();
+                    return { success: true, reasonCode: 'SUBMIT_TRIGGERED', strategy: 'FORCED_FORM_SUBMIT_LAST_RESORT', submitEventFired: true };
+                } catch (_) {}
+            }
+
+            if (!submitEventFired) {
+                console.log('[SUBMIT_DECISION] chosen=none strategy=none');
+                logDev('[SUBMIT_DECISION] chosen=none strategy=none', 'warning');
+            }
+
+            return {
+                success: submitEventFired,
+                reasonCode: submitEventFired ? 'SUBMIT_TRIGGERED' : 'SUBMIT_CANDIDATE_NOT_FOUND',
+                strategy: submitEventFired ? 'event_bridge' : 'none',
+                submitEventFired
+            };
+        }
+    }
+
+    const SubmitExecutorR4 = SubmitExecutorR5; // Backwards compatibility alias
+    const SubmitExecutorR3 = SubmitExecutorR5; // Backwards compatibility alias
+
+    async function executeSubmitStateMachine(form, template = {}, options = {}) {
+        const isCfTarget = Boolean(
+            document.querySelector('.cf-turnstile, iframe[src*="challenges.cloudflare.com"], input[name="cf-turnstile-response"]') ||
+            window.location.href.includes('cf-turnstile')
+        );
+        if (isCfTarget) {
+            console.log('[TURNSTILE_LIVE_SUBMIT] triggered=true');
+            logDev('[TURNSTILE_LIVE_SUBMIT] triggered=true', 'info');
+        }
+        const executor = new SubmitExecutorR5(form, template, options);
+        return await executor.execute();
+    }
+
+    function _dispatchSingleClickSequence(el) {
+        if (!el) return;
+        try {
+            if (typeof PointerEvent !== 'undefined') {
+                el.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true }));
+            }
+            el.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
+            if (typeof PointerEvent !== 'undefined') {
+                el.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, cancelable: true }));
+            }
+            el.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, cancelable: true }));
+            el.click();
+        } catch (_) {
+            try { el.click(); } catch (_) {}
+        }
+    }
+
+    function submitForm(form) {
+        return executeSubmitStateMachine(form);
+    }
+
+    // ============================================================
+    // [Section C & Hotfix R2 / R6.9D] Submission Outcome Verifier (Target-Scoped)
+    // ============================================================
+    function getElementSignature(el) {
+        if (!el) return 'null';
+        try {
+            const tag = (el.tagName || '').toLowerCase();
+            const id = el.id ? `#${el.id}` : '';
+            const name = (el.getAttribute && el.getAttribute('name')) || el.name ? `[name="${(el.getAttribute && el.getAttribute('name')) || el.name}"]` : '';
+            let cls = '';
+            if (el.className && typeof el.className === 'string') {
+                cls = '.' + el.className.trim().split(/\s+/).slice(0, 3).join('.');
+            }
+            return `${tag}${id}${name}${cls}`;
+        } catch (_) {
+            return 'element';
+        }
+    }
+
+    const SERVER_ERROR_PATTERNS = [
+        '500 internal server error',
+        'internal server error',
+        'an error occurred while processing',
+        'submission failed',
+        'could not send message',
+        'failed to send message',
+        'could not be sent',
+        'error occurred while submitting',
+        'cannot send message',
+        'processing error',
+        '서버 오류',
+        '전송에 실패했습니다',
+        '오류가 발생했습니다'
+    ];
+
+    class SubmissionOutcomeVerifier {
+        constructor(form, template = {}, options = {}) {
+            this.form = form;
+            this.template = template;
+            this.options = options;
+            this.submitEventSeen = false;
+            this.preSnapshot = null;
+            this.startTime = 0;
+            this.observer = null;
+            this.decisiveOutcome = null;
+            this._onSubmit = () => { this.submitEventSeen = true; };
+            this.pollCount = 0;
+            this.domServerErrorFirstSeen = null;
+            this.domServerErrorPolls = 0;
+        }
+
+        prepare() {
+            this.startTime = Date.now();
+            this.submitEventSeen = false;
+            this.lastMutationTime = Date.now();
+            this.mutationCount = 0;
+            this.domServerErrorFirstSeen = null;
+            this.domServerErrorPolls = 0;
+            this._preExistingLoggedPhrases = new Set();
+            this.preSnapshot = this.capturePreSubmitSnapshot();
+
+            if (this.form && typeof this.form.addEventListener === 'function') {
+                this.form.addEventListener('submit', this._onSubmit, { once: true, capture: true });
+            }
+            if (typeof document !== 'undefined' && typeof document.addEventListener === 'function') {
+                document.addEventListener('submit', this._onSubmit, { once: true, capture: true });
+            }
+
+            if (typeof MutationObserver !== 'undefined' && typeof document !== 'undefined' && document.body) {
+                try {
+                    this.observer = new MutationObserver((mutations) => {
+                        this.lastMutationTime = Date.now();
+                        this.mutationCount += (mutations ? mutations.length : 1);
+                        if (!this.decisiveOutcome) {
+                            if (this._moEvalTimeout) return;
+                            this._moEvalTimeout = setTimeout(() => {
+                                this._moEvalTimeout = null;
+                                if (!this.decisiveOutcome) {
+                                    const quick = this.evaluateSignals();
+                                    if (quick && (quick.isDecisiveSuccess || quick.isDecisiveFailure)) {
+                                        this.decisiveOutcome = quick;
+                                    }
+                                }
+                            }, 100);
+                        }
+                    });
+                    this.observer.observe(document.body, { childList: true, subtree: true, characterData: true, attributes: true });
+                } catch (_) {}
+            }
+        }
+
+        cleanup() {
+            if (this._moEvalTimeout) {
+                clearTimeout(this._moEvalTimeout);
+                this._moEvalTimeout = null;
+            }
+            if (this.observer) {
+                try { this.observer.disconnect(); } catch (_) {}
+                this.observer = null;
+            }
+            if (this.form && typeof this.form.removeEventListener === 'function') {
+                this.form.removeEventListener('submit', this._onSubmit, { capture: true });
+            }
+            if (typeof document !== 'undefined' && typeof document.removeEventListener === 'function') {
+                document.removeEventListener('submit', this._onSubmit, { capture: true });
+            }
+        }
+
+        capturePreSubmitSnapshot() {
+            const url = (typeof window !== 'undefined') ? window.location.href : '';
+            const formSignature = this.form ? (this.form.id || this.form.className || this.form.name || 'form') : 'no_form';
+
+            let visibleErrorsCount = 0;
+            if (this.form && this.form.querySelectorAll) {
+                try {
+                    const errEls = this.form.querySelectorAll('.error, .invalid, [aria-invalid="true"], :invalid');
+                    for (const el of errEls) {
+                        if (typeof elementIsVisible === 'function' ? elementIsVisible(el) : true) visibleErrorsCount++;
+                    }
+                } catch (_) {}
+            }
+
+            const successContainers = (typeof document !== 'undefined' && document.querySelectorAll) ?
+                document.querySelectorAll('[data-testid*="success"], [class*="success"], [id*="success"], [role="alert"], [role="status"], .wixui-rich-text, .status-msg, .message-success') : [];
+            const existingSuccessTexts = new Set();
+            for (const el of successContainers) {
+                if (typeof elementIsVisible === 'function' ? elementIsVisible(el) : true) {
+                    existingSuccessTexts.add((el.textContent || '').trim().toLowerCase());
+                }
+            }
+
+            const successCandidates = (typeof document !== 'undefined' && document.querySelectorAll) ?
+                Array.from(document.querySelectorAll('[data-testid*="success"], [class*="success"], [id*="success"], [role="alert"], [role="status"], .wixui-rich-text, .status-msg, .message-success, div, p, span'))
+                    .filter(el => {
+                        const t = (el.textContent || '').trim().toLowerCase();
+                        return /thank you|thanks|message has been sent|successfully sent|문의가 정상적으로|접수되었습니다|감사합니다/i.test(t);
+                    }) : [];
+
+            const successSnapshots = successCandidates.map(node => ({
+                node,
+                text: (node.textContent || '').trim(),
+                wasVisible: typeof elementIsVisible === 'function' ? elementIsVisible(node) : false
+            }));
+            const visibleBefore = successSnapshots.filter(s => s.wasVisible).length;
+            console.log(`[SUCCESS_SNAPSHOT] candidates=${successSnapshots.length} visibleBefore=${visibleBefore}`);
+
+            // [R6.9D] Delta-based Negative Signals Pre-Snapshot
+            const preBodyText = (typeof document !== 'undefined' && document.body) ? (document.body.textContent || '').toLowerCase() : '';
+            const serverErrorPhrases = new Set();
+            for (const p of SERVER_ERROR_PATTERNS) {
+                if (preBodyText.includes(p)) serverErrorPhrases.add(p);
+            }
+
+            const serverErrorNodes = [];
+            if (typeof document !== 'undefined' && document.querySelectorAll) {
+                try {
+                    const allTextNodes = document.querySelectorAll('[role="alert"], [role="status"], .status-msg, .error, .message-error, .server-error, div, p, span');
+                    for (const node of allTextNodes) {
+                        const txt = (node.textContent || '').trim().toLowerCase();
+                        if (!txt) continue;
+                        const matched = SERVER_ERROR_PATTERNS.find(p => txt.includes(p));
+                        if (matched) {
+                            const wasVis = typeof elementIsVisible === 'function' ? elementIsVisible(node) : false;
+                            serverErrorNodes.push({
+                                node,
+                                text: txt,
+                                phrase: matched,
+                                wasVisible: wasVis,
+                                signature: getElementSignature(node)
+                            });
+                        }
+                    }
+                } catch (_) {}
+            }
+
+            const visibleValidationSignatures = new Set();
+            const validationTexts = new Set();
+            const validationNodes = [];
+            if (typeof document !== 'undefined' && document.querySelectorAll) {
+                try {
+                    const vEls = document.querySelectorAll('[role="alert"], .error, .invalid, [aria-invalid="true"], :invalid, .wpcf7-not-valid-tip, .gfield_error, .form-error, .help-block-error, .field-error');
+                    for (const el of vEls) {
+                        const isVis = typeof elementIsVisible === 'function' ? elementIsVisible(el) : false;
+                        const txt = (el.textContent || '').trim().toLowerCase();
+                        if (SERVER_ERROR_PATTERNS.some(p => txt.includes(p))) continue;
+                        const isAria = (el.getAttribute && el.getAttribute('aria-invalid') === 'true');
+                        const isNative = !!(el.validity && !el.validity.valid);
+                        const sig = getElementSignature(el);
+                        if (isVis) {
+                            visibleValidationSignatures.add(sig);
+                            if (txt) validationTexts.add(txt);
+                        }
+                        validationNodes.push({
+                            node: el,
+                            wasVisible: isVis,
+                            ariaInvalid: isAria,
+                            nativeInvalid: isNative,
+                            text: txt,
+                            signature: sig
+                        });
+                    }
+                } catch (_) {}
+            }
+
+            const preExistingWidgetErrors = new Set();
+            if (typeof document !== 'undefined' && document.querySelectorAll) {
+                try {
+                    const preWidgets = document.querySelectorAll('.g-recaptcha, .h-captcha, .cf-turnstile, [data-sitekey], iframe[src*="recaptcha"], iframe[src*="turnstile"], iframe[src*="hcaptcha"]');
+                    for (const pw of preWidgets) {
+                        const ds = pw.getAttribute && (pw.getAttribute('data-state') || pw.getAttribute('data-challenge-state') || '');
+                        const hasErrClass = pw.classList && (pw.classList.contains('error') || pw.classList.contains('recaptcha-error') || pw.classList.contains('turnstile-error'));
+                        const isAriaErr = pw.getAttribute && pw.getAttribute('aria-invalid') === 'true';
+                        if (ds === 'error' || ds === 'expired' || ds === 'failed' || hasErrClass || isAriaErr) {
+                            const sig = typeof getElementSignature === 'function' ? getElementSignature(pw) : (pw.id || pw.className || 'widget');
+                            preExistingWidgetErrors.add(sig);
+                        }
+                    }
+                } catch (_) {}
+            }
+
+            const negativeSignals = {
+                visibleErrorSignatures: visibleValidationSignatures,
+                validationTexts,
+                validationNodes,
+                serverErrorPhrases,
+                serverErrorNodes,
+                preExistingWidgetErrors,
+                bodyText: preBodyText
+            };
+
+            return {
+                url,
+                formSignature,
+                visibleErrorsCount,
+                bodyText: preBodyText,
+                existingSuccessTexts: Array.from(existingSuccessTexts),
+                successSnapshots,
+                negativeSignals
+            };
+        }
+
+        evaluateSignals(submitOutcome = {}) {
+            const currentUrl = (typeof window !== 'undefined') ? window.location.href : '';
+            const initialUrl = this.preSnapshot ? this.preSnapshot.url : '';
+            const urlChanged = (currentUrl !== initialUrl);
+
+            // 1. URL / Navigation Strong Signal (Issue #6 R6.8 P0-3 & P0-4: /search/ is strictly negative)
+            // [False-Positive Hardening]: Generic '/post' alone is strictly excluded from success keywords.
+            const successUrlKeywords = ['thank', 'thanks', 'success', 'confirm', 'submitted', 'message-sent', 'complete'];
+            const isSearchUrl = currentUrl.toLowerCase().includes('/search') || currentUrl.toLowerCase().includes('search=') || currentUrl.toLowerCase().includes('q=') || currentUrl.toLowerCase().includes('help.shopify.com');
+            const isSuccessUrl = urlChanged && !isSearchUrl && successUrlKeywords.some(k => currentUrl.toLowerCase().includes(k));
+
+            // [R6.9D] 2. Negative / Error Signals (Delta / Transition Based)
+            let newErrorsFound = false;
+            let validationErrorsCount = 0;
+            let validationErrorTransition = false;
+            let serverErrorFound = false;
+            let serverErrorTransition = false;
+            let actualTransportFailure = false;
+            let domServerErrorTransition = false;
+            let matchedServerError = 'none';
+
+            const elapsedNow = this.startTime ? (Date.now() - this.startTime) : 0;
+
+            // 2a. Actual transport failure (networkStatus >= 400 or transport rejection)
+            if (submitOutcome) {
+                const nStatus = submitOutcome.networkStatus !== undefined ? submitOutcome.networkStatus : null;
+                const isNet5xx = (typeof nStatus === 'number' && nStatus >= 500);
+                const isNet4xx = (typeof nStatus === 'number' && nStatus >= 400);
+                const isFrameworkReject = !!(submitOutcome.transportRejected || submitOutcome.fetchRejected || submitOutcome.promiseRejected || submitOutcome.transportStatus === 'FAILED' || submitOutcome.transportStatus === 'REJECTED');
+
+                if (isNet5xx || isNet4xx || isFrameworkReject) {
+                    actualTransportFailure = true;
+                    serverErrorFound = true;
+                    serverErrorTransition = true;
+                    matchedServerError = isNet5xx ? `HTTP_${nStatus}` : (isNet4xx ? `HTTP_${nStatus}_REJECT` : 'FRAMEWORK_TRANSPORT_REJECTED');
+                    logDev(`[NEGATIVE_SIGNAL] type=SERVER_ERROR source=NETWORK phrase="${matchedServerError}" preExisting=false transition=true visible=true firstSeenMs=${elapsedNow}`, 'error');
+                }
+            }
+
+            // 2a-2. JSON Form Echo / REST API Receipt Signal & False-Positive Hardening (Evaluated post-transport)
+            let isJsonFormReceipt = false;
+            let jsonReceiptErrorFound = false;
+
+            if (typeof document !== 'undefined' && document.body) {
+                const rawText = (document.body.innerText || document.body.textContent || '').trim();
+                if (rawText.startsWith('{') && rawText.endsWith('}')) {
+                    try {
+                        const parsed = JSON.parse(rawText);
+                        if (parsed && typeof parsed === 'object') {
+                            // Check for error properties or HTTP error status codes in JSON payload
+                            const hasErrorCode = (typeof parsed.statusCode === 'number' && parsed.statusCode >= 400) ||
+                                                 (typeof parsed.status === 'number' && parsed.status >= 400) ||
+                                                 (typeof parsed.code === 'number' && parsed.code >= 400);
+                            const hasErrorProp = !!(parsed.error || parsed.err || 
+                                                 (Array.isArray(parsed.errors) && parsed.errors.length > 0) || 
+                                                 (parsed.errors && typeof parsed.errors === 'object' && Object.keys(parsed.errors).length > 0) ||
+                                                 (Array.isArray(parsed.validation_errors) && parsed.validation_errors.length > 0) ||
+                                                 (parsed.validation_errors && typeof parsed.validation_errors === 'object' && Object.keys(parsed.validation_errors).length > 0));
+                            const hasNegativeStatus = parsed.success === false || 
+                                                      parsed.status === 'error' || 
+                                                      parsed.status === 'fail' || 
+                                                      parsed.status === 'failed' || 
+                                                      parsed.result === 'error' || 
+                                                      parsed.result === 'failed';
+
+                            // Check document title for HTTP errors (e.g. 400, 401, 403, 404, 422, 500, 502, 503)
+                            const docTitle = (typeof document.title === 'string' ? document.title.toLowerCase() : '');
+                            const titleHasHttpError = ['400', '401', '403', '404', '422', '500', '502', '503'].some(code => docTitle.includes(code));
+
+                            if (hasErrorCode || hasErrorProp || hasNegativeStatus || titleHasHttpError || actualTransportFailure) {
+                                jsonReceiptErrorFound = true;
+                                newErrorsFound = true;
+                                validationErrorsCount++;
+                                validationErrorTransition = true;
+                                if (hasErrorCode || titleHasHttpError || actualTransportFailure) {
+                                    serverErrorFound = true;
+                                    serverErrorTransition = true;
+                                    matchedServerError = `JSON_HTTP_${parsed.statusCode || parsed.status || parsed.code || 'ERROR'}`;
+                                }
+                                logDev(`[NEGATIVE_SIGNAL] type=JSON_RECEIPT_ERROR error="${parsed.error || JSON.stringify(parsed.errors) || parsed.message || 'VALIDATION_OR_HTTP_ERROR'}"`, 'error');
+                            } else {
+                                // Must have positive evidence: non-empty form echo with fields, or non-empty data/json echo, or explicit success flag
+                                const hasFormFields = parsed.form && typeof parsed.form === 'object' && Object.keys(parsed.form).length > 0;
+                                const hasJsonFields = parsed.json && typeof parsed.json === 'object' && Object.keys(parsed.json).length > 0;
+                                const hasDataContent = typeof parsed.data === 'string' && parsed.data.trim().length > 0 && !parsed.data.includes('error');
+                                const hasExplicitSuccess = parsed.success === true || parsed.status === 'ok' || parsed.status === 'success' || parsed.result === 'ok' || parsed.result === 'success';
+
+                                if ((hasFormFields || hasJsonFields || hasDataContent || hasExplicitSuccess) && !actualTransportFailure) {
+                                    isJsonFormReceipt = true;
+                                }
+                            }
+                        }
+                    } catch (_) {}
+                }
+            }
+
+            // 2b. DOM Server Error Transition (Only if no actual transport failure already asserted)
+            if (!actualTransportFailure && typeof document !== 'undefined') {
+                const preServerErrorPhrases = (this.preSnapshot && this.preSnapshot.negativeSignals && this.preSnapshot.negativeSignals.serverErrorPhrases) || 
+                    (this.preSnapshot && this.preSnapshot.bodyText ? new Set(SERVER_ERROR_PATTERNS.filter(p => this.preSnapshot.bodyText.includes(p))) : new Set());
+                const preServerErrorNodes = (this.preSnapshot && this.preSnapshot.negativeSignals && this.preSnapshot.negativeSignals.serverErrorNodes) || [];
+
+                // Check if hidden pre-existing server-error node transitioned to visible
+                for (const sn of preServerErrorNodes) {
+                    const nowVisible = typeof elementIsVisible === 'function' ? elementIsVisible(sn.node) : true;
+                    if (!sn.wasVisible && nowVisible) {
+                        domServerErrorTransition = true;
+                        serverErrorFound = true;
+                        serverErrorTransition = true;
+                        matchedServerError = sn.phrase;
+                        logDev(`[NEGATIVE_SIGNAL] type=SERVER_ERROR source=DOM phrase="${sn.phrase}" preExisting=false transition=true visible=true firstSeenMs=${elapsedNow}`, 'error');
+                        break;
+                    }
+                }
+
+                // Check visible nodes in DOM
+                if (!domServerErrorTransition) {
+                    // [R6.9F.2 Fix-A] Restore original broad selector so real DOM error
+                    // mutations (e.g. div textContent change) are still caught.
+                    // IPC saturation was caused by repeated logs, not the selector width.
+                    // The per-evaluation throttle Set below ensures each preExisting phrase
+                    // is logged at most once per 250ms poll cycle instead of once per matching node.
+                    const candidateEls = document.querySelectorAll ?
+                        document.querySelectorAll('[role="alert"], [role="status"], .status-msg, .error, .message-error, .server-error, .alert-danger, div, p, span') : [];
+                    // [R6.9F.2 Fix-A] Throttle preExisting phrase logs to at most once across the entire outcome verification run
+                    if (!this._preExistingLoggedPhrases) {
+                        this._preExistingLoggedPhrases = new Set();
+                    }
+                    for (const el of candidateEls) {
+                        const nowVis = typeof elementIsVisible === 'function' ? elementIsVisible(el) : true;
+                        if (!nowVis) continue;
+                        const txt = (el.textContent || '').trim().toLowerCase();
+                        if (!txt) continue;
+                        const matched = SERVER_ERROR_PATTERNS.find(p => txt.includes(p));
+                        if (matched) {
+                            const sig = getElementSignature(el);
+                            const preMatch = preServerErrorNodes.find(pn => pn.node === el || (pn.signature === sig && pn.phrase === matched));
+                            const preExistingInBody = preServerErrorPhrases.has(matched);
+
+                            if (preMatch && preMatch.wasVisible) {
+                                // Pre-existing visible error unchanged — log once across entire verification run
+                                if (!this._preExistingLoggedPhrases.has(matched)) {
+                                    this._preExistingLoggedPhrases.add(matched);
+                                    logDev(`[NEGATIVE_SIGNAL] type=SERVER_ERROR source=DOM phrase="${matched}" preExisting=true transition=false visible=true firstSeenMs=${elapsedNow}`, 'info');
+                                }
+                            } else if (!preExistingInBody || (preMatch && !preMatch.wasVisible)) {
+                                // Real new transition — this is a genuine post-submit error
+                                domServerErrorTransition = true;
+                                serverErrorFound = true;
+                                serverErrorTransition = true;
+                                matchedServerError = matched;
+                                logDev(`[NEGATIVE_SIGNAL] type=SERVER_ERROR source=DOM phrase="${matched}" preExisting=false transition=true visible=true firstSeenMs=${elapsedNow}`, 'error');
+                                break;
+                            } else {
+                                // Was in body text pre-submit — log once across entire verification run
+                                if (!this._preExistingLoggedPhrases.has(matched)) {
+                                    this._preExistingLoggedPhrases.add(matched);
+                                    logDev(`[NEGATIVE_SIGNAL] type=SERVER_ERROR source=DOM phrase="${matched}" preExisting=true transition=false visible=true firstSeenMs=${elapsedNow}`, 'info');
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // 2c. Validation Errors (Delta based) & CAPTCHA Rejection Detector
+            let captchaRejectionSignal = false;
+            let captchaEvidenceClass = null;
+            const CAPTCHA_REJECTION_PATTERNS = [
+                /recaptcha/i,
+                /turnstile/i,
+                /hcaptcha/i,
+                /\bcaptcha\b/i,
+                /\brobot\b/i,
+                /verification failed/i,
+                /보안문자/i,
+                /자동등록방지/i,
+                /\bchallenge\b/i
+            ];
+
+            if (typeof document !== 'undefined' && document.querySelectorAll) {
+                const preValidationNodes = (this.preSnapshot && this.preSnapshot.negativeSignals && this.preSnapshot.negativeSignals.validationNodes) || [];
+
+                const errEls = document.querySelectorAll('[role="alert"], .error, .invalid, [aria-invalid="true"], :invalid, .wpcf7-not-valid-tip, .gfield_error, .form-error, .help-block-error, .field-error');
+                for (const el of errEls) {
+                    const isVis = typeof elementIsVisible === 'function' ? elementIsVisible(el) : true;
+                    if (!isVis) continue;
+
+                    const txt = (el.textContent || '').trim().toLowerCase();
+                    const isAria = (el.getAttribute && el.getAttribute('aria-invalid') === 'true');
+                    const isNative = !!(el.validity && !el.validity.valid);
+                    const isErrorText = /error|failed|please correct|try again|required|invalid|문제|오류|실패/i.test(txt);
+                    if (SERVER_ERROR_PATTERNS.some(p => txt.includes(p))) continue;
+
+                    if (!isErrorText && !isAria && !isNative) continue;
+
+                    const sig = getElementSignature(el);
+                    const preMatch = preValidationNodes.find(pn => pn.node === el || pn.signature === sig);
+
+                    let isTransition = false;
+                    if (preMatch && preMatch.wasVisible) {
+                        const ariaTransition = (!preMatch.ariaInvalid && isAria);
+                        const nativeTransition = (!preMatch.nativeInvalid && isNative);
+                        const textTransition = (preMatch.text !== txt && isErrorText);
+
+                        if (ariaTransition || nativeTransition || textTransition) {
+                            validationErrorsCount++;
+                            newErrorsFound = true;
+                            validationErrorTransition = true;
+                            isTransition = true;
+                            logDev(`[NEGATIVE_SIGNAL] type=VALIDATION selector="${sig}" preExisting=false transition=true`, 'warning');
+                        } else {
+                            logDev(`[NEGATIVE_SIGNAL] type=VALIDATION selector="${sig}" preExisting=true transition=false`, 'info');
+                        }
+                    } else if (preMatch && !preMatch.wasVisible) {
+                        validationErrorsCount++;
+                        newErrorsFound = true;
+                        validationErrorTransition = true;
+                        isTransition = true;
+                        logDev(`[NEGATIVE_SIGNAL] type=VALIDATION selector="${sig}" preExisting=false transition=true`, 'warning');
+                    } else {
+                        validationErrorsCount++;
+                        newErrorsFound = true;
+                        validationErrorTransition = true;
+                        isTransition = true;
+                        logDev(`[NEGATIVE_SIGNAL] type=VALIDATION selector="${sig}" preExisting=false transition=true`, 'warning');
+                    }
+
+                    if (isTransition) {
+                        const isCaptchaText = CAPTCHA_REJECTION_PATTERNS.some(p => p.test(txt));
+                        const isCaptchaContainer = el.closest && Boolean(el.closest('.g-recaptcha, .h-captcha, .cf-turnstile, [data-sitekey], [class*="captcha" i], [id*="captcha" i]'));
+                        if (isCaptchaText) {
+                            captchaRejectionSignal = true;
+                            captchaEvidenceClass = 'DOM_CAPTCHA_ERROR_TEXT';
+                            logDev(`[CAPTCHA_REJECTION_DETECTED] source=DOM_TEXT text="${txt.substring(0, 80)}"`, 'error');
+                        } else if (isCaptchaContainer) {
+                            captchaRejectionSignal = true;
+                            captchaEvidenceClass = 'WIDGET_CONTAINER_ERROR';
+                            logDev(`[CAPTCHA_REJECTION_DETECTED] source=CONTAINER_SELECTOR text="${txt.substring(0, 80)}"`, 'error');
+                        }
+                    }
+                }
+
+                // 2d. Explicit CAPTCHA Widget Error States & Containers (Delta-Gated against pre-existing widget state)
+                const preWidgetErrors = this.preSnapshot?.negativeSignals?.preExistingWidgetErrors;
+                const captchaWidgets = document.querySelectorAll('.g-recaptcha, .h-captcha, .cf-turnstile, [data-sitekey], iframe[src*="recaptcha"], iframe[src*="turnstile"], iframe[src*="hcaptcha"]');
+                for (const cw of captchaWidgets) {
+                    const ds = cw.getAttribute && (cw.getAttribute('data-state') || cw.getAttribute('data-challenge-state') || '');
+                    const hasErrClass = cw.classList && (cw.classList.contains('error') || cw.classList.contains('recaptcha-error') || cw.classList.contains('turnstile-error'));
+                    const isAriaErr = cw.getAttribute && cw.getAttribute('aria-invalid') === 'true';
+                    if (ds === 'error' || ds === 'expired' || ds === 'failed' || hasErrClass || isAriaErr) {
+                        const sig = typeof getElementSignature === 'function' ? getElementSignature(cw) : (cw.id || cw.className || 'widget');
+                        if (preWidgetErrors && preWidgetErrors.has(sig)) {
+                            // [C8: Pre-existing widget error state] Stale pre-submit widget error must not falsely classify new submission as rejection
+                            continue;
+                        }
+                        captchaRejectionSignal = true;
+                        captchaEvidenceClass = 'WIDGET_STATE_ERROR';
+                        logDev(`[CAPTCHA_REJECTION_DETECTED] source=WIDGET_STATE state="${ds || 'error_class'}" transition=true`, 'error');
+                        break;
+                    }
+                }
+            }
+
+            // 2e. submitOutcome Rejection Metadata
+            if (submitOutcome) {
+                if (submitOutcome.captchaRejected) {
+                    captchaRejectionSignal = true;
+                    captchaEvidenceClass = submitOutcome.evidenceClass || 'SUBMIT_OUTCOME_CAPTCHA_REJECTED';
+                } else if (submitOutcome.error && CAPTCHA_REJECTION_PATTERNS.some(p => p.test(submitOutcome.error))) {
+                    captchaRejectionSignal = true;
+                    captchaEvidenceClass = 'SUBMIT_ERROR_METADATA';
+                }
+            }
+
+            // 3. Preexisting success node visibility transition (R6.6 & R6.7 & R6.9A)
+            let successVisibilityTransition = false;
+            if (this.preSnapshot && this.preSnapshot.successSnapshots) {
+                for (const s of this.preSnapshot.successSnapshots) {
+                    if (!s.wasVisible) {
+                        const nowVisible = typeof elementIsVisible === 'function' ? elementIsVisible(s.node) : true;
+                        if (nowVisible) {
+                            console.log(`[SUCCESS_TRANSITION] node=${s.node.tagName}#${s.node.id || 'none'} beforeVisible=false afterVisible=true`);
+                            logDev(`[SUCCESS_TRANSITION] node=${s.node.tagName}#${s.node.id || 'none'} beforeVisible=false afterVisible=true`, 'success');
+                            successVisibilityTransition = true;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            // 4. Strong DOM Success Signals
+            const commonSuccessKeywords = [
+                'thank you', 'thanks', '완료되었습니다', '성공적으로', '전송되었습니다', '제출되었습니다',
+                '접수되었습니다', '감사합니다', '문의가 접수', 'message sent', 'your message has been sent',
+                'successfully submitted', 'submission received', 'we received your message', 'we\'ll be in touch',
+                'ありがとうございます', '送信完了', '受け付けました', '提交成功', 'vielen dank', 'gesendet', 'erfolgreich', 'merci'
+            ];
+
+            // 4a. aria-live / role=status / role=alert success transition (R6.9A)
+            let ariaLiveSuccessTransition = false;
+            if (typeof document !== 'undefined' && document.querySelectorAll) {
+                const liveNodes = document.querySelectorAll('[aria-live], [role="status"], [role="alert"]');
+                for (const node of liveNodes) {
+                    if (typeof elementIsVisible === 'function' && !elementIsVisible(node)) continue;
+                    const txt = (node.textContent || '').trim().toLowerCase();
+                    if (!txt) continue;
+                    if (this.preSnapshot && this.preSnapshot.existingSuccessTexts && this.preSnapshot.existingSuccessTexts.includes(txt)) continue;
+                    if (commonSuccessKeywords.some(k => txt.includes(k))) {
+                        ariaLiveSuccessTransition = true;
+                        break;
+                    }
+                }
+            }
+
+            let newSuccessNodes = 0;
+            const frameworkSuccessSelectors = [
+                '.gform_confirmation_message',
+                '.wpcf7-mail-sent-ok',
+                '.wpcf7-response-output.wpcf7-mail-sent-ok',
+                '.wpforms-confirmation-container',
+                '.submitted-message',
+                '.nf-response-msg',
+                '[role="alert"]',
+                '[role="status"]',
+                '[aria-live="polite"]',
+                '[aria-live="assertive"]',
+                '[data-testid*="success"]',
+                '[class*="success"]',
+                '[id*="success"]',
+                '.message-success'
+            ];
+
+            if (typeof document !== 'undefined' && document.querySelectorAll) {
+                const nodes = document.querySelectorAll(frameworkSuccessSelectors.join(', '));
+                for (const node of nodes) {
+                    if (typeof elementIsVisible === 'function' && !elementIsVisible(node)) continue;
+                    const txt = (node.textContent || '').trim().toLowerCase();
+                    if (!txt) continue;
+                    if (this.preSnapshot && this.preSnapshot.existingSuccessTexts && this.preSnapshot.existingSuccessTexts.includes(txt)) continue;
+
+                    if (commonSuccessKeywords.some(k => txt.includes(k)) || 
+                        node.classList.contains('gform_confirmation_message') ||
+                        node.classList.contains('wpcf7-mail-sent-ok') ||
+                        node.classList.contains('wpforms-confirmation-container') ||
+                        node.classList.contains('submitted-message') ||
+                        node.classList.contains('nf-response-msg')) {
+                        newSuccessNodes++;
+                    }
+                }
+            }
+
+            // Body text delta
+            let successTextTransition = false;
+            const currentBodyText = (typeof document !== 'undefined' && document.body) ? (document.body.textContent || '').toLowerCase() : '';
+            if (this.preSnapshot) {
+                for (const kw of commonSuccessKeywords) {
+                    if (currentBodyText.includes(kw) && (!this.preSnapshot.bodyText || !this.preSnapshot.bodyText.includes(kw))) {
+                        newSuccessNodes++;
+                        successTextTransition = true;
+                        break;
+                    }
+                }
+            }
+
+            // Submit button sent state (R6.9A)
+            let buttonSuccessState = false;
+            if (this.form && this.form.querySelector) {
+                const btn = this.form.querySelector('button[type="submit"], input[type="submit"], button');
+                if (btn) {
+                    const btnTxt = (btn.textContent || btn.value || '').trim().toLowerCase();
+                    if (/sent|submitted|완료|전송완료|보냄|complete|success/i.test(btnTxt)) {
+                        buttonSuccessState = true;
+                    }
+                }
+            }
+
+            // Medium Signals
+            const formStillThere = this.form && typeof document !== 'undefined' && document.body && (typeof document.body.contains === 'function' ? document.body.contains(this.form) : true);
+            const formHidden = this.form ? (typeof elementIsVisible === 'function' ? !elementIsVisible(this.form) : false) : false;
+
+            let formReset = false;
+            if (this.form && this.form.querySelector) {
+                const ta = this.form.querySelector('textarea');
+                const inputs = Array.from(this.form.querySelectorAll('input[type="text"], input[type="email"]'));
+                if (ta && ta.value === '' && inputs.length > 0 && inputs.every(i => !i.value || i.value.trim() === '')) {
+                    formReset = true;
+                }
+            }
+
+            let submitBtnDisabled = false;
+            if (this.form && this.form.querySelector) {
+                const btn = this.form.querySelector('button[type="submit"], input[type="submit"], button');
+                if (btn && (btn.disabled || (btn.classList && (btn.classList.contains('disabled') || btn.classList.contains('loading') || btn.classList.contains('busy'))))) {
+                    submitBtnDisabled = true;
+                }
+            }
+
+            const formReplaced = !formStillThere && (newSuccessNodes > 0 || successVisibilityTransition || ariaLiveSuccessTransition);
+
+            // [R6.9D Point 5] Positive success defeats stale/pre-existing negatives
+            const hasStrongPositive = isSuccessUrl || isJsonFormReceipt || newSuccessNodes > 0 || successVisibilityTransition || ariaLiveSuccessTransition || buttonSuccessState || formReplaced;
+            const isDecisiveSuccess = hasStrongPositive && !actualTransportFailure && !newErrorsFound && validationErrorsCount === 0;
+            const isDecisiveFailure = actualTransportFailure || (newErrorsFound && validationErrorsCount > 0);
+
+            return {
+                urlChanged,
+                isSuccessUrl,
+                isJsonFormReceipt,
+                newErrorsFound,
+                validationErrorsCount,
+                validationErrorTransition,
+                captchaRejected: captchaRejectionSignal,
+                captchaEvidenceClass,
+                serverErrorFound,
+                serverErrorTransition,
+                actualTransportFailure,
+                domServerErrorTransition,
+                matchedServerError,
+                newSuccessNodes,
+                successVisibilityTransition,
+                ariaLiveSuccessTransition,
+                successTextTransition,
+                buttonSuccessState,
+                formStillThere,
+                formHidden,
+                formReset,
+                formReplaced,
+                submitBtnDisabled,
+                hasStrongPositive,
+                isDecisiveSuccess,
+                isDecisiveFailure
+            };
+        }
+
+        async verify(submitOutcome = {}) {
+            logDev("🕵️ [SubmissionOutcomeVerifier] Verifying submission status (Multi-Polling)...", "info");
+            if (submitOutcome && submitOutcome.submitEventFired) {
+                this.submitEventSeen = true;
+            }
+
+            const baseWaitMs = (this.options && this.options.baseWaitMs) || 12000;
+            const extendedWaitMs = (this.options && this.options.extendedWaitMs) || 25000;
+            const transportWaitMs = (this.options && this.options.transportWaitMs) || 35000;
+            const intervalMs = (this.options && this.options.intervalMs) || 250;
+            const start = Date.now();
+            let finalDecision = null;
+            let finalSignals = null;
+            let pollCount = 0;
+            let domServerErrorFirstSeen = null;
+            let domServerErrorPolls = 0;
+
+            while (true) {
+                pollCount++;
+                const elapsed = Date.now() - start;
+                // [R6.9G.10.3.7.1.4.10] Authoritative Cloudflare Server-Side Siteverify Gate
+                // Server-side Siteverify derived response is strictly REQUIRED for Turnstile targets.
+                // DOM success text alone is strictly rejected without Siteverify confirmation.
+                const isCfTarget = Boolean(
+                    document.querySelector('.cf-turnstile, iframe[src*="challenges.cloudflare.com"], input[name="cf-turnstile-response"]') ||
+                    window.location.href.includes('cf-turnstile')
+                );
+
+                if (isCfTarget) {
+                    let siteverifyData = (typeof window !== 'undefined' && window.__siteverify_result) ? window.__siteverify_result : null;
+                    if (!siteverifyData) {
+                        const preEl = document.getElementById('siteverify-result');
+                        if (preEl && preEl.textContent && preEl.textContent.trim().startsWith('{')) {
+                            try { siteverifyData = JSON.parse(preEl.textContent); } catch (_) {}
+                        }
+                    }
+
+                    if (siteverifyData) {
+                        const svVerified = Boolean(siteverifyData.verified === true);
+                        const svHostname = siteverifyData.hostname || window.location.hostname;
+                        const svAction = siteverifyData.action || '';
+                        const svErrors = siteverifyData.error_codes || siteverifyData['error-codes'] || [];
+
+                        console.log(`[TURNSTILE_SITEVERIFY] success=${svVerified} hostname=${svHostname} action=${svAction} errorCodes=${JSON.stringify(svErrors)}`);
+                        logDev(`[TURNSTILE_SITEVERIFY] success=${svVerified} hostname=${svHostname} action=${svAction} errorCodes=${JSON.stringify(svErrors)}`, svVerified ? 'success' : 'error');
+
+                        if (svVerified) {
+                            console.log('[TURNSTILE_LIVE_FINAL] PASS');
+                            logDev('[TURNSTILE_LIVE_FINAL] PASS', 'success');
+                            finalDecision = 'CONFIRMED_SUCCESS';
+                            break;
+                        } else {
+                            console.log(`[TURNSTILE_LIVE_FINAL] FAIL reason=SITEVERIFY_FAILED errorCodes=${JSON.stringify(svErrors)}`);
+                            logDev(`[TURNSTILE_LIVE_FINAL] FAIL reason=SITEVERIFY_FAILED errorCodes=${JSON.stringify(svErrors)}`, 'error');
+
+                            const isTestKeyExpectedFail = window.location.href.includes('fail');
+                            if (isTestKeyExpectedFail) {
+                                console.log(`[CAPTCHA_LAB_CASE] url=${window.location.href} result=EXPECTED_FAIL_PASS reason=SITEVERIFY_FAILED_EXPECTED`);
+                                logDev(`[CAPTCHA_LAB_CASE] url=${window.location.href} result=EXPECTED_FAIL_PASS reason=SITEVERIFY_FAILED_EXPECTED`, 'info');
+                                finalDecision = 'EXPECTED_FAIL_PASS';
+                            } else {
+                                finalDecision = 'SUBMISSION_SERVER_ERROR';
+                            }
+                            break;
+                        }
+                    }
+
+                    // On Cloudflare target: do NOT allow DOM success to trigger CONFIRMED_SUCCESS without Siteverify!
+                    if (elapsed < (this.options?.extendedWaitMs || 15000)) {
+                        await new Promise(r => setTimeout(r, intervalMs));
+                        continue;
+                    }
+                }
+
+                const signals = this.evaluateSignals(submitOutcome);
+                finalSignals = signals;
+
+                // 1. Positive Success defeats stale/pre-existing negatives (R6.9D Point 5)
+                if (signals.hasStrongPositive && !signals.actualTransportFailure && !signals.captchaRejected) {
+                    finalDecision = 'CONFIRMED_SUCCESS';
+                    break;
+                }
+
+                // 2. Explicit CAPTCHA Rejection (F3 / F4 / C7: Prioritized over generic transport errors when explicit CAPTCHA rejection evidence exists)
+                if (signals.captchaRejected || (submitOutcome && submitOutcome.captchaRejected)) {
+                    finalDecision = 'CAPTCHA_TOKEN_REJECTED_BY_SITE';
+                    if (submitOutcome) submitOutcome.captchaRejected = true;
+                    break;
+                }
+
+                // 3. Actual Transport Failure (network >= 400 or transport rejection without explicit CAPTCHA rejection)
+                if (signals.actualTransportFailure) {
+                    finalDecision = 'SUBMISSION_SERVER_ERROR';
+                    break;
+                }
+
+                // 4. Generic Validation errors (Delta-based) => Immediate terminal
+                if (signals.newErrorsFound && signals.validationErrorsCount > 0) {
+                    finalDecision = 'SUBMIT_VALIDATION_BLOCKED';
+                    break;
+                }
+
+                // 4. DOM-only Server Error observation rule (R6.9D Point 3)
+                // - require a NEW error transition
+                // - require at least two consistent polls separated by >=250ms
+                // - require elapsed >= 750ms before terminal SUBMISSION_SERVER_ERROR
+                if (signals.domServerErrorTransition) {
+                    if (domServerErrorFirstSeen === null) {
+                        domServerErrorFirstSeen = Date.now();
+                        domServerErrorPolls = 1;
+                    } else {
+                        domServerErrorPolls++;
+                    }
+
+                    const timeSeparated = (Date.now() - domServerErrorFirstSeen >= 250);
+                    const elapsedEnough = (elapsed >= 750);
+                    const consistentPolls = (domServerErrorPolls >= 2);
+
+                    if (timeSeparated && elapsedEnough && consistentPolls) {
+                        finalDecision = 'SUBMISSION_SERVER_ERROR';
+                        break;
+                    }
+                    // Otherwise continue observing! Do not exit at t=3ms!
+                } else {
+                    domServerErrorFirstSeen = null;
+                    domServerErrorPolls = 0;
+                }
+
+                // 5. Composite Confirmed Outcome
+                if (submitOutcome && submitOutcome.success && !signals.newErrorsFound && !signals.serverErrorFound) {
+                    const hasPositiveConfirmation = signals.newSuccessNodes > 0 || signals.successVisibilityTransition || signals.ariaLiveSuccessTransition || signals.isSuccessUrl || signals.buttonSuccessState;
+                    const hasStructuralResolution = signals.formReset && (signals.formHidden || !signals.formStillThere);
+
+                    if ((hasPositiveConfirmation || hasStructuralResolution) && elapsed >= 750) {
+                        finalDecision = 'CONFIRMED_SUCCESS_COMPOSITE';
+                        break;
+                    }
+                }
+
+                // Dynamic max wait calculation (R6.9A Section 7)
+                let maxWaitMs = baseWaitMs;
+                const recentMutation = (Date.now() - this.lastMutationTime < 2000);
+                const hasPendingActivity = this.submitEventSeen || (submitOutcome && submitOutcome.networkPending) || signals.submitBtnDisabled || recentMutation;
+                if (hasPendingActivity) {
+                    maxWaitMs = extendedWaitMs;
+                }
+                if (submitOutcome && submitOutcome.transportPending) {
+                    maxWaitMs = transportWaitMs;
+                }
+
+                if (elapsed >= maxWaitMs) {
+                    break;
+                }
+
+                // Phase C: early exit if NO submit seen, NO button busy, NO form reset, and NO mutations
+                // Ensure ample time is provided for slow server response / registration completion
+                const minPhaseCTime = (this.options && this.options.extendedWaitMs && this.options.extendedWaitMs < 3500)
+                    ? this.options.extendedWaitMs
+                    : Math.max(8000, (this.options && this.options.submitDelayMs ? this.options.submitDelayMs * 2 : 8000));
+                if (elapsed > minPhaseCTime && !this.submitEventSeen && !signals.submitBtnDisabled && !signals.formReset && !recentMutation) {
+                    break;
+                }
+
+                await new Promise(r => setTimeout(r, intervalMs));
+            }
+
+            this.cleanup();
+
+            const totalLatency = Date.now() - start;
+            if (!finalDecision) {
+                if (finalSignals && (finalSignals.captchaRejected || (submitOutcome && submitOutcome.captchaRejected))) {
+                    finalDecision = 'CAPTCHA_TOKEN_REJECTED_BY_SITE';
+                } else if (finalSignals && finalSignals.actualTransportFailure) {
+                    finalDecision = 'SUBMISSION_SERVER_ERROR';
+                } else if (finalSignals && finalSignals.domServerErrorTransition && domServerErrorPolls >= 2 && totalLatency >= 750) {
+                    finalDecision = 'SUBMISSION_SERVER_ERROR';
+                } else if (finalSignals && finalSignals.newErrorsFound && finalSignals.validationErrorsCount > 0) {
+                    finalDecision = 'SUBMIT_VALIDATION_BLOCKED';
+                } else if (this.submitEventSeen || (submitOutcome && submitOutcome.submitEventFired) || (submitOutcome && submitOutcome.networkCommitObserved)) {
+                    // [R6.9F.2 Fix-B] Before falling back to DELIVERY_UNKNOWN, check structural
+                    // success evidence. formReset (fields cleared) after submission is a reliable
+                    // AJAX success indicator for React/Wix/SPA forms that don't navigate.
+                    const hasStructuralSuccess = !!(finalSignals && (finalSignals.formReset || finalSignals.formHidden || finalSignals.formReplaced || finalSignals.successTextTransition));
+                    const hasAnyPositive = !!(finalSignals && (finalSignals.newSuccessNodes > 0 || finalSignals.successVisibilityTransition || finalSignals.ariaLiveSuccessTransition || finalSignals.buttonSuccessState));
+                    if ((hasStructuralSuccess || hasAnyPositive) && !(finalSignals && finalSignals.serverErrorFound)) {
+                        logDev(`[SUBMIT_VERIFY] Promoting DELIVERY_UNKNOWN -> CONFIRMED_SUCCESS_COMPOSITE via structural evidence (formReset=${!!(finalSignals&&finalSignals.formReset)} textTransition=${!!(finalSignals&&finalSignals.successTextTransition)} positiveNode=${hasAnyPositive})`, 'success');
+                        finalDecision = 'CONFIRMED_SUCCESS_COMPOSITE';
+                    } else {
+                        finalDecision = 'DELIVERY_UNKNOWN';
+                    }
+                } else if (submitOutcome && submitOutcome.strategy === 'trusted_click_sequence' && !this.submitEventSeen) {
+                    finalDecision = 'SUBMIT_CLICK_NO_EFFECT';
+                } else {
+                    finalDecision = 'DELIVERY_UNKNOWN';
+                }
+            }
+
+            // Structured outcome evidence (R6.9A Section 3 & 7)
+            const isSuccess = (finalDecision === 'CONFIRMED_SUCCESS' || finalDecision === 'CONFIRMED_SUCCESS_COMPOSITE');
+            let confirmationStrength = 'NONE';
+            if (isSuccess) {
+                if (finalSignals && (finalSignals.isSuccessUrl || finalSignals.isJsonFormReceipt)) confirmationStrength = 'URL_CHANGE';
+                else if (submitOutcome && submitOutcome.networkCommitObserved) confirmationStrength = 'NETWORK_PLUS_DOM';
+                else confirmationStrength = 'STRONG_DOM';
+            }
+
+            const isCaptchaRejection = (finalDecision === 'CAPTCHA_TOKEN_REJECTED_BY_SITE' || (finalSignals && finalSignals.captchaRejected) || (submitOutcome && submitOutcome.captchaRejected));
+            const captchaEvidenceClass = (finalSignals && finalSignals.captchaEvidenceClass) || (submitOutcome && submitOutcome.evidenceClass) || (isCaptchaRejection ? 'DOM_CAPTCHA_ERROR_TEXT' : null);
+
+            const outcomeEvidence = {
+                submitAttempted: true,
+                submitEventSeen: !!this.submitEventSeen,
+                physicalClickDispatched: !!(submitOutcome && submitOutcome.physicalClickDispatched),
+                networkCommitObserved: !!(submitOutcome && submitOutcome.networkCommitObserved),
+                networkStatus: (submitOutcome && submitOutcome.networkStatus !== undefined) ? submitOutcome.networkStatus : null,
+                successNodeVisibleTransition: !!(finalSignals && finalSignals.successVisibilityTransition),
+                successTextTransition: !!(finalSignals && (finalSignals.successTextTransition || finalSignals.newSuccessNodes > 0)),
+                ariaLiveSuccessTransition: !!(finalSignals && finalSignals.ariaLiveSuccessTransition),
+                formReset: !!(finalSignals && finalSignals.formReset),
+                formHidden: !!(finalSignals && finalSignals.formHidden),
+                formReplaced: !!(finalSignals && finalSignals.formReplaced),
+                buttonSuccessState: !!(finalSignals && finalSignals.buttonSuccessState),
+                thankYouUrlTransition: !!(finalSignals && finalSignals.isSuccessUrl),
+                frameworkSuccessState: !!(finalSignals && finalSignals.newSuccessNodes > 0),
+                validationErrorTransition: !!(finalSignals && finalSignals.validationErrorTransition),
+                serverErrorTransition: !!(finalSignals && finalSignals.serverErrorTransition),
+                captchaRejected: !!isCaptchaRejection,
+                captchaEvidenceClass: captchaEvidenceClass,
+                confirmationStrength,
+                evidenceTimestamp: Date.now()
+            };
+
+            // Specification Required Diagnostic Output
+            logDev(`[SUBMIT_VERIFY] pollCount=${pollCount}`, "info");
+            logDev(`[SUBMIT_VERIFY] elapsedMs=${totalLatency}`, "info");
+            logDev(`[SUBMIT_VERIFY] transportStatus=${submitOutcome && (submitOutcome.transportStatus || submitOutcome.networkStatus || 'NONE')}`, "info");
+            logDev(`[SUBMIT_VERIFY] serverErrorTransition=${finalSignals ? !!finalSignals.serverErrorTransition : false}`, "info");
+            logDev(`[SUBMIT_VERIFY] matchedServerError=${finalSignals ? (finalSignals.matchedServerError || 'none') : 'none'}`, "info");
+            logDev(`[SUBMIT_VERIFY] submitEvent=${this.submitEventSeen}`, "info");
+            logDev(`[SUBMIT_VERIFY] urlChanged=${finalSignals ? finalSignals.urlChanged : false}`, "info");
+            logDev(`[SUBMIT_VERIFY] newSuccessNodes=${finalSignals ? finalSignals.newSuccessNodes : 0}`, "info");
+            logDev(`[SUBMIT_VERIFY] validationErrors=${finalSignals ? finalSignals.validationErrorsCount : 0}`, "info");
+            logDev(`[SUBMIT_VERIFY] formReset=${finalSignals ? finalSignals.formReset : false}`, "info");
+            logDev(`[SUBMIT_VERIFY] decision=${finalDecision}`, (isSuccess ? "success" : "warning"));
+            logDev(`[SUBMIT_VERIFY] latencyMs=${totalLatency}`, "info");
+
+            stopActiveEmptyFieldSweeper();
+
+            if (isSuccess) {
+                logDev(`[FINAL] status=${finalDecision}`, "success");
+                logDev("[STAGE] stage=CONFIRMED_SUCCESS", "success");
+                try {
+                    const sendProg = window.__xpider_sendExecutionMessage || chrome.runtime.sendMessage;
+                    sendProg({
+                        action: 'STAGE_PROGRESSION',
+                        stage: 'CONFIRMED_SUCCESS',
+                        url: window.location.href
+                    });
+                } catch (_) {}
+
+                // [R6.9E Post-Registration Completion Grace] Maintain page so registration finishes completely
+                const defaultGrace = (this.options && this.options.extendedWaitMs && this.options.extendedWaitMs <= 1000) ? 0 : 3000;
+                const postSubmitGraceMs = (this.options && this.options.submitDelayMs !== undefined)
+                    ? parseInt(this.options.submitDelayMs)
+                    : defaultGrace;
+                if (postSubmitGraceMs > 0) {
+                    logDev(`⏳ [PostSubmit] Maintaining page for registration completion (${postSubmitGraceMs}ms)...`, "info");
+                    await new Promise(r => setTimeout(r, postSubmitGraceMs));
+                }
+
+                let extractedReceiptId = null;
+                const extractReceiptFn = () => {
+                    const rcptEl = (typeof document !== 'undefined') ? document.querySelector('[data-receipt-id], #xpider-receipt-id, meta[name="receipt-id"]') : null;
+                    let found = null;
+                    if (rcptEl) {
+                        found = rcptEl.getAttribute('data-receipt-id') || rcptEl.getAttribute('content') || (rcptEl.textContent ? rcptEl.textContent.trim() : null);
+                    }
+                    if (!found && typeof window !== 'undefined' && window.location.search) {
+                        try {
+                            const params = new URLSearchParams(window.location.search);
+                            found = params.get('receipt_id') || params.get('rcpt') || null;
+                        } catch (_) {}
+                    }
+                    if (!found) return null;
+                    found = String(found).trim();
+
+                    // 1. Format and length validation: must be safe identifier (3-128 chars, allowed charset)
+                    if (found.length < 3 || found.length > 128 || !/^[A-Za-z0-9_\-\.:#]+$/.test(found)) {
+                        logDev(`⚠️ [RECEIPT_REJECTED] Invalid format or length: "${found}"`, "warning");
+                        return null;
+                    }
+
+                    // 2. Pre-submit fake injection guard: reject if identical to element present BEFORE submit
+                    if (this.preSubmitReceiptSnapshot && found === this.preSubmitReceiptSnapshot) {
+                        logDev(`⚠️ [RECEIPT_REJECTED] Receipt "${found}" was pre-existing before form submission (fake/stale injection guard)`, "warning");
+                        return null;
+                    }
+
+                    // 3. Cross-target stale receipt guard: reject if carried over from prior target run
+                    const lastRunReceipt = (typeof sessionStorage !== 'undefined') ? sessionStorage.getItem('xpider_last_settled_receipt_id') : null;
+                    if (lastRunReceipt && found === lastRunReceipt) {
+                        logDev(`⚠️ [RECEIPT_REJECTED] Receipt "${found}" matches prior target settled receipt (cross-target stale replay guard)`, "warning");
+                        return null;
+                    }
+
+                    return found;
+                };
+
+                extractedReceiptId = extractReceiptFn();
+                if (!extractedReceiptId && postSubmitGraceMs > 0) {
+                    const pollStart = Date.now();
+                    while (!extractedReceiptId && (Date.now() - pollStart < Math.min(postSubmitGraceMs, 3000))) {
+                        await new Promise(r => setTimeout(r, 100));
+                        extractedReceiptId = extractReceiptFn();
+                    }
+                }
+                if (extractedReceiptId) {
+                    try { sessionStorage.setItem('xpider_last_settled_receipt_id', extractedReceiptId); } catch (_) {}
+                    outcomeEvidence.receiptId = extractedReceiptId;
+                    logDev(`[RECEIPT_DISCOVERED] receiptId=${extractedReceiptId}`, "info");
+                }
+
+                finishCampaign(true, null, finalDecision, {
+                    resultUrl: (typeof window !== 'undefined') ? window.location.href : '',
+                    decision: finalDecision,
+                    latencyMs: totalLatency,
+                    outcomeEvidence,
+                    confirmationStrength,
+                    receiptId: extractedReceiptId
+                });
+                return { success: true, reasonCode: 'SUBMISSION_CONFIRMED_SUCCESS', decision: finalDecision, latencyMs: totalLatency, outcomeEvidence };
+            } else if (finalDecision === 'CAPTCHA_TOKEN_REJECTED_BY_SITE') {
+                logDev(`[FINAL] status=CAPTCHA_TOKEN_REJECTED_BY_SITE`, "error");
+                sessionStorage.removeItem('xpider_submit_count');
+                finishCampaign(false, `Site rejected CAPTCHA token during form verification`, 'CAPTCHA_TOKEN_REJECTED_BY_SITE', {
+                    resultUrl: (typeof window !== 'undefined') ? window.location.href : '',
+                    decision: finalDecision,
+                    latencyMs: totalLatency,
+                    outcomeEvidence,
+                    confirmationStrength,
+                    captchaRejected: true,
+                    evidenceClass: captchaEvidenceClass || 'DOM_CAPTCHA_ERROR_TEXT'
+                });
+                return { success: false, reasonCode: 'CAPTCHA_TOKEN_REJECTED_BY_SITE', decision: finalDecision, latencyMs: totalLatency, outcomeEvidence };
+            } else {
+                logDev(`[FINAL] status=${finalDecision}`, "warning");
+                sessionStorage.removeItem('xpider_submit_count');
+                finishCampaign(false, `Submission outcome: ${finalDecision}`, finalDecision, {
+                    resultUrl: (typeof window !== 'undefined') ? window.location.href : '',
+                    decision: finalDecision,
+                    latencyMs: totalLatency,
+                    outcomeEvidence,
+                    confirmationStrength
+                });
+                return { success: false, reasonCode: 'SUBMISSION_OUTCOME_FAILURE', decision: finalDecision, latencyMs: totalLatency, outcomeEvidence };
+            }
+        }
+    }
+
+    async function detectSubmissionResult(originalForm, tpl = {}, preSnapshot = { elements: [], bodyText: "" }, submitOutcome = null) {
+        const verifier = new SubmissionOutcomeVerifier(originalForm, tpl);
+        if (preSnapshot && preSnapshot.elements) {
+            verifier.preSnapshot = {
+                url: (typeof window !== 'undefined') ? window.location.href : '',
+                formSignature: originalForm ? (originalForm.id || originalForm.name || 'form') : 'no_form',
+                visibleErrorsCount: 0,
+                bodyText: preSnapshot.bodyText || '',
+                existingSuccessTexts: preSnapshot.elements || []
+            };
+        } else {
+            verifier.prepare();
+        }
+        return await verifier.verify(submitOutcome);
+    }
+
+    function finishCampaign(success, error = null, reasonCode = null, metadata = {}) {
+        currentTargetLifecycleState = TargetLifecycleState.SETTLED;
+        // [RC3.60 P0] Stop heartbeat immediately so no more SENDER_LOG fires after terminal settlement
+        if (window.__xpider_heartbeat_interval) {
+            clearInterval(window.__xpider_heartbeat_interval);
+            window.__xpider_heartbeat_interval = null;
+        }
+        // [RC3.60 P0] Mark aborted so logDev short-circuits and running latch is cleared
+        window.__xpider_aborted = true;
+        window.__xpider_running = false;
+        if (window.__xpider_releaseProcessingLock) {
+            try { window.__xpider_releaseProcessingLock(typeof window !== 'undefined' && window.location ? window.location.href : null); } catch (_) {}
+        }
+        window.__xpider_active_single_flight = null; // [RC3.60 P0] Allow next START_SENDING on same URL
+        // [RC3.33 P0-B] Attempt-scoped reset upon terminal settlement
+        if (typeof resetCaptchaRuntimeState === 'function') {
+            resetCaptchaRuntimeState('finishCampaign');
+        } else if (typeof window !== 'undefined' && typeof window.__xpider_resetCaptchaRuntimeState === 'function') {
+            window.__xpider_resetCaptchaRuntimeState('finishCampaign');
+        }
+        sessionStorage.removeItem('xpider_pending_verify'); // [v17.6.0] Clear recovery flag
+        try { removeTopSolverHUD(success ? 'SUCCESS' : 'SETTLED'); } catch (_) {}
+        const sendFn = window.__xpider_sendExecutionMessage || chrome.runtime.sendMessage;
+        sendFn({
+            action: 'SENDER_FINISHED',
+            result: {
+                success: success,
+                error: error,
+                reasonCode: reasonCode || (success ? 'SUBMIT_OK_SIGNAL' : 'UNKNOWN'),
+                metadata: metadata
+            }
+        });
+    }
+
+    const FormDiscoveryEngineR2 = FormDiscoveryEngine; // R6 Alias
+
+    if (typeof window !== 'undefined') {
+        window.__xpiderTargetLifecycleState = TargetLifecycleState;
+        window.__xpiderGetTargetLifecycleState = getTargetLifecycleState;
+        window.__xpiderSetTargetLifecycleState = setTargetLifecycleState;
+        window.__xpiderFormStabilizer = FormStabilizer;
+        window.__xpiderSubmitStateMachine = executeSubmitStateMachine;
+        window.__xpiderStartActiveEmptyFieldSweeper = startActiveEmptyFieldSweeper;
+        window.__xpiderStopActiveEmptyFieldSweeper = stopActiveEmptyFieldSweeper;
+        window.__xpiderFreezeFieldValues = freezeFieldValues;
+        window.__xpiderVerifyFieldIntegrity = verifyFieldIntegrity;
+        window.__xpiderContactDiscoveryEngine = _ContactDiscoveryEngine;
+        window.__xpiderSubmissionOutcomeVerifier = SubmissionOutcomeVerifier;
+        window.__xpiderFormDiscoveryEngine = FormDiscoveryEngine;
+        window.__xpiderFormDiscoveryEngineR2 = FormDiscoveryEngineR2;
+        window.__xpiderSubmitExecutorR3 = SubmitExecutorR3;
+        window.__xpiderSubmitExecutorR4 = SubmitExecutorR4;
+        window.__xpiderSubmitExecutorR5 = SubmitExecutorR5;
+        window.__xpiderCheckboxResolverR2 = _CheckboxResolverR2;
+        window.__xpiderSelectResolverR2 = _SelectResolverR2;
+        window.__xpiderFinalFormCompletionEngine = _FinalFormCompletionEngine;
+        window.__xpiderVisionSubmitExecutor = _VisionSubmitExecutor;
+        window.__xpiderCollectAccessibleRoots = _FormDiscoveryEngineR2 ? _FormDiscoveryEngineR2.collectAccessibleRoots : null;
+        window.__xpiderStartAutofillForEligibleForm = _FormDiscoveryEngineR2 ? _FormDiscoveryEngineR2.startAutofillForEligibleForm : null;
+        window.__xpiderExtractAndSendPageEmails = extractAndSendPageEmails;
+        window.__xpiderExtractEmailsFromCurrentDom = extractEmailsFromCurrentDom;
+        window.__xpiderResetCaptchaRuntimeState = resetCaptchaRuntimeState;
+        window.__xpider_resetCaptchaRuntimeState = resetCaptchaRuntimeState;
+        window.__xpiderClassifyWafBlock = classifyWafBlock;
+        window.__xpiderIsPageWafBlocked = isPageWafBlocked;
+        window.__xpiderChallengeGate = _ChallengeGate;
+        window.__xpiderWaitForExternalOrUserChallengeV7 = waitForExternalOrUserChallengeV7;
+        window.__xpiderHandleV7ManualModeHold = handleV7ManualModeHold;
+        window.__xpiderRestoreFrozenSnapshot = restoreFrozenSnapshot;
+        window.__xpider_initialized = true;
+    }
+
+    if (typeof module !== 'undefined' && module.exports) {
+        module.exports = {
+            TargetLifecycleState,
+            getTargetLifecycleState,
+            setTargetLifecycleState,
+            FormStabilizer,
+            FormDiscoveryEngine,
+            FormDiscoveryEngineR2,
+            SubmitExecutorR3,
+            SubmitExecutorR4,
+            SubmitExecutorR5,
+            VisionSubmitExecutor: _VisionSubmitExecutor,
+            executeSubmitStateMachine,
+            startActiveEmptyFieldSweeper,
+            stopActiveEmptyFieldSweeper,
+            freezeFieldValues,
+            verifyFieldIntegrity,
+            submitForm,
+            fillAndSubmit,
+            SubmissionOutcomeVerifier,
+            checkForCaptcha,
+            tryAutoSolveCaptcha,
+            extractCaptchaSitekey,
+            classifyWafBlock,
+            isPageWafBlocked,
+            ContactGate: _ContactGate,
+            ChallengeGate: _ChallengeGate,
+            waitForExternalOrUserChallengeV7,
+            handleV7ManualModeHold,
+            requestManualFormAssist,
+            retryCurrentPageDetection,
+            restoreFrozenSnapshot,
+            SmartFieldResolver: _SmartFieldResolver,
+            ContactDiscoveryEngine: _ContactDiscoveryEngine,
+            CheckboxResolverR2: _CheckboxResolverR2,
+            SelectResolverR2: _SelectResolverR2,
+            FinalFormCompletionEngine: _FinalFormCompletionEngine,
+            collectAccessibleRoots: _FormDiscoveryEngineR2 ? _FormDiscoveryEngineR2.collectAccessibleRoots : null,
+            startAutofillForEligibleForm: _FormDiscoveryEngineR2 ? _FormDiscoveryEngineR2.startAutofillForEligibleForm : null,
+            extractAndSendPageEmails,
+            extractEmailsFromCurrentDom,
+            getCollectorGeneration: () => __emailCollectorGeneration,
+            setCollectorGeneration: (g) => { __emailCollectorGeneration = g; },
+            setCollectorBaseline: (b) => { __emailCollectorBaseline = b; },
+            getCollectorBaseline: () => __emailCollectorBaseline,
+            getCollectorReadyPromise: () => __emailCollectorReady
+        };
+    }
+})();

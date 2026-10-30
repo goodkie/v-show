@@ -1,0 +1,15 @@
+{
+  "tag": "v7.0.0-rc6",
+  "zipName": "XPIDER_V7.0.0_RC6_DUAL_MODE_OWNER_BETA.zip",
+  "zipSize": 53606654,
+  "zipSha": "256b9d936139c09cdc51ba4140652b428a831884e796a74f49b3ac8d9e2a296d",
+  "buildId": "V7.0.0-RC6-20261030-RESUME-CONTRAST-PARITY-PASS",
+  "backgroundSha": "04f2dad292a2d63202153cc270b45ab4ca6dbfb3bd6ae98abd3b7f40d219ca8d",
+  "contentScriptSha": "19345f75b1d1b0f4dc262f53bc275ed935f064f527d7b65b99238018371c9bb8",
+  "popupSha": "3683eb8bc4fcca37dba256d3115a9988a796dbdb3b83c4c85dbf7cd1a0628d2b",
+  "popupCssSha": "824346e47595feee776d67e209c5462738b59775ddc947ab3b0d819248030578",
+  "popupHtmlSha": "e78fb06b5ad58fb24d34b93da929578cdf64da2e7724e1423bdd0fba75989334",
+  "challengeGateSha": "509cf0be725a1b0e78d2caff4936a6fb85b0d6d35f24b39f7ee237112bc827f2",
+  "privacyGatewaySha": "bfa6a4d70ec77a10a508d94d8424d5b90aca6a2d45a09f64e70f7239ae28c6bb",
+  "builtAt": "2026-10-30T14:10:22.813Z"
+}

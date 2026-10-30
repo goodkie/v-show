@@ -1716,6 +1716,10 @@ async function hydrateSettings(overrideV2Store = null) {
                     } else if (isRunFinished) {
                         campPill.textContent = `CAMPAIGN: FINISHED (${cComp}/${totalTargets || qLen})`;
                         campPill.style.color = '#22c55e';
+                    } else if (campaignPaused || window.__xpider_has_paused_checkpoint) {
+                        const remDisplay = (typeof remainingTargets !== 'undefined' && remainingTargets > 0) ? remainingTargets : qLen;
+                        campPill.textContent = `CAMPAIGN: PAUSED (${remDisplay} remaining)`;
+                        campPill.style.color = '#00ffcc';
                     } else if (qLen > 0) {
                         campPill.textContent = `CAMPAIGN: READY (${qLen} URLs)`;
                         campPill.style.color = '#22c55e';
@@ -4130,8 +4134,21 @@ async function hydrateCampaignState() {
                 }
 
                 try {
-                    const st = await chrome.storage.local.get(['xpider_queue', 'xpider_total', 'xpider_success']);
-                    if (Array.isArray(st.xpider_queue) && st.xpider_queue.length > 0) {
+                    const st = await chrome.storage.local.get(['xpider_queue', 'xpider_total', 'xpider_success', 'xpider_paused_checkpoint', 'xpider_isPaused']);
+                    const cp = (response && response.hasPausedCheckpoint) ? (response.checkpoint || st.xpider_paused_checkpoint) : st.xpider_paused_checkpoint;
+                    const isPausedState = Boolean(response.isPaused || st.xpider_isPaused || (cp && Array.isArray(cp.remainingQueue) && cp.remainingQueue.length > 0 && !response.isActive));
+                    if (isPausedState && cp && Array.isArray(cp.remainingQueue) && cp.remainingQueue.length > 0) {
+                        campaignPaused = true;
+                        window.__xpider_has_paused_checkpoint = true;
+                        campaignQueue = [...cp.remainingQueue];
+                        remainingTargets = cp.remainingQueue.length;
+                        if (!totalTargets) totalTargets = cp.totalTargets || (cp.remainingQueue.length + (cp.visitedUrls ? cp.visitedUrls.length : 0));
+                        renderUrlsPreview(campaignQueue);
+                        const countDisplay = document.getElementById('url-count-display');
+                        if (countDisplay) {
+                            countDisplay.textContent = `${campaignQueue.length} (remaining) / ${totalTargets} URLs`;
+                        }
+                    } else if (Array.isArray(st.xpider_queue) && st.xpider_queue.length > 0) {
                         campaignQueue = [...st.xpider_queue];
                         if (!totalTargets) totalTargets = st.xpider_total || campaignQueue.length;
                         if (!successCount) successCount = st.xpider_success || 0;
@@ -8158,7 +8175,7 @@ function togglePause() {
     const dict = i18nData ? (i18nData[lang] || i18nData['en'] || {}) : {};
 
     // [V7-RC5 Directive #6522457298 Item 3] When already paused, prompt for Resume Mode (Automatic or Manual); Cancel preserves paused state!
-    if (campaignPaused) {
+    if (campaignPaused || window.__xpider_has_paused_checkpoint) {
         promptResumeCampaignMode();
         return;
     }
@@ -8304,6 +8321,7 @@ function wireResumeModeModalOnce() {
 }
 
 function promptResumeCampaignMode(defaultModeOverride) {
+    console.log('[RESUME_CLICK] promptResumeCampaignMode invoked, defaultModeOverride=', defaultModeOverride);
     wireResumeModeModalOnce();
     const openModalWithMode = (prevMode) => {
         const effectivePrev = (prevMode === 'MANUAL' || prevMode === 'AUTO')
@@ -8314,21 +8332,31 @@ function promptResumeCampaignMode(defaultModeOverride) {
         const modal = document.getElementById('resume-mode-modal-overlay');
         if (modal) {
             modal.classList.remove('hidden');
-            modal.style.display = 'flex';
+            modal.style.setProperty('display', 'flex', 'important');
+            modal.style.setProperty('visibility', 'visible', 'important');
+            modal.style.setProperty('opacity', '1', 'important');
+            modal.style.setProperty('pointer-events', 'auto', 'important');
+            console.log('[RESUME_MODAL_OPEN] Modal overlay displayed successfully. Mode=', effectivePrev);
+        } else {
+            console.error('[RESUME_MODAL_ERROR] #resume-mode-modal-overlay not found in DOM!');
         }
     };
 
-    if (defaultModeOverride === 'MANUAL' || defaultModeOverride === 'AUTO') {
-        openModalWithMode(defaultModeOverride);
-        return;
-    }
+    // 1. Open immediately and synchronously with best-known mode
+    const initialMode = (defaultModeOverride === 'MANUAL' || defaultModeOverride === 'AUTO')
+        ? defaultModeOverride
+        : (window.__xpider_last_paused_mode || currentCampaignMode || 'AUTO');
+    openModalWithMode(initialMode);
+
+    // 2. Refresh mode asynchronously from background if available
     if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
         chrome.runtime.sendMessage({ action: 'GET_STATE' }, (stateResp) => {
+            if (chrome.runtime.lastError) return;
             const stateMode = stateResp && (stateResp.pausedCampaignMode || stateResp.campaignMode);
-            openModalWithMode(stateMode);
+            if (stateMode === 'MANUAL' || stateMode === 'AUTO') {
+                openModalWithMode(stateMode);
+            }
         });
-    } else {
-        openModalWithMode(window.__xpider_last_paused_mode || currentCampaignMode || 'AUTO');
     }
 }
 
@@ -8336,7 +8364,9 @@ function cancelResumeCampaignModal() {
     const modal = document.getElementById('resume-mode-modal-overlay');
     if (modal) {
         modal.classList.add('hidden');
-        modal.style.display = 'none';
+        modal.style.setProperty('display', 'none', 'important');
+        modal.style.setProperty('visibility', 'hidden', 'important');
+        modal.style.setProperty('pointer-events', 'none', 'important');
     }
     // Strictly preserve paused state without dispatching RESUME_CAMPAIGN
     addDiagnosticLog('[Engine][ResumeModal] Cancel clicked — paused state preserved.');
@@ -8417,16 +8447,37 @@ function discardCheckpoint() {
 function checkResumableCheckpoint() {
     if (typeof chrome === 'undefined' || !chrome.runtime || !chrome.runtime.sendMessage) return;
     chrome.runtime.sendMessage({ action: 'GET_STATE' }, (stateResp) => {
+        if (chrome.runtime.lastError) return;
         const banner = document.getElementById('resumable-campaign-banner');
         const countEl = document.getElementById('resumable-remaining-count');
+        const resumeBtn = document.getElementById('resume-campaign-btn');
+        const pauseBtn = document.getElementById('pause-btn');
         if (!banner) return;
         if (stateResp && (stateResp.pausedCampaignMode || stateResp.campaignMode)) {
             window.__xpider_last_paused_mode = stateResp.pausedCampaignMode || stateResp.campaignMode;
         }
         if (stateResp && stateResp.hasPausedCheckpoint && !stateResp.isActive) {
+            campaignPaused = true;
+            window.__xpider_has_paused_checkpoint = true;
+            remainingTargets = stateResp.pausedRemainingCount || remainingTargets || 0;
             banner.classList.remove('hidden');
             banner.style.display = 'block';
             if (countEl) countEl.textContent = stateResp.pausedRemainingCount || 0;
+            
+            // Wire resume button directly to guarantee clickability
+            if (resumeBtn) {
+                resumeBtn.onclick = (e) => {
+                    if (e) e.preventDefault();
+                    resumeCampaign();
+                };
+            }
+            if (pauseBtn) {
+                pauseBtn.textContent = '▶️ Resume';
+                pauseBtn.style.backgroundColor = '#22c55e';
+            }
+            if (typeof window.checkAndRefreshPrivacyReadinessHUD === 'function') {
+                window.checkAndRefreshPrivacyReadinessHUD();
+            }
         } else {
             banner.classList.add('hidden');
             banner.style.display = 'none';

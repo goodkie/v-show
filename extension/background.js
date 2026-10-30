@@ -7929,6 +7929,7 @@ async function pauseCampaignOrchestrator(saveCheckpoint = true) {
         campaignState.pausedCheckpoint = checkpoint;
         await chrome.storage.local.set({
             xpider_paused_checkpoint: checkpoint,
+            xpider_queue: checkpoint.remainingQueue || campaignState.queue || [],
             xpider_isPaused: true,
             xpider_isActive: false
         });
@@ -10480,7 +10481,10 @@ async function restoreCampaignState() {
                             data.xpider_paused_checkpoint.restorationLogged = true;
                             campaignState.checkpointHydratedForGeneration = true;
                             if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
-                                chrome.storage.local.set({ xpider_paused_checkpoint: data.xpider_paused_checkpoint });
+                                chrome.storage.local.set({
+                                    xpider_paused_checkpoint: data.xpider_paused_checkpoint,
+                                    xpider_queue: campaignState.queue
+                                });
                             }
                             logBg(null, `Restored paused campaign checkpoint: ${campaignState.queue.length} targets remaining (ready to resume).`, "info");
                         }
