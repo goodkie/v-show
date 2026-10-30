@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Contact Us - Checkbox Manual Hold Fixture</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0f172a; color: #f8fafc; padding: 40px; margin: 0; }
+        .container { max-width: 600px; margin: 0 auto; background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 32px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+        h1 { font-size: 22px; color: #38bdf8; margin-top: 0; margin-bottom: 8px; }
+        p { color: #94a3b8; font-size: 14px; margin-bottom: 24px; }
+        .form-group { margin-bottom: 18px; }
+        label { display: block; font-size: 13px; font-weight: 600; color: #cbd5e1; margin-bottom: 6px; }
+        input[type="text"], input[type="email"], textarea { width: 100%; box-sizing: border-box; background: #0f172a; border: 1px solid #475569; border-radius: 6px; padding: 10px 12px; color: #f8fafc; font-size: 14px; outline: none; }
+        fieldset { border: 1px solid #475569; border-radius: 6px; padding: 14px; margin-bottom: 18px; }
+        legend { font-size: 13px; font-weight: 600; color: #38bdf8; padding: 0 8px; }
+        .checkbox-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; cursor: pointer; }
+        .checkbox-row input[type="checkbox"] { width: 18px; height: 18px; accent-color: #0284c7; cursor: pointer; }
+        .checkbox-row span { font-size: 13px; color: #cbd5e1; }
+        button[type="submit"] { background: #0284c7; color: white; border: none; border-radius: 6px; padding: 12px 24px; font-size: 15px; font-weight: 600; cursor: pointer; width: 100%; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Inquiry with Checkbox Requirements</h1>
+        <p>Fixture for verifying MANUAL_HOLD behavior on required checkbox groups without automatic recovery.</p>
+
+        <form id="checkbox-hold-form" action="contact-success.html" method="GET">
+            <div class="form-group">
+                <label for="name">Full Name *</label>
+                <input type="text" id="name" name="name" required placeholder="Valued Contact">
+            </div>
+
+            <div class="form-group">
+                <label for="email">Email Address *</label>
+                <input type="email" id="email" name="email" required placeholder="contact@example.com">
+            </div>
+
+            <fieldset id="programs-group">
+                <legend>Required Program Selection (At least one required) *</legend>
+                <label class="checkbox-row">
+                    <input type="checkbox" name="program[]" value="taekwondo" required>
+                    <span>Taekwondo Program</span>
+                </label>
+                <label class="checkbox-row">
+                    <input type="checkbox" name="program[]" value="kickboxing" required>
+                    <span>Kickboxing Program</span>
+                </label>
+                <label class="checkbox-row">
+                    <input type="checkbox" name="program[]" value="mma" required>
+                    <span>Mixed Martial Arts</span>
+                </label>
+            </fieldset>
+
+            <div class="form-group">
+                <label for="custom_code">Mandatory Verification Token (Operator Required) *</label>
+                <input type="text" id="custom_code" name="custom_unhandled_code" required placeholder="Operator must fill manually">
+            </div>
+
+            <div class="form-group">
+                <label for="message">Inquiry Details *</label>
+                <textarea id="message" name="message" rows="4" required placeholder="Detailed message..."></textarea>
+            </div>
+
+            <button type="submit" id="submit-btn">Send Message</button>
+        </form>
+    </div>
+</body>
+</html>
+

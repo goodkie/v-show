@@ -2086,6 +2086,11 @@ async function resolveManualHoldHandshake(request = {}, sender = {}) {
             terminalStatus = 'SKIPPED';
             reasonCode = 'MANUAL_OPERATOR_SKIP';
             subReason = 'MANUAL_OPERATOR_SKIP';
+        } else if (decision === 'MARK_UNKNOWN') {
+            terminalStatus = 'DELIVERY_UNKNOWN';
+            reasonCode = REASON_CODES.DELIVERY_UNKNOWN;
+            subReason = 'OPERATOR_MARKED_DELIVERY_UNKNOWN';
+            isDeliveryUnknown = true;
         } else {
             const classification = evaluateManualHoldEvidence(rawEvidence);
             if (classification.status === 'SUCCESS') {
@@ -4407,7 +4412,8 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
                             new Promise(res => setTimeout(res, 1000))
                         ]).catch(() => {});
                     }
-                    const resolvedMode = (request.campaignMode === 'MANUAL' || request.options?.campaignMode === 'MANUAL') ? 'MANUAL' : 'AUTO';
+                    const rawMode = request.campaignMode || request.options?.campaignMode;
+                    const resolvedMode = (rawMode === 'MANUAL' || rawMode === 'SEMI_AUTO') ? rawMode : 'AUTO';
                     campaignState.campaignMode = resolvedMode;
                     try { await chrome.storage.local.set({ xpider_campaign_mode: resolvedMode }); } catch (_) {}
                     await startCampaignOrchestrator(request.queue, request.template, request.delayMs, request.fillDelayMs, request.submitDelayMs, {
@@ -7469,9 +7475,11 @@ function normalizeUrl(url) {
 async function startCampaignOrchestrator(queue, template, delayMs, fillDelayMs = 300, submitDelayMs = 1500, options = {}) {
     // [V7-RC5] Guard against accidental checkpoint overwrite if START_CAMPAIGN is invoked with the paused remainingQueue
     if (!options.ownerFunctionTestMode && !options.forceNewCampaign && campaignState.isPaused && campaignState.pausedCheckpoint && Array.isArray(campaignState.pausedCheckpoint.remainingQueue) && campaignState.pausedCheckpoint.remainingQueue.length > 0 && Array.isArray(queue) && queue.length === campaignState.pausedCheckpoint.remainingQueue.length && normalizeUrl(queue[0]) === normalizeUrl(campaignState.pausedCheckpoint.remainingQueue[0])) {
-        const requestedMode = (options.campaignMode === 'MANUAL' || options.campaignMode === 'AUTO')
-            ? options.campaignMode
-            : ((template && (template.campaignMode === 'MANUAL' || template.campaignMode === 'AUTO')) ? template.campaignMode : undefined);
+        const reqModeOpt = options.campaignMode;
+        const reqModeTpl = template && template.campaignMode;
+        const requestedMode = (reqModeOpt === 'MANUAL' || reqModeOpt === 'SEMI_AUTO' || reqModeOpt === 'AUTO')
+            ? reqModeOpt
+            : ((reqModeTpl === 'MANUAL' || reqModeTpl === 'SEMI_AUTO' || reqModeTpl === 'AUTO') ? reqModeTpl : undefined);
         logBg(null, `🔄 [START_REDIRECT_TO_RESUME] Active paused checkpoint detected with matching remaining queue (${queue.length} items). Resuming checkpoint in ${requestedMode || campaignState.pausedCheckpoint.campaignMode || 'AUTO'} mode to preserve totalTargets & history.`, "info");
         return await resumeCampaignOrchestrator({ campaignMode: requestedMode });
     }
@@ -7616,7 +7624,8 @@ async function startCampaignOrchestrator(queue, template, delayMs, fillDelayMs =
         campaignState.delayMs = delayMs || 6000;
         campaignState.fillDelayMs = fillDelayMs || 300;
         campaignState.submitDelayMs = submitDelayMs || 1500;
-        campaignState.campaignMode = (options.campaignMode === 'MANUAL' || campaignState.campaignMode === 'MANUAL') ? 'MANUAL' : 'AUTO';
+        const optMode = options.campaignMode || campaignState.campaignMode;
+        campaignState.campaignMode = (optMode === 'MANUAL' || optMode === 'SEMI_AUTO') ? optMode : 'AUTO';
         campaignState.manualHoldActive = false;
         campaignState.externalCaptchaWaitActive = false;
         campaignState.ownerFunctionTestMode = !!options.ownerFunctionTestMode;
@@ -8010,10 +8019,10 @@ async function resumeCampaignOrchestrator(options = {}) {
     campaignState.delayMs = checkpoint.delayMs || 6000;
     campaignState.fillDelayMs = checkpoint.fillDelayMs || 300;
     campaignState.submitDelayMs = checkpoint.submitDelayMs || 1500;
-    const previousMode = (checkpoint.campaignMode === 'MANUAL' || checkpoint.campaignMode === 'AUTO')
+    const previousMode = (checkpoint.campaignMode === 'MANUAL' || checkpoint.campaignMode === 'SEMI_AUTO' || checkpoint.campaignMode === 'AUTO')
         ? checkpoint.campaignMode
-        : ((campaignState.campaignMode === 'MANUAL' || campaignState.campaignMode === 'AUTO') ? campaignState.campaignMode : 'AUTO');
-    const requestedMode = (options && (options.campaignMode === 'MANUAL' || options.campaignMode === 'AUTO'))
+        : ((campaignState.campaignMode === 'MANUAL' || campaignState.campaignMode === 'SEMI_AUTO' || campaignState.campaignMode === 'AUTO') ? campaignState.campaignMode : 'AUTO');
+    const requestedMode = (options && (options.campaignMode === 'MANUAL' || options.campaignMode === 'SEMI_AUTO' || options.campaignMode === 'AUTO'))
         ? options.campaignMode
         : previousMode;
     const modeSwitched = requestedMode !== previousMode;

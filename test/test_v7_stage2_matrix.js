@@ -200,7 +200,9 @@ function loadContentScriptInDom(html, url = 'http://127.0.0.1:8088/contact.html'
 
         const popupHtml = fs.readFileSync(path.join(ROOT, 'extension', 'popup.html'), 'utf8');
         assert(popupHtml.includes('id="start-btn" data-mode="AUTO"'), 'popup.html must have Start Automatic button');
+        assert(popupHtml.includes('id="start-semi-auto-btn" data-mode="SEMI_AUTO"'), 'popup.html must have Start Semi-Auto button');
         assert(popupHtml.includes('id="start-manual-btn" data-mode="MANUAL"'), 'popup.html must have Start Manual button');
+        assert(popupHtml.includes('id="side-panel-assistance-card"'), 'popup.html must have side-panel-assistance-card');
         assert(popupHtml.includes('id="campaign-mode-pill"'), 'popup.html must have campaign-mode-pill');
         assert(popupHtml.includes('id="v7-captcha-external-notice"'), 'popup.html must display v7 external challenge notice');
     });
@@ -466,6 +468,111 @@ function loadContentScriptInDom(html, url = 'http://127.0.0.1:8088/contact.html'
         assert(typeof HistoryStore === 'function', 'HistoryStore must be available');
         const extractFn = EmailCollector.extractEmailsFromText || EmailCollector.extractEmails;
         assert(typeof extractFn === 'function', 'EmailCollector extraction function must be available');
+    });
+
+    // ------------------------------------------------------------------------
+    // 7. SEMI_AUTO Mode Verification (Happy Path, Validation Hold, Challenge Hold, Ambiguous Submit, Canonical Settlement)
+    // ------------------------------------------------------------------------
+    await runSection('7A. SEMI_AUTO Mode — Clean Form Submits Automatically Without Interruption', async () => {
+        const html = `<!DOCTYPE html><html><body>
+            <form id="contact-form">
+                <input type="text" name="name" required value="John Doe" />
+                <input type="email" name="email" required value="john@example.com" />
+                <textarea name="message" required>Clean semi-auto inquiry.</textarea>
+                <button type="submit">Send</button>
+            </form>
+        </body></html>`;
+        const ctx = loadContentScriptInDom(html, 'http://127.0.0.1:8088/semi-clean.html', 'SEMI_AUTO');
+        try {
+            const challenge = ctx.cs.ChallengeGate.detectChallenge(ctx.document);
+            assert.strictEqual(challenge.detected, false);
+            const decision = ctx.cs.ChallengeGate.decideAction({
+                mode: 'SEMI_AUTO',
+                fieldsComplete: true,
+                challenge,
+                alreadySubmitted: false
+            });
+            assert.strictEqual(decision, 'SUBMIT_ONCE');
+            assert.strictEqual(ctx.document.getElementById('xpider-v7-manual-hold-panel'), null);
+        } finally {
+            ctx.restoreGlobals();
+        }
+    });
+
+    await runSection('7B. SEMI_AUTO Mode — Validation / Incomplete Field Triggers Operator Assistance Hold & Mark Unknown', async () => {
+        const html = `<!DOCTYPE html><html><body>
+            <form id="contact-form">
+                <input type="text" id="f-name" name="name" required value="John Doe" />
+                <input type="email" id="f-email" name="email" required value="" />
+                <textarea id="f-msg" name="message" required>Inquiry missing email.</textarea>
+                <button type="submit">Submit</button>
+            </form>
+        </body></html>`;
+        const ctx = loadContentScriptInDom(html, 'http://127.0.0.1:8088/semi-val-fail.html', 'SEMI_AUTO');
+        try {
+            const form = ctx.document.getElementById('contact-form');
+            const snap = ctx.cs.freezeFieldValues(form, {});
+            const chal = ctx.cs.ChallengeGate.detectChallenge(ctx.document);
+
+            const pValHold = ctx.cs.handleV7ManualModeHold(form, {}, snap, chal, {
+                mode: 'SEMI_AUTO',
+                validationFailed: true,
+                validationReason: 'REQUIRED_EMAIL_EMPTY',
+                unresolvedFields: ['email']
+            });
+            await new Promise(r => setTimeout(r, 20));
+
+            assert(ctx.sentMessages.some(m => m.action === 'MANUAL_MODE_HOLD' && m.validationFailed === true));
+            const panel = ctx.document.getElementById('xpider-v7-manual-hold-panel');
+            assert(panel, 'Semi-Auto assistance panel must render on validation failure');
+            assert.strictEqual(panel.getAttribute('data-mode'), 'SEMI_AUTO');
+            assert(panel.textContent.includes('SEMI-AUTO — OPERATOR ASSISTANCE'));
+
+            // Test MARK_UNKNOWN action
+            ctx.window.__xpiderTriggerManualAction('MARK_UNKNOWN');
+            const res = await pValHold;
+            assert.strictEqual(res.status, 'DELIVERY_UNKNOWN');
+            assert.strictEqual(res.reasonCode, 'OPERATOR_MARKED_DELIVERY_UNKNOWN');
+        } finally {
+            ctx.restoreGlobals();
+        }
+    });
+
+    await runSection('7C. SEMI_AUTO Mode — Unresolved Challenge Triggers Operator Assistance & Verified Receipt Check', async () => {
+        const html = `<!DOCTYPE html><html><body>
+            <form id="contact-form">
+                <input type="text" id="f-name" name="name" required value="John Doe" />
+                <input type="email" id="f-email" name="email" required value="john@example.com" />
+                <textarea id="f-msg" name="message" required>Inquiry with challenge.</textarea>
+                <div class="cf-turnstile" data-sitekey="0x4AAAAAAAJcZVRqyHh71UMI"></div>
+                <button type="submit">Submit</button>
+            </form>
+            <div id="receipt-box"></div>
+        </body></html>`;
+        const ctx = loadContentScriptInDom(html, 'http://127.0.0.1:8088/semi-chal.html', 'SEMI_AUTO');
+        try {
+            const form = ctx.document.getElementById('contact-form');
+            const snap = ctx.cs.freezeFieldValues(form, {});
+            const chal = ctx.cs.ChallengeGate.detectChallenge(ctx.document);
+            assert.strictEqual(chal.detected, true);
+            assert.strictEqual(chal.verified, false);
+
+            const pHold = ctx.cs.handleV7ManualModeHold(form, {}, snap, chal, {
+                mode: 'SEMI_AUTO',
+                validationFailed: false,
+                validationReason: 'CAPTCHA_CHALLENGE_PENDING (cf-turnstile)'
+            });
+            await new Promise(r => setTimeout(r, 20));
+
+            // Operator claims registration without evidence -> settles DELIVERY_UNKNOWN (never false SUCCESS)
+            const claimRes = ctx.window.__xpiderTriggerManualAction('REGISTERED_CONTINUE');
+            assert.strictEqual(claimRes.status, 'DELIVERY_UNKNOWN');
+            assert.strictEqual(claimRes.reasonCode, 'MANUAL_CLAIM_NO_EVIDENCE');
+            const resNoEv = await pHold;
+            assert.strictEqual(resNoEv.status, 'DELIVERY_UNKNOWN');
+        } finally {
+            ctx.restoreGlobals();
+        }
     });
 
     console.log(`\n=== STAGE 2 MATRIX SUMMARY: ${passed} passed, ${failed} failed ===`);

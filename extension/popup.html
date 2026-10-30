@@ -1262,6 +1262,13 @@
                                 <div style="font-size: 10px; color: #94a3b8; line-height: 1.3;">Auto-fills and submits verified forms automatically; pauses on challenges.</div>
                             </div>
                         </label>
+                        <label id="resume-mode-option-semi-auto" style="display: flex; align-items: flex-start; gap: 8px; padding: 8px 10px; border-radius: 6px; background: rgba(15, 23, 42, 0.8); border: 1px solid rgba(167, 139, 250, 0.4); cursor: pointer;">
+                            <input type="radio" name="resume-campaign-mode" id="resume-mode-radio-semi-auto" value="SEMI_AUTO" style="margin-top: 2px; accent-color: #a78bfa; cursor: pointer;">
+                            <div>
+                                <div style="font-size: 11px; font-weight: 700; color: #f8fafc;">⚡ Semi-Auto Mode <span id="resume-mode-semi-auto-default-tag" style="font-size: 9px; color: #a78bfa; font-family: monospace; display: none;">(Previous)</span></div>
+                                <div style="font-size: 10px; color: #94a3b8; line-height: 1.3;">Submits automatically when clear; holds at current target for operator assistance on any issue or challenge.</div>
+                            </div>
+                        </label>
                         <label id="resume-mode-option-manual" style="display: flex; align-items: flex-start; gap: 8px; padding: 8px 10px; border-radius: 6px; background: rgba(15, 23, 42, 0.8); border: 1px solid rgba(148, 163, 184, 0.3); cursor: pointer;">
                             <input type="radio" name="resume-campaign-mode" id="resume-mode-radio-manual" value="MANUAL" style="margin-top: 2px; accent-color: #38bdf8; cursor: pointer;">
                             <div>
@@ -1317,9 +1324,26 @@
             </div>
 
             <div class="action-buttons">
-                <div id="start-buttons-row" style="display: flex; gap: 8px; width: 100%;">
-                    <button id="start-btn" data-mode="AUTO" class="primary-btn pulse" style="flex: 1;" title="Fill fields, check verification state, and automatically submit once when verified">🚀 Start Automatic</button>
-                    <button id="start-manual-btn" data-mode="MANUAL" class="secondary-btn" style="flex: 1; background: linear-gradient(135deg, #0284c7, #0369a1); color: #fff; border: 1px solid #38bdf8; font-weight: 700;" title="Fill fields and hold queue on each site until you register and confirm">🖐️ Start Manual</button>
+                <div id="start-buttons-row" style="display: flex; gap: 6px; width: 100%;">
+                    <button id="start-btn" data-mode="AUTO" class="primary-btn pulse" style="flex: 1; padding: 9px 4px; font-size: 11px;" title="Fill fields, check verification state, and automatically submit once when verified">🚀 Automatic</button>
+                    <button id="start-semi-auto-btn" data-mode="SEMI_AUTO" class="secondary-btn" style="flex: 1; padding: 9px 4px; font-size: 11px; background: linear-gradient(135deg, #7c3aed, #6d28d9); color: #fff; border: 1px solid #a78bfa; font-weight: 700;" title="Automatic submission when clear; holds at current target with assistance panel on any issue or challenge">⚡ Semi-Auto</button>
+                    <button id="start-manual-btn" data-mode="MANUAL" class="secondary-btn" style="flex: 1; padding: 9px 4px; font-size: 11px; background: linear-gradient(135deg, #0284c7, #0369a1); color: #fff; border: 1px solid #38bdf8; font-weight: 700;" title="Fill fields and hold queue on each site until you register and confirm">🖐️ Manual</button>
+                </div>
+                <!-- Side-Panel Assistance Card (Fallback when page content script cannot render or on assist hold) -->
+                <div id="side-panel-assistance-card" style="display: none; margin-top: 10px; background: #1e1b4b; border: 2px solid #a855f7; border-radius: 8px; padding: 12px; color: #f8fafc;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                        <span style="font-size: 10px; font-weight: 700; background: #7c3aed; color: #fff; padding: 2px 6px; border-radius: 4px;">⚡ OPERATOR ASSISTANCE</span>
+                        <span id="sp-assist-stage-badge" style="font-size: 9px; color: #c084fc; font-family: monospace;">HOLD ACTIVE</span>
+                    </div>
+                    <div id="sp-assist-reason" style="font-size: 11px; color: #fef08a; margin-bottom: 6px; line-height: 1.4;">Issue description</div>
+                    <div id="sp-assist-url" style="font-size: 10px; color: #cbd5e1; font-family: monospace; word-break: break-all; margin-bottom: 10px; background: rgba(0,0,0,0.3); padding: 4px 6px; border-radius: 4px;">URL</div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
+                        <button type="button" id="sp-assist-confirm-btn" class="primary-btn" style="grid-column: span 2; background: #10b981; font-size: 11px; padding: 6px;">✅ Confirm Verified Receipt</button>
+                        <button type="button" id="sp-assist-retry-btn" class="secondary-btn" style="background: #3b82f6; font-size: 11px; padding: 5px;">🔄 Recheck / Retry</button>
+                        <button type="button" id="sp-assist-unknown-btn" class="secondary-btn" style="background: #d97706; font-size: 11px; padding: 5px;">❓ Mark Unknown</button>
+                        <button type="button" id="sp-assist-skip-btn" class="secondary-btn" style="background: #64748b; font-size: 11px; padding: 5px;">⏭️ Skip Target</button>
+                        <button type="button" id="sp-assist-stop-btn" class="secondary-btn" style="grid-column: span 2; background: rgba(239, 68, 68, 0.2); border: 1px solid #ef4444; color: #fca5a5; font-size: 11px; padding: 5px;">⏸️ Stop & Save Checkpoint</button>
+                    </div>
                 </div>
                 <div id="start-btn-helper-text" style="display: none; font-size: 10px; color: #fca5a5; margin-top: 4px; text-align: center; line-height: 1.3;">Strict mode requires Privacy Relay or Managed Proxy. External VPN Monitor alone cannot satisfy Fail-Closed.</div>
                 <div class="multi-actions hidden" id="multi-actions">
