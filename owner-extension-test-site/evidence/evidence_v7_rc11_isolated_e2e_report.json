@@ -1,11 +1,11 @@
 {
-  "runId": "rc11_isolated_e2e_1793451968228",
-  "startTimeUtc": "2026-10-31T13:06:08.226Z",
-  "endTimeUtc": "2026-10-31T13:07:04.955Z",
+  "runId": "rc11_isolated_e2e_1793480174465",
+  "startTimeUtc": "2026-10-31T20:56:14.464Z",
+  "endTimeUtc": "2026-10-31T20:57:12.044Z",
   "project": "XPIDER_FORM_SENDER",
   "issue": 6,
   "targetBaseline": "v7.0.0-rc11",
-  "baselineCommit": "140fd2af26119c17672bb27847c0aad12a0dff81",
+  "baselineCommit": "19099d90725d68b72111dcf22ba416331231de7d",
   "extensionTreeSha": "d065af8f1f1438ecba9bbe7fb03cf8e18c040e05",
   "browserVersion": "Edg/156.0.4314.50",
   "runtimeBuildInfo": {
