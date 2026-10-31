@@ -1,0 +1,619 @@
+[2026-10-31T13:06:08.228Z] ================================================================================
+[2026-10-31T13:06:08.236Z] 🚀 RUNNING CHROMIUM V7.0.0-RC11 ISOLATED E2E TEST RUNNER (runId=rc11_isolated_e2e_1793451968228)
+[2026-10-31T13:06:08.242Z] ================================================================================
+[2026-10-31T13:06:08.249Z] 
+--- Step 1: Verifying Baseline Lock & Exact 50-File Parity ---
+[2026-10-31T13:06:08.440Z] Git HEAD Commit: 140fd2af26119c17672bb27847c0aad12a0dff81
+[2026-10-31T13:06:08.446Z] Extension Tree SHA: d065af8f1f1438ecba9bbe7fb03cf8e18c040e05
+[2026-10-31T13:06:08.454Z] Loaded baseline lock: 50 files, parityConfirmed=true
+[2026-10-31T13:06:08.460Z] 
+--- Step 2: Ensuring Test Fixture Server is Active on 127.0.0.1:8088 ---
+[2026-10-31T13:06:08.518Z] Test server active: PID=25596 submissionsCount=0
+[2026-10-31T13:06:08.525Z] 
+--- Step 3: Launching Isolated Chromium with RC11 Unpacked Extension ---
+[2026-10-31T13:06:08.532Z] Using Chromium browser binary: C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe
+[2026-10-31T13:06:08.540Z] Isolated disposable profile: C:\Users\oPus\AppData\Local\Temp\xpider-rc11-isolated-e2e-Ul9wNo
+[2026-10-31T13:06:09.536Z] Browser Version: Edg/156.0.4314.50
+[2026-10-31T13:06:09.545Z] 
+--- Step 4: Connecting to Background Service Worker ---
+[2026-10-31T13:06:09.702Z] Extension Background SW active: ID=ldlijlaccfeelfdhgnjbibniocefckjj Title="Service Worker chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/background.js"
+[2026-10-31T13:06:10.214Z] Live SW BuildProvenance: buildId="V7.0.0-RC11-20261030-THREE-MODE-CONTRACTS-PASS" head="20678ada" tag="v7.0.0-rc11"
+[2026-10-31T13:06:10.224Z] 
+=========================================================================
+[2026-10-31T13:06:10.234Z] --- FIXTURE A: Autonomous Homepage Discovery -> Contact Navigation -> Autofill ---
+[2026-10-31T13:06:10.246Z] =========================================================================
+[2026-10-31T13:06:10.256Z] Starting campaign targeting http://127.0.0.1:8088/index.html (has NO form, only contact-standard.html link)...
+[2026-10-31T13:06:10.268Z] [SW-LOG] [BG_LOG][tab=none] [OWNER_TEST_GUARD] declarativeNetRequest session rules removed cleanly
+[2026-10-31T13:06:10.308Z] [SW-LOG] [BG_LOG][tab=none] [BUILD_HANDSHAKE] popup=20678ada6491bf842ec7e996a88108152c76007f background=20678ada6491bf842ec7e996a88108152c76007f build=V7.0.0-RC11-20261030-THREE-MODE-CONTRACTS-PASS manifest=3 result=PASS
+[2026-10-31T13:06:10.319Z] [SW-LOG] [BG_LOG][tab=none] [START_BG] received queue=1
+[2026-10-31T13:06:10.329Z] [SW-LOG] [BG_LOG][tab=none] [PRIVACY_OWNER_OVERRIDE] scope=currentRun mode=DIRECT acknowledged=true
+[2026-10-31T13:06:10.342Z] [SW-LOG] [BG_LOG][tab=none] [OWNER_TEST_GUARD] declarativeNetRequest session rules removed cleanly
+[2026-10-31T13:06:10.354Z] [SW-LOG] [BG_LOG][tab=none] [NORMAL_CAMPAIGN_PREFLIGHT] publicTargets=0 testMode=false result=PASS
+[2026-10-31T13:06:10.365Z] [SW-LOG] [BG_LOG][tab=none] [OWNER_TEST_GUARD] declarativeNetRequest session rules removed cleanly
+[2026-10-31T13:06:10.374Z] [SW-LOG] [BG_LOG][tab=none] [PRIVACY_GATE] mode=DIRECT transport=DIRECT failClosed=false (OWNER_FUNCTION_TEST_MODE) status=READY
+[2026-10-31T13:06:10.386Z] [SW-LOG] [BG_LOG][tab=none] [START_BG_READY] privacyReady=true
+[2026-10-31T13:06:10.395Z] START_CAMPAIGN response: {"success":true,"status":"acknowledged","queueCount":1,"campaignRunId":"run_1793451970327_elqez"}
+[2026-10-31T13:06:10.406Z] Observing autonomous contact page discovery and navigation from index.html to contact-standard.html...
+[2026-10-31T13:06:10.427Z] [SW-LOG] [BG_LOG][tab=none] [Boot] Orchestrator entered.
+[2026-10-31T13:06:10.440Z] [SW-LOG] [TAB_BARRIER] phase=START_CAMPAIGN_BOOT ownedBefore=0
+[2026-10-31T13:06:10.454Z] [SW-LOG] [TAB_BARRIER] phase=START_CAMPAIGN_BOOT ownedAfter=0 result=PASS
+[2026-10-31T13:06:10.464Z] [SW-LOG] [BG_LOG][tab=none] [Boot] Previous state cleared.
+[2026-10-31T13:06:10.475Z] [SW-LOG] [BG_LOG][tab=none] [Boot] CAPTCHA solver state reset (attempts=0, identity=null).
+[2026-10-31T13:06:10.487Z] [SW-LOG] [BG_LOG][tab=none] 📊 [Queue Filter] Input: 1 | Duplicates: 0 | Suppressed: 0 | History-Attempted: 0 | Executable: 1
+[2026-10-31T13:06:10.498Z] [SW-LOG] [BG_LOG][tab=none] [LEDGER_INIT] campaignRunId=run_1793451970327_elqez totalImportRows=1 pending=1
+[2026-10-31T13:06:10.511Z] [SW-LOG] [BG_LOG][tab=none] [Boot] Variables initialized.
+[2026-10-31T13:06:10.522Z] [SW-LOG] [BG_LOG][tab=none] 🚀 Engine booting...
+[2026-10-31T13:06:10.539Z] [SW-LOG] [BG_LOG][tab=none] [CAMPAIGN_START] buildId=V7.0.0-RC11-20261030-THREE-MODE-CONTRACTS-PASS campaignRunId=run_1793451970327_elqez totalTargets=1 mode=NORMAL delayMs=200 fillDelayMs=20 submitDelayMs=500
+[2026-10-31T13:06:10.548Z] [SW-LOG] [BG_LOG][tab=none] [Boot] Storage sync initiated.
+[2026-10-31T13:06:10.557Z] [SW-LOG] [BG_LOG][tab=none] [Boot] Target loop triggered.
+[2026-10-31T13:06:10.564Z] [SW-LOG] [BG_LOG][tab=none] [TARGET 1/1][127.0.0.1] START
+[2026-10-31T13:06:10.576Z] [SW-LOG] [BG_LOG][tab=none] [TARGET_START] buildId=V7.0.0-RC11-20261030-THREE-MODE-CONTRACTS-PASS campaignRunId=run_1793451970327_elqez attemptId=att_init targetIndex=1/1 targetUrl=http://127.0.0.1:8088/index.html
+[2026-10-31T13:06:10.586Z] [SW-LOG] [BG_LOG][tab=none] [EXEC_IDENTITY_PRE_NAV] attemptId=att_1793451970372_hpbef token=tok_1793451970371_hajqby epoch=2
+[2026-10-31T13:06:10.606Z] [SW-LOG] [BG_LOG][tab=1423406147] [TAB_FOCUS] tabId=1423406147 windowId=1423406143 active=true focused=true
+[2026-10-31T13:06:10.621Z] [SW-LOG] [BG_LOG][tab=1423406147] Step 1: Sniper Mode active. Searching for contact page...
+[2026-10-31T13:06:10.629Z] [SW-LOG] [BG_LOG][tab=1423406147] 🔦 Fast-scanning candidate paths (1-10)...
+[2026-10-31T13:06:10.648Z] [SW-LOG] [BG_LOG][tab=1423406147] Pre-scan complete. Identified 10 valid paths.
+[2026-10-31T13:06:10.679Z] [SW-LOG] [BG_LOG][tab=1423406147] [SniperScan] Identified 10 candidate paths in background.
+[2026-10-31T13:06:10.743Z] [SW-LOG] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/index.html] ⚠️ [Engine] Suppressing duplicate setup (Signals re-sent).
+[2026-10-31T13:06:10.755Z] [SW-LOG] [BG_LOG][tab=1423406147] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/index.html] ⚠️ [Engine] Suppressing duplicate setup (Signals re-sent).
+[2026-10-31T13:06:10.769Z] [SW-LOG] [BG_LOG][tab=1423406147] [TAB_FOCUS] tabId=1423406147 windowId=1423406143 active=true focused=true
+[2026-10-31T13:06:10.779Z] [SW-LOG] [BG_LOG][tab=1423406147] [TAB_OWNERSHIP] VERIFIED_REDIRECT source=127.0.0.1 target=127.0.0.1 relation=SAME_HOST
+[2026-10-31T13:06:10.796Z] [SW-LOG] [BG_LOG][tab=1423406147] [FOCUS_SECURED] formPageUrl=http://127.0.0.1:8088/index.html
+[2026-10-31T13:06:10.807Z] [SW-LOG] [BG_LOG][tab=1423406147] Extraction focus secured. Mapping template fields...
+[2026-10-31T13:06:10.819Z] [SW-LOG] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/index.html] [TARGET_PAGE] url=http://127.0.0.1:8088/index.html domGeneration=1793451970767 attemptId=att_1793451970372_hpbef
+[2026-10-31T13:06:10.829Z] [SW-LOG] [BG_LOG][tab=1423406147] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/index.html] [TARGET_PAGE] url=http://127.0.0.1:8088/index.html domGeneration=1793451970767 attemptId=att_1793451970372_hpbef
+[2026-10-31T13:06:10.839Z] [SW-LOG] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/index.html] [CAPTCHA_STATE_RESET] attemptId=processCampaign epoch=current isCaptchaSolved=false captchaTokenInjected=false
+[2026-10-31T13:06:10.847Z] [SW-LOG] [BG_LOG][tab=1423406147] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/index.html] [CAPTCHA_STATE_RESET] attemptId=processCampaign epoch=current isCaptchaSolved=false captchaTokenInjected=false
+[2026-10-31T13:06:10.867Z] [SW-LOG] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/index.html] 🚀 [Engine] Ultra-Mode process started
+[2026-10-31T13:06:10.882Z] [SW-LOG] [BG_LOG][tab=1423406147] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/index.html] 🚀 [Engine] Ultra-Mode process started
+[2026-10-31T13:06:10.892Z] [SW-LOG] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/index.html] 🧹 [Cleaner] Scanning for intrusive overlays/popups and cookie banners...
+[2026-10-31T13:06:10.900Z] [SW-LOG] [BG_LOG][tab=1423406147] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/index.html] 🧹 [Cleaner] Scanning for intrusive overlays/popups and cookie banners...
+[2026-10-31T13:06:10.910Z] [SW-LOG] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/index.html] [TARGET_PAGE] url=http://127.0.0.1:8088/index.html recursion=0
+[2026-10-31T13:06:10.923Z] [SW-LOG] [BG_LOG][tab=1423406147] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/index.html] [TARGET_PAGE] url=http://127.0.0.1:8088/index.html recursion=0
+[2026-10-31T13:06:10.941Z] [SW-LOG] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/index.html] 🔍 [Discovery] URL: http://127.0.0.1:8088/index.html | Recursion: 0
+[2026-10-31T13:06:10.993Z] [SW-LOG] [BG_LOG][tab=1423406147] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/index.html] 🔍 [Discovery] URL: http://127.0.0.1:8088/index.html | Recursion: 0
+[2026-10-31T13:06:11.031Z] [SW-LOG] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/index.html] 🧹 [Cleaner] Scanning for intrusive overlays/popups...
+[2026-10-31T13:06:11.057Z] [SW-LOG] [BG_LOG][tab=1423406147] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/index.html] 🧹 [Cleaner] Scanning for intrusive overlays/popups...
+[2026-10-31T13:06:11.072Z] [SW-LOG] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/index.html] 🧐 [Discovery] Polling attempt 1/3... | URL: http://127.0.0.1:8088/index.html | Recursion: 0
+[2026-10-31T13:06:11.099Z] [SW-LOG] [BG_LOG][tab=1423406147] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/index.html] 🧐 [Discovery] Polling attempt 1/3... | URL: http://127.0.0.1:8088/index.html | Recursion: 0
+[2026-10-31T13:06:11.110Z] [SW-LOG] [BG_LOG][tab=1423406147] [TARGET][127.0.0.1] emailsFoundCurrentPage=2 emailsNewGlobal=2 totalEmailsGlobal=2
+[2026-10-31T13:06:11.465Z] [SW-LOG] [BG_LOG][tab=1423406147] 🔓 [Engine] URL path changed. Resetting focus lock for SPA re-injection.
+[2026-10-31T13:06:11.508Z] [SW-LOG] [BG_LOG][tab=1423406147] 🔄 [Engine] Internal navigation detected (SPA). Preparing re-injection...
+[2026-10-31T13:06:11.533Z] 🎯 Autonomous navigation observed at T+0.5s! Tab URL: http://127.0.0.1:8088/contact-standard.html
+[2026-10-31T13:06:11.556Z] Polling contact page DOM to observe autonomous HyperEngine typing into Name, Email, Phone, Message...
+[2026-10-31T13:06:11.643Z] [SW-LOG] [BG_LOG][tab=1423406147] [TAB_FOCUS] tabId=1423406147 windowId=1423406143 active=true focused=true
+[2026-10-31T13:06:11.653Z] [SW-LOG] [BG_LOG][tab=1423406147] [TAB_OWNERSHIP] VERIFIED_REDIRECT source=127.0.0.1 target=127.0.0.1 relation=SAME_HOST
+[2026-10-31T13:06:11.667Z] [SW-LOG] [BG_LOG][tab=1423406147] [FOCUS_SECURED] formPageUrl=http://127.0.0.1:8088/contact-standard.html
+[2026-10-31T13:06:11.676Z] [SW-LOG] [BG_LOG][tab=1423406147] [TARGET][127.0.0.1] emailsFoundCurrentPage=2 emailsNewGlobal=0 totalEmailsGlobal=2
+[2026-10-31T13:06:11.686Z] [SW-LOG] [BG_LOG][tab=1423406147] Extraction focus secured. Mapping template fields...
+[2026-10-31T13:06:11.705Z] [SW-LOG] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html] [TARGET_PAGE] url=http://127.0.0.1:8088/contact-standard.html domGeneration=1793451971663 attemptId=att_1793451970372_hpbef
+[2026-10-31T13:06:11.721Z] [SW-LOG] [BG_LOG][tab=1423406147] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html] [TARGET_PAGE] url=http://127.0.0.1:8088/contact-standard.html domGeneration=1793451971663 attemptId=att_1793451970372_hpbef
+[2026-10-31T13:06:11.736Z] [SW-LOG] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html] [CAPTCHA_STATE_RESET] attemptId=processCampaign epoch=current isCaptchaSolved=false captchaTokenInjected=false
+[2026-10-31T13:06:11.750Z] [SW-LOG] [BG_LOG][tab=1423406147] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html] [CAPTCHA_STATE_RESET] attemptId=processCampaign epoch=current isCaptchaSolved=false captchaTokenInjected=false
+[2026-10-31T13:06:11.762Z] [SW-LOG] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html] 🚀 [Engine] Ultra-Mode process started
+[2026-10-31T13:06:11.775Z] [SW-LOG] [BG_LOG][tab=1423406147] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html] 🚀 [Engine] Ultra-Mode process started
+[2026-10-31T13:06:11.790Z] [SW-LOG] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html] 🧹 [Cleaner] Scanning for intrusive overlays/popups and cookie banners...
+[2026-10-31T13:06:11.805Z] [SW-LOG] [BG_LOG][tab=1423406147] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html] 🧹 [Cleaner] Scanning for intrusive overlays/popups and cookie banners...
+[2026-10-31T13:06:11.820Z] [SW-LOG] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html] [TARGET_PAGE] url=http://127.0.0.1:8088/contact-standard.html recursion=0
+[2026-10-31T13:06:11.834Z] [SW-LOG] [BG_LOG][tab=1423406147] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html] [TARGET_PAGE] url=http://127.0.0.1:8088/contact-standard.html recursion=0
+[2026-10-31T13:06:11.845Z] [SW-LOG] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html] 🔍 [Discovery] URL: http://127.0.0.1:8088/contact-standard.html | Recursion: 0
+[2026-10-31T13:06:11.858Z] [SW-LOG] [BG_LOG][tab=1423406147] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html] 🔍 [Discovery] URL: http://127.0.0.1:8088/contact-standard.html | Recursion: 0
+[2026-10-31T13:06:11.912Z] [SW-LOG] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html] 🧹 [Cleaner] Scanning for intrusive overlays/popups...
+[2026-10-31T13:06:11.928Z] [SW-LOG] [BG_LOG][tab=1423406147] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html] 🧹 [Cleaner] Scanning for intrusive overlays/popups...
+[2026-10-31T13:06:11.944Z] [SW-LOG] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html] 🧐 [Discovery] Polling attempt 1/3... | URL: http://127.0.0.1:8088/contact-standard.html | Recursion: 0
+[2026-10-31T13:06:11.963Z] [SW-LOG] [BG_LOG][tab=1423406147] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html] 🧐 [Discovery] Polling attempt 1/3... | URL: http://127.0.0.1:8088/contact-standard.html | Recursion: 0
+[2026-10-31T13:06:11.978Z] [SW-LOG] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html] [FORM_SCAN] forms=1 logicalContainers=1 crossOriginFrames=0 externalFormCandidates=0
+[2026-10-31T13:06:11.990Z] [SW-LOG] [BG_LOG][tab=1423406147] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html] [FORM_SCAN] forms=1 logicalContainers=1 crossOriginFrames=0 externalFormCandidates=0
+[2026-10-31T13:06:12.003Z] [SW-LOG] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html] [PAGE_CLASS] CONTACT_FORM_PAGE
+[2026-10-31T13:06:12.015Z] [SW-LOG] [BG_LOG][tab=1423406147] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html] [PAGE_CLASS] CONTACT_FORM_PAGE
+[2026-10-31T13:06:12.029Z] [SW-LOG] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html] 🎯 Step 2: Contact form discovered. Preparing submission...
+[2026-10-31T13:06:12.045Z] [SW-LOG] [BG_LOG][tab=1423406147] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html] 🎯 Step 2: Contact form discovered. Preparing submission...
+[2026-10-31T13:06:12.055Z] [SW-LOG] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html] [STAGE] stage=CONTACT_PAGE_FOUND
+[2026-10-31T13:06:12.065Z] [SW-LOG] [BG_LOG][tab=1423406147] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html] [STAGE] stage=CONTACT_PAGE_FOUND
+[2026-10-31T13:06:12.076Z] [SW-LOG] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html] [LONG_TEXT_GATE] found=true type=textarea semantic=message
+[2026-10-31T13:06:12.094Z] [SW-LOG] [BG_LOG][tab=1423406147] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html] [LONG_TEXT_GATE] found=true type=textarea semantic=message
+[2026-10-31T13:06:12.107Z] [SW-LOG] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html] [FORM_GATE] eligible=true reason=BODY_FIELD_PRESENT
+[2026-10-31T13:06:12.117Z] [SW-LOG] [BG_LOG][tab=1423406147] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html] [FORM_GATE] eligible=true reason=BODY_FIELD_PRESENT
+[2026-10-31T13:06:12.127Z] [SW-LOG] [BG_LOG][tab=1423406147] 📍 [PIPELINE][CONTACT_PAGE_FOUND] url=http://127.0.0.1:8088/contact-standard.html
+[2026-10-31T13:06:12.138Z] [SW-LOG] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html] 🔍 [Supreme-X 5.0] Scanning for multi-location / branch links...
+[2026-10-31T13:06:12.151Z] [SW-LOG] [BG_LOG][tab=1423406147] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html] 🔍 [Supreme-X 5.0] Scanning for multi-location / branch links...
+[2026-10-31T13:06:12.160Z] [SW-LOG] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html] [AUTOFILL_LOCK] acquired=true key=att_1793451970372_hpbef:http://127.0.0.1:8088/contact-standard.html:standard-contact-form
+[2026-10-31T13:06:12.170Z] [SW-LOG] [BG_LOG][tab=1423406147] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html] [AUTOFILL_LOCK] acquired=true key=att_1793451970372_hpbef:http://127.0.0.1:8088/contact-standard.html:standard-contact-form
+[2026-10-31T13:06:12.181Z] [SW-LOG] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html] [CAPTCHA_STATE_RESET] attemptId=att_1793451970372_hpbef epoch=2 isCaptchaSolved=false captchaTokenInjected=false
+[2026-10-31T13:06:12.192Z] [SW-LOG] [BG_LOG][tab=1423406147] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html] [CAPTCHA_STATE_RESET] attemptId=att_1793451970372_hpbef epoch=2 isCaptchaSolved=false captchaTokenInjected=false
+[2026-10-31T13:06:12.202Z] [SW-LOG] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html] [CONTACT_GATE] PASS bodyField=textarea
+[2026-10-31T13:06:12.211Z] [SW-LOG] [BG_LOG][tab=1423406147] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html] [CONTACT_GATE] PASS bodyField=textarea
+[2026-10-31T13:06:12.226Z] [SW-LOG] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html] [STAGE] stage=ELIGIBLE_FORM_FOUND
+[2026-10-31T13:06:12.264Z] [SW-LOG] [BG_LOG][tab=1423406147] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html] [STAGE] stage=ELIGIBLE_FORM_FOUND
+[2026-10-31T13:06:12.278Z] [SW-LOG] [BG_LOG][tab=1423406147] [CONTACT_COMMIT] contactPageUrl=http://127.0.0.1:8088/contact-standard.html
+[2026-10-31T13:06:12.292Z] [SW-LOG] [BG_LOG][tab=1423406147] [FORM_COMMIT] formPageUrl=http://127.0.0.1:8088/contact-standard.html
+[2026-10-31T13:06:12.309Z] [SW-LOG] [BG_LOG][tab=1423406147] 📋 [PIPELINE][ELIGIBLE_FORM_FOUND] url=http://127.0.0.1:8088/contact-standard.html
+[2026-10-31T13:06:12.323Z] [SW-LOG] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html] 🛠️ Step 3: Registering message template to form fields...
+[2026-10-31T13:06:12.339Z] [SW-LOG] [BG_LOG][tab=1423406147] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html] 🛠️ Step 3: Registering message template to form fields...
+[2026-10-31T13:06:12.351Z] [SW-LOG] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html] 🛡️ [FormStabilizer] Starting bounded stabilization (max 5s, max 2 retries/element)...
+[2026-10-31T13:06:12.364Z] [SW-LOG] [BG_LOG][tab=1423406147] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html] 🛡️ [FormStabilizer] Starting bounded stabilization (max 5s, max 2 retries/element)...
+[2026-10-31T13:06:12.380Z] [SW-LOG] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html] 🛡️ [Stabilizer] Empty required field attempt 1/2: <INPUT id="name">
+[2026-10-31T13:06:12.390Z] [SW-LOG] [BG_LOG][tab=1423406147] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html] 🛡️ [Stabilizer] Empty required field attempt 1/2: <INPUT id="name">
+[2026-10-31T13:06:12.405Z] [SW-LOG] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html] 🛠️ [Action][HyperEngine v4.0] 초강력 폼 자동 등록기 시작...
+[2026-10-31T13:06:12.421Z] [SW-LOG] [BG_LOG][tab=1423406147] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html] 🛠️ [Action][HyperEngine v4.0] 초강력 폼 자동 등록기 시작...
+[2026-10-31T13:06:12.431Z] [SW-LOG] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html] 🎯 [HyperEngine v4.0] Phase 0 - 입력 필드 전수 수집...
+[2026-10-31T13:06:12.445Z] [SW-LOG] [BG_LOG][tab=1423406147] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html] 🎯 [HyperEngine v4.0] Phase 0 - 입력 필드 전수 수집...
+[2026-10-31T13:06:12.455Z] [SW-LOG] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html]    [v4.0] 총 5개 입력 필드 발견 (radio: 0, checkbox: 0)
+[2026-10-31T13:06:12.464Z] [SW-LOG] [BG_LOG][tab=1423406147] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html]    [v4.0] 총 5개 입력 필드 발견 (radio: 0, checkbox: 0)
+[2026-10-31T13:06:12.475Z] [SW-LOG] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html] 🎯 [HyperEngine v4.0] Phase 1 & 2 - 드롭다운 SelectResolverR2 전수 처리...
+[2026-10-31T13:06:12.482Z] [SW-LOG] [BG_LOG][tab=1423406147] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html] 🎯 [HyperEngine v4.0] Phase 1 & 2 - 드롭다운 SelectResolverR2 전수 처리...
+[2026-10-31T13:06:12.494Z] [SW-LOG] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html] 🎯 [HyperEngine v4.0] Phase 3 - 체크박스 CheckboxResolverR2 전수 처리...
+[2026-10-31T13:06:12.505Z] [SW-LOG] [BG_LOG][tab=1423406147] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html] 🎯 [HyperEngine v4.0] Phase 3 - 체크박스 CheckboxResolverR2 전수 처리...
+[2026-10-31T13:06:12.514Z] [SW-LOG] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html] 🎯 [HyperEngine v4.0] Phase 3.5 - 휴먼 테스트 수식/방정식 퀴즈 검출 및 자동 해결...
+[2026-10-31T13:06:12.524Z] [SW-LOG] [BG_LOG][tab=1423406147] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html] 🎯 [HyperEngine v4.0] Phase 3.5 - 휴먼 테스트 수식/방정식 퀴즈 검출 및 자동 해결...
+[2026-10-31T13:06:12.534Z] [SW-LOG] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html] 🎯 [HyperEngine v4.0] Phase 4 - 텍스트 필드 패턴 매칭...
+[2026-10-31T13:06:12.544Z] [SW-LOG] [BG_LOG][tab=1423406147] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html] 🎯 [HyperEngine v4.0] Phase 4 - 텍스트 필드 패턴 매칭...
+[2026-10-31T13:06:12.553Z] [SW-LOG] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html]    - [FIELD_CLASSIFY] id=name name=name tag=INPUT resolved=name confidence=0.85 reason=NAME_PATTERN
+[2026-10-31T13:06:12.566Z] [SW-LOG] [BG_LOG][tab=1423406147] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html]    - [FIELD_CLASSIFY] id=name name=name tag=INPUT resolved=name confidence=0.85 reason=NAME_PATTERN
+[2026-10-31T13:06:12.577Z] [SW-LOG] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html] 🛡️ [Stabilizer] Empty required field attempt 1/2: <INPUT id="email">
+[2026-10-31T13:06:12.588Z] [SW-LOG] [BG_LOG][tab=1423406147] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html] 🛡️ [Stabilizer] Empty required field attempt 1/2: <INPUT id="email">
+[2026-10-31T13:06:12.602Z] [SW-LOG] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html] 🛡️ [Stabilizer] Empty required field attempt 2/2: <INPUT id="name">
+[2026-10-31T13:06:12.612Z] [SW-LOG] [BG_LOG][tab=1423406147] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html] 🛡️ [Stabilizer] Empty required field attempt 2/2: <INPUT id="name">
+[2026-10-31T13:06:13.012Z] [SW-LOG] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html] 🛡️ [Stabilizer] Empty required field attempt 2/2: <INPUT id="email">
+[2026-10-31T13:06:13.025Z] [SW-LOG] [BG_LOG][tab=1423406147] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html] 🛡️ [Stabilizer] Empty required field attempt 2/2: <INPUT id="email">
+[2026-10-31T13:06:13.292Z] [SW-LOG] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html] 🛡️ [Stabilizer] Empty required field attempt 1/2: <TEXTAREA id="message">
+[2026-10-31T13:06:13.301Z] [SW-LOG] [BG_LOG][tab=1423406147] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html] 🛡️ [Stabilizer] Empty required field attempt 1/2: <TEXTAREA id="message">
+[2026-10-31T13:06:13.597Z] [SW-LOG] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html]    - [FIELD_ASSIGN✅] category=name field=name len=11
+[2026-10-31T13:06:13.610Z] [SW-LOG] [BG_LOG][tab=1423406147] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html]    - [FIELD_ASSIGN✅] category=name field=name len=11
+[2026-10-31T13:06:13.618Z] [SW-LOG] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html]    - [FIELD_CLASSIFY] id=email name=email tag=INPUT resolved=email confidence=1 reason=INPUT_TYPE_EMAIL
+[2026-10-31T13:06:13.626Z] [SW-LOG] [BG_LOG][tab=1423406147] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html]    - [FIELD_CLASSIFY] id=email name=email tag=INPUT resolved=email confidence=1 reason=INPUT_TYPE_EMAIL
+[2026-10-31T13:06:14.100Z] [SW-LOG] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html] 🛡️ [Stabilizer] Empty required field attempt 2/2: <TEXTAREA id="message">
+[2026-10-31T13:06:14.111Z] [SW-LOG] [BG_LOG][tab=1423406147] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html] 🛡️ [Stabilizer] Empty required field attempt 2/2: <TEXTAREA id="message">
+[2026-10-31T13:06:14.510Z] [SW-LOG] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html] 🛡️ [FormStabilizer] Stopped (ALL_FIELDS_STABLE_OR_RESOLVED): seen=5 stable=true unresolved=2 (selects=0, cbs=0, radios=0)
+[2026-10-31T13:06:14.522Z] [SW-LOG] [BG_LOG][tab=1423406147] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html] 🛡️ [FormStabilizer] Stopped (ALL_FIELDS_STABLE_OR_RESOLVED): seen=5 stable=true unresolved=2 (selects=0, cbs=0, radios=0)
+[2026-10-31T13:06:16.306Z] [SW-LOG] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html]    - [FIELD_ASSIGN✅] category=email field=email len=26
+[2026-10-31T13:06:16.315Z] [SW-LOG] [BG_LOG][tab=1423406147] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html]    - [FIELD_ASSIGN✅] category=email field=email len=26
+[2026-10-31T13:06:16.323Z] [SW-LOG] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html]    - [FIELD_CLASSIFY] id=phone name=phone tag=INPUT resolved=phone confidence=1 reason=INPUT_TYPE_TEL
+[2026-10-31T13:06:16.331Z] [SW-LOG] [BG_LOG][tab=1423406147] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html]    - [FIELD_CLASSIFY] id=phone name=phone tag=INPUT resolved=phone confidence=1 reason=INPUT_TYPE_TEL
+[2026-10-31T13:06:16.674Z] [SW-LOG] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html] 💓 [Heartbeat] Engine active and processing...
+[2026-10-31T13:06:16.682Z] [SW-LOG] [BG_LOG][tab=1423406147] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html] 💓 [Heartbeat] Engine active and processing...
+[2026-10-31T13:06:18.430Z] [SW-LOG] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html]    - [FIELD_ASSIGN✅] category=phone field=phone
+[2026-10-31T13:06:18.478Z] [SW-LOG] [BG_LOG][tab=1423406147] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html]    - [FIELD_ASSIGN✅] category=phone field=phone
+[2026-10-31T13:06:18.495Z] [SW-LOG] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html]    - [FIELD_CLASSIFY] id=subject name=subject tag=INPUT resolved=subject confidence=0.9 reason=SUBJECT_PATTERN
+[2026-10-31T13:06:18.505Z] [SW-LOG] [BG_LOG][tab=1423406147] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html]    - [FIELD_CLASSIFY] id=subject name=subject tag=INPUT resolved=subject confidence=0.9 reason=SUBJECT_PATTERN
+[2026-10-31T13:06:18.530Z] [SW-LOG] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html]    - [FIELD_CLASSIFY] id=message name=message tag=TEXTAREA resolved=message confidence=0.95 reason=MULTILINE_STRUCTURAL_PRECEDENCE
+[2026-10-31T13:06:18.545Z] [SW-LOG] [BG_LOG][tab=1423406147] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html]    - [FIELD_CLASSIFY] id=message name=message tag=TEXTAREA resolved=message confidence=0.95 reason=MULTILINE_STRUCTURAL_PRECEDENCE
+[2026-10-31T13:06:20.908Z] [SW-LOG] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html]    - [FIELD_ASSIGN✅] category=message field=message tag=TEXTAREA len=71
+[2026-10-31T13:06:20.921Z] [SW-LOG] [BG_LOG][tab=1423406147] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html]    - [FIELD_ASSIGN✅] category=message field=message tag=TEXTAREA len=71
+[2026-10-31T13:06:20.932Z] [SW-LOG] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html] 🎯 [HyperEngine v4.0] Phase 5 - 빈 필드 강제 채우기...
+[2026-10-31T13:06:20.941Z] [SW-LOG] [BG_LOG][tab=1423406147] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html] 🎯 [HyperEngine v4.0] Phase 5 - 빈 필드 강제 채우기...
+[2026-10-31T13:06:20.956Z] [SW-LOG] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html] 🎯 [HyperEngine v4.0] Phase 6 - 라디오 버튼 미선택 그룹 처리...
+[2026-10-31T13:06:20.972Z] [SW-LOG] [BG_LOG][tab=1423406147] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html] 🎯 [HyperEngine v4.0] Phase 6 - 라디오 버튼 미선택 그룹 처리...
+[2026-10-31T13:06:20.987Z] [SW-LOG] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html] 🎯 [HyperEngine v4.0] Phase 8 - 커스텀 ARIA 체크박스/라디오 처리...
+[2026-10-31T13:06:20.998Z] [SW-LOG] [BG_LOG][tab=1423406147] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html] 🎯 [HyperEngine v4.0] Phase 8 - 커스텀 ARIA 체크박스/라디오 처리...
+[2026-10-31T13:06:21.045Z] [SW-LOG] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html] 🛠️ [HyperEngine v4.0] Phase 9 - BruteForce contentEditable/role=textbox...
+[2026-10-31T13:06:21.057Z] [SW-LOG] [BG_LOG][tab=1423406147] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html] 🛠️ [HyperEngine v4.0] Phase 9 - BruteForce contentEditable/role=textbox...
+[2026-10-31T13:06:21.073Z] [SW-LOG] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html] 🎯 [HyperEngine v4.0] Phase 10 - Super-BruteForce Sweeper (초강력 입력기) 가동...
+[2026-10-31T13:06:21.085Z] [SW-LOG] [BG_LOG][tab=1423406147] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html] 🎯 [HyperEngine v4.0] Phase 10 - Super-BruteForce Sweeper (초강력 입력기) 가동...
+[2026-10-31T13:06:21.098Z] [SW-LOG] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html] [STAGE] stage=REQUIRED_FIELDS_RESOLVED
+[2026-10-31T13:06:21.113Z] [SW-LOG] [BG_LOG][tab=1423406147] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html] [STAGE] stage=REQUIRED_FIELDS_RESOLVED
+[2026-10-31T13:06:21.130Z] [SW-LOG] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html] [STAGE] stage=FIELD_STATE_STABLE
+[2026-10-31T13:06:21.143Z] [SW-LOG] [BG_LOG][tab=1423406147] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html] [STAGE] stage=FIELD_STATE_STABLE
+[2026-10-31T13:06:21.154Z] [SW-LOG] [BG_LOG][tab=1423406147] ✅ [PIPELINE][REQUIRED_FIELDS_RESOLVED] url=http://127.0.0.1:8088/contact-standard.html
+[2026-10-31T13:06:21.166Z] ✨ Autofill fully verified at T+8.5s! Name="Alex Mercer" Msg="Requesting consultation on sys..."
+[2026-10-31T13:06:21.180Z] [SW-LOG] [BG_LOG][tab=1423406147] 🔒 [PIPELINE][FIELD_STATE_STABLE] url=http://127.0.0.1:8088/contact-standard.html
+[2026-10-31T13:06:21.193Z] [SW-LOG] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html] ✅ [HyperEngine v4.0] 폼 작성 완료 - 입력 필드 신규 4개, 기존유효 0개, 총 해결 4개 (총 5개, 미해결: 0개)
+[2026-10-31T13:06:21.203Z] [SW-LOG] [BG_LOG][tab=1423406147] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html] ✅ [HyperEngine v4.0] 폼 작성 완료 - 입력 필드 신규 4개, 기존유효 0개, 총 해결 4개 (총 5개, 미해결: 0개)
+[2026-10-31T13:06:21.212Z] [SW-LOG] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html] [AUTOFILL_RESULT] status=SUCCESS fieldsDetected=5 fieldsFilled=4 (new=4, prefilled=0) unresolved=0 reason=ok
+[2026-10-31T13:06:21.225Z] [SW-LOG] [BG_LOG][tab=1423406147] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html] [AUTOFILL_RESULT] status=SUCCESS fieldsDetected=5 fieldsFilled=4 (new=4, prefilled=0) unresolved=0 reason=ok
+[2026-10-31T13:06:21.235Z] [SW-LOG] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html] [FILL] messageBodyFilled=true
+[2026-10-31T13:06:21.247Z] [SW-LOG] [BG_LOG][tab=1423406147] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html] [FILL] messageBodyFilled=true
+[2026-10-31T13:06:21.258Z] [SW-LOG] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html] [AUTOFILL_VISUAL_CONFIRM] resolved=name,email,message formVisible=true
+[2026-10-31T13:06:21.270Z] [SW-LOG] [BG_LOG][tab=1423406147] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html] [AUTOFILL_VISUAL_CONFIRM] resolved=name,email,message formVisible=true
+[2026-10-31T13:06:21.281Z] [SW-LOG] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html] ✅ [FORM_PREP] COMPLETE
+[2026-10-31T13:06:21.293Z] [SW-LOG] [BG_LOG][tab=1423406147] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html] ✅ [FORM_PREP] COMPLETE
+[2026-10-31T13:06:21.300Z] [SW-LOG] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html] ⏳ [Engine] Holding for visual confirmation (500ms)...
+[2026-10-31T13:06:21.310Z] [SW-LOG] [BG_LOG][tab=1423406147] [CONTENT_EVENT][tabId=1423406147][attemptId=att_1793451970372_hpbef][url=http://127.0.0.1:8088/contact-standard.html] ⏳ [Engine] Holding for visual confirmation (500ms)...
+[2026-10-31T13:06:21.329Z] 📸 Captured screenshot: shot_rc11_fixture_a_autofill_standard.png
+[2026-10-31T13:06:21.338Z] ✅ FIXTURE A PASSED (100% Autonomous Orchestration Verified)
+[2026-10-31T13:06:21.347Z] 
+--- Negative Control A.1: Page without Contact Links or Forms (no-contact-page.html) ---
+[2026-10-31T13:06:21.360Z] [SW-LOG] [BG_LOG][tab=none] [BUILD_HANDSHAKE] popup=20678ada6491bf842ec7e996a88108152c76007f background=20678ada6491bf842ec7e996a88108152c76007f build=V7.0.0-RC11-20261030-THREE-MODE-CONTRACTS-PASS manifest=3 result=PASS
+[2026-10-31T13:06:21.375Z] [SW-LOG] [BG_LOG][tab=none] [START_BG] received queue=1
+[2026-10-31T13:06:21.388Z] [SW-LOG] [BG_LOG][tab=none] [PRIVACY_OWNER_OVERRIDE] scope=currentRun mode=DIRECT acknowledged=true
+[2026-10-31T13:06:21.399Z] [SW-LOG] [BG_LOG][tab=none] [OWNER_TEST_GUARD] declarativeNetRequest session rules removed cleanly
+[2026-10-31T13:06:21.427Z] [SW-LOG] [BG_LOG][tab=none] [NORMAL_CAMPAIGN_PREFLIGHT] publicTargets=0 testMode=false result=PASS
+[2026-10-31T13:06:21.447Z] [SW-LOG] [BG_LOG][tab=none] [OWNER_TEST_GUARD] declarativeNetRequest session rules removed cleanly
+[2026-10-31T13:06:21.463Z] [SW-LOG] [BG_LOG][tab=none] [PRIVACY_GATE] mode=DIRECT transport=DIRECT failClosed=false (OWNER_FUNCTION_TEST_MODE) status=READY
+[2026-10-31T13:06:21.478Z] [SW-LOG] [BG_LOG][tab=none] [START_BG_READY] privacyReady=true
+[2026-10-31T13:06:21.490Z] Negative control campaign started: {"success":true,"status":"acknowledged","queueCount":1,"campaignRunId":"run_1793451970327_elqez"}
+[2026-10-31T13:06:21.504Z] [SW-LOG] [BG_LOG][tab=none] [Boot] Orchestrator entered.
+[2026-10-31T13:06:21.518Z] [SW-LOG] [TAB_BARRIER] phase=START_CAMPAIGN_BOOT ownedBefore=1
+[2026-10-31T13:06:21.609Z] [SW-LOG] [TAB_BARRIER] phase=START_CAMPAIGN_BOOT ownedAfter=0 result=PASS
+[2026-10-31T13:06:21.619Z] [SW-LOG] [BG_LOG][tab=none] [Boot] Previous state cleared.
+[2026-10-31T13:06:21.628Z] [SW-LOG] [BG_LOG][tab=none] [Boot] CAPTCHA solver state reset (attempts=0, identity=null).
+[2026-10-31T13:06:21.639Z] [SW-LOG] [BG_LOG][tab=none] 📊 [Queue Filter] Input: 1 | Duplicates: 0 | Suppressed: 0 | History-Attempted: 0 | Executable: 1
+[2026-10-31T13:06:21.648Z] [SW-LOG] [BG_LOG][tab=none] [Boot] Variables initialized.
+[2026-10-31T13:06:21.674Z] [SW-LOG] [BG_LOG][tab=none] 🚀 Engine booting...
+[2026-10-31T13:06:21.695Z] [SW-LOG] [BG_LOG][tab=none] [CAMPAIGN_START] buildId=V7.0.0-RC11-20261030-THREE-MODE-CONTRACTS-PASS campaignRunId=run_1793451970327_elqez totalTargets=1 mode=NORMAL delayMs=200 fillDelayMs=20 submitDelayMs=500
+[2026-10-31T13:06:21.715Z] [SW-LOG] [BG_LOG][tab=none] [Boot] Storage sync initiated.
+[2026-10-31T13:06:21.747Z] [SW-LOG] [BG_LOG][tab=none] [Boot] Target loop triggered.
+[2026-10-31T13:06:21.802Z] [SW-LOG] [BG_LOG][tab=none] [TARGET 1/1][127.0.0.1] START
+[2026-10-31T13:06:21.812Z] [SW-LOG] [BG_LOG][tab=none] [TARGET_START] buildId=V7.0.0-RC11-20261030-THREE-MODE-CONTRACTS-PASS campaignRunId=run_1793451970327_elqez attemptId=att_1793451970372_hpbef targetIndex=1/1 targetUrl=http://127.0.0.1:8088/no-contact-page.html
+[2026-10-31T13:06:21.826Z] [SW-LOG] [BG_LOG][tab=none] [EXEC_IDENTITY_PRE_NAV] attemptId=att_1793451981628_d2g8u token=tok_1793451981627_505u8i epoch=3
+[2026-10-31T13:06:21.844Z] [SW-LOG] [BG_LOG][tab=1423407419] [TAB_FOCUS] tabId=1423407419 windowId=1423406143 active=true focused=true
+[2026-10-31T13:06:21.868Z] [SW-LOG] [BG_LOG][tab=1423407419] Step 1: Sniper Mode active. Searching for contact page...
+[2026-10-31T13:06:21.914Z] [SW-LOG] [BG_LOG][tab=1423407419] 🔦 Fast-scanning candidate paths (1-10)...
+[2026-10-31T13:06:21.977Z] [SW-LOG] [BG_LOG][tab=1423407419] Pre-scan complete. Identified 10 valid paths.
+[2026-10-31T13:06:22.032Z] [SW-LOG] [BG_LOG][tab=1423407419] [SniperScan] Identified 10 candidate paths in background.
+[2026-10-31T13:06:22.045Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407419][attemptId=att_1793451981628_d2g8u][url=http://127.0.0.1:8088/article.html] ⚠️ [Engine] Suppressing duplicate setup (Signals re-sent).
+[2026-10-31T13:06:22.054Z] [SW-LOG] [BG_LOG][tab=1423407419] [CONTENT_EVENT][tabId=1423407419][attemptId=att_1793451981628_d2g8u][url=http://127.0.0.1:8088/article.html] ⚠️ [Engine] Suppressing duplicate setup (Signals re-sent).
+[2026-10-31T13:06:22.067Z] [SW-LOG] [BG_LOG][tab=1423407419] [TAB_FOCUS] tabId=1423407419 windowId=1423406143 active=true focused=true
+[2026-10-31T13:06:22.076Z] [SW-LOG] [BG_LOG][tab=1423407419] [TAB_OWNERSHIP] VERIFIED_REDIRECT source=127.0.0.1 target=127.0.0.1 relation=SAME_HOST
+[2026-10-31T13:06:22.086Z] [SW-LOG] [BG_LOG][tab=1423407419] [FOCUS_SECURED] formPageUrl=http://127.0.0.1:8088/article.html
+[2026-10-31T13:06:22.102Z] [SW-LOG] [BG_LOG][tab=1423407419] Extraction focus secured. Mapping template fields...
+[2026-10-31T13:06:22.123Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407419][attemptId=att_1793451981628_d2g8u][url=http://127.0.0.1:8088/article.html] [TARGET_PAGE] url=http://127.0.0.1:8088/article.html domGeneration=1793451982101 attemptId=att_1793451981628_d2g8u
+[2026-10-31T13:06:22.133Z] [SW-LOG] [BG_LOG][tab=1423407419] [CONTENT_EVENT][tabId=1423407419][attemptId=att_1793451981628_d2g8u][url=http://127.0.0.1:8088/article.html] [TARGET_PAGE] url=http://127.0.0.1:8088/article.html domGeneration=1793451982101 attemptId=att_1793451981628_d2g8u
+[2026-10-31T13:06:22.142Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407419][attemptId=att_1793451981628_d2g8u][url=http://127.0.0.1:8088/article.html] [CAPTCHA_STATE_RESET] attemptId=processCampaign epoch=current isCaptchaSolved=false captchaTokenInjected=false
+[2026-10-31T13:06:22.156Z] [SW-LOG] [BG_LOG][tab=1423407419] [CONTENT_EVENT][tabId=1423407419][attemptId=att_1793451981628_d2g8u][url=http://127.0.0.1:8088/article.html] [CAPTCHA_STATE_RESET] attemptId=processCampaign epoch=current isCaptchaSolved=false captchaTokenInjected=false
+[2026-10-31T13:06:22.165Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407419][attemptId=att_1793451981628_d2g8u][url=http://127.0.0.1:8088/article.html] 🚀 [Engine] Ultra-Mode process started
+[2026-10-31T13:06:22.175Z] [SW-LOG] [BG_LOG][tab=1423407419] [CONTENT_EVENT][tabId=1423407419][attemptId=att_1793451981628_d2g8u][url=http://127.0.0.1:8088/article.html] 🚀 [Engine] Ultra-Mode process started
+[2026-10-31T13:06:22.189Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407419][attemptId=att_1793451981628_d2g8u][url=http://127.0.0.1:8088/article.html] 🧹 [Cleaner] Scanning for intrusive overlays/popups and cookie banners...
+[2026-10-31T13:06:22.198Z] [SW-LOG] [BG_LOG][tab=1423407419] [CONTENT_EVENT][tabId=1423407419][attemptId=att_1793451981628_d2g8u][url=http://127.0.0.1:8088/article.html] 🧹 [Cleaner] Scanning for intrusive overlays/popups and cookie banners...
+[2026-10-31T13:06:22.209Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407419][attemptId=att_1793451981628_d2g8u][url=http://127.0.0.1:8088/article.html] [TARGET_PAGE] url=http://127.0.0.1:8088/article.html recursion=0
+[2026-10-31T13:06:22.223Z] [SW-LOG] [BG_LOG][tab=1423407419] [CONTENT_EVENT][tabId=1423407419][attemptId=att_1793451981628_d2g8u][url=http://127.0.0.1:8088/article.html] [TARGET_PAGE] url=http://127.0.0.1:8088/article.html recursion=0
+[2026-10-31T13:06:22.233Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407419][attemptId=att_1793451981628_d2g8u][url=http://127.0.0.1:8088/article.html] 🔍 [Discovery] URL: http://127.0.0.1:8088/article.html | Recursion: 0
+[2026-10-31T13:06:22.242Z] [SW-LOG] [BG_LOG][tab=1423407419] [CONTENT_EVENT][tabId=1423407419][attemptId=att_1793451981628_d2g8u][url=http://127.0.0.1:8088/article.html] 🔍 [Discovery] URL: http://127.0.0.1:8088/article.html | Recursion: 0
+[2026-10-31T13:06:22.250Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407419][attemptId=att_1793451981628_d2g8u][url=http://127.0.0.1:8088/article.html] 🧹 [Cleaner] Scanning for intrusive overlays/popups...
+[2026-10-31T13:06:22.258Z] [SW-LOG] [BG_LOG][tab=1423407419] [CONTENT_EVENT][tabId=1423407419][attemptId=att_1793451981628_d2g8u][url=http://127.0.0.1:8088/article.html] 🧹 [Cleaner] Scanning for intrusive overlays/popups...
+[2026-10-31T13:06:22.267Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407419][attemptId=att_1793451981628_d2g8u][url=http://127.0.0.1:8088/article.html] 🧐 [Discovery] Polling attempt 1/3... | URL: http://127.0.0.1:8088/article.html | Recursion: 0
+[2026-10-31T13:06:22.275Z] [SW-LOG] [BG_LOG][tab=1423407419] [CONTENT_EVENT][tabId=1423407419][attemptId=att_1793451981628_d2g8u][url=http://127.0.0.1:8088/article.html] 🧐 [Discovery] Polling attempt 1/3... | URL: http://127.0.0.1:8088/article.html | Recursion: 0
+[2026-10-31T13:06:23.544Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407419][attemptId=att_1793451981628_d2g8u][url=http://127.0.0.1:8088/article.html] 🕵️ [UltraFinder] Scanning complex structures (ShadowDOM & Multi-Root)...
+[2026-10-31T13:06:23.554Z] [SW-LOG] [BG_LOG][tab=1423407419] [CONTENT_EVENT][tabId=1423407419][attemptId=att_1793451981628_d2g8u][url=http://127.0.0.1:8088/article.html] 🕵️ [UltraFinder] Scanning complex structures (ShadowDOM & Multi-Root)...
+[2026-10-31T13:06:23.562Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407419][attemptId=att_1793451981628_d2g8u][url=http://127.0.0.1:8088/article.html] 🕵️ [Supreme-Scan 5.0] Pre-scanning labels and context...
+[2026-10-31T13:06:23.571Z] [SW-LOG] [BG_LOG][tab=1423407419] [CONTENT_EVENT][tabId=1423407419][attemptId=att_1793451981628_d2g8u][url=http://127.0.0.1:8088/article.html] 🕵️ [Supreme-Scan 5.0] Pre-scanning labels and context...
+[2026-10-31T13:06:23.583Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407419][attemptId=att_1793451981628_d2g8u][url=http://127.0.0.1:8088/article.html] 🔍 [Scan] Scanned 4 elements. Highest score: -999
+[2026-10-31T13:06:23.593Z] [SW-LOG] [BG_LOG][tab=1423407419] [CONTENT_EVENT][tabId=1423407419][attemptId=att_1793451981628_d2g8u][url=http://127.0.0.1:8088/article.html] 🔍 [Scan] Scanned 4 elements. Highest score: -999
+[2026-10-31T13:06:23.600Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407419][attemptId=att_1793451981628_d2g8u][url=http://127.0.0.1:8088/article.html] ⚠️ [Scan] No valid forms reached threshold score (Target Score: 35)
+[2026-10-31T13:06:23.607Z] [SW-LOG] [BG_LOG][tab=1423407419] [CONTENT_EVENT][tabId=1423407419][attemptId=att_1793451981628_d2g8u][url=http://127.0.0.1:8088/article.html] ⚠️ [Scan] No valid forms reached threshold score (Target Score: 35)
+[2026-10-31T13:06:23.614Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407419][attemptId=att_1793451981628_d2g8u][url=http://127.0.0.1:8088/article.html] 🚀 [Engine] Ultra-Mode: Scrolling to reveal lazy-loaded content...
+[2026-10-31T13:06:23.621Z] [SW-LOG] [BG_LOG][tab=1423407419] [CONTENT_EVENT][tabId=1423407419][attemptId=att_1793451981628_d2g8u][url=http://127.0.0.1:8088/article.html] 🚀 [Engine] Ultra-Mode: Scrolling to reveal lazy-loaded content...
+[2026-10-31T13:06:25.056Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407419][attemptId=att_1793451981628_d2g8u][url=http://127.0.0.1:8088/article.html] 🧐 [Discovery] Polling attempt 2/3... | URL: http://127.0.0.1:8088/article.html | Recursion: 0
+[2026-10-31T13:06:25.063Z] [SW-LOG] [BG_LOG][tab=1423407419] [CONTENT_EVENT][tabId=1423407419][attemptId=att_1793451981628_d2g8u][url=http://127.0.0.1:8088/article.html] 🧐 [Discovery] Polling attempt 2/3... | URL: http://127.0.0.1:8088/article.html | Recursion: 0
+[2026-10-31T13:06:26.470Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407419][attemptId=att_1793451981628_d2g8u][url=http://127.0.0.1:8088/article.html] 🕵️ [UltraFinder] Scanning complex structures (ShadowDOM & Multi-Root)...
+[2026-10-31T13:06:26.479Z] [SW-LOG] [BG_LOG][tab=1423407419] [CONTENT_EVENT][tabId=1423407419][attemptId=att_1793451981628_d2g8u][url=http://127.0.0.1:8088/article.html] 🕵️ [UltraFinder] Scanning complex structures (ShadowDOM & Multi-Root)...
+[2026-10-31T13:06:26.488Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407419][attemptId=att_1793451981628_d2g8u][url=http://127.0.0.1:8088/article.html] 🕵️ [Supreme-Scan 5.0] Pre-scanning labels and context...
+[2026-10-31T13:06:26.496Z] [SW-LOG] [BG_LOG][tab=1423407419] [CONTENT_EVENT][tabId=1423407419][attemptId=att_1793451981628_d2g8u][url=http://127.0.0.1:8088/article.html] 🕵️ [Supreme-Scan 5.0] Pre-scanning labels and context...
+[2026-10-31T13:06:26.531Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407419][attemptId=att_1793451981628_d2g8u][url=http://127.0.0.1:8088/article.html] 🔍 [Scan] Scanned 4 elements. Highest score: -999
+[2026-10-31T13:06:26.540Z] [SW-LOG] [BG_LOG][tab=1423407419] [CONTENT_EVENT][tabId=1423407419][attemptId=att_1793451981628_d2g8u][url=http://127.0.0.1:8088/article.html] 🔍 [Scan] Scanned 4 elements. Highest score: -999
+[2026-10-31T13:06:26.549Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407419][attemptId=att_1793451981628_d2g8u][url=http://127.0.0.1:8088/article.html] ⚠️ [Scan] No valid forms reached threshold score (Target Score: 35)
+[2026-10-31T13:06:26.561Z] [SW-LOG] [BG_LOG][tab=1423407419] [CONTENT_EVENT][tabId=1423407419][attemptId=att_1793451981628_d2g8u][url=http://127.0.0.1:8088/article.html] ⚠️ [Scan] No valid forms reached threshold score (Target Score: 35)
+[2026-10-31T13:06:26.580Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407419][attemptId=att_1793451981628_d2g8u][url=http://127.0.0.1:8088/article.html] 🔘 [Supreme-Scan] No form found. Attempting to trigger hidden contact containers...
+[2026-10-31T13:06:26.597Z] [SW-LOG] [BG_LOG][tab=1423407419] [CONTENT_EVENT][tabId=1423407419][attemptId=att_1793451981628_d2g8u][url=http://127.0.0.1:8088/article.html] 🔘 [Supreme-Scan] No form found. Attempting to trigger hidden contact containers...
+[2026-10-31T13:06:27.123Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407419][attemptId=att_1793451981628_d2g8u][url=http://127.0.0.1:8088/article.html] 💓 [Heartbeat] Engine active and processing...
+[2026-10-31T13:06:27.130Z] [SW-LOG] [BG_LOG][tab=1423407419] [CONTENT_EVENT][tabId=1423407419][attemptId=att_1793451981628_d2g8u][url=http://127.0.0.1:8088/article.html] 💓 [Heartbeat] Engine active and processing...
+[2026-10-31T13:06:27.981Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407419][attemptId=att_1793451981628_d2g8u][url=http://127.0.0.1:8088/article.html] 🧐 [Discovery] Polling attempt 3/3... | URL: http://127.0.0.1:8088/article.html | Recursion: 0
+[2026-10-31T13:06:27.989Z] [SW-LOG] [BG_LOG][tab=1423407419] [CONTENT_EVENT][tabId=1423407419][attemptId=att_1793451981628_d2g8u][url=http://127.0.0.1:8088/article.html] 🧐 [Discovery] Polling attempt 3/3... | URL: http://127.0.0.1:8088/article.html | Recursion: 0
+[2026-10-31T13:06:29.396Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407419][attemptId=att_1793451981628_d2g8u][url=http://127.0.0.1:8088/article.html] 🕵️ [UltraFinder] Scanning complex structures (ShadowDOM & Multi-Root)...
+[2026-10-31T13:06:29.404Z] [SW-LOG] [BG_LOG][tab=1423407419] [CONTENT_EVENT][tabId=1423407419][attemptId=att_1793451981628_d2g8u][url=http://127.0.0.1:8088/article.html] 🕵️ [UltraFinder] Scanning complex structures (ShadowDOM & Multi-Root)...
+[2026-10-31T13:06:29.411Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407419][attemptId=att_1793451981628_d2g8u][url=http://127.0.0.1:8088/article.html] 🕵️ [Supreme-Scan 5.0] Pre-scanning labels and context...
+[2026-10-31T13:06:29.418Z] [SW-LOG] [BG_LOG][tab=1423407419] [CONTENT_EVENT][tabId=1423407419][attemptId=att_1793451981628_d2g8u][url=http://127.0.0.1:8088/article.html] 🕵️ [Supreme-Scan 5.0] Pre-scanning labels and context...
+[2026-10-31T13:06:29.425Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407419][attemptId=att_1793451981628_d2g8u][url=http://127.0.0.1:8088/article.html] 🔍 [Scan] Scanned 4 elements. Highest score: -999
+[2026-10-31T13:06:29.432Z] [SW-LOG] [BG_LOG][tab=1423407419] [CONTENT_EVENT][tabId=1423407419][attemptId=att_1793451981628_d2g8u][url=http://127.0.0.1:8088/article.html] 🔍 [Scan] Scanned 4 elements. Highest score: -999
+[2026-10-31T13:06:29.439Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407419][attemptId=att_1793451981628_d2g8u][url=http://127.0.0.1:8088/article.html] ⚠️ [Scan] No valid forms reached threshold score (Target Score: 35)
+[2026-10-31T13:06:29.446Z] [SW-LOG] [BG_LOG][tab=1423407419] [CONTENT_EVENT][tabId=1423407419][attemptId=att_1793451981628_d2g8u][url=http://127.0.0.1:8088/article.html] ⚠️ [Scan] No valid forms reached threshold score (Target Score: 35)
+[2026-10-31T13:06:30.898Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407419][attemptId=att_1793451981628_d2g8u][url=http://127.0.0.1:8088/article.html] [FORM_SCAN] forms=0 logicalContainers=0 crossOriginFrames=0 externalFormCandidates=0
+[2026-10-31T13:06:30.908Z] [SW-LOG] [BG_LOG][tab=1423407419] [CONTENT_EVENT][tabId=1423407419][attemptId=att_1793451981628_d2g8u][url=http://127.0.0.1:8088/article.html] [FORM_SCAN] forms=0 logicalContainers=0 crossOriginFrames=0 externalFormCandidates=0
+[2026-10-31T13:06:30.916Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407419][attemptId=att_1793451981628_d2g8u][url=http://127.0.0.1:8088/article.html] [PAGE_CLASS] NO_CONTACT
+[2026-10-31T13:06:30.923Z] [SW-LOG] [BG_LOG][tab=1423407419] [CONTENT_EVENT][tabId=1423407419][attemptId=att_1793451981628_d2g8u][url=http://127.0.0.1:8088/article.html] [PAGE_CLASS] NO_CONTACT
+[2026-10-31T13:06:30.932Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407419][attemptId=att_1793451981628_d2g8u][url=http://127.0.0.1:8088/article.html] [LONG_TEXT_GATE] found=false
+[2026-10-31T13:06:30.939Z] [SW-LOG] [BG_LOG][tab=1423407419] [CONTENT_EVENT][tabId=1423407419][attemptId=att_1793451981628_d2g8u][url=http://127.0.0.1:8088/article.html] [LONG_TEXT_GATE] found=false
+[2026-10-31T13:06:30.948Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407419][attemptId=att_1793451981628_d2g8u][url=http://127.0.0.1:8088/article.html] [FORM_GATE] eligible=false reason=NO_LONG_TEXT_INQUIRY_FIELD
+[2026-10-31T13:06:30.959Z] [SW-LOG] [BG_LOG][tab=1423407419] [CONTENT_EVENT][tabId=1423407419][attemptId=att_1793451981628_d2g8u][url=http://127.0.0.1:8088/article.html] [FORM_GATE] eligible=false reason=NO_LONG_TEXT_INQUIRY_FIELD
+[2026-10-31T13:06:30.966Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407419][attemptId=att_1793451981628_d2g8u][url=http://127.0.0.1:8088/article.html] 🕵️ [Discovery] Scanning DOM for contact links (Track A)...
+[2026-10-31T13:06:30.976Z] [SW-LOG] [BG_LOG][tab=1423407419] [CONTENT_EVENT][tabId=1423407419][attemptId=att_1793451981628_d2g8u][url=http://127.0.0.1:8088/article.html] 🕵️ [Discovery] Scanning DOM for contact links (Track A)...
+[2026-10-31T13:06:30.984Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407419][attemptId=att_1793451981628_d2g8u][url=http://127.0.0.1:8088/article.html] ⚡ [Discovery] No form or links on current page. Trying common contact aliases...
+[2026-10-31T13:06:30.994Z] [SW-LOG] [BG_LOG][tab=1423407419] [CONTENT_EVENT][tabId=1423407419][attemptId=att_1793451981628_d2g8u][url=http://127.0.0.1:8088/article.html] ⚡ [Discovery] No form or links on current page. Trying common contact aliases...
+[2026-10-31T13:06:31.005Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407419][attemptId=att_1793451981628_d2g8u][url=http://127.0.0.1:8088/article.html] ⚡ [Discovery] Navigating to contact alias: http://127.0.0.1:8088/contact
+[2026-10-31T13:06:31.013Z] [SW-LOG] [BG_LOG][tab=1423407419] [CONTENT_EVENT][tabId=1423407419][attemptId=att_1793451981628_d2g8u][url=http://127.0.0.1:8088/article.html] ⚡ [Discovery] Navigating to contact alias: http://127.0.0.1:8088/contact
+[2026-10-31T13:06:31.024Z] [SW-LOG] [BG_LOG][tab=1423407419] 🔓 [Engine] URL path changed. Resetting focus lock for SPA re-injection.
+[2026-10-31T13:06:31.031Z] [SW-LOG] [BG_LOG][tab=1423407419] 🔄 [Engine] Internal navigation detected (SPA). Preparing re-injection...
+[2026-10-31T13:06:31.040Z] [SW-LOG] [BG_LOG][tab=1423407419] [TAB_FOCUS] tabId=1423407419 windowId=1423406143 active=true focused=true
+[2026-10-31T13:06:31.047Z] [SW-LOG] [BG_LOG][tab=1423407419] [TAB_OWNERSHIP] VERIFIED_REDIRECT source=127.0.0.1 target=127.0.0.1 relation=SAME_HOST
+[2026-10-31T13:06:31.055Z] [SW-LOG] [BG_LOG][tab=1423407419] [FOCUS_SECURED] formPageUrl=http://127.0.0.1:8088/contact
+[2026-10-31T13:06:31.063Z] [SW-LOG] [BG_LOG][tab=1423407419] Extraction focus secured. Mapping template fields...
+[2026-10-31T13:06:31.071Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407419][attemptId=att_1793451981628_d2g8u][url=http://127.0.0.1:8088/contact] [TARGET_PAGE] url=http://127.0.0.1:8088/contact domGeneration=1793451991032 attemptId=att_1793451981628_d2g8u
+[2026-10-31T13:06:31.078Z] [SW-LOG] [BG_LOG][tab=1423407419] [CONTENT_EVENT][tabId=1423407419][attemptId=att_1793451981628_d2g8u][url=http://127.0.0.1:8088/contact] [TARGET_PAGE] url=http://127.0.0.1:8088/contact domGeneration=1793451991032 attemptId=att_1793451981628_d2g8u
+[2026-10-31T13:06:31.085Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407419][attemptId=att_1793451981628_d2g8u][url=http://127.0.0.1:8088/contact] [CAPTCHA_STATE_RESET] attemptId=processCampaign epoch=current isCaptchaSolved=false captchaTokenInjected=false
+[2026-10-31T13:06:31.092Z] [SW-LOG] [BG_LOG][tab=1423407419] [CONTENT_EVENT][tabId=1423407419][attemptId=att_1793451981628_d2g8u][url=http://127.0.0.1:8088/contact] [CAPTCHA_STATE_RESET] attemptId=processCampaign epoch=current isCaptchaSolved=false captchaTokenInjected=false
+[2026-10-31T13:06:31.099Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407419][attemptId=att_1793451981628_d2g8u][url=http://127.0.0.1:8088/contact] 🚀 [Engine] Ultra-Mode process started
+[2026-10-31T13:06:31.106Z] [SW-LOG] [BG_LOG][tab=1423407419] [CONTENT_EVENT][tabId=1423407419][attemptId=att_1793451981628_d2g8u][url=http://127.0.0.1:8088/contact] 🚀 [Engine] Ultra-Mode process started
+[2026-10-31T13:06:31.113Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407419][attemptId=att_1793451981628_d2g8u][url=http://127.0.0.1:8088/contact] 🧹 [Cleaner] Scanning for intrusive overlays/popups and cookie banners...
+[2026-10-31T13:06:31.120Z] [SW-LOG] [BG_LOG][tab=1423407419] [CONTENT_EVENT][tabId=1423407419][attemptId=att_1793451981628_d2g8u][url=http://127.0.0.1:8088/contact] 🧹 [Cleaner] Scanning for intrusive overlays/popups and cookie banners...
+[2026-10-31T13:06:31.127Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407419][attemptId=att_1793451981628_d2g8u][url=http://127.0.0.1:8088/contact] ⚠️ [Recovery] Error/404 page detected on candidate: http://127.0.0.1:8088/contact
+[2026-10-31T13:06:31.134Z] [SW-LOG] [BG_LOG][tab=1423407419] [CONTENT_EVENT][tabId=1423407419][attemptId=att_1793451981628_d2g8u][url=http://127.0.0.1:8088/contact] ⚠️ [Recovery] Error/404 page detected on candidate: http://127.0.0.1:8088/contact
+[2026-10-31T13:06:31.141Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407419][attemptId=att_1793451981628_d2g8u][url=http://127.0.0.1:8088/contact] [PAGE_CLASS] ERROR_404_PAGE
+[2026-10-31T13:06:31.148Z] [SW-LOG] [BG_LOG][tab=1423407419] [CONTENT_EVENT][tabId=1423407419][attemptId=att_1793451981628_d2g8u][url=http://127.0.0.1:8088/contact] [PAGE_CLASS] ERROR_404_PAGE
+[2026-10-31T13:06:31.159Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407419][attemptId=att_1793451981628_d2g8u][url=http://127.0.0.1:8088/contact] [LOOPBACK_FIXTURE_ERROR] Candidate http://127.0.0.1:8088/contact is 404/dead. Settle cleanly without alias deviation.
+[2026-10-31T13:06:31.166Z] [SW-LOG] [BG_LOG][tab=1423407419] [CONTENT_EVENT][tabId=1423407419][attemptId=att_1793451981628_d2g8u][url=http://127.0.0.1:8088/contact] [LOOPBACK_FIXTURE_ERROR] Candidate http://127.0.0.1:8088/contact is 404/dead. Settle cleanly without alias deviation.
+[2026-10-31T13:06:31.174Z] [SW-LOG] [BG_LOG][tab=1423407419] [CIRCUIT_BREAKER_CLASSIFY] errorClass=SITE_SPECIFIC reason=NO_ACCESSIBLE_INQUIRY_FORM
+[2026-10-31T13:06:31.181Z] [SW-LOG] [BG_LOG][tab=1423407419] [RESULT] resultUrl=http://127.0.0.1:8088/contact
+[2026-10-31T13:06:31.190Z] [SW-LOG] [BG_LOG][tab=1423407419] [FINAL_CANONICAL] status=FAILURE reason=NO_ACCESSIBLE_INQUIRY_FORM attemptId=att_1793451981628_d2g8u
+[2026-10-31T13:06:31.196Z] [SW-LOG] [BG_LOG][tab=1423407419] [TARGET][127.0.0.1] FINAL status=FAILURE reason=NO_ACCESSIBLE_INQUIRY_FORM
+[2026-10-31T13:06:31.207Z] [SW-LOG] [BG_LOG][tab=1423407419] [HISTORY_FINAL] sourceUrl=http://127.0.0.1:8088/no-contact-page.html contactPageUrl=http://127.0.0.1:8088/contact formPageUrl=http://127.0.0.1:8088/contact resultUrl=http://127.0.0.1:8088/contact
+[2026-10-31T13:06:31.214Z] [SW-LOG] [BG_LOG][tab=1423407419] [TARGET_END] campaignRunId=run_1793451970327_elqez attemptId=att_1793451981628_d2g8u status=FAILURE reason=NO_ACCESSIBLE_INQUIRY_FORM
+[2026-10-31T13:06:31.223Z] [SW-LOG] [BG_LOG][tab=1423407419] [LEDGER_STATS] scope=currentRun success=0 failure=1 unknown=0 timeout=0 skipped=0
+[2026-10-31T13:06:31.281Z] Negative control settled at T+9s: {"isActive":true,"isFaulted":false,"visitedUrls":["http://127.0.0.1:8088/no-contact-page.html"],"lastReason":"NO_ACCESSIBLE_INQUIRY_FORM"}
+[2026-10-31T13:06:31.288Z] Negative Control A.1 Final Outcome: {"isActive":true,"isFaulted":false,"visitedUrls":["http://127.0.0.1:8088/no-contact-page.html"],"lastReason":"NO_ACCESSIBLE_INQUIRY_FORM"}
+[2026-10-31T13:06:31.295Z] ✅ Negative Control A.1 PASSED (Formless target correctly exhausted, no false positive)
+[2026-10-31T13:06:31.304Z] 
+=========================================================================
+[2026-10-31T13:06:31.310Z] --- FIXTURE B: Phone/Email-Only Form with NO Message Field (phone-only-no-message.html) ---
+[2026-10-31T13:06:31.318Z] =========================================================================
+[2026-10-31T13:06:31.328Z] Server submissions before Fixture B: 0
+[2026-10-31T13:06:31.337Z] [SW-LOG] [BG_LOG][tab=none] [BUILD_HANDSHAKE] popup=20678ada6491bf842ec7e996a88108152c76007f background=20678ada6491bf842ec7e996a88108152c76007f build=V7.0.0-RC11-20261030-THREE-MODE-CONTRACTS-PASS manifest=3 result=PASS
+[2026-10-31T13:06:31.345Z] [SW-LOG] [BG_LOG][tab=none] [START_BG] received queue=1
+[2026-10-31T13:06:31.354Z] [SW-LOG] [BG_LOG][tab=none] [PRIVACY_OWNER_OVERRIDE] scope=currentRun mode=DIRECT acknowledged=true
+[2026-10-31T13:06:31.362Z] [SW-LOG] [BG_LOG][tab=none] [OWNER_TEST_GUARD] declarativeNetRequest session rules removed cleanly
+[2026-10-31T13:06:31.372Z] [SW-LOG] [BG_LOG][tab=none] [NORMAL_CAMPAIGN_PREFLIGHT] publicTargets=0 testMode=false result=PASS
+[2026-10-31T13:06:31.380Z] [SW-LOG] [BG_LOG][tab=none] [OWNER_TEST_GUARD] declarativeNetRequest session rules removed cleanly
+[2026-10-31T13:06:31.389Z] [SW-LOG] [BG_LOG][tab=none] [PRIVACY_GATE] mode=DIRECT transport=DIRECT failClosed=false (OWNER_FUNCTION_TEST_MODE) status=READY
+[2026-10-31T13:06:31.397Z] [SW-LOG] [BG_LOG][tab=none] [START_BG_READY] privacyReady=true
+[2026-10-31T13:06:31.406Z] Fixture B campaign started: {"success":true,"status":"acknowledged","queueCount":1,"campaignRunId":"run_1793451970327_elqez"}
+[2026-10-31T13:06:31.413Z] [SW-LOG] [BG_LOG][tab=none] [Boot] Orchestrator entered.
+[2026-10-31T13:06:31.425Z] [SW-LOG] [TAB_BARRIER] phase=START_CAMPAIGN_BOOT ownedBefore=1
+[2026-10-31T13:06:31.542Z] [SW-LOG] [TAB_BARRIER] phase=START_CAMPAIGN_BOOT ownedAfter=0 result=PASS
+[2026-10-31T13:06:31.552Z] [SW-LOG] [BG_LOG][tab=none] [Boot] Previous state cleared.
+[2026-10-31T13:06:31.560Z] [SW-LOG] [BG_LOG][tab=none] [Boot] CAPTCHA solver state reset (attempts=0, identity=null).
+[2026-10-31T13:06:31.569Z] [SW-LOG] [BG_LOG][tab=none] 📊 [Queue Filter] Input: 1 | Duplicates: 0 | Suppressed: 0 | History-Attempted: 0 | Executable: 1
+[2026-10-31T13:06:31.576Z] [SW-LOG] [BG_LOG][tab=none] [Boot] Variables initialized.
+[2026-10-31T13:06:31.585Z] [SW-LOG] [BG_LOG][tab=none] 🚀 Engine booting...
+[2026-10-31T13:06:31.594Z] [SW-LOG] [BG_LOG][tab=none] [CAMPAIGN_START] buildId=V7.0.0-RC11-20261030-THREE-MODE-CONTRACTS-PASS campaignRunId=run_1793451970327_elqez totalTargets=1 mode=NORMAL delayMs=200 fillDelayMs=20 submitDelayMs=500
+[2026-10-31T13:06:31.605Z] [SW-LOG] [BG_LOG][tab=none] [Boot] Storage sync initiated.
+[2026-10-31T13:06:31.616Z] [SW-LOG] [BG_LOG][tab=none] [Boot] Target loop triggered.
+[2026-10-31T13:06:31.626Z] [SW-LOG] [BG_LOG][tab=none] [TARGET 1/1][127.0.0.1] START
+[2026-10-31T13:06:31.638Z] [SW-LOG] [BG_LOG][tab=none] [TARGET_START] buildId=V7.0.0-RC11-20261030-THREE-MODE-CONTRACTS-PASS campaignRunId=run_1793451970327_elqez attemptId=att_1793451981628_d2g8u targetIndex=1/1 targetUrl=http://127.0.0.1:8088/phone-only-no-message.html
+[2026-10-31T13:06:31.647Z] [SW-LOG] [BG_LOG][tab=none] [EXEC_IDENTITY_PRE_NAV] attemptId=att_1793451991556_jxzft token=tok_1793451991556_atsaew epoch=4
+[2026-10-31T13:06:31.662Z] [SW-LOG] [BG_LOG][tab=1423407424] [TAB_FOCUS] tabId=1423407424 windowId=1423406143 active=true focused=true
+[2026-10-31T13:06:31.673Z] [SW-LOG] [BG_LOG][tab=1423407424] Step 1: Sniper Mode active. Searching for contact page...
+[2026-10-31T13:06:31.682Z] [SW-LOG] [BG_LOG][tab=1423407424] 🔦 Fast-scanning candidate paths (1-10)...
+[2026-10-31T13:06:31.692Z] [SW-LOG] [BG_LOG][tab=1423407424] Pre-scan complete. Identified 10 valid paths.
+[2026-10-31T13:06:31.700Z] [SW-LOG] [BG_LOG][tab=1423407424] [SniperScan] Identified 10 candidate paths in background.
+[2026-10-31T13:06:31.794Z] [SW-LOG] [BG_LOG][tab=1423407424] [TAB_FOCUS] tabId=1423407424 windowId=1423406143 active=true focused=true
+[2026-10-31T13:06:31.806Z] [SW-LOG] [BG_LOG][tab=1423407424] [TAB_OWNERSHIP] VERIFIED_REDIRECT source=127.0.0.1 target=127.0.0.1 relation=SAME_HOST
+[2026-10-31T13:06:31.821Z] [SW-LOG] [BG_LOG][tab=1423407424] [FOCUS_SECURED] formPageUrl=http://127.0.0.1:8088/phone-only-no-message.html
+[2026-10-31T13:06:31.831Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407424][attemptId=att_1793451991556_jxzft][url=http://127.0.0.1:8088/phone-only-no-message.html] ⚠️ [Engine] Suppressing duplicate setup (Signals re-sent).
+[2026-10-31T13:06:31.842Z] [SW-LOG] [BG_LOG][tab=1423407424] [CONTENT_EVENT][tabId=1423407424][attemptId=att_1793451991556_jxzft][url=http://127.0.0.1:8088/phone-only-no-message.html] ⚠️ [Engine] Suppressing duplicate setup (Signals re-sent).
+[2026-10-31T13:06:31.855Z] [SW-LOG] [BG_LOG][tab=1423407424] Extraction focus secured. Mapping template fields...
+[2026-10-31T13:06:31.863Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407424][attemptId=att_1793451991556_jxzft][url=http://127.0.0.1:8088/phone-only-no-message.html] [TARGET_PAGE] url=http://127.0.0.1:8088/phone-only-no-message.html domGeneration=1793451991813 attemptId=att_1793451991556_jxzft
+[2026-10-31T13:06:31.874Z] [SW-LOG] [BG_LOG][tab=1423407424] [CONTENT_EVENT][tabId=1423407424][attemptId=att_1793451991556_jxzft][url=http://127.0.0.1:8088/phone-only-no-message.html] [TARGET_PAGE] url=http://127.0.0.1:8088/phone-only-no-message.html domGeneration=1793451991813 attemptId=att_1793451991556_jxzft
+[2026-10-31T13:06:31.883Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407424][attemptId=att_1793451991556_jxzft][url=http://127.0.0.1:8088/phone-only-no-message.html] [CAPTCHA_STATE_RESET] attemptId=processCampaign epoch=current isCaptchaSolved=false captchaTokenInjected=false
+[2026-10-31T13:06:31.891Z] [SW-LOG] [BG_LOG][tab=1423407424] [CONTENT_EVENT][tabId=1423407424][attemptId=att_1793451991556_jxzft][url=http://127.0.0.1:8088/phone-only-no-message.html] [CAPTCHA_STATE_RESET] attemptId=processCampaign epoch=current isCaptchaSolved=false captchaTokenInjected=false
+[2026-10-31T13:06:31.898Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407424][attemptId=att_1793451991556_jxzft][url=http://127.0.0.1:8088/phone-only-no-message.html] 🚀 [Engine] Ultra-Mode process started
+[2026-10-31T13:06:31.905Z] [SW-LOG] [BG_LOG][tab=1423407424] [CONTENT_EVENT][tabId=1423407424][attemptId=att_1793451991556_jxzft][url=http://127.0.0.1:8088/phone-only-no-message.html] 🚀 [Engine] Ultra-Mode process started
+[2026-10-31T13:06:31.912Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407424][attemptId=att_1793451991556_jxzft][url=http://127.0.0.1:8088/phone-only-no-message.html] 🧹 [Cleaner] Scanning for intrusive overlays/popups and cookie banners...
+[2026-10-31T13:06:31.920Z] [SW-LOG] [BG_LOG][tab=1423407424] [CONTENT_EVENT][tabId=1423407424][attemptId=att_1793451991556_jxzft][url=http://127.0.0.1:8088/phone-only-no-message.html] 🧹 [Cleaner] Scanning for intrusive overlays/popups and cookie banners...
+[2026-10-31T13:06:31.927Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407424][attemptId=att_1793451991556_jxzft][url=http://127.0.0.1:8088/phone-only-no-message.html] [TARGET_PAGE] url=http://127.0.0.1:8088/phone-only-no-message.html recursion=0
+[2026-10-31T13:06:31.934Z] [SW-LOG] [BG_LOG][tab=1423407424] [CONTENT_EVENT][tabId=1423407424][attemptId=att_1793451991556_jxzft][url=http://127.0.0.1:8088/phone-only-no-message.html] [TARGET_PAGE] url=http://127.0.0.1:8088/phone-only-no-message.html recursion=0
+[2026-10-31T13:06:31.942Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407424][attemptId=att_1793451991556_jxzft][url=http://127.0.0.1:8088/phone-only-no-message.html] 🔍 [Discovery] URL: http://127.0.0.1:8088/phone-only-no-message.html | Recursion: 0
+[2026-10-31T13:06:31.948Z] [SW-LOG] [BG_LOG][tab=1423407424] [CONTENT_EVENT][tabId=1423407424][attemptId=att_1793451991556_jxzft][url=http://127.0.0.1:8088/phone-only-no-message.html] 🔍 [Discovery] URL: http://127.0.0.1:8088/phone-only-no-message.html | Recursion: 0
+[2026-10-31T13:06:31.956Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407424][attemptId=att_1793451991556_jxzft][url=http://127.0.0.1:8088/phone-only-no-message.html] 🧹 [Cleaner] Scanning for intrusive overlays/popups...
+[2026-10-31T13:06:31.963Z] [SW-LOG] [BG_LOG][tab=1423407424] [CONTENT_EVENT][tabId=1423407424][attemptId=att_1793451991556_jxzft][url=http://127.0.0.1:8088/phone-only-no-message.html] 🧹 [Cleaner] Scanning for intrusive overlays/popups...
+[2026-10-31T13:06:31.973Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407424][attemptId=att_1793451991556_jxzft][url=http://127.0.0.1:8088/phone-only-no-message.html] 🧐 [Discovery] Polling attempt 1/3... | URL: http://127.0.0.1:8088/phone-only-no-message.html | Recursion: 0
+[2026-10-31T13:06:31.980Z] [SW-LOG] [BG_LOG][tab=1423407424] [CONTENT_EVENT][tabId=1423407424][attemptId=att_1793451991556_jxzft][url=http://127.0.0.1:8088/phone-only-no-message.html] 🧐 [Discovery] Polling attempt 1/3... | URL: http://127.0.0.1:8088/phone-only-no-message.html | Recursion: 0
+[2026-10-31T13:06:52.014Z] Server submissions after Fixture B: total=0 delta=0
+[2026-10-31T13:06:52.025Z] ✅ FIXTURE B PASSED (Zero submissions strictly verified for form lacking message field)
+[2026-10-31T13:06:52.032Z] 
+=========================================================================
+[2026-10-31T13:06:52.038Z] --- FIXTURE C: AJAX / SPA Dynamic Form Mount (spa-delayed-contact.html) ---
+[2026-10-31T13:06:52.045Z] =========================================================================
+[2026-10-31T13:06:52.052Z] Starting campaign targeting http://127.0.0.1:8088/spa-delayed-contact.html (mounts form after 1200ms)...
+[2026-10-31T13:06:52.061Z] [SW-LOG] [BG_LOG][tab=none] [BUILD_HANDSHAKE] popup=20678ada6491bf842ec7e996a88108152c76007f background=20678ada6491bf842ec7e996a88108152c76007f build=V7.0.0-RC11-20261030-THREE-MODE-CONTRACTS-PASS manifest=3 result=PASS
+[2026-10-31T13:06:52.069Z] [SW-LOG] [BG_LOG][tab=none] [START_BG] received queue=1
+[2026-10-31T13:06:52.077Z] [SW-LOG] [BG_LOG][tab=none] [PRIVACY_OWNER_OVERRIDE] scope=currentRun mode=DIRECT acknowledged=true
+[2026-10-31T13:06:52.085Z] [SW-LOG] [BG_LOG][tab=none] [OWNER_TEST_GUARD] declarativeNetRequest session rules removed cleanly
+[2026-10-31T13:06:52.094Z] [SW-LOG] [BG_LOG][tab=none] [NORMAL_CAMPAIGN_PREFLIGHT] publicTargets=0 testMode=false result=PASS
+[2026-10-31T13:06:52.102Z] [SW-LOG] [BG_LOG][tab=none] [OWNER_TEST_GUARD] declarativeNetRequest session rules removed cleanly
+[2026-10-31T13:06:52.112Z] [SW-LOG] [BG_LOG][tab=none] [PRIVACY_GATE] mode=DIRECT transport=DIRECT failClosed=false (OWNER_FUNCTION_TEST_MODE) status=READY
+[2026-10-31T13:06:52.122Z] [SW-LOG] [BG_LOG][tab=none] [START_BG_READY] privacyReady=true
+[2026-10-31T13:06:52.130Z] Fixture C campaign started: {"success":true,"status":"acknowledged","queueCount":1,"campaignRunId":"run_1793451970327_elqez"}
+[2026-10-31T13:06:52.138Z] [SW-LOG] [BG_LOG][tab=none] [Boot] Orchestrator entered.
+[2026-10-31T13:06:52.146Z] [SW-LOG] [TAB_BARRIER] phase=START_CAMPAIGN_BOOT ownedBefore=0
+[2026-10-31T13:06:52.158Z] [SW-LOG] [TAB_BARRIER] phase=START_CAMPAIGN_BOOT ownedAfter=0 result=PASS
+[2026-10-31T13:06:52.167Z] [SW-LOG] [BG_LOG][tab=none] [Boot] Previous state cleared.
+[2026-10-31T13:06:52.180Z] [SW-LOG] [BG_LOG][tab=none] [Boot] CAPTCHA solver state reset (attempts=0, identity=null).
+[2026-10-31T13:06:52.192Z] [SW-LOG] [BG_LOG][tab=none] 📊 [Queue Filter] Input: 1 | Duplicates: 0 | Suppressed: 0 | History-Attempted: 0 | Executable: 1
+[2026-10-31T13:06:52.205Z] [SW-LOG] [BG_LOG][tab=none] [Boot] Variables initialized.
+[2026-10-31T13:06:52.214Z] [SW-LOG] [BG_LOG][tab=none] 🚀 Engine booting...
+[2026-10-31T13:06:52.226Z] [SW-LOG] [BG_LOG][tab=none] [CAMPAIGN_START] buildId=V7.0.0-RC11-20261030-THREE-MODE-CONTRACTS-PASS campaignRunId=run_1793451970327_elqez totalTargets=1 mode=NORMAL delayMs=200 fillDelayMs=20 submitDelayMs=500
+[2026-10-31T13:06:52.238Z] [SW-LOG] [BG_LOG][tab=none] [Boot] Storage sync initiated.
+[2026-10-31T13:06:52.246Z] [SW-LOG] [BG_LOG][tab=none] [Boot] Target loop triggered.
+[2026-10-31T13:06:52.257Z] [SW-LOG] [BG_LOG][tab=none] [TARGET 1/1][127.0.0.1] START
+[2026-10-31T13:06:52.264Z] [SW-LOG] [BG_LOG][tab=none] [TARGET_START] buildId=V7.0.0-RC11-20261030-THREE-MODE-CONTRACTS-PASS campaignRunId=run_1793451970327_elqez attemptId=att_init targetIndex=1/1 targetUrl=http://127.0.0.1:8088/spa-delayed-contact.html
+[2026-10-31T13:06:52.274Z] [SW-LOG] [BG_LOG][tab=none] [EXEC_IDENTITY_PRE_NAV] attemptId=att_1793452012087_5hi42 token=tok_1793452012087_6pccmf epoch=5
+[2026-10-31T13:06:52.291Z] [SW-LOG] [BG_LOG][tab=1423407430] [TAB_FOCUS] tabId=1423407430 windowId=1423406143 active=true focused=true
+[2026-10-31T13:06:52.300Z] [SW-LOG] [BG_LOG][tab=1423407430] Step 1: Sniper Mode active. Searching for contact page...
+[2026-10-31T13:06:52.310Z] [SW-LOG] [BG_LOG][tab=1423407430] 🔄 [Engine] Internal navigation detected (SPA). Preparing re-injection...
+[2026-10-31T13:06:52.324Z] [SW-LOG] [BG_LOG][tab=1423407430] 🔦 Fast-scanning candidate paths (1-10)...
+[2026-10-31T13:06:52.340Z] [SW-LOG] [BG_LOG][tab=1423407430] Pre-scan complete. Identified 10 valid paths.
+[2026-10-31T13:06:52.362Z] [SW-LOG] [BG_LOG][tab=1423407430] [SniperScan] Identified 10 candidate paths in background.
+[2026-10-31T13:06:52.372Z] [SW-LOG] [BG_LOG][tab=1423407430] [TAB_FOCUS] tabId=1423407430 windowId=1423406143 active=true focused=true
+[2026-10-31T13:06:52.385Z] [SW-LOG] [BG_LOG][tab=1423407430] [TAB_OWNERSHIP] VERIFIED_REDIRECT source=127.0.0.1 target=127.0.0.1 relation=SAME_HOST
+[2026-10-31T13:06:52.395Z] [SW-LOG] [BG_LOG][tab=1423407430] [FOCUS_SECURED] formPageUrl=http://127.0.0.1:8088/spa-delayed-contact.html
+[2026-10-31T13:06:52.402Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] ⚠️ [Engine] Suppressing duplicate setup (Signals re-sent).
+[2026-10-31T13:06:52.409Z] [SW-LOG] [BG_LOG][tab=1423407430] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] ⚠️ [Engine] Suppressing duplicate setup (Signals re-sent).
+[2026-10-31T13:06:52.416Z] [SW-LOG] [BG_LOG][tab=1423407430] Extraction focus secured. Mapping template fields...
+[2026-10-31T13:06:52.424Z] [SW-LOG] [BG_LOG][tab=1423407430] [TARGET][127.0.0.1] emailsFoundCurrentPage=1 emailsNewGlobal=1 totalEmailsGlobal=3
+[2026-10-31T13:06:52.431Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] [TARGET_PAGE] url=http://127.0.0.1:8088/spa-delayed-contact.html domGeneration=1793452012344 attemptId=att_1793452012087_5hi42
+[2026-10-31T13:06:52.438Z] [SW-LOG] [BG_LOG][tab=1423407430] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] [TARGET_PAGE] url=http://127.0.0.1:8088/spa-delayed-contact.html domGeneration=1793452012344 attemptId=att_1793452012087_5hi42
+[2026-10-31T13:06:52.445Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] [CAPTCHA_STATE_RESET] attemptId=processCampaign epoch=current isCaptchaSolved=false captchaTokenInjected=false
+[2026-10-31T13:06:52.453Z] [SW-LOG] [BG_LOG][tab=1423407430] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] [CAPTCHA_STATE_RESET] attemptId=processCampaign epoch=current isCaptchaSolved=false captchaTokenInjected=false
+[2026-10-31T13:06:52.460Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] 🚀 [Engine] Ultra-Mode process started
+[2026-10-31T13:06:52.467Z] [SW-LOG] [BG_LOG][tab=1423407430] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] 🚀 [Engine] Ultra-Mode process started
+[2026-10-31T13:06:52.475Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] 🧹 [Cleaner] Scanning for intrusive overlays/popups and cookie banners...
+[2026-10-31T13:06:52.483Z] [SW-LOG] [BG_LOG][tab=1423407430] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] 🧹 [Cleaner] Scanning for intrusive overlays/popups and cookie banners...
+[2026-10-31T13:06:52.491Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] [TARGET_PAGE] url=http://127.0.0.1:8088/spa-delayed-contact.html recursion=0
+[2026-10-31T13:06:52.497Z] [SW-LOG] [BG_LOG][tab=1423407430] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] [TARGET_PAGE] url=http://127.0.0.1:8088/spa-delayed-contact.html recursion=0
+[2026-10-31T13:06:52.506Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] 🔍 [Discovery] URL: http://127.0.0.1:8088/spa-delayed-contact.html | Recursion: 0
+[2026-10-31T13:06:52.513Z] [SW-LOG] [BG_LOG][tab=1423407430] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] 🔍 [Discovery] URL: http://127.0.0.1:8088/spa-delayed-contact.html | Recursion: 0
+[2026-10-31T13:06:52.521Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] 🧹 [Cleaner] Scanning for intrusive overlays/popups...
+[2026-10-31T13:06:52.527Z] [SW-LOG] [BG_LOG][tab=1423407430] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] 🧹 [Cleaner] Scanning for intrusive overlays/popups...
+[2026-10-31T13:06:52.535Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] 🧐 [Discovery] Polling attempt 1/3... | URL: http://127.0.0.1:8088/spa-delayed-contact.html | Recursion: 0
+[2026-10-31T13:06:52.542Z] [SW-LOG] [BG_LOG][tab=1423407430] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] 🧐 [Discovery] Polling attempt 1/3... | URL: http://127.0.0.1:8088/spa-delayed-contact.html | Recursion: 0
+[2026-10-31T13:06:52.656Z] Polling SPA page DOM for deferred dynamic form mount & HyperEngine autofill...
+[2026-10-31T13:06:53.866Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] [FORM_SCAN] forms=1 logicalContainers=1 crossOriginFrames=0 externalFormCandidates=0
+[2026-10-31T13:06:53.976Z] [SW-LOG] [BG_LOG][tab=1423407430] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] [FORM_SCAN] forms=1 logicalContainers=1 crossOriginFrames=0 externalFormCandidates=0
+[2026-10-31T13:06:53.990Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] [PAGE_CLASS] CONTACT_FORM_PAGE
+[2026-10-31T13:06:53.999Z] [SW-LOG] [BG_LOG][tab=1423407430] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] [PAGE_CLASS] CONTACT_FORM_PAGE
+[2026-10-31T13:06:54.011Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] 🎯 Step 2: Contact form discovered. Preparing submission...
+[2026-10-31T13:06:54.020Z] [SW-LOG] [BG_LOG][tab=1423407430] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] 🎯 Step 2: Contact form discovered. Preparing submission...
+[2026-10-31T13:06:54.064Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] [STAGE] stage=CONTACT_PAGE_FOUND
+[2026-10-31T13:06:54.075Z] [SW-LOG] [BG_LOG][tab=1423407430] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] [STAGE] stage=CONTACT_PAGE_FOUND
+[2026-10-31T13:06:54.084Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] [LONG_TEXT_GATE] found=true type=textarea semantic=message
+[2026-10-31T13:06:54.092Z] [SW-LOG] [BG_LOG][tab=1423407430] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] [LONG_TEXT_GATE] found=true type=textarea semantic=message
+[2026-10-31T13:06:54.099Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] [FORM_GATE] eligible=true reason=BODY_FIELD_PRESENT
+[2026-10-31T13:06:54.106Z] [SW-LOG] [BG_LOG][tab=1423407430] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] [FORM_GATE] eligible=true reason=BODY_FIELD_PRESENT
+[2026-10-31T13:06:54.113Z] [SW-LOG] [BG_LOG][tab=1423407430] 📍 [PIPELINE][CONTACT_PAGE_FOUND] url=http://127.0.0.1:8088/spa-delayed-contact.html
+[2026-10-31T13:06:54.120Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] 🔍 [Supreme-X 5.0] Scanning for multi-location / branch links...
+[2026-10-31T13:06:54.127Z] [SW-LOG] [BG_LOG][tab=1423407430] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] 🔍 [Supreme-X 5.0] Scanning for multi-location / branch links...
+[2026-10-31T13:06:54.135Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] [AUTOFILL_LOCK] acquired=true key=att_1793452012087_5hi42:http://127.0.0.1:8088/spa-delayed-contact.html:spa-contact-form
+[2026-10-31T13:06:54.142Z] [SW-LOG] [BG_LOG][tab=1423407430] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] [AUTOFILL_LOCK] acquired=true key=att_1793452012087_5hi42:http://127.0.0.1:8088/spa-delayed-contact.html:spa-contact-form
+[2026-10-31T13:06:54.148Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] [CAPTCHA_STATE_RESET] attemptId=att_1793452012087_5hi42 epoch=5 isCaptchaSolved=false captchaTokenInjected=false
+[2026-10-31T13:06:54.157Z] [SW-LOG] [BG_LOG][tab=1423407430] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] [CAPTCHA_STATE_RESET] attemptId=att_1793452012087_5hi42 epoch=5 isCaptchaSolved=false captchaTokenInjected=false
+[2026-10-31T13:06:54.164Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] [CONTACT_GATE] PASS bodyField=textarea
+[2026-10-31T13:06:54.174Z] [SW-LOG] [BG_LOG][tab=1423407430] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] [CONTACT_GATE] PASS bodyField=textarea
+[2026-10-31T13:06:54.181Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] [STAGE] stage=ELIGIBLE_FORM_FOUND
+[2026-10-31T13:06:54.190Z] [SW-LOG] [BG_LOG][tab=1423407430] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] [STAGE] stage=ELIGIBLE_FORM_FOUND
+[2026-10-31T13:06:54.197Z] [SW-LOG] [BG_LOG][tab=1423407430] [CONTACT_COMMIT] contactPageUrl=http://127.0.0.1:8088/spa-delayed-contact.html
+[2026-10-31T13:06:54.205Z] [SW-LOG] [BG_LOG][tab=1423407430] [FORM_COMMIT] formPageUrl=http://127.0.0.1:8088/spa-delayed-contact.html
+[2026-10-31T13:06:54.212Z] [SW-LOG] [BG_LOG][tab=1423407430] 📋 [PIPELINE][ELIGIBLE_FORM_FOUND] url=http://127.0.0.1:8088/spa-delayed-contact.html
+[2026-10-31T13:06:54.222Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] 🛠️ Step 3: Registering message template to form fields...
+[2026-10-31T13:06:54.231Z] [SW-LOG] [BG_LOG][tab=1423407430] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] 🛠️ Step 3: Registering message template to form fields...
+[2026-10-31T13:06:54.240Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] 🛡️ [FormStabilizer] Starting bounded stabilization (max 5s, max 2 retries/element)...
+[2026-10-31T13:06:54.247Z] [SW-LOG] [BG_LOG][tab=1423407430] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] 🛡️ [FormStabilizer] Starting bounded stabilization (max 5s, max 2 retries/element)...
+[2026-10-31T13:06:54.254Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] 🛡️ [Stabilizer] Empty required field attempt 1/2: <INPUT id="name">
+[2026-10-31T13:06:54.261Z] [SW-LOG] [BG_LOG][tab=1423407430] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] 🛡️ [Stabilizer] Empty required field attempt 1/2: <INPUT id="name">
+[2026-10-31T13:06:54.268Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] 🛠️ [Action][HyperEngine v4.0] 초강력 폼 자동 등록기 시작...
+[2026-10-31T13:06:54.275Z] [SW-LOG] [BG_LOG][tab=1423407430] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] 🛠️ [Action][HyperEngine v4.0] 초강력 폼 자동 등록기 시작...
+[2026-10-31T13:06:54.282Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] 🎯 [HyperEngine v4.0] Phase 0 - 입력 필드 전수 수집...
+[2026-10-31T13:06:54.289Z] [SW-LOG] [BG_LOG][tab=1423407430] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] 🎯 [HyperEngine v4.0] Phase 0 - 입력 필드 전수 수집...
+[2026-10-31T13:06:54.296Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html]    [v4.0] 총 4개 입력 필드 발견 (radio: 0, checkbox: 0)
+[2026-10-31T13:06:54.303Z] [SW-LOG] [BG_LOG][tab=1423407430] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html]    [v4.0] 총 4개 입력 필드 발견 (radio: 0, checkbox: 0)
+[2026-10-31T13:06:54.310Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] 🎯 [HyperEngine v4.0] Phase 1 & 2 - 드롭다운 SelectResolverR2 전수 처리...
+[2026-10-31T13:06:54.316Z] [SW-LOG] [BG_LOG][tab=1423407430] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] 🎯 [HyperEngine v4.0] Phase 1 & 2 - 드롭다운 SelectResolverR2 전수 처리...
+[2026-10-31T13:06:54.324Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] 🎯 [HyperEngine v4.0] Phase 3 - 체크박스 CheckboxResolverR2 전수 처리...
+[2026-10-31T13:06:54.331Z] [SW-LOG] [BG_LOG][tab=1423407430] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] 🎯 [HyperEngine v4.0] Phase 3 - 체크박스 CheckboxResolverR2 전수 처리...
+[2026-10-31T13:06:54.341Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] 🎯 [HyperEngine v4.0] Phase 3.5 - 휴먼 테스트 수식/방정식 퀴즈 검출 및 자동 해결...
+[2026-10-31T13:06:54.347Z] [SW-LOG] [BG_LOG][tab=1423407430] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] 🎯 [HyperEngine v4.0] Phase 3.5 - 휴먼 테스트 수식/방정식 퀴즈 검출 및 자동 해결...
+[2026-10-31T13:06:54.354Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] 🎯 [HyperEngine v4.0] Phase 4 - 텍스트 필드 패턴 매칭...
+[2026-10-31T13:06:54.361Z] [SW-LOG] [BG_LOG][tab=1423407430] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] 🎯 [HyperEngine v4.0] Phase 4 - 텍스트 필드 패턴 매칭...
+[2026-10-31T13:06:54.368Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html]    - [FIELD_CLASSIFY] id=name name=name tag=INPUT resolved=name confidence=0.85 reason=NAME_PATTERN
+[2026-10-31T13:06:54.376Z] [SW-LOG] [BG_LOG][tab=1423407430] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html]    - [FIELD_CLASSIFY] id=name name=name tag=INPUT resolved=name confidence=0.85 reason=NAME_PATTERN
+[2026-10-31T13:06:54.383Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] 🛡️ [Stabilizer] Empty required field attempt 1/2: <INPUT id="email">
+[2026-10-31T13:06:54.391Z] [SW-LOG] [BG_LOG][tab=1423407430] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] 🛡️ [Stabilizer] Empty required field attempt 1/2: <INPUT id="email">
+[2026-10-31T13:06:54.611Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] 🛡️ [Stabilizer] Empty required field attempt 2/2: <INPUT id="name">
+[2026-10-31T13:06:54.619Z] [SW-LOG] [BG_LOG][tab=1423407430] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] 🛡️ [Stabilizer] Empty required field attempt 2/2: <INPUT id="name">
+[2026-10-31T13:06:55.016Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] 🛡️ [Stabilizer] Empty required field attempt 2/2: <INPUT id="email">
+[2026-10-31T13:06:55.024Z] [SW-LOG] [BG_LOG][tab=1423407430] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] 🛡️ [Stabilizer] Empty required field attempt 2/2: <INPUT id="email">
+[2026-10-31T13:06:55.422Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] 🛡️ [Stabilizer] Empty required field attempt 1/2: <TEXTAREA id="message">
+[2026-10-31T13:06:55.429Z] [SW-LOG] [BG_LOG][tab=1423407430] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] 🛡️ [Stabilizer] Empty required field attempt 1/2: <TEXTAREA id="message">
+[2026-10-31T13:06:55.716Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html]    - [FIELD_ASSIGN✅] category=name field=name len=11
+[2026-10-31T13:06:55.724Z] [SW-LOG] [BG_LOG][tab=1423407430] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html]    - [FIELD_ASSIGN✅] category=name field=name len=11
+[2026-10-31T13:06:55.731Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html]    - [FIELD_CLASSIFY] id=email name=email tag=INPUT resolved=email confidence=1 reason=INPUT_TYPE_EMAIL
+[2026-10-31T13:06:55.738Z] [SW-LOG] [BG_LOG][tab=1423407430] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html]    - [FIELD_CLASSIFY] id=email name=email tag=INPUT resolved=email confidence=1 reason=INPUT_TYPE_EMAIL
+[2026-10-31T13:06:56.215Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] 🛡️ [Stabilizer] Empty required field attempt 2/2: <TEXTAREA id="message">
+[2026-10-31T13:06:56.223Z] [SW-LOG] [BG_LOG][tab=1423407430] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] 🛡️ [Stabilizer] Empty required field attempt 2/2: <TEXTAREA id="message">
+[2026-10-31T13:06:56.621Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] 🛡️ [FormStabilizer] Stopped (ALL_FIELDS_STABLE_OR_RESOLVED): seen=4 stable=true unresolved=2 (selects=0, cbs=0, radios=0)
+[2026-10-31T13:06:56.629Z] [SW-LOG] [BG_LOG][tab=1423407430] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] 🛡️ [FormStabilizer] Stopped (ALL_FIELDS_STABLE_OR_RESOLVED): seen=4 stable=true unresolved=2 (selects=0, cbs=0, radios=0)
+[2026-10-31T13:06:57.352Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] 💓 [Heartbeat] Engine active and processing...
+[2026-10-31T13:06:57.359Z] [SW-LOG] [BG_LOG][tab=1423407430] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] 💓 [Heartbeat] Engine active and processing...
+[2026-10-31T13:06:58.735Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html]    - [FIELD_ASSIGN✅] category=email field=email len=26
+[2026-10-31T13:06:58.744Z] [SW-LOG] [BG_LOG][tab=1423407430] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html]    - [FIELD_ASSIGN✅] category=email field=email len=26
+[2026-10-31T13:06:58.752Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html]    - [FIELD_CLASSIFY] id=phone name=phone tag=INPUT resolved=phone confidence=1 reason=INPUT_TYPE_TEL
+[2026-10-31T13:06:58.759Z] [SW-LOG] [BG_LOG][tab=1423407430] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html]    - [FIELD_CLASSIFY] id=phone name=phone tag=INPUT resolved=phone confidence=1 reason=INPUT_TYPE_TEL
+[2026-10-31T13:07:00.459Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html]    - [FIELD_ASSIGN✅] category=phone field=phone
+[2026-10-31T13:07:00.466Z] [SW-LOG] [BG_LOG][tab=1423407430] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html]    - [FIELD_ASSIGN✅] category=phone field=phone
+[2026-10-31T13:07:00.473Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html]    - [FIELD_CLASSIFY] id=message name=message tag=TEXTAREA resolved=message confidence=0.95 reason=MULTILINE_STRUCTURAL_PRECEDENCE
+[2026-10-31T13:07:00.480Z] [SW-LOG] [BG_LOG][tab=1423407430] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html]    - [FIELD_CLASSIFY] id=message name=message tag=TEXTAREA resolved=message confidence=0.95 reason=MULTILINE_STRUCTURAL_PRECEDENCE
+[2026-10-31T13:07:02.357Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] 💓 [Heartbeat] Engine active and processing...
+[2026-10-31T13:07:02.364Z] [SW-LOG] [BG_LOG][tab=1423407430] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] 💓 [Heartbeat] Engine active and processing...
+[2026-10-31T13:07:02.805Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html]    - [FIELD_ASSIGN✅] category=message field=message tag=TEXTAREA len=71
+[2026-10-31T13:07:02.814Z] [SW-LOG] [BG_LOG][tab=1423407430] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html]    - [FIELD_ASSIGN✅] category=message field=message tag=TEXTAREA len=71
+[2026-10-31T13:07:02.822Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] 🎯 [HyperEngine v4.0] Phase 5 - 빈 필드 강제 채우기...
+[2026-10-31T13:07:02.831Z] [SW-LOG] [BG_LOG][tab=1423407430] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] 🎯 [HyperEngine v4.0] Phase 5 - 빈 필드 강제 채우기...
+[2026-10-31T13:07:02.838Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] 🎯 [HyperEngine v4.0] Phase 6 - 라디오 버튼 미선택 그룹 처리...
+[2026-10-31T13:07:02.845Z] [SW-LOG] [BG_LOG][tab=1423407430] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] 🎯 [HyperEngine v4.0] Phase 6 - 라디오 버튼 미선택 그룹 처리...
+[2026-10-31T13:07:02.852Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] 🎯 [HyperEngine v4.0] Phase 8 - 커스텀 ARIA 체크박스/라디오 처리...
+[2026-10-31T13:07:02.859Z] [SW-LOG] [BG_LOG][tab=1423407430] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] 🎯 [HyperEngine v4.0] Phase 8 - 커스텀 ARIA 체크박스/라디오 처리...
+[2026-10-31T13:07:02.867Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] 🛠️ [HyperEngine v4.0] Phase 9 - BruteForce contentEditable/role=textbox...
+[2026-10-31T13:07:02.875Z] [SW-LOG] [BG_LOG][tab=1423407430] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] 🛠️ [HyperEngine v4.0] Phase 9 - BruteForce contentEditable/role=textbox...
+[2026-10-31T13:07:02.882Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] 🎯 [HyperEngine v4.0] Phase 10 - Super-BruteForce Sweeper (초강력 입력기) 가동...
+[2026-10-31T13:07:02.889Z] [SW-LOG] [BG_LOG][tab=1423407430] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] 🎯 [HyperEngine v4.0] Phase 10 - Super-BruteForce Sweeper (초강력 입력기) 가동...
+[2026-10-31T13:07:02.895Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] [STAGE] stage=REQUIRED_FIELDS_RESOLVED
+[2026-10-31T13:07:02.903Z] [SW-LOG] [BG_LOG][tab=1423407430] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] [STAGE] stage=REQUIRED_FIELDS_RESOLVED
+[2026-10-31T13:07:02.910Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] [STAGE] stage=FIELD_STATE_STABLE
+[2026-10-31T13:07:02.917Z] ✨ Dynamic SPA form detected and autofilled at T+9.5s! Msg="Requesting consultation on sys..."
+[2026-10-31T13:07:02.925Z] [SW-LOG] [BG_LOG][tab=1423407430] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] [STAGE] stage=FIELD_STATE_STABLE
+[2026-10-31T13:07:02.935Z] [SW-LOG] [BG_LOG][tab=1423407430] ✅ [PIPELINE][REQUIRED_FIELDS_RESOLVED] url=http://127.0.0.1:8088/spa-delayed-contact.html
+[2026-10-31T13:07:02.946Z] [SW-LOG] [BG_LOG][tab=1423407430] 🔒 [PIPELINE][FIELD_STATE_STABLE] url=http://127.0.0.1:8088/spa-delayed-contact.html
+[2026-10-31T13:07:02.954Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] ✅ [HyperEngine v4.0] 폼 작성 완료 - 입력 필드 신규 4개, 기존유효 0개, 총 해결 4개 (총 4개, 미해결: 0개)
+[2026-10-31T13:07:02.964Z] [SW-LOG] [BG_LOG][tab=1423407430] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] ✅ [HyperEngine v4.0] 폼 작성 완료 - 입력 필드 신규 4개, 기존유효 0개, 총 해결 4개 (총 4개, 미해결: 0개)
+[2026-10-31T13:07:02.971Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] [AUTOFILL_RESULT] status=SUCCESS fieldsDetected=4 fieldsFilled=4 (new=4, prefilled=0) unresolved=0 reason=ok
+[2026-10-31T13:07:02.979Z] [SW-LOG] [BG_LOG][tab=1423407430] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] [AUTOFILL_RESULT] status=SUCCESS fieldsDetected=4 fieldsFilled=4 (new=4, prefilled=0) unresolved=0 reason=ok
+[2026-10-31T13:07:02.987Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] [FILL] messageBodyFilled=true
+[2026-10-31T13:07:02.996Z] [SW-LOG] [BG_LOG][tab=1423407430] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] [FILL] messageBodyFilled=true
+[2026-10-31T13:07:03.004Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] [AUTOFILL_VISUAL_CONFIRM] resolved=name,email,message formVisible=true
+[2026-10-31T13:07:03.011Z] [SW-LOG] [BG_LOG][tab=1423407430] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] [AUTOFILL_VISUAL_CONFIRM] resolved=name,email,message formVisible=true
+[2026-10-31T13:07:03.028Z] 📸 Captured screenshot: shot_rc11_fixture_c_spa_delayed_mount.png
+[2026-10-31T13:07:03.036Z] ✅ FIXTURE C PASSED (Deferred dynamic mount detected and autofilled)
+[2026-10-31T13:07:03.044Z] 
+=========================================================================
+[2026-10-31T13:07:03.052Z] --- FIXTURE D: Side Panel HUD, Triple Mode & Pause Storage Persistence ---
+[2026-10-31T13:07:03.059Z] =========================================================================
+[2026-10-31T13:07:03.066Z] Opening extension popup UI: chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/popup.html...
+[2026-10-31T13:07:03.075Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] ✅ [FORM_PREP] COMPLETE
+[2026-10-31T13:07:03.084Z] [SW-LOG] [BG_LOG][tab=1423407430] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] ✅ [FORM_PREP] COMPLETE
+[2026-10-31T13:07:03.091Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] ⏳ [Engine] Holding for visual confirmation (500ms)...
+[2026-10-31T13:07:03.101Z] [SW-LOG] [BG_LOG][tab=1423407430] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] ⏳ [Engine] Holding for visual confirmation (500ms)...
+[2026-10-31T13:07:03.376Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] 🧠 [FinalFill] Running AI Final Form Completion Pass immediately before submit...
+[2026-10-31T13:07:03.384Z] [SW-LOG] [BG_LOG][tab=1423407430] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] 🧠 [FinalFill] Running AI Final Form Completion Pass immediately before submit...
+[2026-10-31T13:07:03.597Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] [AI_COMPLETE_FORM] fillableTotal=4 filledBefore=4 filledByAI=0 safeSkipped=0 sensitiveBlocked=0 emptySafeAfter=0
+[2026-10-31T13:07:03.607Z] [SW-LOG] [BG_LOG][tab=1423407430] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] [AI_COMPLETE_FORM] fillableTotal=4 filledBefore=4 filledByAI=0 safeSkipped=0 sensitiveBlocked=0 emptySafeAfter=0
+[2026-10-31T13:07:03.622Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] [FINAL_FILL] controls=4 unresolvedBefore=0 checkboxResolved=0 radioResolved=0 selectResolved=0 unresolvedAfter=0
+[2026-10-31T13:07:03.632Z] [SW-LOG] [BG_LOG][tab=1423407430] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] [FINAL_FILL] controls=4 unresolvedBefore=0 checkboxResolved=0 radioResolved=0 selectResolved=0 unresolvedAfter=0
+[2026-10-31T13:07:03.646Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] [FINAL_AUDIT] PASS
+[2026-10-31T13:07:03.657Z] [SW-LOG] [BG_LOG][tab=1423407430] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] [FINAL_AUDIT] PASS
+[2026-10-31T13:07:03.665Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] [FIELD_SUMMARY] text required 3/3 | checkbox 0/0 | radio 0/0 | select 0/0 | message 1/1 | unresolved 0
+[2026-10-31T13:07:03.675Z] [SW-LOG] [BG_LOG][tab=1423407430] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] [FIELD_SUMMARY] text required 3/3 | checkbox 0/0 | radio 0/0 | select 0/0 | message 1/1 | unresolved 0
+[2026-10-31T13:07:03.694Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] ✅ [FinalAudit] Hard Gate Passed: 0 unresolved required fields
+[2026-10-31T13:07:03.711Z] [SW-LOG] [BG_LOG][tab=1423407430] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] ✅ [FinalAudit] Hard Gate Passed: 0 unresolved required fields
+[2026-10-31T13:07:03.721Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] [FIELD_VALIDITY] valid=true reason=OK
+[2026-10-31T13:07:03.738Z] [SW-LOG] [BG_LOG][tab=1423407430] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] [FIELD_VALIDITY] valid=true reason=OK
+[2026-10-31T13:07:03.747Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] [V7_DUAL_MODE_GATE] mode=MANUAL challengeDetected=false challengeType=none challengeVerified=false
+[2026-10-31T13:07:03.759Z] [SW-LOG] [BG_LOG][tab=1423407430] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] [V7_DUAL_MODE_GATE] mode=MANUAL challengeDetected=false challengeType=none challengeVerified=false
+[2026-10-31T13:07:03.772Z] [SW-LOG] [BG_LOG][tab=1423407430] 🖐️ [V7_MANUAL_MODE_HOLD] Form prepared on http://127.0.0.1:8088/spa-delayed-contact.html. Holding campaign queue for manual operator action.
+[2026-10-31T13:07:03.781Z] [SW-LOG] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] 🖐️ [MANUAL_MODE_HOLD] Form prepared and frozen. Holding queue for operator registration (challenge=NONE, validationFailed=false, reason=NONE).
+[2026-10-31T13:07:03.791Z] [SW-LOG] [BG_LOG][tab=1423407430] [CONTENT_EVENT][tabId=1423407430][attemptId=att_1793452012087_5hi42][url=http://127.0.0.1:8088/spa-delayed-contact.html] 🖐️ [MANUAL_MODE_HOLD] Form prepared and frozen. Holding queue for operator registration (challenge=NONE, validationFailed=false, reason=NONE).
+[2026-10-31T13:07:03.801Z] [SW-LOG] [BG_LOG][tab=none] 📦 [Migration] Safely migrated to v2 (Backup: xpider_backup_v1_1793452023683)
+[2026-10-31T13:07:04.651Z] HUD Header & Controls: {"header":"XPIDER AutoForm Sender Pro","buildBadge":"● PRIVATE OWNER BETA — DEBUG TELEMETRY ENABLED","startBtn":true,"semiBtn":true,"manualBtn":true,"pauseBtn":true}
+[2026-10-31T13:07:04.658Z] Testing Triple Mode storage switching (AUTO -> SEMI_AUTO -> MANUAL)...
+[2026-10-31T13:07:04.667Z] Switched to AUTO -> chrome.storage.local: AUTO
+[2026-10-31T13:07:04.677Z] Switched to SEMI_AUTO -> chrome.storage.local: SEMI_AUTO
+[2026-10-31T13:07:04.686Z] Switched to MANUAL -> chrome.storage.local: MANUAL
+[2026-10-31T13:07:04.692Z] Testing Pause Checkpoint persistence (PAUSE_CAMPAIGN -> xpider_paused_checkpoint)...
+[2026-10-31T13:07:04.702Z] Read persisted checkpoint: runId=run_pause_test_1793452024698 mode=SEMI_AUTO
+[2026-10-31T13:07:04.710Z] Negative Control: Cleared checkpoint state: undefined
+[2026-10-31T13:07:04.871Z] 📸 Captured screenshot: shot_rc11_fixture_d1_sidepanel_header_hud.png
+[2026-10-31T13:07:04.877Z] ✅ FIXTURE D PASSED (HUD controls, triple modes, and durable checkpoint verified)
+[2026-10-31T13:07:04.884Z] 
+=========================================================================
+[2026-10-31T13:07:04.891Z] --- FIXTURE E: Fail-Closed Privacy Guard & Outbound Egress Isolation ---
+[2026-10-31T13:07:04.897Z] =========================================================================
+[2026-10-31T13:07:04.903Z] Testing Negative Control E.1: Non-loopback public URL rejected fail-closed in Owner Test Mode...
+[2026-10-31T13:07:04.912Z] Negative Control E.1 Block Result: {"blocked":true,"reason":"NON_LOOPBACK_TARGET_BLOCKED_IN_TEST_MODE"}
+[2026-10-31T13:07:04.918Z] Testing Negative Control E.2: Simulated Privacy Gateway transport failure blocks start (failClosed=true)...
+[2026-10-31T13:07:04.926Z] Negative Control E.2 Simulated Gateway Result: {"tested":true,"isReady":true,"failClosed":true}
+[2026-10-31T13:07:04.935Z] Authoritative local fixture submissions recorded: 0
+[2026-10-31T13:07:04.941Z] Public / External Submissions count: 0
+[2026-10-31T13:07:04.948Z] ✅ FIXTURE E PASSED (Fail-closed guards and zero external egress strictly verified)
+[2026-10-31T13:07:04.963Z] 
+📄 Generated machine-readable evidence report: E:\vivpr\ai\extension-form-sender\owner-extension-test-site\evidence\evidence_v7_rc11_isolated_e2e_report.json
+[2026-10-31T13:07:04.970Z] 
+================================================================================
+[2026-10-31T13:07:04.976Z] 🎉 ALL 5 ISOLATED CHROMIUM E2E FIXTURES & NEGATIVE CONTROLS PASSED (100%)
+[2026-10-31T13:07:04.983Z] ================================================================================

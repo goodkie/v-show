@@ -1,0 +1,93 @@
+{
+  "runId": "rc11_isolated_e2e_1793451968228",
+  "startTimeUtc": "2026-10-31T13:06:08.226Z",
+  "endTimeUtc": "2026-10-31T13:07:04.955Z",
+  "project": "XPIDER_FORM_SENDER",
+  "issue": 6,
+  "targetBaseline": "v7.0.0-rc11",
+  "baselineCommit": "140fd2af26119c17672bb27847c0aad12a0dff81",
+  "extensionTreeSha": "d065af8f1f1438ecba9bbe7fb03cf8e18c040e05",
+  "browserVersion": "Edg/156.0.4314.50",
+  "runtimeBuildInfo": {
+    "buildId": "V7.0.0-RC11-20261030-THREE-MODE-CONTRACTS-PASS",
+    "implementationHeadShort": "20678ada",
+    "tag": "v7.0.0-rc11"
+  },
+  "totalFixtures": 6,
+  "fixturesPassed": 6,
+  "capturedScreenshots": [
+    "shot_rc11_fixture_a_autofill_standard.png",
+    "shot_rc11_fixture_c_spa_delayed_mount.png",
+    "shot_rc11_fixture_d1_sidepanel_header_hud.png"
+  ],
+  "perFixtureResults": {
+    "fixture_a": {
+      "name": "Autonomous Homepage Discovery -> Contact Navigation -> Autofill",
+      "autonomousDiscovery": true,
+      "autonomousNavigation": true,
+      "fieldsFilled": {
+        "name": "Alex Mercer",
+        "email": "alex@mercer-consulting.com",
+        "phone": "555-0199",
+        "msg": "Requesting consultation on system integration and architectural review."
+      },
+      "status": "PASS",
+      "screenshot": "shot_rc11_fixture_a_autofill_standard.png"
+    },
+    "fixture_a_negative_control": {
+      "name": "Negative Control: Formless Page Exhaustion",
+      "outcome": {
+        "isActive": true,
+        "isFaulted": false,
+        "visitedUrls": [
+          "http://127.0.0.1:8088/no-contact-page.html"
+        ],
+        "lastReason": "NO_ACCESSIBLE_INQUIRY_FORM"
+      },
+      "status": "PASS"
+    },
+    "fixture_b": {
+      "name": "Phone/Email-Only Form with NO Message Field",
+      "rejectionReason": "NO_LONG_TEXT_INQUIRY_FIELD",
+      "submissionsObserved": 0,
+      "status": "PASS",
+      "screenshot": null
+    },
+    "fixture_c": {
+      "name": "AJAX / SPA Dynamic Form Mount & Autofill",
+      "formMounted": true,
+      "autofilled": true,
+      "status": "PASS",
+      "screenshot": "shot_rc11_fixture_c_spa_delayed_mount.png"
+    },
+    "fixture_d": {
+      "name": "Triple Mode HUD & Checkpoint Storage Persistence",
+      "modeSwitchResults": [
+        {
+          "mode": "AUTO",
+          "persisted": true
+        },
+        {
+          "mode": "SEMI_AUTO",
+          "persisted": true
+        },
+        {
+          "mode": "MANUAL",
+          "persisted": true
+        }
+      ],
+      "checkpointDurable": true,
+      "checkpointNegativeControlVerified": true,
+      "status": "PASS",
+      "screenshot": "shot_rc11_fixture_d1_sidepanel_header_hud.png"
+    },
+    "fixture_e": {
+      "name": "Fail-Closed Privacy Guard & Outbound Egress Isolation",
+      "negativeControlNonLoopbackBlocked": true,
+      "negativeControlGatewayFailClosed": true,
+      "externalSubmissionsCount": 0,
+      "status": "PASS"
+    }
+  },
+  "releaseHoldStatus": "ACTIVE (Awaiting independent ChatGPT and Owner gate acceptance)"
+}
