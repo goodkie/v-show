@@ -9,7 +9,7 @@
 - State Rev: 2026-10-31.260
 - Authority Cursor: 6537069439
 - Major-version v7.0.0-rc13 Speed Slider Runtime Audit & Bidirectional Resume/Pause COMPLETED:
-  - Functional Commit pending/tagged on `major/v7-dual-mode`.
+  - Functional Commit `72eddd49` on `major/v7-dual-mode`.
   - GitHub Release: `v7.0.0-rc13` (tag `v7.0.0-rc13`).
   - Package: `XPIDER_V7.0.0_RC13_DUAL_MODE_OWNER_BETA.zip` (SHA256: `50c5ed03aaab6e2f4c3026a83428f30083dbe862fc61b6dc495b73a9b7d8f390`, size: `52307993` bytes).
   - Directives:
