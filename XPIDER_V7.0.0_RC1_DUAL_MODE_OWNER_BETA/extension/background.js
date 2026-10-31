@@ -524,19 +524,9 @@ class TargetDeadlineController {
             this.timerId = null;
         }
         if (this.isPaused || this.isCancelled || this.isExpired) return;
-        if (campaignState && (campaignState.manualHoldActive || campaignState.currentTargetStage === 'MANUAL_HOLD' || campaignState.externalCaptchaWaitActive)) {
-            this.isPaused = true;
-            this.pauseReason = 'MANUAL_HOLD_ACTIVE';
-            return;
-        }
 
         this.lastStartOrResumeTime = Date.now();
         this.timerId = setTimeout(() => {
-            if (campaignState && (campaignState.manualHoldActive || campaignState.currentTargetStage === 'MANUAL_HOLD' || campaignState.externalCaptchaWaitActive)) {
-                this.isPaused = true;
-                this.pauseReason = 'MANUAL_HOLD_ACTIVE';
-                return;
-            }
             this.isExpired = true;
             this.remainingMs = 0;
             if (this._rejectFn) {
@@ -563,17 +553,12 @@ class TargetDeadlineController {
         return this.remainingMs;
     }
 
-    resume(reason = null) {
+    resume() {
         if (!this.isPaused || this.isCancelled || this.isExpired) return;
-        // [RC15 Hold Authority Guard] Never resume deadline while operator hold or captcha manual wait is active
-        if (campaignState && (campaignState.manualHoldActive || campaignState.currentTargetStage === 'MANUAL_HOLD' || campaignState.externalCaptchaWaitActive)) {
-            console.log(`[TARGET_DEADLINE] Resume rejected: manual hold active (trigger=${reason})`);
-            return;
-        }
         this.isPaused = false;
         const prevReason = this.pauseReason;
         this.pauseReason = null;
-        console.log(`[TARGET_DEADLINE] Resumed: wasReason=${prevReason} remainingMs=${this.remainingMs} triggerReason=${reason}`);
+        console.log(`[TARGET_DEADLINE] Resumed: wasReason=${prevReason} remainingMs=${this.remainingMs}`);
         this._armTimer();
     }
 
@@ -596,7 +581,6 @@ class TargetDeadlineController {
 
 // [v1.2.0] Global Campaign State Registry (Ensures availability across all scopes)
 let campaignState = {
-    stateRevision: 0, // [RC12 Item 3] Authoritative Monotonic State Revision Counter
     isActive: false,
     campaignMode: 'AUTO', // [v7.0 Dual Mode] 'AUTO' | 'MANUAL'
     manualHoldActive: false,
@@ -754,7 +738,6 @@ function broadcastCounters() {
             counters: campaignState.counters
         }
     }).catch(() => {});
-    broadcastAuthoritativeState();
 }
 
 async function persistCounters() {
@@ -763,63 +746,6 @@ async function persistCounters() {
             await chrome.storage.local.set({ xpider_campaign_counters_v1: campaignState.counters });
         } catch (_) {}
     }
-}
-
-// [RC12 Item 3] Authoritative Canonical State Snapshot with Monotonic Revision
-function getAuthoritativeStateSnapshot() {
-    if (!campaignState.stateRevision) campaignState.stateRevision = 1;
-    else campaignState.stateRevision++;
-    const checkpoint = campaignState.pausedCheckpoint;
-    const counters = campaignState.counters || { success: 0, failed: 0, completed: 0, remaining: 0, total: 0 };
-    const inFlight = (campaignState.isActive && !campaignState.isPaused && (campaignState.activeTargetInFlight || campaignState.counters?.inProgress)) ? 1 : 0;
-    const rawQueueLen = campaignState.queue ? campaignState.queue.length : 0;
-    const hasCp = Boolean(checkpoint && Array.isArray(checkpoint.remainingQueue) && checkpoint.remainingQueue.length > 0 && !campaignState.isActive);
-    const isPausedEffective = Boolean(campaignState.isPaused || hasCp);
-    const remCount = campaignState.isActive
-        ? (rawQueueLen + inFlight)
-        : (isPausedEffective && checkpoint && Array.isArray(checkpoint.remainingQueue)
-            ? checkpoint.remainingQueue.length
-            : rawQueueLen);
-    const compCount = counters.completed !== undefined ? counters.completed : ((counters.success || 0) + (counters.failed || 0));
-    const totTargets = (counters.total !== undefined && counters.total > 0)
-        ? counters.total
-        : (campaignState.totalTargets || (remCount + compCount));
-    
-    return {
-        revision: campaignState.stateRevision,
-        campaignRunId: campaignState.campaignRunId || null,
-        runEpoch: campaignState.sessionId || 1,
-        isActive: Boolean(campaignState.isActive),
-        isPaused: isPausedEffective,
-        campaignMode: campaignState.campaignMode || (checkpoint && checkpoint.campaignMode) || 'AUTO',
-        remainingCount: remCount,
-        completedCount: compCount,
-        successCount: counters.success || campaignState.successCount || 0,
-        failedCount: counters.failed || 0,
-        totalTargets: totTargets,
-        currentTargetUrl: (campaignState.currentAttempt && campaignState.currentAttempt.url) || campaignState.currentTargetUrl || (isPausedEffective ? 'Paused Target' : 'Idle'),
-        stage: campaignState.currentTargetStage || (isPausedEffective ? 'PAUSED' : (campaignState.isActive ? 'RUNNING' : 'IDLE')),
-        hasPausedCheckpoint: Boolean(!campaignState.isActive && (hasCp || (campaignState.isPaused && checkpoint && Array.isArray(checkpoint.remainingQueue) && checkpoint.remainingQueue.length > 0))),
-        pausedRemainingCount: (!campaignState.isActive && checkpoint && Array.isArray(checkpoint.remainingQueue)) ? checkpoint.remainingQueue.length : 0,
-        pausedCampaignMode: (checkpoint && checkpoint.campaignMode) || campaignState.campaignMode || 'AUTO',
-        failureBreakdown: counters.failureBreakdown || {},
-        counters: {
-            ...counters,
-            inProgress: inFlight,
-            remaining: remCount,
-            completed: compCount,
-            total: totTargets
-        }
-    };
-}
-
-function broadcastAuthoritativeState() {
-    const snapshot = getAuthoritativeStateSnapshot();
-    chrome.runtime.sendMessage({
-        action: 'AUTHORITATIVE_STATE_UPDATE',
-        snapshot
-    }).catch(() => {});
-    return snapshot;
 }
 
 // [v18.35.0] Mission-Critical API Wrapper: Native bridge for missing APIs
@@ -1962,10 +1888,7 @@ async function freezeActiveCampaignJob(reason) {
     campaignState.networkRecoveryPhase = 'CHECKPOINTED';
     campaignState.networkRecoveryRetryCount = (campaignState.networkRecoveryRetryCount || 0) + 1;
 
-    // Clear active timeout alarms and pause target deadline so timeouts don't fire during network recovery
-    if (campaignState.targetDeadlineController && typeof campaignState.targetDeadlineController.pause === 'function') {
-        try { campaignState.targetDeadlineController.pause('NETWORK_DEGRADED'); } catch (_) {}
-    }
+    // Clear active timeout alarms so timeouts don't fire during network recovery
     if (chrome.alarms) {
         if (campaignState.currentTabId) {
             chrome.alarms.clear(`xpider_watchdog_${campaignState.currentTabId}_${campaignState.sessionId}`);
@@ -2046,9 +1969,6 @@ async function resumeActiveCampaignJobAfterRecovery() {
     }
 
     campaignState.isPaused = false;
-    if (campaignState.targetDeadlineController && typeof campaignState.targetDeadlineController.resume === 'function') {
-        try { campaignState.targetDeadlineController.resume('NETWORK_RECOVERED'); } catch (_) {}
-    }
     logBg(null, `[NETWORK_RECOVERY] 🔄 Privacy Relay re-established. Initiating preflight and job restoration...`, "info");
     console.log(`[NETWORK_RECOVERY] Reconnecting -> Privacy Reverify...`);
 
@@ -2225,7 +2145,6 @@ async function resumeActiveCampaignJobAfterRecovery() {
  * Transitions between READY -> DEGRADED -> RECONNECTING -> READY without Owner intervention.
  */
 let relayWatchdogInterval = null;
-let lastRelayWatchdogProbeTime = 0;
 function startPrivacyRelayWatchdog() {
     if (relayWatchdogInterval) return;
 
@@ -2233,13 +2152,6 @@ function startPrivacyRelayWatchdog() {
         try {
             const pg = (typeof PrivacyGateway !== 'undefined' && PrivacyGateway.getInstance) ? PrivacyGateway.getInstance() : null;
             if (!pg || !pg.config.enabled) return;
-
-            // [RC14 Bounded Probe Backoff] When in network recovery, probe on 15s backoff to eliminate 3s 522 thrashing
-            const now = Date.now();
-            if (campaignState.isNetworkDegraded && (now - lastRelayWatchdogProbeTime < 15000)) {
-                return;
-            }
-            lastRelayWatchdogProbeTime = now;
 
             const res = await pg.probeRelayLifecycle(true);
 
@@ -2254,9 +2166,8 @@ function startPrivacyRelayWatchdog() {
                 }
             } else {
                 if (campaignState.isActive && !campaignState.isPaused && !campaignState.pausedByOperator && !campaignState.isNetworkDegraded && !campaignState.ownerFunctionTestMode) {
-                    const degradedDesc = (res.reason && !res.reason.includes('READY')) ? res.reason : (res.lifecycleState && res.lifecycleState !== 'READY' ? res.lifecycleState : 'UPSTREAM_PROXY_DEGRADED');
-                    logBg(null, `[WATCHDOG] Privacy Relay degraded (${degradedDesc}). Freezing active campaign job...`, "warning");
-                    await freezeActiveCampaignJob(`WATCHDOG_RELAY_DEGRADED: ${degradedDesc}`);
+                    logBg(null, `[WATCHDOG] Privacy Relay degraded (${res.lifecycleState || res.reason}). Freezing active campaign job...`, "warning");
+                    await freezeActiveCampaignJob(`WATCHDOG_RELAY_DEGRADED: ${res.reason || res.lifecycleState}`);
                 }
             }
         } catch (e) {
@@ -4813,9 +4724,8 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
 
         case 'SENDER_READY':
             // [v18.24.0] Direct Route: Handle content-script ready signal via global state
-            if (sender.tab && (sender.tab.id === campaignState.currentTabId || sender.tab.id === campaignState.targetTabId) && campaignState.targetReady) {
-                logBg(sender.tab.id, `[CONTENT_BOOT_ACK] SENDER_READY received from tab ${sender.tab.id} (${sender.tab.url}). Securing focus...`, "info");
-                campaignState.targetReady(sender.tab.url, true);
+            if (sender.tab && sender.tab.id === campaignState.currentTabId && campaignState.targetReady) {
+                campaignState.targetReady(sender.tab.url, false);
                 sendResponse({ success: true });
             }
             return true;
@@ -5187,25 +5097,27 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
             return true;
 
         case 'GET_STATE':
-            chrome.storage.local.get(['xpider_paused_checkpoint', 'xpider_isPaused'], (stored) => {
-                if (!campaignState.isActive) {
-                    if (!campaignState.pausedCheckpoint && stored.xpider_paused_checkpoint) {
-                        campaignState.pausedCheckpoint = stored.xpider_paused_checkpoint;
-                    }
-                    if (stored.xpider_isPaused || (stored.xpider_paused_checkpoint && Array.isArray(stored.xpider_paused_checkpoint.remainingQueue) && stored.xpider_paused_checkpoint.remainingQueue.length > 0)) {
-                        campaignState.isPaused = true;
-                        if (!campaignState.queue || campaignState.queue.length === 0) {
-                            campaignState.queue = [...(stored.xpider_paused_checkpoint?.remainingQueue || [])];
-                        }
-                    }
-                } else {
-                    campaignState.pausedCheckpoint = null;
-                }
-                const snapshot = getAuthoritativeStateSnapshot();
+            chrome.storage.local.get(['xpider_paused_checkpoint'], (stored) => {
+                const checkpoint = campaignState.pausedCheckpoint || stored.xpider_paused_checkpoint || null;
+                const counters = campaignState.counters || { success: 0, failed: 0, completed: 0, remaining: 0, total: 0 };
                 sendResponse({
                     success: true,
-                    ...snapshot,
-                    snapshot
+                    isActive: campaignState.isActive,
+                    successCount: counters.success !== undefined ? counters.success : campaignState.successCount,
+                    failedCount: counters.failed !== undefined ? counters.failed : 0,
+                    completedCount: counters.completed !== undefined ? counters.completed : 0,
+                    remainingCount: counters.remaining !== undefined ? counters.remaining : campaignState.queue.length,
+                    totalTargets: counters.total !== undefined && counters.total > 0 ? counters.total : campaignState.totalTargets,
+                    failureBreakdown: counters.failureBreakdown || {},
+                    counters: counters,
+                    isPaused: campaignState.isPaused,
+                    hasPausedCheckpoint: !!(checkpoint && checkpoint.remainingQueue && checkpoint.remainingQueue.length > 0),
+                    pausedRemainingCount: (checkpoint && checkpoint.remainingQueue) ? checkpoint.remainingQueue.length : 0,
+                    campaignMode: campaignState.campaignMode || (checkpoint && checkpoint.campaignMode) || 'AUTO',
+                    pausedCampaignMode: (checkpoint && checkpoint.campaignMode) || campaignState.campaignMode || 'AUTO',
+                    hasActiveLock: !!(campaignState.currentAttempt && campaignState.currentAttempt.status === 'SUBMIT_PENDING'),
+                    currentAttempt: campaignState.currentAttempt,
+                    outcomeHistogram: campaignState.outcomeHistogram || {}
                 });
             });
             return true;
@@ -5213,17 +5125,7 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
         case 'PAUSE_CAMPAIGN':
             (async () => {
                 const res = await pauseCampaignOrchestrator(true);
-                const snapshot = getAuthoritativeStateSnapshot();
-                broadcastAuthoritativeState();
-                sendResponse({
-                    success: true,
-                    ...res,
-                    snapshot,
-                    revision: snapshot.revision,
-                    effectiveMode: snapshot.campaignMode,
-                    runId: snapshot.campaignRunId,
-                    remainingCount: snapshot.remainingCount
-                });
+                sendResponse({ success: true, ...res });
             })();
             return true;
             
@@ -5233,17 +5135,7 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
                     const res = await resumeCampaignOrchestrator({
                         campaignMode: request.campaignMode
                     });
-                    const snapshot = getAuthoritativeStateSnapshot();
-                    broadcastAuthoritativeState();
-                    sendResponse({
-                        success: true,
-                        ...res,
-                        snapshot,
-                        revision: snapshot.revision,
-                        effectiveMode: snapshot.campaignMode,
-                        runId: snapshot.campaignRunId,
-                        remainingCount: snapshot.remainingCount
-                    });
+                    sendResponse({ success: true, ...res });
                 } catch (err) {
                     sendResponse({ success: false, error: err.message });
                 }
@@ -5251,34 +5143,6 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
             return true;
 
         // [R6.9G.10.3.5 A.2] Live Identity Query for CAPTCHA iframes
-        
-        // [RC13 Speed Slider Runtime Audit] Live Speed Update Endpoint
-        case 'UPDATE_SPEED_SETTINGS':
-            try {
-                if (typeof request.delayMs === 'number') campaignState.delayMs = request.delayMs;
-                if (typeof request.fillDelayMs === 'number') campaignState.fillDelayMs = request.fillDelayMs;
-                if (typeof request.submitDelayMs === 'number') campaignState.submitDelayMs = request.submitDelayMs;
-
-                // Live propagation to active target content script
-                if (campaignState.currentTabId) {
-                    chrome.tabs.sendMessage(campaignState.currentTabId, {
-                        action: 'UPDATE_ACTIVE_SPEED',
-                        fillDelayMs: campaignState.fillDelayMs,
-                        submitDelayMs: campaignState.submitDelayMs
-                    }).catch(() => {});
-                }
-                logBg(null, `[SPEED_UPDATE] liveApplied=true collectMs=${campaignState.delayMs} fillMs=${campaignState.fillDelayMs} submitMs=${campaignState.submitDelayMs}`, 'info');
-                sendResponse({
-                    success: true,
-                    delayMs: campaignState.delayMs,
-                    fillDelayMs: campaignState.fillDelayMs,
-                    submitDelayMs: campaignState.submitDelayMs
-                });
-            } catch (err) {
-                sendResponse({ success: false, error: err.message });
-            }
-            return true;
-
         case 'GET_ACTIVE_EXECUTION_IDENTITY':
             (async () => {
                 try {
@@ -6844,17 +6708,15 @@ function normalizeUrl(url) {
     }
 }
 
-async function startCampaignOrchestrator(queue, template, delayMs, fillDelayMs = 300, submitDelayMs = 4000, options = {}) {
-    // [V7-RC5 & RC14 Robust Paused-Resume Guard]
-    // Guard against accidental full re-run when a paused checkpoint exists with remaining queue
-    const hasPausedChk = Boolean(campaignState.pausedCheckpoint && Array.isArray(campaignState.pausedCheckpoint.remainingQueue) && campaignState.pausedCheckpoint.remainingQueue.length > 0);
-    if (!options.ownerFunctionTestMode && !options.forceFreshRun && !options.forceNewCampaign && (campaignState.isPaused || hasPausedChk) && hasPausedChk) {
+async function startCampaignOrchestrator(queue, template, delayMs, fillDelayMs = 300, submitDelayMs = 1500, options = {}) {
+    // [V7-RC5] Guard against accidental checkpoint overwrite if START_CAMPAIGN is invoked with the paused remainingQueue
+    if (!options.ownerFunctionTestMode && !options.forceNewCampaign && campaignState.isPaused && campaignState.pausedCheckpoint && Array.isArray(campaignState.pausedCheckpoint.remainingQueue) && campaignState.pausedCheckpoint.remainingQueue.length > 0 && Array.isArray(queue) && queue.length === campaignState.pausedCheckpoint.remainingQueue.length && normalizeUrl(queue[0]) === normalizeUrl(campaignState.pausedCheckpoint.remainingQueue[0])) {
         const reqModeOpt = options.campaignMode;
         const reqModeTpl = template && template.campaignMode;
         const requestedMode = (reqModeOpt === 'MANUAL' || reqModeOpt === 'SEMI_AUTO' || reqModeOpt === 'AUTO')
             ? reqModeOpt
             : ((reqModeTpl === 'MANUAL' || reqModeTpl === 'SEMI_AUTO' || reqModeTpl === 'AUTO') ? reqModeTpl : undefined);
-        logBg(null, `🔄 [START_REDIRECT_TO_RESUME] Active paused checkpoint detected (${campaignState.pausedCheckpoint.remainingQueue.length} remaining items in run ${campaignState.pausedCheckpoint.campaignRunId}). Resuming checkpoint in ${requestedMode || campaignState.pausedCheckpoint.campaignMode || 'AUTO'} mode to prevent accidental full re-run.`, "info");
+        logBg(null, `🔄 [START_REDIRECT_TO_RESUME] Active paused checkpoint detected with matching remaining queue (${queue.length} items). Resuming checkpoint in ${requestedMode || campaignState.pausedCheckpoint.campaignMode || 'AUTO'} mode to preserve totalTargets & history.`, "info");
         return await resumeCampaignOrchestrator({ campaignMode: requestedMode });
     }
     // [v18.17.0] Emergency Diagnostic Sequence
@@ -7003,9 +6865,9 @@ async function startCampaignOrchestrator(queue, template, delayMs, fillDelayMs =
         campaignState.template = template;
         campaignState.templateId = (template && (template.id || template.templateId)) || 'default';
         campaignState.templateVersion = (template && (template.version || template.templateVersion)) || 1;
-        campaignState.delayMs = delayMs || 10000;
+        campaignState.delayMs = delayMs || 6000;
         campaignState.fillDelayMs = fillDelayMs || 300;
-        campaignState.submitDelayMs = submitDelayMs || 4000;
+        campaignState.submitDelayMs = submitDelayMs || 1500;
         const optMode = options.campaignMode || campaignState.campaignMode;
         campaignState.campaignMode = (optMode === 'MANUAL' || optMode === 'SEMI_AUTO') ? optMode : 'AUTO';
         campaignState.manualHoldActive = false;
@@ -7075,7 +6937,7 @@ async function startCampaignOrchestrator(queue, template, delayMs, fillDelayMs =
         logBg(null, "[Boot] Storage sync initiated.", "debug");
 
         await syncCampaignCountersFromLedger(hs);
-        broadcastAuthoritativeState();
+
         processNextCampaignTarget(campaignState.sessionId);
         logBg(null, "[Boot] Target loop triggered.", "debug");
         
@@ -7178,16 +7040,16 @@ async function pauseCampaignOrchestrator(saveCheckpoint = true) {
         campaignState.externalCaptchaWaitActive = false;
     } else {
         const pauseQuiesceStart = Date.now();
-        while (campaignState.activeTargetInFlight && (Date.now() - pauseQuiesceStart < 800)) {
+        while (campaignState.activeTargetInFlight && (Date.now() - pauseQuiesceStart < 5000)) {
             await new Promise(r => setTimeout(r, 50));
         }
     }
 
-    // [RC15 Bounded Pause Settlement] Force clean release if still in flight after 800ms
     if (campaignState.activeTargetInFlight) {
-        logBg(null, `⚠️ [Pause] Target did not quiesce within 800ms. Forcing clean pause transition.`, 'warning');
-        campaignState.activeTargetInFlight = false;
-        campaignState.activeTargetCount = 0;
+        logBg(null, `🚨 [PAUSE_FAULT] Active target failed to quiesce during pause. Entering HOLD/FAULT state. Checkpoint held.`, 'error');
+        campaignState.isFaulted = true;
+        campaignState.faultReason = 'PAUSE_QUIESCENCE_TIMEOUT';
+        return { success: false, status: 'HOLD_FAULT', reason: 'PAUSE_QUIESCENCE_TIMEOUT' };
     }
 
     // 4. Resolve in-flight attempt state canonically
@@ -7271,44 +7133,14 @@ async function pauseCampaignOrchestrator(saveCheckpoint = true) {
     const hsInstance = await getHistoryStoreInstance();
     await syncCampaignCountersFromLedger(hsInstance);
 
-    // [RC13 Audit Directive #6535593609] Preserve operator tab and work if pause occurs during active operator hold
-    let preservedTabId = null;
-    if (wasInV7Hold && campaignState.currentTabId) {
-        preservedTabId = campaignState.currentTabId;
-        logBg(preservedTabId, `⏸️ [Pause] Operator hold active. Preserving operator tab (tabId=${preservedTabId}) across pause barrier.`, "info");
-        await closeAllCampaignTabsExcept(preservedTabId, 'PAUSE_RETAIN_HOLD_TAB');
-        campaignState.pausedHeldTabId = preservedTabId;
-        campaignState.pausedHeldUrl = campaignState.currentTargetUrl;
-        campaignState.pausedHeldStage = inFlightStage;
-        
-        // Notify tab content script that campaign is paused but hold is retained
-        chrome.tabs.sendMessage(preservedTabId, {
-            action: 'CAMPAIGN_PAUSED_HOLD_RETAINED',
-            runId: campaignState.campaignRunId
-        }).catch(() => {});
-        
-        if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
-            chrome.storage.local.set({
-                xpider_v7_active_hold_state: {
-                    tabId: preservedTabId,
-                    url: campaignState.currentTargetUrl,
-                    stage: inFlightStage,
-                    reason: 'PAUSED_OPERATOR_HOLD_RETAINED',
-                    timestamp: Date.now()
-                }
-            }).catch(() => {});
-        }
-    } else {
-        await closeAllCampaignTabsExcept(null, 'PAUSE_CAMPAIGN');
-        if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
-            chrome.storage.local.remove('xpider_v7_active_hold_state').catch(() => {});
-        }
-        campaignState.pausedHeldTabId = null;
-        campaignState.pausedHeldUrl = null;
-        campaignState.pausedHeldStage = null;
-        campaignState.currentTabId = null;
-        campaignState.targetTabId = null;
+    // [Issue #6 R6.9E B5 & V7.0.0-RC2 Audit Item 2] 5. Close campaign tabs EXCEPT held tab if in MANUAL_HOLD or CAPTCHA_PENDING_EXTERNAL_USER
+    const retainTabOnPause = wasInV7Hold ? campaignState.currentTabId : null;
+    await closeAllCampaignTabsExcept(retainTabOnPause, 'PAUSE_CAMPAIGN');
+    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+        chrome.storage.local.remove('xpider_v7_active_hold_state').catch(() => {});
     }
+    campaignState.currentTabId = null;
+    campaignState.targetTabId = null;
     campaignState.submitLock = false;
     campaignState.timeoutWatchdogGen = (campaignState.timeoutWatchdogGen || 0) + 1;
     chrome.storage.local.remove('xpider_currentAttempt').catch(() => {});
@@ -7331,9 +7163,6 @@ async function pauseCampaignOrchestrator(saveCheckpoint = true) {
     if (saveCheckpoint) {
         const checkpoint = {
             campaignRunId: campaignState.campaignRunId,
-            pausedHeldTabId: campaignState.pausedHeldTabId,
-            pausedHeldUrl: campaignState.pausedHeldUrl,
-            pausedHeldStage: campaignState.pausedHeldStage,
             remainingQueue: [...campaignState.queue],
             visitedUrls: [...campaignState.visitedUrls],
             successfulUrls: [...campaignState.successfulUrls],
@@ -7432,9 +7261,9 @@ async function resumeCampaignOrchestrator(options = {}) {
     campaignState.template = checkpoint.template || campaignState.template;
     campaignState.templateId = checkpoint.templateId || 'default';
     campaignState.templateVersion = checkpoint.templateVersion || 1;
-    campaignState.delayMs = checkpoint.delayMs || 10000;
+    campaignState.delayMs = checkpoint.delayMs || 6000;
     campaignState.fillDelayMs = checkpoint.fillDelayMs || 300;
-    campaignState.submitDelayMs = checkpoint.submitDelayMs || 4000;
+    campaignState.submitDelayMs = checkpoint.submitDelayMs || 1500;
     const previousMode = (checkpoint.campaignMode === 'MANUAL' || checkpoint.campaignMode === 'SEMI_AUTO' || checkpoint.campaignMode === 'AUTO')
         ? checkpoint.campaignMode
         : ((campaignState.campaignMode === 'MANUAL' || campaignState.campaignMode === 'SEMI_AUTO' || campaignState.campaignMode === 'AUTO') ? campaignState.campaignMode : 'AUTO');
@@ -7485,7 +7314,6 @@ async function resumeCampaignOrchestrator(options = {}) {
     campaignState.isLoopRunning = false;
     campaignState.lastActionTime = Date.now();
     campaignState.pausedCheckpoint = null;
-    await chrome.storage.local.remove(['xpider_paused_checkpoint', 'xpider_isPaused']);
 
     // [RC10 P0] Authoritative triple-mode contract & Stale Hold Purge on Resume:
     campaignState.manualHoldActive = false;
@@ -7493,37 +7321,11 @@ async function resumeCampaignOrchestrator(options = {}) {
     campaignState.manualAssistDetails = null;
     await chrome.storage.local.remove(['xpider_v7_active_hold_state']);
 
-    // [RC13 Hold Preservation] Re-attach to preserved operator hold tab if still open
-    if (checkpoint.pausedHeldTabId) {
-        let tabAlive = false;
-        try {
-            const t = await safeTabs.get(checkpoint.pausedHeldTabId);
-            if (t && t.id) tabAlive = true;
-        } catch (_) {}
-        if (tabAlive) {
-            campaignState.currentTabId = checkpoint.pausedHeldTabId;
-            campaignState.targetTabId = checkpoint.pausedHeldTabId;
-            logBg(checkpoint.pausedHeldTabId, `▶️ [Resume] Operator tab ${checkpoint.pausedHeldTabId} preserved & alive. Resumed in ${requestedMode} mode.`, "info");
-            if (requestedMode === 'AUTO') {
-                safeTabs.sendMessage(checkpoint.pausedHeldTabId, {
-                    action: 'RESUME_AUTO_AUDIT',
-                    campaignMode: 'AUTO',
-                    template: checkpoint.template || campaignState.template
-                }).catch(() => {});
-            } else {
-                safeTabs.sendMessage(checkpoint.pausedHeldTabId, { action: 'UPDATE_CAMPAIGN_MODE', mode: requestedMode }).catch(() => {});
-            }
-        } else {
-            logBg(null, `ℹ️ [Resume] Preserved operator tab ${checkpoint.pausedHeldTabId} was closed by user while paused. Proceeding with target queue.`, "info");
-        }
-    } else if (campaignState.currentTabId || campaignState.targetTabId) {
+    // If there is an active target tab from before pause, dismiss in-page hold if resuming in AUTO
+    if (campaignState.currentTabId || campaignState.targetTabId) {
         const holdTabId = campaignState.currentTabId || campaignState.targetTabId;
         if (requestedMode === 'AUTO') {
-            safeTabs.sendMessage(holdTabId, {
-                action: 'RESUME_AUTO_AUDIT',
-                campaignMode: 'AUTO',
-                template: checkpoint.template || campaignState.template
-            }).catch(() => {});
+            safeTabs.sendMessage(holdTabId, { action: 'DISMISS_MANUAL_HOLD_PANEL', reason: 'RESUMED_IN_AUTO' }).catch(() => {});
         }
     }
 
@@ -7535,7 +7337,6 @@ async function resumeCampaignOrchestrator(options = {}) {
     logBg(null, `🚀 [Resume] Resuming campaign at task boundary in ${requestedMode} mode (previous=${previousMode}, switched=${modeSwitched}) from target ${campaignState.totalTargets - campaignState.queue.length + 1} (${campaignState.queue.length} targets remaining)...`, "start");
 
     const restoredCount = checkpoint.remainingQueue.length;
-    broadcastAuthoritativeState();
     processNextCampaignTarget(campaignState.sessionId);
     return {
         success: true,
@@ -7983,14 +7784,6 @@ async function processNextCampaignTarget(loopSessionId, loopGeneration) {
             ]).catch(async (err) => {
                 logBg(null, `⚠️ [Protection] Target skipped / timed out: ${err.message}`, "warning");
 
-                // [RC15 Hold Retention Invariant] In SEMI_AUTO / MANUAL during an active operator hold, retain tab and do not abort!
-                const curMode = campaignState.campaignMode || 'AUTO';
-                const isHoldActive = Boolean(campaignState.manualHoldActive || campaignState.currentTargetStage === 'MANUAL_HOLD');
-                if ((curMode === 'SEMI_AUTO' || curMode === 'MANUAL') && isHoldActive) {
-                    logBg(null, `🖐️ [HOLD_RETENTION] Preserving operator hold tab (tabId=${campaignState.currentTabId}) across parent timeout catch. Target held for operator.`, "warning");
-                    return { success: false, holdRetained: true, reasonCode: 'MANUAL_HOLD' };
-                }
-
                 // 1. SIGNAL ABORT IMMEDIATELY
                 targetAbortController.abort(err.message);
                 if (campaignState.currentTabId) {
@@ -8008,7 +7801,7 @@ async function processNextCampaignTarget(loopSessionId, loopGeneration) {
                 }
 
                 // 3. Verified tab closure
-                if (campaignState.currentTabId && !(isHoldActive && (curMode === 'SEMI_AUTO' || curMode === 'MANUAL'))) {
+                if (campaignState.currentTabId) {
                     const orphanId = campaignState.currentTabId;
                     campaignState.currentTabId = null;
                     await closeOwnedTabVerified(orphanId, 'TIMEOUT_ABORT');
@@ -8062,17 +7855,6 @@ async function processNextCampaignTarget(loopSessionId, loopGeneration) {
                     }
 
                     if (attemptId && hs && typeof hs.settleCanonicalAttempt === 'function') {
-                        // [RC15 Target Identity Invariant] Ensure attempt belongs to this targetUrl before settlement
-                        const existingAtt = hs.attempts.find(a => a.attemptId === attemptId);
-                        if (existingAtt && existingAtt.sourceUrl) {
-                            const expectedNorm = normalizeUrl(targetUrl);
-                            const actualNorm = normalizeUrl(existingAtt.sourceUrl);
-                            if (expectedNorm !== actualNorm) {
-                                logBg(null, `🚨 [TARGET_IDENTITY_MISMATCH_BLOCKED] Attempt ${attemptId} belongs to ${existingAtt.sourceUrl}, but active target is ${targetUrl}. Refusing wrong-domain settlement!`, 'error');
-                                return { success: false, error: 'TARGET_IDENTITY_MISMATCH', reasonCode: 'TARGET_IDENTITY_MISMATCH' };
-                            }
-                        }
-
                         await hs.settleCanonicalAttempt(attemptId, timeoutStatus, timeoutReason, {}, {
                             campaignRunId: campaignState.campaignRunId,
                             resultUrl: targetUrl,
@@ -8102,10 +7884,7 @@ async function processNextCampaignTarget(loopSessionId, loopGeneration) {
                     await new Promise(r => setTimeout(r, 50));
                 }
 
-                // [RC15 Tab Retention Invariant] Preserve tab during active operator hold in SEMI_AUTO / MANUAL
-                const curMode = campaignState.campaignMode || 'AUTO';
-                const isHoldActiveNow = Boolean(campaignState.manualHoldActive || campaignState.currentTargetStage === 'MANUAL_HOLD');
-                if (campaignState.currentTabId && !(isHoldActiveNow && (curMode === 'SEMI_AUTO' || curMode === 'MANUAL'))) {
+                if (campaignState.currentTabId) {
                     const orphanId = campaignState.currentTabId;
                     campaignState.currentTabId = null;
                     await closeOwnedTabVerified(orphanId, 'TARGET_FINALLY_CLEANUP');
@@ -8191,12 +7970,6 @@ if (chrome.alarms) {
             return;
         }
 
-        // [RC15 Operator Hold & Paused Guard] NEVER advance or force timeout while in operator hold or paused!
-        if (campaignState.isPaused || campaignState.manualHoldActive || campaignState.currentTargetStage === 'MANUAL_HOLD' || campaignState.externalCaptchaWaitActive) {
-            console.log(`[TIMEOUT_GUARD] Suppressed alarm=${alarm.name}: manualHoldActive=${campaignState.manualHoldActive} stage=${campaignState.currentTargetStage} isPaused=${campaignState.isPaused}`);
-            return;
-        }
-
         // [Issue #6 R6.5 Section 9] Session timeout must not settle active submission
         const activeStages = ['ACTIVE_FORM', 'FILLING', 'CAPTCHA', 'FINAL_AUDIT', 'SUBMIT_ATTEMPT_STARTED', 'SUBMITTING', 'SUBMIT_TRIGGERED', 'VERIFYING'];
 
@@ -8212,11 +7985,7 @@ if (chrome.alarms) {
                 logBg(null, `⚠️ [WATCHDOG_BREAK] Target stalled in stage=${curStage} for >= 2 cycles without progression. Forcing terminal settlement and advancing.`, "warning");
                 campaignState.stageStallCount = 0;
             }
-            if (!campaignState.activeTargetInFlight && !campaignState.manualHoldActive && !campaignState.isPaused) {
-                processNextCampaignTarget();
-            } else {
-                console.log(`[WATCHDOG_SUPPRESSED] activeInFlight=${campaignState.activeTargetInFlight} manualHold=${campaignState.manualHoldActive}`);
-            }
+            processNextCampaignTarget();
             return;
         }
 
@@ -8227,12 +7996,6 @@ if (chrome.alarms) {
             if (session !== campaignState.sessionId) {
                 // [R6.3 C] Stale timeout callback from prior target/session — ignore
                 logBg(null, `[TIMEOUT_GUARD] staleGeneration=true alarm.session=${session} current.session=${campaignState.sessionId} -> ignored`, "info");
-                return;
-            }
-
-            // [RC15 Operator Hold Guard on Global Timeout Alarm]
-            if (campaignState.manualHoldActive || campaignState.currentTargetStage === 'MANUAL_HOLD' || campaignState.isPaused) {
-                console.log(`[TIMEOUT_GUARD] Global session alarm suppressed during operator hold (stage=${campaignState.currentTargetStage})`);
                 return;
             }
 
@@ -9004,72 +8767,6 @@ async function orchestrateSending(urlInput, template, abortSignal = null) {
     };
     resetWatchdog();
 
-    // [RC14 Bounded Per-Stage Watchdog]
-    let currentStageName = 'INIT';
-    let stageStartTime = Date.now();
-    let stageWatchdogTimer = null;
-
-    const transitionStage = (stageName, timeoutMs = 30000) => {
-        if (stageWatchdogTimer) {
-            clearTimeout(stageWatchdogTimer);
-            stageWatchdogTimer = null;
-        }
-        if (isFinished || discoveryCtx.aborted || campaignState.isPaused) return;
-
-        currentStageName = stageName;
-        stageStartTime = Date.now();
-        campaignState.currentTargetStage = stageName;
-        console.log(`[STAGE_TRANSITION] target=${targetHost} stage=${stageName} timeoutMs=${timeoutMs}`);
-
-        if (timeoutMs > 0) {
-            stageWatchdogTimer = setTimeout(async () => {
-                if (isFinished || discoveryCtx.aborted || campaignState.isPaused || campaignState.manualHoldActive) return;
-                const elapsed = Date.now() - stageStartTime;
-                logBg(tabId, `⏱️ [STAGE_WATCHDOG_TIMEOUT] Stage [${currentStageName}] stalled after ${elapsed}ms on ${currentAttemptUrl || baseUrl}. Action taken...`, "warning");
-
-                const curMode = campaignState.campaignMode || 'AUTO';
-                if (curMode === 'SEMI_AUTO' || curMode === 'MANUAL') {
-                    logBg(tabId, `🖐️ [${curMode}_STAGE_HOLD] Stage timeout in ${currentStageName}. Displaying operator assistance hold...`, "warning");
-                    campaignState.currentTargetStage = 'MANUAL_HOLD';
-                    campaignState.manualHoldActive = true;
-                    campaignState.manualHoldInitialUrl = currentAttemptUrl || baseUrl;
-                    if (campaignState.targetDeadlineController) {
-                        campaignState.targetDeadlineController.pause('MANUAL_HOLD');
-                    }
-                    chrome.runtime.sendMessage({
-                        action: 'TRIGGER_SIDE_PANEL_ASSIST',
-                        data: {
-                            url: currentAttemptUrl || baseUrl,
-                            reason: `STAGE_TIMEOUT (${currentStageName})`,
-                            mode: curMode,
-                            stage: currentStageName
-                        }
-                    }).catch(() => {});
-                    safeTabs.sendMessage(tabId, {
-                        action: 'RESTORE_MANUAL_HOLD_PANEL',
-                        stage: currentStageName,
-                        mode: curMode,
-                        validationReason: `STAGE_TIMEOUT (${currentStageName})`
-                    }).catch(() => {});
-                } else {
-                    // AUTO mode: advance to next candidate without stalling for 180s
-                    if (pathIdx < validPaths.length) {
-                        logBg(tabId, `⏭️ [AutoStageAdvance] Stage [${currentStageName}] timed out. Trying next candidate path...`, "info");
-                        tryNext();
-                    } else {
-                        logBg(tabId, `🛑 [AutoStageAdvance] Stage [${currentStageName}] timed out and all paths exhausted. Settling target.`, "warning");
-                        finish({
-                            success: false,
-                            error: `Stage [${currentStageName}] timeout (${elapsed}ms)`,
-                            reasonCode: 'DISCOVERY_STAGE_TIMEOUT'
-                        });
-                    }
-                }
-            }, timeoutMs);
-        }
-    };
-    transitionStage('PRE_SCAN', 20000);
-
     let injectionTimer = null;
     let pollerTimer = null;
     let lastActivity = Date.now();
@@ -9144,10 +8841,6 @@ async function orchestrateSending(urlInput, template, abortSignal = null) {
 
         if (isFinished) return;
         isFinished = true; // [RC3.60 P0] Immediately latch — prevents re-entry across async gaps
-        if (stageWatchdogTimer) {
-            clearTimeout(stageWatchdogTimer);
-            stageWatchdogTimer = null;
-        }
         let isConfirmedProof = Boolean(res && res.success);
         let actualResultUrl = null;
         try {
@@ -9401,7 +9094,7 @@ async function orchestrateSending(urlInput, template, abortSignal = null) {
         }
 
         if (res && res.success) {
-            const holdMs = res?.metadata?.manualMode ? 20 : Math.max(500, campaignState.submitDelayMs !== undefined ? parseInt(campaignState.submitDelayMs) : 4000);
+            const holdMs = res?.metadata?.manualMode ? 20 : Math.max(3500, campaignState.submitDelayMs ? parseInt(campaignState.submitDelayMs) : 3500);
             logBg(tabId, `✨ [Engine] Submission confirmed. Maintaining tab for completion (${holdMs}ms)...`, "success");
             await new Promise(r => setTimeout(r, holdMs));
         } else if (res?.error !== 'ABORTED' && res?.reasonCode !== 'ABORTED' && !campaignState.isPaused) {
@@ -9511,7 +9204,6 @@ async function orchestrateSending(urlInput, template, abortSignal = null) {
         }
 
         if (injectionTimer) clearTimeout(injectionTimer);
-        transitionStage('FORM_DISCOVERY', 30000);
         logBg(tabId, "Extraction focus secured. Mapping template fields...", "info");
         safeTabs.sendMessage(tabId, { 
             action: 'START_SENDING', 
@@ -9524,14 +9216,12 @@ async function orchestrateSending(urlInput, template, abortSignal = null) {
             template: template, 
             delayMs: campaignState.delayMs,
             fillDelayMs: campaignState.fillDelayMs || 300,
-            submitDelayMs: campaignState.submitDelayMs || 4000,
-            triedUrl: currentAttemptUrl,
-            isSpaReinjected: true,
-            force: force
+            submitDelayMs: campaignState.submitDelayMs || 1500,
+            triedUrl: currentAttemptUrl
         }).catch(() => {});
     };
 
-    const navWatcher = (updatedTabId, statusInfo, tab) => {
+    const navWatcher = (updatedTabId, statusInfo) => {
         if (updatedTabId !== tabId || discoveryCtx.aborted || campaignState.isPaused || isFinished) return;
         if (updatedTabId === tabId) {
             lastActivity = Date.now();
@@ -9570,15 +9260,15 @@ async function orchestrateSending(urlInput, template, abortSignal = null) {
             }
             if (chrome.alarms) chrome.alarms.create(`xpider_watchdog_${tabId}_${currentSession}`, { delayInMinutes: 1 });
             
-            const currentNavUrl = (statusInfo && statusInfo.url) || (tab && tab.url) || '';
-            const norm = normalizeUrl(currentNavUrl);
+            const norm = normalizeUrl(statusInfo.url || '');
             
-            if (norm && norm !== lastInjectedUrl) {
-                logBg(tabId, "🔓 [Engine] URL path changed. Resetting focus lock for SPA/candidate re-injection.", "debug");
-                isFocusSecured = false;
-                if (pollerTimer) { clearInterval(pollerTimer); pollerTimer = null; }
-                lastInjectedUrl = norm;
-                startInjection(1000); 
+            if (statusInfo.url && norm !== lastInjectedUrl) {
+                if (isFocusSecured) {
+                    logBg(tabId, "🔓 [Engine] URL path changed. Resetting focus lock for SPA re-injection.", "debug");
+                    isFocusSecured = false;
+                }
+                logBg(tabId, "🔄 [Engine] Internal navigation detected (SPA). Preparing re-injection...", "debug");
+                startInjection(1500); 
             }
 
             if (norm && statusInfo.status === 'complete') {
@@ -9589,13 +9279,8 @@ async function orchestrateSending(urlInput, template, abortSignal = null) {
                 }
             }
 
-            if (statusInfo.status === 'complete') {
-                isFocusSecured = false;
-                if (pollerTimer) { clearInterval(pollerTimer); pollerTimer = null; }
-                startInjection(0);
-            } else if (statusInfo.status === 'loading' && !isFocusSecured) {
-                startInjection(2000);
-            }
+            if (statusInfo.status === 'complete') startInjection(0);
+            else if (statusInfo.status === 'loading' && !isFocusSecured) startInjection(2000);
         }
     };
 
@@ -9605,10 +9290,10 @@ async function orchestrateSending(urlInput, template, abortSignal = null) {
     safeTabs.onUpdated.addListener(navWatcher);
 
     const startInjection = (delay) => {
-        if (isFinished || discoveryCtx.aborted || campaignState.isPaused) return;
+        if (isFinished || isFocusSecured || discoveryCtx.aborted || campaignState.isPaused) return;
         if (injectionTimer) clearTimeout(injectionTimer);
         injectionTimer = setTimeout(async () => {
-            if (isFinished || discoveryCtx.aborted || campaignState.isPaused) return;
+            if (isFinished || isFocusSecured || discoveryCtx.aborted || campaignState.isPaused) return;
             try {
                 const targetTab = await safeTabs.get(tabId);
                 
@@ -9662,40 +9347,22 @@ async function orchestrateSending(urlInput, template, abortSignal = null) {
                     return;
                 }
                 
-                // If tab is actively loading and under 4s elapsed, defer to navWatcher completion
-                if (targetTab.status === 'loading' && Date.now() - lastActivity < 4000) {
-                    logBg(tabId, `[InjectionGuard] Tab ${tabId} is loading (${targetTab.url}). Deferring injection until status complete...`, "debug");
-                    return;
-                }
-
-                transitionStage('INJECTION', 20000);
-                const injStart = Date.now();
-                logBg(tabId, `[INJECTION_START] tabId=${tabId} url=${targetTab.url} status=${targetTab.status}`, "debug");
-                try {
-                    const injRes = await safeScripting.executeScript({ target: { tabId }, files: [
-                        'modules/contact-gate.js',
-                        'modules/challenge-gate.js',
-                        'modules/math-captcha-solver.js',
-                        'modules/smart-field-resolver.js',
-                        'modules/contact-discovery-engine.js',
-                        'modules/checkbox-resolver-r2.js',
-                        'modules/select-resolver-r2.js',
-                        'modules/final-form-completion-engine.js',
-                        'modules/form-discovery-engine-r2.js',
-                        'modules/vision-submit-executor.js',
-                        'modules/email-collector.js',
-                        'content-script.js'
-                    ] });
-                    const injElapsed = Date.now() - injStart;
-                    logBg(tabId, `[INJECTION_SUCCESS] tabId=${tabId} url=${targetTab.url} elapsed=${injElapsed}ms frames=${injRes ? injRes.length : 0}`, "info");
-                } catch (injErr) {
-                    const injElapsed = Date.now() - injStart;
-                    logBg(tabId, `❌ [INJECTION_ERROR] tabId=${tabId} elapsed=${injElapsed}ms: ${injErr.message}`, "error");
-                    throw injErr;
-                }
+                await safeScripting.executeScript({ target: { tabId }, files: [
+                    'modules/contact-gate.js',
+                    'modules/challenge-gate.js',
+                    'modules/math-captcha-solver.js',
+                    'modules/smart-field-resolver.js',
+                    'modules/contact-discovery-engine.js',
+                    'modules/checkbox-resolver-r2.js',
+                    'modules/select-resolver-r2.js',
+                    'modules/final-form-completion-engine.js',
+                    'modules/form-discovery-engine-r2.js',
+                    'modules/vision-submit-executor.js',
+                    'modules/email-collector.js',
+                    'content-script.js'
+                ] });
                 // [v7.0] solver-content.js frame injection retired
-                if (pollerTimer) { clearInterval(pollerTimer); pollerTimer = null; }
-                startPolling(targetTab.url);
+                startPolling();
             } catch (e) {
                 const isErrorPageErr = /showing error page|chrome-error|chromewebdata|cannot access contents of url "chrome-error/i.test(e.message);
                 if (isErrorPageErr) {
@@ -9718,23 +9385,19 @@ async function orchestrateSending(urlInput, template, abortSignal = null) {
         }, delay);
     };
 
-    const startPolling = (pollUrl = null) => {
-        if (isFinished || pollerTimer || discoveryCtx.aborted || campaignState.isPaused) return;
+    const startPolling = () => {
+        if (isFinished || isFocusSecured || pollerTimer || discoveryCtx.aborted || campaignState.isPaused) return;
         pollerTimer = setInterval(async () => {
-            if (isFinished || discoveryCtx.aborted || campaignState.isPaused) {
+            if (isFinished || isFocusSecured || discoveryCtx.aborted || campaignState.isPaused) {
                 clearInterval(pollerTimer);
                 pollerTimer = null;
                 return;
             }
             try {
                 const r = await safeScripting.executeScript({ target: { tabId }, func: () => window.__xpider_initialized });
-                if (r && r[0] && r[0].result) {
-                    clearInterval(pollerTimer);
-                    pollerTimer = null;
-                    secureFocus(pollUrl || currentAttemptUrl, true);
-                }
+                if (r && r[0] && r[0].result) secureFocus();
             } catch (e) {}
-        }, 800);
+        }, 1500);
     };
 
     // [Issue #6 R6.9F.1 Guard] Prevent race condition where initial tab finishes loading before onUpdated listener is registered
@@ -9746,149 +9409,97 @@ async function orchestrateSending(urlInput, template, abortSignal = null) {
         }
     }).catch(() => {});
 
-    let isCandidateNavigating = false;
     const tryNext = async () => {
-        if (isFinished || discoveryCtx.aborted || campaignState.isPaused || isCandidateNavigating) {
-            if (isCandidateNavigating) {
-                logBg(tabId, `[CandidateNav] Candidate navigation already in-flight for pathIdx=${pathIdx}. Skipping racing call.`, "debug");
+        if (isFinished) return;
+        if (baseUrl.includes('teamusatkd.com')) baseUrl = "https://teamusatkd.com";
+
+        if (pathIdx >= validPaths.length) {
+            const curMode = campaignState.campaignMode || 'AUTO';
+            if (curMode === 'SEMI_AUTO' || curMode === 'MANUAL') {
+                logBg(tabId, `🖐️ [${curMode}_DISCOVERY_HOLD] All contact discovery paths exhausted. Displaying operator assistance hold...`, "warning");
+                chrome.runtime.sendMessage({
+                    action: 'TRIGGER_SIDE_PANEL_ASSIST',
+                    data: {
+                        url: currentAttemptUrl || baseUrl,
+                        reason: 'NO_ACCESSIBLE_INQUIRY_FORM (All paths exhausted)',
+                        mode: curMode,
+                        stage: 'FORM_DISCOVERY'
+                    }
+                }).catch(() => {});
             }
+            finish({ success: false, error: "Paths exhausted", reasonCode: 'CONTACT_DISCOVERY_EXHAUSTED' });
             return;
         }
-        isCandidateNavigating = true;
-        try {
-            if (baseUrl.includes('teamusatkd.com')) baseUrl = "https://teamusatkd.com";
 
-            if (pathIdx >= validPaths.length) {
-                const curMode = campaignState.campaignMode || 'AUTO';
-                if (curMode === 'SEMI_AUTO' || curMode === 'MANUAL') {
-                    logBg(tabId, `🖐️ [${curMode}_DISCOVERY_HOLD] All contact discovery paths exhausted. Displaying operator assistance hold...`, "warning");
-                    campaignState.currentTargetStage = 'MANUAL_HOLD';
-                    campaignState.manualHoldActive = true;
-                    campaignState.manualHoldInitialUrl = currentAttemptUrl || baseUrl;
-                    if (campaignState.targetDeadlineController && typeof campaignState.targetDeadlineController.pause === 'function') {
-                        campaignState.targetDeadlineController.pause('MANUAL_HOLD');
-                    }
-                    chrome.runtime.sendMessage({
-                        action: 'TRIGGER_SIDE_PANEL_ASSIST',
-                        data: {
-                            url: currentAttemptUrl || baseUrl,
-                            reason: 'NO_ACCESSIBLE_INQUIRY_FORM (All paths exhausted)',
-                            mode: curMode,
-                            stage: 'FORM_DISCOVERY'
-                        }
-                    }).catch(() => {});
-                    safeTabs.sendMessage(tabId, {
-                        action: 'RESTORE_MANUAL_HOLD_PANEL',
-                        stage: 'FORM_DISCOVERY',
-                        mode: curMode,
-                        validationReason: 'NO_ACCESSIBLE_INQUIRY_FORM (All paths exhausted)'
-                    }).catch(() => {});
-                    return; // [RC14 Invariant] Operator hold must retain tab and await operator action, never silently advance!
+        const nextP = validPaths[pathIdx++];
+        const isHttpAbsolute = (typeof nextP === 'string' && nextP.startsWith('http'));
+        const check = validateCandidateUrl(nextP, baseUrl);
+        if (!check.valid) {
+            logBg(tabId, `🚫 [Discovery] Invalid path [${nextP}]: ${check.reason}. Skipping.`, "warning");
+            setTimeout(tryNext, 100);
+            return;
+        }
+        const fullUrl = check.url;
+        const norm = normalizeUrl(fullUrl);
+
+        if (campaignState.successfulUrls.includes(norm) || discoveryCtx.visited.has(norm)) {
+            logBg(tabId, `⏭️ [Engine] Path [${fullUrl}] already handled successfully. Skipping.`, "info");
+            setTimeout(tryNext, 100);
+            return;
+        }
+        discoveryCtx.visited.add(norm);
+
+        lastActivity = Date.now();
+        isFocusSecured = false;
+        currentAttemptUrl = fullUrl;
+        discoveryCtx.selectedContactUrl = fullUrl;
+
+        // [Section J & Comment 51] Source resolution from target-scoped discoveryCtx (never implicit global)
+        const discoverySource = (discoveryCtx.candidateSourceMap && (discoveryCtx.candidateSourceMap.get(fullUrl) || discoveryCtx.candidateSourceMap.get(nextP) || discoveryCtx.candidateSourceMap.get(norm)))
+            || 'Ensemble';
+
+        logBg(tabId, `[DISCOVERY] selectedCandidate=${fullUrl}`, "info");
+
+        // [Hotfix R2] Record selected candidate without prematurely committing contactPageUrl
+        if (_attemptId) {
+            try {
+                const hs = await getHistoryStoreInstance();
+                if (hs && typeof hs.updateAttemptContact === 'function') {
+                    hs.updateAttemptContact(_attemptId, {
+                        selectedCandidateUrl: fullUrl,
+                        contactDiscoverySource: discoverySource,
+                        targetToken: targetToken
+                    }, targetToken);
+                    await hs.persist();
                 }
-                finish({ success: false, error: "Paths exhausted", reasonCode: 'CONTACT_DISCOVERY_EXHAUSTED' });
-                return;
-            }
+            } catch (_) {}
+        } 
 
-            const nextP = validPaths[pathIdx++];
-            const isHttpAbsolute = (typeof nextP === 'string' && nextP.startsWith('http'));
-            const check = validateCandidateUrl(nextP, baseUrl);
-            if (!check.valid) {
-                logBg(tabId, `🚫 [Discovery] Invalid path [${nextP}]: ${check.reason}. Skipping.`, "warning");
-                setTimeout(tryNext, 100);
-                return;
-            }
-            const fullUrl = check.url;
-            const norm = normalizeUrl(fullUrl);
-
-            if (campaignState.successfulUrls.includes(norm) || discoveryCtx.visited.has(norm)) {
-                logBg(tabId, `⏭️ [Engine] Path [${fullUrl}] already handled successfully. Skipping.`, "info");
-                setTimeout(tryNext, 100);
-                return;
-            }
-            discoveryCtx.visited.add(norm);
-
-            lastActivity = Date.now();
-            isFocusSecured = false;
-            currentAttemptUrl = fullUrl;
-            discoveryCtx.selectedContactUrl = fullUrl;
-
-            // [Section J & Comment 51] Source resolution from target-scoped discoveryCtx (never implicit global)
-            const discoverySource = (discoveryCtx.candidateSourceMap && (discoveryCtx.candidateSourceMap.get(fullUrl) || discoveryCtx.candidateSourceMap.get(nextP) || discoveryCtx.candidateSourceMap.get(norm)))
-                || 'Ensemble';
-
-            logBg(tabId, `[DISCOVERY] selectedCandidate=${fullUrl}`, "info");
-
-            // [Hotfix R2] Record selected candidate without prematurely committing contactPageUrl
-            if (_attemptId) {
-                try {
-                    const hs = await getHistoryStoreInstance();
-                    if (hs && typeof hs.updateAttemptContact === 'function') {
-                        hs.updateAttemptContact(_attemptId, {
-                            selectedCandidateUrl: fullUrl,
-                            contactDiscoverySource: discoverySource,
-                            targetToken: targetToken
-                        }, targetToken);
-                        await hs.persist();
-                    }
-                } catch (_) {}
-            } 
-
-            logBg(tabId, `Connecting to [${fullUrl}]...`, "visit");
-            const privCheck = await assertPrivacyTransportReady('CANDIDATE_NAVIGATION');
-            if (!privCheck.ready) {
-                logBg(tabId, `🚫 [CandidateNav] Blocked by privacy transport assertion: ${privCheck.reason}`, 'error');
-                finish({ success: false, error: privCheck.reason, reasonCode: 'PRIVACY_GATEWAY_BLOCKED' });
-                return;
-            }
-            const tabCheck = await ensureCampaignTab(tabId, fullUrl);
-            if (tabCheck.recreated) {
-                tabId = tabCheck.tabId;
-                campaignState.currentTabId = tabId;
-                campaignState.targetTabId = tabId;
-            }
-            transitionStage('CANDIDATE_NAV', 25000);
-            const navRes = await navigateToValidatedCandidate(tabId, fullUrl, baseUrl, {
-                sourceHost: targetHost,
-                relation: 'same-origin'
-            });
-            if (navRes.recreated && navRes.tabId) {
-                tabId = navRes.tabId;
-                campaignState.currentTabId = tabId;
-                campaignState.targetTabId = tabId;
-            }
-            if (!navRes.success) {
-                setTimeout(tryNext, 100);
-                return;
-            }
-            // Verified candidate injection fallback: if navWatcher doesn't fire, check tab status before injecting
-            setTimeout(async () => {
-                if (!isFocusSecured && !isFinished && !discoveryCtx.aborted && !campaignState.isPaused) {
-                    try {
-                        const chkTab = await safeTabs.get(tabId);
-                        if (chkTab && (chkTab.status === 'complete' || Date.now() - lastActivity > 4000)) {
-                            logBg(tabId, `[CandidateKickoff] Initiating injection for ${chkTab.url} (status=${chkTab.status})...`, "debug");
-                            startInjection(0);
-                        }
-                    } catch (_) {}
-                }
-            }, 2500);
-        } finally {
-            isCandidateNavigating = false;
+        logBg(tabId, `Connecting to [${fullUrl}]...`, "visit");
+        const privCheck = await assertPrivacyTransportReady('CANDIDATE_NAVIGATION');
+        if (!privCheck.ready) {
+            logBg(tabId, `🚫 [CandidateNav] Blocked by privacy transport assertion: ${privCheck.reason}`, 'error');
+            finish({ success: false, error: privCheck.reason, reasonCode: 'PRIVACY_GATEWAY_BLOCKED' });
+            return;
+        }
+        const tabCheck = await ensureCampaignTab(tabId, fullUrl);
+        if (tabCheck.recreated) {
+            tabId = tabCheck.tabId;
+        }
+        const navRes = await navigateToValidatedCandidate(tabId, fullUrl, baseUrl, {
+            sourceHost: targetHost,
+            relation: 'same-origin'
+        });
+        if (navRes.recreated && navRes.tabId) {
+            tabId = navRes.tabId;
+        }
+        if (!navRes.success) {
+            setTimeout(tryNext, 100);
+            return;
         }
     };
 
-    // [RC15 Bounded Path Scan: 15s Max]
-    const scanTimeoutTimer = setTimeout(() => {
-        if (isScanningPaths && waitingForPaths) {
-            isScanningPaths = false;
-            waitingForPaths = false;
-            logBg(tabId, `⏱️ [PathScanTimeout] Path scan exceeded 15s. Advancing with ${validPaths.length} identified paths.`, "warning");
-            tryNext();
-        }
-    }, 15000);
-
     scanContactPaths(baseUrl, tabId, discoveryCtx).then(paths => {
-        clearTimeout(scanTimeoutTimer);
         isScanningPaths = false;
         if (isFinished) return;
         validPaths.push(...paths);
@@ -9896,18 +9507,8 @@ async function orchestrateSending(urlInput, template, abortSignal = null) {
         if (waitingForPaths) {
             waitingForPaths = false;
             tryNext();
-        } else if (validPaths.length > 0) {
-            // [RC16 Fast Candidate Progression] If current page is homepage and has not identified a form after 3.5s,
-            // automatically advance to first discovered candidate path instead of stalling
-            setTimeout(() => {
-                if (!isFinished && !isFocusSecured && pathIdx === 0 && validPaths.length > 0 && !campaignState.isPaused && !campaignState.manualHoldActive && !isCandidateNavigating) {
-                    logBg(tabId, `🎯 [DiscoveryAutoAdvance] Advancing from initial page to candidate ${validPaths[0]}...`, "info");
-                    tryNext();
-                }
-            }, 3500);
         }
     }).catch(err => {
-        clearTimeout(scanTimeoutTimer);
         isScanningPaths = false;
         if (isFinished) return;
         logBg(tabId, `❌ [CONTACT_DISCOVERY_RUNTIME_ERROR][${targetHost}] ${err.name}: ${err.message}`, "error");
@@ -9999,10 +9600,7 @@ async function saveCampaignState() {
                     xpider_successful: campaignState.successfulUrls,
                     xpider_currentAttempt: campaignState.currentAttempt,
                     xpider_active_campaign_run_id: campaignState.campaignRunId,
-                    xpider_owner_function_test_mode_active: Boolean(campaignState.ownerFunctionTestMode),
-                    xpider_state_revision: campaignState.stateRevision || 0,
-                    xpider_run_epoch: campaignState.runEpoch || 0,
-                    xpider_campaign_mode: campaignState.campaignMode || 'AUTO'
+                    xpider_owner_function_test_mode_active: Boolean(campaignState.ownerFunctionTestMode)
                 }, () => {
                     if (chrome.runtime.lastError) console.error("Save error:", chrome.runtime.lastError);
                     recordCurrentRunDiagEvent(`[CHECKPOINT] saved session checkpoint remaining=${campaignState.queue ? campaignState.queue.length : 0} isActive=${campaignState.isActive}`);
@@ -10046,7 +9644,7 @@ async function restoreCampaignState() {
                 'xpider_sessionId', 'xpider_success', 'xpider_total', 'xpider_visited', 'xpider_successful', 'xpider_currentAttempt',
                 'xpider_paused_checkpoint', 'xpider_isPaused', 'xpider_active_campaign_run_id',
                 'xpider_owner_function_test_mode', 'xpider_owner_function_test_mode_active',
-                'xpider_v7_active_hold_state', 'xpider_campaign_mode', 'xpider_state_revision', 'xpider_run_epoch'
+                'xpider_v7_active_hold_state', 'xpider_campaign_mode'
             ], async (data) => {
                 try {
                     const hs = await getHistoryStoreInstance();
@@ -10059,12 +9657,6 @@ async function restoreCampaignState() {
                     }
                     if (hs && campaignState.campaignRunId) {
                         hs.activeCampaignRunId = campaignState.campaignRunId;
-                    }
-                    if (typeof data.xpider_state_revision === 'number') {
-                        campaignState.stateRevision = data.xpider_state_revision;
-                    }
-                    if (typeof data.xpider_run_epoch === 'number') {
-                        campaignState.runEpoch = data.xpider_run_epoch;
                     }
                     if (hs && typeof hs.reconcileLegacyCounters === 'function') {
                         await hs.reconcileLegacyCounters();
@@ -10196,7 +9788,7 @@ async function restoreCampaignState() {
                         campaignState.template = data.xpider_tpl;
                         campaignState.delayMs = data.xpider_delayMs || 10000;
                         campaignState.fillDelayMs = data.xpider_fillDelayMs || 300;
-                        campaignState.submitDelayMs = data.xpider_submitDelayMs || 4000;
+                        campaignState.submitDelayMs = data.xpider_submitDelayMs || 1500;
                         campaignState.sessionId = data.xpider_sessionId || 0;
                         campaignState.successCount = data.xpider_success || 0;
                         campaignState.totalTargets = data.xpider_total || 0;

@@ -1158,27 +1158,14 @@
                 }
             }
 
-            // [RC12 Item 2] Attempt template message fill if message field exists but is currently empty
+            // Fallback message check if template message exists and form has textareas
             if (!messageFieldFilled && (template.message || template.content)) {
-                const textareas = form.querySelectorAll ? Array.from(form.querySelectorAll('textarea')) : [];
+                const textareas = form.querySelectorAll ? form.querySelectorAll('textarea') : [];
                 for (const ta of textareas) {
                     if ((ta.value || '').trim().length > 0) {
                         messageFieldFilled = true;
                         break;
                     }
-                }
-                if (!messageFieldFilled && textareas.length > 0) {
-                    const targetTa = textareas[0];
-                    const msgVal = template.message || template.content || '';
-                    try {
-                        setNativeValue(targetTa, msgVal);
-                        targetTa.dispatchEvent(new Event('input', { bubbles: true }));
-                        targetTa.dispatchEvent(new Event('change', { bubbles: true }));
-                        if ((targetTa.value || '').trim().length > 0) {
-                            messageFieldFilled = true;
-                            if (typeof this.logger === 'function') this.logger('[FINAL_FILL_RECOVERY] Populated empty textarea with template message');
-                        }
-                    } catch (_) {}
                 }
             }
 
@@ -1206,11 +1193,7 @@
                 if (unresolvedRequired > 0 || unstableCheckboxes + unstableRadios + unstableSelects + unstableText > 0) failReason = 'REQUIRED_FIELDS_UNRESOLVED';
                 else if (nativeInvalidCount > 0) failReason = 'FINAL_NATIVE_VALIDITY_FAILED';
                 else if (customInvalidCount > 0) failReason = 'FINAL_CUSTOM_VALIDITY_FAILED';
-                else if (!messageFieldFilled) {
-                    // [RC12 Item 2] Distinguish confirmed non-inquiry form (0 message fields) from genuine message field that failed to fill
-                    const hasAnyMsgCandidate = form.querySelectorAll && form.querySelectorAll('textarea, [contenteditable="true"], [role="textbox"][aria-multiline="true"], .ql-editor, .fr-element, .note-editable, .mce-content-body').length > 0;
-                    failReason = hasAnyMsgCandidate ? 'FINAL_MESSAGE_FIELD_EMPTY' : 'NON_INQUIRY_FORM';
-                }
+                else if (!messageFieldFilled) failReason = 'FINAL_MESSAGE_FIELD_EMPTY';
                 else failReason = 'FINAL_FORM_COMPLETION_FAILED';
                 if (typeof this.logger === 'function') {
                     this.logger(`[FINAL_AUDIT_DETAIL] reason=${failReason} unresolvedRequired=${unresolvedRequired} nativeInvalidCount=${nativeInvalidCount} customInvalidCount=${customInvalidCount} invalid=${JSON.stringify(invalidFields.slice(0, 8))}`);

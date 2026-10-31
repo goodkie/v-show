@@ -14,13 +14,13 @@
 
     const BUILD_INFO = Object.freeze({
         version: "7.0.0",
-        buildId: "V7.0.0-RC16-20261031-PROVENANCE-INJECTION-AND-CONTROLS-RESTORE",
+        buildId: "V7.0.0-RC11-20261030-THREE-MODE-CONTRACTS-PASS",
         channel: "OWNER_BETA_V7_DUAL_MODE",
-        tag: "v7.0.0-rc16",
+        tag: "v7.0.0-rc11",
         manifestVersion: 3,
-        implementationHead: "ce7b7973dc37d42f428001be086d010b1b2b5a01",
-        implementationHeadShort: "ce7b7973",
-        builtAt: "2026-10-31T05:42:06.221Z",
+        implementationHead: "20678ada6491bf842ec7e996a88108152c76007f",
+        implementationHeadShort: "20678ada",
+        builtAt: new Date().toISOString(),
         testOnly: false,
         productionReady: true,
         features: Object.freeze([
@@ -45,11 +45,7 @@
             "GENEROUS_ROW_CLEARANCE_NO_CLIPPING",
             "INSTANT_SYNCHRONOUS_RESUME_MODAL",
             "EXACT_QUEUE_RECONCILIATION_73_74",
-            "STRICT_COHERENT_RUNTIME_HANDSHAKE",
-            "CANDIDATE_INJECTION_ACK",
-            "SINGLE_FLIGHT_NAVIGATION_GUARD",
-            "CANONICAL_CHECKPOINT_RECONCILIATION",
-            "ALWAYS_VISIBLE_CAMPAIGN_CONTROLS"
+            "STRICT_COHERENT_RUNTIME_HANDSHAKE"
         ])
     });
 

@@ -1154,21 +1154,6 @@ function bindCriticalControls() {
         displayControlPlaneError('SETTINGS_HANDLER_NOT_BOUND', 'element #save-settings-btn not found in DOM');
     }
 
-    // 2.5 Fallback Emergency Stop & Save Button
-    const fallbackStopSaveBtn = document.getElementById('fallback-stop-save-btn');
-    if (fallbackStopSaveBtn && !fallbackStopSaveBtn.dataset.bound) {
-        fallbackStopSaveBtn.dataset.bound = 'true';
-        fallbackStopSaveBtn.addEventListener('click', () => {
-            console.log('[BUTTON_CLICK] id=fallback-stop-save-btn');
-            const primaryStopSave = document.getElementById('stop-save-btn');
-            if (primaryStopSave) {
-                primaryStopSave.click();
-            } else if (typeof pauseCampaign === 'function') {
-                pauseCampaign();
-            }
-        });
-    }
-
     // 3. Runtime & Storage checks
     if (typeof chrome === 'undefined' || !chrome.runtime) {
         displayControlPlaneError('RUNTIME_UNAVAILABLE', 'chrome.runtime is not available');
@@ -1914,177 +1899,33 @@ async function hydrateSettings(overrideV2Store = null) {
             privacyBlockModal.style.display = 'flex';
         };
 
-        let currentSnapshotRevision = 0;
-        let currentSnapshotRunId = null;
-        let currentSnapshotRunEpoch = null;
-
-        function applyAuthoritativeStateSnapshot(snapshot) {
-            if (!snapshot || typeof snapshot !== 'object') return;
-            const runId = snapshot.campaignRunId || null;
-            const runEpoch = snapshot.runEpoch !== undefined ? snapshot.runEpoch : 0;
-
-            // [RC13 Audit Hold #6535593609] Scoped monotonic revision comparison to runId and runEpoch
-            if (runId !== currentSnapshotRunId || runEpoch !== currentSnapshotRunEpoch) {
-                currentSnapshotRunId = runId;
-                currentSnapshotRunEpoch = runEpoch;
-                currentSnapshotRevision = 0; // Reset revision for distinct run/epoch
-            }
-
-            if (typeof snapshot.revision === 'number') {
-                if (snapshot.revision < currentSnapshotRevision) {
-                    console.warn(`[STATE_DESYNC_REJECTED] Stale snapshot revision=${snapshot.revision} < current=${currentSnapshotRevision} (runId=${runId}, epoch=${runEpoch})`);
-                    return;
-                }
-                currentSnapshotRevision = snapshot.revision;
-            }
-            window.__xpider_last_authoritative_snapshot = snapshot;
-
-            // Authoritative state variables
-            campaignActive = Boolean(snapshot.isActive);
-            campaignPaused = Boolean(snapshot.isPaused);
-            currentCampaignMode = (snapshot.campaignMode === 'MANUAL' || snapshot.campaignMode === 'SEMI_AUTO') ? snapshot.campaignMode : 'AUTO';
-            remainingTargets = snapshot.remainingCount !== undefined ? snapshot.remainingCount : 0;
-            completedCount = snapshot.completedCount !== undefined ? snapshot.completedCount : 0;
-            successCount = snapshot.successCount !== undefined ? snapshot.successCount : 0;
-            failedCount = snapshot.failedCount !== undefined ? snapshot.failedCount : 0;
-            totalTargets = snapshot.totalTargets || (remainingTargets + completedCount);
-            window.__xpider_has_paused_checkpoint = Boolean(snapshot.hasPausedCheckpoint && !snapshot.isActive);
-
-            // 1. TOP PILL: #campaign-ready-pill (Strict single source of truth: NEVER show RUNNING & PAUSED simultaneously)
-            const campPill = document.getElementById('campaign-ready-pill');
-            if (campPill) {
-                if (campaignActive && !campaignPaused) {
-                    campPill.textContent = `CAMPAIGN: RUNNING (${completedCount}/${totalTargets})`;
-                    campPill.style.color = '#38bdf8';
-                } else if (campaignPaused || window.__xpider_has_paused_checkpoint) {
-                    campPill.textContent = `CAMPAIGN: PAUSED (${remainingTargets} remaining)`;
-                    campPill.style.color = '#00ffcc';
-                } else if (completedCount > 0 && remainingTargets === 0) {
-                    campPill.textContent = `CAMPAIGN: FINISHED (${completedCount}/${totalTargets})`;
-                    campPill.style.color = '#22c55e';
-                } else if (remainingTargets > 0) {
-                    campPill.textContent = `CAMPAIGN: READY (${remainingTargets} URLs)`;
-                    campPill.style.color = '#22c55e';
-                } else {
-                    campPill.textContent = 'CAMPAIGN: QUEUE EMPTY';
-                    campPill.style.color = '#94a3b8';
-                }
-            }
-
-            // 2. HUD: #persistent-mode-hud & mode pill
-            const hudStatus = campaignPaused ? 'PAUSED' : (campaignActive ? 'RUNNING' : (remainingTargets > 0 ? 'READY' : 'IDLE'));
-            updatePersistentModeHud(currentCampaignMode, hudStatus, snapshot.currentTargetUrl, remainingTargets);
-
-            // 3. Resumable Banner
-            const banner = document.getElementById('resumable-campaign-banner');
-            if (banner) {
-                if (campaignPaused && !campaignActive && snapshot.hasPausedCheckpoint) {
-                    banner.classList.remove('hidden');
-                    banner.style.display = 'block';
-                    const countEl = document.getElementById('resumable-remaining-count');
-                    if (countEl) countEl.textContent = String(snapshot.pausedRemainingCount || remainingTargets);
-                } else {
-                    banner.classList.add('hidden');
-                    banner.style.display = 'none';
-                }
-            }
-
-            // 4. Progress Stats & Counter displays
-            if (typeof updateRealTimeStatus === 'function') {
-                updateRealTimeStatus({
-                    successCount: successCount,
-                    failedCount: failedCount,
-                    completedCount: completedCount,
-                    remainingCount: remainingTargets,
-                    totalTargets: totalTargets,
-                    failureBreakdown: snapshot.failureBreakdown || {}
-                });
-            }
-
-            const countDisplay = document.getElementById('url-count-display');
-            if (countDisplay && (campaignActive || campaignPaused || snapshot.hasPausedCheckpoint)) {
-                countDisplay.textContent = `${remainingTargets} (remaining) / ${totalTargets} URLs`;
-            }
-
-            // 5. [RC13 Directive #6537069439 Item 2] Bidirectional Resume/Pause Primary Action Button Synchronization
-            const pauseBtn = document.getElementById('pause-btn');
-            const startButtonsRow = document.getElementById('start-buttons-row');
-            const multiActions = document.getElementById('multi-actions');
-            const stopSaveBtn = document.getElementById('stop-save-btn');
-            const fallbackControlRow = document.getElementById('fallback-control-row');
-            const isOperatorHold = Boolean(
-                snapshot.stage === 'MANUAL_HOLD' ||
-                snapshot.stage === 'CAPTCHA_PENDING_EXTERNAL_USER' ||
-                snapshot.manualHoldActive
-            );
-            const hasCheckpoint = Boolean(
-                snapshot.hasPausedCheckpoint ||
-                window.__xpider_has_paused_checkpoint ||
-                (snapshot.checkpoint && Array.isArray(snapshot.checkpoint.remainingQueue) && snapshot.checkpoint.remainingQueue.length > 0)
-            );
-            const isPausedState = Boolean(campaignPaused || (!campaignActive && hasCheckpoint));
-
-            if (campaignActive && !campaignPaused) {
-                if (startButtonsRow) startButtonsRow.classList.add('hidden');
-                if (multiActions) multiActions.classList.remove('hidden');
-                if (fallbackControlRow) fallbackControlRow.style.display = 'none';
-                if (pauseBtn) {
-                    pauseBtn.disabled = false;
-                    if (isOperatorHold) {
-                        pauseBtn.textContent = "⏸️ Pause (Hold Active)";
-                        pauseBtn.style.backgroundColor = "#d97706"; // Amber-orange
-                    } else {
-                        pauseBtn.textContent = "⏸️ Pause";
-                        pauseBtn.style.backgroundColor = "#ea580c"; // Bright Orange
-                    }
-                    pauseBtn.style.color = "#ffffff";
-                    pauseBtn.style.border = "none";
-                    pauseBtn.title = "Pause active campaign and maintain queue position";
-                }
-                if (stopSaveBtn) {
-                    stopSaveBtn.style.display = 'inline-block';
-                    stopSaveBtn.textContent = "⏸️ Stop & Save";
-                }
-            } else if (isPausedState) {
-                if (startButtonsRow) startButtonsRow.classList.add('hidden');
-                if (multiActions) multiActions.classList.remove('hidden');
-                if (fallbackControlRow) fallbackControlRow.style.display = 'none';
-                if (pauseBtn) {
-                    pauseBtn.disabled = false;
-                    pauseBtn.textContent = "▶️ Resume";
-                    pauseBtn.style.backgroundColor = "#22c55e"; // Emerald Green
-                    pauseBtn.style.color = "#ffffff";
-                    pauseBtn.style.border = "none";
-                    pauseBtn.title = "Resume paused campaign (choose Automatic, Semi-Auto, or Manual)";
-                }
-                if (stopSaveBtn) {
-                    stopSaveBtn.style.display = 'inline-block';
-                    stopSaveBtn.textContent = "💾 Save & Exit";
-                }
-            } else {
-                // Campaign is completely stopped / idle / ready to launch
-                if (startButtonsRow) startButtonsRow.classList.remove('hidden');
-                if (multiActions) multiActions.classList.add('hidden');
-                if (fallbackControlRow) {
-                    // Always provide accessible Stop & Save control whenever queue exists or run is tracked
-                    fallbackControlRow.style.display = (remainingTargets > 0 || snapshot.campaignRunId) ? 'block' : 'none';
-                }
-                if (pauseBtn) {
-                    pauseBtn.disabled = false;
-                    pauseBtn.textContent = "⏸️ Pause";
-                    pauseBtn.style.backgroundColor = "";
-                    pauseBtn.style.color = "";
-                }
-            }
-        }
-        window.__xpider_applyAuthoritativeStateSnapshot = applyAuthoritativeStateSnapshot;
-
         window.checkAndRefreshPrivacyReadinessHUD = async function() {
             try {
-                if (window.__xpider_last_authoritative_snapshot) {
-                    applyAuthoritativeStateSnapshot(window.__xpider_last_authoritative_snapshot);
-                }
+                const campPill = document.getElementById('campaign-ready-pill');
                 const privPill = document.getElementById('privacy-ready-pill');
+                const qLen = Array.isArray(campaignQueue) ? campaignQueue.length : 0;
+                if (campPill) {
+                    const cComp = (typeof completedCount !== 'undefined') ? completedCount : 0;
+                    const cRem = (typeof remainingTargets !== 'undefined') ? remainingTargets : 0;
+                    const isRunFinished = (!campaignActive) && (cComp > 0 && cRem === 0);
+                    if (campaignActive) {
+                        campPill.textContent = `CAMPAIGN: RUNNING (${cComp}/${totalTargets || qLen})`;
+                        campPill.style.color = '#38bdf8';
+                    } else if (isRunFinished) {
+                        campPill.textContent = `CAMPAIGN: FINISHED (${cComp}/${totalTargets || qLen})`;
+                        campPill.style.color = '#22c55e';
+                    } else if (campaignPaused || window.__xpider_has_paused_checkpoint) {
+                        const remDisplay = (typeof remainingTargets !== 'undefined' && remainingTargets > 0) ? remainingTargets : qLen;
+                        campPill.textContent = `CAMPAIGN: PAUSED (${remDisplay} remaining)`;
+                        campPill.style.color = '#00ffcc';
+                    } else if (qLen > 0) {
+                        campPill.textContent = `CAMPAIGN: READY (${qLen} URLs)`;
+                        campPill.style.color = '#22c55e';
+                    } else {
+                        campPill.textContent = 'CAMPAIGN: QUEUE EMPTY';
+                        campPill.style.color = '#94a3b8';
+                    }
+                }
 
                 if (privPill) {
                     const st = await chrome.storage.local.get(['xpider_privacy_config', 'xpider_strict_privacy']);
@@ -4472,8 +4313,23 @@ async function hydrateCampaignState() {
 
             if (response && response.success) {
                 onBackgroundMessageSuccess();
-                // [RC12 Item 3] Synchronize authoritative state snapshot from background
-                applyAuthoritativeStateSnapshot(response.snapshot || response);
+                totalTargets = response.totalTargets || 0;
+                successCount = response.successCount || 0;
+                failedCount = response.failedCount || 0;
+                completedCount = response.completedCount || 0;
+                remainingTargets = response.remainingCount !== undefined ? response.remainingCount : 0;
+                campaignPaused = !!response.isPaused;
+
+                if (typeof updateRealTimeStatus === 'function') {
+                    updateRealTimeStatus({
+                        successCount: successCount,
+                        failedCount: failedCount,
+                        completedCount: completedCount,
+                        remainingCount: remainingTargets,
+                        totalTargets: totalTargets,
+                        failureBreakdown: response.failureBreakdown || {}
+                    });
+                }
 
                 try {
                     const st = await chrome.storage.local.get(['xpider_queue', 'xpider_total', 'xpider_success', 'xpider_paused_checkpoint', 'xpider_isPaused']);
@@ -4509,15 +4365,10 @@ async function hydrateCampaignState() {
                     if (statusBox) statusBox.classList.remove('hidden');
                     const multiActions = document.getElementById('multi-actions');
                     if (multiActions) multiActions.classList.remove('hidden');
-                    const startButtonsRow = document.getElementById('start-buttons-row');
-                    if (startButtonsRow) startButtonsRow.classList.add('hidden');
                     const startBtn = document.getElementById('start-btn');
                     if (startBtn) startBtn.classList.add('hidden');
-                    const fallbackControlRow = document.getElementById('fallback-control-row');
-                    if (fallbackControlRow) fallbackControlRow.style.display = 'none';
                     
                     const btn = document.getElementById('pause-btn');
-                    const stopSaveBtn = document.getElementById('stop-save-btn');
                     const langSelect = document.getElementById('language-select');
                     const lang = langSelect ? langSelect.value : 'en';
                     const dict = (typeof i18nData !== 'undefined' && i18nData) ? (i18nData[lang] || i18nData['en'] || {}) : {};
@@ -4527,55 +4378,21 @@ async function hydrateCampaignState() {
                             btn.style.backgroundColor = "#22c55e";
                         } else {
                             btn.textContent = dict.btn_pause || "⏸️ Pause";
-                            btn.style.backgroundColor = "#ea580c";
+                            btn.style.backgroundColor = "#f59e0b";
                         }
-                    }
-                    if (stopSaveBtn) {
-                        stopSaveBtn.style.display = 'inline-block';
-                        stopSaveBtn.textContent = "⏸️ Stop & Save";
                     }
                     addDiagnosticLog(`[Engine] Initial handshake synced: active=true, remaining=${remainingTargets}`);
                 } else {
                     campaignActive = false;
-                    const multiActions = document.getElementById('multi-actions');
-                    const startButtonsRow = document.getElementById('start-buttons-row');
                     const startBtn = document.getElementById('start-btn');
-                    const btn = document.getElementById('pause-btn');
-                    const stopSaveBtn = document.getElementById('stop-save-btn');
-                    const fallbackControlRow = document.getElementById('fallback-control-row');
-                    const langSelect = document.getElementById('language-select');
-                    const lang = langSelect ? langSelect.value : 'en';
-                    const dict = (typeof i18nData !== 'undefined' && i18nData) ? (i18nData[lang] || i18nData['en'] || {}) : {};
-
-                    if (isPausedState || window.__xpider_has_paused_checkpoint) {
-                        campaignPaused = true;
-                        if (startButtonsRow) startButtonsRow.classList.add('hidden');
-                        if (startBtn) startBtn.classList.add('hidden');
-                        if (multiActions) multiActions.classList.remove('hidden');
-                        if (fallbackControlRow) fallbackControlRow.style.display = 'none';
-                        if (btn) {
-                            btn.disabled = false;
-                            btn.textContent = dict.btn_resume || "▶️ Resume";
-                            btn.style.backgroundColor = "#22c55e";
-                            btn.style.color = "#ffffff";
-                        }
-                        if (stopSaveBtn) {
-                            stopSaveBtn.style.display = 'inline-block';
-                            stopSaveBtn.textContent = "💾 Save & Exit";
-                        }
-                    } else {
-                        if (startButtonsRow) startButtonsRow.classList.remove('hidden');
-                        if (startBtn) startBtn.classList.remove('hidden');
-                        if (multiActions) multiActions.classList.add('hidden');
-                        if (fallbackControlRow) {
-                            fallbackControlRow.style.display = (remainingTargets > 0 || (response.snapshot && response.snapshot.campaignRunId)) ? 'block' : 'none';
-                        }
-                    }
+                    if (startBtn) startBtn.classList.remove('hidden');
+                    const multiActions = document.getElementById('multi-actions');
+                    if (multiActions) multiActions.classList.add('hidden');
                     if (totalTargets > 0 || completedCount > 0 || successCount > 0 || failedCount > 0) {
                         const statusBox = document.getElementById('status-box');
                         if (statusBox) statusBox.classList.remove('hidden');
                     }
-                    addDiagnosticLog(`[Engine] Initial handshake synced: active=false, paused=${campaignPaused}, completed=${completedCount}, success=${successCount}, failed=${failedCount}`);
+                    addDiagnosticLog(`[Engine] Initial handshake synced: active=false, completed=${completedCount}, success=${successCount}, failed=${failedCount}`);
                 }
                 return resolve(true);
             }
@@ -4834,8 +4651,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                     window.isNetworkRecovery = false;
                     window.networkRecoveryPhase = null;
                     refreshStatusDetailUI();
-                } else if (request.action === 'AUTHORITATIVE_STATE_UPDATE' && request.snapshot) {
-                    applyAuthoritativeStateSnapshot(request.snapshot);
                 } else if (request.action === 'UPDATE_STATS') {
                     updateRealTimeStatus(request.data);
                 } else if (request.action === 'CAMPAIGN_FINISHED') {
@@ -5125,9 +4940,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     if (!request) return;
                     if (request.action === 'SENDER_LOG') {
                         addLog(request.message, request.logType);
-                    } else if (request.action === 'AUTHORITATIVE_STATE_UPDATE' && request.snapshot) {
-                    applyAuthoritativeStateSnapshot(request.snapshot);
-                } else if (request.action === 'UPDATE_STATS') {
+                    } else if (request.action === 'UPDATE_STATS') {
                         updateRealTimeStatus(request.data);
                     }
                 }
@@ -5476,78 +5289,42 @@ function updateSpeedLabels() {
     // 1. 수집 속도 매핑 라벨
     const collectSlider = document.getElementById('delay-input-collect');
     const collectDisplay = document.getElementById('speed-collect-display');
-    let delayMs = 10000;
-    let levelCollect = 6;
     if (collectSlider && collectDisplay) {
-        levelCollect = parseInt(collectSlider.value, 10);
-        if (isNaN(levelCollect)) levelCollect = 6;
+        const level = collectSlider.value;
         const msArr = [60000, 45000, 30000, 25000, 20000, 15000, 10000, 7000, 5000, 3000];
-        delayMs = msArr[levelCollect] || 10000;
-        const sec = delayMs / 1000;
-        let label = `${dict.speed_level || 'Level'} ${levelCollect} <small>(${sec}s)</small>`;
-        if (levelCollect === 6) label += ` <small>${dict.speed_normal || '(Normal)'}</small>`;
+        const sec = (msArr[parseInt(level)] || 10000) / 1000;
+        let label = `${dict.speed_level || 'Level'} ${level} <small>(${sec}s)</small>`;
+        if (level === '6') label += ` <small>${dict.speed_normal || '(Normal)'}</small>`;
         collectDisplay.innerHTML = label;
         
         // 레거시 연동용으로 hidden delay-input의 value도 대변 업데이트
         const legacyInput = document.getElementById('delay-input');
-        if (legacyInput) legacyInput.value = String(levelCollect);
+        if (legacyInput) legacyInput.value = level;
     }
 
     // 2. 자동 입력 속도 매핑 라벨
     const fillSlider = document.getElementById('delay-input-fill');
     const fillDisplay = document.getElementById('speed-fill-display');
-    let fillDelayMs = 300;
-    let levelFill = 6;
     if (fillSlider && fillDisplay) {
-        levelFill = parseInt(fillSlider.value, 10);
-        if (isNaN(levelFill)) levelFill = 6;
+        const level = fillSlider.value;
         const msArr = [2000, 1500, 1000, 800, 500, 400, 300, 200, 150, 100];
-        fillDelayMs = msArr[levelFill] || 300;
-        let label = `${dict.speed_level || 'Level'} ${levelFill} <small>(${fillDelayMs}ms)</small>`;
-        if (levelFill === 6) label += ` <small>${dict.speed_normal || '(Normal)'}</small>`;
+        const ms = msArr[parseInt(level)] || 300;
+        let label = `${dict.speed_level || 'Level'} ${level} <small>(${ms}ms)</small>`;
+        if (level === '6') label += ` <small>${dict.speed_normal || '(Normal)'}</small>`;
         fillDisplay.innerHTML = label;
     }
 
     // 3. 등록 완료 대기 속도 매핑 라벨
     const submitSlider = document.getElementById('delay-input-submit');
     const submitDisplay = document.getElementById('speed-submit-display');
-    let submitDelayMs = 4000;
-    let levelSubmit = 6;
     if (submitSlider && submitDisplay) {
-        levelSubmit = parseInt(submitSlider.value, 10);
-        if (isNaN(levelSubmit)) levelSubmit = 6;
+        const level = submitSlider.value;
         const msArr = [15000, 12000, 10000, 8000, 6000, 5000, 4000, 3000, 2000, 1000];
-        submitDelayMs = msArr[levelSubmit] || 4000;
-        const sec = (submitDelayMs / 1000).toFixed(1);
-        let label = `${dict.speed_level || 'Level'} ${levelSubmit} <small>(${sec}s)</small>`;
-        if (levelSubmit === 6) label += ` <small>${dict.speed_normal || '(Normal)'}</small>`;
+        const sec = ((msArr[parseInt(level)] || 4000) / 1000).toFixed(1);
+        let label = `${dict.speed_level || 'Level'} ${level} <small>(${sec}s)</small>`;
+        if (level === '6') label += ` <small>${dict.speed_normal || '(Normal)'}</small>`;
         submitDisplay.innerHTML = label;
     }
-
-    // [RC13 Speed Slider Runtime Audit] Auto-persist to storage and notify background worker for live active campaign adaptation
-    try {
-        if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
-            chrome.storage.local.set({
-                xpider_delay_collect: levelCollect,
-                xpider_delay_fill: levelFill,
-                xpider_delay_submit: levelSubmit,
-                xpider_delay: levelCollect
-            }).catch(() => {});
-        }
-        if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
-            chrome.runtime.sendMessage({
-                action: 'UPDATE_SPEED_SETTINGS',
-                levelCollect,
-                levelFill,
-                levelSubmit,
-                delayMs,
-                fillDelayMs,
-                submitDelayMs
-            }, () => {
-                if (chrome.runtime.lastError) {} // Ignore if background is sleeping
-            });
-        }
-    } catch (_) {}
 }
 
 function updateSpeedLabel() {
@@ -5621,8 +5398,39 @@ function bindEvents() {
         console.error('[POPUP_BOOT] Settings binding error:', e);
     }
 
-    // 3. Campaign Action Buttons (Guarded Single-Binding)
+    // 3. Campaign Action Buttons (Isolated)
     try {
+        const startBtn = document.getElementById('start-btn');
+        if (startBtn && !startBtn.dataset.bound) {
+            startBtn.dataset.bound = 'true';
+            startBtn.addEventListener('click', () => {
+                console.log('[BUTTON_CLICK] id=start-btn mode=AUTO');
+                launchCampaign({ source: 'USER_START_BUTTON', campaignMode: 'AUTO' }).catch(err => {
+                    console.error('[START_EXCEPTION]', err);
+                });
+            });
+        }
+        const startSemiAutoBtn = document.getElementById('start-semi-auto-btn');
+        if (startSemiAutoBtn && !startSemiAutoBtn.dataset.bound) {
+            startSemiAutoBtn.dataset.bound = 'true';
+            startSemiAutoBtn.addEventListener('click', () => {
+                console.log('[BUTTON_CLICK] id=start-semi-auto-btn mode=SEMI_AUTO');
+                launchCampaign({ source: 'USER_START_BUTTON', campaignMode: 'SEMI_AUTO' }).catch(err => {
+                    console.error('[START_EXCEPTION]', err);
+                });
+            });
+        }
+        const startManualBtn = document.getElementById('start-manual-btn');
+        if (startManualBtn && !startManualBtn.dataset.bound) {
+            startManualBtn.dataset.bound = 'true';
+            startManualBtn.addEventListener('click', () => {
+                console.log('[BUTTON_CLICK] id=start-manual-btn mode=MANUAL');
+                launchCampaign({ source: 'USER_START_BUTTON', campaignMode: 'MANUAL' }).catch(err => {
+                    console.error('[START_EXCEPTION]', err);
+                });
+            });
+        }
+        
         const pauseBtn = document.getElementById('pause-btn');
         if (pauseBtn && !pauseBtn.dataset.bound) {
             pauseBtn.dataset.bound = 'true';
@@ -8226,35 +8034,6 @@ async function launchCampaign(options = {}) {
             console.log(`[NORMAL_CAMPAIGN_PREFLIGHT] publicTargets=${publicTargetsCount} testMode=false result=PASS`);
             addLog(`[NORMAL_CAMPAIGN_PREFLIGHT] publicTargets=${publicTargetsCount} testMode=false result=PASS`, 'info');
 
-            // [RC14 Paused Checkpoint Protection Guard]
-            // If a valid paused campaign checkpoint exists, USER_START_BUTTON must resume it,
-            // never rebase the queue to 91 targets or overwrite the active runId!
-            const pausedCheckpoint = curSt.xpider_paused_checkpoint;
-            if (pausedCheckpoint && Array.isArray(pausedCheckpoint.remainingQueue) && pausedCheckpoint.remainingQueue.length > 0 && !pausedCheckpoint.isTestMode && !options.forceFreshRun) {
-                console.log(`[START_RESUME_GUARD] Paused checkpoint detected with ${pausedCheckpoint.remainingQueue.length} remaining targets in run ${pausedCheckpoint.campaignRunId}. Diverting to resumeCampaignOrchestrator.`);
-                addLog(`▶️ [RESUME_GUARD] Resuming paused campaign with ${pausedCheckpoint.remainingQueue.length} remaining targets in run ${pausedCheckpoint.campaignRunId}.`, 'info');
-                _isCampaignLaunching = false;
-                const resumeMode = options.campaignMode || pausedCheckpoint.campaignMode || 'AUTO';
-                return await new Promise((resolve) => {
-                    chrome.runtime.sendMessage({
-                        action: 'RESUME_CAMPAIGN',
-                        mode: resumeMode,
-                        campaignMode: resumeMode
-                    }, (res) => {
-                        if (chrome.runtime.lastError) {
-                            addLog(`❌ [RESUME_ERROR] ${chrome.runtime.lastError.message}`, 'error');
-                            _restoreStartButton();
-                            resolve({ success: false, error: chrome.runtime.lastError.message });
-                        } else {
-                            campaignActive = true;
-                            campaignPaused = false;
-                            updatePersistentModeHud(resumeMode, 'RUNNING', 'Resumed', pausedCheckpoint.remainingQueue.length);
-                            resolve(res || { success: true });
-                        }
-                    });
-                });
-            }
-
             // [Directive E] Rebase current-run counters & generate fresh normal campaignRunId
             const oldRunId = curSt.xpider_active_campaign_run_id || 'none';
             assignedNormalRunId = `normal_run_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
@@ -8498,19 +8277,15 @@ async function launchCampaign(options = {}) {
         const delayCollectInput = document.getElementById('delay-input-collect');
         const delayFillInput = document.getElementById('delay-input-fill');
         const delaySubmitInput = document.getElementById('delay-input-submit');
-        let levelCollect = parseInt(delayCollectInput ? delayCollectInput.value : (activeRunStorage.xpider_delay_collect || 6), 10);
-        let levelFill = parseInt(delayFillInput ? delayFillInput.value : (activeRunStorage.xpider_delay_fill || 6), 10);
-        let levelSubmit = parseInt(delaySubmitInput ? delaySubmitInput.value : (activeRunStorage.xpider_delay_submit || 6), 10);
-        if (isNaN(levelCollect)) levelCollect = 6;
-        if (isNaN(levelFill)) levelFill = 6;
-        if (isNaN(levelSubmit)) levelSubmit = 6;
+        const levelCollect = parseInt(delayCollectInput ? delayCollectInput.value : 6);
+        const levelFill = parseInt(delayFillInput ? delayFillInput.value : 6);
+        const levelSubmit = parseInt(delaySubmitInput ? delaySubmitInput.value : 6);
         const levelToCollectMs = [60000, 45000, 30000, 25000, 20000, 15000, 10000, 7000, 5000, 3000];
         const levelToFillMs = [2000, 1500, 1000, 800, 500, 400, 300, 200, 150, 100];
         const levelToSubmitMs = [15000, 12000, 10000, 8000, 6000, 5000, 4000, 3000, 2000, 1000];
         const delayMs = levelToCollectMs[levelCollect] || 10000;
         const fillDelayMs = levelToFillMs[levelFill] || 300;
         const submitDelayMs = levelToSubmitMs[levelSubmit] || 4000;
-        console.log(`[START_SPEED_RESOLVED] collectLevel=${levelCollect} (${delayMs}ms) fillLevel=${levelFill} (${fillDelayMs}ms) submitLevel=${levelSubmit} (${submitDelayMs}ms)`);
 
         const fillModeEl = document.querySelector('input[name="fill-mode"]:checked');
         const fillMode = fillModeEl ? fillModeEl.value : 'instant';
@@ -8735,83 +8510,19 @@ function togglePause() {
         return;
     }
 
-    // [RC15 Bounded Pause Action: Deadlock Prevention]
-    if (btn) {
-        btn.disabled = true;
-        btn.textContent = "⏳ Pausing...";
-    }
+    campaignPaused = true;
+    window.__xpider_last_paused_mode = currentCampaignMode || 'AUTO';
+    updatePersistentModeHud(currentCampaignMode, 'PAUSED', undefined, undefined);
     addDiagnosticLog('[Engine][TX] action=PAUSE_CAMPAIGN');
-
-    let pauseHandled = false;
-    const pauseTimeout = setTimeout(() => {
-        if (!pauseHandled) {
-            pauseHandled = true;
-            console.warn('[PAUSE_TIMEOUT] No immediate response from background. Polling authoritative state...');
-            if (btn) btn.disabled = false;
-            if (typeof chrome !== 'undefined' && chrome.runtime?.sendMessage) {
-                chrome.runtime.sendMessage({ action: 'GET_AUTHORITATIVE_STATE' }, (resp) => {
-                    if (resp && resp.snapshot) {
-                        applyAuthoritativeStateSnapshot(resp.snapshot);
-                    } else if (typeof chrome !== 'undefined' && chrome.storage?.local) {
-                        chrome.storage.local.get(['xpider_isPaused', 'xpider_paused_checkpoint'], (st) => {
-                            if (st.xpider_isPaused || st.xpider_paused_checkpoint) {
-                                campaignPaused = true;
-                                campaignActive = false;
-                                if (btn) {
-                                    btn.textContent = dict.btn_resume || "▶️ Resume";
-                                    btn.style.backgroundColor = "#22c55e";
-                                    btn.style.color = "#ffffff";
-                                }
-                            } else {
-                                if (btn) {
-                                    btn.textContent = dict.btn_pause || "⏸️ Pause";
-                                    btn.style.backgroundColor = "#ea580c";
-                                }
-                            }
-                        });
-                    }
-                });
-            }
-        }
-    }, 2500);
-
     if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
-        chrome.runtime.sendMessage({ action: 'PAUSE_CAMPAIGN' }, (res) => {
-            if (pauseHandled) return;
-            pauseHandled = true;
-            clearTimeout(pauseTimeout);
-            if (btn) btn.disabled = false;
-            if (res && res.success) {
-                if (res.snapshot) {
-                    applyAuthoritativeStateSnapshot(res.snapshot);
-                } else {
-                    campaignPaused = true;
-                    campaignActive = false;
-                    window.__xpider_has_paused_checkpoint = true;
-                    if (btn) {
-                        btn.textContent = dict.btn_resume || "▶️ Resume";
-                        btn.style.backgroundColor = "#22c55e";
-                        btn.style.color = "#ffffff";
-                    }
-                    updatePersistentModeHud(currentCampaignMode, 'PAUSED', undefined, undefined);
-                }
-            } else {
-                console.error('[PAUSE_FAILED]', res?.error);
-                if (btn) {
-                    btn.textContent = dict.btn_pause || "⏸️ Pause";
-                    btn.style.backgroundColor = "#ea580c";
-                }
-            }
-            refreshStatusDetailUI();
-        });
-    } else {
-        clearTimeout(pauseTimeout);
-        if (btn) {
-            btn.disabled = false;
-            btn.textContent = dict.btn_resume || "▶️ Resume";
-            btn.style.backgroundColor = "#22c55e";
-        }
+        chrome.runtime.sendMessage({ action: 'PAUSE_CAMPAIGN' }).catch(e => console.error('[Pause Ext Error]', e));
     }
+
+    if (btn) {
+        btn.textContent = dict.btn_resume || "▶️ Resume";
+        btn.style.backgroundColor = "#22c55e";
+    }
+    refreshStatusDetailUI();
 }
 
 function stopCampaign() {
@@ -8974,24 +8685,6 @@ function updatePersistentModeHud(mode, status, currentTarget, remainingCount) {
     }
     if (remEl && remainingCount !== undefined && remainingCount !== null) {
         remEl.textContent = String(remainingCount);
-    }
-
-    // [RC15 Top Pill Coherence Guarantee] Synchronize #campaign-ready-pill so it NEVER contradicts the HUD
-    const campPill = document.getElementById('campaign-ready-pill');
-    if (campPill) {
-        const curRem = remainingCount !== undefined ? remainingCount : (remainingTargets || 0);
-        const curComp = completedCount || 0;
-        const curTot = totalTargets || (curRem + curComp);
-        if (status === 'RUNNING') {
-            campPill.textContent = `CAMPAIGN: RUNNING (${curComp}/${curTot})`;
-            campPill.style.color = '#38bdf8';
-        } else if (status === 'PAUSED') {
-            campPill.textContent = `CAMPAIGN: PAUSED (${curRem} remaining)`;
-            campPill.style.color = '#00ffcc';
-        } else if (status === 'HOLD' || status === 'WAITING') {
-            campPill.textContent = `CAMPAIGN: OPERATOR HOLD (${curRem} remaining)`;
-            campPill.style.color = '#fbbf24';
-        }
     }
 }
 
@@ -9166,27 +8859,12 @@ function confirmResumeCampaignWithMode(selectedMode) {
     updatePersistentModeHud(targetMode, 'RUNNING', undefined, undefined);
 
     addDiagnosticLog(`[Engine][TX] action=RESUME_CAMPAIGN campaignMode=${targetMode}`);
-    const pauseBtn = document.getElementById('pause-btn');
-    if (pauseBtn) {
-        pauseBtn.disabled = true;
-        pauseBtn.textContent = "⏳ Resuming...";
-    }
     if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
         const targetTimeoutMs = (parseInt(document.getElementById('target-max-wait-input')?.value, 10) || 180) * 1000;
         chrome.runtime.sendMessage({ action: 'RESUME_CAMPAIGN', campaignMode: targetMode, targetTimeoutMs }, (res) => {
-            if (pauseBtn) pauseBtn.disabled = false;
             if (res && res.success) {
-                if (res.snapshot) {
-                    applyAuthoritativeStateSnapshot(res.snapshot);
-                } else {
-                    campaignActive = true;
-                    campaignPaused = false;
-                    if (pauseBtn) {
-                        pauseBtn.textContent = "⏸️ Pause";
-                        pauseBtn.style.backgroundColor = "#ea580c";
-                        pauseBtn.style.color = "#ffffff";
-                    }
-                }
+                campaignActive = true;
+                campaignPaused = false;
                 const banner = document.getElementById('resumable-campaign-banner');
                 if (banner) {
                     banner.style.display = 'none';
@@ -9202,6 +8880,13 @@ function confirmResumeCampaignWithMode(selectedMode) {
                 if (startManualBtn) startManualBtn.classList.add('hidden');
                 const multiActions = document.getElementById('multi-actions');
                 if (multiActions) multiActions.classList.remove('hidden');
+                const pauseBtn = document.getElementById('pause-btn');
+                const lang = document.getElementById('language-select')?.value || 'en';
+                const dict = i18nData ? (i18nData[lang] || i18nData['en'] || {}) : {};
+                if (pauseBtn) {
+                    pauseBtn.textContent = dict.btn_pause || "⏸️ Pause";
+                    pauseBtn.style.backgroundColor = "#f59e0b";
+                }
                 const statusBox = document.getElementById('status-box');
                 if (statusBox) statusBox.classList.remove('hidden');
                 refreshStatusDetailUI();
@@ -9209,11 +8894,6 @@ function confirmResumeCampaignWithMode(selectedMode) {
                 addLog(`▶️ Campaign resumed in ${targetMode} mode (${res.remainingCount} remaining).`, "start");
             } else {
                 addLog(`❌ Resume failed: ${res?.error || 'Unknown error'}`, "error");
-                if (pauseBtn) {
-                    pauseBtn.textContent = "▶️ Resume";
-                    pauseBtn.style.backgroundColor = "#22c55e";
-                    pauseBtn.style.color = "#ffffff";
-                }
             }
         });
     }
@@ -9278,11 +8958,9 @@ function checkResumableCheckpoint() {
             banner.style.display = 'none';
         }
         const currentMode = stateResp?.pausedCampaignMode || stateResp?.campaignMode || window.__xpider_last_paused_mode || currentCampaignMode || 'AUTO';
-        const currentStatus = (stateResp && stateResp.hasPausedCheckpoint && !stateResp.isActive) ? 'PAUSED' : (stateResp?.isActive ? 'RUNNING' : 'READY');
-        const currentTarget = stateResp?.currentTargetUrl || ((stateResp && stateResp.hasPausedCheckpoint && !stateResp.isActive) ? 'Paused Target' : 'Idle');
-        const remCount = (stateResp?.isActive)
-            ? (stateResp?.remainingCount || remainingTargets || 0)
-            : (stateResp?.pausedRemainingCount || stateResp?.remainingCount || remainingTargets || 0);
+        const currentStatus = stateResp?.hasPausedCheckpoint ? 'PAUSED' : (stateResp?.isActive ? 'RUNNING' : 'READY');
+        const currentTarget = stateResp?.currentTargetUrl || (stateResp?.hasPausedCheckpoint ? 'Paused Target' : 'Idle');
+        const remCount = stateResp?.pausedRemainingCount || stateResp?.remainingCount || remainingTargets || 0;
         updatePersistentModeHud(currentMode, currentStatus, currentTarget, remCount);
     });
 }

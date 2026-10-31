@@ -5,10 +5,32 @@
 - Project ID: xpider-autoform-sender-pro
 - Workspace: E:\vivpr\ai\extension-form-sender
 - Authority: goodkie/v-show Issues #6 & #10
-- Branch: major/v7-dual-mode (branched from upgrade/phase-0-1)
-- State Rev: 2026-10-31.291
-- Authority Cursor: 6539589809
-- Major-version v7.0.0-rc16 Deployment Provenance Sync, Candidate Injection Loading Guard, Single-Flight Navigation & Checkpoint Reconciliation COMPLETED:
+- Branch: major/v7-dual-mode (target commit 20678ada / RC11 restored)
+- State Rev: 2026-10-31.292
+- Authority Cursor: 6539827067 (Comment #876)
+- Major-version v7.0.0-rc11 Complete Code Rollback EXECUTED:
+  - Owner Directive: `[OWNER DIRECTIVE — EXECUTE CODE ROLLBACK TO EXACT PRE-RC12 RC11][Issue #6][2026-10-31]` (Comment #876 / `IC_kwDOT53X288AAAABhet9-w`).
+  - Target Version: `v7.0.0-rc11`
+  - Target Functional Commit: `20678ada` (`20678ada6491bf842ec7e996a88108152c76007f`).
+  - Release Package: `XPIDER_V7.0.0_RC11_DUAL_MODE_OWNER_BETA.zip` (SHA256: `46a1470c80249466f79a3a4fe5599976593d99fd52f945b87add876f1b787a54`, size: `51693297` bytes).
+  - Pinned Chrome Extension ID: `ldlijlaccfeelfdhgnjbibniocefckjj`.
+  - Actual Chrome Loaded Unpacked Extension Path: `E:\vivpr\ai\extension-form-sender\XPIDER_V7.0.0_RC1_DUAL_MODE_OWNER_BETA\extension`.
+  - Execution Summary:
+    1. RC16 Code Backup: Created full backup of existing RC16 extension code at `backups/PRE_ROLLBACK_RC16_CODE_BACKUP_2026-10-31T09-39-25-904Z/extension`.
+    2. Zero Profile Modification Invariant: Chrome user data, LevelDB storage, profile preferences, ledger, history, and imported lists were untouched (100% pure code rollback).
+    3. Pristine RC11 Extraction: Extracted extension from immutable release ZIP `XPIDER_V7.0.0_RC11_DUAL_MODE_OWNER_BETA.zip` into `scratch/extracted_rc11_for_rollback/extension`.
+    4. Exact In-Place Overwrite: Replaced all files in actual Owner-loaded directory (`XPIDER_V7.0.0_RC1_DUAL_MODE_OWNER_BETA/extension`) and git `extension/` with pure RC11 files.
+    5. Hash Parity Verification: Verified 100% SHA256 parity across all 50 extension files between extracted RC11 ZIP, Owner-loaded folder, and git working directory.
+    6. Functional Contract Verification: Executed `node test/test_v7_rc11_contracts.js` -> 53 / 53 assertions passed.
+    7. Provenance Verification:
+       - Manifest Version: `7.0.0`
+       - Build ID: `V7.0.0-RC11-20261030-THREE-MODE-CONTRACTS-PASS`
+       - Implementation Head: `20678ada6491bf842ec7e996a88108152c76007f`
+       - Implementation Head Short: `20678ada`
+       - Channel: `OWNER_BETA_V7_DUAL_MODE`
+       - Tag: `v7.0.0-rc11`
+    8. Storage Compatibility Notice: RC11 relies on standard `chrome.storage.local` keys (`xpider_isPaused`, `xpider_paused_checkpoint`, etc.). Any state persisted by the browser from previous runs is handled natively by RC11 logic without schema mutation.
+
   - Functional Commit `559c0542` on `major/v7-dual-mode`.
   - GitHub Release: `v7.0.0-rc16` (tag `v7.0.0-rc16`).
   - Package: `XPIDER_V7.0.0_RC16_DUAL_MODE_OWNER_BETA.zip` (SHA256: `665ea7980f4d06475e9996c7e5b6c03ed038d56eea327bdf2073986f64a3c6a6`, size: `52329637` bytes).

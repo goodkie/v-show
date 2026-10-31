@@ -493,61 +493,6 @@
                 return true;
             }
 
-            // [RC14 Explicit Re-Audit on Resume to AUTO]
-            if (request.action === 'RESUME_AUTO_AUDIT') {
-                logDev("🔍 [ResumeAuto] Explicit re-audit requested upon resume to AUTO mode. Auditing form...", "info");
-                if (typeof document !== 'undefined') {
-                    const panel = document.getElementById('xpider-v7-manual-hold-panel');
-                    if (panel) panel.remove();
-                }
-                window.__xpider_manual_hold_active = false;
-                window.__xpider_campaign_mode = 'AUTO';
-
-                (async () => {
-                    try {
-                        const targetForm = await findOptimalForm();
-                        if (!targetForm) {
-                            logDev("❌ [ResumeAuto] No automatable inquiry form present during resume re-audit. Settling safely without submit.", "error");
-                            finishCampaign(false, "NO_FORM_ON_RESUME_AUTO", "NO_ACCESSIBLE_INQUIRY_FORM");
-                            return;
-                        }
-                        let inquiryBody = null;
-                        if (_ContactGate && typeof _ContactGate.detectInquiryBodyField === 'function') {
-                            inquiryBody = _ContactGate.detectInquiryBodyField(targetForm);
-                        } else if (targetForm.querySelector) {
-                            inquiryBody = targetForm.querySelector('textarea, [contenteditable="true"], [role="textbox"][aria-multiline="true"]');
-                        }
-                        if (!inquiryBody) {
-                            logDev("❌ [ResumeAuto] No genuine inquiry body field present during resume re-audit. Settling safely without submit.", "error");
-                            finishCampaign(false, "NO_INQUIRY_BODY_ON_RESUME_AUTO", "NO_LONG_TEXT_INQUIRY_FIELD");
-                            return;
-                        }
-                        const chal = _ChallengeGate ? _ChallengeGate.detectChallenge(document) : { detected: false, verified: true };
-                        if (chal && chal.detected && !chal.verified) {
-                            logDev(`❌ [ResumeAuto] Unresolved challenge (${chal.type}) during resume re-audit. Settling challenge failure.`, "error");
-                            finishCampaign(false, `Unresolved challenge: ${chal.type}`, "CAPTCHA_TOKEN_REJECTED_BY_SITE");
-                            return;
-                        }
-                        if (_FinalFormCompletionEngine && typeof _FinalFormCompletionEngine.verifyFormCompleteness === 'function') {
-                            const comp = _FinalFormCompletionEngine.verifyFormCompleteness(targetForm, request.template || {});
-                            if (!comp.complete) {
-                                logDev(`❌ [ResumeAuto] Form completeness validation failed (${comp.missingFields?.join(', ')}). Settling without submit.`, "error");
-                                finishCampaign(false, "REQUIRED_FIELDS_UNRESOLVED", "REQUIRED_FIELDS_UNRESOLVED_ON_RESUME_AUTO");
-                                return;
-                            }
-                        }
-                        logDev("✅ [ResumeAuto] Safe re-audit passed all invariant gates. Proceeding to submit...", "success");
-                        const speed = getSpeedProfile(10000, 300, 4000);
-                        await fillAndSubmit(targetForm, request.template || {}, speed);
-                    } catch (err) {
-                        logDev(`❌ [ResumeAuto] Re-audit exception: ${err.message}`, "error");
-                        finishCampaign(false, err.message, "RESUME_AUTO_AUDIT_EXCEPTION");
-                    }
-                })();
-                if (typeof sendResponse === 'function') sendResponse({ success: true, auditing: true });
-                return true;
-            }
-
             if (request.action === 'START_SENDING') {
                 window.__xpider_aborted = false;
                 const currentRunUrl = (window.location ? window.location.href : '');
@@ -566,13 +511,9 @@
                     campaignMode: window.__xpider_campaign_mode
                 };
 
-                const isForceOrReinjected = Boolean(request.force || request.isSpaReinjected);
-                if (!isForceOrReinjected && (window.__xpider_active_single_flight === singleFlightKey || (window.__xpider_hasProcessingLock && window.__xpider_hasProcessingLock(currentRunUrl)))) {
+                if (window.__xpider_active_single_flight === singleFlightKey || (window.__xpider_hasProcessingLock && window.__xpider_hasProcessingLock(currentRunUrl))) {
                     console.log(`[CONTROL_PLANE] duplicate START_SENDING suppressed key=${singleFlightKey}`);
                     return;
-                }
-                if (isForceOrReinjected && window.__xpider_releaseProcessingLock) {
-                    window.__xpider_releaseProcessingLock(currentRunUrl);
                 }
                 window.__xpider_active_single_flight = singleFlightKey;
 
@@ -605,17 +546,11 @@
         }
     }
 
-    function getSpeedProfile(delayMs, fillDelayMs = 300, submitDelayMs = 4000) {
-        if (!window.__xpider_speed_profile) {
-            window.__xpider_speed_profile = {
-                field: parseInt(fillDelayMs) || 300,
-                hold: parseInt(submitDelayMs) || 4000
-            };
-        } else {
-            if (fillDelayMs !== undefined) window.__xpider_speed_profile.field = parseInt(fillDelayMs) || 300;
-            if (submitDelayMs !== undefined) window.__xpider_speed_profile.hold = parseInt(submitDelayMs) || 4000;
-        }
-        return window.__xpider_speed_profile;
+    function getSpeedProfile(delayMs, fillDelayMs = 300, submitDelayMs = 1500) {
+        return {
+            field: parseInt(fillDelayMs) || 300,
+            hold: parseInt(submitDelayMs) || 1500
+        };
     }
 
     function normalizeUrl(url) {
@@ -1133,7 +1068,7 @@
         return false;
     }
 
-    async function processCampaign(template, delayMs = 10000, triedUrl = '', fillDelayMs = 300, submitDelayMs = 4000) {
+    async function processCampaign(template, delayMs = 10000, triedUrl = '', fillDelayMs = 300, submitDelayMs = 1500) {
         try {
             // [RC3.33 P0-B] Attempt-scoped reset at processCampaign entry
             resetCaptchaRuntimeState('processCampaign');
@@ -1153,12 +1088,8 @@
                 sessionStorage.removeItem('xpider_guessed_paths');
                 sessionStorage.removeItem('xpider_visited_subs');
                 sessionStorage.removeItem('xpider_recursion_debt');
-                sessionStorage.removeItem('xpider_visited_contact_candidate');
             }
             sessionStorage.setItem('xpider_active_target_token', targetToken);
-            if (isContactPage() || (triedUrl && currentUrl !== triedUrl)) {
-                sessionStorage.setItem('xpider_visited_contact_candidate', 'true');
-            }
 
             // [v2.9.8] Navigation Registry: Mark background-opened and current pages as visited
             const visited = JSON.parse(sessionStorage.getItem('xpider_guessed_paths') || '[]');
@@ -1528,8 +1459,7 @@
             // 3. Direct Path Guessing & Known Contact Aliases (Directive B #6)
             const isLoopback = window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost';
             const isDedicatedFixture = isLoopback && (currentUrl.includes('ai-required-fields') || currentUrl.includes('contact-') || currentUrl.includes('subscribe') || currentUrl.includes('reservation'));
-            const aliasAttempts = parseInt(sessionStorage.getItem('xpider_alias_attempts') || '0', 10);
-            if (recursionDebt === 0 && !isDedicatedFixture && aliasAttempts < 1) {
+            if (recursionDebt === 0 && !isDedicatedFixture) {
                 logDev("⚡ [Discovery] No form or links on current page. Trying common contact aliases...");
                 const COMMON_CONTACT_ALIASES = ['/contact', '/contact-us', '/contactus', '/get-in-touch', '/inquiry', '/about/contact'];
                 const visited = JSON.parse(sessionStorage.getItem('xpider_guessed_paths') || '[]');
@@ -1538,7 +1468,6 @@
                     .find(u => !visited.includes(normalizeUrl(u)));
                 if (unvisitedAlias && normalizeUrl(unvisitedAlias) !== normalizeUrl(currentUrl)) {
                     logDev(`⚡ [Discovery] Navigating to contact alias: ${unvisitedAlias}`, "info");
-                    sessionStorage.setItem('xpider_alias_attempts', String(aliasAttempts + 1));
                     visited.push(normalizeUrl(unvisitedAlias));
                     sessionStorage.setItem('xpider_guessed_paths', JSON.stringify(visited));
                     await safeNavigate(unvisitedAlias, template);
@@ -1567,9 +1496,8 @@
             sessionStorage.removeItem('xpider_recursion_debt');
             sessionStorage.removeItem('xpider_guessed_paths');
             const curMode = (typeof window !== 'undefined' && window.__xpider_campaign_mode) || (template && template.campaignMode) || 'AUTO';
-            const isDedicatedContactPage = isContactPage() || Boolean(sessionStorage.getItem('xpider_visited_contact_candidate'));
-            if ((curMode === 'SEMI_AUTO' || curMode === 'MANUAL') && isDedicatedContactPage) {
-                logDev(`🖐️ [${curMode}_DISCOVERY_HOLD] No inquiry form automatically discovered on contact page. Retaining tab and displaying operator assistance panel.`, "warning");
+            if (curMode === 'SEMI_AUTO' || curMode === 'MANUAL') {
+                logDev(`🖐️ [${curMode}_DISCOVERY_HOLD] No inquiry form automatically discovered. Retaining tab and displaying operator assistance panel.`, "warning");
                 const holdOutcome = await handleV7ManualModeHold(null, template, new Map(), { detected: false, verified: true, type: 'none' }, {
                     mode: curMode,
                     stage: 'FORM_DISCOVERY',
@@ -1579,8 +1507,6 @@
                 });
                 return Boolean(holdOutcome && holdOutcome.success);
             }
-            // For homepage or initial non-contact pages:
-            // ALWAYS report NO_FORM_ON_PAGE so background can advance to sniper candidate paths!
             currentTargetLifecycleState = TargetLifecycleState.SETTLING;
             finishCampaign(false, "NO_FORM_ON_PAGE", "NO_ACCESSIBLE_INQUIRY_FORM");
         } catch (e) {
@@ -1950,7 +1876,7 @@
             delayMs = 10000,
             triedUrl = '',
             fillDelayMs = 300,
-            submitDelayMs = 4000,
+            submitDelayMs = 1500,
             retryCount = 1,
             reason = 'FORM_NOT_ACCESSIBLE'
         } = context;
@@ -2051,55 +1977,12 @@
         return false;
     }
 
-    function captureSelectedFormEvidence(form) {
-        if (!form || !form.querySelectorAll) return { hasForm: false };
-        const inputs = Array.from(form.querySelectorAll('input, textarea, select'));
-        const fieldNames = [];
-        const fieldTypes = [];
-        inputs.forEach(el => {
-            const tag = (el.tagName || '').toLowerCase();
-            const type = (el.type || tag).toLowerCase();
-            const name = (el.name || el.id || '').toLowerCase();
-            if (name && !fieldNames.includes(name)) fieldNames.push(name.slice(0, 30));
-            if (type && !fieldTypes.includes(type)) fieldTypes.push(type.slice(0, 20));
-        });
-        const isVis = !!(form.offsetWidth || form.offsetHeight || (typeof form.getClientRects === 'function' && form.getClientRects().length > 0));
-        const action = (typeof form.getAttribute === 'function' ? form.getAttribute('action') : '') || (typeof form.action === 'string' ? form.action : '') || '';
-        return {
-            formAction: action.split('?')[0],
-            fieldNames: fieldNames.slice(0, 10),
-            fieldTypes: fieldTypes.slice(0, 10),
-            fieldsCount: inputs.length,
-            visibility: isVis,
-            confidence: 0.95,
-            exactReason: 'NO_GENUINE_MESSAGE_FIELD'
-        };
-    }
-
     async function fillAndSubmit(form, template, speed) {
         try {
             window.__xpider_last_template = template;
             // [RC3.33 P0-B] Attempt-scoped reset at fillAndSubmit entry
             resetCaptchaRuntimeState(window.__xpider_execution_identity?.attemptId, window.__xpider_execution_identity?.captchaEpoch);
             extractAndSendPageEmails('FORM_ENTRY');
-
-            const activeCampaignMode = (typeof window !== 'undefined' && (window.__xpider_campaign_mode === 'MANUAL' || window.__xpider_campaign_mode === 'SEMI_AUTO'))
-                ? window.__xpider_campaign_mode
-                : ((template && (template.campaignMode === 'MANUAL' || template.campaignMode === 'SEMI_AUTO')) ? template.campaignMode : 'AUTO');
-
-            // [RC12 Item 2] Strict Pre-Fill Inquiry Body Field Gate:
-            // Forms confirmed to lack an inquiry message field MUST be SKIPPED as NON_INQUIRY_FORM before fill or hold in all modes.
-            const hasReachableMsgField = form && typeof form.querySelectorAll === 'function' &&
-                (form.querySelectorAll('textarea, [contenteditable="true"], [role="textbox"][aria-multiline="true"], .ql-editor, .fr-element, .note-editable, .mce-content-body').length > 0 ||
-                 (_ContactGate && typeof _ContactGate.detectInquiryBodyField === 'function' && _ContactGate.detectInquiryBodyField(form)));
-
-            if (!hasReachableMsgField) {
-                const formEvidence = captureSelectedFormEvidence(form);
-                logDev(`ℹ️ [NON_INQUIRY_GATE] Confirmed absence of genuine message/inquiry field on reachable form: settling SKIPPED NON_INQUIRY_FORM in all modes (${activeCampaignMode})`, "info");
-                currentTargetLifecycleState = TargetLifecycleState.SETTLING;
-                finishCampaign(false, 'NON_INQUIRY_FORM', 'NO_LONG_TEXT_INQUIRY_FIELD', { formEvidence });
-                return false;
-            }
 
             // [HARD ELIGIBILITY GATE] Verify form eligibility before any autofill or submit
             if (_ContactGate && typeof _ContactGate.classifyFormIntent === 'function') {
@@ -2287,19 +2170,6 @@
                     // [R6.1 FINAL REQUIRED AUDIT - HARD GATE]
                     if (!auditResult.pass) {
                         logDev(`❌ [FinalAudit] Submission blocked by Hard Gate: ${auditResult.reason}`, "error");
-                        if (auditResult.reason === 'NON_INQUIRY_FORM' || auditResult.reason === 'FINAL_MESSAGE_FIELD_EMPTY') {
-                            const hasRealMsg = form && Boolean(
-                                (form.querySelectorAll && form.querySelectorAll('textarea, [contenteditable="true"], [role="textbox"][aria-multiline="true"], .ql-editor, .fr-element, .note-editable, .mce-content-body').length > 0) ||
-                                (_ContactGate && typeof _ContactGate.detectInquiryBodyField === 'function' && _ContactGate.detectInquiryBodyField(form))
-                            );
-                            if (!hasRealMsg || auditResult.reason === 'NON_INQUIRY_FORM') {
-                                const formEvidence = captureSelectedFormEvidence(form);
-                                logDev(`ℹ️ [NON_INQUIRY_GATE] Confirmed non-inquiry form (no genuine message field). Settling SKIPPED NON_INQUIRY_FORM without operator hold.`, "info");
-                                currentTargetLifecycleState = TargetLifecycleState.SETTLING;
-                                finishCampaign(false, 'NON_INQUIRY_FORM', 'NON_INQUIRY_FORM', { formEvidence });
-                                return false;
-                            }
-                        }
                         const unres = auditResult.unresolvedList || auditResult.unresolvedFields || [auditResult.reason];
                         if (activeCampaignMode === 'MANUAL' || activeCampaignMode === 'SEMI_AUTO') {
                             logDev(`🖐️ [${activeCampaignMode}_MODE_VALIDATION_HOLD] Final audit failed (${auditResult.reason}) in ${activeCampaignMode} mode. Retaining tab and displaying operator hold panel.`, "warning");
@@ -5136,17 +5006,10 @@
     }
 
     async function handleV7ManualModeHold(form, template, frozenSnapshot, initialChallengeInfo, holdOptions = {}) {
-        // [RC12 P0 Hard Fix] Authoritative Triple Mode Resolution:
-        // Priority: holdOptions.mode > window.__xpider_campaign_mode > template.campaignMode > 'AUTO'
-        // CRITICAL: NEVER let template.campaignMode === 'AUTO' suppress hold if runtime mode is SEMI_AUTO or MANUAL!
-        const effectiveMode = (holdOptions && (holdOptions.mode === 'SEMI_AUTO' || holdOptions.mode === 'MANUAL'))
-            ? holdOptions.mode
-            : ((typeof window !== 'undefined' && (window.__xpider_campaign_mode === 'SEMI_AUTO' || window.__xpider_campaign_mode === 'MANUAL'))
-                ? window.__xpider_campaign_mode
-                : ((holdOptions && holdOptions.mode === 'AUTO') || (typeof window !== 'undefined' && window.__xpider_campaign_mode === 'AUTO')
-                    ? 'AUTO'
-                    : ((template && template.campaignMode) || 'AUTO')));
-        if (effectiveMode === 'AUTO') {
+        const isExplicitAuto = (holdOptions && holdOptions.mode === 'AUTO') ||
+            (typeof window !== 'undefined' && window.__xpider_campaign_mode === 'AUTO') ||
+            (template && template.campaignMode === 'AUTO');
+        if (isExplicitAuto) {
             logDev(`[V7_AUTO_GUARD] handleV7ManualModeHold called in AUTO mode. Suppressing manual hold panel and failing safe.`, "warning");
             return { success: false, reasonCode: holdOptions.validationReason || 'AUTO_MODE_NO_HOLD' };
         }
@@ -5436,7 +5299,7 @@
 
                 const hostLabel = (typeof window !== 'undefined' && window.location && window.location.hostname) ? window.location.hostname : initialHoldUrl;
                 const fieldCount = (frozenSnapshot instanceof Map) ? frozenSnapshot.size : Object.keys(frozenSnapshot || {}).length;
-                const isSemiAuto = Boolean(effectiveMode === 'SEMI_AUTO' || (holdOptions && holdOptions.mode === 'SEMI_AUTO'));
+                const isSemiAuto = Boolean(holdOptions && holdOptions.mode === 'SEMI_AUTO');
                 const headerBadge = isSemiAuto ? '⚡ SEMI-AUTO — OPERATOR ASSISTANCE' : '🖐️ MANUAL MODE — HOLD FOR REGISTRATION';
                 const headerBg = isSemiAuto ? '#7c3aed' : '#0284c7';
                 const borderColor = isSemiAuto ? '#a855f7' : '#38bdf8';
@@ -6124,23 +5987,7 @@
     if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.onMessage) {
         try {
             chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
-                if (msg && msg.action === 'UPDATE_ACTIVE_SPEED') {
-                    if (!window.__xpider_speed_profile) window.__xpider_speed_profile = { field: 300, hold: 4000 };
-                    if (typeof msg.fillDelayMs === 'number') window.__xpider_speed_profile.field = msg.fillDelayMs;
-                    if (typeof msg.submitDelayMs === 'number') window.__xpider_speed_profile.hold = msg.submitDelayMs;
-                    logDev(`⚡ [Speed] Live speed update applied: field=${window.__xpider_speed_profile.field}ms hold=${window.__xpider_speed_profile.hold}ms`, 'info');
-                    if (sendResponse) sendResponse({ success: true, profile: window.__xpider_speed_profile });
-                    return true;
-                } else if (msg && msg.action === 'CAMPAIGN_PAUSED_HOLD_RETAINED') {
-                    const badge = document.getElementById('xpider-manual-hold-badge');
-                    if (badge) {
-                        badge.textContent = '⏸️ CAMPAIGN PAUSED (Operator Hold Retained)';
-                        badge.style.background = '#0284c7';
-                    }
-                    logDev(`⏸️ [Hold] Campaign paused across barrier — operator tab and input preserved.`, 'info');
-                    if (sendResponse) sendResponse({ success: true, retained: true });
-                    return true;
-                } else if (msg && (msg.action === 'EXECUTE_AUTOFILL_NOW' || msg.action === 'AUTO_FILL_ACTIVE_TAB')) {
+                if (msg && (msg.action === 'EXECUTE_AUTOFILL_NOW' || msg.action === 'AUTO_FILL_ACTIVE_TAB')) {
                     executeAutoFillNow(null, msg.template).then(res => {
                         if (sendResponse) sendResponse(res);
                     }).catch(err => {
