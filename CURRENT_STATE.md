@@ -6,8 +6,28 @@
 - Workspace: E:\vivpr\ai\extension-form-sender
 - Authority: goodkie/v-show Issues #6 & #10
 - Branch: major/v7-dual-mode (branched from upgrade/phase-0-1)
-- State Rev: 2026-10-31.280
-- Authority Cursor: 6538168574
+- State Rev: 2026-10-31.290
+- Authority Cursor: 6538500588
+- Major-version v7.0.0-rc16 Contact Discovery Pipeline Restoration, Always-Accessible UI Controls & Chromium Multi-Fixture E2E COMPLETED:
+  - Functional Commit `17970330` on `major/v7-dual-mode`.
+  - GitHub Release: `v7.0.0-rc16` (tag `v7.0.0-rc16`).
+  - Package: `XPIDER_V7.0.0_RC16_DUAL_MODE_OWNER_BETA.zip` (SHA256: `f3840cef84dc15048ec1f9947462bfaa3578ff2e734658726382f396f2b35c60`, size: `52320833` bytes).
+  - Directive: `[CHATGPT -> ANTIGRAVITY][Issue #6][P0 OWNER ESCALATION — RC15 FAILED; RESTORE CORE FUNCTIONALITY BEFORE ANY NEW FEATURES]` (Comment #6538500588 / `IC_kwDOT53X288AAAABhbmZ7A`).
+  - Contract Enforcement:
+    1. Always-Accessible / Recoverable UI Controls: Fixed UI synchronization where popup unconditionally hid `#multi-actions` and only displayed the 3 Start buttons whenever background was not active. In `popup.html`, added `#fallback-control-row` with `#fallback-stop-save-btn` ("⏸️ Emergency Stop & Save Checkpoint"). In `popup.js`, `applyAuthoritativeStateSnapshot` and `hydrateCampaignState` strictly guarantee that: when RUNNING, Pause (`⏸️ Pause`) and Stop & Save (`⏸️ Stop & Save`) are visible; when PAUSED or when a paused checkpoint exists, Resume (`▶️ Resume` emerald green `#22c55e`) and Stop & Save (`💾 Save & Exit`) are visible and active; when IDLE with a queue or active run, `#fallback-control-row` is displayed so the operator is NEVER trapped without campaign controls.
+    2. Contact Discovery Differential Restoration Against Baseline 4be780b4:
+       - In `content-script.js`, removed premature manual hold escalation on generic homepages (`/`). In `SEMI_AUTO` / `MANUAL`, if on a non-contact page with no form, truthfully emits `NO_FORM_ON_PAGE` to background instead of halting prematurely on the homepage. Operator hold only escalates once candidate paths are truly exhausted.
+       - In `background.js` `navWatcher`, fixed URL tracking: inspects both `statusInfo.url` and `tab.url`, and resets `isFocusSecured = false` upon new URL and on status `complete`, clearing stale `pollerTimer` and allowing candidate contact pages to receive `START_SENDING`.
+       - In `background.js` `scanContactPaths`, added fast candidate auto-advancement: if candidate paths are identified and the homepage has no form after 3.5s, the engine automatically advances to candidate paths (`/contact`, `/contact-us`, etc.) without sitting for 180s.
+       - In `background.js` `GET_STATE` & `getAuthoritativeStateSnapshot`, restored `isPaused = true` from storage upon Service Worker reload so background and UI remain perfectly synchronized across SW restarts.
+    3. Genuine Chromium Multi-Fixture Browser E2E:
+       - Executed real Chromium browser test (`test/run_chromium_v7_rc16_browser_multi_fixture_e2e.js`) with isolated profile and remote debugging protocol (CDP).
+       - Fixture 1: Discovered contact link on homepage (`/index.html` -> `/contact-standard.html`), navigated to contact page, identified genuine multiline message textarea (`#message`), and completed autofill audit. Captured screenshot `evidence_v7_rc16_fixture1_contact_form.png`.
+       - Fixture 2: Modal / checkbox form (`/contact-checkbox-manual-hold.html`), verified operator hold tab is strictly retained without unwanted submission. Captured screenshot `evidence_v7_rc16_fixture2_manual_hold.png`.
+       - Fixture 3: Formless site (`/no-contact-page.html`), verified safe bounded resolution without 180s idle stall. Captured screenshot `evidence_v7_rc16_fixture3_formless.png`.
+       - Side Panel UI: Verified side panel (`extension/popup.html`) reflects RUNNING (Pause + Stop & Save), PAUSED (Resume emerald green + Save & Exit), and IDLE with queue (Emergency Stop & Save). Captured screenshots `evidence_v7_rc16_sidepanel_running.png`, `evidence_v7_rc16_sidepanel_paused.png`, `evidence_v7_rc16_sidepanel_fallback.png`.
+       - Strict zero third-party form submissions invariant verified.
+    4. 100% 3-Way Hash Parity Verification: `test/test_v7_rc16_contact_discovery_and_controls.js` (5/5 PASS), `test/run_chromium_v7_rc16_browser_multi_fixture_e2e.js` (100% PASS), `test/test_v7_rc15_operator_hold_identity_and_pause.js` (8/8 PASS), `test/test_v7_rc15_isolated_fixtures_e2e.js` (6/6 PASS), `test/test_v7_rc14_spa_watchdog_and_recovery.js` (8/8 PASS), `test/test_v7_rc13_speed_and_pause_resume.js` (8/8 PASS), `test/test_v7_rc12_owner_regressions.js` (15/15 PASS), `test/test_v7_rc11_contracts.js` (53/53 PASS). 100% 3-way hash parity verified across git `extension/`, unpacked directory `XPIDER_V7.0.0_RC1_DUAL_MODE_OWNER_BETA/extension/`, and release ZIP.
 - Major-version v7.0.0-rc15 Operator Hold Retention, Target Identity Invariant, Bounded Pause & Progress Parity COMPLETED:
   - Functional Commit `ea388cbf` on `major/v7-dual-mode`.
   - GitHub Release: `v7.0.0-rc15` (tag `v7.0.0-rc15`).
