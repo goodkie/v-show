@@ -6,8 +6,20 @@
 - Workspace: E:\vivpr\ai\extension-form-sender
 - Authority: goodkie/v-show Issues #6 & #10
 - Branch: major/v7-dual-mode (branched from upgrade/phase-0-1)
-- State Rev: 2026-10-31.260
-- Authority Cursor: 6537069439
+- State Rev: 2026-10-31.270
+- Authority Cursor: 6537676540
+- Major-version v7.0.0-rc14 Bounded Stage Watchdog, Residential 522 Backoff, Paused Resume Guard & Safe Auto Re-Audit COMPLETED:
+  - Functional Commit `eb41171f` on `major/v7-dual-mode`.
+  - GitHub Release: `v7.0.0-rc14` (tag `v7.0.0-rc14`).
+  - Package: `XPIDER_V7.0.0_RC14_DUAL_MODE_OWNER_BETA.zip` (SHA256: `41c9e099aa283d2ddc02b9f175434cb18a85b0d30478781c2caa7d6d00169ac8`, size: `52313026` bytes).
+  - Directive: `[CHATGPT -> ANTIGRAVITY][Issue #6][P0 RC13 OWNER LOG AUDIT — SYSTEMIC 180s TIMEOUT AND NO HOLD]` (Comment #6537676540 / `IC_kwDOT53X288AAAABha0G_A`).
+  - Contract Enforcement:
+    1. Bounded Stage Watchdogs & 180s Timeout Elimination: Implemented per-stage watchdog timers (`PRE_SCAN` 20s, `INJECTION` 20s, `FORM_DISCOVERY` 30s, `CANDIDATE_NAV` 25s). On stage timeout, `SEMI_AUTO` and `MANUAL` modes retain the tab, pause target countdown, and elevate to actionable operator hold (`TRIGGER_SIDE_PANEL_ASSIST` + `RESTORE_MANUAL_HOLD_PANEL`). `AUTO` mode fails fast with `DISCOVERY_STAGE_TIMEOUT` without waiting for the 180s deadline. Stale `window.__xpider_hasProcessingLock` cleared on SPA reinjection; contact alias redirect navigation bounded to a single attempt (`aliasAttempts < 1`).
+    2. Missing Hold in SEMI_AUTO / MANUAL on Exhausted Paths: In `tryNext` (`background.js`), early return retains the tab open upon path exhaustion instead of calling `finish()` immediately, preventing tab closure and preserving operator control.
+    3. Residential Relay HTTP 522 Backoff & Watchdog State Fix: Fixed false `Privacy Relay degraded (READY)` logging by setting `lifecycleState = 'DEGRADED'` when health or relay readiness is invalid. Added 15s exponential backoff during residential proxy failure to eliminate 3s probe thrashing, and paused the target deadline controller during network degradation.
+    4. Speed Slider Listener De-duplication & Paused Checkpoint Protection: Removed duplicate click listeners in `bindEvents` (`popup.js`). Added `START_RESUME_GUARD` so clicking Start with a paused checkpoint automatically redirects to `RESUME_CAMPAIGN`, preserving existing campaign run ID, remaining queue (83/90 targets), and ledger without rebasing.
+    5. Safe Resumption Audit from Operator Hold: Resuming from operator hold to `AUTO` mode sends `RESUME_AUTO_AUDIT` with explicit form and message field validation, `FinalFormCompletionEngine` verification, `ChallengeGate` clearance, and single-flight lock ownership—eliminating blind `autoSubmit: true`.
+    6. Regression Matrix & Parity Verification: `test/test_v7_rc14_spa_watchdog_and_recovery.js` (8/8 PASS), `test/test_v7_rc13_speed_and_pause_resume.js` (8/8 PASS), `test/test_v7_rc12_owner_regressions.js` (15/15 PASS), `test/test_v7_rc11_contracts.js` (53/53 PASS), `test/test_v7_mode_resume_matrix.js` (ALL PASS). 100% 3-way hash parity verified across git `extension/`, unpacked directory `XPIDER_V7.0.0_RC1_DUAL_MODE_OWNER_BETA/extension/`, and release ZIP.
 - Major-version v7.0.0-rc13 Speed Slider Runtime Audit & Bidirectional Resume/Pause COMPLETED:
   - Functional Commit `72eddd49` on `major/v7-dual-mode`.
   - GitHub Release: `v7.0.0-rc13` (tag `v7.0.0-rc13`).
