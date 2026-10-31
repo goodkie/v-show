@@ -1900,12 +1900,24 @@ async function hydrateSettings(overrideV2Store = null) {
         };
 
         let currentSnapshotRevision = 0;
+        let currentSnapshotRunId = null;
+        let currentSnapshotRunEpoch = null;
 
         function applyAuthoritativeStateSnapshot(snapshot) {
             if (!snapshot || typeof snapshot !== 'object') return;
+            const runId = snapshot.campaignRunId || null;
+            const runEpoch = snapshot.runEpoch !== undefined ? snapshot.runEpoch : 0;
+
+            // [RC13 Audit Hold #6535593609] Scoped monotonic revision comparison to runId and runEpoch
+            if (runId !== currentSnapshotRunId || runEpoch !== currentSnapshotRunEpoch) {
+                currentSnapshotRunId = runId;
+                currentSnapshotRunEpoch = runEpoch;
+                currentSnapshotRevision = 0; // Reset revision for distinct run/epoch
+            }
+
             if (typeof snapshot.revision === 'number') {
                 if (snapshot.revision < currentSnapshotRevision) {
-                    console.warn(`[STATE_DESYNC_REJECTED] Stale snapshot revision=${snapshot.revision} < current=${currentSnapshotRevision}`);
+                    console.warn(`[STATE_DESYNC_REJECTED] Stale snapshot revision=${snapshot.revision} < current=${currentSnapshotRevision} (runId=${runId}, epoch=${runEpoch})`);
                     return;
                 }
                 currentSnapshotRevision = snapshot.revision;
@@ -1977,6 +1989,62 @@ async function hydrateSettings(overrideV2Store = null) {
             const countDisplay = document.getElementById('url-count-display');
             if (countDisplay && (campaignActive || campaignPaused || snapshot.hasPausedCheckpoint)) {
                 countDisplay.textContent = `${remainingTargets} (remaining) / ${totalTargets} URLs`;
+            }
+
+            // 5. [RC13 Directive #6537069439 Item 2] Bidirectional Resume/Pause Primary Action Button Synchronization
+            const pauseBtn = document.getElementById('pause-btn');
+            const startButtonsRow = document.getElementById('start-buttons-row');
+            const multiActions = document.getElementById('multi-actions');
+            const stopSaveBtn = document.getElementById('stop-save-btn');
+            const isOperatorHold = Boolean(
+                snapshot.stage === 'MANUAL_HOLD' ||
+                snapshot.stage === 'CAPTCHA_PENDING_EXTERNAL_USER' ||
+                snapshot.manualHoldActive
+            );
+
+            if (campaignActive && !campaignPaused) {
+                if (startButtonsRow) startButtonsRow.classList.add('hidden');
+                if (multiActions) multiActions.classList.remove('hidden');
+                if (pauseBtn) {
+                    pauseBtn.disabled = false;
+                    if (isOperatorHold) {
+                        pauseBtn.textContent = "⏸️ Pause (Hold Active)";
+                        pauseBtn.style.backgroundColor = "#d97706"; // Amber-orange
+                    } else {
+                        pauseBtn.textContent = "⏸️ Pause";
+                        pauseBtn.style.backgroundColor = "#ea580c"; // Bright Orange
+                    }
+                    pauseBtn.style.color = "#ffffff";
+                    pauseBtn.style.border = "none";
+                    pauseBtn.title = "Pause active campaign and maintain queue position";
+                }
+                if (stopSaveBtn) {
+                    stopSaveBtn.style.display = 'inline-block';
+                }
+            } else if (campaignPaused || window.__xpider_has_paused_checkpoint) {
+                if (startButtonsRow) startButtonsRow.classList.add('hidden');
+                if (multiActions) multiActions.classList.remove('hidden');
+                if (pauseBtn) {
+                    pauseBtn.disabled = false;
+                    pauseBtn.textContent = "▶️ Resume";
+                    pauseBtn.style.backgroundColor = "#22c55e"; // Emerald Green
+                    pauseBtn.style.color = "#ffffff";
+                    pauseBtn.style.border = "none";
+                    pauseBtn.title = "Resume paused campaign (choose Automatic, Semi-Auto, or Manual)";
+                }
+                if (stopSaveBtn) {
+                    stopSaveBtn.style.display = 'inline-block';
+                }
+            } else {
+                // Campaign is completely stopped / idle / ready to launch
+                if (startButtonsRow) startButtonsRow.classList.remove('hidden');
+                if (multiActions) multiActions.classList.add('hidden');
+                if (pauseBtn) {
+                    pauseBtn.disabled = false;
+                    pauseBtn.textContent = "⏸️ Pause";
+                    pauseBtn.style.backgroundColor = "";
+                    pauseBtn.style.color = "";
+                }
             }
         }
         window.__xpider_applyAuthoritativeStateSnapshot = applyAuthoritativeStateSnapshot;
@@ -5339,42 +5407,78 @@ function updateSpeedLabels() {
     // 1. 수집 속도 매핑 라벨
     const collectSlider = document.getElementById('delay-input-collect');
     const collectDisplay = document.getElementById('speed-collect-display');
+    let delayMs = 10000;
+    let levelCollect = 6;
     if (collectSlider && collectDisplay) {
-        const level = collectSlider.value;
+        levelCollect = parseInt(collectSlider.value, 10);
+        if (isNaN(levelCollect)) levelCollect = 6;
         const msArr = [60000, 45000, 30000, 25000, 20000, 15000, 10000, 7000, 5000, 3000];
-        const sec = (msArr[parseInt(level)] || 10000) / 1000;
-        let label = `${dict.speed_level || 'Level'} ${level} <small>(${sec}s)</small>`;
-        if (level === '6') label += ` <small>${dict.speed_normal || '(Normal)'}</small>`;
+        delayMs = msArr[levelCollect] || 10000;
+        const sec = delayMs / 1000;
+        let label = `${dict.speed_level || 'Level'} ${levelCollect} <small>(${sec}s)</small>`;
+        if (levelCollect === 6) label += ` <small>${dict.speed_normal || '(Normal)'}</small>`;
         collectDisplay.innerHTML = label;
         
         // 레거시 연동용으로 hidden delay-input의 value도 대변 업데이트
         const legacyInput = document.getElementById('delay-input');
-        if (legacyInput) legacyInput.value = level;
+        if (legacyInput) legacyInput.value = String(levelCollect);
     }
 
     // 2. 자동 입력 속도 매핑 라벨
     const fillSlider = document.getElementById('delay-input-fill');
     const fillDisplay = document.getElementById('speed-fill-display');
+    let fillDelayMs = 300;
+    let levelFill = 6;
     if (fillSlider && fillDisplay) {
-        const level = fillSlider.value;
+        levelFill = parseInt(fillSlider.value, 10);
+        if (isNaN(levelFill)) levelFill = 6;
         const msArr = [2000, 1500, 1000, 800, 500, 400, 300, 200, 150, 100];
-        const ms = msArr[parseInt(level)] || 300;
-        let label = `${dict.speed_level || 'Level'} ${level} <small>(${ms}ms)</small>`;
-        if (level === '6') label += ` <small>${dict.speed_normal || '(Normal)'}</small>`;
+        fillDelayMs = msArr[levelFill] || 300;
+        let label = `${dict.speed_level || 'Level'} ${levelFill} <small>(${fillDelayMs}ms)</small>`;
+        if (levelFill === 6) label += ` <small>${dict.speed_normal || '(Normal)'}</small>`;
         fillDisplay.innerHTML = label;
     }
 
     // 3. 등록 완료 대기 속도 매핑 라벨
     const submitSlider = document.getElementById('delay-input-submit');
     const submitDisplay = document.getElementById('speed-submit-display');
+    let submitDelayMs = 4000;
+    let levelSubmit = 6;
     if (submitSlider && submitDisplay) {
-        const level = submitSlider.value;
+        levelSubmit = parseInt(submitSlider.value, 10);
+        if (isNaN(levelSubmit)) levelSubmit = 6;
         const msArr = [15000, 12000, 10000, 8000, 6000, 5000, 4000, 3000, 2000, 1000];
-        const sec = ((msArr[parseInt(level)] || 4000) / 1000).toFixed(1);
-        let label = `${dict.speed_level || 'Level'} ${level} <small>(${sec}s)</small>`;
-        if (level === '6') label += ` <small>${dict.speed_normal || '(Normal)'}</small>`;
+        submitDelayMs = msArr[levelSubmit] || 4000;
+        const sec = (submitDelayMs / 1000).toFixed(1);
+        let label = `${dict.speed_level || 'Level'} ${levelSubmit} <small>(${sec}s)</small>`;
+        if (levelSubmit === 6) label += ` <small>${dict.speed_normal || '(Normal)'}</small>`;
         submitDisplay.innerHTML = label;
     }
+
+    // [RC13 Speed Slider Runtime Audit] Auto-persist to storage and notify background worker for live active campaign adaptation
+    try {
+        if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+            chrome.storage.local.set({
+                xpider_delay_collect: levelCollect,
+                xpider_delay_fill: levelFill,
+                xpider_delay_submit: levelSubmit,
+                xpider_delay: levelCollect
+            }).catch(() => {});
+        }
+        if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
+            chrome.runtime.sendMessage({
+                action: 'UPDATE_SPEED_SETTINGS',
+                levelCollect,
+                levelFill,
+                levelSubmit,
+                delayMs,
+                fillDelayMs,
+                submitDelayMs
+            }, () => {
+                if (chrome.runtime.lastError) {} // Ignore if background is sleeping
+            });
+        }
+    } catch (_) {}
 }
 
 function updateSpeedLabel() {
@@ -8560,23 +8664,45 @@ function togglePause() {
         return;
     }
 
-    campaignPaused = true;
-    window.__xpider_last_paused_mode = currentCampaignMode || 'AUTO';
-    updatePersistentModeHud(currentCampaignMode, 'PAUSED', undefined, undefined);
+    // [RC13 State-Driven Action] Transition to Pausing... state and await authoritative background ACK
+    if (btn) {
+        btn.disabled = true;
+        btn.textContent = "⏳ Pausing...";
+    }
     addDiagnosticLog('[Engine][TX] action=PAUSE_CAMPAIGN');
     if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
         chrome.runtime.sendMessage({ action: 'PAUSE_CAMPAIGN' }, (res) => {
-            if (res && res.snapshot) {
-                applyAuthoritativeStateSnapshot(res.snapshot);
+            if (btn) btn.disabled = false;
+            if (res && res.success) {
+                if (res.snapshot) {
+                    applyAuthoritativeStateSnapshot(res.snapshot);
+                } else {
+                    campaignPaused = true;
+                    campaignActive = false;
+                    window.__xpider_has_paused_checkpoint = true;
+                    if (btn) {
+                        btn.textContent = dict.btn_resume || "▶️ Resume";
+                        btn.style.backgroundColor = "#22c55e";
+                        btn.style.color = "#ffffff";
+                    }
+                    updatePersistentModeHud(currentCampaignMode, 'PAUSED', undefined, undefined);
+                }
+            } else {
+                console.error('[PAUSE_FAILED]', res?.error);
+                if (btn) {
+                    btn.textContent = dict.btn_pause || "⏸️ Pause";
+                    btn.style.backgroundColor = "#ea580c";
+                }
             }
+            refreshStatusDetailUI();
         });
+    } else {
+        if (btn) {
+            btn.disabled = false;
+            btn.textContent = dict.btn_resume || "▶️ Resume";
+            btn.style.backgroundColor = "#22c55e";
+        }
     }
-
-    if (btn) {
-        btn.textContent = dict.btn_resume || "▶️ Resume";
-        btn.style.backgroundColor = "#22c55e";
-    }
-    refreshStatusDetailUI();
 }
 
 function stopCampaign() {
@@ -8913,15 +9039,26 @@ function confirmResumeCampaignWithMode(selectedMode) {
     updatePersistentModeHud(targetMode, 'RUNNING', undefined, undefined);
 
     addDiagnosticLog(`[Engine][TX] action=RESUME_CAMPAIGN campaignMode=${targetMode}`);
+    const pauseBtn = document.getElementById('pause-btn');
+    if (pauseBtn) {
+        pauseBtn.disabled = true;
+        pauseBtn.textContent = "⏳ Resuming...";
+    }
     if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
         const targetTimeoutMs = (parseInt(document.getElementById('target-max-wait-input')?.value, 10) || 180) * 1000;
         chrome.runtime.sendMessage({ action: 'RESUME_CAMPAIGN', campaignMode: targetMode, targetTimeoutMs }, (res) => {
+            if (pauseBtn) pauseBtn.disabled = false;
             if (res && res.success) {
                 if (res.snapshot) {
                     applyAuthoritativeStateSnapshot(res.snapshot);
                 } else {
                     campaignActive = true;
                     campaignPaused = false;
+                    if (pauseBtn) {
+                        pauseBtn.textContent = "⏸️ Pause";
+                        pauseBtn.style.backgroundColor = "#ea580c";
+                        pauseBtn.style.color = "#ffffff";
+                    }
                 }
                 const banner = document.getElementById('resumable-campaign-banner');
                 if (banner) {
@@ -8938,13 +9075,6 @@ function confirmResumeCampaignWithMode(selectedMode) {
                 if (startManualBtn) startManualBtn.classList.add('hidden');
                 const multiActions = document.getElementById('multi-actions');
                 if (multiActions) multiActions.classList.remove('hidden');
-                const pauseBtn = document.getElementById('pause-btn');
-                const lang = document.getElementById('language-select')?.value || 'en';
-                const dict = i18nData ? (i18nData[lang] || i18nData['en'] || {}) : {};
-                if (pauseBtn) {
-                    pauseBtn.textContent = dict.btn_pause || "⏸️ Pause";
-                    pauseBtn.style.backgroundColor = "#f59e0b";
-                }
                 const statusBox = document.getElementById('status-box');
                 if (statusBox) statusBox.classList.remove('hidden');
                 refreshStatusDetailUI();
@@ -8952,6 +9082,11 @@ function confirmResumeCampaignWithMode(selectedMode) {
                 addLog(`▶️ Campaign resumed in ${targetMode} mode (${res.remainingCount} remaining).`, "start");
             } else {
                 addLog(`❌ Resume failed: ${res?.error || 'Unknown error'}`, "error");
+                if (pauseBtn) {
+                    pauseBtn.textContent = "▶️ Resume";
+                    pauseBtn.style.backgroundColor = "#22c55e";
+                    pauseBtn.style.color = "#ffffff";
+                }
             }
         });
     }

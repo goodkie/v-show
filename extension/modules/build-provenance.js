@@ -14,7 +14,7 @@
 
     const BUILD_INFO = Object.freeze({
         version: "7.0.0",
-        buildId: "V7.0.0-RC12-20261030-SEMI-AUTO-TRIPLE-CONTRACT-FIX",
+        buildId: "V7.0.0-RC13-20261031-SPEED-SLIDER-AND-PAUSE-RESUME-FIX",
         channel: "OWNER_BETA_V7_DUAL_MODE",
         tag: "v7.0.0-rc12",
         manifestVersion: 3,

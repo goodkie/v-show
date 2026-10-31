@@ -5205,6 +5205,34 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
             return true;
 
         // [R6.9G.10.3.5 A.2] Live Identity Query for CAPTCHA iframes
+        
+        // [RC13 Speed Slider Runtime Audit] Live Speed Update Endpoint
+        case 'UPDATE_SPEED_SETTINGS':
+            try {
+                if (typeof request.delayMs === 'number') campaignState.delayMs = request.delayMs;
+                if (typeof request.fillDelayMs === 'number') campaignState.fillDelayMs = request.fillDelayMs;
+                if (typeof request.submitDelayMs === 'number') campaignState.submitDelayMs = request.submitDelayMs;
+
+                // Live propagation to active target content script
+                if (campaignState.currentTabId) {
+                    chrome.tabs.sendMessage(campaignState.currentTabId, {
+                        action: 'UPDATE_ACTIVE_SPEED',
+                        fillDelayMs: campaignState.fillDelayMs,
+                        submitDelayMs: campaignState.submitDelayMs
+                    }).catch(() => {});
+                }
+                logBg(null, `[SPEED_UPDATE] liveApplied=true collectMs=${campaignState.delayMs} fillMs=${campaignState.fillDelayMs} submitMs=${campaignState.submitDelayMs}`, 'info');
+                sendResponse({
+                    success: true,
+                    delayMs: campaignState.delayMs,
+                    fillDelayMs: campaignState.fillDelayMs,
+                    submitDelayMs: campaignState.submitDelayMs
+                });
+            } catch (err) {
+                sendResponse({ success: false, error: err.message });
+            }
+            return true;
+
         case 'GET_ACTIVE_EXECUTION_IDENTITY':
             (async () => {
                 try {
@@ -6770,7 +6798,7 @@ function normalizeUrl(url) {
     }
 }
 
-async function startCampaignOrchestrator(queue, template, delayMs, fillDelayMs = 300, submitDelayMs = 1500, options = {}) {
+async function startCampaignOrchestrator(queue, template, delayMs, fillDelayMs = 300, submitDelayMs = 4000, options = {}) {
     // [V7-RC5] Guard against accidental checkpoint overwrite if START_CAMPAIGN is invoked with the paused remainingQueue
     if (!options.ownerFunctionTestMode && !options.forceNewCampaign && campaignState.isPaused && campaignState.pausedCheckpoint && Array.isArray(campaignState.pausedCheckpoint.remainingQueue) && campaignState.pausedCheckpoint.remainingQueue.length > 0 && Array.isArray(queue) && queue.length === campaignState.pausedCheckpoint.remainingQueue.length && normalizeUrl(queue[0]) === normalizeUrl(campaignState.pausedCheckpoint.remainingQueue[0])) {
         const reqModeOpt = options.campaignMode;
@@ -6927,9 +6955,9 @@ async function startCampaignOrchestrator(queue, template, delayMs, fillDelayMs =
         campaignState.template = template;
         campaignState.templateId = (template && (template.id || template.templateId)) || 'default';
         campaignState.templateVersion = (template && (template.version || template.templateVersion)) || 1;
-        campaignState.delayMs = delayMs || 6000;
+        campaignState.delayMs = delayMs || 10000;
         campaignState.fillDelayMs = fillDelayMs || 300;
-        campaignState.submitDelayMs = submitDelayMs || 1500;
+        campaignState.submitDelayMs = submitDelayMs || 4000;
         const optMode = options.campaignMode || campaignState.campaignMode;
         campaignState.campaignMode = (optMode === 'MANUAL' || optMode === 'SEMI_AUTO') ? optMode : 'AUTO';
         campaignState.manualHoldActive = false;
@@ -7195,13 +7223,44 @@ async function pauseCampaignOrchestrator(saveCheckpoint = true) {
     const hsInstance = await getHistoryStoreInstance();
     await syncCampaignCountersFromLedger(hsInstance);
 
-    // [RC12 Item 4] Close all campaign tabs on pause; clean task boundary ensures never resurrecting a prior-mode hold
-    await closeAllCampaignTabsExcept(null, 'PAUSE_CAMPAIGN');
-    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
-        chrome.storage.local.remove('xpider_v7_active_hold_state').catch(() => {});
+    // [RC13 Audit Directive #6535593609] Preserve operator tab and work if pause occurs during active operator hold
+    let preservedTabId = null;
+    if (wasInV7Hold && campaignState.currentTabId) {
+        preservedTabId = campaignState.currentTabId;
+        logBg(preservedTabId, `⏸️ [Pause] Operator hold active. Preserving operator tab (tabId=${preservedTabId}) across pause barrier.`, "info");
+        await closeAllCampaignTabsExcept(preservedTabId, 'PAUSE_RETAIN_HOLD_TAB');
+        campaignState.pausedHeldTabId = preservedTabId;
+        campaignState.pausedHeldUrl = campaignState.currentTargetUrl;
+        campaignState.pausedHeldStage = inFlightStage;
+        
+        // Notify tab content script that campaign is paused but hold is retained
+        chrome.tabs.sendMessage(preservedTabId, {
+            action: 'CAMPAIGN_PAUSED_HOLD_RETAINED',
+            runId: campaignState.campaignRunId
+        }).catch(() => {});
+        
+        if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+            chrome.storage.local.set({
+                xpider_v7_active_hold_state: {
+                    tabId: preservedTabId,
+                    url: campaignState.currentTargetUrl,
+                    stage: inFlightStage,
+                    reason: 'PAUSED_OPERATOR_HOLD_RETAINED',
+                    timestamp: Date.now()
+                }
+            }).catch(() => {});
+        }
+    } else {
+        await closeAllCampaignTabsExcept(null, 'PAUSE_CAMPAIGN');
+        if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+            chrome.storage.local.remove('xpider_v7_active_hold_state').catch(() => {});
+        }
+        campaignState.pausedHeldTabId = null;
+        campaignState.pausedHeldUrl = null;
+        campaignState.pausedHeldStage = null;
+        campaignState.currentTabId = null;
+        campaignState.targetTabId = null;
     }
-    campaignState.currentTabId = null;
-    campaignState.targetTabId = null;
     campaignState.submitLock = false;
     campaignState.timeoutWatchdogGen = (campaignState.timeoutWatchdogGen || 0) + 1;
     chrome.storage.local.remove('xpider_currentAttempt').catch(() => {});
@@ -7224,6 +7283,9 @@ async function pauseCampaignOrchestrator(saveCheckpoint = true) {
     if (saveCheckpoint) {
         const checkpoint = {
             campaignRunId: campaignState.campaignRunId,
+            pausedHeldTabId: campaignState.pausedHeldTabId,
+            pausedHeldUrl: campaignState.pausedHeldUrl,
+            pausedHeldStage: campaignState.pausedHeldStage,
             remainingQueue: [...campaignState.queue],
             visitedUrls: [...campaignState.visitedUrls],
             successfulUrls: [...campaignState.successfulUrls],
@@ -7322,9 +7384,9 @@ async function resumeCampaignOrchestrator(options = {}) {
     campaignState.template = checkpoint.template || campaignState.template;
     campaignState.templateId = checkpoint.templateId || 'default';
     campaignState.templateVersion = checkpoint.templateVersion || 1;
-    campaignState.delayMs = checkpoint.delayMs || 6000;
+    campaignState.delayMs = checkpoint.delayMs || 10000;
     campaignState.fillDelayMs = checkpoint.fillDelayMs || 300;
-    campaignState.submitDelayMs = checkpoint.submitDelayMs || 1500;
+    campaignState.submitDelayMs = checkpoint.submitDelayMs || 4000;
     const previousMode = (checkpoint.campaignMode === 'MANUAL' || checkpoint.campaignMode === 'SEMI_AUTO' || checkpoint.campaignMode === 'AUTO')
         ? checkpoint.campaignMode
         : ((campaignState.campaignMode === 'MANUAL' || campaignState.campaignMode === 'SEMI_AUTO' || campaignState.campaignMode === 'AUTO') ? campaignState.campaignMode : 'AUTO');
@@ -7382,11 +7444,29 @@ async function resumeCampaignOrchestrator(options = {}) {
     campaignState.manualAssistDetails = null;
     await chrome.storage.local.remove(['xpider_v7_active_hold_state']);
 
-    // If there is an active target tab from before pause, dismiss in-page hold if resuming in AUTO
-    if (campaignState.currentTabId || campaignState.targetTabId) {
+    // [RC13 Hold Preservation] Re-attach to preserved operator hold tab if still open
+    if (checkpoint.pausedHeldTabId) {
+        let tabAlive = false;
+        try {
+            const t = await safeTabs.get(checkpoint.pausedHeldTabId);
+            if (t && t.id) tabAlive = true;
+        } catch (_) {}
+        if (tabAlive) {
+            campaignState.currentTabId = checkpoint.pausedHeldTabId;
+            campaignState.targetTabId = checkpoint.pausedHeldTabId;
+            logBg(checkpoint.pausedHeldTabId, `▶️ [Resume] Operator tab ${checkpoint.pausedHeldTabId} preserved & alive. Resumed in ${requestedMode} mode.`, "info");
+            if (requestedMode === 'AUTO') {
+                safeTabs.sendMessage(checkpoint.pausedHeldTabId, { action: 'DISMISS_MANUAL_HOLD_PANEL', autoSubmit: true, reason: 'RESUMED_IN_AUTO' }).catch(() => {});
+            } else {
+                safeTabs.sendMessage(checkpoint.pausedHeldTabId, { action: 'UPDATE_CAMPAIGN_MODE', mode: requestedMode }).catch(() => {});
+            }
+        } else {
+            logBg(null, `ℹ️ [Resume] Preserved operator tab ${checkpoint.pausedHeldTabId} was closed by user while paused. Proceeding with target queue.`, "info");
+        }
+    } else if (campaignState.currentTabId || campaignState.targetTabId) {
         const holdTabId = campaignState.currentTabId || campaignState.targetTabId;
         if (requestedMode === 'AUTO') {
-            safeTabs.sendMessage(holdTabId, { action: 'DISMISS_MANUAL_HOLD_PANEL', reason: 'RESUMED_IN_AUTO' }).catch(() => {});
+            safeTabs.sendMessage(holdTabId, { action: 'DISMISS_MANUAL_HOLD_PANEL', autoSubmit: true, reason: 'RESUMED_IN_AUTO' }).catch(() => {});
         }
     }
 
@@ -9156,7 +9236,7 @@ async function orchestrateSending(urlInput, template, abortSignal = null) {
         }
 
         if (res && res.success) {
-            const holdMs = res?.metadata?.manualMode ? 20 : Math.max(3500, campaignState.submitDelayMs ? parseInt(campaignState.submitDelayMs) : 3500);
+            const holdMs = res?.metadata?.manualMode ? 20 : Math.max(500, campaignState.submitDelayMs !== undefined ? parseInt(campaignState.submitDelayMs) : 4000);
             logBg(tabId, `✨ [Engine] Submission confirmed. Maintaining tab for completion (${holdMs}ms)...`, "success");
             await new Promise(r => setTimeout(r, holdMs));
         } else if (res?.error !== 'ABORTED' && res?.reasonCode !== 'ABORTED' && !campaignState.isPaused) {
@@ -9278,7 +9358,7 @@ async function orchestrateSending(urlInput, template, abortSignal = null) {
             template: template, 
             delayMs: campaignState.delayMs,
             fillDelayMs: campaignState.fillDelayMs || 300,
-            submitDelayMs: campaignState.submitDelayMs || 1500,
+            submitDelayMs: campaignState.submitDelayMs || 4000,
             triedUrl: currentAttemptUrl
         }).catch(() => {});
     };
@@ -9662,7 +9742,10 @@ async function saveCampaignState() {
                     xpider_successful: campaignState.successfulUrls,
                     xpider_currentAttempt: campaignState.currentAttempt,
                     xpider_active_campaign_run_id: campaignState.campaignRunId,
-                    xpider_owner_function_test_mode_active: Boolean(campaignState.ownerFunctionTestMode)
+                    xpider_owner_function_test_mode_active: Boolean(campaignState.ownerFunctionTestMode),
+                    xpider_state_revision: campaignState.stateRevision || 0,
+                    xpider_run_epoch: campaignState.runEpoch || 0,
+                    xpider_campaign_mode: campaignState.campaignMode || 'AUTO'
                 }, () => {
                     if (chrome.runtime.lastError) console.error("Save error:", chrome.runtime.lastError);
                     recordCurrentRunDiagEvent(`[CHECKPOINT] saved session checkpoint remaining=${campaignState.queue ? campaignState.queue.length : 0} isActive=${campaignState.isActive}`);
@@ -9706,7 +9789,7 @@ async function restoreCampaignState() {
                 'xpider_sessionId', 'xpider_success', 'xpider_total', 'xpider_visited', 'xpider_successful', 'xpider_currentAttempt',
                 'xpider_paused_checkpoint', 'xpider_isPaused', 'xpider_active_campaign_run_id',
                 'xpider_owner_function_test_mode', 'xpider_owner_function_test_mode_active',
-                'xpider_v7_active_hold_state', 'xpider_campaign_mode'
+                'xpider_v7_active_hold_state', 'xpider_campaign_mode', 'xpider_state_revision', 'xpider_run_epoch'
             ], async (data) => {
                 try {
                     const hs = await getHistoryStoreInstance();
@@ -9719,6 +9802,12 @@ async function restoreCampaignState() {
                     }
                     if (hs && campaignState.campaignRunId) {
                         hs.activeCampaignRunId = campaignState.campaignRunId;
+                    }
+                    if (typeof data.xpider_state_revision === 'number') {
+                        campaignState.stateRevision = data.xpider_state_revision;
+                    }
+                    if (typeof data.xpider_run_epoch === 'number') {
+                        campaignState.runEpoch = data.xpider_run_epoch;
                     }
                     if (hs && typeof hs.reconcileLegacyCounters === 'function') {
                         await hs.reconcileLegacyCounters();
@@ -9850,7 +9939,7 @@ async function restoreCampaignState() {
                         campaignState.template = data.xpider_tpl;
                         campaignState.delayMs = data.xpider_delayMs || 10000;
                         campaignState.fillDelayMs = data.xpider_fillDelayMs || 300;
-                        campaignState.submitDelayMs = data.xpider_submitDelayMs || 1500;
+                        campaignState.submitDelayMs = data.xpider_submitDelayMs || 4000;
                         campaignState.sessionId = data.xpider_sessionId || 0;
                         campaignState.successCount = data.xpider_success || 0;
                         campaignState.totalTargets = data.xpider_total || 0;

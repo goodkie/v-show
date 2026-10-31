@@ -546,11 +546,17 @@
         }
     }
 
-    function getSpeedProfile(delayMs, fillDelayMs = 300, submitDelayMs = 1500) {
-        return {
-            field: parseInt(fillDelayMs) || 300,
-            hold: parseInt(submitDelayMs) || 1500
-        };
+    function getSpeedProfile(delayMs, fillDelayMs = 300, submitDelayMs = 4000) {
+        if (!window.__xpider_speed_profile) {
+            window.__xpider_speed_profile = {
+                field: parseInt(fillDelayMs) || 300,
+                hold: parseInt(submitDelayMs) || 4000
+            };
+        } else {
+            if (fillDelayMs !== undefined) window.__xpider_speed_profile.field = parseInt(fillDelayMs) || 300;
+            if (submitDelayMs !== undefined) window.__xpider_speed_profile.hold = parseInt(submitDelayMs) || 4000;
+        }
+        return window.__xpider_speed_profile;
     }
 
     function normalizeUrl(url) {
@@ -1068,7 +1074,7 @@
         return false;
     }
 
-    async function processCampaign(template, delayMs = 10000, triedUrl = '', fillDelayMs = 300, submitDelayMs = 1500) {
+    async function processCampaign(template, delayMs = 10000, triedUrl = '', fillDelayMs = 300, submitDelayMs = 4000) {
         try {
             // [RC3.33 P0-B] Attempt-scoped reset at processCampaign entry
             resetCaptchaRuntimeState('processCampaign');
@@ -1876,7 +1882,7 @@
             delayMs = 10000,
             triedUrl = '',
             fillDelayMs = 300,
-            submitDelayMs = 1500,
+            submitDelayMs = 4000,
             retryCount = 1,
             reason = 'FORM_NOT_ACCESSIBLE'
         } = context;
@@ -6050,7 +6056,23 @@
     if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.onMessage) {
         try {
             chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
-                if (msg && (msg.action === 'EXECUTE_AUTOFILL_NOW' || msg.action === 'AUTO_FILL_ACTIVE_TAB')) {
+                if (msg && msg.action === 'UPDATE_ACTIVE_SPEED') {
+                    if (!window.__xpider_speed_profile) window.__xpider_speed_profile = { field: 300, hold: 4000 };
+                    if (typeof msg.fillDelayMs === 'number') window.__xpider_speed_profile.field = msg.fillDelayMs;
+                    if (typeof msg.submitDelayMs === 'number') window.__xpider_speed_profile.hold = msg.submitDelayMs;
+                    logDev(`⚡ [Speed] Live speed update applied: field=${window.__xpider_speed_profile.field}ms hold=${window.__xpider_speed_profile.hold}ms`, 'info');
+                    if (sendResponse) sendResponse({ success: true, profile: window.__xpider_speed_profile });
+                    return true;
+                } else if (msg && msg.action === 'CAMPAIGN_PAUSED_HOLD_RETAINED') {
+                    const badge = document.getElementById('xpider-manual-hold-badge');
+                    if (badge) {
+                        badge.textContent = '⏸️ CAMPAIGN PAUSED (Operator Hold Retained)';
+                        badge.style.background = '#0284c7';
+                    }
+                    logDev(`⏸️ [Hold] Campaign paused across barrier — operator tab and input preserved.`, 'info');
+                    if (sendResponse) sendResponse({ success: true, retained: true });
+                    return true;
+                } else if (msg && (msg.action === 'EXECUTE_AUTOFILL_NOW' || msg.action === 'AUTO_FILL_ACTIVE_TAB')) {
                     executeAutoFillNow(null, msg.template).then(res => {
                         if (sendResponse) sendResponse(res);
                     }).catch(err => {

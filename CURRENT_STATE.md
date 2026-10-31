@@ -6,8 +6,21 @@
 - Workspace: E:\vivpr\ai\extension-form-sender
 - Authority: goodkie/v-show Issues #6 & #10
 - Branch: major/v7-dual-mode (branched from upgrade/phase-0-1)
-- State Rev: 2026-10-30.259
-- Authority Cursor: 6534473346
+- State Rev: 2026-10-31.260
+- Authority Cursor: 6537069439
+- Major-version v7.0.0-rc13 Speed Slider Runtime Audit & Bidirectional Resume/Pause COMPLETED:
+  - Functional Commit pending/tagged on `major/v7-dual-mode`.
+  - GitHub Release: `v7.0.0-rc13` (tag `v7.0.0-rc13`).
+  - Package: `XPIDER_V7.0.0_RC13_DUAL_MODE_OWNER_BETA.zip` (SHA256: `50c5ed03aaab6e2f4c3026a83428f30083dbe862fc61b6dc495b73a9b7d8f390`, size: `52307993` bytes).
+  - Directives:
+    - `[CHATGPT -> ANTIGRAVITY][Issue #6][RC12 AUDIT HOLD: PAUSE TAB LIFECYCLE AND SNAPSHOT REVISION]` (Comment #6535593609)
+    - `[CHATGPT -> ANTIGRAVITY][Issue #6][P0 SPEED SLIDER RUNTIME AUDIT + RESUME/PAUSE BUTTON STATE]` (Comment #6537069439)
+  - Contract Enforcement:
+    1. Speed Slider Runtime Audit & Wiring: Verified and wired all 3 sliders end-to-end: Collection Speed (Target Delay, Level 6 = 10s default, applies strictly between targets in finally block, not before first target), Auto-Fill Speed (Field Delay, Level 6 = 300ms default), and Submission Speed (Hold Delay, Level 6 = 4.0s default, fixed initial HTML display). Sliders auto-persist to `chrome.storage.local` on input and dispatch `UPDATE_SPEED_SETTINGS` to background and `UPDATE_ACTIVE_SPEED` to active tab content script for live adjustment during active runs. Eliminated legacy `Math.max(3500)` hard-clamp so fast submission speeds (Levels 7, 8, 9: 3.0s, 2.0s, 1.0s) work accurately.
+    2. Bidirectional Resume/Pause Primary Action Button: Completely state-driven via background snapshot. When PAUSED/RECOVERABLE displays emerald green `▶️ Resume` (`#22c55e`); clicking triggers mode selection; transitions to `⏳ Resuming...` and only upon authoritative background ACK with `isActive: true && isPaused: false` transforms to bright orange `⏸️ Pause` (`#ea580c`). When RUNNING displays orange `⏸️ Pause`; clicking transitions to `⏳ Pausing...` and only upon authoritative background ACK with `isPaused: true` transforms to green `▶️ Resume`. When in deliberate operator wait (`MANUAL_HOLD` / `CAPTCHA_PENDING_EXTERNAL_USER`), displays amber-orange `⏸️ Pause (Hold Active)` while keeping `Stop & Save Checkpoint` available.
+    3. Pending Operator Hold Tab Retention on Pause (#6535593609): In `pauseCampaignOrchestrator`, when pause occurs during an active operator hold (`wasInV7Hold && currentTabId`), the operator's active tab is explicitly preserved via `closeAllCampaignTabsExcept(preservedTabId, 'PAUSE_RETAIN_HOLD_TAB')` and notified with `CAMPAIGN_PAUSED_HOLD_RETAINED`. Retains operator DOM work and input without silent tab destruction. On resume, re-attaches to the preserved tab if alive; if resuming in `AUTO`, dismisses the hold panel and auto-submits; if resuming in `SEMI_AUTO`/`MANUAL`, updates hold mode cleanly.
+    4. Monotonic State Revision Scoping (#6535593609): Scoped monotonic revision comparison to `(campaignRunId, runEpoch)` in `applyAuthoritativeStateSnapshot`. Distinct runs or epochs reset `currentSnapshotRevision = 0` so high revisions from past runs cannot block new runs. Monotonic `stateRevision` and `runEpoch` persisted in `saveCampaignState()` and restored on Service Worker reboot.
+    5. Regression Matrix & Parity Verification: `test/test_v7_rc13_speed_and_pause_resume.js` (8/8 PASS), `test/test_v7_rc12_owner_regressions.js` (15/15 PASS), `test/test_v7_rc11_contracts.js` (53/53 assertions PASS), `test/test_v7_mode_resume_matrix.js` (ALL PASS). 100% 3-way hash parity verified across git source, unpacked directory, and release ZIP.
 - Major-version v7.0.0-rc12 Triple Contract Fix (Semi-Auto Silent Advance + False Hold + State Desync) COMPLETED:
   - Functional Commit `2954e116` on `major/v7-dual-mode`.
   - GitHub Release: `v7.0.0-rc12` (tag `v7.0.0-rc12`).
