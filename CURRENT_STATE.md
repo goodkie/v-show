@@ -6,8 +6,22 @@
 - Workspace: E:\vivpr\ai\extension-form-sender
 - Authority: goodkie/v-show Issues #6 & #10
 - Branch: major/v7-dual-mode (branched from upgrade/phase-0-1)
-- State Rev: 2026-10-31.270
-- Authority Cursor: 6537676540
+- State Rev: 2026-10-31.280
+- Authority Cursor: 6538168574
+- Major-version v7.0.0-rc15 Operator Hold Retention, Target Identity Invariant, Bounded Pause & Progress Parity COMPLETED:
+  - Functional Commit `ea388cbf` on `major/v7-dual-mode`.
+  - GitHub Release: `v7.0.0-rc15` (tag `v7.0.0-rc15`).
+  - Package: `XPIDER_V7.0.0_RC15_DUAL_MODE_OWNER_BETA.zip` (SHA256: `b23d9d6adfccbf649c3291e6b038ebbfced7029635c5aa379ff4469d758a6301`, size: `52316895` bytes).
+  - Directives:
+    - `[CHATGPT -> ANTIGRAVITY][Issue #6][P0 RC14 OWNER REPRO: CONTACT DISCOVERY STALL / WRONG TARGET SETTLEMENT — RC15]` (Comment #6538151031 / `IC_kwDOT53X288AAAABhbRC9w`)
+    - `[CHATGPT -> ANTIGRAVITY][Issue #6][P0 ADDENDUM TO RC15 #6538151031 — PAUSING BUTTON DEADLOCK]` (Comment #6538168574 / `IC_kwDOT53X288AAAABhbSI_g`)
+  - Contract Enforcement:
+    1. True Operator Hold Tab Retention: In `TargetDeadlineController`, `_armTimer()` and `resume()` strictly check if `manualHoldActive || currentTargetStage === 'MANUAL_HOLD' || externalCaptchaWaitActive` and refuse timer activation during operator hold. `chrome.alarms.onAlarm` completely suppresses alarms during operator hold or pause, eliminating background calls to `processNextCampaignTarget()` that previously advanced the queue over an active hold. In `processTargetWithSession`'s catch and finally blocks, tabs in `SEMI_AUTO` / `MANUAL` during an active operator hold are preserved without calling abort or closing the tab.
+    2. Target Identity Invariant: In `processTargetWithSession`, strictly assert `existingAtt.sourceUrl === targetUrl` before calling `hs.settleCanonicalAttempt` or logging `[TARGET][${hostName}] FINAL`. Any attempt-target identity mismatch is immediately blocked with `[TARGET_IDENTITY_MISMATCH_BLOCKED]` and rejected safely, preventing cross-domain ledger pollution (e.g. `americankempoma.com` vs `aztecamex.com`).
+    3. Bounded Candidate Navigation & Path Scan: `scanContactPaths` bounded to max 15s; if timeout is reached, automatically continues with default candidate paths. `navigateToValidatedCandidate` bounded by `CANDIDATE_NAV` watchdog (25s) with a 2-second fallback injection kickoff in case tab navigation events are missed. In `AUTO` mode, exhausted paths or formless pages immediately fail fast with `NO_ACCESSIBLE_INQUIRY_FORM` without waiting out a 180s stall. In `SEMI_AUTO` / `MANUAL`, safely enters operator assistance hold and retains tab.
+    4. Pause Button Deadlock Prevention: In `pauseCampaignOrchestrator`, quiescence wait is bounded to max 800ms (eliminated 5000ms stall); if target does not quiesce in 800ms, cleanly forces `activeTargetInFlight = false`, re-queues pre-submit target safely to `queue[0]`, persists checkpoint, and returns `success: true`. In `popup.js`, added a 2.5s watchdog timeout that polls authoritative background state via `GET_AUTHORITATIVE_STATE` and `chrome.storage.local` if background messaging is delayed or dropped, re-enabling the button and updating state.
+    5. Top Pill & Persistent Mode HUD Coherence & Progress Parity: In `updatePersistentModeHud`, strictly synchronizes `#campaign-ready-pill` to match HUD status (`RUNNING`, `PAUSED`, `HOLD`), completely eliminating UI contradictions where pill showed `READY` while HUD showed `RUNNING`. In `getAuthoritativeStateSnapshot`, unified `remainingCount = queue.length + (activeTargetInFlight ? 1 : 0)`, ensuring `totalTargets == completedCount + remainingCount` at all times without discrepancy.
+    6. Regression Matrix & Parity Verification: `test/test_v7_rc15_operator_hold_identity_and_pause.js` (8/8 PASS), `test/test_v7_rc15_isolated_fixtures_e2e.js` (6/6 PASS), `test/test_v7_rc14_spa_watchdog_and_recovery.js` (8/8 PASS), `test/test_v7_rc13_speed_and_pause_resume.js` (8/8 PASS), `test/test_v7_rc12_owner_regressions.js` (15/15 PASS), `test/test_v7_rc11_contracts.js` (53/53 PASS). 100% 3-way hash parity verified across git `extension/`, unpacked directory `XPIDER_V7.0.0_RC1_DUAL_MODE_OWNER_BETA/extension/`, and release ZIP.
 - Major-version v7.0.0-rc14 Bounded Stage Watchdog, Residential 522 Backoff, Paused Resume Guard & Safe Auto Re-Audit COMPLETED:
   - Functional Commit `eb41171f` on `major/v7-dual-mode`.
   - GitHub Release: `v7.0.0-rc14` (tag `v7.0.0-rc14`).
