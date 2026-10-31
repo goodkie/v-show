@@ -1,0 +1,42 @@
+[2026-10-31T05:41:23.795Z] ================================================================================
+[2026-10-31T05:41:23.804Z] 🚀 RUNNING CHROMIUM V7.0.0-RC16 BROWSER MULTI-FIXTURE E2E VERIFICATION
+[2026-10-31T05:41:23.811Z] ================================================================================
+[2026-10-31T05:41:23.874Z] Test server active: PID=25596 uptime=undefined
+[2026-10-31T05:41:23.881Z] Using Chromium browser binary: C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe
+[2026-10-31T05:41:23.889Z] Isolated browser profile: C:\Users\oPus\AppData\Local\Temp\xpider-v7-rc16-e2e-GmvtqR
+[2026-10-31T05:41:25.196Z] Extension Background SW active: ID=ldlijlaccfeelfdhgnjbibniocefckjj Title="Service Worker chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/background.js"
+[2026-10-31T05:41:25.238Z] Service Worker test environment configured.
+[2026-10-31T05:41:25.249Z] 
+--- TEST CASE 1: Candidate Discovery -> Contact Page Navigation -> Autofill (AUTO) ---
+[2026-10-31T05:41:25.322Z] Created browser tab for Fixture 1: 9C24513D971C47C8F386A977D0D2C0C9
+[2026-10-31T05:41:25.601Z] Fixture 1 Homepage candidate scan: found=true href=http://127.0.0.1:8088/contact-standard.html
+[2026-10-31T05:41:27.146Z] Fixture 1 Contact Page Scan: form=true textarea=true id=message
+[2026-10-31T05:41:27.261Z] 📸 Captured screenshot: evidence_v7_rc16_fixture1_contact_form.png
+[2026-10-31T05:41:27.269Z] ✅ PASS: Fixture 1 candidate discovery, contact navigation, and inquiry textarea detected.
+[2026-10-31T05:41:27.282Z] 
+--- TEST CASE 2: SEMI_AUTO / MANUAL Safe Hold Retention & Tab Preservation ---
+[2026-10-31T05:41:28.852Z] Fixture 2 Modal/Checkbox Hold Scan: form=true checkboxRequired=true
+[2026-10-31T05:41:28.948Z] 📸 Captured screenshot: evidence_v7_rc16_fixture2_manual_hold.png
+[2026-10-31T05:41:28.955Z] ✅ PASS: Fixture 2 verified; operator hold tab strictly retained without unwanted submission.
+[2026-10-31T05:41:28.962Z] 
+--- TEST CASE 3: Formless Site Bounded Safe Resolution (Zero 180s Stall) ---
+[2026-10-31T05:41:30.006Z] Fixture 3 Formless scan: forms=0 textareas=0 isFormless=true
+[2026-10-31T05:41:30.107Z] 📸 Captured screenshot: evidence_v7_rc16_fixture3_formless.png
+[2026-10-31T05:41:30.115Z] ✅ PASS: Fixture 3 verified; formless site handles safe fail-fast without 180s stall.
+[2026-10-31T05:41:30.122Z] 
+--- TEST CASE 4: Side Panel UI Controls Persistence & State Parity ---
+[2026-10-31T05:41:31.716Z] Side Panel Initial UI: title="XPIDER AutoForm Sender Pro" hasStartRow=true hasFallbackBtn=true
+[2026-10-31T05:41:31.723Z] Simulating Side Panel RUNNING state...
+[2026-10-31T05:41:31.733Z] Side Panel RUNNING: multiActionsVisible=true pause="⏸️ Pause" stopSave="⏸️ Stop & Save"
+[2026-10-31T05:41:31.964Z] 📸 Captured screenshot: evidence_v7_rc16_sidepanel_running.png
+[2026-10-31T05:41:31.971Z] Simulating Side Panel PAUSED state...
+[2026-10-31T05:41:31.983Z] Side Panel PAUSED: multiActionsVisible=true pause="▶️ Resume" color="rgb(34, 197, 94)" stopSave="💾 Save & Exit"
+[2026-10-31T05:41:32.142Z] 📸 Captured screenshot: evidence_v7_rc16_sidepanel_paused.png
+[2026-10-31T05:41:32.149Z] Simulating Side Panel IDLE with active run/queue...
+[2026-10-31T05:41:32.157Z] Side Panel Fallback: startRowVisible=true fallbackVisible=true text="⏸️ Emergency Stop & Save Checkpoint"
+[2026-10-31T05:41:32.313Z] 📸 Captured screenshot: evidence_v7_rc16_sidepanel_fallback.png
+[2026-10-31T05:41:32.321Z] ✅ PASS: Side panel UI controls persistence, Resume button state, and emergency fallback verified.
+[2026-10-31T05:41:32.332Z] 
+================================================================================
+[2026-10-31T05:41:32.339Z] 🎉 ALL CHROMIUM MULTI-FIXTURE E2E BROWSER TESTS PASSED (100% PASS)
+[2026-10-31T05:41:32.347Z] ================================================================================

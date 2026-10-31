@@ -1,11 +1,11 @@
 {
-  "runId": "rc11_isolated_e2e_1793480174465",
-  "startTimeUtc": "2026-10-31T20:56:14.464Z",
-  "endTimeUtc": "2026-10-31T20:57:12.044Z",
+  "runId": "rc11_isolated_e2e_1793481916904",
+  "startTimeUtc": "2026-10-31T21:25:16.903Z",
+  "endTimeUtc": "2026-10-31T21:26:16.111Z",
   "project": "XPIDER_FORM_SENDER",
   "issue": 6,
   "targetBaseline": "v7.0.0-rc11",
-  "baselineCommit": "19099d90725d68b72111dcf22ba416331231de7d",
+  "baselineCommit": "b2efb6b90e1444baabb59bf8e6d73057d787c62f",
   "extensionTreeSha": "d065af8f1f1438ecba9bbe7fb03cf8e18c040e05",
   "browserVersion": "Edg/156.0.4314.50",
   "runtimeBuildInfo": {
@@ -18,7 +18,9 @@
   "capturedScreenshots": [
     "shot_rc11_fixture_a_autofill_standard.png",
     "shot_rc11_fixture_c_spa_delayed_mount.png",
-    "shot_rc11_fixture_d1_sidepanel_header_hud.png"
+    "shot_rc11_fixture_d1_sidepanel_header_hud.png",
+    "shot_rc11_fixture_d2_popup_paused.png",
+    "shot_rc11_fixture_d3_popup_stopped.png"
   ],
   "perFixtureResults": {
     "fixture_a": {
@@ -37,19 +39,22 @@
     "fixture_a_negative_control": {
       "name": "Negative Control: Formless Page Exhaustion",
       "outcome": {
-        "isActive": true,
+        "isActive": false,
         "isFaulted": false,
         "visitedUrls": [
           "http://127.0.0.1:8088/no-contact-page.html"
         ],
-        "lastReason": "NO_ACCESSIBLE_INQUIRY_FORM"
+        "lastReason": "NO_FORM_ON_PAGE"
       },
+      "ledgerStatus": "FAILURE",
+      "settledInactive": true,
       "status": "PASS"
     },
     "fixture_b": {
       "name": "Phone/Email-Only Form with NO Message Field",
-      "rejectionReason": "NO_LONG_TEXT_INQUIRY_FIELD",
+      "ledgerStatus": "FAILURE",
       "submissionsObserved": 0,
+      "settledInactive": true,
       "status": "PASS",
       "screenshot": null
     },
@@ -61,30 +66,26 @@
       "screenshot": "shot_rc11_fixture_c_spa_delayed_mount.png"
     },
     "fixture_d": {
-      "name": "Triple Mode HUD & Checkpoint Storage Persistence",
-      "modeSwitchResults": [
-        {
-          "mode": "AUTO",
-          "persisted": true
-        },
-        {
-          "mode": "SEMI_AUTO",
-          "persisted": true
-        },
-        {
-          "mode": "MANUAL",
-          "persisted": true
-        }
-      ],
+      "name": "Real UI Button Controls (Start/Pause/Resume/Stop) & Durable Checkpoint",
+      "realStartButtonClicked": true,
+      "realPauseButtonClicked": true,
+      "realResumeButtonClicked": true,
+      "realStopButtonClicked": true,
       "checkpointDurable": true,
-      "checkpointNegativeControlVerified": true,
+      "persistedRunId": "run_1793481918978_u3tqn",
       "status": "PASS",
-      "screenshot": "shot_rc11_fixture_d1_sidepanel_header_hud.png"
+      "screenshots": [
+        "shot_rc11_fixture_d1_sidepanel_header_hud.png",
+        "shot_rc11_fixture_d2_popup_paused.png",
+        "shot_rc11_fixture_d3_popup_stopped.png"
+      ]
     },
     "fixture_e": {
       "name": "Fail-Closed Privacy Guard & Outbound Egress Isolation",
       "negativeControlNonLoopbackBlocked": true,
-      "negativeControlGatewayFailClosed": true,
+      "negativeControlNoOverrideDenied": true,
+      "negativeControlCanaryFailClosed": true,
+      "sensitivityConfirmed": true,
       "externalSubmissionsCount": 0,
       "status": "PASS"
     }
