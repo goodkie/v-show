@@ -3,7 +3,7 @@ const path = require('path');
 const crypto = require('crypto');
 const { execSync } = require('child_process');
 
-const NEW_BUILD_ID = 'V7.0.0-RC16-20261031-CONTACT-DISCOVERY-AND-PERSISTENT-CONTROLS';
+const NEW_BUILD_ID = 'V7.0.0-RC16-20261031-PROVENANCE-INJECTION-AND-CONTROLS-RESTORE';
 const NEW_CHANNEL = 'OWNER_BETA_V7_DUAL_MODE';
 const NEW_TAG = 'v7.0.0-rc16';
 const ZIP_NAME = 'XPIDER_V7.0.0_RC16_DUAL_MODE_OWNER_BETA.zip';
@@ -92,10 +92,12 @@ for (const rel of MODULE_FILES) {
 // Update build-provenance.js
 const bpPath = path.join(extDir, 'modules/build-provenance.js');
 let bpContent = fs.readFileSync(bpPath, 'utf8');
-bpContent = bpContent.replace(/buildId:\s*'[^']+'/, `buildId: '${NEW_BUILD_ID}'`);
-bpContent = bpContent.replace(/channel:\s*'[^']+'/, `channel: '${NEW_CHANNEL}'`);
-bpContent = bpContent.replace(/gitCommit:\s*'[^']+'/, `gitCommit: '${headCommit}'`);
-bpContent = bpContent.replace(/timestamp:\s*'[^']+'/, `timestamp: '${new Date().toISOString()}'`);
+bpContent = bpContent.replace(/buildId:\s*["'][^"']+["']/, `buildId: "${NEW_BUILD_ID}"`);
+bpContent = bpContent.replace(/channel:\s*["'][^"']+["']/, `channel: "${NEW_CHANNEL}"`);
+bpContent = bpContent.replace(/tag:\s*["'][^"']+["']/, `tag: "${NEW_TAG}"`);
+bpContent = bpContent.replace(/implementationHead:\s*["'][^"']+["']/, `implementationHead: "${headCommit}"`);
+bpContent = bpContent.replace(/implementationHeadShort:\s*["'][^"']+["']/, `implementationHeadShort: "${headCommit.substring(0, 8)}"`);
+bpContent = bpContent.replace(/builtAt:\s*[^,\n]+/, `builtAt: "${new Date().toISOString()}"`);
 
 // Replace moduleHashes object in build-provenance.js
 const hashEntries = Object.entries(moduleHashes).map(([k, v]) => `            '${k}': '${v}'`).join(',\n');
@@ -247,3 +249,4 @@ const meta = {
 };
 fs.writeFileSync('scratch_v7_0_0_rc16_metadata.json', JSON.stringify(meta, null, 2), 'utf8');
 console.log('Written scratch_v7_0_0_rc16_metadata.json');
+

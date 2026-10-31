@@ -9278,9 +9278,11 @@ function checkResumableCheckpoint() {
             banner.style.display = 'none';
         }
         const currentMode = stateResp?.pausedCampaignMode || stateResp?.campaignMode || window.__xpider_last_paused_mode || currentCampaignMode || 'AUTO';
-        const currentStatus = stateResp?.hasPausedCheckpoint ? 'PAUSED' : (stateResp?.isActive ? 'RUNNING' : 'READY');
-        const currentTarget = stateResp?.currentTargetUrl || (stateResp?.hasPausedCheckpoint ? 'Paused Target' : 'Idle');
-        const remCount = stateResp?.pausedRemainingCount || stateResp?.remainingCount || remainingTargets || 0;
+        const currentStatus = (stateResp && stateResp.hasPausedCheckpoint && !stateResp.isActive) ? 'PAUSED' : (stateResp?.isActive ? 'RUNNING' : 'READY');
+        const currentTarget = stateResp?.currentTargetUrl || ((stateResp && stateResp.hasPausedCheckpoint && !stateResp.isActive) ? 'Paused Target' : 'Idle');
+        const remCount = (stateResp?.isActive)
+            ? (stateResp?.remainingCount || remainingTargets || 0)
+            : (stateResp?.pausedRemainingCount || stateResp?.remainingCount || remainingTargets || 0);
         updatePersistentModeHud(currentMode, currentStatus, currentTarget, remCount);
     });
 }

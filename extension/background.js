@@ -799,8 +799,8 @@ function getAuthoritativeStateSnapshot() {
         totalTargets: totTargets,
         currentTargetUrl: (campaignState.currentAttempt && campaignState.currentAttempt.url) || campaignState.currentTargetUrl || (isPausedEffective ? 'Paused Target' : 'Idle'),
         stage: campaignState.currentTargetStage || (isPausedEffective ? 'PAUSED' : (campaignState.isActive ? 'RUNNING' : 'IDLE')),
-        hasPausedCheckpoint: Boolean(hasCp || (campaignState.isPaused && checkpoint && Array.isArray(checkpoint.remainingQueue) && checkpoint.remainingQueue.length > 0)),
-        pausedRemainingCount: (checkpoint && Array.isArray(checkpoint.remainingQueue)) ? checkpoint.remainingQueue.length : 0,
+        hasPausedCheckpoint: Boolean(!campaignState.isActive && (hasCp || (campaignState.isPaused && checkpoint && Array.isArray(checkpoint.remainingQueue) && checkpoint.remainingQueue.length > 0))),
+        pausedRemainingCount: (!campaignState.isActive && checkpoint && Array.isArray(checkpoint.remainingQueue)) ? checkpoint.remainingQueue.length : 0,
         pausedCampaignMode: (checkpoint && checkpoint.campaignMode) || campaignState.campaignMode || 'AUTO',
         failureBreakdown: counters.failureBreakdown || {},
         counters: {
@@ -4813,8 +4813,9 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
 
         case 'SENDER_READY':
             // [v18.24.0] Direct Route: Handle content-script ready signal via global state
-            if (sender.tab && sender.tab.id === campaignState.currentTabId && campaignState.targetReady) {
-                campaignState.targetReady(sender.tab.url, false);
+            if (sender.tab && (sender.tab.id === campaignState.currentTabId || sender.tab.id === campaignState.targetTabId) && campaignState.targetReady) {
+                logBg(sender.tab.id, `[CONTENT_BOOT_ACK] SENDER_READY received from tab ${sender.tab.id} (${sender.tab.url}). Securing focus...`, "info");
+                campaignState.targetReady(sender.tab.url, true);
                 sendResponse({ success: true });
             }
             return true;
@@ -5187,14 +5188,18 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
 
         case 'GET_STATE':
             chrome.storage.local.get(['xpider_paused_checkpoint', 'xpider_isPaused'], (stored) => {
-                if (!campaignState.pausedCheckpoint && stored.xpider_paused_checkpoint) {
-                    campaignState.pausedCheckpoint = stored.xpider_paused_checkpoint;
-                }
-                if (!campaignState.isActive && (stored.xpider_isPaused || (stored.xpider_paused_checkpoint && Array.isArray(stored.xpider_paused_checkpoint.remainingQueue) && stored.xpider_paused_checkpoint.remainingQueue.length > 0))) {
-                    campaignState.isPaused = true;
-                    if (!campaignState.queue || campaignState.queue.length === 0) {
-                        campaignState.queue = [...(stored.xpider_paused_checkpoint?.remainingQueue || [])];
+                if (!campaignState.isActive) {
+                    if (!campaignState.pausedCheckpoint && stored.xpider_paused_checkpoint) {
+                        campaignState.pausedCheckpoint = stored.xpider_paused_checkpoint;
                     }
+                    if (stored.xpider_isPaused || (stored.xpider_paused_checkpoint && Array.isArray(stored.xpider_paused_checkpoint.remainingQueue) && stored.xpider_paused_checkpoint.remainingQueue.length > 0)) {
+                        campaignState.isPaused = true;
+                        if (!campaignState.queue || campaignState.queue.length === 0) {
+                            campaignState.queue = [...(stored.xpider_paused_checkpoint?.remainingQueue || [])];
+                        }
+                    }
+                } else {
+                    campaignState.pausedCheckpoint = null;
                 }
                 const snapshot = getAuthoritativeStateSnapshot();
                 sendResponse({
@@ -7480,6 +7485,7 @@ async function resumeCampaignOrchestrator(options = {}) {
     campaignState.isLoopRunning = false;
     campaignState.lastActionTime = Date.now();
     campaignState.pausedCheckpoint = null;
+    await chrome.storage.local.remove(['xpider_paused_checkpoint', 'xpider_isPaused']);
 
     // [RC10 P0] Authoritative triple-mode contract & Stale Hold Purge on Resume:
     campaignState.manualHoldActive = false;
@@ -9656,21 +9662,37 @@ async function orchestrateSending(urlInput, template, abortSignal = null) {
                     return;
                 }
                 
+                // If tab is actively loading and under 4s elapsed, defer to navWatcher completion
+                if (targetTab.status === 'loading' && Date.now() - lastActivity < 4000) {
+                    logBg(tabId, `[InjectionGuard] Tab ${tabId} is loading (${targetTab.url}). Deferring injection until status complete...`, "debug");
+                    return;
+                }
+
                 transitionStage('INJECTION', 20000);
-                await safeScripting.executeScript({ target: { tabId }, files: [
-                    'modules/contact-gate.js',
-                    'modules/challenge-gate.js',
-                    'modules/math-captcha-solver.js',
-                    'modules/smart-field-resolver.js',
-                    'modules/contact-discovery-engine.js',
-                    'modules/checkbox-resolver-r2.js',
-                    'modules/select-resolver-r2.js',
-                    'modules/final-form-completion-engine.js',
-                    'modules/form-discovery-engine-r2.js',
-                    'modules/vision-submit-executor.js',
-                    'modules/email-collector.js',
-                    'content-script.js'
-                ] });
+                const injStart = Date.now();
+                logBg(tabId, `[INJECTION_START] tabId=${tabId} url=${targetTab.url} status=${targetTab.status}`, "debug");
+                try {
+                    const injRes = await safeScripting.executeScript({ target: { tabId }, files: [
+                        'modules/contact-gate.js',
+                        'modules/challenge-gate.js',
+                        'modules/math-captcha-solver.js',
+                        'modules/smart-field-resolver.js',
+                        'modules/contact-discovery-engine.js',
+                        'modules/checkbox-resolver-r2.js',
+                        'modules/select-resolver-r2.js',
+                        'modules/final-form-completion-engine.js',
+                        'modules/form-discovery-engine-r2.js',
+                        'modules/vision-submit-executor.js',
+                        'modules/email-collector.js',
+                        'content-script.js'
+                    ] });
+                    const injElapsed = Date.now() - injStart;
+                    logBg(tabId, `[INJECTION_SUCCESS] tabId=${tabId} url=${targetTab.url} elapsed=${injElapsed}ms frames=${injRes ? injRes.length : 0}`, "info");
+                } catch (injErr) {
+                    const injElapsed = Date.now() - injStart;
+                    logBg(tabId, `❌ [INJECTION_ERROR] tabId=${tabId} elapsed=${injElapsed}ms: ${injErr.message}`, "error");
+                    throw injErr;
+                }
                 // [v7.0] solver-content.js frame injection retired
                 if (pollerTimer) { clearInterval(pollerTimer); pollerTimer = null; }
                 startPolling(targetTab.url);
@@ -9724,114 +9746,135 @@ async function orchestrateSending(urlInput, template, abortSignal = null) {
         }
     }).catch(() => {});
 
+    let isCandidateNavigating = false;
     const tryNext = async () => {
-        if (isFinished) return;
-        if (baseUrl.includes('teamusatkd.com')) baseUrl = "https://teamusatkd.com";
+        if (isFinished || discoveryCtx.aborted || campaignState.isPaused || isCandidateNavigating) {
+            if (isCandidateNavigating) {
+                logBg(tabId, `[CandidateNav] Candidate navigation already in-flight for pathIdx=${pathIdx}. Skipping racing call.`, "debug");
+            }
+            return;
+        }
+        isCandidateNavigating = true;
+        try {
+            if (baseUrl.includes('teamusatkd.com')) baseUrl = "https://teamusatkd.com";
 
-        if (pathIdx >= validPaths.length) {
-            const curMode = campaignState.campaignMode || 'AUTO';
-            if (curMode === 'SEMI_AUTO' || curMode === 'MANUAL') {
-                logBg(tabId, `🖐️ [${curMode}_DISCOVERY_HOLD] All contact discovery paths exhausted. Displaying operator assistance hold...`, "warning");
-                campaignState.currentTargetStage = 'MANUAL_HOLD';
-                campaignState.manualHoldActive = true;
-                campaignState.manualHoldInitialUrl = currentAttemptUrl || baseUrl;
-                if (campaignState.targetDeadlineController && typeof campaignState.targetDeadlineController.pause === 'function') {
-                    campaignState.targetDeadlineController.pause('MANUAL_HOLD');
-                }
-                chrome.runtime.sendMessage({
-                    action: 'TRIGGER_SIDE_PANEL_ASSIST',
-                    data: {
-                        url: currentAttemptUrl || baseUrl,
-                        reason: 'NO_ACCESSIBLE_INQUIRY_FORM (All paths exhausted)',
-                        mode: curMode,
-                        stage: 'FORM_DISCOVERY'
+            if (pathIdx >= validPaths.length) {
+                const curMode = campaignState.campaignMode || 'AUTO';
+                if (curMode === 'SEMI_AUTO' || curMode === 'MANUAL') {
+                    logBg(tabId, `🖐️ [${curMode}_DISCOVERY_HOLD] All contact discovery paths exhausted. Displaying operator assistance hold...`, "warning");
+                    campaignState.currentTargetStage = 'MANUAL_HOLD';
+                    campaignState.manualHoldActive = true;
+                    campaignState.manualHoldInitialUrl = currentAttemptUrl || baseUrl;
+                    if (campaignState.targetDeadlineController && typeof campaignState.targetDeadlineController.pause === 'function') {
+                        campaignState.targetDeadlineController.pause('MANUAL_HOLD');
                     }
-                }).catch(() => {});
-                safeTabs.sendMessage(tabId, {
-                    action: 'RESTORE_MANUAL_HOLD_PANEL',
-                    stage: 'FORM_DISCOVERY',
-                    mode: curMode,
-                    validationReason: 'NO_ACCESSIBLE_INQUIRY_FORM (All paths exhausted)'
-                }).catch(() => {});
-                return; // [RC14 Invariant] Operator hold must retain tab and await operator action, never silently advance!
-            }
-            finish({ success: false, error: "Paths exhausted", reasonCode: 'CONTACT_DISCOVERY_EXHAUSTED' });
-            return;
-        }
-
-        const nextP = validPaths[pathIdx++];
-        const isHttpAbsolute = (typeof nextP === 'string' && nextP.startsWith('http'));
-        const check = validateCandidateUrl(nextP, baseUrl);
-        if (!check.valid) {
-            logBg(tabId, `🚫 [Discovery] Invalid path [${nextP}]: ${check.reason}. Skipping.`, "warning");
-            setTimeout(tryNext, 100);
-            return;
-        }
-        const fullUrl = check.url;
-        const norm = normalizeUrl(fullUrl);
-
-        if (campaignState.successfulUrls.includes(norm) || discoveryCtx.visited.has(norm)) {
-            logBg(tabId, `⏭️ [Engine] Path [${fullUrl}] already handled successfully. Skipping.`, "info");
-            setTimeout(tryNext, 100);
-            return;
-        }
-        discoveryCtx.visited.add(norm);
-
-        lastActivity = Date.now();
-        isFocusSecured = false;
-        currentAttemptUrl = fullUrl;
-        discoveryCtx.selectedContactUrl = fullUrl;
-
-        // [Section J & Comment 51] Source resolution from target-scoped discoveryCtx (never implicit global)
-        const discoverySource = (discoveryCtx.candidateSourceMap && (discoveryCtx.candidateSourceMap.get(fullUrl) || discoveryCtx.candidateSourceMap.get(nextP) || discoveryCtx.candidateSourceMap.get(norm)))
-            || 'Ensemble';
-
-        logBg(tabId, `[DISCOVERY] selectedCandidate=${fullUrl}`, "info");
-
-        // [Hotfix R2] Record selected candidate without prematurely committing contactPageUrl
-        if (_attemptId) {
-            try {
-                const hs = await getHistoryStoreInstance();
-                if (hs && typeof hs.updateAttemptContact === 'function') {
-                    hs.updateAttemptContact(_attemptId, {
-                        selectedCandidateUrl: fullUrl,
-                        contactDiscoverySource: discoverySource,
-                        targetToken: targetToken
-                    }, targetToken);
-                    await hs.persist();
+                    chrome.runtime.sendMessage({
+                        action: 'TRIGGER_SIDE_PANEL_ASSIST',
+                        data: {
+                            url: currentAttemptUrl || baseUrl,
+                            reason: 'NO_ACCESSIBLE_INQUIRY_FORM (All paths exhausted)',
+                            mode: curMode,
+                            stage: 'FORM_DISCOVERY'
+                        }
+                    }).catch(() => {});
+                    safeTabs.sendMessage(tabId, {
+                        action: 'RESTORE_MANUAL_HOLD_PANEL',
+                        stage: 'FORM_DISCOVERY',
+                        mode: curMode,
+                        validationReason: 'NO_ACCESSIBLE_INQUIRY_FORM (All paths exhausted)'
+                    }).catch(() => {});
+                    return; // [RC14 Invariant] Operator hold must retain tab and await operator action, never silently advance!
                 }
-            } catch (_) {}
-        } 
-
-        logBg(tabId, `Connecting to [${fullUrl}]...`, "visit");
-        const privCheck = await assertPrivacyTransportReady('CANDIDATE_NAVIGATION');
-        if (!privCheck.ready) {
-            logBg(tabId, `🚫 [CandidateNav] Blocked by privacy transport assertion: ${privCheck.reason}`, 'error');
-            finish({ success: false, error: privCheck.reason, reasonCode: 'PRIVACY_GATEWAY_BLOCKED' });
-            return;
-        }
-        const tabCheck = await ensureCampaignTab(tabId, fullUrl);
-        if (tabCheck.recreated) {
-            tabId = tabCheck.tabId;
-        }
-        transitionStage('CANDIDATE_NAV', 25000);
-        const navRes = await navigateToValidatedCandidate(tabId, fullUrl, baseUrl, {
-            sourceHost: targetHost,
-            relation: 'same-origin'
-        });
-        if (navRes.recreated && navRes.tabId) {
-            tabId = navRes.tabId;
-        }
-        if (!navRes.success) {
-            setTimeout(tryNext, 100);
-            return;
-        }
-        // [RC15 Candidate Navigation Kickoff] If tab is already completed or navWatcher doesn't fire, ensure injection starts
-        setTimeout(() => {
-            if (!isFocusSecured && !isFinished && !discoveryCtx.aborted && !campaignState.isPaused) {
-                startInjection(0);
+                finish({ success: false, error: "Paths exhausted", reasonCode: 'CONTACT_DISCOVERY_EXHAUSTED' });
+                return;
             }
-        }, 2000);
+
+            const nextP = validPaths[pathIdx++];
+            const isHttpAbsolute = (typeof nextP === 'string' && nextP.startsWith('http'));
+            const check = validateCandidateUrl(nextP, baseUrl);
+            if (!check.valid) {
+                logBg(tabId, `🚫 [Discovery] Invalid path [${nextP}]: ${check.reason}. Skipping.`, "warning");
+                setTimeout(tryNext, 100);
+                return;
+            }
+            const fullUrl = check.url;
+            const norm = normalizeUrl(fullUrl);
+
+            if (campaignState.successfulUrls.includes(norm) || discoveryCtx.visited.has(norm)) {
+                logBg(tabId, `⏭️ [Engine] Path [${fullUrl}] already handled successfully. Skipping.`, "info");
+                setTimeout(tryNext, 100);
+                return;
+            }
+            discoveryCtx.visited.add(norm);
+
+            lastActivity = Date.now();
+            isFocusSecured = false;
+            currentAttemptUrl = fullUrl;
+            discoveryCtx.selectedContactUrl = fullUrl;
+
+            // [Section J & Comment 51] Source resolution from target-scoped discoveryCtx (never implicit global)
+            const discoverySource = (discoveryCtx.candidateSourceMap && (discoveryCtx.candidateSourceMap.get(fullUrl) || discoveryCtx.candidateSourceMap.get(nextP) || discoveryCtx.candidateSourceMap.get(norm)))
+                || 'Ensemble';
+
+            logBg(tabId, `[DISCOVERY] selectedCandidate=${fullUrl}`, "info");
+
+            // [Hotfix R2] Record selected candidate without prematurely committing contactPageUrl
+            if (_attemptId) {
+                try {
+                    const hs = await getHistoryStoreInstance();
+                    if (hs && typeof hs.updateAttemptContact === 'function') {
+                        hs.updateAttemptContact(_attemptId, {
+                            selectedCandidateUrl: fullUrl,
+                            contactDiscoverySource: discoverySource,
+                            targetToken: targetToken
+                        }, targetToken);
+                        await hs.persist();
+                    }
+                } catch (_) {}
+            } 
+
+            logBg(tabId, `Connecting to [${fullUrl}]...`, "visit");
+            const privCheck = await assertPrivacyTransportReady('CANDIDATE_NAVIGATION');
+            if (!privCheck.ready) {
+                logBg(tabId, `🚫 [CandidateNav] Blocked by privacy transport assertion: ${privCheck.reason}`, 'error');
+                finish({ success: false, error: privCheck.reason, reasonCode: 'PRIVACY_GATEWAY_BLOCKED' });
+                return;
+            }
+            const tabCheck = await ensureCampaignTab(tabId, fullUrl);
+            if (tabCheck.recreated) {
+                tabId = tabCheck.tabId;
+                campaignState.currentTabId = tabId;
+                campaignState.targetTabId = tabId;
+            }
+            transitionStage('CANDIDATE_NAV', 25000);
+            const navRes = await navigateToValidatedCandidate(tabId, fullUrl, baseUrl, {
+                sourceHost: targetHost,
+                relation: 'same-origin'
+            });
+            if (navRes.recreated && navRes.tabId) {
+                tabId = navRes.tabId;
+                campaignState.currentTabId = tabId;
+                campaignState.targetTabId = tabId;
+            }
+            if (!navRes.success) {
+                setTimeout(tryNext, 100);
+                return;
+            }
+            // Verified candidate injection fallback: if navWatcher doesn't fire, check tab status before injecting
+            setTimeout(async () => {
+                if (!isFocusSecured && !isFinished && !discoveryCtx.aborted && !campaignState.isPaused) {
+                    try {
+                        const chkTab = await safeTabs.get(tabId);
+                        if (chkTab && (chkTab.status === 'complete' || Date.now() - lastActivity > 4000)) {
+                            logBg(tabId, `[CandidateKickoff] Initiating injection for ${chkTab.url} (status=${chkTab.status})...`, "debug");
+                            startInjection(0);
+                        }
+                    } catch (_) {}
+                }
+            }, 2500);
+        } finally {
+            isCandidateNavigating = false;
+        }
     };
 
     // [RC15 Bounded Path Scan: 15s Max]
@@ -9857,7 +9900,7 @@ async function orchestrateSending(urlInput, template, abortSignal = null) {
             // [RC16 Fast Candidate Progression] If current page is homepage and has not identified a form after 3.5s,
             // automatically advance to first discovered candidate path instead of stalling
             setTimeout(() => {
-                if (!isFinished && !isFocusSecured && pathIdx === 0 && validPaths.length > 0 && !campaignState.isPaused && !campaignState.manualHoldActive) {
+                if (!isFinished && !isFocusSecured && pathIdx === 0 && validPaths.length > 0 && !campaignState.isPaused && !campaignState.manualHoldActive && !isCandidateNavigating) {
                     logBg(tabId, `🎯 [DiscoveryAutoAdvance] Advancing from initial page to candidate ${validPaths[0]}...`, "info");
                     tryNext();
                 }

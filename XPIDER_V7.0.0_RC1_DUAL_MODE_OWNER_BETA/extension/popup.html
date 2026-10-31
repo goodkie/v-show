@@ -1286,6 +1286,10 @@
                     <button id="end-campaign-btn" class="danger-btn" style="background: rgba(255, 51, 51, 0.2); border: 1px solid #ff3333; color: #ff3333;" title="Stop and discard remaining queue">End Campaign</button>
                     <button id="stop-btn" class="danger-btn" data-i18n="btn_stop" style="display: none;">Stop</button>
                 </div>
+                <!-- Fallback Emergency Stop & Save (always accessible when a run or queue exists) -->
+                <div id="fallback-control-row" style="display: none; margin-top: 6px; width: 100%;">
+                    <button id="fallback-stop-save-btn" class="secondary-btn" style="width: 100%; padding: 7px; font-size: 11px; background: rgba(255, 165, 0, 0.25); border: 1px solid #f59e0b; color: #fef08a; font-weight: 600;" title="Immediately pause active/stalled work and save durable checkpoint">⏸️ Emergency Stop & Save Checkpoint</button>
+                </div>
             </div>
 
             <div id="status-box" class="hidden">
