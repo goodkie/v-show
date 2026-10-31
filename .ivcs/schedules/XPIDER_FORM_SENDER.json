@@ -1,8 +1,8 @@
 {
   "schema": "IVCS_SCHEDULE_1",
   "project": "XPIDER_FORM_SENDER",
-  "revision": 3,
-  "updated_at": "2026-10-31T12:57:32.027Z",
+  "revision": 4,
+  "updated_at": "2026-10-31T13:10:08.999Z",
   "tasks": [
     {
       "id": "SC-20261031-01",
@@ -32,13 +32,13 @@
       "status": "IN_PROGRESS",
       "start_at": "2026-10-31T13:15:00Z",
       "due_at": "2026-10-31T14:45:00Z",
-      "dev_progress": 40,
+      "dev_progress": 100,
       "verify_progress": 0,
       "verification": "HOLD",
       "weight": 4,
-      "evidence_url": "",
-      "note": "Antigravity 작업 착수: 실제 START_CAMPAIGN 오케스트레이션 구동, 네거티브 컨트롤, 실시간 이벤트/라이프사이클 검증 하네스 구현 중.",
-      "updated_at": "2026-10-31T12:57:32.027Z"
+      "evidence_url": "https://github.com/goodkie/v-show/issues/6#issuecomment-6543782703",
+      "note": "개발자 자체 E2E 검증 완료 (Fixture A/Neg-Ctrl/B/C/D/E 100% 통과). 독립 감사 및 승인 대기 HOLD.",
+      "updated_at": "2026-10-31T13:10:08.999Z"
     },
     {
       "id": "SC-20261031-03",
