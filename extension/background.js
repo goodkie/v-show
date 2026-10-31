@@ -773,9 +773,11 @@ function getAuthoritativeStateSnapshot() {
     const counters = campaignState.counters || { success: 0, failed: 0, completed: 0, remaining: 0, total: 0 };
     const inFlight = (campaignState.isActive && !campaignState.isPaused && (campaignState.activeTargetInFlight || campaignState.counters?.inProgress)) ? 1 : 0;
     const rawQueueLen = campaignState.queue ? campaignState.queue.length : 0;
+    const hasCp = Boolean(checkpoint && Array.isArray(checkpoint.remainingQueue) && checkpoint.remainingQueue.length > 0 && !campaignState.isActive);
+    const isPausedEffective = Boolean(campaignState.isPaused || hasCp);
     const remCount = campaignState.isActive
         ? (rawQueueLen + inFlight)
-        : (campaignState.isPaused && checkpoint && Array.isArray(checkpoint.remainingQueue)
+        : (isPausedEffective && checkpoint && Array.isArray(checkpoint.remainingQueue)
             ? checkpoint.remainingQueue.length
             : rawQueueLen);
     const compCount = counters.completed !== undefined ? counters.completed : ((counters.success || 0) + (counters.failed || 0));
@@ -788,16 +790,16 @@ function getAuthoritativeStateSnapshot() {
         campaignRunId: campaignState.campaignRunId || null,
         runEpoch: campaignState.sessionId || 1,
         isActive: Boolean(campaignState.isActive),
-        isPaused: Boolean(campaignState.isPaused),
+        isPaused: isPausedEffective,
         campaignMode: campaignState.campaignMode || (checkpoint && checkpoint.campaignMode) || 'AUTO',
         remainingCount: remCount,
         completedCount: compCount,
         successCount: counters.success || campaignState.successCount || 0,
         failedCount: counters.failed || 0,
         totalTargets: totTargets,
-        currentTargetUrl: (campaignState.currentAttempt && campaignState.currentAttempt.url) || campaignState.currentTargetUrl || (campaignState.isPaused ? 'Paused Target' : 'Idle'),
-        stage: campaignState.currentTargetStage || (campaignState.isPaused ? 'PAUSED' : (campaignState.isActive ? 'RUNNING' : 'IDLE')),
-        hasPausedCheckpoint: Boolean(campaignState.isPaused && checkpoint && Array.isArray(checkpoint.remainingQueue) && checkpoint.remainingQueue.length > 0),
+        currentTargetUrl: (campaignState.currentAttempt && campaignState.currentAttempt.url) || campaignState.currentTargetUrl || (isPausedEffective ? 'Paused Target' : 'Idle'),
+        stage: campaignState.currentTargetStage || (isPausedEffective ? 'PAUSED' : (campaignState.isActive ? 'RUNNING' : 'IDLE')),
+        hasPausedCheckpoint: Boolean(hasCp || (campaignState.isPaused && checkpoint && Array.isArray(checkpoint.remainingQueue) && checkpoint.remainingQueue.length > 0)),
         pausedRemainingCount: (checkpoint && Array.isArray(checkpoint.remainingQueue)) ? checkpoint.remainingQueue.length : 0,
         pausedCampaignMode: (checkpoint && checkpoint.campaignMode) || campaignState.campaignMode || 'AUTO',
         failureBreakdown: counters.failureBreakdown || {},
@@ -5184,9 +5186,15 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
             return true;
 
         case 'GET_STATE':
-            chrome.storage.local.get(['xpider_paused_checkpoint'], (stored) => {
+            chrome.storage.local.get(['xpider_paused_checkpoint', 'xpider_isPaused'], (stored) => {
                 if (!campaignState.pausedCheckpoint && stored.xpider_paused_checkpoint) {
                     campaignState.pausedCheckpoint = stored.xpider_paused_checkpoint;
+                }
+                if (!campaignState.isActive && (stored.xpider_isPaused || (stored.xpider_paused_checkpoint && Array.isArray(stored.xpider_paused_checkpoint.remainingQueue) && stored.xpider_paused_checkpoint.remainingQueue.length > 0))) {
+                    campaignState.isPaused = true;
+                    if (!campaignState.queue || campaignState.queue.length === 0) {
+                        campaignState.queue = [...(stored.xpider_paused_checkpoint?.remainingQueue || [])];
+                    }
                 }
                 const snapshot = getAuthoritativeStateSnapshot();
                 sendResponse({
@@ -9517,7 +9525,7 @@ async function orchestrateSending(urlInput, template, abortSignal = null) {
         }).catch(() => {});
     };
 
-    const navWatcher = (updatedTabId, statusInfo) => {
+    const navWatcher = (updatedTabId, statusInfo, tab) => {
         if (updatedTabId !== tabId || discoveryCtx.aborted || campaignState.isPaused || isFinished) return;
         if (updatedTabId === tabId) {
             lastActivity = Date.now();
@@ -9556,15 +9564,15 @@ async function orchestrateSending(urlInput, template, abortSignal = null) {
             }
             if (chrome.alarms) chrome.alarms.create(`xpider_watchdog_${tabId}_${currentSession}`, { delayInMinutes: 1 });
             
-            const norm = normalizeUrl(statusInfo.url || '');
+            const currentNavUrl = (statusInfo && statusInfo.url) || (tab && tab.url) || '';
+            const norm = normalizeUrl(currentNavUrl);
             
-            if (statusInfo.url && norm !== lastInjectedUrl) {
-                if (isFocusSecured) {
-                    logBg(tabId, "🔓 [Engine] URL path changed. Resetting focus lock for SPA re-injection.", "debug");
-                    isFocusSecured = false;
-                }
-                logBg(tabId, "🔄 [Engine] Internal navigation detected (SPA). Preparing re-injection...", "debug");
-                startInjection(1500); 
+            if (norm && norm !== lastInjectedUrl) {
+                logBg(tabId, "🔓 [Engine] URL path changed. Resetting focus lock for SPA/candidate re-injection.", "debug");
+                isFocusSecured = false;
+                if (pollerTimer) { clearInterval(pollerTimer); pollerTimer = null; }
+                lastInjectedUrl = norm;
+                startInjection(1000); 
             }
 
             if (norm && statusInfo.status === 'complete') {
@@ -9575,8 +9583,13 @@ async function orchestrateSending(urlInput, template, abortSignal = null) {
                 }
             }
 
-            if (statusInfo.status === 'complete') startInjection(0);
-            else if (statusInfo.status === 'loading' && !isFocusSecured) startInjection(2000);
+            if (statusInfo.status === 'complete') {
+                isFocusSecured = false;
+                if (pollerTimer) { clearInterval(pollerTimer); pollerTimer = null; }
+                startInjection(0);
+            } else if (statusInfo.status === 'loading' && !isFocusSecured) {
+                startInjection(2000);
+            }
         }
     };
 
@@ -9586,10 +9599,10 @@ async function orchestrateSending(urlInput, template, abortSignal = null) {
     safeTabs.onUpdated.addListener(navWatcher);
 
     const startInjection = (delay) => {
-        if (isFinished || isFocusSecured || discoveryCtx.aborted || campaignState.isPaused) return;
+        if (isFinished || discoveryCtx.aborted || campaignState.isPaused) return;
         if (injectionTimer) clearTimeout(injectionTimer);
         injectionTimer = setTimeout(async () => {
-            if (isFinished || isFocusSecured || discoveryCtx.aborted || campaignState.isPaused) return;
+            if (isFinished || discoveryCtx.aborted || campaignState.isPaused) return;
             try {
                 const targetTab = await safeTabs.get(tabId);
                 
@@ -9659,7 +9672,8 @@ async function orchestrateSending(urlInput, template, abortSignal = null) {
                     'content-script.js'
                 ] });
                 // [v7.0] solver-content.js frame injection retired
-                startPolling();
+                if (pollerTimer) { clearInterval(pollerTimer); pollerTimer = null; }
+                startPolling(targetTab.url);
             } catch (e) {
                 const isErrorPageErr = /showing error page|chrome-error|chromewebdata|cannot access contents of url "chrome-error/i.test(e.message);
                 if (isErrorPageErr) {
@@ -9682,19 +9696,23 @@ async function orchestrateSending(urlInput, template, abortSignal = null) {
         }, delay);
     };
 
-    const startPolling = () => {
-        if (isFinished || isFocusSecured || pollerTimer || discoveryCtx.aborted || campaignState.isPaused) return;
+    const startPolling = (pollUrl = null) => {
+        if (isFinished || pollerTimer || discoveryCtx.aborted || campaignState.isPaused) return;
         pollerTimer = setInterval(async () => {
-            if (isFinished || isFocusSecured || discoveryCtx.aborted || campaignState.isPaused) {
+            if (isFinished || discoveryCtx.aborted || campaignState.isPaused) {
                 clearInterval(pollerTimer);
                 pollerTimer = null;
                 return;
             }
             try {
                 const r = await safeScripting.executeScript({ target: { tabId }, func: () => window.__xpider_initialized });
-                if (r && r[0] && r[0].result) secureFocus();
+                if (r && r[0] && r[0].result) {
+                    clearInterval(pollerTimer);
+                    pollerTimer = null;
+                    secureFocus(pollUrl || currentAttemptUrl, true);
+                }
             } catch (e) {}
-        }, 1500);
+        }, 800);
     };
 
     // [Issue #6 R6.9F.1 Guard] Prevent race condition where initial tab finishes loading before onUpdated listener is registered
@@ -9835,6 +9853,15 @@ async function orchestrateSending(urlInput, template, abortSignal = null) {
         if (waitingForPaths) {
             waitingForPaths = false;
             tryNext();
+        } else if (validPaths.length > 0) {
+            // [RC16 Fast Candidate Progression] If current page is homepage and has not identified a form after 3.5s,
+            // automatically advance to first discovered candidate path instead of stalling
+            setTimeout(() => {
+                if (!isFinished && !isFocusSecured && pathIdx === 0 && validPaths.length > 0 && !campaignState.isPaused && !campaignState.manualHoldActive) {
+                    logBg(tabId, `🎯 [DiscoveryAutoAdvance] Advancing from initial page to candidate ${validPaths[0]}...`, "info");
+                    tryNext();
+                }
+            }, 3500);
         }
     }).catch(err => {
         clearTimeout(scanTimeoutTimer);

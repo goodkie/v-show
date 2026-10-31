@@ -21,7 +21,7 @@ const path = require('path');
 const { spawn, execSync } = require('child_process');
 const crypto = require('crypto');
 
-const EXPECTED_BUILD_ID = 'V7.0.0-RC15-20261031-OPERATOR-HOLD-IDENTITY-AND-BOUNDED-PAUSE';
+const EXPECTED_BUILD_ID = 'V7.0.0-RC16-20261031-CONTACT-DISCOVERY-AND-PERSISTENT-CONTROLS';
 const REQUIRED_CAPABILITIES = ['verify-plan', 'provision-egress', 'provision-progress', 'recovery-status'];
 
 const COMPANION_DIR = __dirname;

@@ -1154,6 +1154,21 @@ function bindCriticalControls() {
         displayControlPlaneError('SETTINGS_HANDLER_NOT_BOUND', 'element #save-settings-btn not found in DOM');
     }
 
+    // 2.5 Fallback Emergency Stop & Save Button
+    const fallbackStopSaveBtn = document.getElementById('fallback-stop-save-btn');
+    if (fallbackStopSaveBtn && !fallbackStopSaveBtn.dataset.bound) {
+        fallbackStopSaveBtn.dataset.bound = 'true';
+        fallbackStopSaveBtn.addEventListener('click', () => {
+            console.log('[BUTTON_CLICK] id=fallback-stop-save-btn');
+            const primaryStopSave = document.getElementById('stop-save-btn');
+            if (primaryStopSave) {
+                primaryStopSave.click();
+            } else if (typeof pauseCampaign === 'function') {
+                pauseCampaign();
+            }
+        });
+    }
+
     // 3. Runtime & Storage checks
     if (typeof chrome === 'undefined' || !chrome.runtime) {
         displayControlPlaneError('RUNTIME_UNAVAILABLE', 'chrome.runtime is not available');
@@ -1996,15 +2011,23 @@ async function hydrateSettings(overrideV2Store = null) {
             const startButtonsRow = document.getElementById('start-buttons-row');
             const multiActions = document.getElementById('multi-actions');
             const stopSaveBtn = document.getElementById('stop-save-btn');
+            const fallbackControlRow = document.getElementById('fallback-control-row');
             const isOperatorHold = Boolean(
                 snapshot.stage === 'MANUAL_HOLD' ||
                 snapshot.stage === 'CAPTCHA_PENDING_EXTERNAL_USER' ||
                 snapshot.manualHoldActive
             );
+            const hasCheckpoint = Boolean(
+                snapshot.hasPausedCheckpoint ||
+                window.__xpider_has_paused_checkpoint ||
+                (snapshot.checkpoint && Array.isArray(snapshot.checkpoint.remainingQueue) && snapshot.checkpoint.remainingQueue.length > 0)
+            );
+            const isPausedState = Boolean(campaignPaused || (!campaignActive && hasCheckpoint));
 
             if (campaignActive && !campaignPaused) {
                 if (startButtonsRow) startButtonsRow.classList.add('hidden');
                 if (multiActions) multiActions.classList.remove('hidden');
+                if (fallbackControlRow) fallbackControlRow.style.display = 'none';
                 if (pauseBtn) {
                     pauseBtn.disabled = false;
                     if (isOperatorHold) {
@@ -2020,10 +2043,12 @@ async function hydrateSettings(overrideV2Store = null) {
                 }
                 if (stopSaveBtn) {
                     stopSaveBtn.style.display = 'inline-block';
+                    stopSaveBtn.textContent = "⏸️ Stop & Save";
                 }
-            } else if (campaignPaused || window.__xpider_has_paused_checkpoint) {
+            } else if (isPausedState) {
                 if (startButtonsRow) startButtonsRow.classList.add('hidden');
                 if (multiActions) multiActions.classList.remove('hidden');
+                if (fallbackControlRow) fallbackControlRow.style.display = 'none';
                 if (pauseBtn) {
                     pauseBtn.disabled = false;
                     pauseBtn.textContent = "▶️ Resume";
@@ -2034,11 +2059,16 @@ async function hydrateSettings(overrideV2Store = null) {
                 }
                 if (stopSaveBtn) {
                     stopSaveBtn.style.display = 'inline-block';
+                    stopSaveBtn.textContent = "💾 Save & Exit";
                 }
             } else {
                 // Campaign is completely stopped / idle / ready to launch
                 if (startButtonsRow) startButtonsRow.classList.remove('hidden');
                 if (multiActions) multiActions.classList.add('hidden');
+                if (fallbackControlRow) {
+                    // Always provide accessible Stop & Save control whenever queue exists or run is tracked
+                    fallbackControlRow.style.display = (remainingTargets > 0 || snapshot.campaignRunId) ? 'block' : 'none';
+                }
                 if (pauseBtn) {
                     pauseBtn.disabled = false;
                     pauseBtn.textContent = "⏸️ Pause";
@@ -4479,10 +4509,15 @@ async function hydrateCampaignState() {
                     if (statusBox) statusBox.classList.remove('hidden');
                     const multiActions = document.getElementById('multi-actions');
                     if (multiActions) multiActions.classList.remove('hidden');
+                    const startButtonsRow = document.getElementById('start-buttons-row');
+                    if (startButtonsRow) startButtonsRow.classList.add('hidden');
                     const startBtn = document.getElementById('start-btn');
                     if (startBtn) startBtn.classList.add('hidden');
+                    const fallbackControlRow = document.getElementById('fallback-control-row');
+                    if (fallbackControlRow) fallbackControlRow.style.display = 'none';
                     
                     const btn = document.getElementById('pause-btn');
+                    const stopSaveBtn = document.getElementById('stop-save-btn');
                     const langSelect = document.getElementById('language-select');
                     const lang = langSelect ? langSelect.value : 'en';
                     const dict = (typeof i18nData !== 'undefined' && i18nData) ? (i18nData[lang] || i18nData['en'] || {}) : {};
@@ -4492,21 +4527,55 @@ async function hydrateCampaignState() {
                             btn.style.backgroundColor = "#22c55e";
                         } else {
                             btn.textContent = dict.btn_pause || "⏸️ Pause";
-                            btn.style.backgroundColor = "#f59e0b";
+                            btn.style.backgroundColor = "#ea580c";
                         }
+                    }
+                    if (stopSaveBtn) {
+                        stopSaveBtn.style.display = 'inline-block';
+                        stopSaveBtn.textContent = "⏸️ Stop & Save";
                     }
                     addDiagnosticLog(`[Engine] Initial handshake synced: active=true, remaining=${remainingTargets}`);
                 } else {
                     campaignActive = false;
-                    const startBtn = document.getElementById('start-btn');
-                    if (startBtn) startBtn.classList.remove('hidden');
                     const multiActions = document.getElementById('multi-actions');
-                    if (multiActions) multiActions.classList.add('hidden');
+                    const startButtonsRow = document.getElementById('start-buttons-row');
+                    const startBtn = document.getElementById('start-btn');
+                    const btn = document.getElementById('pause-btn');
+                    const stopSaveBtn = document.getElementById('stop-save-btn');
+                    const fallbackControlRow = document.getElementById('fallback-control-row');
+                    const langSelect = document.getElementById('language-select');
+                    const lang = langSelect ? langSelect.value : 'en';
+                    const dict = (typeof i18nData !== 'undefined' && i18nData) ? (i18nData[lang] || i18nData['en'] || {}) : {};
+
+                    if (isPausedState || window.__xpider_has_paused_checkpoint) {
+                        campaignPaused = true;
+                        if (startButtonsRow) startButtonsRow.classList.add('hidden');
+                        if (startBtn) startBtn.classList.add('hidden');
+                        if (multiActions) multiActions.classList.remove('hidden');
+                        if (fallbackControlRow) fallbackControlRow.style.display = 'none';
+                        if (btn) {
+                            btn.disabled = false;
+                            btn.textContent = dict.btn_resume || "▶️ Resume";
+                            btn.style.backgroundColor = "#22c55e";
+                            btn.style.color = "#ffffff";
+                        }
+                        if (stopSaveBtn) {
+                            stopSaveBtn.style.display = 'inline-block';
+                            stopSaveBtn.textContent = "💾 Save & Exit";
+                        }
+                    } else {
+                        if (startButtonsRow) startButtonsRow.classList.remove('hidden');
+                        if (startBtn) startBtn.classList.remove('hidden');
+                        if (multiActions) multiActions.classList.add('hidden');
+                        if (fallbackControlRow) {
+                            fallbackControlRow.style.display = (remainingTargets > 0 || (response.snapshot && response.snapshot.campaignRunId)) ? 'block' : 'none';
+                        }
+                    }
                     if (totalTargets > 0 || completedCount > 0 || successCount > 0 || failedCount > 0) {
                         const statusBox = document.getElementById('status-box');
                         if (statusBox) statusBox.classList.remove('hidden');
                     }
-                    addDiagnosticLog(`[Engine] Initial handshake synced: active=false, completed=${completedCount}, success=${successCount}, failed=${failedCount}`);
+                    addDiagnosticLog(`[Engine] Initial handshake synced: active=false, paused=${campaignPaused}, completed=${completedCount}, success=${successCount}, failed=${failedCount}`);
                 }
                 return resolve(true);
             }

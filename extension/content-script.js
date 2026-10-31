@@ -1153,8 +1153,12 @@
                 sessionStorage.removeItem('xpider_guessed_paths');
                 sessionStorage.removeItem('xpider_visited_subs');
                 sessionStorage.removeItem('xpider_recursion_debt');
+                sessionStorage.removeItem('xpider_visited_contact_candidate');
             }
             sessionStorage.setItem('xpider_active_target_token', targetToken);
+            if (isContactPage() || (triedUrl && currentUrl !== triedUrl)) {
+                sessionStorage.setItem('xpider_visited_contact_candidate', 'true');
+            }
 
             // [v2.9.8] Navigation Registry: Mark background-opened and current pages as visited
             const visited = JSON.parse(sessionStorage.getItem('xpider_guessed_paths') || '[]');
@@ -1563,8 +1567,9 @@
             sessionStorage.removeItem('xpider_recursion_debt');
             sessionStorage.removeItem('xpider_guessed_paths');
             const curMode = (typeof window !== 'undefined' && window.__xpider_campaign_mode) || (template && template.campaignMode) || 'AUTO';
-            if (curMode === 'SEMI_AUTO' || curMode === 'MANUAL') {
-                logDev(`🖐️ [${curMode}_DISCOVERY_HOLD] No inquiry form automatically discovered. Retaining tab and displaying operator assistance panel.`, "warning");
+            const isDedicatedContactPage = isContactPage() || Boolean(sessionStorage.getItem('xpider_visited_contact_candidate'));
+            if ((curMode === 'SEMI_AUTO' || curMode === 'MANUAL') && isDedicatedContactPage) {
+                logDev(`🖐️ [${curMode}_DISCOVERY_HOLD] No inquiry form automatically discovered on contact page. Retaining tab and displaying operator assistance panel.`, "warning");
                 const holdOutcome = await handleV7ManualModeHold(null, template, new Map(), { detected: false, verified: true, type: 'none' }, {
                     mode: curMode,
                     stage: 'FORM_DISCOVERY',
@@ -1574,6 +1579,8 @@
                 });
                 return Boolean(holdOutcome && holdOutcome.success);
             }
+            // For homepage or initial non-contact pages:
+            // ALWAYS report NO_FORM_ON_PAGE so background can advance to sniper candidate paths!
             currentTargetLifecycleState = TargetLifecycleState.SETTLING;
             finishCampaign(false, "NO_FORM_ON_PAGE", "NO_ACCESSIBLE_INQUIRY_FORM");
         } catch (e) {
