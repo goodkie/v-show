@@ -1,8 +1,8 @@
 {
   "schema": "IVCS_SCHEDULE_1",
   "project": "XPIDER_FORM_SENDER",
-  "revision": 1,
-  "updated_at": "2026-10-31T12:30:00Z",
+  "revision": 2,
+  "updated_at": "2026-10-31T12:50:57.786Z",
   "tasks": [
     {
       "id": "SC-20261031-01",
@@ -11,16 +11,16 @@
       "details": "2026-10-31 XPIDER 독립 검증 일정. 개발자 자체 PASS는 독립 검증이나 사용자 승인이 아님. 진행률은 기록된 추정치이며 직접 검증 근거가 없으면 NOT_TESTED/HOLD.",
       "owner": "ChatGPT",
       "priority": "P0",
-      "status": "IN_PROGRESS",
+      "status": "DONE",
       "start_at": "2026-10-31T12:30:00Z",
       "due_at": "2026-10-31T13:15:00Z",
-      "dev_progress": 40,
-      "verify_progress": 20,
-      "verification": "HOLD",
+      "dev_progress": 100,
+      "verify_progress": 100,
+      "verification": "PASS",
       "weight": 3,
-      "evidence_url": "https://github.com/goodkie/v-show/issues/6#issuecomment-6543105682",
-      "note": "사용자 Windows 환경과 실사용 캠페인 성공은 독립 확인 전. 외부 공개 폼 제출 금지.",
-      "updated_at": "2026-10-31T12:30:00Z"
+      "evidence_url": "https://github.com/goodkie/v-show/issues/6#issuecomment-6543582308",
+      "note": "PASS는 GitHub RC11 50/50×2 원본 소스 일치와 테스트 스크립트 정밀 코드 감사에만 해당. 실제 캠페인 자동 탐색/폼 입력/제어/프록시 보호 E2E는 아직 NOT_TESTED이며 출시 HOLD. Fixture A/B/C/D/E 우회·상수·미검증 관찰을 감사 보고에 상세 기록.",
+      "updated_at": "2026-10-31T12:50:57.786Z"
     },
     {
       "id": "SC-20261031-02",
