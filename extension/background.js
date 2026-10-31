@@ -524,9 +524,19 @@ class TargetDeadlineController {
             this.timerId = null;
         }
         if (this.isPaused || this.isCancelled || this.isExpired) return;
+        if (campaignState && (campaignState.manualHoldActive || campaignState.currentTargetStage === 'MANUAL_HOLD' || campaignState.externalCaptchaWaitActive)) {
+            this.isPaused = true;
+            this.pauseReason = 'MANUAL_HOLD_ACTIVE';
+            return;
+        }
 
         this.lastStartOrResumeTime = Date.now();
         this.timerId = setTimeout(() => {
+            if (campaignState && (campaignState.manualHoldActive || campaignState.currentTargetStage === 'MANUAL_HOLD' || campaignState.externalCaptchaWaitActive)) {
+                this.isPaused = true;
+                this.pauseReason = 'MANUAL_HOLD_ACTIVE';
+                return;
+            }
             this.isExpired = true;
             this.remainingMs = 0;
             if (this._rejectFn) {
@@ -553,12 +563,17 @@ class TargetDeadlineController {
         return this.remainingMs;
     }
 
-    resume() {
+    resume(reason = null) {
         if (!this.isPaused || this.isCancelled || this.isExpired) return;
+        // [RC15 Hold Authority Guard] Never resume deadline while operator hold or captcha manual wait is active
+        if (campaignState && (campaignState.manualHoldActive || campaignState.currentTargetStage === 'MANUAL_HOLD' || campaignState.externalCaptchaWaitActive)) {
+            console.log(`[TARGET_DEADLINE] Resume rejected: manual hold active (trigger=${reason})`);
+            return;
+        }
         this.isPaused = false;
         const prevReason = this.pauseReason;
         this.pauseReason = null;
-        console.log(`[TARGET_DEADLINE] Resumed: wasReason=${prevReason} remainingMs=${this.remainingMs}`);
+        console.log(`[TARGET_DEADLINE] Resumed: wasReason=${prevReason} remainingMs=${this.remainingMs} triggerReason=${reason}`);
         this._armTimer();
     }
 
@@ -756,11 +771,13 @@ function getAuthoritativeStateSnapshot() {
     else campaignState.stateRevision++;
     const checkpoint = campaignState.pausedCheckpoint;
     const counters = campaignState.counters || { success: 0, failed: 0, completed: 0, remaining: 0, total: 0 };
+    const inFlight = (campaignState.isActive && !campaignState.isPaused && (campaignState.activeTargetInFlight || campaignState.counters?.inProgress)) ? 1 : 0;
+    const rawQueueLen = campaignState.queue ? campaignState.queue.length : 0;
     const remCount = campaignState.isActive
-        ? (campaignState.queue ? campaignState.queue.length : 0)
+        ? (rawQueueLen + inFlight)
         : (campaignState.isPaused && checkpoint && Array.isArray(checkpoint.remainingQueue)
             ? checkpoint.remainingQueue.length
-            : (campaignState.queue ? campaignState.queue.length : 0));
+            : rawQueueLen);
     const compCount = counters.completed !== undefined ? counters.completed : ((counters.success || 0) + (counters.failed || 0));
     const totTargets = (counters.total !== undefined && counters.total > 0)
         ? counters.total
@@ -786,6 +803,7 @@ function getAuthoritativeStateSnapshot() {
         failureBreakdown: counters.failureBreakdown || {},
         counters: {
             ...counters,
+            inProgress: inFlight,
             remaining: remCount,
             completed: compCount,
             total: totTargets
@@ -7147,16 +7165,16 @@ async function pauseCampaignOrchestrator(saveCheckpoint = true) {
         campaignState.externalCaptchaWaitActive = false;
     } else {
         const pauseQuiesceStart = Date.now();
-        while (campaignState.activeTargetInFlight && (Date.now() - pauseQuiesceStart < 5000)) {
+        while (campaignState.activeTargetInFlight && (Date.now() - pauseQuiesceStart < 800)) {
             await new Promise(r => setTimeout(r, 50));
         }
     }
 
+    // [RC15 Bounded Pause Settlement] Force clean release if still in flight after 800ms
     if (campaignState.activeTargetInFlight) {
-        logBg(null, `🚨 [PAUSE_FAULT] Active target failed to quiesce during pause. Entering HOLD/FAULT state. Checkpoint held.`, 'error');
-        campaignState.isFaulted = true;
-        campaignState.faultReason = 'PAUSE_QUIESCENCE_TIMEOUT';
-        return { success: false, status: 'HOLD_FAULT', reason: 'PAUSE_QUIESCENCE_TIMEOUT' };
+        logBg(null, `⚠️ [Pause] Target did not quiesce within 800ms. Forcing clean pause transition.`, 'warning');
+        campaignState.activeTargetInFlight = false;
+        campaignState.activeTargetCount = 0;
     }
 
     // 4. Resolve in-flight attempt state canonically
@@ -7951,6 +7969,14 @@ async function processNextCampaignTarget(loopSessionId, loopGeneration) {
             ]).catch(async (err) => {
                 logBg(null, `⚠️ [Protection] Target skipped / timed out: ${err.message}`, "warning");
 
+                // [RC15 Hold Retention Invariant] In SEMI_AUTO / MANUAL during an active operator hold, retain tab and do not abort!
+                const curMode = campaignState.campaignMode || 'AUTO';
+                const isHoldActive = Boolean(campaignState.manualHoldActive || campaignState.currentTargetStage === 'MANUAL_HOLD');
+                if ((curMode === 'SEMI_AUTO' || curMode === 'MANUAL') && isHoldActive) {
+                    logBg(null, `🖐️ [HOLD_RETENTION] Preserving operator hold tab (tabId=${campaignState.currentTabId}) across parent timeout catch. Target held for operator.`, "warning");
+                    return { success: false, holdRetained: true, reasonCode: 'MANUAL_HOLD' };
+                }
+
                 // 1. SIGNAL ABORT IMMEDIATELY
                 targetAbortController.abort(err.message);
                 if (campaignState.currentTabId) {
@@ -7968,7 +7994,7 @@ async function processNextCampaignTarget(loopSessionId, loopGeneration) {
                 }
 
                 // 3. Verified tab closure
-                if (campaignState.currentTabId) {
+                if (campaignState.currentTabId && !(isHoldActive && (curMode === 'SEMI_AUTO' || curMode === 'MANUAL'))) {
                     const orphanId = campaignState.currentTabId;
                     campaignState.currentTabId = null;
                     await closeOwnedTabVerified(orphanId, 'TIMEOUT_ABORT');
@@ -8022,6 +8048,17 @@ async function processNextCampaignTarget(loopSessionId, loopGeneration) {
                     }
 
                     if (attemptId && hs && typeof hs.settleCanonicalAttempt === 'function') {
+                        // [RC15 Target Identity Invariant] Ensure attempt belongs to this targetUrl before settlement
+                        const existingAtt = hs.attempts.find(a => a.attemptId === attemptId);
+                        if (existingAtt && existingAtt.sourceUrl) {
+                            const expectedNorm = normalizeUrl(targetUrl);
+                            const actualNorm = normalizeUrl(existingAtt.sourceUrl);
+                            if (expectedNorm !== actualNorm) {
+                                logBg(null, `🚨 [TARGET_IDENTITY_MISMATCH_BLOCKED] Attempt ${attemptId} belongs to ${existingAtt.sourceUrl}, but active target is ${targetUrl}. Refusing wrong-domain settlement!`, 'error');
+                                return { success: false, error: 'TARGET_IDENTITY_MISMATCH', reasonCode: 'TARGET_IDENTITY_MISMATCH' };
+                            }
+                        }
+
                         await hs.settleCanonicalAttempt(attemptId, timeoutStatus, timeoutReason, {}, {
                             campaignRunId: campaignState.campaignRunId,
                             resultUrl: targetUrl,
@@ -8051,7 +8088,10 @@ async function processNextCampaignTarget(loopSessionId, loopGeneration) {
                     await new Promise(r => setTimeout(r, 50));
                 }
 
-                if (campaignState.currentTabId) {
+                // [RC15 Tab Retention Invariant] Preserve tab during active operator hold in SEMI_AUTO / MANUAL
+                const curMode = campaignState.campaignMode || 'AUTO';
+                const isHoldActiveNow = Boolean(campaignState.manualHoldActive || campaignState.currentTargetStage === 'MANUAL_HOLD');
+                if (campaignState.currentTabId && !(isHoldActiveNow && (curMode === 'SEMI_AUTO' || curMode === 'MANUAL'))) {
                     const orphanId = campaignState.currentTabId;
                     campaignState.currentTabId = null;
                     await closeOwnedTabVerified(orphanId, 'TARGET_FINALLY_CLEANUP');
@@ -8137,6 +8177,12 @@ if (chrome.alarms) {
             return;
         }
 
+        // [RC15 Operator Hold & Paused Guard] NEVER advance or force timeout while in operator hold or paused!
+        if (campaignState.isPaused || campaignState.manualHoldActive || campaignState.currentTargetStage === 'MANUAL_HOLD' || campaignState.externalCaptchaWaitActive) {
+            console.log(`[TIMEOUT_GUARD] Suppressed alarm=${alarm.name}: manualHoldActive=${campaignState.manualHoldActive} stage=${campaignState.currentTargetStage} isPaused=${campaignState.isPaused}`);
+            return;
+        }
+
         // [Issue #6 R6.5 Section 9] Session timeout must not settle active submission
         const activeStages = ['ACTIVE_FORM', 'FILLING', 'CAPTCHA', 'FINAL_AUDIT', 'SUBMIT_ATTEMPT_STARTED', 'SUBMITTING', 'SUBMIT_TRIGGERED', 'VERIFYING'];
 
@@ -8152,7 +8198,11 @@ if (chrome.alarms) {
                 logBg(null, `⚠️ [WATCHDOG_BREAK] Target stalled in stage=${curStage} for >= 2 cycles without progression. Forcing terminal settlement and advancing.`, "warning");
                 campaignState.stageStallCount = 0;
             }
-            processNextCampaignTarget();
+            if (!campaignState.activeTargetInFlight && !campaignState.manualHoldActive && !campaignState.isPaused) {
+                processNextCampaignTarget();
+            } else {
+                console.log(`[WATCHDOG_SUPPRESSED] activeInFlight=${campaignState.activeTargetInFlight} manualHold=${campaignState.manualHoldActive}`);
+            }
             return;
         }
 
@@ -8163,6 +8213,12 @@ if (chrome.alarms) {
             if (session !== campaignState.sessionId) {
                 // [R6.3 C] Stale timeout callback from prior target/session — ignore
                 logBg(null, `[TIMEOUT_GUARD] staleGeneration=true alarm.session=${session} current.session=${campaignState.sessionId} -> ignored`, "info");
+                return;
+            }
+
+            // [RC15 Operator Hold Guard on Global Timeout Alarm]
+            if (campaignState.manualHoldActive || campaignState.currentTargetStage === 'MANUAL_HOLD' || campaignState.isPaused) {
+                console.log(`[TIMEOUT_GUARD] Global session alarm suppressed during operator hold (stage=${campaignState.currentTargetStage})`);
                 return;
             }
 
@@ -9752,9 +9808,26 @@ async function orchestrateSending(urlInput, template, abortSignal = null) {
             setTimeout(tryNext, 100);
             return;
         }
+        // [RC15 Candidate Navigation Kickoff] If tab is already completed or navWatcher doesn't fire, ensure injection starts
+        setTimeout(() => {
+            if (!isFocusSecured && !isFinished && !discoveryCtx.aborted && !campaignState.isPaused) {
+                startInjection(0);
+            }
+        }, 2000);
     };
 
+    // [RC15 Bounded Path Scan: 15s Max]
+    const scanTimeoutTimer = setTimeout(() => {
+        if (isScanningPaths && waitingForPaths) {
+            isScanningPaths = false;
+            waitingForPaths = false;
+            logBg(tabId, `⏱️ [PathScanTimeout] Path scan exceeded 15s. Advancing with ${validPaths.length} identified paths.`, "warning");
+            tryNext();
+        }
+    }, 15000);
+
     scanContactPaths(baseUrl, tabId, discoveryCtx).then(paths => {
+        clearTimeout(scanTimeoutTimer);
         isScanningPaths = false;
         if (isFinished) return;
         validPaths.push(...paths);
@@ -9764,6 +9837,7 @@ async function orchestrateSending(urlInput, template, abortSignal = null) {
             tryNext();
         }
     }).catch(err => {
+        clearTimeout(scanTimeoutTimer);
         isScanningPaths = false;
         if (isFinished) return;
         logBg(tabId, `❌ [CONTACT_DISCOVERY_RUNTIME_ERROR][${targetHost}] ${err.name}: ${err.message}`, "error");

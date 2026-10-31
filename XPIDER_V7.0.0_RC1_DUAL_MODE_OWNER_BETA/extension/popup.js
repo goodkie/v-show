@@ -8666,14 +8666,51 @@ function togglePause() {
         return;
     }
 
-    // [RC13 State-Driven Action] Transition to Pausing... state and await authoritative background ACK
+    // [RC15 Bounded Pause Action: Deadlock Prevention]
     if (btn) {
         btn.disabled = true;
         btn.textContent = "⏳ Pausing...";
     }
     addDiagnosticLog('[Engine][TX] action=PAUSE_CAMPAIGN');
+
+    let pauseHandled = false;
+    const pauseTimeout = setTimeout(() => {
+        if (!pauseHandled) {
+            pauseHandled = true;
+            console.warn('[PAUSE_TIMEOUT] No immediate response from background. Polling authoritative state...');
+            if (btn) btn.disabled = false;
+            if (typeof chrome !== 'undefined' && chrome.runtime?.sendMessage) {
+                chrome.runtime.sendMessage({ action: 'GET_AUTHORITATIVE_STATE' }, (resp) => {
+                    if (resp && resp.snapshot) {
+                        applyAuthoritativeStateSnapshot(resp.snapshot);
+                    } else if (typeof chrome !== 'undefined' && chrome.storage?.local) {
+                        chrome.storage.local.get(['xpider_isPaused', 'xpider_paused_checkpoint'], (st) => {
+                            if (st.xpider_isPaused || st.xpider_paused_checkpoint) {
+                                campaignPaused = true;
+                                campaignActive = false;
+                                if (btn) {
+                                    btn.textContent = dict.btn_resume || "▶️ Resume";
+                                    btn.style.backgroundColor = "#22c55e";
+                                    btn.style.color = "#ffffff";
+                                }
+                            } else {
+                                if (btn) {
+                                    btn.textContent = dict.btn_pause || "⏸️ Pause";
+                                    btn.style.backgroundColor = "#ea580c";
+                                }
+                            }
+                        });
+                    }
+                });
+            }
+        }
+    }, 2500);
+
     if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
         chrome.runtime.sendMessage({ action: 'PAUSE_CAMPAIGN' }, (res) => {
+            if (pauseHandled) return;
+            pauseHandled = true;
+            clearTimeout(pauseTimeout);
             if (btn) btn.disabled = false;
             if (res && res.success) {
                 if (res.snapshot) {
@@ -8699,6 +8736,7 @@ function togglePause() {
             refreshStatusDetailUI();
         });
     } else {
+        clearTimeout(pauseTimeout);
         if (btn) {
             btn.disabled = false;
             btn.textContent = dict.btn_resume || "▶️ Resume";
@@ -8867,6 +8905,24 @@ function updatePersistentModeHud(mode, status, currentTarget, remainingCount) {
     }
     if (remEl && remainingCount !== undefined && remainingCount !== null) {
         remEl.textContent = String(remainingCount);
+    }
+
+    // [RC15 Top Pill Coherence Guarantee] Synchronize #campaign-ready-pill so it NEVER contradicts the HUD
+    const campPill = document.getElementById('campaign-ready-pill');
+    if (campPill) {
+        const curRem = remainingCount !== undefined ? remainingCount : (remainingTargets || 0);
+        const curComp = completedCount || 0;
+        const curTot = totalTargets || (curRem + curComp);
+        if (status === 'RUNNING') {
+            campPill.textContent = `CAMPAIGN: RUNNING (${curComp}/${curTot})`;
+            campPill.style.color = '#38bdf8';
+        } else if (status === 'PAUSED') {
+            campPill.textContent = `CAMPAIGN: PAUSED (${curRem} remaining)`;
+            campPill.style.color = '#00ffcc';
+        } else if (status === 'HOLD' || status === 'WAITING') {
+            campPill.textContent = `CAMPAIGN: OPERATOR HOLD (${curRem} remaining)`;
+            campPill.style.color = '#fbbf24';
+        }
     }
 }
 

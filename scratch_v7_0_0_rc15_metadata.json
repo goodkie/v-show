@@ -1,0 +1,10 @@
+{
+  "buildId": "V7.0.0-RC15-20261031-OPERATOR-HOLD-IDENTITY-AND-BOUNDED-PAUSE",
+  "tag": "v7.0.0-rc15",
+  "zipName": "XPIDER_V7.0.0_RC15_DUAL_MODE_OWNER_BETA.zip",
+  "size": 52316895,
+  "sha256": "b23d9d6adfccbf649c3291e6b038ebbfced7029635c5aa379ff4469d758a6301",
+  "headCommit": "0dc4de6358686b8af5e1ee7155be3d9f78795cb0",
+  "headShort": "0dc4de63",
+  "timestamp": "2026-10-31T03:23:15.453Z"
+}
