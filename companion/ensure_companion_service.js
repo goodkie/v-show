@@ -21,7 +21,7 @@ const path = require('path');
 const { spawn, execSync } = require('child_process');
 const crypto = require('crypto');
 
-const EXPECTED_BUILD_ID = 'V7.0.0-RC13-20261031-SPEED-SLIDER-AND-PAUSE-RESUME-FIX';
+const EXPECTED_BUILD_ID = 'V7.0.0-RC14-20261031-SPA-WATCHDOG-AND-RESIDENTIAL-RECOVERY';
 const REQUIRED_CAPABILITIES = ['verify-plan', 'provision-egress', 'provision-progress', 'recovery-status'];
 
 const COMPANION_DIR = __dirname;

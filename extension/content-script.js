@@ -493,6 +493,61 @@
                 return true;
             }
 
+            // [RC14 Explicit Re-Audit on Resume to AUTO]
+            if (request.action === 'RESUME_AUTO_AUDIT') {
+                logDev("🔍 [ResumeAuto] Explicit re-audit requested upon resume to AUTO mode. Auditing form...", "info");
+                if (typeof document !== 'undefined') {
+                    const panel = document.getElementById('xpider-v7-manual-hold-panel');
+                    if (panel) panel.remove();
+                }
+                window.__xpider_manual_hold_active = false;
+                window.__xpider_campaign_mode = 'AUTO';
+
+                (async () => {
+                    try {
+                        const targetForm = await findOptimalForm();
+                        if (!targetForm) {
+                            logDev("❌ [ResumeAuto] No automatable inquiry form present during resume re-audit. Settling safely without submit.", "error");
+                            finishCampaign(false, "NO_FORM_ON_RESUME_AUTO", "NO_ACCESSIBLE_INQUIRY_FORM");
+                            return;
+                        }
+                        let inquiryBody = null;
+                        if (_ContactGate && typeof _ContactGate.detectInquiryBodyField === 'function') {
+                            inquiryBody = _ContactGate.detectInquiryBodyField(targetForm);
+                        } else if (targetForm.querySelector) {
+                            inquiryBody = targetForm.querySelector('textarea, [contenteditable="true"], [role="textbox"][aria-multiline="true"]');
+                        }
+                        if (!inquiryBody) {
+                            logDev("❌ [ResumeAuto] No genuine inquiry body field present during resume re-audit. Settling safely without submit.", "error");
+                            finishCampaign(false, "NO_INQUIRY_BODY_ON_RESUME_AUTO", "NO_LONG_TEXT_INQUIRY_FIELD");
+                            return;
+                        }
+                        const chal = _ChallengeGate ? _ChallengeGate.detectChallenge(document) : { detected: false, verified: true };
+                        if (chal && chal.detected && !chal.verified) {
+                            logDev(`❌ [ResumeAuto] Unresolved challenge (${chal.type}) during resume re-audit. Settling challenge failure.`, "error");
+                            finishCampaign(false, `Unresolved challenge: ${chal.type}`, "CAPTCHA_TOKEN_REJECTED_BY_SITE");
+                            return;
+                        }
+                        if (_FinalFormCompletionEngine && typeof _FinalFormCompletionEngine.verifyFormCompleteness === 'function') {
+                            const comp = _FinalFormCompletionEngine.verifyFormCompleteness(targetForm, request.template || {});
+                            if (!comp.complete) {
+                                logDev(`❌ [ResumeAuto] Form completeness validation failed (${comp.missingFields?.join(', ')}). Settling without submit.`, "error");
+                                finishCampaign(false, "REQUIRED_FIELDS_UNRESOLVED", "REQUIRED_FIELDS_UNRESOLVED_ON_RESUME_AUTO");
+                                return;
+                            }
+                        }
+                        logDev("✅ [ResumeAuto] Safe re-audit passed all invariant gates. Proceeding to submit...", "success");
+                        const speed = getSpeedProfile(10000, 300, 4000);
+                        await fillAndSubmit(targetForm, request.template || {}, speed);
+                    } catch (err) {
+                        logDev(`❌ [ResumeAuto] Re-audit exception: ${err.message}`, "error");
+                        finishCampaign(false, err.message, "RESUME_AUTO_AUDIT_EXCEPTION");
+                    }
+                })();
+                if (typeof sendResponse === 'function') sendResponse({ success: true, auditing: true });
+                return true;
+            }
+
             if (request.action === 'START_SENDING') {
                 window.__xpider_aborted = false;
                 const currentRunUrl = (window.location ? window.location.href : '');
@@ -511,9 +566,13 @@
                     campaignMode: window.__xpider_campaign_mode
                 };
 
-                if (window.__xpider_active_single_flight === singleFlightKey || (window.__xpider_hasProcessingLock && window.__xpider_hasProcessingLock(currentRunUrl))) {
+                const isForceOrReinjected = Boolean(request.force || request.isSpaReinjected);
+                if (!isForceOrReinjected && (window.__xpider_active_single_flight === singleFlightKey || (window.__xpider_hasProcessingLock && window.__xpider_hasProcessingLock(currentRunUrl)))) {
                     console.log(`[CONTROL_PLANE] duplicate START_SENDING suppressed key=${singleFlightKey}`);
                     return;
+                }
+                if (isForceOrReinjected && window.__xpider_releaseProcessingLock) {
+                    window.__xpider_releaseProcessingLock(currentRunUrl);
                 }
                 window.__xpider_active_single_flight = singleFlightKey;
 
@@ -1465,7 +1524,8 @@
             // 3. Direct Path Guessing & Known Contact Aliases (Directive B #6)
             const isLoopback = window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost';
             const isDedicatedFixture = isLoopback && (currentUrl.includes('ai-required-fields') || currentUrl.includes('contact-') || currentUrl.includes('subscribe') || currentUrl.includes('reservation'));
-            if (recursionDebt === 0 && !isDedicatedFixture) {
+            const aliasAttempts = parseInt(sessionStorage.getItem('xpider_alias_attempts') || '0', 10);
+            if (recursionDebt === 0 && !isDedicatedFixture && aliasAttempts < 1) {
                 logDev("⚡ [Discovery] No form or links on current page. Trying common contact aliases...");
                 const COMMON_CONTACT_ALIASES = ['/contact', '/contact-us', '/contactus', '/get-in-touch', '/inquiry', '/about/contact'];
                 const visited = JSON.parse(sessionStorage.getItem('xpider_guessed_paths') || '[]');
@@ -1474,6 +1534,7 @@
                     .find(u => !visited.includes(normalizeUrl(u)));
                 if (unvisitedAlias && normalizeUrl(unvisitedAlias) !== normalizeUrl(currentUrl)) {
                     logDev(`⚡ [Discovery] Navigating to contact alias: ${unvisitedAlias}`, "info");
+                    sessionStorage.setItem('xpider_alias_attempts', String(aliasAttempts + 1));
                     visited.push(normalizeUrl(unvisitedAlias));
                     sessionStorage.setItem('xpider_guessed_paths', JSON.stringify(visited));
                     await safeNavigate(unvisitedAlias, template);

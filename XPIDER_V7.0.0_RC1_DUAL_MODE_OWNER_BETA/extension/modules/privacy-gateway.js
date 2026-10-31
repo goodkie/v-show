@@ -839,9 +839,10 @@
                 const sRes = await this.queryRelayStatus();
                 if (sRes.success && sRes.status) {
                     const st = sRes.status;
+                    const isActuallyReady = Boolean(st.relayReady && st.isHealthValid);
                     return {
-                        ok: Boolean(st.relayReady && st.isHealthValid),
-                        lifecycleState: st.lifecycleState || (st.relayReady ? 'READY' : 'DEGRADED'),
+                        ok: isActuallyReady,
+                        lifecycleState: isActuallyReady ? (st.lifecycleState || 'READY') : 'DEGRADED',
                         relayReady: st.relayReady,
                         isHealthValid: st.isHealthValid,
                         reconnectAttempt: st.reconnectAttempt || 0,

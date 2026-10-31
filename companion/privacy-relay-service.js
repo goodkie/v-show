@@ -67,7 +67,7 @@ process.on('unhandledRejection', (reason) => {
 });
 
 // [Defect Q2 Hardening - Issue #6 Comment #6244711545] Authoritative companion build identity & capabilities
-const COMPANION_BUILD_ID = 'V7.0.0-RC13-20261031-SPEED-SLIDER-AND-PAUSE-RESUME-FIX';
+const COMPANION_BUILD_ID = 'V7.0.0-RC14-20261031-SPA-WATCHDOG-AND-RESIDENTIAL-RECOVERY';
 const COMPANION_IMPLEMENTATION_HEAD = 'ec56efbd7654ed83b92e099068bdd0acb0b6084b';
 
 function isCompatibleExtensionBuild(extBuildId, companionBuildId) {

@@ -135,7 +135,8 @@ runTest('Tab Lifecycle on Pause: Active operator hold tab preserved; no silent t
 
     // In resumeCampaignOrchestrator:
     assert(bgCode.includes('if (checkpoint.pausedHeldTabId)'), 'Resume must check for preserved held tab');
-    assert(bgCode.includes('safeTabs.sendMessage(checkpoint.pausedHeldTabId, { action: \'DISMISS_MANUAL_HOLD_PANEL\', autoSubmit: true'), 'If resuming in AUTO, dismiss hold with autoSubmit');
+    // [RC14 Directive #6537676540] Replaces blind autoSubmit:true with explicit safe re-audit RESUME_AUTO_AUDIT
+    assert(bgCode.includes('action: \'RESUME_AUTO_AUDIT\''), 'If resuming in AUTO, trigger explicit safe re-audit');
     assert(bgCode.includes('safeTabs.sendMessage(checkpoint.pausedHeldTabId, { action: \'UPDATE_CAMPAIGN_MODE\', mode: requestedMode }'), 'If resuming in SEMI_AUTO/MANUAL, update mode');
 });
 

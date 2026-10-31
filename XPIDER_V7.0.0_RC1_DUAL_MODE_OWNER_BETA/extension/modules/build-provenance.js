@@ -14,12 +14,12 @@
 
     const BUILD_INFO = Object.freeze({
         version: "7.0.0",
-        buildId: "V7.0.0-RC13-20261031-SPEED-SLIDER-AND-PAUSE-RESUME-FIX",
+        buildId: "V7.0.0-RC14-20261031-SPA-WATCHDOG-AND-RESIDENTIAL-RECOVERY",
         channel: "OWNER_BETA_V7_DUAL_MODE",
-        tag: "v7.0.0-rc12",
+        tag: "v7.0.0-rc14",
         manifestVersion: 3,
-        implementationHead: "0ba678097d2aca48e717c8513831fe0224a940c6",
-        implementationHeadShort: "0ba67809",
+        implementationHead: "7ee7acb87a2648d1151dcb1ae1cd7712a9b97df2",
+        implementationHeadShort: "7ee7acb8",
         builtAt: new Date().toISOString(),
         testOnly: false,
         productionReady: true,

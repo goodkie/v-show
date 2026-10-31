@@ -5552,39 +5552,8 @@ function bindEvents() {
         console.error('[POPUP_BOOT] Settings binding error:', e);
     }
 
-    // 3. Campaign Action Buttons (Isolated)
+    // 3. Campaign Action Buttons (Guarded Single-Binding)
     try {
-        const startBtn = document.getElementById('start-btn');
-        if (startBtn && !startBtn.dataset.bound) {
-            startBtn.dataset.bound = 'true';
-            startBtn.addEventListener('click', () => {
-                console.log('[BUTTON_CLICK] id=start-btn mode=AUTO');
-                launchCampaign({ source: 'USER_START_BUTTON', campaignMode: 'AUTO' }).catch(err => {
-                    console.error('[START_EXCEPTION]', err);
-                });
-            });
-        }
-        const startSemiAutoBtn = document.getElementById('start-semi-auto-btn');
-        if (startSemiAutoBtn && !startSemiAutoBtn.dataset.bound) {
-            startSemiAutoBtn.dataset.bound = 'true';
-            startSemiAutoBtn.addEventListener('click', () => {
-                console.log('[BUTTON_CLICK] id=start-semi-auto-btn mode=SEMI_AUTO');
-                launchCampaign({ source: 'USER_START_BUTTON', campaignMode: 'SEMI_AUTO' }).catch(err => {
-                    console.error('[START_EXCEPTION]', err);
-                });
-            });
-        }
-        const startManualBtn = document.getElementById('start-manual-btn');
-        if (startManualBtn && !startManualBtn.dataset.bound) {
-            startManualBtn.dataset.bound = 'true';
-            startManualBtn.addEventListener('click', () => {
-                console.log('[BUTTON_CLICK] id=start-manual-btn mode=MANUAL');
-                launchCampaign({ source: 'USER_START_BUTTON', campaignMode: 'MANUAL' }).catch(err => {
-                    console.error('[START_EXCEPTION]', err);
-                });
-            });
-        }
-        
         const pauseBtn = document.getElementById('pause-btn');
         if (pauseBtn && !pauseBtn.dataset.bound) {
             pauseBtn.dataset.bound = 'true';
@@ -8188,6 +8157,35 @@ async function launchCampaign(options = {}) {
             console.log(`[NORMAL_CAMPAIGN_PREFLIGHT] publicTargets=${publicTargetsCount} testMode=false result=PASS`);
             addLog(`[NORMAL_CAMPAIGN_PREFLIGHT] publicTargets=${publicTargetsCount} testMode=false result=PASS`, 'info');
 
+            // [RC14 Paused Checkpoint Protection Guard]
+            // If a valid paused campaign checkpoint exists, USER_START_BUTTON must resume it,
+            // never rebase the queue to 91 targets or overwrite the active runId!
+            const pausedCheckpoint = curSt.xpider_paused_checkpoint;
+            if (pausedCheckpoint && Array.isArray(pausedCheckpoint.remainingQueue) && pausedCheckpoint.remainingQueue.length > 0 && !pausedCheckpoint.isTestMode && !options.forceFreshRun) {
+                console.log(`[START_RESUME_GUARD] Paused checkpoint detected with ${pausedCheckpoint.remainingQueue.length} remaining targets in run ${pausedCheckpoint.campaignRunId}. Diverting to resumeCampaignOrchestrator.`);
+                addLog(`▶️ [RESUME_GUARD] Resuming paused campaign with ${pausedCheckpoint.remainingQueue.length} remaining targets in run ${pausedCheckpoint.campaignRunId}.`, 'info');
+                _isCampaignLaunching = false;
+                const resumeMode = options.campaignMode || pausedCheckpoint.campaignMode || 'AUTO';
+                return await new Promise((resolve) => {
+                    chrome.runtime.sendMessage({
+                        action: 'RESUME_CAMPAIGN',
+                        mode: resumeMode,
+                        campaignMode: resumeMode
+                    }, (res) => {
+                        if (chrome.runtime.lastError) {
+                            addLog(`❌ [RESUME_ERROR] ${chrome.runtime.lastError.message}`, 'error');
+                            _restoreStartButton();
+                            resolve({ success: false, error: chrome.runtime.lastError.message });
+                        } else {
+                            campaignActive = true;
+                            campaignPaused = false;
+                            updatePersistentModeHud(resumeMode, 'RUNNING', 'Resumed', pausedCheckpoint.remainingQueue.length);
+                            resolve(res || { success: true });
+                        }
+                    });
+                });
+            }
+
             // [Directive E] Rebase current-run counters & generate fresh normal campaignRunId
             const oldRunId = curSt.xpider_active_campaign_run_id || 'none';
             assignedNormalRunId = `normal_run_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
@@ -8431,15 +8429,19 @@ async function launchCampaign(options = {}) {
         const delayCollectInput = document.getElementById('delay-input-collect');
         const delayFillInput = document.getElementById('delay-input-fill');
         const delaySubmitInput = document.getElementById('delay-input-submit');
-        const levelCollect = parseInt(delayCollectInput ? delayCollectInput.value : 6);
-        const levelFill = parseInt(delayFillInput ? delayFillInput.value : 6);
-        const levelSubmit = parseInt(delaySubmitInput ? delaySubmitInput.value : 6);
+        let levelCollect = parseInt(delayCollectInput ? delayCollectInput.value : (activeRunStorage.xpider_delay_collect || 6), 10);
+        let levelFill = parseInt(delayFillInput ? delayFillInput.value : (activeRunStorage.xpider_delay_fill || 6), 10);
+        let levelSubmit = parseInt(delaySubmitInput ? delaySubmitInput.value : (activeRunStorage.xpider_delay_submit || 6), 10);
+        if (isNaN(levelCollect)) levelCollect = 6;
+        if (isNaN(levelFill)) levelFill = 6;
+        if (isNaN(levelSubmit)) levelSubmit = 6;
         const levelToCollectMs = [60000, 45000, 30000, 25000, 20000, 15000, 10000, 7000, 5000, 3000];
         const levelToFillMs = [2000, 1500, 1000, 800, 500, 400, 300, 200, 150, 100];
         const levelToSubmitMs = [15000, 12000, 10000, 8000, 6000, 5000, 4000, 3000, 2000, 1000];
         const delayMs = levelToCollectMs[levelCollect] || 10000;
         const fillDelayMs = levelToFillMs[levelFill] || 300;
         const submitDelayMs = levelToSubmitMs[levelSubmit] || 4000;
+        console.log(`[START_SPEED_RESOLVED] collectLevel=${levelCollect} (${delayMs}ms) fillLevel=${levelFill} (${fillDelayMs}ms) submitLevel=${levelSubmit} (${submitDelayMs}ms)`);
 
         const fillModeEl = document.querySelector('input[name="fill-mode"]:checked');
         const fillMode = fillModeEl ? fillModeEl.value : 'instant';

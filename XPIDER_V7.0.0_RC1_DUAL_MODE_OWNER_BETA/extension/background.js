@@ -1942,7 +1942,10 @@ async function freezeActiveCampaignJob(reason) {
     campaignState.networkRecoveryPhase = 'CHECKPOINTED';
     campaignState.networkRecoveryRetryCount = (campaignState.networkRecoveryRetryCount || 0) + 1;
 
-    // Clear active timeout alarms so timeouts don't fire during network recovery
+    // Clear active timeout alarms and pause target deadline so timeouts don't fire during network recovery
+    if (campaignState.targetDeadlineController && typeof campaignState.targetDeadlineController.pause === 'function') {
+        try { campaignState.targetDeadlineController.pause('NETWORK_DEGRADED'); } catch (_) {}
+    }
     if (chrome.alarms) {
         if (campaignState.currentTabId) {
             chrome.alarms.clear(`xpider_watchdog_${campaignState.currentTabId}_${campaignState.sessionId}`);
@@ -2023,6 +2026,9 @@ async function resumeActiveCampaignJobAfterRecovery() {
     }
 
     campaignState.isPaused = false;
+    if (campaignState.targetDeadlineController && typeof campaignState.targetDeadlineController.resume === 'function') {
+        try { campaignState.targetDeadlineController.resume('NETWORK_RECOVERED'); } catch (_) {}
+    }
     logBg(null, `[NETWORK_RECOVERY] 🔄 Privacy Relay re-established. Initiating preflight and job restoration...`, "info");
     console.log(`[NETWORK_RECOVERY] Reconnecting -> Privacy Reverify...`);
 
@@ -2199,6 +2205,7 @@ async function resumeActiveCampaignJobAfterRecovery() {
  * Transitions between READY -> DEGRADED -> RECONNECTING -> READY without Owner intervention.
  */
 let relayWatchdogInterval = null;
+let lastRelayWatchdogProbeTime = 0;
 function startPrivacyRelayWatchdog() {
     if (relayWatchdogInterval) return;
 
@@ -2206,6 +2213,13 @@ function startPrivacyRelayWatchdog() {
         try {
             const pg = (typeof PrivacyGateway !== 'undefined' && PrivacyGateway.getInstance) ? PrivacyGateway.getInstance() : null;
             if (!pg || !pg.config.enabled) return;
+
+            // [RC14 Bounded Probe Backoff] When in network recovery, probe on 15s backoff to eliminate 3s 522 thrashing
+            const now = Date.now();
+            if (campaignState.isNetworkDegraded && (now - lastRelayWatchdogProbeTime < 15000)) {
+                return;
+            }
+            lastRelayWatchdogProbeTime = now;
 
             const res = await pg.probeRelayLifecycle(true);
 
@@ -2220,8 +2234,9 @@ function startPrivacyRelayWatchdog() {
                 }
             } else {
                 if (campaignState.isActive && !campaignState.isPaused && !campaignState.pausedByOperator && !campaignState.isNetworkDegraded && !campaignState.ownerFunctionTestMode) {
-                    logBg(null, `[WATCHDOG] Privacy Relay degraded (${res.lifecycleState || res.reason}). Freezing active campaign job...`, "warning");
-                    await freezeActiveCampaignJob(`WATCHDOG_RELAY_DEGRADED: ${res.reason || res.lifecycleState}`);
+                    const degradedDesc = (res.reason && !res.reason.includes('READY')) ? res.reason : (res.lifecycleState && res.lifecycleState !== 'READY' ? res.lifecycleState : 'UPSTREAM_PROXY_DEGRADED');
+                    logBg(null, `[WATCHDOG] Privacy Relay degraded (${degradedDesc}). Freezing active campaign job...`, "warning");
+                    await freezeActiveCampaignJob(`WATCHDOG_RELAY_DEGRADED: ${degradedDesc}`);
                 }
             }
         } catch (e) {
@@ -6799,14 +6814,16 @@ function normalizeUrl(url) {
 }
 
 async function startCampaignOrchestrator(queue, template, delayMs, fillDelayMs = 300, submitDelayMs = 4000, options = {}) {
-    // [V7-RC5] Guard against accidental checkpoint overwrite if START_CAMPAIGN is invoked with the paused remainingQueue
-    if (!options.ownerFunctionTestMode && !options.forceNewCampaign && campaignState.isPaused && campaignState.pausedCheckpoint && Array.isArray(campaignState.pausedCheckpoint.remainingQueue) && campaignState.pausedCheckpoint.remainingQueue.length > 0 && Array.isArray(queue) && queue.length === campaignState.pausedCheckpoint.remainingQueue.length && normalizeUrl(queue[0]) === normalizeUrl(campaignState.pausedCheckpoint.remainingQueue[0])) {
+    // [V7-RC5 & RC14 Robust Paused-Resume Guard]
+    // Guard against accidental full re-run when a paused checkpoint exists with remaining queue
+    const hasPausedChk = Boolean(campaignState.pausedCheckpoint && Array.isArray(campaignState.pausedCheckpoint.remainingQueue) && campaignState.pausedCheckpoint.remainingQueue.length > 0);
+    if (!options.ownerFunctionTestMode && !options.forceFreshRun && !options.forceNewCampaign && (campaignState.isPaused || hasPausedChk) && hasPausedChk) {
         const reqModeOpt = options.campaignMode;
         const reqModeTpl = template && template.campaignMode;
         const requestedMode = (reqModeOpt === 'MANUAL' || reqModeOpt === 'SEMI_AUTO' || reqModeOpt === 'AUTO')
             ? reqModeOpt
             : ((reqModeTpl === 'MANUAL' || reqModeTpl === 'SEMI_AUTO' || reqModeTpl === 'AUTO') ? reqModeTpl : undefined);
-        logBg(null, `🔄 [START_REDIRECT_TO_RESUME] Active paused checkpoint detected with matching remaining queue (${queue.length} items). Resuming checkpoint in ${requestedMode || campaignState.pausedCheckpoint.campaignMode || 'AUTO'} mode to preserve totalTargets & history.`, "info");
+        logBg(null, `🔄 [START_REDIRECT_TO_RESUME] Active paused checkpoint detected (${campaignState.pausedCheckpoint.remainingQueue.length} remaining items in run ${campaignState.pausedCheckpoint.campaignRunId}). Resuming checkpoint in ${requestedMode || campaignState.pausedCheckpoint.campaignMode || 'AUTO'} mode to prevent accidental full re-run.`, "info");
         return await resumeCampaignOrchestrator({ campaignMode: requestedMode });
     }
     // [v18.17.0] Emergency Diagnostic Sequence
@@ -7456,7 +7473,11 @@ async function resumeCampaignOrchestrator(options = {}) {
             campaignState.targetTabId = checkpoint.pausedHeldTabId;
             logBg(checkpoint.pausedHeldTabId, `▶️ [Resume] Operator tab ${checkpoint.pausedHeldTabId} preserved & alive. Resumed in ${requestedMode} mode.`, "info");
             if (requestedMode === 'AUTO') {
-                safeTabs.sendMessage(checkpoint.pausedHeldTabId, { action: 'DISMISS_MANUAL_HOLD_PANEL', autoSubmit: true, reason: 'RESUMED_IN_AUTO' }).catch(() => {});
+                safeTabs.sendMessage(checkpoint.pausedHeldTabId, {
+                    action: 'RESUME_AUTO_AUDIT',
+                    campaignMode: 'AUTO',
+                    template: checkpoint.template || campaignState.template
+                }).catch(() => {});
             } else {
                 safeTabs.sendMessage(checkpoint.pausedHeldTabId, { action: 'UPDATE_CAMPAIGN_MODE', mode: requestedMode }).catch(() => {});
             }
@@ -7466,7 +7487,11 @@ async function resumeCampaignOrchestrator(options = {}) {
     } else if (campaignState.currentTabId || campaignState.targetTabId) {
         const holdTabId = campaignState.currentTabId || campaignState.targetTabId;
         if (requestedMode === 'AUTO') {
-            safeTabs.sendMessage(holdTabId, { action: 'DISMISS_MANUAL_HOLD_PANEL', autoSubmit: true, reason: 'RESUMED_IN_AUTO' }).catch(() => {});
+            safeTabs.sendMessage(holdTabId, {
+                action: 'RESUME_AUTO_AUDIT',
+                campaignMode: 'AUTO',
+                template: checkpoint.template || campaignState.template
+            }).catch(() => {});
         }
     }
 
@@ -8909,6 +8934,72 @@ async function orchestrateSending(urlInput, template, abortSignal = null) {
     };
     resetWatchdog();
 
+    // [RC14 Bounded Per-Stage Watchdog]
+    let currentStageName = 'INIT';
+    let stageStartTime = Date.now();
+    let stageWatchdogTimer = null;
+
+    const transitionStage = (stageName, timeoutMs = 30000) => {
+        if (stageWatchdogTimer) {
+            clearTimeout(stageWatchdogTimer);
+            stageWatchdogTimer = null;
+        }
+        if (isFinished || discoveryCtx.aborted || campaignState.isPaused) return;
+
+        currentStageName = stageName;
+        stageStartTime = Date.now();
+        campaignState.currentTargetStage = stageName;
+        console.log(`[STAGE_TRANSITION] target=${targetHost} stage=${stageName} timeoutMs=${timeoutMs}`);
+
+        if (timeoutMs > 0) {
+            stageWatchdogTimer = setTimeout(async () => {
+                if (isFinished || discoveryCtx.aborted || campaignState.isPaused || campaignState.manualHoldActive) return;
+                const elapsed = Date.now() - stageStartTime;
+                logBg(tabId, `⏱️ [STAGE_WATCHDOG_TIMEOUT] Stage [${currentStageName}] stalled after ${elapsed}ms on ${currentAttemptUrl || baseUrl}. Action taken...`, "warning");
+
+                const curMode = campaignState.campaignMode || 'AUTO';
+                if (curMode === 'SEMI_AUTO' || curMode === 'MANUAL') {
+                    logBg(tabId, `🖐️ [${curMode}_STAGE_HOLD] Stage timeout in ${currentStageName}. Displaying operator assistance hold...`, "warning");
+                    campaignState.currentTargetStage = 'MANUAL_HOLD';
+                    campaignState.manualHoldActive = true;
+                    campaignState.manualHoldInitialUrl = currentAttemptUrl || baseUrl;
+                    if (campaignState.targetDeadlineController) {
+                        campaignState.targetDeadlineController.pause('MANUAL_HOLD');
+                    }
+                    chrome.runtime.sendMessage({
+                        action: 'TRIGGER_SIDE_PANEL_ASSIST',
+                        data: {
+                            url: currentAttemptUrl || baseUrl,
+                            reason: `STAGE_TIMEOUT (${currentStageName})`,
+                            mode: curMode,
+                            stage: currentStageName
+                        }
+                    }).catch(() => {});
+                    safeTabs.sendMessage(tabId, {
+                        action: 'RESTORE_MANUAL_HOLD_PANEL',
+                        stage: currentStageName,
+                        mode: curMode,
+                        validationReason: `STAGE_TIMEOUT (${currentStageName})`
+                    }).catch(() => {});
+                } else {
+                    // AUTO mode: advance to next candidate without stalling for 180s
+                    if (pathIdx < validPaths.length) {
+                        logBg(tabId, `⏭️ [AutoStageAdvance] Stage [${currentStageName}] timed out. Trying next candidate path...`, "info");
+                        tryNext();
+                    } else {
+                        logBg(tabId, `🛑 [AutoStageAdvance] Stage [${currentStageName}] timed out and all paths exhausted. Settling target.`, "warning");
+                        finish({
+                            success: false,
+                            error: `Stage [${currentStageName}] timeout (${elapsed}ms)`,
+                            reasonCode: 'DISCOVERY_STAGE_TIMEOUT'
+                        });
+                    }
+                }
+            }, timeoutMs);
+        }
+    };
+    transitionStage('PRE_SCAN', 20000);
+
     let injectionTimer = null;
     let pollerTimer = null;
     let lastActivity = Date.now();
@@ -8983,6 +9074,10 @@ async function orchestrateSending(urlInput, template, abortSignal = null) {
 
         if (isFinished) return;
         isFinished = true; // [RC3.60 P0] Immediately latch — prevents re-entry across async gaps
+        if (stageWatchdogTimer) {
+            clearTimeout(stageWatchdogTimer);
+            stageWatchdogTimer = null;
+        }
         let isConfirmedProof = Boolean(res && res.success);
         let actualResultUrl = null;
         try {
@@ -9346,6 +9441,7 @@ async function orchestrateSending(urlInput, template, abortSignal = null) {
         }
 
         if (injectionTimer) clearTimeout(injectionTimer);
+        transitionStage('FORM_DISCOVERY', 30000);
         logBg(tabId, "Extraction focus secured. Mapping template fields...", "info");
         safeTabs.sendMessage(tabId, { 
             action: 'START_SENDING', 
@@ -9359,7 +9455,9 @@ async function orchestrateSending(urlInput, template, abortSignal = null) {
             delayMs: campaignState.delayMs,
             fillDelayMs: campaignState.fillDelayMs || 300,
             submitDelayMs: campaignState.submitDelayMs || 4000,
-            triedUrl: currentAttemptUrl
+            triedUrl: currentAttemptUrl,
+            isSpaReinjected: true,
+            force: force
         }).catch(() => {});
     };
 
@@ -9489,6 +9587,7 @@ async function orchestrateSending(urlInput, template, abortSignal = null) {
                     return;
                 }
                 
+                transitionStage('INJECTION', 20000);
                 await safeScripting.executeScript({ target: { tabId }, files: [
                     'modules/contact-gate.js',
                     'modules/challenge-gate.js',
@@ -9559,6 +9658,12 @@ async function orchestrateSending(urlInput, template, abortSignal = null) {
             const curMode = campaignState.campaignMode || 'AUTO';
             if (curMode === 'SEMI_AUTO' || curMode === 'MANUAL') {
                 logBg(tabId, `🖐️ [${curMode}_DISCOVERY_HOLD] All contact discovery paths exhausted. Displaying operator assistance hold...`, "warning");
+                campaignState.currentTargetStage = 'MANUAL_HOLD';
+                campaignState.manualHoldActive = true;
+                campaignState.manualHoldInitialUrl = currentAttemptUrl || baseUrl;
+                if (campaignState.targetDeadlineController && typeof campaignState.targetDeadlineController.pause === 'function') {
+                    campaignState.targetDeadlineController.pause('MANUAL_HOLD');
+                }
                 chrome.runtime.sendMessage({
                     action: 'TRIGGER_SIDE_PANEL_ASSIST',
                     data: {
@@ -9568,6 +9673,13 @@ async function orchestrateSending(urlInput, template, abortSignal = null) {
                         stage: 'FORM_DISCOVERY'
                     }
                 }).catch(() => {});
+                safeTabs.sendMessage(tabId, {
+                    action: 'RESTORE_MANUAL_HOLD_PANEL',
+                    stage: 'FORM_DISCOVERY',
+                    mode: curMode,
+                    validationReason: 'NO_ACCESSIBLE_INQUIRY_FORM (All paths exhausted)'
+                }).catch(() => {});
+                return; // [RC14 Invariant] Operator hold must retain tab and await operator action, never silently advance!
             }
             finish({ success: false, error: "Paths exhausted", reasonCode: 'CONTACT_DISCOVERY_EXHAUSTED' });
             return;
@@ -9628,6 +9740,7 @@ async function orchestrateSending(urlInput, template, abortSignal = null) {
         if (tabCheck.recreated) {
             tabId = tabCheck.tabId;
         }
+        transitionStage('CANDIDATE_NAV', 25000);
         const navRes = await navigateToValidatedCandidate(tabId, fullUrl, baseUrl, {
             sourceHost: targetHost,
             relation: 'same-origin'

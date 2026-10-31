@@ -1,0 +1,10 @@
+{
+  "buildId": "V7.0.0-RC14-20261031-SPA-WATCHDOG-AND-RESIDENTIAL-RECOVERY",
+  "tag": "v7.0.0-rc14",
+  "zipName": "XPIDER_V7.0.0_RC14_DUAL_MODE_OWNER_BETA.zip",
+  "size": 52313026,
+  "sha256": "41c9e099aa283d2ddc02b9f175434cb18a85b0d30478781c2caa7d6d00169ac8",
+  "headCommit": "7ee7acb87a2648d1151dcb1ae1cd7712a9b97df2",
+  "headShort": "7ee7acb8",
+  "timestamp": "2026-10-31T02:46:40.593Z"
+}
