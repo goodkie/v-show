@@ -6,8 +6,31 @@
 - Workspace: E:\vivpr\ai\extension-form-sender
 - Authority: goodkie/v-show Issues #6 & #10
 - Branch: major/v7-dual-mode (target commit 20678ada / RC11 restored)
-- State Rev: 2026-10-31.292
-- Authority Cursor: 6539827067 (Comment #876)
+- State Rev: 2026-10-31.293
+- Authority Cursor: 6542889402 (Comment #878)
+- RC11 Baseline Lock & Isolated Chromium E2E Test Harness Verification COMPLETED:
+  - Directive: `[CHATGPT INDEPENDENT VERIFIER → ANTIGRAVITY][Issue #6][IVCS REMIND][P0 RC11 BASELINE LOCK + TRUE BROWSER E2E EVIDENCE — NO APP CODE CHANGES]` (Comment #878 / `IC_kwDOT53X288AAAABhfyRug` / `6542889402`).
+  - Baseline Lock Verification:
+    - Baseline Tag: `v7.0.0-rc11`
+    - Baseline Functional Commit: `20678ada6491bf842ec7e996a88108152c76007f`
+    - Extension Tree SHA: `d065af8f1f1438ecba9bbe7fb03cf8e18c040e05`
+    - 50/50 exact file SHA256 matches verified between `extension/` and `XPIDER_V7.0.0_RC1_DUAL_MODE_OWNER_BETA/extension/`. Parity confirmed = true.
+    - Zero application code changes: both directories remain byte-identical to pure RC11 baseline.
+  - Isolated Chromium E2E Test Suite (`test/run_chromium_v7_rc11_isolated_e2e.js`):
+    - Executed in genuine Chromium browser (`Edg/156.0.4314.50`) via remote debugging protocol (CDP `9444`) with disposable temporary profile directory.
+    - Fixture A (Standard Contact): Discovered contact link on homepage (`http://127.0.0.1:8088/index.html` -> `/contact-standard.html`), navigated, detected genuine message textarea, and completed HyperEngine humanlike typing. DOM verified: name="Alex Mercer", email="alex@mercer-consulting.com", phone="555-0199", message length=71 chars. (Screenshot: `shot_rc11_fixture_a_autofill_standard.png`).
+    - Fixture B (Phone-Only Lead Form): Form with phone/email but strictly NO message field. Successfully verified 0 submissions triggered on authoritative test server (`/__xpider_submissions`). (Screenshot: `shot_rc11_fixture_b_no_message_zero_submits.png`).
+    - Fixture C (AJAX / SPA Delayed Mount): Dynamically mounted contact form after 1200ms delay. Content script detected dynamic mount and completed humanlike typing of inquiry message. (Screenshot: `shot_rc11_fixture_c_spa_delayed_mount.png`).
+    - Fixture D (Triple Mode & Side Panel Controls): Side panel (`popup.html`) verified with `OWNER BETA V7.0.0-RC11 [20678ada]` badge, three start buttons (AUTO, SEMI_AUTO, MANUAL), and Target Max Wait setting (`180s`). (Screenshot: `shot_rc11_fixture_d1_sidepanel_header_hud.png`).
+    - Fixture E (Fail-Closed & Zero Public Leakage): Confirmed strictly 0 public submissions and 0 outbound network leakage.
+  - Machine-Readable Report & Artifacts:
+    - Evidence Report: `owner-extension-test-site/evidence/evidence_v7_rc11_isolated_e2e_report.json`
+    - Evidence Log: `owner-extension-test-site/evidence/evidence_v7_rc11_isolated_e2e.log`
+    - Test-Only Git Branch: `test/rc11-isolated-e2e` (Commit `27b7d3a1`)
+  - Runtime Observations (Contract Mock vs Real Browser):
+    - In `extension/content-script.js`, `findOptimalForm()` is defined as an `async function`. In `executeAutoFillNow`, it is invoked without `await` (`target = findOptimalForm(document)`), causing `target` to be a Promise when called directly via `EXECUTE_AUTOFILL_NOW` message, which JSDOM mock contract tests failed to detect because Test 2 only asserted `ok(csSrc.includes('executeAutoFillNow'))` and emulated field population. When invoked via `START_SENDING`, `currentForm = await findOptimalForm()` is awaited properly and HyperEngine autofills all fields completely.
+    - RC11 contains no per-stage watchdog timers (which were introduced in RC14). On formless sites, it relies on global target deadline rather than fast-failing, matching owner's prior observations.
+  - Release State: RELEASE HOLD maintained. Await ChatGPT independent verification.
 - Major-version v7.0.0-rc11 Complete Code Rollback EXECUTED:
   - Owner Directive: `[OWNER DIRECTIVE — EXECUTE CODE ROLLBACK TO EXACT PRE-RC12 RC11][Issue #6][2026-10-31]` (Comment #876 / `IC_kwDOT53X288AAAABhet9-w`).
   - Target Version: `v7.0.0-rc11`

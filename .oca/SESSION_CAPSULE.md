@@ -6,19 +6,19 @@ PROJECT_NAME: XPIDER AutoForm Sender Pro
 WORKSPACE_ROOT: E:\vivpr\ai\extension-form-sender
 AUTHORITY_SOURCE: goodkie/v-show Issues #6 & #10
 ACTIVE_BRANCH: major/v7-dual-mode
-STATE_REV: 2026-10-31.292
-AUTHORITY_CURSOR: 6541841175
-LAST_AUDIT: [OWNER DIRECTIVE — EXECUTE CODE ROLLBACK TO EXACT PRE-RC12 RC11][Issue #6][2026-10-31] Comment #876
-LAST_DIRECTIVE: [OWNER DIRECTIVE — EXECUTE CODE ROLLBACK TO EXACT PRE-RC12 RC11][Issue #6][2026-10-31] Comment #876
-LAST_RECEIPT: [ANTIGRAVITY → OWNER / CHATGPT][RECEIPT][Issue #6][ROLLBACK COMPLETE — CODE RESTORED TO EXACT IMMUTABLE PRE-RC12 RC11 (20678ada)] Comment #6541841175
+STATE_REV: 2026-10-31.293
+AUTHORITY_CURSOR: 6542889402
+LAST_AUDIT: [CHATGPT INDEPENDENT VERIFIER → ANTIGRAVITY][Issue #6][IVCS REMIND][P0 RC11 BASELINE LOCK + TRUE BROWSER E2E EVIDENCE — NO APP CODE CHANGES] Comment #878
+LAST_DIRECTIVE: [CHATGPT INDEPENDENT VERIFIER → ANTIGRAVITY][Issue #6][IVCS REMIND][P0 RC11 BASELINE LOCK + TRUE BROWSER E2E EVIDENCE — NO APP CODE CHANGES] Comment #878
+LAST_RECEIPT: [ANTIGRAVITY → CHATGPT / OWNER][RECEIPT][Issue #6][P0 RC11 BASELINE LOCK & CHROMIUM ISOLATED E2E EVIDENCE HARNESS]
 BUILD_ID: V7.0.0-RC11-20261030-THREE-MODE-CONTRACTS-PASS
 FUNCTIONAL_COMMIT: 20678ada
 PROVENANCE_COMMIT: 20678ada
-ROLLBACK_ANCHOR: major-backup-20261030-from-93 (4be780b4), v6.9g.10.3-rc3.60.7.1.4.94 (ebf2c7a3), v7.0.0-rc1 (d8ca7582), v7.0.0-rc2 (0c8e0df4), v7.0.0-rc3 (ec56efbd), v7.0.0-rc5 (a696ab36), v7.0.0-rc6 (8ab1f93b), v7.0.0-rc7 (fb120fba), v7.0.0-rc8 (d8983348), v7.0.0-rc9 (d1514259), v7.0.0-rc10 (f5e235eb), v7.0.0-rc11 (20678ada), v7.0.0-rc12 (2954e116), v7.0.0-rc13 (72eddd49), v7.0.0-rc14 (eb41171f), v7.0.0-rc15 (ea388cbf), v7.0.0-rc16 (17970330 / 559c0542)
-PREVIOUS_FUNCTIONAL_RESTORE_POINT: 559c0542 (v7.0.0-rc16 rollback backup at backups/PRE_ROLLBACK_RC16_CODE_BACKUP_2026-10-31T09-39-25-904Z)
-NEXT_ACTION: Owner reloads extension in chrome://extensions and verifies OWNER BETA V7.0.0-RC11 [20678ada] badge.
-BLOCKERS: None. Owner-instructed code rollback to immutable RC11 completed and verified byte-for-byte; Chrome profile/storage untouched; 53/53 test assertions pass.
-OWNER_ACTION: In chrome://extensions, locate XPIDER AutoForm Sender Pro (ID: ldlijlaccfeelfdhgnjbibniocefckjj) and click circular Reload (🔄) once. (Do not Remove, do not Load unpacked). Open side panel and verify header displays OWNER BETA V7.0.0-RC11 [20678ada].
+TEST_EVIDENCE_BRANCH: test/rc11-isolated-e2e (commit 27b7d3a1)
+TEST_EVIDENCE_REPORT: owner-extension-test-site/evidence/evidence_v7_rc11_isolated_e2e_report.json
+NEXT_ACTION: ChatGPT independent review of isolated E2E test harness, evidence JSON, and runtime observations. Release HOLD maintained.
+BLOCKERS: None. Isolated Chromium/CDP test harness executed across 5 deterministic localhost fixtures (A: Standard contact autofill; B: Phone-only form zero submits; C: SPA delayed dynamic mount autofill; D: Side panel mode HUD & controls; E: Zero public submissions invariant). 100% PASS on test/rc11-isolated-e2e. RC11 code untouched.
+OWNER_ACTION: None required yet per Directive #878 (Owner-local execution NOT required yet; release HOLD maintained; no full campaign run).
 RELEASE_ASSET_TAG: v7.0.0-rc11
 RELEASE_ASSET_ZIP: XPIDER_V7.0.0_RC11_DUAL_MODE_OWNER_BETA.zip
 RELEASE_ASSET_SIZE: 51693297
