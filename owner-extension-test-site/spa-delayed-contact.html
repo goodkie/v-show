@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>SPA Delayed Dynamic Contact Page</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0f172a; color: #f8fafc; padding: 40px; margin: 0; text-align: center; }
+        .container { max-width: 600px; margin: 0 auto; background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 40px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+        h1 { font-size: 22px; color: #38bdf8; margin-top: 0; margin-bottom: 8px; }
+        .form-group { margin-bottom: 16px; text-align: left; }
+        label { display: block; margin-bottom: 6px; font-size: 13px; color: #94a3b8; }
+        input[type="text"], input[type="email"], input[type="tel"], textarea { width: 100%; box-sizing: border-box; background: #0f172a; border: 1px solid #475569; border-radius: 6px; padding: 10px 12px; color: #f8fafc; font-size: 14px; }
+        textarea { height: 100px; resize: vertical; }
+        button[type="submit"] { width: 100%; background: #0284c7; color: white; border: none; border-radius: 6px; padding: 12px 20px; font-size: 14px; font-weight: 600; cursor: pointer; margin-top: 10px; }
+        .loading { color: #38bdf8; font-size: 16px; padding: 30px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Single-Page Application (Client-Side Hydration)</h1>
+        <div id="spa-root">
+            <div class="loading">⏳ Loading SPA Dynamic Component...</div>
+        </div>
+    </div>
+
+    <script>
+        // Simulates client-side AJAX/SPA delayed rendering of contact form after 1200ms
+        setTimeout(() => {
+            const root = document.getElementById('spa-root');
+            root.innerHTML = `
+                <form id="spa-contact-form" action="/contact-success.html" method="POST">
+                    <div class="form-group">
+                        <label for="name">Your Name</label>
+                        <input type="text" id="name" name="name" required placeholder="Alex Mercer">
+                    </div>
+                    <div class="form-group">
+                        <label for="email">Email Address</label>
+                        <input type="email" id="email" name="email" required placeholder="alex@mercer.com">
+                    </div>
+                    <div class="form-group">
+                        <label for="phone">Phone</label>
+                        <input type="tel" id="phone" name="phone" placeholder="555-0100">
+                    </div>
+                    <div class="form-group">
+                        <label for="message">Detailed Inquiry Message</label>
+                        <textarea id="message" name="message" required placeholder="Inquiry details..."></textarea>
+                    </div>
+                    <button type="submit" id="submit-btn">Send SPA Message</button>
+                </form>
+            `;
+            console.log('[SPA] Contact form dynamically mounted.');
+        }, 1200);
+    </script>
+</body>
+</html>
