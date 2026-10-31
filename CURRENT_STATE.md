@@ -6,8 +6,37 @@
 - Workspace: E:\vivpr\ai\extension-form-sender
 - Authority: goodkie/v-show Issues #6 & #10
 - Branch: major/v7-dual-mode (branched from upgrade/phase-0-1)
-- State Rev: 2026-10-31.290
-- Authority Cursor: 6538500588
+- State Rev: 2026-10-31.291
+- Authority Cursor: 6539589809
+- Major-version v7.0.0-rc16 Deployment Provenance Sync, Candidate Injection Loading Guard, Single-Flight Navigation & Checkpoint Reconciliation COMPLETED:
+  - Functional Commit `559c0542` on `major/v7-dual-mode`.
+  - GitHub Release: `v7.0.0-rc16` (tag `v7.0.0-rc16`).
+  - Package: `XPIDER_V7.0.0_RC16_DUAL_MODE_OWNER_BETA.zip` (SHA256: `665ea7980f4d06475e9996c7e5b6c03ed038d56eea327bdf2073986f64a3c6a6`, size: `52329637` bytes).
+  - Directives Addressed:
+    - `[CHATGPT -> ANTIGRAVITY][Issue #6][P0 RELEASE PIPELINE FAILURE: OWNER STILL ON RC14 DESPITE RC16 PARITY CLAIM]` (Comment #872 / `IC_kwDOT53X288AAAABhchKMg`)
+    - `[CHATGPT -> ANTIGRAVITY][Issue #6][P0 NEW OWNER LOG 20261031-052837 — RC14 STILL ACTIVE, INJECTION NEVER COMPLETES, CONTROL BAR MISSING]` (Comment #873 / `IC_kwDOT53X288AAAABhcnutQ`)
+  - Contract & Root Cause Enforcements:
+    1. Read-Only Proof of Chrome Actual Loaded Extension Path:
+       - Confirmed via Chrome `User Data\Default\Secure Preferences`: loaded unpacked extension for pinned ID `ldlijlaccfeelfdhgnjbibniocefckjj` is strictly `E:\vivpr\ai\extension-form-sender\XPIDER_V7.0.0_RC1_DUAL_MODE_OWNER_BETA\extension`.
+       - Identified packaging script regex mismatch where double-quoted `build-provenance.js` fields were not updated, leaving stale RC14 strings (`buildId: "V7.0.0-RC14-..."`, `implementationHeadShort: "7ee7acb8"`). Both popup UI and background `[TARGET_START]` were falsely stamping RC14 despite RC16 logic.
+       - Corrected regex in `prepare_and_package_v7_0_0_rc16.js`, synchronized `modules/build-provenance.js` to `V7.0.0-RC16-20261031-PROVENANCE-INJECTION-AND-CONTROLS-RESTORE` with head `559c0542`.
+    2. Resolution of 20003ms Injection Watchdog Timeout:
+       - Eliminated blind 2000ms `setTimeout` injection on loading tabs: Chrome MV3 drops scripts injected during `loading` when the document commits, while setting `lastInjectedUrl` and causing `navWatcher` to ignore status `complete`.
+       - Added `targetTab.status === 'loading'` deferral in `startInjection`: injection only runs when document is committed and complete.
+       - Wired `navWatcher` to unconditionally trigger injection upon `status: complete` if `!isFocusSecured`.
+       - Handled `SENDER_READY` message with direct ACK logging (`[CONTENT_BOOT_ACK]`), clearing poller and securing focus instantly.
+       - Added explicit try/catch logging for `safeScripting.executeScript`: `[INJECTION_START]`, `[INJECTION_SUCCESS]`, `[INJECTION_ERROR]`.
+    3. Single-Flight Navigation Guard & Race Condition Elimination:
+       - In `tryNext()`, implemented strict `isCandidateNavigating` mutual exclusion lock. Overlapping calls from 3.5s homepage auto-advance and path scan timeouts are safely blocked, eliminating duplicate `[Connecting to]`, double `[TARGET_NAV]`, and double `[TAB_FOCUS]` events.
+    4. Canonical Checkpoint Reconciliation (Eliminated 97 vs 86 Contradiction):
+       - In `resumeCampaignOrchestrator`, explicitly executed `await chrome.storage.local.remove(['xpider_paused_checkpoint', 'xpider_isPaused'])` upon resume, preventing `GET_STATE` from resurrecting old 97 remaining checkpoint.
+       - In `getAuthoritativeStateSnapshot`, strictly enforced `hasPausedCheckpoint: false` and `pausedRemainingCount: 0` whenever `campaignState.isActive` is true.
+       - In `popup.js` `checkResumableCheckpoint()` and `applyAuthoritativeStateSnapshot`, strictly prioritized live `remainingCount` over `pausedRemainingCount` when active, hiding the resumable banner and ensuring HUD and progress counters match live queue.
+    5. Parity & Multi-Fixture Browser E2E:
+       - 100% 3-way hash parity verified across git `extension/`, owner unpacked path, and release ZIP.
+       - `test/test_v7_rc16_1_provenance_and_injection_handshake.js`: 6 / 6 PASS.
+       - `test/test_v7_rc16_contact_discovery_and_controls.js`: 5 / 5 PASS.
+       - `test/run_chromium_v7_rc16_browser_multi_fixture_e2e.js`: 100% PASS across 3 real fixtures + UI controls persistence; strictly 0 public submissions.
 - Major-version v7.0.0-rc16 Contact Discovery Pipeline Restoration, Always-Accessible UI Controls & Chromium Multi-Fixture E2E COMPLETED:
   - Functional Commit `17970330` on `major/v7-dual-mode`.
   - GitHub Release: `v7.0.0-rc16` (tag `v7.0.0-rc16`).
