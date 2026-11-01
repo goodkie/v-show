@@ -1,0 +1,41 @@
+{
+  "suiteName": "XPIDER V7 SC-03 & SC-04 Deterministic Chromium E2E Suite",
+  "startTimeUtc": "2026-11-01T00:07:57.405Z",
+  "endTimeUtc": "2026-11-01T00:08:28.422Z",
+  "durationSeconds": "31.0",
+  "targetBaseline": "v7.0.0-rc11",
+  "candidateBranch": "candidate/sc03-sc04-classification-and-pause",
+  "baselineCommit": "20678ada",
+  "extensionTreeSha": "d065af8f1f1438ecba9bbe7fb03cf8e18c040e05 (modified on candidate branch)",
+  "capturedScreenshots": [
+    "shot_sc04_popup_paused_nonempty.png",
+    "shot_sc04_popup_stopped.png"
+  ],
+  "sc03_no_message_classification": {
+    "phoneOnlyTarget": "http://127.0.0.1:8088/phone-only-no-message.html",
+    "authoritativeLedgerStatus": "SKIPPED",
+    "authoritativeReasonCode": "NO_LONG_TEXT_INQUIRY_FIELD",
+    "submissionsDelta": 0,
+    "statusStrictlySkipped": true,
+    "formlessTarget": "http://127.0.0.1:8088/no-contact-page.html",
+    "formlessStatus": "SKIPPED",
+    "sevenBucketLedgerReconciliation": {
+      "completed": 2,
+      "bucketSum": 2,
+      "discrepancy": 0,
+      "failures": 0
+    },
+    "status": "PASS"
+  },
+  "sc04_nonempty_queue_and_sw_durability": {
+    "initialTargetsCount": 3,
+    "pausedRemainingCount": 2,
+    "nonemptyQueuePreserved": true,
+    "swForciblyTerminated": true,
+    "swRestoredRemainingCount": 2,
+    "resumedViaRealUi": true,
+    "stoppedViaRealUi": true,
+    "status": "PASS"
+  },
+  "releaseHoldStatus": "ACTIVE (Awaiting independent ChatGPT and Owner gate acceptance)"
+}
