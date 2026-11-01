@@ -1358,7 +1358,7 @@
                                     logDev(`[FORM_GATE] eligible=false reason=${settleReason} noContactLink=true`);
                                     logDev(`❌ [ContactGate] Page rejected: non-inquiry form with no contact links (${settleReason})`, "error");
                                     currentTargetLifecycleState = TargetLifecycleState.SETTLING;
-                                    finishCampaign(false, settleReason, settleReason);
+                                    finishCampaign(false, `SKIPPED: ${settleReason}`, settleReason);
                                     return;
                                 }
                             }
@@ -2056,7 +2056,7 @@
 
                 if (!hasReachableMsgField || (result && (result.reasonCode === 'NO_LONG_TEXT_INQUIRY_FIELD' || result.terminalStatus === 'SKIPPED'))) {
                     logDev(`ℹ️ [FORM_ELIGIBILITY_GATE] Confirmed absence of genuine message/inquiry field on reachable form: settling SKIPPED in all modes (${activeCampaignMode})`, "info");
-                    finishCampaign(false, 'NO_LONG_TEXT_INQUIRY_FIELD', 'NO_LONG_TEXT_INQUIRY_FIELD');
+                    finishCampaign(false, 'SKIPPED: NO_LONG_TEXT_INQUIRY_FIELD', 'NO_LONG_TEXT_INQUIRY_FIELD');
                     return false;
                 }
                 const failReason = (result && result.reasonCode) || "Zero-mapping: No usable fields found.";

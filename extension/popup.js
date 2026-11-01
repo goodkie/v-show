@@ -8442,7 +8442,17 @@ async function launchCampaign(options = {}) {
             const reason = startRes?.reason || startRes?.error || 'REJECTED_BY_BACKGROUND';
             console.error(`[START_BG_REJECT] reason=${reason}`);
             addLog(`❌ [START_BG_REJECT] reason=${reason}`, 'error');
-            alert(`Start rejected by background engine: ${reason}`);
+            if (startRes?.status === 'PRIVACY_GATEWAY_BLOCKED' && typeof window.showPrivacyBlockDecisionModal === 'function') {
+                window.showPrivacyBlockDecisionModal({
+                    reason,
+                    userMessage: startRes?.userMessage,
+                    mode: 'PRIVACY_RELAY',
+                    failClosed: true,
+                    source
+                });
+            } else {
+                alert(`Start rejected by background engine: ${reason}`);
+            }
             _restoreStartButton();
             return { success: false, reason };
         }

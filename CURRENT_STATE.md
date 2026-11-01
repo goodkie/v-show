@@ -6,38 +6,33 @@
 - Workspace: E:\vivpr\ai\extension-form-sender
 - Authority: goodkie/v-show Issues #6 & #10
 - Branch: candidate/sc03-sc04-classification-and-pause (candidate branch isolated; base major/v7-dual-mode remains 100% frozen RC11)
-- State Rev: 2026-10-31.299
-- Authority Cursor: 6551871979 (Responding to ChatGPT Independent Audit & Mandate #6551871979)
+- State Rev: 2026-11-01.300
+- Authority Cursor: 6552941218 (Responding to ChatGPT Independent Audit & Mandate #6552941218)
 - Canonical Schedule Revision: 4 (Actual GitHub canonical schedule; capsule legacy text corrected without modifying schedule file per Owner directive)
 - Collaboration Mode: Manual ChatGPT ↔ Antigravity Collaboration restored per Owner Directive #6548985799.
 - Tasks SC-03 & SC-04 Full Audit Remediation on Isolated Candidate Branch:
   - Candidate Branch: `candidate/sc03-sc04-classification-and-pause`
   - Base Baseline: v7.0.0-rc11 (`20678ada`, tree `d065af8f1f1438ecba9bbe7fb03cf8e18c040e05`) 100% frozen on `major/v7-dual-mode`.
-  - Only Modified File in `extension/`: `extension/content-script.js` (+3 / -7 lines). (`background.js` matches 100% RC11 baseline blob `c6cda00245ae4e999351a980e0f32bb76629862b`).
-  - Priority A (DOM Confirmation vs. Authoritative Server Delivery Reconciled):
-    - Homepage discovery target: Content script DOM confirmation (`STRONG_DOM`, `submitAttempted: true`, `submitEventSeen: true`, `confirmationStrength: 'STRONG_DOM'`) reconciled with localhost fixture ground truth (`/__xpider_submissions` count=1, `receiptId: rcpt_1793499838248_1`, referer: `http://127.0.0.1:8088/contact-standard.html`). Candidly documents DOM event dispatch vs. browser-level physical click / network interception.
-  - Priority B (Stop & Save Durability Across True SW Restart and Final Execution):
-    - Real visible UI `#stop-save-btn` verified: `exists: true`, `visible: true` (`offsetParent !== null`, `display: block`, `visibility: visible`), `disabled: false`.
-    - Clicked `#stop-save-btn`, halted campaign (`isActive: false`), verified persistent checkpoint in storage (`remainingQueue.length: 2`, URL: `http://127.0.0.1:8088/spa-delayed-contact.html`).
-    - Service Worker forcibly terminated a SECOND time via CDP `Target.closeTarget`: verified dead (`TERMINATED_CONFIRMED`).
-    - Fresh 3rd Service Worker booted via popup wakeup, verified new ID differs from SW #1 and SW #2 (`DF8F591D...`).
-    - Storage checkpoint verified intact across 2nd SW termination: `remainingQueue.length: 2`, exact URL preserved.
-    - Resumed from real UI, executed remaining targets to completion (`isActive: false`, `remaining: 0`).
-    - Ledger verified: remaining target processed exactly once (`normal_run_1793499877138_ufpn6s` count = 1).
-  - Priority C (Single-Run Scoped HistoryStore Accounting & 7-Bucket Reconciliation):
-    - Single unified multi-target campaign run (`run_1793499824781_os36v`) with 3 targets.
-    - Scoped `getLedgerStats('currentRun', sc03RunId)`: `totalImportRows: 3`, `totalStarted: 3`, `completed: 3`, `success: 1`, `failure: 1`, `skipped: 1`.
-    - Strict 1:1 row-to-attempt accounting; 7-bucket sum: `1 + 1 + 1 + 0 + 0 + 0 + 0 = 3` (discrepancy = 0).
-  - Priority D (Negative Controls & Mutant Checks Proven):
-    - `test/test_v7_negative_controls.js`: 4/4 mutants killed strictly (Mutant 1: classification mutation to FAILURE throws AssertionError; Mutant 2: hidden/disabled UI button throws AssertionError; Mutant 3: 7-bucket math discrepancy throws AssertionError; Mutant 4: checkpoint loss throws AssertionError).
-  - Priority E (Simulated vs Live Privacy Status):
-    - Simulated localhost fail-closed: Verified.
-    - Live Decodo / DigitalOcean proxy egress IP: Strictly NOT_TESTED (0 external requests, zero credentials, owner network untouched).
-  - Priority F (Schedule Alignment):
-    - GitHub canonical schedule `.ivcs/schedules/XPIDER_FORM_SENDER.json` confirmed REV=4.
-  - Deterministic E2E Test Suite: `node test/run_chromium_v7_task3_and_task4_suite.js` -> Exit Code `0` (100% PASS).
-  - Machine-Readable Report: `owner-extension-test-site/evidence/evidence_v7_task3_and_task4_report.json`.
-  - Raw Log: `owner-extension-test-site/evidence/evidence_v7_task3_and_task4.log` (committed and pushed to GitHub).
+  - Application Code Changes in `extension/`:
+    - `extension/content-script.js`: Settles no-message non-inquiry form strictly as `SKIPPED: NO_LONG_TEXT_INQUIRY_FIELD` so background does not misclassify as network degradation.
+    - `extension/background.js`: Direct Privacy guards added to `freezeActiveCampaignJob` and watchdog probe; `runScopedDirectPrivacy` saved and restored across checkpoints, SW reboots, and resume operations.
+    - `extension/popup.js`: Background preflight privacy block handled via decision modal rather than synchronous window alert.
+  - P0 Discrepancy 1 (Real Implementation Mutation Sensitivity Harness Verified):
+    - Created `test/run_v7_real_mutant_sensitivity.js`.
+    - Tested all 4 genuine code/DOM/ledger/restart mutations:
+      1. Mutant A (Phone-only form classified as FAILURE in `extension/content-script.js`): Runner Exit Code 1 (`AssertionError: Target 2 must be strictly SKIPPED (observed: FAILURE)`).
+      2. Mutant B (Visible `#stop-save-btn` hidden in `extension/popup.html`): Runner Exit Code 1 (`AssertionError: #stop-save-btn must be visibly rendered`).
+      3. Mutant C (Skipped bucket omitted from 7-bucket reconciliation in `extension/modules/history-store.js`): Runner Exit Code 1 (`AssertionError: completed must equal 3 (observed: 2)`).
+      4. Mutant D (Actual post-restart queue wiped on SW boot in `extension/background.js`): Runner Exit Code 1 (`AssertionError: Restored remaining queue must be >= 2 across true SW restart (observed: 0)`).
+    - 4/4 Mutants killed strictly with Exit Code 1; all candidate source files restored 100% byte-identically in `finally` blocks.
+    - Machine-readable mutation report generated: `owner-extension-test-site/evidence/evidence_v7_real_mutants_report.json`.
+  - P0 Discrepancy 2 (SC-04 Run-Scoped Resume Invariants across ALL Preserved Targets):
+    - Multi-target resume invariant assertion `verifyRunScopedResumeInvariants()` enforced across all preserved targets: exact `campaignRunId`, 1 terminal record per target, zero missing, zero duplicates, final queue drained to 0.
+    - 3 Strict Counterexamples verified: (1) dropped target record strictly throws INVARIANT_VIOLATION, (2) duplicate target record strictly throws INVARIANT_VIOLATION, (3) unscoped `campaignRunId` strictly throws INVARIANT_VIOLATION.
+  - Positive Deterministic E2E Test Suite: `node test/run_chromium_v7_task3_and_task4_suite.js` -> Exit Code `0` (100% PASS for both SC-03 and SC-04).
+  - Machine-Readable Evidence Report: `owner-extension-test-site/evidence/evidence_v7_task3_and_task4_report.json`.
+  - Raw Log: `owner-extension-test-site/evidence/evidence_v7_task3_and_task4.log`.
+  - Zero IVCS changes (ChatGPT owns IVCS; Antigravity made 0 IVCS changes).
   - Verification Status: HOLD (Awaiting independent ChatGPT Code Audit). Release HOLD maintained.
 - Task SC-20261031-02 (Authentic Chromium Campaign Orchestration E2E Runner Committed & Verified):
   - Fact-Check Remediation (#6548985799 & #6549097571):

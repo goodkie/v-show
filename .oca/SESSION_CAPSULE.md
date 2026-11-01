@@ -6,22 +6,21 @@ PROJECT_NAME: XPIDER AutoForm Sender Pro
 WORKSPACE_ROOT: E:\vivpr\ai\extension-form-sender
 AUTHORITY_SOURCE: goodkie/v-show Issues #6 & #10
 ACTIVE_BRANCH: candidate/sc03-sc04-classification-and-pause
-STATE_REV: 2026-10-31.299
-AUTHORITY_CURSOR: 6551871979
-LAST_AUDIT: [CHATGPT INDEPENDENT AUDIT → ANTIGRAVITY][Issue #6][REVISED SC-03 SC-04 CANDIDATE 62177ab6 / LAST ACCEPTANCE GATES] Comment #6551871979
-LAST_DIRECTIVE: [CHATGPT AUDIT MANDATE: PRIORITIZE B (STOP & SAVE DURABILITY ACROSS RESTARTS) & A (TRUTHFUL DELIVERY EVIDENCE), THEN C (SCOPED TOTALS) & D (NEGATIVE CONTROLS)] Comment #6551871979
-LAST_RECEIPT: [ANTIGRAVITY → CHATGPT / OWNER][RECEIPT][Issue #6][FULL AUDIT REMEDIATION: SCOPED 7-BUCKET RECONCILIATION, SERVER DELIVERY RECEIPT, STOP & SAVE SURVIVAL ACROSS 2ND SW RESTART & 4/4 MUTANT KILLS]
-SCHEDULE_REVISION: 4 (Actual GitHub canonical schedule revision; legacy text claiming 7 corrected to match canonical schedule without modifying schedule file)
+STATE_REV: 2026-11-01.300
+AUTHORITY_CURSOR: 6552941218
+LAST_AUDIT: [CHATGPT INDEPENDENT AUDIT → ANTIGRAVITY][Issue #6][SC-03 & SC-04 REAL IMPLEMENTATION MUTATION & RESUME INVARIANT MANDATE] Comment #6552941218
+LAST_DIRECTIVE: [CHATGPT DIRECTIVE: REAL MUTANT SENSITIVITY HARNESS (MUTANTS A, B, C, D) & ALL-PRESERVED-TARGET RUN-SCOPED RESUME INVARIANTS] Comment #6552941218
+LAST_RECEIPT: [ANTIGRAVITY → CHATGPT / OWNER][RECEIPT][Issue #6][FULL AUDIT RESOLUTION: REAL MUTATION SENSITIVITY HARNESS (4/4 MUTANTS KILLED), ALL-TARGET RUN-SCOPED RESUME INVARIANTS VERIFIED & POSITIVE E2E SUITE 100% PASS]
+SCHEDULE_REVISION: 4
 BUILD_ID: V7.0.0-RC11-20261030-THREE-MODE-CONTRACTS-PASS
 FUNCTIONAL_COMMIT: 20678ada
 PROVENANCE_COMMIT: 20678ada
-CANDIDATE_COMMIT: 62177ab68b9762cda4dcbc6c4450945f59eef7f3
-CANDIDATE_EXTENSION_TREE_SHA: 428fba9b8f382f09d25f0905afc91c5523f95533
 TEST_EVIDENCE_BRANCH: candidate/sc03-sc04-classification-and-pause
 TEST_EVIDENCE_REPORT: owner-extension-test-site/evidence/evidence_v7_task3_and_task4_report.json
-NEXT_ACTION: ChatGPT independent code audit of revised candidate commit 62177ab68b9762cda4dcbc6c4450945f59eef7f3 and gate decision for Tasks SC-03 and SC-04. Release HOLD maintained.
-BLOCKERS: None. Revised candidate branch cleanly pushed to GitHub; passes 100% across SC-03 discovery preservation, truthful 404 failure, strict non-inquiry skip, 7-bucket reconciliation, visible #stop-save-btn, and SW termination assertions. RC11 baseline on major/v7-dual-mode remains 100% frozen.
-OWNER_ACTION: None required yet. Release HOLD maintained; no full public campaign run.
+MUTATION_EVIDENCE_REPORT: owner-extension-test-site/evidence/evidence_v7_real_mutants_report.json
+NEXT_ACTION: ChatGPT independent code audit of candidate commit with real mutation sensitivity evidence and gate decision for Tasks SC-03 and SC-04. Release HOLD maintained.
+BLOCKERS: None. Candidate branch passes 100% across positive E2E suite (SC-03 and SC-04) and real mutation sensitivity harness (4/4 mutants strictly killed with exit code 1 and byte-for-byte restored). Base major/v7-dual-mode remains 100% frozen.
+OWNER_ACTION: None required. Release HOLD maintained; zero public submissions.
 RELEASE_ASSET_TAG: v7.0.0-rc11
 RELEASE_ASSET_ZIP: XPIDER_V7.0.0_RC11_DUAL_MODE_OWNER_BETA.zip
 RELEASE_ASSET_SIZE: 51693297

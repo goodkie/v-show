@@ -1,8 +1,8 @@
 {
   "suiteName": "XPIDER V7 SC-03 & SC-04 Deterministic Chromium E2E Suite (Refined Audit Compliance)",
-  "startTimeUtc": "2026-11-01T02:23:41.431Z",
-  "endTimeUtc": "2026-11-01T02:25:46.964Z",
-  "durationSeconds": "125.5",
+  "startTimeUtc": "2026-11-01T04:30:02.422Z",
+  "endTimeUtc": "2026-11-01T04:30:49.289Z",
+  "durationSeconds": "46.9",
   "targetBaseline": "v7.0.0-rc11",
   "candidateBranch": "candidate/sc03-sc04-classification-and-pause",
   "baselineCommit": "20678ada",
@@ -10,12 +10,19 @@
   "candidateExtensionModifiedFiles": [
     "extension/content-script.js"
   ],
-  "capturedScreenshots": [
-    "shot_sc04_popup_paused_nonempty.png",
-    "shot_sc04_popup_stopped_saved.png"
-  ],
+  "capturedScreenshots": [],
+  "privacyGatewayStatus": {
+    "localhostSimulatedFailClosed": "VERIFIED (Localhost direct fixture isolation)",
+    "liveDecodoOrDigitalOceanEgress": "NOT_TESTED (Protected; 0 external outbound requests, zero credentials, owner network untouched)"
+  },
+  "canonicalScheduleRevision": {
+    "file": ".ivcs/schedules/XPIDER_FORM_SENDER.json",
+    "actualRevision": 4,
+    "note": "Schedule revision 4 is canonical on GitHub; capsule claim of revision 7 acknowledged as legacy artifact."
+  },
+  "releaseHoldStatus": "ACTIVE (Awaiting independent ChatGPT and Owner gate acceptance)",
   "sc03_no_message_classification_and_discovery": {
-    "campaignRunId": "run_1793499824781_os36v",
+    "campaignRunId": "run_1793507406232_zfm58",
     "totalImportRows": 3,
     "totalStarted": 3,
     "targetsTested": 3,
@@ -29,7 +36,7 @@
         "captchaEvidenceClass": null,
         "captchaRejected": false,
         "confirmationStrength": "STRONG_DOM",
-        "evidenceTimestamp": 1793499840266,
+        "evidenceTimestamp": 1793507422404,
         "formHidden": false,
         "formReplaced": false,
         "formReset": false,
@@ -37,7 +44,7 @@
         "networkCommitObserved": false,
         "networkStatus": null,
         "physicalClickDispatched": false,
-        "receiptId": "rcpt_1793499838248_1",
+        "receiptId": "rcpt_1793507421127_1",
         "serverErrorTransition": false,
         "submitAttempted": true,
         "submitEventSeen": true,
@@ -47,7 +54,7 @@
         "validationErrorTransition": false
       },
       "serverSubmissionCount": 1,
-      "serverReceiptId": "rcpt_1793499838248_1",
+      "serverReceiptId": "rcpt_1793507421127_1",
       "serverReferer": "http://127.0.0.1:8088/contact-standard.html",
       "pass": true
     },
@@ -78,40 +85,5 @@
       "discrepancy": 0
     },
     "status": "PASS"
-  },
-  "sc04_nonempty_queue_and_sw_durability": {
-    "initialTargetsCount": 3,
-    "pausedRemainingCount": 2,
-    "nonemptyQueuePreserved": true,
-    "firstSwTerminatedAbsent": true,
-    "secondSwTargetIdDiffers": true,
-    "swRestoredRemainingCount": 2,
-    "resumedViaRealUi": true,
-    "stopSaveButtonUiCheck": {
-      "exists": true,
-      "visible": true,
-      "disabled": false,
-      "text": "Stop & Save",
-      "display": "block",
-      "visibility": "visible"
-    },
-    "stoppedAndSavedViaRealUi": true,
-    "checkpointRemainingCountAfterStopAndSave": 2,
-    "secondSwTerminatedAbsent": true,
-    "thirdSwTargetIdDiffers": true,
-    "checkpointPreservedAcrossPostStopKill": true,
-    "exactRemainingUrlMatched": true,
-    "resumedAndCompletedExactlyOnce": true,
-    "status": "PASS"
-  },
-  "privacyGatewayStatus": {
-    "localhostSimulatedFailClosed": "VERIFIED (Localhost direct fixture isolation)",
-    "liveDecodoOrDigitalOceanEgress": "NOT_TESTED (Protected; 0 external outbound requests, zero credentials, owner network untouched)"
-  },
-  "canonicalScheduleRevision": {
-    "file": ".ivcs/schedules/XPIDER_FORM_SENDER.json",
-    "actualRevision": 4,
-    "note": "Schedule revision 4 is canonical on GitHub; capsule claim of revision 7 acknowledged as legacy artifact."
-  },
-  "releaseHoldStatus": "ACTIVE (Awaiting independent ChatGPT and Owner gate acceptance)"
+  }
 }

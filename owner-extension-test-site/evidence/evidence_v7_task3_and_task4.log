@@ -1,196 +1,119 @@
-[2026-11-01T02:23:41.428Z] ================================================================================
-[2026-11-01T02:23:41.431Z] 🚀 RUNNING TASK SC-03 & SC-04 CHROMIUM E2E SUITE (REFINED AUDIT COMPLIANCE)
-[2026-11-01T02:23:41.431Z] ================================================================================
-[2026-11-01T02:23:41.487Z] Test server active on port 8088
-[2026-11-01T02:23:41.488Z] Disposable profile: C:\Users\oPus\AppData\Local\Temp\xpider-sc03-sc04-nw7iia
-[2026-11-01T02:23:41.501Z] Browser launched (PID=29240)
-[2026-11-01T02:23:42.425Z] Extension ID: ldlijlaccfeelfdhgnjbibniocefckjj
-[2026-11-01T02:23:44.701Z] Connected to Popup UI via CDP
-[2026-11-01T02:23:44.702Z] 
+[2026-11-01T04:35:06.960Z] ================================================================================
+[2026-11-01T04:35:06.963Z] 🚀 RUNNING TASK SC-03 & SC-04 CHROMIUM E2E SUITE (REFINED AUDIT COMPLIANCE)
+[2026-11-01T04:35:06.963Z] ================================================================================
+[2026-11-01T04:35:06.963Z] ⚡ Task filter active: executing SC-04 only
+[2026-11-01T04:35:07.020Z] Test server active on port 8088
+[2026-11-01T04:35:07.021Z] Disposable profile: C:\Users\oPus\AppData\Local\Temp\xpider-sc03-sc04-3arp3v
+[2026-11-01T04:35:07.032Z] Browser launched (PID=37460)
+[2026-11-01T04:35:07.949Z] Extension ID: ldlijlaccfeelfdhgnjbibniocefckjj
+[2026-11-01T04:35:08.845Z] [SW-LOG] [BOOT] [SW_RESTART] XPIDER Service Worker initialized buildId=V7.0.0-RC11-20261030-THREE-MODE-CONTRACTS-PASS channel=OWNER_BETA_V7_DUAL_MODE timestamp=2026-11-01T04:35:08.844Z modules={"modules/build-provenance.js":{"status":"PASS","buildId":"V7.0.0-RC11-20261030-THREE-MODE-CONTRACTS-PASS","implementationHead":"20678ada6491bf842ec7e996a88108152c76007f"},"solver-core.js":{"status":"PASS"},"modules/operation-queue.js":{"status":"PASS"},"modules/template-store.js":{"status":"PASS"},"modules/history-store.js":{"status":"PASS"},"modules/email-collector.js":{"status":"PASS"},"modules/vision-submit-executor.js":{"status":"PASS"},"modules/privacy-gateway.js":{"status":"PASS"},"modules/smart-field-resolver.js":{"status":"PASS"},"modules/challenge-gate.js":{"status":"PASS"},"modules/mock-captcha-provider-adapter.js":{"status":"PASS"}}
+[2026-11-01T04:35:08.850Z] [SW-LOG] [PRIVACY_GATE] Proxy onAuthRequired asyncBlocking listener registered with bounded retries.
+[2026-11-01T04:35:08.860Z] [SW-LOG] [BootStep] solver_instantiation
+[2026-11-01T04:35:08.865Z] [SW-LOG] [X PIDER] Background script initializing (Unified Mode)...
+[2026-11-01T04:35:08.866Z] [SW-LOG] [BootStep] side_panel_config
+[2026-11-01T04:35:08.868Z] [SW-LOG] [BootStep] campaign_state_init
+[2026-11-01T04:35:08.869Z] [SW-LOG] [BootStep] global_functions_defined
+[2026-11-01T04:35:08.869Z] [SW-LOG] [BootStep] worker_online
+[2026-11-01T04:35:08.892Z] [SW-LOG] [OWNER_TEST_GUARD] declarativeNetRequest session rules removed cleanly
+[2026-11-01T04:35:08.893Z] [SW-LOG] [BG_LOG][tab=none] [OWNER_TEST_GUARD] declarativeNetRequest session rules removed cleanly
+[2026-11-01T04:35:09.261Z] [SW-LOG] [BG_LOG][tab=none] 📦 [Migration] Safely migrated to v2 (Backup: xpider_backup_v1_1793507709246)
+[2026-11-01T04:35:09.409Z] [SW-LOG] [BootStep] restoring_campaign_state
+[2026-11-01T04:35:09.410Z] [SW-LOG] [Boot] Initializing campaign state...
+[2026-11-01T04:35:09.449Z] [SW-LOG] [OWNER_TEST_GUARD] declarativeNetRequest session rules removed cleanly
+[2026-11-01T04:35:09.449Z] [SW-LOG] [BG_LOG][tab=none] [OWNER_TEST_GUARD] declarativeNetRequest session rules removed cleanly
+[2026-11-01T04:35:09.450Z] [SW-LOG] [COUNTER_RECONCILE] legacySuccess=0 ledgerSuccess=0 action=LEDGER_WINS
+[2026-11-01T04:35:09.450Z] [SW-LOG] [BootStep] restore_complete
+[2026-11-01T04:35:09.450Z] [SW-LOG] [Boot] Privacy Relay configured — checking status and auto-recovering if offline...
+[2026-11-01T04:35:10.319Z] Connected to Popup UI via CDP
+[2026-11-01T04:35:10.350Z] Initial server submissions count verified: 0
+[2026-11-01T04:35:10.350Z] 
 =========================================================================
-[2026-11-01T02:23:44.702Z] --- TASK SC-03: UNIFIED MULTI-TARGET CAMPAIGN RUN & SCOPED RECONCILIATION ---
-[2026-11-01T02:23:44.702Z] =========================================================================
-[2026-11-01T02:23:44.723Z] Initial server submissions count verified: 0
-[2026-11-01T02:23:44.723Z] Launching single unified campaign with 3 targets: ["http://127.0.0.1:8088/homepage-with-newsletter-and-contact-link.html","http://127.0.0.1:8088/phone-only-no-message.html","http://127.0.0.1:8088/no-contact-page.html"]
-[2026-11-01T02:23:44.791Z] SC-03 Campaign Start Response: {"success":true,"status":"acknowledged","queueCount":3,"campaignRunId":"run_1793499824781_os36v"}
-[2026-11-01T02:23:45.434Z] SC-03 Campaign Active: runId=run_1793499824781_os36v
-[2026-11-01T02:23:45.460Z] Assigned SC-03 CampaignRunId: run_1793499824781_os36v
-[2026-11-01T02:23:46.741Z] SC-03 Progress T+0s: active=true queue=2 url=undefined
-[2026-11-01T02:23:47.746Z] SC-03 Progress T+1s: active=true queue=2 url=undefined
-[2026-11-01T02:23:48.749Z] SC-03 Progress T+2s: active=true queue=2 url=undefined
-[2026-11-01T02:23:49.765Z] SC-03 Progress T+3s: active=true queue=2 url=undefined
-[2026-11-01T02:23:50.778Z] SC-03 Progress T+4s: active=true queue=2 url=undefined
-[2026-11-01T02:23:51.779Z] SC-03 Progress T+5s: active=true queue=2 url=undefined
-[2026-11-01T02:23:52.787Z] SC-03 Progress T+6s: active=true queue=2 url=undefined
-[2026-11-01T02:23:53.788Z] SC-03 Progress T+7s: active=true queue=2 url=undefined
-[2026-11-01T02:23:54.792Z] SC-03 Progress T+8s: active=true queue=2 url=undefined
-[2026-11-01T02:23:55.806Z] SC-03 Progress T+9s: active=true queue=2 url=undefined
-[2026-11-01T02:23:56.813Z] SC-03 Progress T+10s: active=true queue=2 url=undefined
-[2026-11-01T02:23:57.816Z] SC-03 Progress T+11s: active=true queue=2 url=undefined
-[2026-11-01T02:23:58.831Z] SC-03 Progress T+12s: active=true queue=2 url=undefined
-[2026-11-01T02:23:59.838Z] SC-03 Progress T+13s: active=true queue=2 url=undefined
-[2026-11-01T02:24:00.843Z] SC-03 Progress T+14s: active=true queue=2 url=undefined
-[2026-11-01T02:24:01.856Z] SC-03 Progress T+15s: active=true queue=2 url=undefined
-[2026-11-01T02:24:02.861Z] SC-03 Progress T+16s: active=true queue=2 url=undefined
-[2026-11-01T02:24:03.870Z] SC-03 Progress T+17s: active=true queue=2 url=undefined
-[2026-11-01T02:24:04.879Z] SC-03 Progress T+18s: active=true queue=2 url=undefined
-[2026-11-01T02:24:05.884Z] SC-03 Progress T+19s: active=true queue=2 url=undefined
-[2026-11-01T02:24:06.889Z] SC-03 Progress T+20s: active=true queue=2 url=undefined
-[2026-11-01T02:24:07.899Z] SC-03 Progress T+21s: active=true queue=2 url=undefined
-[2026-11-01T02:24:08.915Z] SC-03 Progress T+22s: active=true queue=2 url=undefined
-[2026-11-01T02:24:09.917Z] SC-03 Progress T+23s: active=true queue=2 url=undefined
-[2026-11-01T02:24:10.923Z] SC-03 Progress T+24s: active=true queue=1 url=undefined
-[2026-11-01T02:24:11.925Z] SC-03 Progress T+25s: active=true queue=1 url=undefined
-[2026-11-01T02:24:12.931Z] SC-03 Progress T+26s: active=true queue=1 url=undefined
-[2026-11-01T02:24:13.946Z] SC-03 Progress T+27s: active=true queue=1 url=undefined
-[2026-11-01T02:24:14.952Z] SC-03 Progress T+28s: active=true queue=1 url=undefined
-[2026-11-01T02:24:15.956Z] SC-03 Progress T+29s: active=true queue=1 url=undefined
-[2026-11-01T02:24:16.956Z] SC-03 Progress T+30s: active=true queue=1 url=undefined
-[2026-11-01T02:24:17.964Z] SC-03 Progress T+31s: active=true queue=1 url=undefined
-[2026-11-01T02:24:18.972Z] SC-03 Progress T+32s: active=true queue=1 url=undefined
-[2026-11-01T02:24:19.977Z] SC-03 Progress T+33s: active=true queue=1 url=undefined
-[2026-11-01T02:24:20.985Z] SC-03 Progress T+34s: active=true queue=1 url=undefined
-[2026-11-01T02:24:21.991Z] SC-03 Progress T+35s: active=true queue=1 url=undefined
-[2026-11-01T02:24:23.005Z] SC-03 Progress T+36s: active=true queue=1 url=undefined
-[2026-11-01T02:24:24.007Z] SC-03 Progress T+37s: active=true queue=1 url=undefined
-[2026-11-01T02:24:25.009Z] SC-03 Progress T+38s: active=true queue=1 url=undefined
-[2026-11-01T02:24:26.022Z] SC-03 Progress T+39s: active=true queue=1 url=undefined
-[2026-11-01T02:24:27.032Z] SC-03 Progress T+40s: active=true queue=0 url=undefined
-[2026-11-01T02:24:28.041Z] SC-03 Progress T+41s: active=true queue=0 url=undefined
-[2026-11-01T02:24:29.045Z] SC-03 Progress T+42s: active=true queue=0 url=undefined
-[2026-11-01T02:24:30.055Z] SC-03 Progress T+43s: active=true queue=0 url=undefined
-[2026-11-01T02:24:31.059Z] SC-03 Progress T+44s: active=true queue=0 url=undefined
-[2026-11-01T02:24:32.065Z] SC-03 Progress T+45s: active=true queue=0 url=undefined
-[2026-11-01T02:24:33.073Z] SC-03 Progress T+46s: active=true queue=0 url=undefined
-[2026-11-01T02:24:34.081Z] SC-03 Progress T+47s: active=true queue=0 url=undefined
-[2026-11-01T02:24:35.084Z] SC-03 Progress T+48s: active=true queue=0 url=undefined
-[2026-11-01T02:24:36.089Z] SC-03 Progress T+49s: active=true queue=0 url=undefined
-[2026-11-01T02:24:37.095Z] SC-03 Progress T+50s: active=false queue=0 url=undefined
-[2026-11-01T02:24:37.095Z] SC-03 Campaign settled to inactive at T+50s
-[2026-11-01T02:24:37.100Z] SC-03 Attempt count for runId run_1793499824781_os36v: 3
-[2026-11-01T02:24:37.100Z] Target 1 Authoritative Status: CONFIRMED_SUCCESS
-[2026-11-01T02:24:37.100Z] Target 1 Contact Page URL: http://127.0.0.1:8088/contact-standard.html
-[2026-11-01T02:24:37.101Z] Target 1 Outcome Evidence: {"ariaLiveSuccessTransition":true,"buttonSuccessState":true,"captchaEvidenceClass":null,"captchaRejected":false,"confirmationStrength":"STRONG_DOM","evidenceTimestamp":1793499840266,"formHidden":false,"formReplaced":false,"formReset":false,"frameworkSuccessState":true,"networkCommitObserved":false,"networkStatus":null,"physicalClickDispatched":false,"receiptId":"rcpt_1793499838248_1","serverErrorTransition":false,"submitAttempted":true,"submitEventSeen":true,"successNodeVisibleTransition":true,"successTextTransition":true,"thankYouUrlTransition":false,"validationErrorTransition":false}
-[2026-11-01T02:24:37.104Z] Server-side submissions after Target 1: count=1
-[2026-11-01T02:24:37.104Z] ✅ Target 1 verified: Discovered contact link, submitted HTTP POST, server recorded receiptId=rcpt_1793499838248_1
-[2026-11-01T02:24:37.104Z] Target 2 Authoritative Status: SKIPPED | Reason: NO_LONG_TEXT_INQUIRY_FIELD
-[2026-11-01T02:24:37.107Z] ✅ Target 2 verified: Classified strictly SKIPPED with 0 submissions delta.
-[2026-11-01T02:24:37.107Z] Target 3 Authoritative Status: FAILURE | Reason: NO_ACCESSIBLE_INQUIRY_FORM
-[2026-11-01T02:24:37.109Z] ✅ Target 3 verified: Classified truthfully as FAILURE / NO_ACCESSIBLE_INQUIRY_FORM with 0 submissions delta.
-[2026-11-01T02:24:37.109Z] 
---- Authoritative Scoped HistoryStore Statistics ---
-[2026-11-01T02:24:37.112Z] Scoped Stats for runId run_1793499824781_os36v: {"scope":"currentRun","campaignRunId":"run_1793499824781_os36v","totalStarted":3,"totalImportRows":3,"pending":0,"invalid":0,"success":1,"failure":1,"unknown":0,"timeout":0,"timeoutLocal":0,"timeoutGlobal":0,"skipped":1,"paused":0,"completed":3,"failureBreakdown":{"NO_ACCESSIBLE_INQUIRY_FORM":1},"logStr":"[LEDGER_STATS] scope=currentRun success=1 failure=1 unknown=0 timeout=0 skipped=1"}
-[2026-11-01T02:24:37.112Z] Scoped 7-Bucket Sum: 3 | Completed: 3
-[2026-11-01T02:24:37.112Z] ✅ SC-03: Single multi-target campaign verified with strict 1:1 row accounting and 7-bucket reconciliation (0 discrepancy).
-[2026-11-01T02:24:37.112Z] 
-=========================================================================
-[2026-11-01T02:24:37.112Z] --- TASK SC-04: NONEMPTY QUEUE PAUSE, SW RESTART & STOP & SAVE DURABILITY ---
-[2026-11-01T02:24:37.112Z] =========================================================================
-[2026-11-01T02:24:37.112Z] Setting up 3-target campaign queue in Popup DOM: ["http://127.0.0.1:8088/contact-standard.html","http://127.0.0.1:8088/spa-delayed-contact.html","http://127.0.0.1:8088/index.html"]
-[2026-11-01T02:24:37.114Z] Clicking Real UI Start Button (#start-btn)...
-[2026-11-01T02:24:37.973Z] 🎯 Multi-target campaign active at T+0s! runId=normal_run_1793499877138_ufpn6s
-[2026-11-01T02:24:37.973Z] Clicking Real UI Pause Button (#pause-btn) to capture NON-EMPTY queue...
-[2026-11-01T02:24:38.827Z] ⏸️ Durable pause checkpoint captured at T+0.4s: remaining=2
-[2026-11-01T02:24:38.827Z] Checkpoint remainingQueue: ["http://127.0.0.1:8088/spa-delayed-contact.html","http://127.0.0.1:8088/index.html"]
-[2026-11-01T02:24:38.829Z] Pause button text after pause: "Resume"
-[2026-11-01T02:24:39.002Z] 📸 Captured screenshot: shot_sc04_popup_paused_nonempty.png
-[2026-11-01T02:24:39.002Z] 
+[2026-11-01T04:35:10.350Z] --- TASK SC-04: NONEMPTY QUEUE PAUSE, SW RESTART & STOP & SAVE DURABILITY ---
+[2026-11-01T04:35:10.350Z] =========================================================================
+[2026-11-01T04:35:10.350Z] Setting up 3-target campaign queue in Popup DOM: ["http://127.0.0.1:8088/contact-standard.html","http://127.0.0.1:8088/spa-delayed-contact.html","http://127.0.0.1:8088/index.html"]
+[2026-11-01T04:35:10.398Z] Clicking Real UI Start Button (#start-btn)...
+[2026-11-01T04:35:10.457Z] [SW-LOG] [PRIVACY_START_PREP] currentMode=PRIVACY_RELAY failClosed=true
+[2026-11-01T04:35:12.011Z] [SW-LOG] [PRIVACY_AUTO_RECOVERY] candidate=PRIVACY_RELAY
+[2026-11-01T04:35:12.018Z] [SW-LOG] [PRIVACY_TRANSPORT_APPLIED] mode=PRIVACY_RELAY host=127.0.0.1:18988
+[2026-11-01T04:35:12.082Z] [SW-LOG] [PRIVACY_CANARY] FAIL reason=PROXY_CANARY_FAILED: Failed to fetch
+[2026-11-01T04:35:12.085Z] [SW-LOG] [PRIVACY_START_BLOCKED] reason=PROXY_NOT_CONFIGURED
+[2026-11-01T04:35:12.291Z] [SW-LOG] [BUILD_HANDSHAKE] popup=20678ada6491bf842ec7e996a88108152c76007f background=20678ada6491bf842ec7e996a88108152c76007f build=V7.0.0-RC11-20261030-THREE-MODE-CONTRACTS-PASS manifest=3 result=PASS
+[2026-11-01T04:35:12.292Z] [SW-LOG] [BG_LOG][tab=none] [BUILD_HANDSHAKE] popup=20678ada6491bf842ec7e996a88108152c76007f background=20678ada6491bf842ec7e996a88108152c76007f build=V7.0.0-RC11-20261030-THREE-MODE-CONTRACTS-PASS manifest=3 result=PASS
+[2026-11-01T04:35:12.293Z] [SW-LOG] [START_BG] received queue=3
+[2026-11-01T04:35:12.294Z] [SW-LOG] [BG_LOG][tab=none] [START_BG] received queue=3
+[2026-11-01T04:35:12.294Z] [SW-LOG] [PRIVACY_OWNER_OVERRIDE] scope=currentRun mode=DIRECT acknowledged=true
+[2026-11-01T04:35:12.295Z] [SW-LOG] [BG_LOG][tab=none] [PRIVACY_OWNER_OVERRIDE] scope=currentRun mode=DIRECT acknowledged=true
+[2026-11-01T04:35:12.298Z] [SW-LOG] [OWNER_TEST_GUARD] declarativeNetRequest session rules removed cleanly
+[2026-11-01T04:35:12.299Z] [SW-LOG] [BG_LOG][tab=none] [OWNER_TEST_GUARD] declarativeNetRequest session rules removed cleanly
+[2026-11-01T04:35:12.300Z] [SW-LOG] [NORMAL_CAMPAIGN_PREFLIGHT] publicTargets=0 testMode=false result=PASS
+[2026-11-01T04:35:12.303Z] [SW-LOG] [BG_LOG][tab=none] [NORMAL_CAMPAIGN_PREFLIGHT] publicTargets=0 testMode=false result=PASS
+[2026-11-01T04:35:12.308Z] [SW-LOG] [OWNER_TEST_GUARD] declarativeNetRequest session rules removed cleanly
+[2026-11-01T04:35:12.311Z] [SW-LOG] [BG_LOG][tab=none] [OWNER_TEST_GUARD] declarativeNetRequest session rules removed cleanly
+[2026-11-01T04:35:12.311Z] [SW-LOG] [PRIVACY_GATE] mode=DIRECT transport=DIRECT failClosed=false (OWNER_FUNCTION_TEST_MODE) status=READY
+[2026-11-01T04:35:12.311Z] [SW-LOG] [BG_LOG][tab=none] [PRIVACY_GATE] mode=DIRECT transport=DIRECT failClosed=false (OWNER_FUNCTION_TEST_MODE) status=READY
+[2026-11-01T04:35:12.314Z] [SW-LOG] [START_BG_READY] privacyReady=true
+[2026-11-01T04:35:12.314Z] [SW-LOG] [BG_LOG][tab=none] [START_BG_READY] privacyReady=true
+[2026-11-01T04:35:12.320Z] [SW-LOG] [BG_LOG][tab=none] [Boot] Orchestrator entered.
+[2026-11-01T04:35:12.327Z] [SW-LOG] [SESSION_BASELINE] Captured 2 pre-existing user tabs as protected baseline.
+[2026-11-01T04:35:12.328Z] [SW-LOG] [TAB_BARRIER] phase=START_CAMPAIGN_BOOT ownedBefore=0
+[2026-11-01T04:35:12.329Z] [SW-LOG] [TAB_BARRIER] phase=START_CAMPAIGN_BOOT ownedAfter=0 result=PASS
+[2026-11-01T04:35:12.330Z] [SW-LOG] [BG_LOG][tab=none] [Boot] Previous state cleared.
+[2026-11-01T04:35:12.333Z] [SW-LOG] [BG_LOG][tab=none] [Boot] CAPTCHA solver state reset (attempts=0, identity=null).
+[2026-11-01T04:35:12.336Z] [SW-LOG] [BG_LOG][tab=none] 📊 [Queue Filter] Input: 3 | Duplicates: 0 | Suppressed: 0 | History-Attempted: 0 | Executable: 3
+[2026-11-01T04:35:12.344Z] [SW-LOG] [LEDGER_INIT] campaignRunId=normal_run_1793507712250_35w376 totalImportRows=3 pending=3
+[2026-11-01T04:35:12.345Z] [SW-LOG] [BG_LOG][tab=none] [LEDGER_INIT] campaignRunId=normal_run_1793507712250_35w376 totalImportRows=3 pending=3
+[2026-11-01T04:35:12.345Z] [SW-LOG] [BG_LOG][tab=none] [Boot] Variables initialized.
+[2026-11-01T04:35:12.346Z] [SW-LOG] [BG_LOG][tab=none] 🚀 Engine booting...
+[2026-11-01T04:35:12.348Z] [SW-LOG] [BG_LOG][tab=none] [CAMPAIGN_START] buildId=V7.0.0-RC11-20261030-THREE-MODE-CONTRACTS-PASS campaignRunId=normal_run_1793507712250_35w376 totalTargets=3 mode=NORMAL delayMs=10000 fillDelayMs=300 submitDelayMs=4000
+[2026-11-01T04:35:12.355Z] [SW-LOG] [BG_LOG][tab=none] [Boot] Storage sync initiated.
+[2026-11-01T04:35:12.362Z] [SW-LOG] [BG_LOG][tab=none] [Boot] Target loop triggered.
+[2026-11-01T04:35:12.367Z] [SW-LOG] [SERIALIZED_GATE] Slot acquired atomically. activeTargetInFlight=true activeTargetCount=1 maxConcurrent=1
+[2026-11-01T04:35:12.370Z] [SW-LOG] [TAB_BARRIER] phase=PRE_NEXT_TARGET ownedBefore=0
+[2026-11-01T04:35:12.376Z] [SW-LOG] [TAB_BARRIER] phase=PRE_NEXT_TARGET ownedAfter=0 result=PASS
+[2026-11-01T04:35:12.377Z] [SW-LOG] [BG_LOG][tab=none] [TARGET 1/3][127.0.0.1] START
+[2026-11-01T04:35:12.377Z] [SW-LOG] [BG_LOG][tab=none] [TARGET_START] buildId=V7.0.0-RC11-20261030-THREE-MODE-CONTRACTS-PASS campaignRunId=normal_run_1793507712250_35w376 attemptId=att_init targetIndex=1/3 targetUrl=http://127.0.0.1:8088/contact-standard.html
+[2026-11-01T04:35:12.383Z] [SW-LOG] [BG_LOG][tab=none] [EXEC_IDENTITY_PRE_NAV] attemptId=att_1793507712366_nqf8u token=tok_1793507712365_7iqray epoch=2
+[2026-11-01T04:35:12.482Z] [SW-LOG] [TAB_BARRIER] phase=POST_NEW_TARGET_CREATE ownedBefore=0
+[2026-11-01T04:35:12.501Z] [SW-LOG] [TAB_BARRIER] phase=POST_NEW_TARGET_CREATE ownedAfter=0 result=PASS
+[2026-11-01T04:35:12.501Z] [SW-LOG] [TAB_KILL_SWITCH] keepTabId=1494957662 closedOthers=0 remainingOwned=1 result=PASS
+[2026-11-01T04:35:12.651Z] 🎯 Multi-target campaign active at T+1.5s! runId=normal_run_1793507712250_35w376
+[2026-11-01T04:35:12.652Z] Clicking Real UI Pause Button (#pause-btn) to capture NON-EMPTY queue...
+[2026-11-01T04:35:12.684Z] [SW-LOG] [BG_LOG][tab=1494957662] [TAB_FOCUS] tabId=1494957662 windowId=1494957656 active=true focused=true
+[2026-11-01T04:35:12.685Z] [SW-LOG] [BG_LOG][tab=1494957662] Step 1: Sniper Mode active. Searching for contact page...
+[2026-11-01T04:35:12.714Z] [SW-LOG] [BG_LOG][tab=none] [PAUSE] campaignRunId=normal_run_1793507712250_35w376 remaining=2 inProgress=1
+[2026-11-01T04:35:12.717Z] [SW-LOG] [BG_LOG][tab=none] ⏸️ [Engine] Campaign PAUSED / STOP & SAVE requested.
+[2026-11-01T04:35:12.745Z] [SW-LOG] [BG_LOG][tab=1494957662] ⏸️ [Scan] In-flight scan aborted due to pause/cancel.
+[2026-11-01T04:35:12.745Z] [SW-LOG] [BG_LOG][tab=1494957662] Pre-scan complete. Identified 2 valid paths.
+[2026-11-01T04:35:12.751Z] [SW-LOG] [BG_LOG][tab=1494957662] [ORCHESTRATION_ABORTED] abortSignal was triggered externally (PAUSE). Delegating terminal settlement to outer target lifecycle.
+[2026-11-01T04:35:12.982Z] [SW-LOG] [TAB_CLOSE] tabId=1494957662 attempt=1 result=CLOSED
+[2026-11-01T04:35:13.013Z] [SW-LOG] [SERIALIZED_GATE] Slot released. activeTargetInFlight=false activeTargetCount=0
+[2026-11-01T04:35:13.078Z] [SW-LOG] [TAB_BARRIER] phase=PAUSE_CAMPAIGN ownedBefore=0
+[2026-11-01T04:35:13.079Z] [SW-LOG] [TAB_BARRIER] phase=PAUSE_CAMPAIGN ownedAfter=0 result=PASS
+[2026-11-01T04:35:13.079Z] [SW-LOG] [PRIVACY_SETTINGS_RESTORED] keepEnforced=true gateReady=true transportEnforced=true mode=PRIVACY_RELAY
+[2026-11-01T04:35:13.079Z] [SW-LOG] [PRIVACY_SETTINGS_RESTORED] gateReady=false transportEnforced=false
+[2026-11-01T04:35:13.079Z] [SW-LOG] [BG_LOG][tab=none] [PRIVACY_SETTINGS_RESTORED] gateReady=false transportEnforced=false
+[2026-11-01T04:35:13.095Z] [SW-LOG] [BG_LOG][tab=none] 💾 [Checkpoint] Campaign snapshot saved: 2 targets remaining.
+[2026-11-01T04:35:13.102Z] [SW-LOG] [BG_LOG][tab=none] === CAMPAIGN OUTCOME SUMMARY (currentRun) ===
+[2026-11-01T04:35:13.118Z] ⏸️ Durable pause checkpoint captured at T+0s: remaining=2
+[2026-11-01T04:35:13.118Z] Checkpoint remainingQueue: ["http://127.0.0.1:8088/spa-delayed-contact.html","http://127.0.0.1:8088/index.html"]
+[2026-11-01T04:35:13.119Z] [SW-LOG] [BG_LOG][tab=none] CONFIRMED_SUCCESS:           0
+[2026-11-01T04:35:13.120Z] [SW-LOG] [BG_LOG][tab=none] FAILURE:                     0
+[2026-11-01T04:35:13.124Z] [SW-LOG] [BG_LOG][tab=none] TIMEOUT_LOCAL:               0
+[2026-11-01T04:35:13.125Z] [SW-LOG] [BG_LOG][tab=none] TIMEOUT_GLOBAL:              0
+[2026-11-01T04:35:13.129Z] [SW-LOG] [BG_LOG][tab=none] DELIVERY_UNKNOWN:            0
+[2026-11-01T04:35:13.132Z] [SW-LOG] [BG_LOG][tab=none] SKIPPED:                     1
+[2026-11-01T04:35:13.133Z] [SW-LOG] [BG_LOG][tab=none] PAUSED_UNKNOWN:              0
+[2026-11-01T04:35:13.135Z] [SW-LOG] [BG_LOG][tab=none] ----------------------------------------
+[2026-11-01T04:35:13.136Z] [SW-LOG] [BG_LOG][tab=none] TOTAL TERMINAL / COMPLETED:  1
+[2026-11-01T04:35:13.138Z] [SW-LOG] [CAMPAIGN_SUMMARY] success=0 failure=0 timeoutLocal=0 timeoutGlobal=0 unknown=0 skipped=1 paused=0 completed=1
+[2026-11-01T04:35:13.139Z] [SW-LOG] [BG_LOG][tab=none] ========================================
+[2026-11-01T04:35:13.150Z] Pause button text after pause: "Resume"
+[2026-11-01T04:35:13.367Z] 📸 Captured screenshot: shot_sc04_popup_paused_nonempty.png
+[2026-11-01T04:35:13.368Z] 
 --- Forcibly Terminating Service Worker Process #1 via CDP ---
-[2026-11-01T02:24:39.516Z] Closing SW Target #1: 985066B0E866E3E826827D9CECA748E2
-[2026-11-01T02:24:41.535Z] SW Target after closeTarget #1: TERMINATED_CONFIRMED (old ID: 985066B0E866E3E826827D9CECA748E2 absent)
-[2026-11-01T02:24:41.535Z] 
+[2026-11-01T04:35:13.872Z] Closing SW Target #1: 5B30BF77CC2672F358DADE2425600A24
+[2026-11-01T04:35:15.947Z] SW Target after closeTarget #1: TERMINATED_CONFIRMED (old ID: 5B30BF77CC2672F358DADE2425600A24 absent)
+[2026-11-01T04:35:15.948Z] 
 --- Waking Up Fresh Service Worker #2 & Verifying Durable Checkpoint Restoration ---
-[2026-11-01T02:24:42.051Z] Fresh SW #2 Booted: Target ID=53C6796ECE495550BA6DD6B53C9502A5 (verified different from old ID=985066B0E866E3E826827D9CECA748E2)
-[2026-11-01T02:24:42.061Z] Fresh SW #2 Restored State from Checkpoint: {"isActive":false,"isPaused":true,"remainingCount":2,"pausedByOperator":true,"runId":"normal_run_1793499877138_ufpn6s"}
-[2026-11-01T02:24:42.061Z] ✅ SC-04 Part A: Non-empty queue preserved and restored across genuine Service Worker termination.
-[2026-11-01T02:24:42.061Z] 
---- Resuming Campaign via Real UI (#pause-btn / confirmResumeCampaignWithMode) ---
-[2026-11-01T02:24:42.472Z] ▶️ Campaign resumed at T+0s! isPaused=false, isActive=true
-[2026-11-01T02:24:42.472Z] 
---- Checking UI Visibility of #stop-save-btn and Stopping & Saving Campaign ---
-[2026-11-01T02:24:42.474Z] Stop & Save Button UI Verification: {"exists":true,"visible":true,"disabled":false,"text":"Stop & Save","display":"block","visibility":"visible"}
-[2026-11-01T02:24:42.796Z] 🛑 Campaign stopped observed from real visible #stop-save-btn click at T+0s! isActive=false
-[2026-11-01T02:24:42.800Z] Saved Checkpoint in Storage after #stop-save-btn: remaining=2
-[2026-11-01T02:24:42.800Z] Exact remaining target recorded before second kill: http://127.0.0.1:8088/spa-delayed-contact.html
-[2026-11-01T02:24:42.968Z] 📸 Captured screenshot: shot_sc04_popup_stopped_saved.png
-[2026-11-01T02:24:42.968Z] 
---- Forcibly Terminating Service Worker #2 AFTER Stop & Save ---
-[2026-11-01T02:24:43.474Z] Closing SW Target #2: 53C6796ECE495550BA6DD6B53C9502A5
-[2026-11-01T02:24:45.481Z] SW Target after closeTarget #2: TERMINATED_CONFIRMED (old ID: 53C6796ECE495550BA6DD6B53C9502A5 absent)
-[2026-11-01T02:24:45.481Z] 
---- Waking Up Fresh Service Worker #3 & Verifying Post-Stop&Save Checkpoint Survival ---
-[2026-11-01T02:24:45.988Z] Fresh SW #3 Booted: Target ID=5D4494C9562A628262018AF80103062E (verified different from SW #1 and SW #2)
-[2026-11-01T02:24:46.000Z] SW #3 Checkpoint Restored: remaining=2 url=http://127.0.0.1:8088/spa-delayed-contact.html
-[2026-11-01T02:24:46.000Z] ✅ SC-04 Part B: Persistent checkpoint survived genuine SW kill & restart after Stop & Save with exact target identity intact.
-[2026-11-01T02:24:46.000Z] 
---- Resuming Final Target from Real UI after Post-Stop&Save Restart ---
-[2026-11-01T02:24:46.408Z] ▶️ Final target execution active at T+0s
-[2026-11-01T02:24:47.414Z] Final execution progress T+0s: active=true remaining=1 currentUrl=undefined
-[2026-11-01T02:24:48.419Z] Final execution progress T+1s: active=true remaining=1 currentUrl=undefined
-[2026-11-01T02:24:49.429Z] Final execution progress T+2s: active=true remaining=1 currentUrl=undefined
-[2026-11-01T02:24:50.443Z] Final execution progress T+3s: active=true remaining=1 currentUrl=undefined
-[2026-11-01T02:24:51.447Z] Final execution progress T+4s: active=true remaining=1 currentUrl=undefined
-[2026-11-01T02:24:52.449Z] Final execution progress T+5s: active=true remaining=1 currentUrl=undefined
-[2026-11-01T02:24:53.455Z] Final execution progress T+6s: active=true remaining=1 currentUrl=undefined
-[2026-11-01T02:24:54.467Z] Final execution progress T+7s: active=true remaining=1 currentUrl=undefined
-[2026-11-01T02:24:55.483Z] Final execution progress T+8s: active=true remaining=1 currentUrl=undefined
-[2026-11-01T02:24:56.489Z] Final execution progress T+9s: active=true remaining=1 currentUrl=undefined
-[2026-11-01T02:24:57.553Z] Final execution progress T+10s: active=true remaining=1 currentUrl=undefined
-[2026-11-01T02:24:58.561Z] Final execution progress T+11s: active=true remaining=1 currentUrl=undefined
-[2026-11-01T02:24:59.567Z] Final execution progress T+12s: active=true remaining=1 currentUrl=undefined
-[2026-11-01T02:25:00.582Z] Final execution progress T+13s: active=true remaining=1 currentUrl=undefined
-[2026-11-01T02:25:01.589Z] Final execution progress T+14s: active=true remaining=1 currentUrl=undefined
-[2026-11-01T02:25:02.606Z] Final execution progress T+15s: active=true remaining=1 currentUrl=undefined
-[2026-11-01T02:25:03.624Z] Final execution progress T+16s: active=true remaining=1 currentUrl=undefined
-[2026-11-01T02:25:04.639Z] Final execution progress T+17s: active=true remaining=1 currentUrl=undefined
-[2026-11-01T02:25:05.653Z] Final execution progress T+18s: active=true remaining=1 currentUrl=undefined
-[2026-11-01T02:25:06.657Z] Final execution progress T+19s: active=true remaining=1 currentUrl=undefined
-[2026-11-01T02:25:07.673Z] Final execution progress T+20s: active=true remaining=1 currentUrl=undefined
-[2026-11-01T02:25:08.686Z] Final execution progress T+21s: active=true remaining=1 currentUrl=undefined
-[2026-11-01T02:25:09.692Z] Final execution progress T+22s: active=true remaining=1 currentUrl=undefined
-[2026-11-01T02:25:10.700Z] Final execution progress T+23s: active=true remaining=1 currentUrl=undefined
-[2026-11-01T02:25:11.709Z] Final execution progress T+24s: active=true remaining=1 currentUrl=undefined
-[2026-11-01T02:25:12.721Z] Final execution progress T+25s: active=true remaining=1 currentUrl=undefined
-[2026-11-01T02:25:13.729Z] Final execution progress T+26s: active=true remaining=1 currentUrl=undefined
-[2026-11-01T02:25:14.744Z] Final execution progress T+27s: active=true remaining=1 currentUrl=undefined
-[2026-11-01T02:25:15.747Z] Final execution progress T+28s: active=true remaining=1 currentUrl=undefined
-[2026-11-01T02:25:16.756Z] Final execution progress T+29s: active=true remaining=1 currentUrl=undefined
-[2026-11-01T02:25:17.766Z] Final execution progress T+30s: active=true remaining=1 currentUrl=undefined
-[2026-11-01T02:25:18.768Z] Final execution progress T+31s: active=true remaining=1 currentUrl=undefined
-[2026-11-01T02:25:19.770Z] Final execution progress T+32s: active=true remaining=1 currentUrl=undefined
-[2026-11-01T02:25:20.779Z] Final execution progress T+33s: active=true remaining=1 currentUrl=undefined
-[2026-11-01T02:25:21.786Z] Final execution progress T+34s: active=true remaining=0 currentUrl=undefined
-[2026-11-01T02:25:22.796Z] Final execution progress T+35s: active=true remaining=0 currentUrl=undefined
-[2026-11-01T02:25:23.798Z] Final execution progress T+36s: active=true remaining=0 currentUrl=undefined
-[2026-11-01T02:25:24.800Z] Final execution progress T+37s: active=true remaining=0 currentUrl=undefined
-[2026-11-01T02:25:25.806Z] Final execution progress T+38s: active=true remaining=0 currentUrl=undefined
-[2026-11-01T02:25:26.813Z] Final execution progress T+39s: active=true remaining=0 currentUrl=undefined
-[2026-11-01T02:25:27.823Z] Final execution progress T+40s: active=true remaining=0 currentUrl=undefined
-[2026-11-01T02:25:28.835Z] Final execution progress T+41s: active=true remaining=0 currentUrl=undefined
-[2026-11-01T02:25:29.843Z] Final execution progress T+42s: active=true remaining=0 currentUrl=undefined
-[2026-11-01T02:25:30.851Z] Final execution progress T+43s: active=true remaining=0 currentUrl=undefined
-[2026-11-01T02:25:31.860Z] Final execution progress T+44s: active=true remaining=0 currentUrl=undefined
-[2026-11-01T02:25:32.874Z] Final execution progress T+45s: active=true remaining=0 currentUrl=undefined
-[2026-11-01T02:25:33.881Z] Final execution progress T+46s: active=true remaining=0 currentUrl=undefined
-[2026-11-01T02:25:34.886Z] Final execution progress T+47s: active=true remaining=0 currentUrl=undefined
-[2026-11-01T02:25:35.890Z] Final execution progress T+48s: active=true remaining=0 currentUrl=undefined
-[2026-11-01T02:25:36.897Z] Final execution progress T+49s: active=true remaining=0 currentUrl=undefined
-[2026-11-01T02:25:37.901Z] Final execution progress T+50s: active=true remaining=0 currentUrl=undefined
-[2026-11-01T02:25:38.915Z] Final execution progress T+51s: active=true remaining=0 currentUrl=undefined
-[2026-11-01T02:25:39.916Z] Final execution progress T+52s: active=true remaining=0 currentUrl=undefined
-[2026-11-01T02:25:40.921Z] Final execution progress T+53s: active=true remaining=0 currentUrl=undefined
-[2026-11-01T02:25:41.927Z] Final execution progress T+54s: active=true remaining=0 currentUrl=undefined
-[2026-11-01T02:25:42.935Z] Final execution progress T+55s: active=true remaining=0 currentUrl=undefined
-[2026-11-01T02:25:43.939Z] Final execution progress T+56s: active=true remaining=0 currentUrl=undefined
-[2026-11-01T02:25:44.944Z] Final execution progress T+57s: active=true remaining=0 currentUrl=undefined
-[2026-11-01T02:25:45.949Z] Final execution progress T+58s: active=true remaining=0 currentUrl=undefined
-[2026-11-01T02:25:46.960Z] Final execution progress T+59s: active=false remaining=0 currentUrl=undefined
-[2026-11-01T02:25:46.960Z] 🎯 Final campaign execution settled to inactive at T+59s
-[2026-11-01T02:25:46.963Z] Final target execution count for runId normal_run_1793499877138_ufpn6s: 1
-[2026-11-01T02:25:46.963Z] ✅ SC-04 Part C: Remaining target resumed from UI and processed exactly once to clean completion.
-[2026-11-01T02:25:46.972Z] 
-📄 Generated machine-readable evidence report: E:\vivpr\ai\extension-form-sender\owner-extension-test-site\evidence\evidence_v7_task3_and_task4_report.json
-[2026-11-01T02:25:46.973Z] 
-================================================================================
-[2026-11-01T02:25:46.973Z] 🎉 ALL AUDIT ITEMS RESOLVED: TASK SC-03 & TASK SC-04 VERIFIED SUCCESSFULLY
-[2026-11-01T02:25:46.973Z] ================================================================================
+[2026-11-01T04:35:16.465Z] Fresh SW #2 Booted: Target ID=54BCD56341EE96208A1572C52E64B4DF (verified different from old ID=5B30BF77CC2672F358DADE2425600A24)
+[2026-11-01T04:35:16.473Z] Fresh SW #2 Restored State from Checkpoint: {"isActive":false,"isPaused":true,"remainingCount":0,"pausedByOperator":true,"runId":"normal_run_1793507712250_35w376"}

@@ -1,0 +1,62 @@
+{
+  "suiteName": "XPIDER V7 Real Implementation Mutation Sensitivity Report",
+  "startTimeUtc": "2026-11-01T04:33:27.775Z",
+  "endTimeUtc": "2026-11-01T04:35:16.529Z",
+  "totalMutantsTested": 4,
+  "allMutantsRejectedWithExitCode1": true,
+  "mutantResults": [
+    {
+      "id": "MUTANT_A_PHONE_ONLY_CLASSIFIED_FAILURE",
+      "name": "Phone-only form classified as FAILURE instead of SKIPPED",
+      "file": "extension/content-script.js",
+      "taskFlag": "--task=sc03",
+      "exitCode": 1,
+      "exitCodePass": true,
+      "matchedError": true,
+      "capturedErrorExcerpt": "❌ Fatal Test Runner Error: AssertionError [ERR_ASSERTION]: Target 2 must be strictly SKIPPED (observed: FAILURE)",
+      "durationSeconds": "45.2",
+      "restoredByteIdentical": true,
+      "status": "PASS_MUTANT_REJECTED"
+    },
+    {
+      "id": "MUTANT_B_STOP_SAVE_BTN_HIDDEN",
+      "name": "Visible #stop-save-btn hidden at live popup",
+      "file": "extension/popup.html",
+      "taskFlag": "--task=sc04",
+      "exitCode": 1,
+      "exitCodePass": true,
+      "matchedError": true,
+      "capturedErrorExcerpt": "❌ Fatal Test Runner Error: AssertionError [ERR_ASSERTION]: #stop-save-btn must be visibly rendered (offsetParent !== null && display !== none)",
+      "durationSeconds": "9.4",
+      "restoredByteIdentical": true,
+      "status": "PASS_MUTANT_REJECTED"
+    },
+    {
+      "id": "MUTANT_C_LEDGER_BUCKET_DROPPED",
+      "name": "Real store run bucket dropped / skipped count omitted from ledger",
+      "file": "extension/modules/history-store.js",
+      "taskFlag": "--task=sc03",
+      "exitCode": 1,
+      "exitCodePass": true,
+      "matchedError": true,
+      "capturedErrorExcerpt": "❌ Fatal Test Runner Error: AssertionError [ERR_ASSERTION]: completed must equal 3 (observed: 2)",
+      "durationSeconds": "44.4",
+      "restoredByteIdentical": true,
+      "status": "PASS_MUTANT_REJECTED"
+    },
+    {
+      "id": "MUTANT_D_POST_RESTART_QUEUE_WIPED",
+      "name": "Actual post-restart queue wiped on SW boot",
+      "file": "extension/background.js",
+      "taskFlag": "--task=sc04",
+      "exitCode": 1,
+      "exitCodePass": true,
+      "matchedError": true,
+      "capturedErrorExcerpt": "❌ Fatal Test Runner Error: AssertionError [ERR_ASSERTION]: Restored remaining queue must be >= 2 across true SW restart (observed: 0)",
+      "durationSeconds": "9.6",
+      "restoredByteIdentical": true,
+      "status": "PASS_MUTANT_REJECTED"
+    }
+  ],
+  "summary": "All 4 real implementation mutations strictly triggered exit code 1 with exact assertion failure matches. All modified files restored byte-identically."
+}

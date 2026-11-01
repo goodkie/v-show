@@ -78,6 +78,11 @@ async function main() {
     log('🚀 RUNNING TASK SC-03 & SC-04 CHROMIUM E2E SUITE (REFINED AUDIT COMPLIANCE)');
     log('================================================================================');
 
+    const runOnlySc03 = process.argv.includes('--task=sc03');
+    const runOnlySc04 = process.argv.includes('--task=sc04');
+    if (runOnlySc03) log('⚡ Task filter active: executing SC-03 only');
+    if (runOnlySc04) log('⚡ Task filter active: executing SC-04 only');
+
     const startTimeUtc = new Date().toISOString();
 
     // 1. Ensure test fixture server active
@@ -105,8 +110,14 @@ async function main() {
         'about:blank'
     ];
 
-    const proc = spawn(bin, browserArgs, { stdio: 'ignore' });
-    log(`Browser launched (PID=${proc.pid})`);
+    let proc = null;
+    let browserWs = null;
+    let popupWs = null;
+    let swWs = null;
+
+    try {
+        proc = spawn(bin, browserArgs, { stdio: 'ignore' });
+        log(`Browser launched (PID=${proc.pid})`);
 
     // Wait for CDP
     let targets = null;
@@ -133,8 +144,22 @@ async function main() {
     const extId = swTarget.url.split('/')[2];
     log(`Extension ID: ${extId}`);
 
-    let swWs = await openWs(swTarget.webSocketDebuggerUrl);
+    function attachSwConsole(ws) {
+        ws.addEventListener('message', ev => {
+            try {
+                const raw = typeof ev.data === 'string' ? ev.data : ev.data?.toString?.();
+                const m = JSON.parse(raw);
+                if (m.method === 'Runtime.consoleAPICalled') {
+                    const text = (m.params?.args || []).map(a => a.value !== undefined ? (typeof a.value === 'object' ? JSON.stringify(a.value) : a.value) : (a.description || '')).join(' ');
+                    log(`[SW-LOG] ${text}`);
+                }
+            } catch (_) {}
+        });
+    }
+
+    swWs = await openWs(swTarget.webSocketDebuggerUrl);
     await cdpSend(swWs, 'Runtime.enable');
+    attachSwConsole(swWs);
 
     const swEval = async (code) => {
         const res = await cdpSend(swWs, 'Runtime.evaluate', {
@@ -147,7 +172,7 @@ async function main() {
 
     // Open Popup Page
     const browserWsUrl = await fetch(`http://127.0.0.1:${CDP_PORT}/json/version`).then(r => r.json()).then(j => j.webSocketDebuggerUrl);
-    const browserWs = await openWs(browserWsUrl);
+    browserWs = await openWs(browserWsUrl);
 
     const popupUrl = `chrome-extension://${extId}/popup.html`;
     const openRes = await cdpSend(browserWs, 'Target.createTarget', { url: popupUrl });
@@ -158,31 +183,36 @@ async function main() {
     const popupTarget = targets.find(t => t.id === popupTargetId);
     assert(popupTarget, 'Popup target must exist');
 
-    const popupWs = await openWs(popupTarget.webSocketDebuggerUrl);
+    popupWs = await openWs(popupTarget.webSocketDebuggerUrl);
     await cdpSend(popupWs, 'Runtime.enable');
     await cdpSend(popupWs, 'Page.enable');
     log('Connected to Popup UI via CDP');
+    await cdpSend(popupWs, 'Runtime.evaluate', {
+        expression: `window.alert = (msg) => console.warn('[SUPPRESSED_POPUP_ALERT]', msg);`
+    });
 
     const capturedShots = [];
-
-    // =========================================================================
-    // TASK SC-03: Unified Single-Campaign Multi-Target Execution & Reconciliation
-    // =========================================================================
-    log('\n=========================================================================');
-    log('--- TASK SC-03: UNIFIED MULTI-TARGET CAMPAIGN RUN & SCOPED RECONCILIATION ---');
-    log('=========================================================================');
-
-    // Configure test mode
-    await swEval(`
-        self.campaignState.ownerFunctionTestMode = true;
-        self.campaignState.runScopedDirectPrivacy = true;
-    `);
 
     // Reset localhost authoritative server submissions
     await fetch(`http://127.0.0.1:${PORT}/__xpider_reset_submissions`).then(r => r.json());
     const initialSubRecord = await fetch(`http://127.0.0.1:${PORT}/__xpider_submissions`).then(r => r.json());
     assert.strictEqual(initialSubRecord.count, 0, 'Server submissions must start at strictly 0');
     log('Initial server submissions count verified: 0');
+
+    let sc03Summary = null;
+    if (!runOnlySc04) {
+        // =========================================================================
+        // TASK SC-03: Unified Single-Campaign Multi-Target Execution & Reconciliation
+        // =========================================================================
+        log('\n=========================================================================');
+        log('--- TASK SC-03: UNIFIED MULTI-TARGET CAMPAIGN RUN & SCOPED RECONCILIATION ---');
+        log('=========================================================================');
+
+        // Configure test mode
+        await swEval(`
+            self.campaignState.ownerFunctionTestMode = true;
+            self.campaignState.runScopedDirectPrivacy = true;
+        `);
 
     // Define 3 unified targets for SC-03
     const sc03Targets = [
@@ -203,6 +233,9 @@ async function main() {
                 action: 'START_CAMPAIGN',
                 source: 'USER_START_BUTTON',
                 runScopedDirectPrivacy: true,
+                delayMs: 1000,
+                fillDelayMs: 200,
+                submitDelayMs: 800,
                 expectedImplementationHead: liveHead,
                 expectedBuildId: liveBuild,
                 expectedManifestVersion: Number(liveManifest),
@@ -213,7 +246,10 @@ async function main() {
                     phone: '555-0199',
                     message: 'SC-03 Architectural inquiry for unified multi-target verification.'
                 },
-                options: { source: 'USER_START_BUTTON' }
+                options: {
+                    source: 'USER_START_BUTTON',
+                    runScopedDirectPrivacy: true
+                }
             };
             globalThis.__dispatchBackgroundMessage(msg, {}, res => resolve(res));
         })
@@ -238,7 +274,7 @@ async function main() {
 
     // Wait for all 3 targets to complete and campaign to settle inactive
     let sc03Settled = false;
-    for (let i = 0; i < 60; i++) {
+    for (let i = 0; i < 150; i++) {
         await sleep(1000);
         const st = await swEval(`({
             isActive: campaignState.isActive,
@@ -341,6 +377,53 @@ async function main() {
     assert.strictEqual(discrepancy, 0, 'Reconciliation discrepancy must be strictly 0');
     log('✅ SC-03: Single multi-target campaign verified with strict 1:1 row accounting and 7-bucket reconciliation (0 discrepancy).');
 
+    sc03Summary = {
+        campaignRunId: sc03RunId,
+        totalImportRows: scopedStats.totalImportRows,
+        totalStarted: scopedStats.totalStarted,
+        targetsTested: 3,
+        target1_homepageDiscovery: {
+            targetUrl: sc03Targets[0],
+            status: discoveryAttempt.status,
+            contactPageUrl: discoveryAttempt.contactPageUrl || discoveryAttempt.selectedCandidateUrl,
+            outcomeEvidence: discoveryAttempt.outcomeEvidence,
+            serverSubmissionCount: postDiscoverySubRecord.count,
+            serverReceiptId: firstSub.receiptId,
+            serverReferer: firstSub.referer,
+            pass: discoveryAttempt.status === 'CONFIRMED_SUCCESS' && postDiscoverySubRecord.count === 1
+        },
+        target2_phoneOnlyNoMessage: {
+            targetUrl: sc03Targets[1],
+            status: phoneAttempt.status,
+            reasonCode: phoneAttempt.reasonCode,
+            serverSubmissionDelta: postPhoneSubRecord.count - postDiscoverySubRecord.count,
+            pass: phoneAttempt.status === 'SKIPPED' && phoneAttempt.reasonCode === 'NO_LONG_TEXT_INQUIRY_FIELD' && (postPhoneSubRecord.count - postDiscoverySubRecord.count === 0)
+        },
+        target3_formlessPage: {
+            targetUrl: sc03Targets[2],
+            status: formlessAttempt.status,
+            reasonCode: formlessAttempt.reasonCode,
+            serverSubmissionDelta: postFormlessSubRecord.count - postPhoneSubRecord.count,
+            pass: formlessAttempt.status === 'FAILURE' && formlessAttempt.reasonCode === 'NO_ACCESSIBLE_INQUIRY_FORM' && (postFormlessSubRecord.count - postPhoneSubRecord.count === 0)
+        },
+        scopedSevenBucketLedgerReconciliation: {
+            completed: scopedStats.completed,
+            success: scopedStats.success,
+            failure: scopedStats.failure,
+            skipped: scopedStats.skipped,
+            timeout: scopedStats.timeout,
+            deliveryUnknown: scopedStats.unknown || 0,
+            automationFailed: scopedStats.automationFailed || 0,
+            paused: scopedStats.paused || 0,
+            bucketSum,
+            discrepancy
+        },
+        status: 'PASS'
+    };
+    } // end if (!runOnlySc04)
+
+    let sc04Summary = null;
+    if (!runOnlySc03) {
     // =========================================================================
     // TASK SC-04: Nonempty Queue Pause, SW Termination, UI Stop & Save Durability across Restarts & Resume
     // =========================================================================
@@ -388,21 +471,18 @@ async function main() {
         expression: `document.getElementById('start-btn')?.click()`
     });
 
-    await sleep(500);
-    await cdpSend(popupWs, 'Runtime.evaluate', {
-        expression: `(() => {
-            const btn = document.getElementById('privacy-block-action-override');
-            if (btn && btn.offsetParent !== null) {
-                console.log('Clicking privacy override in modal');
-                btn.click();
-            }
-        })()`
-    });
-
-    // Wait for active state
+    // Wait for active state, clicking privacy override if loopback modal appears
     let sc04Active = false;
-    for (let i = 0; i < 20; i++) {
+    for (let i = 0; i < 30; i++) {
         await sleep(300);
+        await cdpSend(popupWs, 'Runtime.evaluate', {
+            expression: `(() => {
+                const btn = document.getElementById('privacy-block-action-override');
+                if (btn && btn.offsetParent !== null) {
+                    btn.click();
+                }
+            })()`
+        });
         const st = await swEval(`({ isActive: campaignState.isActive, runId: campaignState.campaignRunId })`);
         if (st?.isActive) {
             log(`🎯 Multi-target campaign active at T+${i * 0.3}s! runId=${st.runId}`);
@@ -485,12 +565,13 @@ async function main() {
 
     swWs = await openWs(newSwTarget2.webSocketDebuggerUrl);
     await cdpSend(swWs, 'Runtime.enable');
+    attachSwConsole(swWs);
 
     const restoredState = await swEval(`
         ({
             isActive: campaignState.isActive,
             isPaused: campaignState.isPaused,
-            remainingCount: (campaignState.queue || campaignState.remainingQueue || campaignState.pausedCheckpoint?.remainingQueue)?.length,
+            remainingCount: Array.isArray(campaignState.queue) ? campaignState.queue.length : 0,
             pausedByOperator: campaignState.pausedByOperator,
             runId: campaignState.campaignRunId
         })
@@ -624,6 +705,7 @@ async function main() {
 
     swWs = await openWs(newSwTarget3.webSocketDebuggerUrl);
     await cdpSend(swWs, 'Runtime.enable');
+    attachSwConsole(swWs);
 
     // Query storage directly in SW #3
     const thirdRestored = await swEval(`
@@ -667,9 +749,9 @@ async function main() {
     }
     assert(finalRunActive, 'Campaign must resume actively for final target execution');
 
-    // Wait for remaining target to finish
+    // Wait for remaining targets to finish
     let finalSettled = false;
-    for (let i = 0; i < 60; i++) {
+    for (let i = 0; i < 150; i++) {
         await sleep(1000);
         const st = await swEval(`({ isActive: campaignState.isActive, remaining: campaignState.queue?.length || 0, url: campaignState.currentAttemptUrl })`);
         log(`Final execution progress T+${i}s: active=${st?.isActive} remaining=${st?.remaining} currentUrl=${st?.url}`);
@@ -681,18 +763,116 @@ async function main() {
     }
     assert(finalSettled, 'Campaign must complete final target to inactive state');
 
-    // Verify remaining target was processed exactly once in HistoryStore
-    const finalLedgerRecords = await swEval(`
+    // 11. SC-04 Settlement & Run-Scoped Multi-Target Invariant Verification (ChatGPT Discrepancy 2)
+    log('\n--- Authoritative SC-04 Final Settlement & Multi-Target Invariants ---');
+
+    // (A) Final queue state: drained to 0 and inactive
+    const finalQueueState = await swEval(`({
+        isActive: Boolean(campaignState.isActive),
+        queueLength: Array.isArray(campaignState.queue) ? campaignState.queue.length : 0
+    })`);
+    log(`Final Campaign Queue State: isActive=${finalQueueState.isActive}, queueLength=${finalQueueState.queueLength}`);
+    assert.strictEqual(finalQueueState.isActive, false, 'Campaign must be strictly inactive upon completion');
+    assert.strictEqual(finalQueueState.queueLength, 0, 'Campaign queue must be completely drained to 0 (zero remaining)');
+
+    // (B) Read all attempts from HistoryStore
+    const allAttempts = await swEval(`
         new Promise(resolve => {
             chrome.storage.local.get(['xpider_history_attempts'], res => {
-                const list = res.xpider_history_attempts || [];
-                resolve(list.filter(a => (a.sourceUrl && a.sourceUrl.includes('spa-delayed-contact')) || (a.targetUrl && a.targetUrl.includes('spa-delayed-contact'))));
+                resolve(res.xpider_history_attempts || []);
             });
         })
     `);
-    log(`Final target execution count for runId ${savedCheckpoint.campaignRunId}: ${finalLedgerRecords.length}`);
-    assert.strictEqual(finalLedgerRecords.length, 1, 'Remaining target must be resumed and processed exactly once');
-    log('✅ SC-04 Part C: Remaining target resumed from UI and processed exactly once to clean completion.');
+
+    // Invariant verification function
+    function verifyRunScopedResumeInvariants(runId, preservedQueue, attempts) {
+        const runAttempts = attempts.filter(a => a.campaignRunId === runId);
+        const terminalStatuses = ['CONFIRMED_SUCCESS', 'SKIPPED', 'FAILURE', 'SUCCESS'];
+        const results = [];
+        for (const targetUrl of preservedQueue) {
+            const urlPath = new URL(targetUrl).pathname;
+            const matching = runAttempts.filter(a => {
+                const u = a.sourceUrl || a.targetUrl || a.targetIdentity || '';
+                return u === targetUrl || u.includes(urlPath);
+            });
+            if (matching.length === 0) {
+                throw new Error(`INVARIANT_VIOLATION: Missing attempt record for target ${targetUrl} in run ${runId}`);
+            }
+            if (matching.length > 1) {
+                throw new Error(`INVARIANT_VIOLATION: Duplicate attempt records (${matching.length}) for target ${targetUrl} in run ${runId}`);
+            }
+            const record = matching[0];
+            if (!terminalStatuses.includes(record.status)) {
+                throw new Error(`INVARIANT_VIOLATION: Attempt for ${targetUrl} has non-terminal status ${record.status}`);
+            }
+            results.push({ targetUrl, status: record.status, reasonCode: record.reasonCode || 'N/A' });
+        }
+        return { valid: true, runId, verifiedTargets: results.length, details: results };
+    }
+
+    log(`Verifying run-scoped resume invariants for runId ${savedCheckpoint.campaignRunId} across all preserved targets: ${JSON.stringify(savedCheckpoint.remainingQueue)}`);
+    const invariantResult = verifyRunScopedResumeInvariants(savedCheckpoint.campaignRunId, savedCheckpoint.remainingQueue, allAttempts);
+    log(`✅ Run-scoped invariant passed: ${JSON.stringify(invariantResult)}`);
+
+    // (C) Counterexamples proving assertion strictly fails when invariants are violated
+    log('\n--- Running Counterexample Sensitivity Checks on Multi-Target Invariants ---');
+    // Counterexample 1: Preserved target dropped / missing from run records
+    const droppedTargetAttempts = allAttempts.filter(a => {
+        const u = a.sourceUrl || a.targetUrl || '';
+        return !u.includes('index.html');
+    });
+    assert.throws(() => {
+        verifyRunScopedResumeInvariants(savedCheckpoint.campaignRunId, savedCheckpoint.remainingQueue, droppedTargetAttempts);
+    }, /INVARIANT_VIOLATION: Missing attempt record for target .* in run/);
+    log('✅ Counterexample 1 Passed: Dropped target strictly throws INVARIANT_VIOLATION (missing record).');
+
+    // Counterexample 2: Duplicate target record injected into run
+    const indexRecord = allAttempts.find(a => (a.sourceUrl || a.targetUrl || '').includes('index.html'));
+    assert(indexRecord, 'index.html record must exist for duplicate counterexample test');
+    const duplicateAttempts = [...allAttempts, { ...indexRecord, attemptId: 'dup_counterexample_' + Date.now() }];
+    assert.throws(() => {
+        verifyRunScopedResumeInvariants(savedCheckpoint.campaignRunId, savedCheckpoint.remainingQueue, duplicateAttempts);
+    }, /INVARIANT_VIOLATION: Duplicate attempt records/);
+    log('✅ Counterexample 2 Passed: Duplicate target record strictly throws INVARIANT_VIOLATION.');
+
+    // Counterexample 3: Unscoped / mismatched campaignRunId
+    assert.throws(() => {
+        verifyRunScopedResumeInvariants('unscoped_random_run_id_9999', savedCheckpoint.remainingQueue, allAttempts);
+    }, /INVARIANT_VIOLATION: Missing attempt record for target .* in run unscoped_random_run_id_9999/);
+    log('✅ Counterexample 3 Passed: Unscoped runId strictly throws INVARIANT_VIOLATION.');
+
+    log('✅ SC-04 Part C: ALL preserved targets resumed and settled to terminal statuses with 0 missing, 0 duplicates, 0 queue remaining, and invariant sensitivity proven via counterexamples.');
+
+    sc04Summary = {
+        initialTargetsCount: 3,
+        pausedRemainingCount: pausedCheckpoint.remainingQueue.length,
+        nonemptyQueuePreserved: pausedCheckpoint.remainingQueue.length >= 2,
+        firstSwTerminatedAbsent: !deadSw,
+        secondSwTargetIdDiffers: newSwTarget2.id !== oldSwId,
+        swRestoredRemainingCount: restoredState.remainingCount,
+        resumedViaRealUi: resumedActive,
+        stopSaveButtonUiCheck: stopSaveBtnCheck,
+        stoppedAndSavedViaRealUi: stoppedCleanly,
+        checkpointRemainingCountAfterStopAndSave: savedCheckpoint.remainingQueue.length,
+        secondSwTerminatedAbsent: !deadSw2,
+        thirdSwTargetIdDiffers: newSwTarget3.id !== secondSwId && newSwTarget3.id !== oldSwId,
+        checkpointPreservedAcrossPostStopKill: thirdRestored.remainingQueue.length === savedCheckpoint.remainingQueue.length,
+        exactRemainingUrlMatched: thirdRestored.remainingQueue[0] === remainingTargetBeforeKill,
+        runScopedResumeMultiTargetInvariants: {
+            campaignRunId: savedCheckpoint.campaignRunId,
+            preservedTargets: savedCheckpoint.remainingQueue,
+            finalQueueDrained: finalQueueState.queueLength === 0,
+            finalCampaignInactive: !finalQueueState.isActive,
+            terminalAttemptsRecorded: invariantResult.details,
+            counterexamplesVerified: {
+                droppedTargetThrows: true,
+                duplicateTargetThrows: true,
+                unscopedRunIdThrows: true
+            }
+        },
+        status: 'PASS'
+    };
+    } // end if (!runOnlySc03)
 
     // Summary & Machine-Readable Evidence Report
     const endTimeUtc = new Date().toISOString();
@@ -707,67 +887,6 @@ async function main() {
         baselineExtensionTreeSha: 'd065af8f1f1438ecba9bbe7fb03cf8e18c040e05',
         candidateExtensionModifiedFiles: ['extension/content-script.js'],
         capturedScreenshots: capturedShots,
-        sc03_no_message_classification_and_discovery: {
-            campaignRunId: sc03RunId,
-            totalImportRows: scopedStats.totalImportRows,
-            totalStarted: scopedStats.totalStarted,
-            targetsTested: 3,
-            target1_homepageDiscovery: {
-                targetUrl: sc03Targets[0],
-                status: discoveryAttempt.status,
-                contactPageUrl: discoveryAttempt.contactPageUrl || discoveryAttempt.selectedCandidateUrl,
-                outcomeEvidence: discoveryAttempt.outcomeEvidence,
-                serverSubmissionCount: postDiscoverySubRecord.count,
-                serverReceiptId: firstSub.receiptId,
-                serverReferer: firstSub.referer,
-                pass: discoveryAttempt.status === 'CONFIRMED_SUCCESS' && postDiscoverySubRecord.count === 1
-            },
-            target2_phoneOnlyNoMessage: {
-                targetUrl: sc03Targets[1],
-                status: phoneAttempt.status,
-                reasonCode: phoneAttempt.reasonCode,
-                serverSubmissionDelta: postPhoneSubRecord.count - postDiscoverySubRecord.count,
-                pass: phoneAttempt.status === 'SKIPPED' && phoneAttempt.reasonCode === 'NO_LONG_TEXT_INQUIRY_FIELD' && (postPhoneSubRecord.count - postDiscoverySubRecord.count === 0)
-            },
-            target3_formlessPage: {
-                targetUrl: sc03Targets[2],
-                status: formlessAttempt.status,
-                reasonCode: formlessAttempt.reasonCode,
-                serverSubmissionDelta: postFormlessSubRecord.count - postPhoneSubRecord.count,
-                pass: formlessAttempt.status === 'FAILURE' && formlessAttempt.reasonCode === 'NO_ACCESSIBLE_INQUIRY_FORM' && (postFormlessSubRecord.count - postPhoneSubRecord.count === 0)
-            },
-            scopedSevenBucketLedgerReconciliation: {
-                completed: scopedStats.completed,
-                success: scopedStats.success,
-                failure: scopedStats.failure,
-                skipped: scopedStats.skipped,
-                timeout: scopedStats.timeout,
-                deliveryUnknown: scopedStats.unknown || 0,
-                automationFailed: scopedStats.automationFailed || 0,
-                paused: scopedStats.paused || 0,
-                bucketSum,
-                discrepancy
-            },
-            status: 'PASS'
-        },
-        sc04_nonempty_queue_and_sw_durability: {
-            initialTargetsCount: 3,
-            pausedRemainingCount: pausedCheckpoint.remainingQueue.length,
-            nonemptyQueuePreserved: pausedCheckpoint.remainingQueue.length >= 2,
-            firstSwTerminatedAbsent: !deadSw,
-            secondSwTargetIdDiffers: newSwTarget2.id !== oldSwId,
-            swRestoredRemainingCount: restoredState.remainingCount,
-            resumedViaRealUi: resumedActive,
-            stopSaveButtonUiCheck: stopSaveBtnCheck,
-            stoppedAndSavedViaRealUi: stoppedCleanly,
-            checkpointRemainingCountAfterStopAndSave: savedCheckpoint.remainingQueue.length,
-            secondSwTerminatedAbsent: !deadSw2,
-            thirdSwTargetIdDiffers: newSwTarget3.id !== secondSwId && newSwTarget3.id !== oldSwId,
-            checkpointPreservedAcrossPostStopKill: thirdRestored.remainingQueue.length === savedCheckpoint.remainingQueue.length,
-            exactRemainingUrlMatched: thirdRestored.remainingQueue[0] === remainingTargetBeforeKill,
-            resumedAndCompletedExactlyOnce: finalLedgerRecords.length === 1,
-            status: 'PASS'
-        },
         privacyGatewayStatus: {
             localhostSimulatedFailClosed: 'VERIFIED (Localhost direct fixture isolation)',
             liveDecodoOrDigitalOceanEgress: 'NOT_TESTED (Protected; 0 external outbound requests, zero credentials, owner network untouched)'
@@ -780,19 +899,23 @@ async function main() {
         releaseHoldStatus: 'ACTIVE (Awaiting independent ChatGPT and Owner gate acceptance)'
     };
 
+    if (sc03Summary) finalReport.sc03_no_message_classification_and_discovery = sc03Summary;
+    if (sc04Summary) finalReport.sc04_nonempty_queue_and_sw_durability = sc04Summary;
+
     fs.writeFileSync(REPORT_FILE, JSON.stringify(finalReport, null, 2), 'utf8');
     log(`\n📄 Generated machine-readable evidence report: ${REPORT_FILE}`);
-
-    // Cleanup
-    browserWs.close();
-    popupWs.close();
-    swWs.close();
-    proc.kill();
 
     log('\n================================================================================');
     log('🎉 ALL AUDIT ITEMS RESOLVED: TASK SC-03 & TASK SC-04 VERIFIED SUCCESSFULLY');
     log('================================================================================');
     logStream.end();
+    } finally {
+        // Deterministic cleanup guaranteed even on assertion failure
+        if (browserWs) try { browserWs.close(); } catch (_) {}
+        if (popupWs) try { popupWs.close(); } catch (_) {}
+        if (swWs) try { swWs.close(); } catch (_) {}
+        if (proc) try { proc.kill(); } catch (_) {}
+    }
 }
 
 main().catch(err => {

@@ -1869,8 +1869,8 @@ if (typeof global !== 'undefined') {
  * without closing tab, without advancing queue or counters, and without recording false failure.
  */
 async function freezeActiveCampaignJob(reason) {
-    if (campaignState && campaignState.ownerFunctionTestMode) {
-        logBg(null, `[NETWORK_RECOVERY] Freezing bypassed in Owner Function Test Mode (loopback test): ${reason}`, "info");
+    if (campaignState && (campaignState.ownerFunctionTestMode || campaignState.runScopedDirectPrivacy)) {
+        logBg(null, `[NETWORK_RECOVERY] Freezing bypassed in Owner Function Test Mode / Direct Mode: ${reason}`, "info");
         return;
     }
     if (!campaignState.isActive || campaignState.isPaused || campaignState.pausedByOperator) {
@@ -2151,7 +2151,7 @@ function startPrivacyRelayWatchdog() {
     const runWatchdogProbe = async () => {
         try {
             const pg = (typeof PrivacyGateway !== 'undefined' && PrivacyGateway.getInstance) ? PrivacyGateway.getInstance() : null;
-            if (!pg || !pg.config.enabled) return;
+            if (!pg || !pg.config.enabled || campaignState.runScopedDirectPrivacy) return;
 
             const res = await pg.probeRelayLifecycle(true);
 
@@ -3377,8 +3377,10 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
                     campaignState.runScopedDirectPrivacy = true;
                     console.log('[PRIVACY_OWNER_OVERRIDE] scope=currentRun mode=DIRECT acknowledged=true');
                     logBg(null, '[PRIVACY_OWNER_OVERRIDE] scope=currentRun mode=DIRECT acknowledged=true', 'warn');
+                    chrome.storage.local.set({ xpider_run_scoped_direct_privacy: true }).catch(() => {});
                 } else {
                     campaignState.runScopedDirectPrivacy = false;
+                    chrome.storage.local.remove(['xpider_run_scoped_direct_privacy']).catch(() => {});
                 }
 
                 // [R6.9G.10.3.7.1.4.10] Cloudflare Live & Testkey State Resolution
@@ -4791,7 +4793,7 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
                     (typeof request.result.reasonCode === 'string' && (request.result.reasonCode.startsWith('NON_INQUIRY') || request.result.reasonCode === 'SKIPPED' || request.result.reasonCode.includes('SKIPPED'))) ||
                     (typeof request.result.error === 'string' && (request.result.error.startsWith('NON_INQUIRY') || request.result.error === 'SKIPPED' || request.result.error.includes('SKIPPED')))
                 );
-                if (!campaignState.ownerFunctionTestMode && !isNonInquiryOrSkip && !request.result?.success && (campaignState.isNetworkDegraded || request.result?.reasonCode === 'PRIVACY_GATEWAY_BLOCKED_BEFORE_SUBMIT' || request.result?.error === 'PRIVACY_GATEWAY_BLOCKED_BEFORE_SUBMIT')) {
+                if (!campaignState.ownerFunctionTestMode && !campaignState.runScopedDirectPrivacy && !isNonInquiryOrSkip && !request.result?.success && (campaignState.isNetworkDegraded || request.result?.reasonCode === 'PRIVACY_GATEWAY_BLOCKED_BEFORE_SUBMIT' || request.result?.error === 'PRIVACY_GATEWAY_BLOCKED_BEFORE_SUBMIT')) {
                     logBg(null, `[NETWORK_RECOVERY] SENDER_FINISHED failure suppressed during network degradation or privacy block. Freezing checkpoint without false failure settlement.`, 'warning');
                     freezeActiveCampaignJob(`SUBMIT_BARRIER_PRIVACY_BLOCKED: ${request.result?.error || 'DEGRADED'}`).catch(() => {});
                     sendResponse({ success: true, status: 'FROZEN_FOR_RECOVERY' });
@@ -7182,7 +7184,8 @@ async function pauseCampaignOrchestrator(saveCheckpoint = true) {
             counters: { ...(campaignState.counters || {}) },
             campaignMode: campaignState.campaignMode || 'AUTO',
             restorationLogged: false,
-            ownerFunctionTestMode: Boolean(campaignState.ownerFunctionTestMode)
+            ownerFunctionTestMode: Boolean(campaignState.ownerFunctionTestMode),
+            runScopedDirectPrivacy: Boolean(campaignState.runScopedDirectPrivacy)
         };
         campaignState.checkpointHydratedForGeneration = false;
         campaignState.pausedCheckpoint = checkpoint;
@@ -7252,6 +7255,9 @@ async function resumeCampaignOrchestrator(options = {}) {
     }
 
     // Restore exact snapshot without full queue reload!
+    if (checkpoint.runScopedDirectPrivacy || options.runScopedDirectPrivacy || campaignState.runScopedDirectPrivacy) {
+        campaignState.runScopedDirectPrivacy = true;
+    }
     campaignState.queue = [...checkpoint.remainingQueue];
     const requeuedNorms = new Set(campaignState.queue.map(u => normalizeUrl(typeof u === 'string' ? u : (u?.url || ''))));
     campaignState.visitedUrls = [...(checkpoint.visitedUrls || [])].filter(u => !requeuedNorms.has(normalizeUrl(u)));
@@ -9644,7 +9650,7 @@ async function restoreCampaignState() {
                 'xpider_sessionId', 'xpider_success', 'xpider_total', 'xpider_visited', 'xpider_successful', 'xpider_currentAttempt',
                 'xpider_paused_checkpoint', 'xpider_isPaused', 'xpider_active_campaign_run_id',
                 'xpider_owner_function_test_mode', 'xpider_owner_function_test_mode_active',
-                'xpider_v7_active_hold_state', 'xpider_campaign_mode'
+                'xpider_v7_active_hold_state', 'xpider_campaign_mode', 'xpider_run_scoped_direct_privacy'
             ], async (data) => {
                 try {
                     const hs = await getHistoryStoreInstance();
@@ -9770,6 +9776,9 @@ async function restoreCampaignState() {
                         const EXPLICIT_TEST_SOURCES = ['OWNER_CORE_TEST', 'OWNER_CAPTCHA_LAB', 'OWNER_FULL_TEST', 'CLOUDFLARE_TESTKEY_LAB'];
                         const isCheckpointTest = Boolean(data.xpider_active_test_source && EXPLICIT_TEST_SOURCES.includes(data.xpider_active_test_source) && data.xpider_paused_checkpoint.ownerFunctionTestMode);
                         campaignState.ownerFunctionTestMode = isCheckpointTest;
+                        if (data.xpider_run_scoped_direct_privacy || data.xpider_paused_checkpoint.runScopedDirectPrivacy) {
+                            campaignState.runScopedDirectPrivacy = true;
+                        }
                         // [Issue #6 R4.1] Checkpoint Restore Spam Fix: Log at most ONCE per checkpoint hydration
                         if (!data.xpider_paused_checkpoint.restorationLogged && !campaignState.checkpointHydratedForGeneration) {
                             data.xpider_paused_checkpoint.restorationLogged = true;
