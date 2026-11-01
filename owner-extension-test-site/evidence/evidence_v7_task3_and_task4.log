@@ -1,69 +1,196 @@
-[2026-11-01T01:10:30.226Z] ================================================================================
-[2026-11-01T01:10:30.228Z] 🚀 RUNNING TASK SC-03 & SC-04 CHROMIUM E2E SUITE
-[2026-11-01T01:10:30.228Z] ================================================================================
-[2026-11-01T01:10:30.280Z] Test server active on port 8088
-[2026-11-01T01:10:30.281Z] Disposable profile: C:\Users\oPus\AppData\Local\Temp\xpider-sc03-sc04-mtyn91
-[2026-11-01T01:10:30.290Z] Browser launched (PID=36952)
-[2026-11-01T01:10:31.654Z] Extension ID: ldlijlaccfeelfdhgnjbibniocefckjj
-[2026-11-01T01:10:33.300Z] Connected to Popup UI via CDP
-[2026-11-01T01:10:33.300Z] 
+[2026-11-01T02:23:41.428Z] ================================================================================
+[2026-11-01T02:23:41.431Z] 🚀 RUNNING TASK SC-03 & SC-04 CHROMIUM E2E SUITE (REFINED AUDIT COMPLIANCE)
+[2026-11-01T02:23:41.431Z] ================================================================================
+[2026-11-01T02:23:41.487Z] Test server active on port 8088
+[2026-11-01T02:23:41.488Z] Disposable profile: C:\Users\oPus\AppData\Local\Temp\xpider-sc03-sc04-nw7iia
+[2026-11-01T02:23:41.501Z] Browser launched (PID=29240)
+[2026-11-01T02:23:42.425Z] Extension ID: ldlijlaccfeelfdhgnjbibniocefckjj
+[2026-11-01T02:23:44.701Z] Connected to Popup UI via CDP
+[2026-11-01T02:23:44.702Z] 
 =========================================================================
-[2026-11-01T01:10:33.300Z] --- TASK SC-03: NO-MESSAGE INPUT CLASSIFICATION & LEDGER RECONCILIATION ---
-[2026-11-01T01:10:33.301Z] =========================================================================
-[2026-11-01T01:10:33.303Z] Testing homepage-with-newsletter-and-contact-link.html (Discovery preservation)...
-[2026-11-01T01:10:33.338Z] Campaign started for homepage discovery: {"success":true,"status":"acknowledged","queueCount":1,"campaignRunId":"run_1793495433325_745ia"}
-[2026-11-01T01:10:53.295Z] Discovery Authoritative Ledger Record: {"attemptId":"att_1793495433884_v770k","autofillStatus":"SUCCESS","campaignRunId":"run_1793495433325_745ia","captchaStatus":"NONE","committedContactUrl":"http://127.0.0.1:8088/contact-standard.html","committedFormUrl":"http://127.0.0.1:8088/contact-standard.html","contactDiscoveryConfidence":1,"contactDiscoverySource":null,"contactPageHostname":"127.0.0.1","contactPageUrl":"http://127.0.0.1:8088/contact-standard.html","createdAt":1793495433884,"emailsFound":0,"evidence":{},"externalFormUrl":null,"failureClass":null,"formDetectionStatus":"FOUND","formPageUrl":"http://127.0.0.1:8088/contact-standard.html","generation":1,"generationId":1,"importId":null,"isPreSubmitLocked":true,"outcomeEvidence":{"ariaLiveSuccessTransition":true,"buttonSuccessState":true,"captchaEvidenceClass":null,"captchaRejected":false,"confirmationStrength":"STRONG_DOM","evidenceTimestamp":1793495449317,"formHidden":false,"formReplaced":false,"formReset":false,"frameworkSuccessState":true,"networkCommitObserved":false,"networkStatus":null,"physicalClickDispatched":false,"receiptId":"rcpt_1793495447164_1","serverErrorTransition":false,"submitAttempted":true,"submitEventSeen":true,"successNodeVisibleTransition":true,"successTextTransition":true,"thankYouUrlTransition":false,"validationErrorTransition":false},"ownerManualConfirmed":false,"privacyFailureReason":null,"privacyGateCheckedAt":"2026-11-01T01:10:33.884Z","privacyGatePassed":false,"privacyMode":"PRIVACY_RELAY","privacyTransport":"PRIVACY_RELAY","reasonCode":"SUCCESS_CONFIRMED","receiptId":"rcpt_1793495447164_1","resultUrl":"http://127.0.0.1:8088/contact-standard.html","selectedCandidateUrl":"http://127.0.0.1:8088/contact-standard.html","sessionId":null,"settledAt":1793495449317,"sourceHostname":"127.0.0.1","sourceUrl":"http://127.0.0.1:8088/homepage-with-newsletter-and-contact-link.html","startedAt":1793495433884,"status":"CONFIRMED_SUCCESS","submissionStatus":"CONFIRMED_SUCCESS","submittedFromUrl":"http://127.0.0.1:8088/homepage-with-newsletter-and-contact-link.html","targetIdentity":"https://127.0.0.1/homepage-with-newsletter-and-contact-link.html","targetToken":"tok_1793495433883_cy6otd","templateId":"default","templateVersion":1,"timing":{"durationMs":15433,"finalizedTime":1793495449317,"intentTime":1793495433884}}
-[2026-11-01T01:10:53.295Z] ✅ SC-03 Part A.0: Homepage with newsletter form and valid contact link successfully navigated to contact form and filled without premature skipping.
-[2026-11-01T01:10:53.295Z] 
-Testing phone-only-no-message.html (Standalone non-inquiry form, strictly NO contact links)...
-[2026-11-01T01:10:53.323Z] Campaign started for phone-only-no-message.html: {"success":true,"status":"acknowledged","queueCount":1,"campaignRunId":"run_1793495433325_745ia"}
-[2026-11-01T01:10:53.684Z] Campaign active observed: true
-[2026-11-01T01:11:04.152Z] phone-only-no-message.html settled at T+9.5s: {"isActive":false,"isPaused":false}
-[2026-11-01T01:11:04.195Z] phone-only-no-message Authoritative Ledger Record: {"attemptId":"att_1793495453354_oed8u","autofillStatus":"N_A","campaignRunId":"run_1793495433325_745ia","captchaStatus":"NONE","contactDiscoveryConfidence":1,"contactDiscoverySource":null,"contactPageHostname":"127.0.0.1","contactPageUrl":"http://127.0.0.1:8088/phone-only-no-message.html","createdAt":1793495453354,"emailsFound":0,"evidence":{},"externalFormUrl":null,"failureClass":null,"formDetectionStatus":"NOT_FOUND","formPageUrl":"http://127.0.0.1:8088/phone-only-no-message.html","generation":1,"generationId":1,"importId":null,"isPreSubmitLocked":false,"outcomeEvidence":{"ariaLiveSuccessTransition":false,"buttonSuccessState":false,"captchaRejected":false,"confirmationStrength":"NONE","evidenceTimestamp":1793495462781,"formHidden":false,"formReplaced":false,"formReset":false,"frameworkSuccessState":false,"networkCommitObserved":false,"networkStatus":null,"physicalClickDispatched":false,"serverErrorTransition":false,"submitAttempted":false,"submitEventSeen":false,"successNodeVisibleTransition":false,"successTextTransition":false,"thankYouUrlTransition":false,"validationErrorTransition":false},"ownerManualConfirmed":false,"privacyFailureReason":null,"privacyGateCheckedAt":"2026-11-01T01:10:53.354Z","privacyGatePassed":true,"privacyMode":"PRIVACY_RELAY","privacyTransport":"PRIVACY_RELAY","reasonCode":"NO_LONG_TEXT_INQUIRY_FIELD","receiptId":null,"resultUrl":"http://127.0.0.1:8088/phone-only-no-message.html","selectedCandidateUrl":"http://127.0.0.1:8088/phone-only-no-message.html","sessionId":null,"settledAt":1793495462781,"sourceHostname":"127.0.0.1","sourceUrl":"http://127.0.0.1:8088/phone-only-no-message.html","startedAt":1793495453354,"status":"SKIPPED","submissionStatus":"SKIPPED","submittedFromUrl":"http://127.0.0.1:8088/phone-only-no-message.html","targetIdentity":"https://127.0.0.1/phone-only-no-message.html","targetToken":"tok_1793495453353_y92m6u","templateId":"default","templateVersion":1,"timing":{"durationMs":9427,"finalizedTime":1793495462781,"intentTime":1793495453354}}
-[2026-11-01T01:11:04.198Z] ✅ SC-03 Part A.1: phone-only-no-message.html strictly classified as SKIPPED with exact reason NO_LONG_TEXT_INQUIRY_FIELD and 0 submissions.
-[2026-11-01T01:11:04.198Z] 
-Testing no-contact-page.html (Formless target with 404 dead contact links)...
-[2026-11-01T01:11:04.836Z] Formless campaign active observed: true
-[2026-11-01T01:11:15.077Z] no-contact-page Authoritative Ledger Record: {"attemptId":"att_1793495464376_ulbnc","autofillStatus":"N_A","campaignRunId":"run_1793495433325_745ia","captchaStatus":"NONE","contactDiscoveryConfidence":1,"contactDiscoverySource":null,"contactPageHostname":"127.0.0.1","contactPageUrl":"http://127.0.0.1:8088/contact","createdAt":1793495464376,"emailsFound":0,"evidence":{},"externalFormUrl":null,"failureClass":"RUNTIME_ERROR","formDetectionStatus":"NOT_FOUND","formPageUrl":"http://127.0.0.1:8088/contact","generation":1,"generationId":1,"importId":null,"isPreSubmitLocked":false,"outcomeEvidence":{"ariaLiveSuccessTransition":false,"buttonSuccessState":false,"captchaRejected":false,"confirmationStrength":"NONE","evidenceTimestamp":1793495473691,"formHidden":false,"formReplaced":false,"formReset":false,"frameworkSuccessState":false,"networkCommitObserved":false,"networkStatus":null,"physicalClickDispatched":false,"serverErrorTransition":false,"submitAttempted":false,"submitEventSeen":false,"successNodeVisibleTransition":false,"successTextTransition":false,"thankYouUrlTransition":false,"validationErrorTransition":false},"ownerManualConfirmed":false,"privacyFailureReason":null,"privacyGateCheckedAt":"2026-11-01T01:11:04.376Z","privacyGatePassed":true,"privacyMode":"PRIVACY_RELAY","privacyTransport":"PRIVACY_RELAY","reasonCode":"NO_ACCESSIBLE_INQUIRY_FORM","receiptId":null,"resultUrl":"http://127.0.0.1:8088/contact","selectedCandidateUrl":"http://127.0.0.1:8088/no-contact-page.html","sessionId":null,"settledAt":1793495473691,"sourceHostname":"127.0.0.1","sourceUrl":"http://127.0.0.1:8088/no-contact-page.html","startedAt":1793495464376,"status":"FAILURE","submissionStatus":"FAILURE","submittedFromUrl":"http://127.0.0.1:8088/article.html","targetIdentity":"https://127.0.0.1/no-contact-page.html","targetToken":"tok_1793495464376_mqs8jm","templateId":"default","templateVersion":1,"timing":{"durationMs":9315,"finalizedTime":1793495473691,"intentTime":1793495464376}}
-[2026-11-01T01:11:15.077Z] ✅ SC-03 Part B: no-contact-page.html truthfully classified as FAILURE due to 404 dead contact pages.
-[2026-11-01T01:11:15.077Z] 
-Reconciling 7-Bucket Ledger Math Invariant...
-[2026-11-01T01:11:15.078Z] Authoritative Ledger Stats: {"scope":"allHistory","campaignRunId":"run_1793495433325_745ia","totalStarted":3,"totalImportRows":1,"pending":0,"invalid":0,"success":1,"failure":1,"unknown":0,"timeout":0,"timeoutLocal":0,"timeoutGlobal":0,"skipped":1,"paused":0,"completed":3,"failureBreakdown":{"NO_ACCESSIBLE_INQUIRY_FORM":1},"logStr":"[LEDGER_STATS] scope=allHistory success=1 failure=1 unknown=0 timeout=0 skipped=1"}
-[2026-11-01T01:11:15.078Z] Total Completed Targets: 3 | Bucket Sum: 3 | Success: 1 | Failure: 1 | Skipped: 1
-[2026-11-01T01:11:15.078Z] ✅ SC-03 Part C: 7-Bucket ledger reconciliation passed with 0 discrepancy across all categories.
-[2026-11-01T01:11:15.078Z] 
+[2026-11-01T02:23:44.702Z] --- TASK SC-03: UNIFIED MULTI-TARGET CAMPAIGN RUN & SCOPED RECONCILIATION ---
+[2026-11-01T02:23:44.702Z] =========================================================================
+[2026-11-01T02:23:44.723Z] Initial server submissions count verified: 0
+[2026-11-01T02:23:44.723Z] Launching single unified campaign with 3 targets: ["http://127.0.0.1:8088/homepage-with-newsletter-and-contact-link.html","http://127.0.0.1:8088/phone-only-no-message.html","http://127.0.0.1:8088/no-contact-page.html"]
+[2026-11-01T02:23:44.791Z] SC-03 Campaign Start Response: {"success":true,"status":"acknowledged","queueCount":3,"campaignRunId":"run_1793499824781_os36v"}
+[2026-11-01T02:23:45.434Z] SC-03 Campaign Active: runId=run_1793499824781_os36v
+[2026-11-01T02:23:45.460Z] Assigned SC-03 CampaignRunId: run_1793499824781_os36v
+[2026-11-01T02:23:46.741Z] SC-03 Progress T+0s: active=true queue=2 url=undefined
+[2026-11-01T02:23:47.746Z] SC-03 Progress T+1s: active=true queue=2 url=undefined
+[2026-11-01T02:23:48.749Z] SC-03 Progress T+2s: active=true queue=2 url=undefined
+[2026-11-01T02:23:49.765Z] SC-03 Progress T+3s: active=true queue=2 url=undefined
+[2026-11-01T02:23:50.778Z] SC-03 Progress T+4s: active=true queue=2 url=undefined
+[2026-11-01T02:23:51.779Z] SC-03 Progress T+5s: active=true queue=2 url=undefined
+[2026-11-01T02:23:52.787Z] SC-03 Progress T+6s: active=true queue=2 url=undefined
+[2026-11-01T02:23:53.788Z] SC-03 Progress T+7s: active=true queue=2 url=undefined
+[2026-11-01T02:23:54.792Z] SC-03 Progress T+8s: active=true queue=2 url=undefined
+[2026-11-01T02:23:55.806Z] SC-03 Progress T+9s: active=true queue=2 url=undefined
+[2026-11-01T02:23:56.813Z] SC-03 Progress T+10s: active=true queue=2 url=undefined
+[2026-11-01T02:23:57.816Z] SC-03 Progress T+11s: active=true queue=2 url=undefined
+[2026-11-01T02:23:58.831Z] SC-03 Progress T+12s: active=true queue=2 url=undefined
+[2026-11-01T02:23:59.838Z] SC-03 Progress T+13s: active=true queue=2 url=undefined
+[2026-11-01T02:24:00.843Z] SC-03 Progress T+14s: active=true queue=2 url=undefined
+[2026-11-01T02:24:01.856Z] SC-03 Progress T+15s: active=true queue=2 url=undefined
+[2026-11-01T02:24:02.861Z] SC-03 Progress T+16s: active=true queue=2 url=undefined
+[2026-11-01T02:24:03.870Z] SC-03 Progress T+17s: active=true queue=2 url=undefined
+[2026-11-01T02:24:04.879Z] SC-03 Progress T+18s: active=true queue=2 url=undefined
+[2026-11-01T02:24:05.884Z] SC-03 Progress T+19s: active=true queue=2 url=undefined
+[2026-11-01T02:24:06.889Z] SC-03 Progress T+20s: active=true queue=2 url=undefined
+[2026-11-01T02:24:07.899Z] SC-03 Progress T+21s: active=true queue=2 url=undefined
+[2026-11-01T02:24:08.915Z] SC-03 Progress T+22s: active=true queue=2 url=undefined
+[2026-11-01T02:24:09.917Z] SC-03 Progress T+23s: active=true queue=2 url=undefined
+[2026-11-01T02:24:10.923Z] SC-03 Progress T+24s: active=true queue=1 url=undefined
+[2026-11-01T02:24:11.925Z] SC-03 Progress T+25s: active=true queue=1 url=undefined
+[2026-11-01T02:24:12.931Z] SC-03 Progress T+26s: active=true queue=1 url=undefined
+[2026-11-01T02:24:13.946Z] SC-03 Progress T+27s: active=true queue=1 url=undefined
+[2026-11-01T02:24:14.952Z] SC-03 Progress T+28s: active=true queue=1 url=undefined
+[2026-11-01T02:24:15.956Z] SC-03 Progress T+29s: active=true queue=1 url=undefined
+[2026-11-01T02:24:16.956Z] SC-03 Progress T+30s: active=true queue=1 url=undefined
+[2026-11-01T02:24:17.964Z] SC-03 Progress T+31s: active=true queue=1 url=undefined
+[2026-11-01T02:24:18.972Z] SC-03 Progress T+32s: active=true queue=1 url=undefined
+[2026-11-01T02:24:19.977Z] SC-03 Progress T+33s: active=true queue=1 url=undefined
+[2026-11-01T02:24:20.985Z] SC-03 Progress T+34s: active=true queue=1 url=undefined
+[2026-11-01T02:24:21.991Z] SC-03 Progress T+35s: active=true queue=1 url=undefined
+[2026-11-01T02:24:23.005Z] SC-03 Progress T+36s: active=true queue=1 url=undefined
+[2026-11-01T02:24:24.007Z] SC-03 Progress T+37s: active=true queue=1 url=undefined
+[2026-11-01T02:24:25.009Z] SC-03 Progress T+38s: active=true queue=1 url=undefined
+[2026-11-01T02:24:26.022Z] SC-03 Progress T+39s: active=true queue=1 url=undefined
+[2026-11-01T02:24:27.032Z] SC-03 Progress T+40s: active=true queue=0 url=undefined
+[2026-11-01T02:24:28.041Z] SC-03 Progress T+41s: active=true queue=0 url=undefined
+[2026-11-01T02:24:29.045Z] SC-03 Progress T+42s: active=true queue=0 url=undefined
+[2026-11-01T02:24:30.055Z] SC-03 Progress T+43s: active=true queue=0 url=undefined
+[2026-11-01T02:24:31.059Z] SC-03 Progress T+44s: active=true queue=0 url=undefined
+[2026-11-01T02:24:32.065Z] SC-03 Progress T+45s: active=true queue=0 url=undefined
+[2026-11-01T02:24:33.073Z] SC-03 Progress T+46s: active=true queue=0 url=undefined
+[2026-11-01T02:24:34.081Z] SC-03 Progress T+47s: active=true queue=0 url=undefined
+[2026-11-01T02:24:35.084Z] SC-03 Progress T+48s: active=true queue=0 url=undefined
+[2026-11-01T02:24:36.089Z] SC-03 Progress T+49s: active=true queue=0 url=undefined
+[2026-11-01T02:24:37.095Z] SC-03 Progress T+50s: active=false queue=0 url=undefined
+[2026-11-01T02:24:37.095Z] SC-03 Campaign settled to inactive at T+50s
+[2026-11-01T02:24:37.100Z] SC-03 Attempt count for runId run_1793499824781_os36v: 3
+[2026-11-01T02:24:37.100Z] Target 1 Authoritative Status: CONFIRMED_SUCCESS
+[2026-11-01T02:24:37.100Z] Target 1 Contact Page URL: http://127.0.0.1:8088/contact-standard.html
+[2026-11-01T02:24:37.101Z] Target 1 Outcome Evidence: {"ariaLiveSuccessTransition":true,"buttonSuccessState":true,"captchaEvidenceClass":null,"captchaRejected":false,"confirmationStrength":"STRONG_DOM","evidenceTimestamp":1793499840266,"formHidden":false,"formReplaced":false,"formReset":false,"frameworkSuccessState":true,"networkCommitObserved":false,"networkStatus":null,"physicalClickDispatched":false,"receiptId":"rcpt_1793499838248_1","serverErrorTransition":false,"submitAttempted":true,"submitEventSeen":true,"successNodeVisibleTransition":true,"successTextTransition":true,"thankYouUrlTransition":false,"validationErrorTransition":false}
+[2026-11-01T02:24:37.104Z] Server-side submissions after Target 1: count=1
+[2026-11-01T02:24:37.104Z] ✅ Target 1 verified: Discovered contact link, submitted HTTP POST, server recorded receiptId=rcpt_1793499838248_1
+[2026-11-01T02:24:37.104Z] Target 2 Authoritative Status: SKIPPED | Reason: NO_LONG_TEXT_INQUIRY_FIELD
+[2026-11-01T02:24:37.107Z] ✅ Target 2 verified: Classified strictly SKIPPED with 0 submissions delta.
+[2026-11-01T02:24:37.107Z] Target 3 Authoritative Status: FAILURE | Reason: NO_ACCESSIBLE_INQUIRY_FORM
+[2026-11-01T02:24:37.109Z] ✅ Target 3 verified: Classified truthfully as FAILURE / NO_ACCESSIBLE_INQUIRY_FORM with 0 submissions delta.
+[2026-11-01T02:24:37.109Z] 
+--- Authoritative Scoped HistoryStore Statistics ---
+[2026-11-01T02:24:37.112Z] Scoped Stats for runId run_1793499824781_os36v: {"scope":"currentRun","campaignRunId":"run_1793499824781_os36v","totalStarted":3,"totalImportRows":3,"pending":0,"invalid":0,"success":1,"failure":1,"unknown":0,"timeout":0,"timeoutLocal":0,"timeoutGlobal":0,"skipped":1,"paused":0,"completed":3,"failureBreakdown":{"NO_ACCESSIBLE_INQUIRY_FORM":1},"logStr":"[LEDGER_STATS] scope=currentRun success=1 failure=1 unknown=0 timeout=0 skipped=1"}
+[2026-11-01T02:24:37.112Z] Scoped 7-Bucket Sum: 3 | Completed: 3
+[2026-11-01T02:24:37.112Z] ✅ SC-03: Single multi-target campaign verified with strict 1:1 row accounting and 7-bucket reconciliation (0 discrepancy).
+[2026-11-01T02:24:37.112Z] 
 =========================================================================
-[2026-11-01T01:11:15.078Z] --- TASK SC-04: NONEMPTY QUEUE PAUSE, TRUE SW TERMINATION & RESUME ---
-[2026-11-01T01:11:15.078Z] =========================================================================
-[2026-11-01T01:11:15.078Z] Setting up 3-target campaign queue in Popup DOM: ["http://127.0.0.1:8088/contact-standard.html","http://127.0.0.1:8088/spa-delayed-contact.html","http://127.0.0.1:8088/index.html"]
-[2026-11-01T01:11:15.080Z] Clicking Real UI Start Button (#start-btn)...
-[2026-11-01T01:11:15.940Z] 🎯 Multi-target campaign active at T+0s! runId=normal_run_1793495475096_tpiw5j
-[2026-11-01T01:11:15.940Z] Clicking Real UI Pause Button (#pause-btn) to capture NON-EMPTY queue...
-[2026-11-01T01:11:16.456Z] ⏸️ Durable pause checkpoint captured at T+0s: remaining=2
-[2026-11-01T01:11:16.456Z] Checkpoint remainingQueue: ["http://127.0.0.1:8088/spa-delayed-contact.html","http://127.0.0.1:8088/index.html"]
-[2026-11-01T01:11:16.462Z] Pause button text after pause: "▶️ Resume"
-[2026-11-01T01:11:16.605Z] 📸 Captured screenshot: shot_sc04_popup_paused_nonempty.png
-[2026-11-01T01:11:16.605Z] 
---- Forcibly Terminating Service Worker Process via CDP ---
-[2026-11-01T01:11:17.120Z] Closing SW Target: 2F919FBB8BCF37AC768ECCF305FD6884
-[2026-11-01T01:11:19.126Z] SW Target after closeTarget: TERMINATED_CONFIRMED (old ID: 2F919FBB8BCF37AC768ECCF305FD6884 absent)
-[2026-11-01T01:11:19.126Z] 
---- Waking Up Fresh Service Worker & Verifying Durable Checkpoint Restoration ---
-[2026-11-01T01:11:19.640Z] Fresh SW Booted: Target ID=653347646D11805405811CD2021B0125 (verified different from old ID=2F919FBB8BCF37AC768ECCF305FD6884)
-[2026-11-01T01:11:19.648Z] Fresh SW Restored State from Checkpoint: {"isActive":false,"isPaused":true,"remainingCount":2,"pausedByOperator":true,"runId":"normal_run_1793495475096_tpiw5j"}
-[2026-11-01T01:11:19.649Z] ✅ SC-04 Part A: Non-empty queue preserved and restored across genuine Service Worker termination.
-[2026-11-01T01:11:19.649Z] 
+[2026-11-01T02:24:37.112Z] --- TASK SC-04: NONEMPTY QUEUE PAUSE, SW RESTART & STOP & SAVE DURABILITY ---
+[2026-11-01T02:24:37.112Z] =========================================================================
+[2026-11-01T02:24:37.112Z] Setting up 3-target campaign queue in Popup DOM: ["http://127.0.0.1:8088/contact-standard.html","http://127.0.0.1:8088/spa-delayed-contact.html","http://127.0.0.1:8088/index.html"]
+[2026-11-01T02:24:37.114Z] Clicking Real UI Start Button (#start-btn)...
+[2026-11-01T02:24:37.973Z] 🎯 Multi-target campaign active at T+0s! runId=normal_run_1793499877138_ufpn6s
+[2026-11-01T02:24:37.973Z] Clicking Real UI Pause Button (#pause-btn) to capture NON-EMPTY queue...
+[2026-11-01T02:24:38.827Z] ⏸️ Durable pause checkpoint captured at T+0.4s: remaining=2
+[2026-11-01T02:24:38.827Z] Checkpoint remainingQueue: ["http://127.0.0.1:8088/spa-delayed-contact.html","http://127.0.0.1:8088/index.html"]
+[2026-11-01T02:24:38.829Z] Pause button text after pause: "Resume"
+[2026-11-01T02:24:39.002Z] 📸 Captured screenshot: shot_sc04_popup_paused_nonempty.png
+[2026-11-01T02:24:39.002Z] 
+--- Forcibly Terminating Service Worker Process #1 via CDP ---
+[2026-11-01T02:24:39.516Z] Closing SW Target #1: 985066B0E866E3E826827D9CECA748E2
+[2026-11-01T02:24:41.535Z] SW Target after closeTarget #1: TERMINATED_CONFIRMED (old ID: 985066B0E866E3E826827D9CECA748E2 absent)
+[2026-11-01T02:24:41.535Z] 
+--- Waking Up Fresh Service Worker #2 & Verifying Durable Checkpoint Restoration ---
+[2026-11-01T02:24:42.051Z] Fresh SW #2 Booted: Target ID=53C6796ECE495550BA6DD6B53C9502A5 (verified different from old ID=985066B0E866E3E826827D9CECA748E2)
+[2026-11-01T02:24:42.061Z] Fresh SW #2 Restored State from Checkpoint: {"isActive":false,"isPaused":true,"remainingCount":2,"pausedByOperator":true,"runId":"normal_run_1793499877138_ufpn6s"}
+[2026-11-01T02:24:42.061Z] ✅ SC-04 Part A: Non-empty queue preserved and restored across genuine Service Worker termination.
+[2026-11-01T02:24:42.061Z] 
 --- Resuming Campaign via Real UI (#pause-btn / confirmResumeCampaignWithMode) ---
-[2026-11-01T01:11:20.095Z] ▶️ Campaign resumed at T+0s! isPaused=false, isActive=true
-[2026-11-01T01:11:20.095Z] 
---- Stopping & Saving Campaign via Real Visible UI (#stop-save-btn) ---
-[2026-11-01T01:11:20.425Z] 🛑 Campaign stopped observed from real visible #stop-save-btn click at T+0s! isActive=false
-[2026-11-01T01:11:20.427Z] Saved Checkpoint in Storage after #stop-save-btn: remaining=1
-[2026-11-01T01:11:20.600Z] 📸 Captured screenshot: shot_sc04_popup_stopped_saved.png
-[2026-11-01T01:11:20.600Z] ✅ SC-04 Part B: Campaign successfully resumed and stopped & saved via visible real UI #stop-save-btn.
-[2026-11-01T01:11:20.614Z] 
+[2026-11-01T02:24:42.472Z] ▶️ Campaign resumed at T+0s! isPaused=false, isActive=true
+[2026-11-01T02:24:42.472Z] 
+--- Checking UI Visibility of #stop-save-btn and Stopping & Saving Campaign ---
+[2026-11-01T02:24:42.474Z] Stop & Save Button UI Verification: {"exists":true,"visible":true,"disabled":false,"text":"Stop & Save","display":"block","visibility":"visible"}
+[2026-11-01T02:24:42.796Z] 🛑 Campaign stopped observed from real visible #stop-save-btn click at T+0s! isActive=false
+[2026-11-01T02:24:42.800Z] Saved Checkpoint in Storage after #stop-save-btn: remaining=2
+[2026-11-01T02:24:42.800Z] Exact remaining target recorded before second kill: http://127.0.0.1:8088/spa-delayed-contact.html
+[2026-11-01T02:24:42.968Z] 📸 Captured screenshot: shot_sc04_popup_stopped_saved.png
+[2026-11-01T02:24:42.968Z] 
+--- Forcibly Terminating Service Worker #2 AFTER Stop & Save ---
+[2026-11-01T02:24:43.474Z] Closing SW Target #2: 53C6796ECE495550BA6DD6B53C9502A5
+[2026-11-01T02:24:45.481Z] SW Target after closeTarget #2: TERMINATED_CONFIRMED (old ID: 53C6796ECE495550BA6DD6B53C9502A5 absent)
+[2026-11-01T02:24:45.481Z] 
+--- Waking Up Fresh Service Worker #3 & Verifying Post-Stop&Save Checkpoint Survival ---
+[2026-11-01T02:24:45.988Z] Fresh SW #3 Booted: Target ID=5D4494C9562A628262018AF80103062E (verified different from SW #1 and SW #2)
+[2026-11-01T02:24:46.000Z] SW #3 Checkpoint Restored: remaining=2 url=http://127.0.0.1:8088/spa-delayed-contact.html
+[2026-11-01T02:24:46.000Z] ✅ SC-04 Part B: Persistent checkpoint survived genuine SW kill & restart after Stop & Save with exact target identity intact.
+[2026-11-01T02:24:46.000Z] 
+--- Resuming Final Target from Real UI after Post-Stop&Save Restart ---
+[2026-11-01T02:24:46.408Z] ▶️ Final target execution active at T+0s
+[2026-11-01T02:24:47.414Z] Final execution progress T+0s: active=true remaining=1 currentUrl=undefined
+[2026-11-01T02:24:48.419Z] Final execution progress T+1s: active=true remaining=1 currentUrl=undefined
+[2026-11-01T02:24:49.429Z] Final execution progress T+2s: active=true remaining=1 currentUrl=undefined
+[2026-11-01T02:24:50.443Z] Final execution progress T+3s: active=true remaining=1 currentUrl=undefined
+[2026-11-01T02:24:51.447Z] Final execution progress T+4s: active=true remaining=1 currentUrl=undefined
+[2026-11-01T02:24:52.449Z] Final execution progress T+5s: active=true remaining=1 currentUrl=undefined
+[2026-11-01T02:24:53.455Z] Final execution progress T+6s: active=true remaining=1 currentUrl=undefined
+[2026-11-01T02:24:54.467Z] Final execution progress T+7s: active=true remaining=1 currentUrl=undefined
+[2026-11-01T02:24:55.483Z] Final execution progress T+8s: active=true remaining=1 currentUrl=undefined
+[2026-11-01T02:24:56.489Z] Final execution progress T+9s: active=true remaining=1 currentUrl=undefined
+[2026-11-01T02:24:57.553Z] Final execution progress T+10s: active=true remaining=1 currentUrl=undefined
+[2026-11-01T02:24:58.561Z] Final execution progress T+11s: active=true remaining=1 currentUrl=undefined
+[2026-11-01T02:24:59.567Z] Final execution progress T+12s: active=true remaining=1 currentUrl=undefined
+[2026-11-01T02:25:00.582Z] Final execution progress T+13s: active=true remaining=1 currentUrl=undefined
+[2026-11-01T02:25:01.589Z] Final execution progress T+14s: active=true remaining=1 currentUrl=undefined
+[2026-11-01T02:25:02.606Z] Final execution progress T+15s: active=true remaining=1 currentUrl=undefined
+[2026-11-01T02:25:03.624Z] Final execution progress T+16s: active=true remaining=1 currentUrl=undefined
+[2026-11-01T02:25:04.639Z] Final execution progress T+17s: active=true remaining=1 currentUrl=undefined
+[2026-11-01T02:25:05.653Z] Final execution progress T+18s: active=true remaining=1 currentUrl=undefined
+[2026-11-01T02:25:06.657Z] Final execution progress T+19s: active=true remaining=1 currentUrl=undefined
+[2026-11-01T02:25:07.673Z] Final execution progress T+20s: active=true remaining=1 currentUrl=undefined
+[2026-11-01T02:25:08.686Z] Final execution progress T+21s: active=true remaining=1 currentUrl=undefined
+[2026-11-01T02:25:09.692Z] Final execution progress T+22s: active=true remaining=1 currentUrl=undefined
+[2026-11-01T02:25:10.700Z] Final execution progress T+23s: active=true remaining=1 currentUrl=undefined
+[2026-11-01T02:25:11.709Z] Final execution progress T+24s: active=true remaining=1 currentUrl=undefined
+[2026-11-01T02:25:12.721Z] Final execution progress T+25s: active=true remaining=1 currentUrl=undefined
+[2026-11-01T02:25:13.729Z] Final execution progress T+26s: active=true remaining=1 currentUrl=undefined
+[2026-11-01T02:25:14.744Z] Final execution progress T+27s: active=true remaining=1 currentUrl=undefined
+[2026-11-01T02:25:15.747Z] Final execution progress T+28s: active=true remaining=1 currentUrl=undefined
+[2026-11-01T02:25:16.756Z] Final execution progress T+29s: active=true remaining=1 currentUrl=undefined
+[2026-11-01T02:25:17.766Z] Final execution progress T+30s: active=true remaining=1 currentUrl=undefined
+[2026-11-01T02:25:18.768Z] Final execution progress T+31s: active=true remaining=1 currentUrl=undefined
+[2026-11-01T02:25:19.770Z] Final execution progress T+32s: active=true remaining=1 currentUrl=undefined
+[2026-11-01T02:25:20.779Z] Final execution progress T+33s: active=true remaining=1 currentUrl=undefined
+[2026-11-01T02:25:21.786Z] Final execution progress T+34s: active=true remaining=0 currentUrl=undefined
+[2026-11-01T02:25:22.796Z] Final execution progress T+35s: active=true remaining=0 currentUrl=undefined
+[2026-11-01T02:25:23.798Z] Final execution progress T+36s: active=true remaining=0 currentUrl=undefined
+[2026-11-01T02:25:24.800Z] Final execution progress T+37s: active=true remaining=0 currentUrl=undefined
+[2026-11-01T02:25:25.806Z] Final execution progress T+38s: active=true remaining=0 currentUrl=undefined
+[2026-11-01T02:25:26.813Z] Final execution progress T+39s: active=true remaining=0 currentUrl=undefined
+[2026-11-01T02:25:27.823Z] Final execution progress T+40s: active=true remaining=0 currentUrl=undefined
+[2026-11-01T02:25:28.835Z] Final execution progress T+41s: active=true remaining=0 currentUrl=undefined
+[2026-11-01T02:25:29.843Z] Final execution progress T+42s: active=true remaining=0 currentUrl=undefined
+[2026-11-01T02:25:30.851Z] Final execution progress T+43s: active=true remaining=0 currentUrl=undefined
+[2026-11-01T02:25:31.860Z] Final execution progress T+44s: active=true remaining=0 currentUrl=undefined
+[2026-11-01T02:25:32.874Z] Final execution progress T+45s: active=true remaining=0 currentUrl=undefined
+[2026-11-01T02:25:33.881Z] Final execution progress T+46s: active=true remaining=0 currentUrl=undefined
+[2026-11-01T02:25:34.886Z] Final execution progress T+47s: active=true remaining=0 currentUrl=undefined
+[2026-11-01T02:25:35.890Z] Final execution progress T+48s: active=true remaining=0 currentUrl=undefined
+[2026-11-01T02:25:36.897Z] Final execution progress T+49s: active=true remaining=0 currentUrl=undefined
+[2026-11-01T02:25:37.901Z] Final execution progress T+50s: active=true remaining=0 currentUrl=undefined
+[2026-11-01T02:25:38.915Z] Final execution progress T+51s: active=true remaining=0 currentUrl=undefined
+[2026-11-01T02:25:39.916Z] Final execution progress T+52s: active=true remaining=0 currentUrl=undefined
+[2026-11-01T02:25:40.921Z] Final execution progress T+53s: active=true remaining=0 currentUrl=undefined
+[2026-11-01T02:25:41.927Z] Final execution progress T+54s: active=true remaining=0 currentUrl=undefined
+[2026-11-01T02:25:42.935Z] Final execution progress T+55s: active=true remaining=0 currentUrl=undefined
+[2026-11-01T02:25:43.939Z] Final execution progress T+56s: active=true remaining=0 currentUrl=undefined
+[2026-11-01T02:25:44.944Z] Final execution progress T+57s: active=true remaining=0 currentUrl=undefined
+[2026-11-01T02:25:45.949Z] Final execution progress T+58s: active=true remaining=0 currentUrl=undefined
+[2026-11-01T02:25:46.960Z] Final execution progress T+59s: active=false remaining=0 currentUrl=undefined
+[2026-11-01T02:25:46.960Z] 🎯 Final campaign execution settled to inactive at T+59s
+[2026-11-01T02:25:46.963Z] Final target execution count for runId normal_run_1793499877138_ufpn6s: 1
+[2026-11-01T02:25:46.963Z] ✅ SC-04 Part C: Remaining target resumed from UI and processed exactly once to clean completion.
+[2026-11-01T02:25:46.972Z] 
 📄 Generated machine-readable evidence report: E:\vivpr\ai\extension-form-sender\owner-extension-test-site\evidence\evidence_v7_task3_and_task4_report.json
-[2026-11-01T01:11:20.615Z] 
+[2026-11-01T02:25:46.973Z] 
 ================================================================================
-[2026-11-01T01:11:20.615Z] 🎉 BOTH TASK SC-03 & TASK SC-04 VERIFIED SUCCESSFULLY (100% PASS)
-[2026-11-01T01:11:20.615Z] ================================================================================
+[2026-11-01T02:25:46.973Z] 🎉 ALL AUDIT ITEMS RESOLVED: TASK SC-03 & TASK SC-04 VERIFIED SUCCESSFULLY
+[2026-11-01T02:25:46.973Z] ================================================================================

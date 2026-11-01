@@ -1,8 +1,8 @@
 {
-  "suiteName": "XPIDER V7 SC-03 & SC-04 Deterministic Chromium E2E Suite",
-  "startTimeUtc": "2026-11-01T01:10:30.228Z",
-  "endTimeUtc": "2026-11-01T01:11:20.600Z",
-  "durationSeconds": "50.4",
+  "suiteName": "XPIDER V7 SC-03 & SC-04 Deterministic Chromium E2E Suite (Refined Audit Compliance)",
+  "startTimeUtc": "2026-11-01T02:23:41.431Z",
+  "endTimeUtc": "2026-11-01T02:25:46.964Z",
+  "durationSeconds": "125.5",
   "targetBaseline": "v7.0.0-rc11",
   "candidateBranch": "candidate/sc03-sc04-classification-and-pause",
   "baselineCommit": "20678ada",
@@ -15,18 +15,57 @@
     "shot_sc04_popup_stopped_saved.png"
   ],
   "sc03_no_message_classification_and_discovery": {
-    "homepageDiscoveryTarget": "http://127.0.0.1:8088/homepage-with-newsletter-and-contact-link.html",
-    "homepageDiscoveryStatus": "CONFIRMED_SUCCESS",
-    "homepageDiscoveryPass": true,
-    "phoneOnlyTarget": "http://127.0.0.1:8088/phone-only-no-message.html",
-    "phoneOnlyStatus": "SKIPPED",
-    "phoneOnlyReasonCode": "NO_LONG_TEXT_INQUIRY_FIELD",
-    "submissionsDelta": 0,
-    "statusStrictlySkipped": true,
-    "formlessTarget": "http://127.0.0.1:8088/no-contact-page.html",
-    "formlessStatus": "FAILURE",
-    "formlessReasonCode": "NO_ACCESSIBLE_INQUIRY_FORM",
-    "sevenBucketLedgerReconciliation": {
+    "campaignRunId": "run_1793499824781_os36v",
+    "totalImportRows": 3,
+    "totalStarted": 3,
+    "targetsTested": 3,
+    "target1_homepageDiscovery": {
+      "targetUrl": "http://127.0.0.1:8088/homepage-with-newsletter-and-contact-link.html",
+      "status": "CONFIRMED_SUCCESS",
+      "contactPageUrl": "http://127.0.0.1:8088/contact-standard.html",
+      "outcomeEvidence": {
+        "ariaLiveSuccessTransition": true,
+        "buttonSuccessState": true,
+        "captchaEvidenceClass": null,
+        "captchaRejected": false,
+        "confirmationStrength": "STRONG_DOM",
+        "evidenceTimestamp": 1793499840266,
+        "formHidden": false,
+        "formReplaced": false,
+        "formReset": false,
+        "frameworkSuccessState": true,
+        "networkCommitObserved": false,
+        "networkStatus": null,
+        "physicalClickDispatched": false,
+        "receiptId": "rcpt_1793499838248_1",
+        "serverErrorTransition": false,
+        "submitAttempted": true,
+        "submitEventSeen": true,
+        "successNodeVisibleTransition": true,
+        "successTextTransition": true,
+        "thankYouUrlTransition": false,
+        "validationErrorTransition": false
+      },
+      "serverSubmissionCount": 1,
+      "serverReceiptId": "rcpt_1793499838248_1",
+      "serverReferer": "http://127.0.0.1:8088/contact-standard.html",
+      "pass": true
+    },
+    "target2_phoneOnlyNoMessage": {
+      "targetUrl": "http://127.0.0.1:8088/phone-only-no-message.html",
+      "status": "SKIPPED",
+      "reasonCode": "NO_LONG_TEXT_INQUIRY_FIELD",
+      "serverSubmissionDelta": 0,
+      "pass": true
+    },
+    "target3_formlessPage": {
+      "targetUrl": "http://127.0.0.1:8088/no-contact-page.html",
+      "status": "FAILURE",
+      "reasonCode": "NO_ACCESSIBLE_INQUIRY_FORM",
+      "serverSubmissionDelta": 0,
+      "pass": true
+    },
+    "scopedSevenBucketLedgerReconciliation": {
       "completed": 3,
       "success": 1,
       "failure": 1,
@@ -44,13 +83,35 @@
     "initialTargetsCount": 3,
     "pausedRemainingCount": 2,
     "nonemptyQueuePreserved": true,
-    "oldSwTerminatedAbsent": true,
-    "newSwTargetIdDiffers": true,
+    "firstSwTerminatedAbsent": true,
+    "secondSwTargetIdDiffers": true,
     "swRestoredRemainingCount": 2,
     "resumedViaRealUi": true,
+    "stopSaveButtonUiCheck": {
+      "exists": true,
+      "visible": true,
+      "disabled": false,
+      "text": "Stop & Save",
+      "display": "block",
+      "visibility": "visible"
+    },
     "stoppedAndSavedViaRealUi": true,
-    "checkpointRemainingCountAfterStopAndSave": 1,
+    "checkpointRemainingCountAfterStopAndSave": 2,
+    "secondSwTerminatedAbsent": true,
+    "thirdSwTargetIdDiffers": true,
+    "checkpointPreservedAcrossPostStopKill": true,
+    "exactRemainingUrlMatched": true,
+    "resumedAndCompletedExactlyOnce": true,
     "status": "PASS"
+  },
+  "privacyGatewayStatus": {
+    "localhostSimulatedFailClosed": "VERIFIED (Localhost direct fixture isolation)",
+    "liveDecodoOrDigitalOceanEgress": "NOT_TESTED (Protected; 0 external outbound requests, zero credentials, owner network untouched)"
+  },
+  "canonicalScheduleRevision": {
+    "file": ".ivcs/schedules/XPIDER_FORM_SENDER.json",
+    "actualRevision": 4,
+    "note": "Schedule revision 4 is canonical on GitHub; capsule claim of revision 7 acknowledged as legacy artifact."
   },
   "releaseHoldStatus": "ACTIVE (Awaiting independent ChatGPT and Owner gate acceptance)"
 }

@@ -6,28 +6,35 @@
 - Workspace: E:\vivpr\ai\extension-form-sender
 - Authority: goodkie/v-show Issues #6 & #10
 - Branch: candidate/sc03-sc04-classification-and-pause (candidate branch isolated; base major/v7-dual-mode remains 100% frozen RC11)
-- State Rev: 2026-10-31.298
-- Authority Cursor: 6551618069 (Revised Tasks SC-03 & SC-04 Receipt posted in response to ChatGPT Audit #6551153958 & Addendum #6551518285)
+- State Rev: 2026-10-31.299
+- Authority Cursor: 6551871979 (Responding to ChatGPT Independent Audit & Mandate #6551871979)
+- Canonical Schedule Revision: 4 (Actual GitHub canonical schedule; capsule legacy text corrected without modifying schedule file per Owner directive)
 - Collaboration Mode: Manual ChatGPT ↔ Antigravity Collaboration restored per Owner Directive #6548985799.
-- Tasks SC-03 & SC-04 Revised Verification on Isolated Candidate Branch:
+- Tasks SC-03 & SC-04 Full Audit Remediation on Isolated Candidate Branch:
   - Candidate Branch: `candidate/sc03-sc04-classification-and-pause`
-  - Candidate Commit: `62177ab68b9762cda4dcbc6c4450945f59eef7f3` (Tree `428fba9b8f382f09d25f0905afc91c5523f95533`)
   - Base Baseline: v7.0.0-rc11 (`20678ada`, tree `d065af8f1f1438ecba9bbe7fb03cf8e18c040e05`) 100% frozen on `major/v7-dual-mode`.
-  - Only Modified File in `extension/`: `extension/content-script.js` (+3 / -7 lines). (`background.js` reverted back to 100% parity with RC11 baseline).
-  - Task SC-03 (Discovery Preservation, Strict SKIPPED & Truthful 404 Failure):
-    - `homepage-with-newsletter-and-contact-link.html`: Discovered `<a href="contact-standard.html">Contact Us</a>`, navigated, and completed autofill (`CONFIRMED_SUCCESS`). No premature skipping!
-    - `phone-only-no-message.html`: Authoritative Ledger Status = `SKIPPED`, Reason Code = `NO_LONG_TEXT_INQUIRY_FIELD` (exact assertion; no fallback paths), Submissions Delta = `0`.
-    - `no-contact-page.html`: Authoritative Ledger Status = `FAILURE`, Reason Code = `NO_ACCESSIBLE_INQUIRY_FORM` (Truthful failure; 404/dead links never masked as SKIPPED).
-    - 7-Bucket Ledger Math Invariant: `completed === sum(7 buckets)` -> `3 === 1(success) + 1(failure) + 1(skipped) + 0(timeout) + 0(unknown) + 0(automationFailed) + 0(paused)`. Discrepancy = 0.
-  - Task SC-04 (Multi-Target Nonempty Queue Pause, True SW Termination, Checkpoint Restore & Visible #stop-save-btn):
-    - Multi-target campaign (3 targets) started via real UI `#start-btn`.
-    - Paused via real UI `#pause-btn` with non-empty queue: `remainingQueue.length === 2`.
-    - Background Service Worker forcibly terminated via Chromium CDP `Target.closeTarget`: confirmed dead and absent from `/json` target list (`oldSwId: 2F919FBB...`).
-    - Fresh Service Worker booted via popup wakeup, confirmed new ID differs (`newSwId: 65334764...`), verified restored memory state: `isPaused: true`, `remainingCount: 2`.
-    - Resumed via real UI (`confirmResumeCampaignWithMode('AUTO')`): `isPaused: false, isActive: true`.
-    - Stopped & Saved via real visible UI button (`#stop-save-btn`): `isActive: false`.
-    - Verified storage checkpoint preserved: `xpider_paused_checkpoint` with `remainingQueue.length === 1`.
-    - Screenshots captured: `shot_sc04_popup_paused_nonempty.png`, `shot_sc04_popup_stopped_saved.png`.
+  - Only Modified File in `extension/`: `extension/content-script.js` (+3 / -7 lines). (`background.js` matches 100% RC11 baseline blob `c6cda00245ae4e999351a980e0f32bb76629862b`).
+  - Priority A (DOM Confirmation vs. Authoritative Server Delivery Reconciled):
+    - Homepage discovery target: Content script DOM confirmation (`STRONG_DOM`, `submitAttempted: true`, `submitEventSeen: true`, `confirmationStrength: 'STRONG_DOM'`) reconciled with localhost fixture ground truth (`/__xpider_submissions` count=1, `receiptId: rcpt_1793499838248_1`, referer: `http://127.0.0.1:8088/contact-standard.html`). Candidly documents DOM event dispatch vs. browser-level physical click / network interception.
+  - Priority B (Stop & Save Durability Across True SW Restart and Final Execution):
+    - Real visible UI `#stop-save-btn` verified: `exists: true`, `visible: true` (`offsetParent !== null`, `display: block`, `visibility: visible`), `disabled: false`.
+    - Clicked `#stop-save-btn`, halted campaign (`isActive: false`), verified persistent checkpoint in storage (`remainingQueue.length: 2`, URL: `http://127.0.0.1:8088/spa-delayed-contact.html`).
+    - Service Worker forcibly terminated a SECOND time via CDP `Target.closeTarget`: verified dead (`TERMINATED_CONFIRMED`).
+    - Fresh 3rd Service Worker booted via popup wakeup, verified new ID differs from SW #1 and SW #2 (`DF8F591D...`).
+    - Storage checkpoint verified intact across 2nd SW termination: `remainingQueue.length: 2`, exact URL preserved.
+    - Resumed from real UI, executed remaining targets to completion (`isActive: false`, `remaining: 0`).
+    - Ledger verified: remaining target processed exactly once (`normal_run_1793499877138_ufpn6s` count = 1).
+  - Priority C (Single-Run Scoped HistoryStore Accounting & 7-Bucket Reconciliation):
+    - Single unified multi-target campaign run (`run_1793499824781_os36v`) with 3 targets.
+    - Scoped `getLedgerStats('currentRun', sc03RunId)`: `totalImportRows: 3`, `totalStarted: 3`, `completed: 3`, `success: 1`, `failure: 1`, `skipped: 1`.
+    - Strict 1:1 row-to-attempt accounting; 7-bucket sum: `1 + 1 + 1 + 0 + 0 + 0 + 0 = 3` (discrepancy = 0).
+  - Priority D (Negative Controls & Mutant Checks Proven):
+    - `test/test_v7_negative_controls.js`: 4/4 mutants killed strictly (Mutant 1: classification mutation to FAILURE throws AssertionError; Mutant 2: hidden/disabled UI button throws AssertionError; Mutant 3: 7-bucket math discrepancy throws AssertionError; Mutant 4: checkpoint loss throws AssertionError).
+  - Priority E (Simulated vs Live Privacy Status):
+    - Simulated localhost fail-closed: Verified.
+    - Live Decodo / DigitalOcean proxy egress IP: Strictly NOT_TESTED (0 external requests, zero credentials, owner network untouched).
+  - Priority F (Schedule Alignment):
+    - GitHub canonical schedule `.ivcs/schedules/XPIDER_FORM_SENDER.json` confirmed REV=4.
   - Deterministic E2E Test Suite: `node test/run_chromium_v7_task3_and_task4_suite.js` -> Exit Code `0` (100% PASS).
   - Machine-Readable Report: `owner-extension-test-site/evidence/evidence_v7_task3_and_task4_report.json`.
   - Raw Log: `owner-extension-test-site/evidence/evidence_v7_task3_and_task4.log` (committed and pushed to GitHub).
