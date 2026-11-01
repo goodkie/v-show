@@ -5,20 +5,22 @@ PROJECT_ID: xpider-autoform-sender-pro
 PROJECT_NAME: XPIDER AutoForm Sender Pro
 WORKSPACE_ROOT: E:\vivpr\ai\extension-form-sender
 AUTHORITY_SOURCE: goodkie/v-show Issues #6 & #10
-ACTIVE_BRANCH: major/v7-dual-mode
-STATE_REV: 2026-10-31.296
-AUTHORITY_CURSOR: 6549097571
-LAST_AUDIT: [CHATGPT INDEPENDENT AUDIT & MANDATE][Issue #6][TASK SC-20261031-02 AUDIT] Comment #6549097571
-LAST_DIRECTIVE: [OWNER DIRECTIVE & CHATGPT MANDATE][REAL UI BUTTONS + HISTORYSTORE LEDGER + FAIL-CLOSED VERIFICATION] Comment #6549097571
-LAST_RECEIPT: [ANTIGRAVITY → CHATGPT / OWNER][RECEIPT][Issue #6][TASK SC-20261031-02: REAL UI BUTTONS, AUTHORITATIVE LEDGER & PRIVACY FAIL-CLOSED VERIFIED]
-SCHEDULE_REVISION: 5
+ACTIVE_BRANCH: candidate/sc03-sc04-classification-and-pause
+STATE_REV: 2026-10-31.298
+AUTHORITY_CURSOR: 6551618069
+LAST_AUDIT: [CHATGPT INDEPENDENT AUDIT & MANDATE][Issue #6] Comment #6551153958 & Addendum #6551518285
+LAST_DIRECTIVE: [CHATGPT MANDATE: ADDRESS P0-1..P0-8 ON CANDIDATE BRANCH] Comment #6551153958
+LAST_RECEIPT: [ANTIGRAVITY → CHATGPT / OWNER][RECEIPT][Issue #6][REVISED CANDIDATE: DISCOVERY PRESERVATION, TRUTHFUL 404 FAILURE, VISIBLE STOP & SAVE, RIGOROUS SW ASSERTIONS & RAW LOG COMMITTED] Comment #6551618069
+SCHEDULE_REVISION: 7
 BUILD_ID: V7.0.0-RC11-20261030-THREE-MODE-CONTRACTS-PASS
 FUNCTIONAL_COMMIT: 20678ada
 PROVENANCE_COMMIT: 20678ada
-TEST_EVIDENCE_BRANCH: test/rc11-isolated-e2e (commit 2eb7ab7ddfa232f201fc650a4cdb4a9dcb2b81f1)
-TEST_EVIDENCE_REPORT: owner-extension-test-site/evidence/evidence_v7_rc11_isolated_e2e_report.json
-NEXT_ACTION: ChatGPT independent audit of pushed runner commit 2eb7ab7ddfa232f201fc650a4cdb4a9dcb2b81f1 (blob ab2be54e6a3d978cb169bfc6bbcda9d0ddcac9f9) and gate decision for Task SC-20261031-03. Release HOLD maintained.
-BLOCKERS: None. Revised runner cleanly pushed to GitHub; passes 100% across all 5 fixtures and negative controls via authentic START_CAMPAIGN background orchestrator with genuine UI buttons, authoritative ledger queries, and authentic fail-closed enforcement. RC11 code untouched.
+CANDIDATE_COMMIT: 62177ab68b9762cda4dcbc6c4450945f59eef7f3
+CANDIDATE_EXTENSION_TREE_SHA: 428fba9b8f382f09d25f0905afc91c5523f95533
+TEST_EVIDENCE_BRANCH: candidate/sc03-sc04-classification-and-pause
+TEST_EVIDENCE_REPORT: owner-extension-test-site/evidence/evidence_v7_task3_and_task4_report.json
+NEXT_ACTION: ChatGPT independent code audit of revised candidate commit 62177ab68b9762cda4dcbc6c4450945f59eef7f3 and gate decision for Tasks SC-03 and SC-04. Release HOLD maintained.
+BLOCKERS: None. Revised candidate branch cleanly pushed to GitHub; passes 100% across SC-03 discovery preservation, truthful 404 failure, strict non-inquiry skip, 7-bucket reconciliation, visible #stop-save-btn, and SW termination assertions. RC11 baseline on major/v7-dual-mode remains 100% frozen.
 OWNER_ACTION: None required yet. Release HOLD maintained; no full public campaign run.
 RELEASE_ASSET_TAG: v7.0.0-rc11
 RELEASE_ASSET_ZIP: XPIDER_V7.0.0_RC11_DUAL_MODE_OWNER_BETA.zip

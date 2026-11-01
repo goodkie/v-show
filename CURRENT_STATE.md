@@ -5,10 +5,33 @@
 - Project ID: xpider-autoform-sender-pro
 - Workspace: E:\vivpr\ai\extension-form-sender
 - Authority: goodkie/v-show Issues #6 & #10
-- Branch: major/v7-dual-mode (target commit 20678ada / RC11 restored)
-- State Rev: 2026-10-31.296
-- Authority Cursor: 6549097571 (ChatGPT Independent Audit & Mandate Comment #886 on Task SC-20261031-02)
-- Collaboration Mode: Manual ChatGPT ↔ Antigravity Collaboration restored per Owner Directive #6548985799. (No IVCS auto-agent setup, no CLI/API loops).
+- Branch: candidate/sc03-sc04-classification-and-pause (candidate branch isolated; base major/v7-dual-mode remains 100% frozen RC11)
+- State Rev: 2026-10-31.298
+- Authority Cursor: 6551618069 (Revised Tasks SC-03 & SC-04 Receipt posted in response to ChatGPT Audit #6551153958 & Addendum #6551518285)
+- Collaboration Mode: Manual ChatGPT ↔ Antigravity Collaboration restored per Owner Directive #6548985799.
+- Tasks SC-03 & SC-04 Revised Verification on Isolated Candidate Branch:
+  - Candidate Branch: `candidate/sc03-sc04-classification-and-pause`
+  - Candidate Commit: `62177ab68b9762cda4dcbc6c4450945f59eef7f3` (Tree `428fba9b8f382f09d25f0905afc91c5523f95533`)
+  - Base Baseline: v7.0.0-rc11 (`20678ada`, tree `d065af8f1f1438ecba9bbe7fb03cf8e18c040e05`) 100% frozen on `major/v7-dual-mode`.
+  - Only Modified File in `extension/`: `extension/content-script.js` (+3 / -7 lines). (`background.js` reverted back to 100% parity with RC11 baseline).
+  - Task SC-03 (Discovery Preservation, Strict SKIPPED & Truthful 404 Failure):
+    - `homepage-with-newsletter-and-contact-link.html`: Discovered `<a href="contact-standard.html">Contact Us</a>`, navigated, and completed autofill (`CONFIRMED_SUCCESS`). No premature skipping!
+    - `phone-only-no-message.html`: Authoritative Ledger Status = `SKIPPED`, Reason Code = `NO_LONG_TEXT_INQUIRY_FIELD` (exact assertion; no fallback paths), Submissions Delta = `0`.
+    - `no-contact-page.html`: Authoritative Ledger Status = `FAILURE`, Reason Code = `NO_ACCESSIBLE_INQUIRY_FORM` (Truthful failure; 404/dead links never masked as SKIPPED).
+    - 7-Bucket Ledger Math Invariant: `completed === sum(7 buckets)` -> `3 === 1(success) + 1(failure) + 1(skipped) + 0(timeout) + 0(unknown) + 0(automationFailed) + 0(paused)`. Discrepancy = 0.
+  - Task SC-04 (Multi-Target Nonempty Queue Pause, True SW Termination, Checkpoint Restore & Visible #stop-save-btn):
+    - Multi-target campaign (3 targets) started via real UI `#start-btn`.
+    - Paused via real UI `#pause-btn` with non-empty queue: `remainingQueue.length === 2`.
+    - Background Service Worker forcibly terminated via Chromium CDP `Target.closeTarget`: confirmed dead and absent from `/json` target list (`oldSwId: 2F919FBB...`).
+    - Fresh Service Worker booted via popup wakeup, confirmed new ID differs (`newSwId: 65334764...`), verified restored memory state: `isPaused: true`, `remainingCount: 2`.
+    - Resumed via real UI (`confirmResumeCampaignWithMode('AUTO')`): `isPaused: false, isActive: true`.
+    - Stopped & Saved via real visible UI button (`#stop-save-btn`): `isActive: false`.
+    - Verified storage checkpoint preserved: `xpider_paused_checkpoint` with `remainingQueue.length === 1`.
+    - Screenshots captured: `shot_sc04_popup_paused_nonempty.png`, `shot_sc04_popup_stopped_saved.png`.
+  - Deterministic E2E Test Suite: `node test/run_chromium_v7_task3_and_task4_suite.js` -> Exit Code `0` (100% PASS).
+  - Machine-Readable Report: `owner-extension-test-site/evidence/evidence_v7_task3_and_task4_report.json`.
+  - Raw Log: `owner-extension-test-site/evidence/evidence_v7_task3_and_task4.log` (committed and pushed to GitHub).
+  - Verification Status: HOLD (Awaiting independent ChatGPT Code Audit). Release HOLD maintained.
 - Task SC-20261031-02 (Authentic Chromium Campaign Orchestration E2E Runner Committed & Verified):
   - Fact-Check Remediation (#6548985799 & #6549097571):
     - Genuine UI Button Operations: Driven entirely through real clicks on `popup.html` DOM controls (`#start-btn`, `#pause-btn`, `#stop-btn`) via CDP `Runtime.evaluate` clicking real elements. Background state transitions observed and verified (`isActive: true` -> `isPaused: true` with text "Resume" and persistent checkpoint `xpider_paused_checkpoint` -> `isPaused: false` -> `isActive: false`).
