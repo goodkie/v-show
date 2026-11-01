@@ -1353,14 +1353,10 @@
                                 const settleReason = (classification.reason && (classification.reason.startsWith('NON_INQUIRY') || classification.reason === 'NO_LONG_TEXT_INQUIRY_FIELD'))
                                     ? classification.reason
                                     : `NON_INQUIRY_${classification.intent}_FORM`;
-                                const lowerUrl = currentUrl.toLowerCase();
-                                const isTargetSpecificNonInquiry = lowerUrl.includes('subscribe') || lowerUrl.includes('newsletter') ||
-                                    lowerUrl.includes('reservation') || lowerUrl.includes('booking') || lowerUrl.includes('login') || lowerUrl.includes('signin') || lowerUrl.includes('no-message');
                                 const bestLink = typeof findBestContactLink === 'function' ? findBestContactLink() : null;
-                                if (isTargetSpecificNonInquiry || settleReason === 'NO_LONG_TEXT_INQUIRY_FIELD' || settleReason === 'NON_INQUIRY_LOGIN_FORM' || settleReason === 'NON_INQUIRY_COMMENT_FORM' ||
-                                    settleReason === 'NON_INQUIRY_SUBSCRIBE_FORM' || settleReason === 'NON_INQUIRY_RESERVATION_FORM' || !bestLink) {
-                                    logDev(`[FORM_GATE] eligible=false reason=${settleReason}`);
-                                    logDev(`❌ [ContactGate] Page rejected: non-inquiry form (${settleReason})`, "error");
+                                if (!bestLink) {
+                                    logDev(`[FORM_GATE] eligible=false reason=${settleReason} noContactLink=true`);
+                                    logDev(`❌ [ContactGate] Page rejected: non-inquiry form with no contact links (${settleReason})`, "error");
                                     currentTargetLifecycleState = TargetLifecycleState.SETTLING;
                                     finishCampaign(false, settleReason, settleReason);
                                     return;

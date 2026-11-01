@@ -1,0 +1,69 @@
+[2026-11-01T01:10:30.226Z] ================================================================================
+[2026-11-01T01:10:30.228Z] 🚀 RUNNING TASK SC-03 & SC-04 CHROMIUM E2E SUITE
+[2026-11-01T01:10:30.228Z] ================================================================================
+[2026-11-01T01:10:30.280Z] Test server active on port 8088
+[2026-11-01T01:10:30.281Z] Disposable profile: C:\Users\oPus\AppData\Local\Temp\xpider-sc03-sc04-mtyn91
+[2026-11-01T01:10:30.290Z] Browser launched (PID=36952)
+[2026-11-01T01:10:31.654Z] Extension ID: ldlijlaccfeelfdhgnjbibniocefckjj
+[2026-11-01T01:10:33.300Z] Connected to Popup UI via CDP
+[2026-11-01T01:10:33.300Z] 
+=========================================================================
+[2026-11-01T01:10:33.300Z] --- TASK SC-03: NO-MESSAGE INPUT CLASSIFICATION & LEDGER RECONCILIATION ---
+[2026-11-01T01:10:33.301Z] =========================================================================
+[2026-11-01T01:10:33.303Z] Testing homepage-with-newsletter-and-contact-link.html (Discovery preservation)...
+[2026-11-01T01:10:33.338Z] Campaign started for homepage discovery: {"success":true,"status":"acknowledged","queueCount":1,"campaignRunId":"run_1793495433325_745ia"}
+[2026-11-01T01:10:53.295Z] Discovery Authoritative Ledger Record: {"attemptId":"att_1793495433884_v770k","autofillStatus":"SUCCESS","campaignRunId":"run_1793495433325_745ia","captchaStatus":"NONE","committedContactUrl":"http://127.0.0.1:8088/contact-standard.html","committedFormUrl":"http://127.0.0.1:8088/contact-standard.html","contactDiscoveryConfidence":1,"contactDiscoverySource":null,"contactPageHostname":"127.0.0.1","contactPageUrl":"http://127.0.0.1:8088/contact-standard.html","createdAt":1793495433884,"emailsFound":0,"evidence":{},"externalFormUrl":null,"failureClass":null,"formDetectionStatus":"FOUND","formPageUrl":"http://127.0.0.1:8088/contact-standard.html","generation":1,"generationId":1,"importId":null,"isPreSubmitLocked":true,"outcomeEvidence":{"ariaLiveSuccessTransition":true,"buttonSuccessState":true,"captchaEvidenceClass":null,"captchaRejected":false,"confirmationStrength":"STRONG_DOM","evidenceTimestamp":1793495449317,"formHidden":false,"formReplaced":false,"formReset":false,"frameworkSuccessState":true,"networkCommitObserved":false,"networkStatus":null,"physicalClickDispatched":false,"receiptId":"rcpt_1793495447164_1","serverErrorTransition":false,"submitAttempted":true,"submitEventSeen":true,"successNodeVisibleTransition":true,"successTextTransition":true,"thankYouUrlTransition":false,"validationErrorTransition":false},"ownerManualConfirmed":false,"privacyFailureReason":null,"privacyGateCheckedAt":"2026-11-01T01:10:33.884Z","privacyGatePassed":false,"privacyMode":"PRIVACY_RELAY","privacyTransport":"PRIVACY_RELAY","reasonCode":"SUCCESS_CONFIRMED","receiptId":"rcpt_1793495447164_1","resultUrl":"http://127.0.0.1:8088/contact-standard.html","selectedCandidateUrl":"http://127.0.0.1:8088/contact-standard.html","sessionId":null,"settledAt":1793495449317,"sourceHostname":"127.0.0.1","sourceUrl":"http://127.0.0.1:8088/homepage-with-newsletter-and-contact-link.html","startedAt":1793495433884,"status":"CONFIRMED_SUCCESS","submissionStatus":"CONFIRMED_SUCCESS","submittedFromUrl":"http://127.0.0.1:8088/homepage-with-newsletter-and-contact-link.html","targetIdentity":"https://127.0.0.1/homepage-with-newsletter-and-contact-link.html","targetToken":"tok_1793495433883_cy6otd","templateId":"default","templateVersion":1,"timing":{"durationMs":15433,"finalizedTime":1793495449317,"intentTime":1793495433884}}
+[2026-11-01T01:10:53.295Z] ✅ SC-03 Part A.0: Homepage with newsletter form and valid contact link successfully navigated to contact form and filled without premature skipping.
+[2026-11-01T01:10:53.295Z] 
+Testing phone-only-no-message.html (Standalone non-inquiry form, strictly NO contact links)...
+[2026-11-01T01:10:53.323Z] Campaign started for phone-only-no-message.html: {"success":true,"status":"acknowledged","queueCount":1,"campaignRunId":"run_1793495433325_745ia"}
+[2026-11-01T01:10:53.684Z] Campaign active observed: true
+[2026-11-01T01:11:04.152Z] phone-only-no-message.html settled at T+9.5s: {"isActive":false,"isPaused":false}
+[2026-11-01T01:11:04.195Z] phone-only-no-message Authoritative Ledger Record: {"attemptId":"att_1793495453354_oed8u","autofillStatus":"N_A","campaignRunId":"run_1793495433325_745ia","captchaStatus":"NONE","contactDiscoveryConfidence":1,"contactDiscoverySource":null,"contactPageHostname":"127.0.0.1","contactPageUrl":"http://127.0.0.1:8088/phone-only-no-message.html","createdAt":1793495453354,"emailsFound":0,"evidence":{},"externalFormUrl":null,"failureClass":null,"formDetectionStatus":"NOT_FOUND","formPageUrl":"http://127.0.0.1:8088/phone-only-no-message.html","generation":1,"generationId":1,"importId":null,"isPreSubmitLocked":false,"outcomeEvidence":{"ariaLiveSuccessTransition":false,"buttonSuccessState":false,"captchaRejected":false,"confirmationStrength":"NONE","evidenceTimestamp":1793495462781,"formHidden":false,"formReplaced":false,"formReset":false,"frameworkSuccessState":false,"networkCommitObserved":false,"networkStatus":null,"physicalClickDispatched":false,"serverErrorTransition":false,"submitAttempted":false,"submitEventSeen":false,"successNodeVisibleTransition":false,"successTextTransition":false,"thankYouUrlTransition":false,"validationErrorTransition":false},"ownerManualConfirmed":false,"privacyFailureReason":null,"privacyGateCheckedAt":"2026-11-01T01:10:53.354Z","privacyGatePassed":true,"privacyMode":"PRIVACY_RELAY","privacyTransport":"PRIVACY_RELAY","reasonCode":"NO_LONG_TEXT_INQUIRY_FIELD","receiptId":null,"resultUrl":"http://127.0.0.1:8088/phone-only-no-message.html","selectedCandidateUrl":"http://127.0.0.1:8088/phone-only-no-message.html","sessionId":null,"settledAt":1793495462781,"sourceHostname":"127.0.0.1","sourceUrl":"http://127.0.0.1:8088/phone-only-no-message.html","startedAt":1793495453354,"status":"SKIPPED","submissionStatus":"SKIPPED","submittedFromUrl":"http://127.0.0.1:8088/phone-only-no-message.html","targetIdentity":"https://127.0.0.1/phone-only-no-message.html","targetToken":"tok_1793495453353_y92m6u","templateId":"default","templateVersion":1,"timing":{"durationMs":9427,"finalizedTime":1793495462781,"intentTime":1793495453354}}
+[2026-11-01T01:11:04.198Z] ✅ SC-03 Part A.1: phone-only-no-message.html strictly classified as SKIPPED with exact reason NO_LONG_TEXT_INQUIRY_FIELD and 0 submissions.
+[2026-11-01T01:11:04.198Z] 
+Testing no-contact-page.html (Formless target with 404 dead contact links)...
+[2026-11-01T01:11:04.836Z] Formless campaign active observed: true
+[2026-11-01T01:11:15.077Z] no-contact-page Authoritative Ledger Record: {"attemptId":"att_1793495464376_ulbnc","autofillStatus":"N_A","campaignRunId":"run_1793495433325_745ia","captchaStatus":"NONE","contactDiscoveryConfidence":1,"contactDiscoverySource":null,"contactPageHostname":"127.0.0.1","contactPageUrl":"http://127.0.0.1:8088/contact","createdAt":1793495464376,"emailsFound":0,"evidence":{},"externalFormUrl":null,"failureClass":"RUNTIME_ERROR","formDetectionStatus":"NOT_FOUND","formPageUrl":"http://127.0.0.1:8088/contact","generation":1,"generationId":1,"importId":null,"isPreSubmitLocked":false,"outcomeEvidence":{"ariaLiveSuccessTransition":false,"buttonSuccessState":false,"captchaRejected":false,"confirmationStrength":"NONE","evidenceTimestamp":1793495473691,"formHidden":false,"formReplaced":false,"formReset":false,"frameworkSuccessState":false,"networkCommitObserved":false,"networkStatus":null,"physicalClickDispatched":false,"serverErrorTransition":false,"submitAttempted":false,"submitEventSeen":false,"successNodeVisibleTransition":false,"successTextTransition":false,"thankYouUrlTransition":false,"validationErrorTransition":false},"ownerManualConfirmed":false,"privacyFailureReason":null,"privacyGateCheckedAt":"2026-11-01T01:11:04.376Z","privacyGatePassed":true,"privacyMode":"PRIVACY_RELAY","privacyTransport":"PRIVACY_RELAY","reasonCode":"NO_ACCESSIBLE_INQUIRY_FORM","receiptId":null,"resultUrl":"http://127.0.0.1:8088/contact","selectedCandidateUrl":"http://127.0.0.1:8088/no-contact-page.html","sessionId":null,"settledAt":1793495473691,"sourceHostname":"127.0.0.1","sourceUrl":"http://127.0.0.1:8088/no-contact-page.html","startedAt":1793495464376,"status":"FAILURE","submissionStatus":"FAILURE","submittedFromUrl":"http://127.0.0.1:8088/article.html","targetIdentity":"https://127.0.0.1/no-contact-page.html","targetToken":"tok_1793495464376_mqs8jm","templateId":"default","templateVersion":1,"timing":{"durationMs":9315,"finalizedTime":1793495473691,"intentTime":1793495464376}}
+[2026-11-01T01:11:15.077Z] ✅ SC-03 Part B: no-contact-page.html truthfully classified as FAILURE due to 404 dead contact pages.
+[2026-11-01T01:11:15.077Z] 
+Reconciling 7-Bucket Ledger Math Invariant...
+[2026-11-01T01:11:15.078Z] Authoritative Ledger Stats: {"scope":"allHistory","campaignRunId":"run_1793495433325_745ia","totalStarted":3,"totalImportRows":1,"pending":0,"invalid":0,"success":1,"failure":1,"unknown":0,"timeout":0,"timeoutLocal":0,"timeoutGlobal":0,"skipped":1,"paused":0,"completed":3,"failureBreakdown":{"NO_ACCESSIBLE_INQUIRY_FORM":1},"logStr":"[LEDGER_STATS] scope=allHistory success=1 failure=1 unknown=0 timeout=0 skipped=1"}
+[2026-11-01T01:11:15.078Z] Total Completed Targets: 3 | Bucket Sum: 3 | Success: 1 | Failure: 1 | Skipped: 1
+[2026-11-01T01:11:15.078Z] ✅ SC-03 Part C: 7-Bucket ledger reconciliation passed with 0 discrepancy across all categories.
+[2026-11-01T01:11:15.078Z] 
+=========================================================================
+[2026-11-01T01:11:15.078Z] --- TASK SC-04: NONEMPTY QUEUE PAUSE, TRUE SW TERMINATION & RESUME ---
+[2026-11-01T01:11:15.078Z] =========================================================================
+[2026-11-01T01:11:15.078Z] Setting up 3-target campaign queue in Popup DOM: ["http://127.0.0.1:8088/contact-standard.html","http://127.0.0.1:8088/spa-delayed-contact.html","http://127.0.0.1:8088/index.html"]
+[2026-11-01T01:11:15.080Z] Clicking Real UI Start Button (#start-btn)...
+[2026-11-01T01:11:15.940Z] 🎯 Multi-target campaign active at T+0s! runId=normal_run_1793495475096_tpiw5j
+[2026-11-01T01:11:15.940Z] Clicking Real UI Pause Button (#pause-btn) to capture NON-EMPTY queue...
+[2026-11-01T01:11:16.456Z] ⏸️ Durable pause checkpoint captured at T+0s: remaining=2
+[2026-11-01T01:11:16.456Z] Checkpoint remainingQueue: ["http://127.0.0.1:8088/spa-delayed-contact.html","http://127.0.0.1:8088/index.html"]
+[2026-11-01T01:11:16.462Z] Pause button text after pause: "▶️ Resume"
+[2026-11-01T01:11:16.605Z] 📸 Captured screenshot: shot_sc04_popup_paused_nonempty.png
+[2026-11-01T01:11:16.605Z] 
+--- Forcibly Terminating Service Worker Process via CDP ---
+[2026-11-01T01:11:17.120Z] Closing SW Target: 2F919FBB8BCF37AC768ECCF305FD6884
+[2026-11-01T01:11:19.126Z] SW Target after closeTarget: TERMINATED_CONFIRMED (old ID: 2F919FBB8BCF37AC768ECCF305FD6884 absent)
+[2026-11-01T01:11:19.126Z] 
+--- Waking Up Fresh Service Worker & Verifying Durable Checkpoint Restoration ---
+[2026-11-01T01:11:19.640Z] Fresh SW Booted: Target ID=653347646D11805405811CD2021B0125 (verified different from old ID=2F919FBB8BCF37AC768ECCF305FD6884)
+[2026-11-01T01:11:19.648Z] Fresh SW Restored State from Checkpoint: {"isActive":false,"isPaused":true,"remainingCount":2,"pausedByOperator":true,"runId":"normal_run_1793495475096_tpiw5j"}
+[2026-11-01T01:11:19.649Z] ✅ SC-04 Part A: Non-empty queue preserved and restored across genuine Service Worker termination.
+[2026-11-01T01:11:19.649Z] 
+--- Resuming Campaign via Real UI (#pause-btn / confirmResumeCampaignWithMode) ---
+[2026-11-01T01:11:20.095Z] ▶️ Campaign resumed at T+0s! isPaused=false, isActive=true
+[2026-11-01T01:11:20.095Z] 
+--- Stopping & Saving Campaign via Real Visible UI (#stop-save-btn) ---
+[2026-11-01T01:11:20.425Z] 🛑 Campaign stopped observed from real visible #stop-save-btn click at T+0s! isActive=false
+[2026-11-01T01:11:20.427Z] Saved Checkpoint in Storage after #stop-save-btn: remaining=1
+[2026-11-01T01:11:20.600Z] 📸 Captured screenshot: shot_sc04_popup_stopped_saved.png
+[2026-11-01T01:11:20.600Z] ✅ SC-04 Part B: Campaign successfully resumed and stopped & saved via visible real UI #stop-save-btn.
+[2026-11-01T01:11:20.614Z] 
+📄 Generated machine-readable evidence report: E:\vivpr\ai\extension-form-sender\owner-extension-test-site\evidence\evidence_v7_task3_and_task4_report.json
+[2026-11-01T01:11:20.615Z] 
+================================================================================
+[2026-11-01T01:11:20.615Z] 🎉 BOTH TASK SC-03 & TASK SC-04 VERIFIED SUCCESSFULLY (100% PASS)
+[2026-11-01T01:11:20.615Z] ================================================================================

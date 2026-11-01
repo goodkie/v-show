@@ -1,29 +1,42 @@
 {
   "suiteName": "XPIDER V7 SC-03 & SC-04 Deterministic Chromium E2E Suite",
-  "startTimeUtc": "2026-11-01T00:07:57.405Z",
-  "endTimeUtc": "2026-11-01T00:08:28.422Z",
-  "durationSeconds": "31.0",
+  "startTimeUtc": "2026-11-01T01:10:30.228Z",
+  "endTimeUtc": "2026-11-01T01:11:20.600Z",
+  "durationSeconds": "50.4",
   "targetBaseline": "v7.0.0-rc11",
   "candidateBranch": "candidate/sc03-sc04-classification-and-pause",
   "baselineCommit": "20678ada",
-  "extensionTreeSha": "d065af8f1f1438ecba9bbe7fb03cf8e18c040e05 (modified on candidate branch)",
+  "baselineExtensionTreeSha": "d065af8f1f1438ecba9bbe7fb03cf8e18c040e05",
+  "candidateExtensionModifiedFiles": [
+    "extension/content-script.js"
+  ],
   "capturedScreenshots": [
     "shot_sc04_popup_paused_nonempty.png",
-    "shot_sc04_popup_stopped.png"
+    "shot_sc04_popup_stopped_saved.png"
   ],
-  "sc03_no_message_classification": {
+  "sc03_no_message_classification_and_discovery": {
+    "homepageDiscoveryTarget": "http://127.0.0.1:8088/homepage-with-newsletter-and-contact-link.html",
+    "homepageDiscoveryStatus": "CONFIRMED_SUCCESS",
+    "homepageDiscoveryPass": true,
     "phoneOnlyTarget": "http://127.0.0.1:8088/phone-only-no-message.html",
-    "authoritativeLedgerStatus": "SKIPPED",
-    "authoritativeReasonCode": "NO_LONG_TEXT_INQUIRY_FIELD",
+    "phoneOnlyStatus": "SKIPPED",
+    "phoneOnlyReasonCode": "NO_LONG_TEXT_INQUIRY_FIELD",
     "submissionsDelta": 0,
     "statusStrictlySkipped": true,
     "formlessTarget": "http://127.0.0.1:8088/no-contact-page.html",
-    "formlessStatus": "SKIPPED",
+    "formlessStatus": "FAILURE",
+    "formlessReasonCode": "NO_ACCESSIBLE_INQUIRY_FORM",
     "sevenBucketLedgerReconciliation": {
-      "completed": 2,
-      "bucketSum": 2,
-      "discrepancy": 0,
-      "failures": 0
+      "completed": 3,
+      "success": 1,
+      "failure": 1,
+      "skipped": 1,
+      "timeout": 0,
+      "deliveryUnknown": 0,
+      "automationFailed": 0,
+      "paused": 0,
+      "bucketSum": 3,
+      "discrepancy": 0
     },
     "status": "PASS"
   },
@@ -31,10 +44,12 @@
     "initialTargetsCount": 3,
     "pausedRemainingCount": 2,
     "nonemptyQueuePreserved": true,
-    "swForciblyTerminated": true,
+    "oldSwTerminatedAbsent": true,
+    "newSwTargetIdDiffers": true,
     "swRestoredRemainingCount": 2,
     "resumedViaRealUi": true,
-    "stoppedViaRealUi": true,
+    "stoppedAndSavedViaRealUi": true,
+    "checkpointRemainingCountAfterStopAndSave": 1,
     "status": "PASS"
   },
   "releaseHoldStatus": "ACTIVE (Awaiting independent ChatGPT and Owner gate acceptance)"

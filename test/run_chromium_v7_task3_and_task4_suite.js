@@ -178,8 +178,58 @@ async function main() {
         self.campaignState.runScopedDirectPrivacy = true;
     `);
 
-    // (A) Target: phone-only-no-message.html
-    log('Testing phone-only-no-message.html (has Name, Email, Phone, but NO message textarea)...');
+    // (A.0) Target: homepage-with-newsletter-and-contact-link.html (Has newsletter form BUT valid contact link)
+    log('Testing homepage-with-newsletter-and-contact-link.html (Discovery preservation)...');
+    const startDiscovery = await swEval(`
+        new Promise(resolve => {
+            const bp = (typeof BuildProvenance !== 'undefined') ? BuildProvenance : self.BuildProvenance;
+            const liveHead = bp.BUILD_INFO.implementationHead || bp.BUILD_INFO.head;
+            const liveBuild = bp.BUILD_INFO.buildId;
+            const liveManifest = bp.BUILD_INFO.manifestVersion || 3;
+
+            const msg = {
+                action: 'START_CAMPAIGN',
+                source: 'USER_START_BUTTON',
+                runScopedDirectPrivacy: true,
+                expectedImplementationHead: liveHead,
+                expectedBuildId: liveBuild,
+                expectedManifestVersion: Number(liveManifest),
+                queue: ['http://127.0.0.1:${PORT}/homepage-with-newsletter-and-contact-link.html'],
+                template: {
+                    name: 'Alex Mercer',
+                    email: 'alex@mercer-consulting.com',
+                    phone: '555-0199',
+                    message: 'Inquiry following homepage contact link navigation.'
+                },
+                options: { source: 'USER_START_BUTTON' }
+            };
+            globalThis.__dispatchBackgroundMessage(msg, {}, res => resolve(res));
+        })
+    `);
+    log(`Campaign started for homepage discovery: ${JSON.stringify(startDiscovery)}`);
+
+    for (let i = 0; i < 40; i++) {
+        await sleep(500);
+        const st = await swEval(`({ isActive: campaignState.isActive })`);
+        if (!st?.isActive && i > 2) break;
+    }
+
+    const discoveryLedger = await swEval(`
+        new Promise(resolve => {
+            chrome.storage.local.get(['xpider_history_attempts'], res => {
+                const list = res.xpider_history_attempts || [];
+                const match = list.slice().reverse().find(a => (a.sourceUrl && a.sourceUrl.includes('homepage-with-newsletter')) || (a.targetUrl && a.targetUrl.includes('contact-standard')));
+                resolve(match || list[list.length - 1] || null);
+            });
+        })
+    `);
+    log(`Discovery Authoritative Ledger Record: ${JSON.stringify(discoveryLedger)}`);
+    assert(discoveryLedger, 'Discovery attempt record must exist in ledger');
+    assert.strictEqual(discoveryLedger.status, 'CONFIRMED_SUCCESS', `Homepage with contact link must discover contact page and succeed (observed: ${discoveryLedger.status})`);
+    log('✅ SC-03 Part A.0: Homepage with newsletter form and valid contact link successfully navigated to contact form and filled without premature skipping.');
+
+    // (A.1) Target: phone-only-no-message.html (Standalone non-inquiry form with NO contact links)
+    log('\nTesting phone-only-no-message.html (Standalone non-inquiry form, strictly NO contact links)...');
     
     // Clear submissions count
     await fetch(`http://127.0.0.1:${PORT}/__xpider_clear_submissions`, { method: 'POST' }).catch(() => {});
@@ -257,20 +307,19 @@ async function main() {
     `);
     log(`phone-only-no-message Authoritative Ledger Record: ${JSON.stringify(phoneLedger)}`);
 
-    // STRICT ASSERTIONS (Per ChatGPT Comment #887):
-    // Owner repeatedly requires message-less non-inquiry forms to be SKIPPED, not FAILED.
+    // STRICT EXACT ASSERTIONS (Per ChatGPT Audit #6551153958 [P0-1] & [P0-3]):
     assert(phoneLedger, 'Authoritative ledger must contain attempt record');
     assert.strictEqual(phoneLedger.status, 'SKIPPED', `Authoritative status must be strictly SKIPPED (observed: ${phoneLedger.status})`);
-    assert(phoneLedger.reasonCode === 'NO_LONG_TEXT_INQUIRY_FIELD' || phoneLedger.reasonCode?.includes('NO_LONG_TEXT') || phoneLedger.reasonCode === 'NO_ACCESSIBLE_INQUIRY_FORM',
-        `Reason must reflect no inquiry field (observed: ${phoneLedger.reasonCode})`);
+    assert.strictEqual(phoneLedger.reasonCode, 'NO_LONG_TEXT_INQUIRY_FIELD',
+        `Reason must be strictly exact NO_LONG_TEXT_INQUIRY_FIELD without fallback path (observed: ${phoneLedger.reasonCode})`);
 
     // Verify 0 submissions
     const sub1 = await fetch(`http://127.0.0.1:${PORT}/__xpider_submissions`).then(r => r.json()).then(j => j.count || 0);
     assert.strictEqual(sub1 - sub0, 0, 'Zero server submissions must be strictly verified');
-    log('✅ SC-03 Part A: phone-only-no-message.html strictly classified as SKIPPED with 0 submissions.');
+    log('✅ SC-03 Part A.1: phone-only-no-message.html strictly classified as SKIPPED with exact reason NO_LONG_TEXT_INQUIRY_FIELD and 0 submissions.');
 
-    // (B) Target: no-contact-page.html (Formless page)
-    log('Testing no-contact-page.html (formless target)...');
+    // (B) Target: no-contact-page.html (Formless page with 404 dead contact paths)
+    log('\nTesting no-contact-page.html (Formless target with 404 dead contact links)...');
     const startFormless = await swEval(`
         new Promise(resolve => {
             const bp = (typeof BuildProvenance !== 'undefined') ? BuildProvenance : self.BuildProvenance;
@@ -326,35 +375,38 @@ async function main() {
     `);
     log(`no-contact-page Authoritative Ledger Record: ${JSON.stringify(formlessLedger)}`);
     assert(formlessLedger, 'Authoritative ledger must contain record for formless target');
-    assert.strictEqual(formlessLedger.status, 'SKIPPED', `Formless target must settle as SKIPPED (observed: ${formlessLedger.status})`);
-    log('✅ SC-03 Part B: no-contact-page.html strictly classified as SKIPPED.');
+    // STRICT EXACT ASSERTION (Per ChatGPT Audit #6551153958 [P0-2]):
+    // Unreachable / 404 contact paths must settle truthfully as FAILURE, NOT masked as SKIPPED.
+    assert.strictEqual(formlessLedger.status, 'FAILURE', `Formless 404 target must settle truthfully as FAILURE (observed: ${formlessLedger.status})`);
+    assert.strictEqual(formlessLedger.reasonCode, 'NO_ACCESSIBLE_INQUIRY_FORM', `Reason must be NO_ACCESSIBLE_INQUIRY_FORM (observed: ${formlessLedger.reasonCode})`);
+    log('✅ SC-03 Part B: no-contact-page.html truthfully classified as FAILURE due to 404 dead contact pages.');
 
-    // (C) 7-Bucket Ledger Math Reconciliation Invariant
-    log('Reconciling 7-Bucket Ledger Math Invariant...');
+    // (C) 7-Bucket Ledger Math Reconciliation Invariant (Per ChatGPT Audit #6551153958 [P0-4])
+    log('\nReconciling 7-Bucket Ledger Math Invariant...');
     const statsObj = await swEval(`
         (async () => {
             const hs = await getHistoryStoreInstance();
-            const runStats = hs.getLedgerStats('currentRun', campaignState.campaignRunId);
             const allStats = hs.getLedgerStats('allHistory');
-            return { runStats, allStats };
+            return allStats;
         })()
     `);
-    log(`Ledger Stats: ${JSON.stringify(statsObj)}`);
-    const ledgerStats = (statsObj.runStats && statsObj.runStats.completed > 0) ? statsObj.runStats : statsObj.allStats;
+    log(`Authoritative Ledger Stats: ${JSON.stringify(statsObj)}`);
 
-    const bucketSum = (ledgerStats.success || 0) +
-                      (ledgerStats.failure || 0) +
-                      (ledgerStats.skipped || 0) +
-                      (ledgerStats.timeout || 0) +
-                      (ledgerStats.unknown || ledgerStats.deliveryUnknown || 0) +
-                      (ledgerStats.paused || 0);
+    const bucketSum = (statsObj.success || 0) +
+                      (statsObj.failure || 0) +
+                      (statsObj.skipped || 0) +
+                      (statsObj.timeout || 0) +
+                      (statsObj.unknown || statsObj.deliveryUnknown || 0) +
+                      (statsObj.automationFailed || 0) +
+                      (statsObj.paused || 0);
 
-    log(`Total Completed Targets: ${ledgerStats.completed} | Bucket Sum: ${bucketSum} | Skipped: ${ledgerStats.skipped} | Failure: ${ledgerStats.failure}`);
-    assert(ledgerStats.completed >= 2, `At least 2 targets must be recorded as completed in ledger (observed: ${ledgerStats.completed})`);
-    assert.strictEqual(ledgerStats.completed, bucketSum, '7-Bucket ledger math invariant must hold: completed === sum(buckets)');
-    assert.strictEqual(ledgerStats.failure, 0, 'No false failures: non-inquiry and formless targets must NOT count as failure');
-    assert.strictEqual(ledgerStats.skipped, 2, 'Both targets strictly classified as skipped');
-    log('✅ SC-03 Part C: 7-Bucket ledger reconciliation passed with 0 discrepancy.');
+    log(`Total Completed Targets: ${statsObj.completed} | Bucket Sum: ${bucketSum} | Success: ${statsObj.success} | Failure: ${statsObj.failure} | Skipped: ${statsObj.skipped}`);
+    assert(statsObj.completed >= 3, `At least 3 targets must be recorded as completed in ledger (observed: ${statsObj.completed})`);
+    assert.strictEqual(statsObj.completed, bucketSum, '7-Bucket ledger math invariant must hold: completed === sum(buckets)');
+    assert(statsObj.success >= 1, 'At least 1 confirmed success target present in ledger');
+    assert(statsObj.skipped >= 1, 'At least 1 skipped target present in ledger (from non-inquiry form)');
+    assert(statsObj.failure >= 1, 'At least 1 failure target present in ledger (from unreachable/404 page)');
+    log('✅ SC-03 Part C: 7-Bucket ledger reconciliation passed with 0 discrepancy across all categories.');
 
     // =========================================================================
     // TASK SC-04: Nonempty Queue Pause, True SW Termination, Checkpoint Restore & Resume
@@ -474,15 +526,16 @@ async function main() {
     swWs.close();
     await sleep(500);
 
-    // Close SW Target in Chromium
-    log(`Closing SW Target: ${swTarget.id}`);
-    await cdpSend(browserWs, 'Target.closeTarget', { targetId: swTarget.id }).catch(() => {});
+    const oldSwId = swTarget.id;
+    log(`Closing SW Target: ${oldSwId}`);
+    await cdpSend(browserWs, 'Target.closeTarget', { targetId: oldSwId }).catch(() => {});
     await sleep(2000);
 
-    // Verify target is dead
+    // Verify target is dead (Strict assertion per [P0-5])
     targets = await fetch(`http://127.0.0.1:${CDP_PORT}/json`).then(r => r.json());
-    const deadSw = targets.find(t => t.id === swTarget.id);
-    log(`SW Target after closeTarget: ${deadSw ? 'STILL_ALIVE' : 'TERMINATED_CONFIRMED'}`);
+    const deadSw = targets.find(t => t.id === oldSwId);
+    assert(!deadSw, `Original SW target ${oldSwId} must be completely terminated and absent from target list`);
+    log(`SW Target after closeTarget: TERMINATED_CONFIRMED (old ID: ${oldSwId} absent)`);
 
     // 5. WAKE UP SERVICE WORKER & VERIFY CHECKPOINT RESTORATION
     log('\n--- Waking Up Fresh Service Worker & Verifying Durable Checkpoint Restoration ---');
@@ -495,11 +548,12 @@ async function main() {
     for (let i = 0; i < 30; i++) {
         await sleep(500);
         targets = await fetch(`http://127.0.0.1:${CDP_PORT}/json`).then(r => r.json());
-        newSwTarget = targets.find(t => t.type === 'service_worker' && t.url.includes('background.js'));
+        newSwTarget = targets.find(t => t.type === 'service_worker' && t.url.includes('background.js') && t.id !== oldSwId);
         if (newSwTarget) break;
     }
     assert(newSwTarget, 'Fresh Service Worker must boot after termination');
-    log(`Fresh SW Booted: Target ID=${newSwTarget.id}`);
+    assert.notStrictEqual(newSwTarget.id, oldSwId, `New SW Target ID (${newSwTarget.id}) must differ from terminated SW ID (${oldSwId})`);
+    log(`Fresh SW Booted: Target ID=${newSwTarget.id} (verified different from old ID=${oldSwId})`);
 
     swWs = await openWs(newSwTarget.webSocketDebuggerUrl);
     await cdpSend(swWs, 'Runtime.enable');
@@ -545,10 +599,10 @@ async function main() {
     }
     assert(resumedActive, 'Campaign must resume actively after clicking resume in UI');
 
-    // 7. STOP & SAVE CAMPAIGN VIA REAL UI (#stop-btn)
-    log('\n--- Stopping Campaign via Real UI (#stop-btn) ---');
+    // 7. STOP & SAVE CAMPAIGN VIA REAL VISIBLE UI (#stop-save-btn, Per ChatGPT Addendum #6551518285 [P0-6])
+    log('\n--- Stopping & Saving Campaign via Real Visible UI (#stop-save-btn) ---');
     await cdpSend(popupWs, 'Runtime.evaluate', {
-        expression: `document.getElementById('stop-btn')?.click()`
+        expression: `document.getElementById('stop-save-btn')?.click()`
     });
 
     let stoppedCleanly = false;
@@ -556,17 +610,30 @@ async function main() {
         await sleep(300);
         const st = await swEval(`({ isActive: campaignState.isActive, isPaused: campaignState.isPaused })`);
         if (!st?.isActive) {
-            log(`🛑 Campaign stopped observed from real UI click at T+${i * 0.3}s! isActive=false`);
+            log(`🛑 Campaign stopped observed from real visible #stop-save-btn click at T+${i * 0.3}s! isActive=false`);
             stoppedCleanly = true;
             break;
         }
     }
-    assert(stoppedCleanly, 'Campaign must stop cleanly after clicking #stop-btn');
+    assert(stoppedCleanly, 'Campaign must stop cleanly after clicking visible #stop-save-btn');
 
-    const shotSc04Stopped = await shot(popupWs, 'shot_sc04_popup_stopped.png');
+    // Assert that Stop & Save preserved the checkpoint in storage
+    const savedCheckpoint = await swEval(`
+        new Promise(resolve => {
+            chrome.storage.local.get(['xpider_paused_checkpoint'], res => {
+                resolve(res.xpider_paused_checkpoint || null);
+            });
+        })
+    `);
+    log(`Saved Checkpoint in Storage after #stop-save-btn: remaining=${savedCheckpoint?.remainingQueue?.length}`);
+    assert(savedCheckpoint, 'Durable checkpoint must exist in storage after #stop-save-btn');
+    assert(Array.isArray(savedCheckpoint.remainingQueue) && savedCheckpoint.remainingQueue.length >= 1,
+        'Remaining queue must be preserved in storage after Stop & Save');
+
+    const shotSc04Stopped = await shot(popupWs, 'shot_sc04_popup_stopped_saved.png');
     capturedShots.push(shotSc04Stopped);
 
-    log('✅ SC-04 Part B: Campaign successfully resumed and stopped via real UI controls.');
+    log('✅ SC-04 Part B: Campaign successfully resumed and stopped & saved via visible real UI #stop-save-btn.');
 
     // Summary & Machine-Readable Evidence Report
     const endTimeUtc = new Date().toISOString();
@@ -578,21 +645,32 @@ async function main() {
         targetBaseline: 'v7.0.0-rc11',
         candidateBranch: 'candidate/sc03-sc04-classification-and-pause',
         baselineCommit: '20678ada',
-        extensionTreeSha: 'd065af8f1f1438ecba9bbe7fb03cf8e18c040e05 (modified on candidate branch)',
+        baselineExtensionTreeSha: 'd065af8f1f1438ecba9bbe7fb03cf8e18c040e05',
+        candidateExtensionModifiedFiles: ['extension/content-script.js'],
         capturedScreenshots: capturedShots,
-        sc03_no_message_classification: {
+        sc03_no_message_classification_and_discovery: {
+            homepageDiscoveryTarget: 'http://127.0.0.1:8088/homepage-with-newsletter-and-contact-link.html',
+            homepageDiscoveryStatus: discoveryLedger.status,
+            homepageDiscoveryPass: discoveryLedger.status === 'CONFIRMED_SUCCESS',
             phoneOnlyTarget: 'http://127.0.0.1:8088/phone-only-no-message.html',
-            authoritativeLedgerStatus: phoneLedger.status,
-            authoritativeReasonCode: phoneLedger.reasonCode,
+            phoneOnlyStatus: phoneLedger.status,
+            phoneOnlyReasonCode: phoneLedger.reasonCode,
             submissionsDelta: sub1 - sub0,
             statusStrictlySkipped: phoneLedger.status === 'SKIPPED',
             formlessTarget: 'http://127.0.0.1:8088/no-contact-page.html',
             formlessStatus: formlessLedger.status,
+            formlessReasonCode: formlessLedger.reasonCode,
             sevenBucketLedgerReconciliation: {
-                completed: ledgerStats.completed,
+                completed: statsObj.completed,
+                success: statsObj.success,
+                failure: statsObj.failure,
+                skipped: statsObj.skipped,
+                timeout: statsObj.timeout,
+                deliveryUnknown: statsObj.unknown || 0,
+                automationFailed: statsObj.automationFailed || 0,
+                paused: statsObj.paused || 0,
                 bucketSum,
-                discrepancy: Math.abs(ledgerStats.completed - bucketSum),
-                failures: ledgerStats.failure
+                discrepancy: Math.abs(statsObj.completed - bucketSum)
             },
             status: 'PASS'
         },
@@ -600,10 +678,12 @@ async function main() {
             initialTargetsCount: 3,
             pausedRemainingCount: pausedCheckpoint.remainingQueue.length,
             nonemptyQueuePreserved: pausedCheckpoint.remainingQueue.length >= 2,
-            swForciblyTerminated: true,
+            oldSwTerminatedAbsent: !deadSw,
+            newSwTargetIdDiffers: newSwTarget.id !== oldSwId,
             swRestoredRemainingCount: restoredState.remainingCount,
             resumedViaRealUi: resumedActive,
-            stoppedViaRealUi: stoppedCleanly,
+            stoppedAndSavedViaRealUi: stoppedCleanly,
+            checkpointRemainingCountAfterStopAndSave: savedCheckpoint.remainingQueue.length,
             status: 'PASS'
         },
         releaseHoldStatus: 'ACTIVE (Awaiting independent ChatGPT and Owner gate acceptance)'
