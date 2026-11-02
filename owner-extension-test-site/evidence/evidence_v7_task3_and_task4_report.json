@@ -1,8 +1,8 @@
 {
   "suiteName": "XPIDER V7 SC-03 & SC-04 Deterministic Chromium E2E Suite (Refined Audit Compliance)",
-  "startTimeUtc": "2026-11-01T04:30:02.422Z",
-  "endTimeUtc": "2026-11-01T04:30:49.289Z",
-  "durationSeconds": "46.9",
+  "startTimeUtc": "2026-11-02T09:22:30.402Z",
+  "endTimeUtc": "2026-11-02T09:23:52.537Z",
+  "durationSeconds": "82.1",
   "targetBaseline": "v7.0.0-rc11",
   "candidateBranch": "candidate/sc03-sc04-classification-and-pause",
   "baselineCommit": "20678ada",
@@ -10,7 +10,10 @@
   "candidateExtensionModifiedFiles": [
     "extension/content-script.js"
   ],
-  "capturedScreenshots": [],
+  "capturedScreenshots": [
+    "shot_sc04_popup_paused_nonempty.png",
+    "shot_sc04_popup_stopped_saved.png"
+  ],
   "privacyGatewayStatus": {
     "localhostSimulatedFailClosed": "VERIFIED (Localhost direct fixture isolation)",
     "liveDecodoOrDigitalOceanEgress": "NOT_TESTED (Protected; 0 external outbound requests, zero credentials, owner network untouched)"
@@ -22,7 +25,7 @@
   },
   "releaseHoldStatus": "ACTIVE (Awaiting independent ChatGPT and Owner gate acceptance)",
   "sc03_no_message_classification_and_discovery": {
-    "campaignRunId": "run_1793507406232_zfm58",
+    "campaignRunId": "run_1793611353740_67s4t",
     "totalImportRows": 3,
     "totalStarted": 3,
     "targetsTested": 3,
@@ -36,7 +39,7 @@
         "captchaEvidenceClass": null,
         "captchaRejected": false,
         "confirmationStrength": "STRONG_DOM",
-        "evidenceTimestamp": 1793507422404,
+        "evidenceTimestamp": 1793611368858,
         "formHidden": false,
         "formReplaced": false,
         "formReset": false,
@@ -44,7 +47,7 @@
         "networkCommitObserved": false,
         "networkStatus": null,
         "physicalClickDispatched": false,
-        "receiptId": "rcpt_1793507421127_1",
+        "receiptId": "rcpt_1793611367556_1",
         "serverErrorTransition": false,
         "submitAttempted": true,
         "submitEventSeen": true,
@@ -54,7 +57,7 @@
         "validationErrorTransition": false
       },
       "serverSubmissionCount": 1,
-      "serverReceiptId": "rcpt_1793507421127_1",
+      "serverReceiptId": "rcpt_1793611367556_1",
       "serverReferer": "http://127.0.0.1:8088/contact-standard.html",
       "pass": true
     },
@@ -83,6 +86,50 @@
       "paused": 0,
       "bucketSum": 3,
       "discrepancy": 0
+    },
+    "status": "PASS"
+  },
+  "sc04_nonempty_queue_and_sw_durability": {
+    "initialTargetsCount": 3,
+    "pausedRemainingCount": 2,
+    "nonemptyQueuePreserved": true,
+    "firstSwTerminatedAbsent": true,
+    "secondSwTargetIdDiffers": true,
+    "swRestoredRemainingCount": 2,
+    "resumedViaRealUi": true,
+    "stopSaveButtonUiCheck": {
+      "exists": true,
+      "visible": true,
+      "disabled": false,
+      "text": "Stop & Save",
+      "display": "block",
+      "visibility": "visible"
+    },
+    "stoppedAndSavedViaRealUi": true,
+    "checkpointRemainingCountAfterStopAndSave": 1,
+    "secondSwTerminatedAbsent": true,
+    "thirdSwTargetIdDiffers": true,
+    "checkpointPreservedAcrossPostStopKill": true,
+    "exactRemainingUrlMatched": true,
+    "runScopedResumeMultiTargetInvariants": {
+      "campaignRunId": "normal_run_1793611397186_8fgf1a",
+      "preservedTargets": [
+        "http://127.0.0.1:8088/index.html"
+      ],
+      "finalQueueDrained": true,
+      "finalCampaignInactive": true,
+      "terminalAttemptsRecorded": [
+        {
+          "targetUrl": "http://127.0.0.1:8088/index.html",
+          "status": "CONFIRMED_SUCCESS",
+          "reasonCode": "SUCCESS_CONFIRMED"
+        }
+      ],
+      "counterexamplesVerified": {
+        "droppedTargetThrows": true,
+        "duplicateTargetThrows": true,
+        "unscopedRunIdThrows": true
+      }
     },
     "status": "PASS"
   }

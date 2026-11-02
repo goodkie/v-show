@@ -473,8 +473,8 @@ async function main() {
 
     // Wait for active state, clicking privacy override if loopback modal appears
     let sc04Active = false;
-    for (let i = 0; i < 30; i++) {
-        await sleep(300);
+    for (let i = 0; i < 60; i++) {
+        await sleep(400);
         await cdpSend(popupWs, 'Runtime.evaluate', {
             expression: `(() => {
                 const btn = document.getElementById('privacy-block-action-override');
@@ -485,7 +485,7 @@ async function main() {
         });
         const st = await swEval(`({ isActive: campaignState.isActive, runId: campaignState.campaignRunId })`);
         if (st?.isActive) {
-            log(`🎯 Multi-target campaign active at T+${i * 0.3}s! runId=${st.runId}`);
+            log(`🎯 Multi-target campaign active at T+${(i * 0.4).toFixed(1)}s! runId=${st.runId}`);
             sc04Active = true;
             break;
         }

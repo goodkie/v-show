@@ -1,119 +1,123 @@
-[2026-11-01T04:35:06.960Z] ================================================================================
-[2026-11-01T04:35:06.963Z] 🚀 RUNNING TASK SC-03 & SC-04 CHROMIUM E2E SUITE (REFINED AUDIT COMPLIANCE)
-[2026-11-01T04:35:06.963Z] ================================================================================
-[2026-11-01T04:35:06.963Z] ⚡ Task filter active: executing SC-04 only
-[2026-11-01T04:35:07.020Z] Test server active on port 8088
-[2026-11-01T04:35:07.021Z] Disposable profile: C:\Users\oPus\AppData\Local\Temp\xpider-sc03-sc04-3arp3v
-[2026-11-01T04:35:07.032Z] Browser launched (PID=37460)
-[2026-11-01T04:35:07.949Z] Extension ID: ldlijlaccfeelfdhgnjbibniocefckjj
-[2026-11-01T04:35:08.845Z] [SW-LOG] [BOOT] [SW_RESTART] XPIDER Service Worker initialized buildId=V7.0.0-RC11-20261030-THREE-MODE-CONTRACTS-PASS channel=OWNER_BETA_V7_DUAL_MODE timestamp=2026-11-01T04:35:08.844Z modules={"modules/build-provenance.js":{"status":"PASS","buildId":"V7.0.0-RC11-20261030-THREE-MODE-CONTRACTS-PASS","implementationHead":"20678ada6491bf842ec7e996a88108152c76007f"},"solver-core.js":{"status":"PASS"},"modules/operation-queue.js":{"status":"PASS"},"modules/template-store.js":{"status":"PASS"},"modules/history-store.js":{"status":"PASS"},"modules/email-collector.js":{"status":"PASS"},"modules/vision-submit-executor.js":{"status":"PASS"},"modules/privacy-gateway.js":{"status":"PASS"},"modules/smart-field-resolver.js":{"status":"PASS"},"modules/challenge-gate.js":{"status":"PASS"},"modules/mock-captcha-provider-adapter.js":{"status":"PASS"}}
-[2026-11-01T04:35:08.850Z] [SW-LOG] [PRIVACY_GATE] Proxy onAuthRequired asyncBlocking listener registered with bounded retries.
-[2026-11-01T04:35:08.860Z] [SW-LOG] [BootStep] solver_instantiation
-[2026-11-01T04:35:08.865Z] [SW-LOG] [X PIDER] Background script initializing (Unified Mode)...
-[2026-11-01T04:35:08.866Z] [SW-LOG] [BootStep] side_panel_config
-[2026-11-01T04:35:08.868Z] [SW-LOG] [BootStep] campaign_state_init
-[2026-11-01T04:35:08.869Z] [SW-LOG] [BootStep] global_functions_defined
-[2026-11-01T04:35:08.869Z] [SW-LOG] [BootStep] worker_online
-[2026-11-01T04:35:08.892Z] [SW-LOG] [OWNER_TEST_GUARD] declarativeNetRequest session rules removed cleanly
-[2026-11-01T04:35:08.893Z] [SW-LOG] [BG_LOG][tab=none] [OWNER_TEST_GUARD] declarativeNetRequest session rules removed cleanly
-[2026-11-01T04:35:09.261Z] [SW-LOG] [BG_LOG][tab=none] 📦 [Migration] Safely migrated to v2 (Backup: xpider_backup_v1_1793507709246)
-[2026-11-01T04:35:09.409Z] [SW-LOG] [BootStep] restoring_campaign_state
-[2026-11-01T04:35:09.410Z] [SW-LOG] [Boot] Initializing campaign state...
-[2026-11-01T04:35:09.449Z] [SW-LOG] [OWNER_TEST_GUARD] declarativeNetRequest session rules removed cleanly
-[2026-11-01T04:35:09.449Z] [SW-LOG] [BG_LOG][tab=none] [OWNER_TEST_GUARD] declarativeNetRequest session rules removed cleanly
-[2026-11-01T04:35:09.450Z] [SW-LOG] [COUNTER_RECONCILE] legacySuccess=0 ledgerSuccess=0 action=LEDGER_WINS
-[2026-11-01T04:35:09.450Z] [SW-LOG] [BootStep] restore_complete
-[2026-11-01T04:35:09.450Z] [SW-LOG] [Boot] Privacy Relay configured — checking status and auto-recovering if offline...
-[2026-11-01T04:35:10.319Z] Connected to Popup UI via CDP
-[2026-11-01T04:35:10.350Z] Initial server submissions count verified: 0
-[2026-11-01T04:35:10.350Z] 
+[2026-11-02T09:36:53.940Z] ================================================================================
+[2026-11-02T09:36:53.942Z] 🚀 RUNNING TASK SC-03 & SC-04 CHROMIUM E2E SUITE (REFINED AUDIT COMPLIANCE)
+[2026-11-02T09:36:53.942Z] ================================================================================
+[2026-11-02T09:36:53.942Z] ⚡ Task filter active: executing SC-04 only
+[2026-11-02T09:36:53.998Z] Test server active on port 8088
+[2026-11-02T09:36:53.999Z] Disposable profile: C:\Users\oPus\AppData\Local\Temp\xpider-sc03-sc04-kdy535
+[2026-11-02T09:36:54.009Z] Browser launched (PID=28024)
+[2026-11-02T09:36:54.822Z] Extension ID: ldlijlaccfeelfdhgnjbibniocefckjj
+[2026-11-02T09:36:55.322Z] [SW-LOG] [BOOT] [SW_RESTART] XPIDER Service Worker initialized buildId=V7.0.0-RC11-20261030-THREE-MODE-CONTRACTS-PASS channel=OWNER_BETA_V7_DUAL_MODE timestamp=2026-11-02T09:36:55.321Z modules={"modules/build-provenance.js":{"status":"PASS","buildId":"V7.0.0-RC11-20261030-THREE-MODE-CONTRACTS-PASS","implementationHead":"20678ada6491bf842ec7e996a88108152c76007f"},"solver-core.js":{"status":"PASS"},"modules/operation-queue.js":{"status":"PASS"},"modules/template-store.js":{"status":"PASS"},"modules/history-store.js":{"status":"PASS"},"modules/email-collector.js":{"status":"PASS"},"modules/vision-submit-executor.js":{"status":"PASS"},"modules/privacy-gateway.js":{"status":"PASS"},"modules/smart-field-resolver.js":{"status":"PASS"},"modules/challenge-gate.js":{"status":"PASS"},"modules/mock-captcha-provider-adapter.js":{"status":"PASS"}}
+[2026-11-02T09:36:55.329Z] [SW-LOG] [PRIVACY_GATE] Proxy onAuthRequired asyncBlocking listener registered with bounded retries.
+[2026-11-02T09:36:55.332Z] [SW-LOG] [BootStep] solver_instantiation
+[2026-11-02T09:36:55.333Z] [SW-LOG] [X PIDER] Background script initializing (Unified Mode)...
+[2026-11-02T09:36:55.333Z] [SW-LOG] [BootStep] side_panel_config
+[2026-11-02T09:36:55.335Z] [SW-LOG] [BootStep] campaign_state_init
+[2026-11-02T09:36:55.337Z] [SW-LOG] [BootStep] global_functions_defined
+[2026-11-02T09:36:55.337Z] [SW-LOG] [BootStep] worker_online
+[2026-11-02T09:36:55.361Z] [SW-LOG] [OWNER_TEST_GUARD] declarativeNetRequest session rules removed cleanly
+[2026-11-02T09:36:55.362Z] [SW-LOG] [BG_LOG][tab=none] [OWNER_TEST_GUARD] declarativeNetRequest session rules removed cleanly
+[2026-11-02T09:36:55.628Z] [SW-LOG] [BG_LOG][tab=none] 📦 [Migration] Safely migrated to v2 (Backup: xpider_backup_v1_1793612215620)
+[2026-11-02T09:36:55.857Z] [SW-LOG] [BootStep] restoring_campaign_state
+[2026-11-02T09:36:55.857Z] [SW-LOG] [Boot] Initializing campaign state...
+[2026-11-02T09:36:55.862Z] [SW-LOG] [OWNER_TEST_GUARD] declarativeNetRequest session rules removed cleanly
+[2026-11-02T09:36:55.863Z] [SW-LOG] [BG_LOG][tab=none] [OWNER_TEST_GUARD] declarativeNetRequest session rules removed cleanly
+[2026-11-02T09:36:55.878Z] [SW-LOG] [COUNTER_RECONCILE] legacySuccess=0 ledgerSuccess=0 action=LEDGER_WINS
+[2026-11-02T09:36:55.880Z] [SW-LOG] [BootStep] restore_complete
+[2026-11-02T09:36:55.881Z] [SW-LOG] [Boot] Privacy Relay configured — checking status and auto-recovering if offline...
+[2026-11-02T09:36:56.801Z] Connected to Popup UI via CDP
+[2026-11-02T09:36:56.820Z] Initial server submissions count verified: 0
+[2026-11-02T09:36:56.820Z] 
 =========================================================================
-[2026-11-01T04:35:10.350Z] --- TASK SC-04: NONEMPTY QUEUE PAUSE, SW RESTART & STOP & SAVE DURABILITY ---
-[2026-11-01T04:35:10.350Z] =========================================================================
-[2026-11-01T04:35:10.350Z] Setting up 3-target campaign queue in Popup DOM: ["http://127.0.0.1:8088/contact-standard.html","http://127.0.0.1:8088/spa-delayed-contact.html","http://127.0.0.1:8088/index.html"]
-[2026-11-01T04:35:10.398Z] Clicking Real UI Start Button (#start-btn)...
-[2026-11-01T04:35:10.457Z] [SW-LOG] [PRIVACY_START_PREP] currentMode=PRIVACY_RELAY failClosed=true
-[2026-11-01T04:35:12.011Z] [SW-LOG] [PRIVACY_AUTO_RECOVERY] candidate=PRIVACY_RELAY
-[2026-11-01T04:35:12.018Z] [SW-LOG] [PRIVACY_TRANSPORT_APPLIED] mode=PRIVACY_RELAY host=127.0.0.1:18988
-[2026-11-01T04:35:12.082Z] [SW-LOG] [PRIVACY_CANARY] FAIL reason=PROXY_CANARY_FAILED: Failed to fetch
-[2026-11-01T04:35:12.085Z] [SW-LOG] [PRIVACY_START_BLOCKED] reason=PROXY_NOT_CONFIGURED
-[2026-11-01T04:35:12.291Z] [SW-LOG] [BUILD_HANDSHAKE] popup=20678ada6491bf842ec7e996a88108152c76007f background=20678ada6491bf842ec7e996a88108152c76007f build=V7.0.0-RC11-20261030-THREE-MODE-CONTRACTS-PASS manifest=3 result=PASS
-[2026-11-01T04:35:12.292Z] [SW-LOG] [BG_LOG][tab=none] [BUILD_HANDSHAKE] popup=20678ada6491bf842ec7e996a88108152c76007f background=20678ada6491bf842ec7e996a88108152c76007f build=V7.0.0-RC11-20261030-THREE-MODE-CONTRACTS-PASS manifest=3 result=PASS
-[2026-11-01T04:35:12.293Z] [SW-LOG] [START_BG] received queue=3
-[2026-11-01T04:35:12.294Z] [SW-LOG] [BG_LOG][tab=none] [START_BG] received queue=3
-[2026-11-01T04:35:12.294Z] [SW-LOG] [PRIVACY_OWNER_OVERRIDE] scope=currentRun mode=DIRECT acknowledged=true
-[2026-11-01T04:35:12.295Z] [SW-LOG] [BG_LOG][tab=none] [PRIVACY_OWNER_OVERRIDE] scope=currentRun mode=DIRECT acknowledged=true
-[2026-11-01T04:35:12.298Z] [SW-LOG] [OWNER_TEST_GUARD] declarativeNetRequest session rules removed cleanly
-[2026-11-01T04:35:12.299Z] [SW-LOG] [BG_LOG][tab=none] [OWNER_TEST_GUARD] declarativeNetRequest session rules removed cleanly
-[2026-11-01T04:35:12.300Z] [SW-LOG] [NORMAL_CAMPAIGN_PREFLIGHT] publicTargets=0 testMode=false result=PASS
-[2026-11-01T04:35:12.303Z] [SW-LOG] [BG_LOG][tab=none] [NORMAL_CAMPAIGN_PREFLIGHT] publicTargets=0 testMode=false result=PASS
-[2026-11-01T04:35:12.308Z] [SW-LOG] [OWNER_TEST_GUARD] declarativeNetRequest session rules removed cleanly
-[2026-11-01T04:35:12.311Z] [SW-LOG] [BG_LOG][tab=none] [OWNER_TEST_GUARD] declarativeNetRequest session rules removed cleanly
-[2026-11-01T04:35:12.311Z] [SW-LOG] [PRIVACY_GATE] mode=DIRECT transport=DIRECT failClosed=false (OWNER_FUNCTION_TEST_MODE) status=READY
-[2026-11-01T04:35:12.311Z] [SW-LOG] [BG_LOG][tab=none] [PRIVACY_GATE] mode=DIRECT transport=DIRECT failClosed=false (OWNER_FUNCTION_TEST_MODE) status=READY
-[2026-11-01T04:35:12.314Z] [SW-LOG] [START_BG_READY] privacyReady=true
-[2026-11-01T04:35:12.314Z] [SW-LOG] [BG_LOG][tab=none] [START_BG_READY] privacyReady=true
-[2026-11-01T04:35:12.320Z] [SW-LOG] [BG_LOG][tab=none] [Boot] Orchestrator entered.
-[2026-11-01T04:35:12.327Z] [SW-LOG] [SESSION_BASELINE] Captured 2 pre-existing user tabs as protected baseline.
-[2026-11-01T04:35:12.328Z] [SW-LOG] [TAB_BARRIER] phase=START_CAMPAIGN_BOOT ownedBefore=0
-[2026-11-01T04:35:12.329Z] [SW-LOG] [TAB_BARRIER] phase=START_CAMPAIGN_BOOT ownedAfter=0 result=PASS
-[2026-11-01T04:35:12.330Z] [SW-LOG] [BG_LOG][tab=none] [Boot] Previous state cleared.
-[2026-11-01T04:35:12.333Z] [SW-LOG] [BG_LOG][tab=none] [Boot] CAPTCHA solver state reset (attempts=0, identity=null).
-[2026-11-01T04:35:12.336Z] [SW-LOG] [BG_LOG][tab=none] 📊 [Queue Filter] Input: 3 | Duplicates: 0 | Suppressed: 0 | History-Attempted: 0 | Executable: 3
-[2026-11-01T04:35:12.344Z] [SW-LOG] [LEDGER_INIT] campaignRunId=normal_run_1793507712250_35w376 totalImportRows=3 pending=3
-[2026-11-01T04:35:12.345Z] [SW-LOG] [BG_LOG][tab=none] [LEDGER_INIT] campaignRunId=normal_run_1793507712250_35w376 totalImportRows=3 pending=3
-[2026-11-01T04:35:12.345Z] [SW-LOG] [BG_LOG][tab=none] [Boot] Variables initialized.
-[2026-11-01T04:35:12.346Z] [SW-LOG] [BG_LOG][tab=none] 🚀 Engine booting...
-[2026-11-01T04:35:12.348Z] [SW-LOG] [BG_LOG][tab=none] [CAMPAIGN_START] buildId=V7.0.0-RC11-20261030-THREE-MODE-CONTRACTS-PASS campaignRunId=normal_run_1793507712250_35w376 totalTargets=3 mode=NORMAL delayMs=10000 fillDelayMs=300 submitDelayMs=4000
-[2026-11-01T04:35:12.355Z] [SW-LOG] [BG_LOG][tab=none] [Boot] Storage sync initiated.
-[2026-11-01T04:35:12.362Z] [SW-LOG] [BG_LOG][tab=none] [Boot] Target loop triggered.
-[2026-11-01T04:35:12.367Z] [SW-LOG] [SERIALIZED_GATE] Slot acquired atomically. activeTargetInFlight=true activeTargetCount=1 maxConcurrent=1
-[2026-11-01T04:35:12.370Z] [SW-LOG] [TAB_BARRIER] phase=PRE_NEXT_TARGET ownedBefore=0
-[2026-11-01T04:35:12.376Z] [SW-LOG] [TAB_BARRIER] phase=PRE_NEXT_TARGET ownedAfter=0 result=PASS
-[2026-11-01T04:35:12.377Z] [SW-LOG] [BG_LOG][tab=none] [TARGET 1/3][127.0.0.1] START
-[2026-11-01T04:35:12.377Z] [SW-LOG] [BG_LOG][tab=none] [TARGET_START] buildId=V7.0.0-RC11-20261030-THREE-MODE-CONTRACTS-PASS campaignRunId=normal_run_1793507712250_35w376 attemptId=att_init targetIndex=1/3 targetUrl=http://127.0.0.1:8088/contact-standard.html
-[2026-11-01T04:35:12.383Z] [SW-LOG] [BG_LOG][tab=none] [EXEC_IDENTITY_PRE_NAV] attemptId=att_1793507712366_nqf8u token=tok_1793507712365_7iqray epoch=2
-[2026-11-01T04:35:12.482Z] [SW-LOG] [TAB_BARRIER] phase=POST_NEW_TARGET_CREATE ownedBefore=0
-[2026-11-01T04:35:12.501Z] [SW-LOG] [TAB_BARRIER] phase=POST_NEW_TARGET_CREATE ownedAfter=0 result=PASS
-[2026-11-01T04:35:12.501Z] [SW-LOG] [TAB_KILL_SWITCH] keepTabId=1494957662 closedOthers=0 remainingOwned=1 result=PASS
-[2026-11-01T04:35:12.651Z] 🎯 Multi-target campaign active at T+1.5s! runId=normal_run_1793507712250_35w376
-[2026-11-01T04:35:12.652Z] Clicking Real UI Pause Button (#pause-btn) to capture NON-EMPTY queue...
-[2026-11-01T04:35:12.684Z] [SW-LOG] [BG_LOG][tab=1494957662] [TAB_FOCUS] tabId=1494957662 windowId=1494957656 active=true focused=true
-[2026-11-01T04:35:12.685Z] [SW-LOG] [BG_LOG][tab=1494957662] Step 1: Sniper Mode active. Searching for contact page...
-[2026-11-01T04:35:12.714Z] [SW-LOG] [BG_LOG][tab=none] [PAUSE] campaignRunId=normal_run_1793507712250_35w376 remaining=2 inProgress=1
-[2026-11-01T04:35:12.717Z] [SW-LOG] [BG_LOG][tab=none] ⏸️ [Engine] Campaign PAUSED / STOP & SAVE requested.
-[2026-11-01T04:35:12.745Z] [SW-LOG] [BG_LOG][tab=1494957662] ⏸️ [Scan] In-flight scan aborted due to pause/cancel.
-[2026-11-01T04:35:12.745Z] [SW-LOG] [BG_LOG][tab=1494957662] Pre-scan complete. Identified 2 valid paths.
-[2026-11-01T04:35:12.751Z] [SW-LOG] [BG_LOG][tab=1494957662] [ORCHESTRATION_ABORTED] abortSignal was triggered externally (PAUSE). Delegating terminal settlement to outer target lifecycle.
-[2026-11-01T04:35:12.982Z] [SW-LOG] [TAB_CLOSE] tabId=1494957662 attempt=1 result=CLOSED
-[2026-11-01T04:35:13.013Z] [SW-LOG] [SERIALIZED_GATE] Slot released. activeTargetInFlight=false activeTargetCount=0
-[2026-11-01T04:35:13.078Z] [SW-LOG] [TAB_BARRIER] phase=PAUSE_CAMPAIGN ownedBefore=0
-[2026-11-01T04:35:13.079Z] [SW-LOG] [TAB_BARRIER] phase=PAUSE_CAMPAIGN ownedAfter=0 result=PASS
-[2026-11-01T04:35:13.079Z] [SW-LOG] [PRIVACY_SETTINGS_RESTORED] keepEnforced=true gateReady=true transportEnforced=true mode=PRIVACY_RELAY
-[2026-11-01T04:35:13.079Z] [SW-LOG] [PRIVACY_SETTINGS_RESTORED] gateReady=false transportEnforced=false
-[2026-11-01T04:35:13.079Z] [SW-LOG] [BG_LOG][tab=none] [PRIVACY_SETTINGS_RESTORED] gateReady=false transportEnforced=false
-[2026-11-01T04:35:13.095Z] [SW-LOG] [BG_LOG][tab=none] 💾 [Checkpoint] Campaign snapshot saved: 2 targets remaining.
-[2026-11-01T04:35:13.102Z] [SW-LOG] [BG_LOG][tab=none] === CAMPAIGN OUTCOME SUMMARY (currentRun) ===
-[2026-11-01T04:35:13.118Z] ⏸️ Durable pause checkpoint captured at T+0s: remaining=2
-[2026-11-01T04:35:13.118Z] Checkpoint remainingQueue: ["http://127.0.0.1:8088/spa-delayed-contact.html","http://127.0.0.1:8088/index.html"]
-[2026-11-01T04:35:13.119Z] [SW-LOG] [BG_LOG][tab=none] CONFIRMED_SUCCESS:           0
-[2026-11-01T04:35:13.120Z] [SW-LOG] [BG_LOG][tab=none] FAILURE:                     0
-[2026-11-01T04:35:13.124Z] [SW-LOG] [BG_LOG][tab=none] TIMEOUT_LOCAL:               0
-[2026-11-01T04:35:13.125Z] [SW-LOG] [BG_LOG][tab=none] TIMEOUT_GLOBAL:              0
-[2026-11-01T04:35:13.129Z] [SW-LOG] [BG_LOG][tab=none] DELIVERY_UNKNOWN:            0
-[2026-11-01T04:35:13.132Z] [SW-LOG] [BG_LOG][tab=none] SKIPPED:                     1
-[2026-11-01T04:35:13.133Z] [SW-LOG] [BG_LOG][tab=none] PAUSED_UNKNOWN:              0
-[2026-11-01T04:35:13.135Z] [SW-LOG] [BG_LOG][tab=none] ----------------------------------------
-[2026-11-01T04:35:13.136Z] [SW-LOG] [BG_LOG][tab=none] TOTAL TERMINAL / COMPLETED:  1
-[2026-11-01T04:35:13.138Z] [SW-LOG] [CAMPAIGN_SUMMARY] success=0 failure=0 timeoutLocal=0 timeoutGlobal=0 unknown=0 skipped=1 paused=0 completed=1
-[2026-11-01T04:35:13.139Z] [SW-LOG] [BG_LOG][tab=none] ========================================
-[2026-11-01T04:35:13.150Z] Pause button text after pause: "Resume"
-[2026-11-01T04:35:13.367Z] 📸 Captured screenshot: shot_sc04_popup_paused_nonempty.png
-[2026-11-01T04:35:13.368Z] 
+[2026-11-02T09:36:56.820Z] --- TASK SC-04: NONEMPTY QUEUE PAUSE, SW RESTART & STOP & SAVE DURABILITY ---
+[2026-11-02T09:36:56.820Z] =========================================================================
+[2026-11-02T09:36:56.820Z] Setting up 3-target campaign queue in Popup DOM: ["http://127.0.0.1:8088/contact-standard.html","http://127.0.0.1:8088/spa-delayed-contact.html","http://127.0.0.1:8088/index.html"]
+[2026-11-02T09:36:56.830Z] Clicking Real UI Start Button (#start-btn)...
+[2026-11-02T09:36:56.919Z] [SW-LOG] [PRIVACY_START_PREP] currentMode=PRIVACY_RELAY failClosed=true
+[2026-11-02T09:36:56.937Z] [SW-LOG] [PRIVACY_AUTO_RECOVERY] candidate=PRIVACY_RELAY
+[2026-11-02T09:36:56.938Z] [SW-LOG] [PRIVACY_TRANSPORT_APPLIED] mode=PRIVACY_RELAY host=127.0.0.1:18988
+[2026-11-02T09:36:57.021Z] [SW-LOG] [PRIVACY_CANARY] FAIL reason=PROXY_CANARY_FAILED: Failed to fetch
+[2026-11-02T09:36:57.022Z] [SW-LOG] [PRIVACY_START_BLOCKED] reason=PROXY_NOT_CONFIGURED
+[2026-11-02T09:36:57.419Z] [SW-LOG] [BUILD_HANDSHAKE] popup=20678ada6491bf842ec7e996a88108152c76007f background=20678ada6491bf842ec7e996a88108152c76007f build=V7.0.0-RC11-20261030-THREE-MODE-CONTRACTS-PASS manifest=3 result=PASS
+[2026-11-02T09:36:57.419Z] [SW-LOG] [BG_LOG][tab=none] [BUILD_HANDSHAKE] popup=20678ada6491bf842ec7e996a88108152c76007f background=20678ada6491bf842ec7e996a88108152c76007f build=V7.0.0-RC11-20261030-THREE-MODE-CONTRACTS-PASS manifest=3 result=PASS
+[2026-11-02T09:36:57.420Z] [SW-LOG] [START_BG] received queue=3
+[2026-11-02T09:36:57.420Z] [SW-LOG] [BG_LOG][tab=none] [START_BG] received queue=3
+[2026-11-02T09:36:57.421Z] [SW-LOG] [PRIVACY_OWNER_OVERRIDE] scope=currentRun mode=DIRECT acknowledged=true
+[2026-11-02T09:36:57.422Z] [SW-LOG] [BG_LOG][tab=none] [PRIVACY_OWNER_OVERRIDE] scope=currentRun mode=DIRECT acknowledged=true
+[2026-11-02T09:36:57.436Z] [SW-LOG] [OWNER_TEST_GUARD] declarativeNetRequest session rules removed cleanly
+[2026-11-02T09:36:57.437Z] [SW-LOG] [BG_LOG][tab=none] [OWNER_TEST_GUARD] declarativeNetRequest session rules removed cleanly
+[2026-11-02T09:36:57.437Z] [SW-LOG] [NORMAL_CAMPAIGN_PREFLIGHT] publicTargets=0 testMode=false result=PASS
+[2026-11-02T09:36:57.438Z] [SW-LOG] [BG_LOG][tab=none] [NORMAL_CAMPAIGN_PREFLIGHT] publicTargets=0 testMode=false result=PASS
+[2026-11-02T09:36:57.442Z] [SW-LOG] [OWNER_TEST_GUARD] declarativeNetRequest session rules removed cleanly
+[2026-11-02T09:36:57.449Z] [SW-LOG] [BG_LOG][tab=none] [OWNER_TEST_GUARD] declarativeNetRequest session rules removed cleanly
+[2026-11-02T09:36:57.450Z] [SW-LOG] [PRIVACY_GATE] mode=DIRECT transport=DIRECT failClosed=false (OWNER_FUNCTION_TEST_MODE) status=READY
+[2026-11-02T09:36:57.450Z] [SW-LOG] [BG_LOG][tab=none] [PRIVACY_GATE] mode=DIRECT transport=DIRECT failClosed=false (OWNER_FUNCTION_TEST_MODE) status=READY
+[2026-11-02T09:36:57.451Z] [SW-LOG] [START_BG_READY] privacyReady=true
+[2026-11-02T09:36:57.451Z] [SW-LOG] [BG_LOG][tab=none] [START_BG_READY] privacyReady=true
+[2026-11-02T09:36:57.516Z] [SW-LOG] [BG_LOG][tab=none] [Boot] Orchestrator entered.
+[2026-11-02T09:36:57.536Z] [SW-LOG] [SESSION_BASELINE] Captured 2 pre-existing user tabs as protected baseline.
+[2026-11-02T09:36:57.538Z] [SW-LOG] [TAB_BARRIER] phase=START_CAMPAIGN_BOOT ownedBefore=0
+[2026-11-02T09:36:57.538Z] [SW-LOG] [TAB_BARRIER] phase=START_CAMPAIGN_BOOT ownedAfter=0 result=PASS
+[2026-11-02T09:36:57.539Z] [SW-LOG] [BG_LOG][tab=none] [Boot] Previous state cleared.
+[2026-11-02T09:36:57.540Z] [SW-LOG] [BG_LOG][tab=none] [Boot] CAPTCHA solver state reset (attempts=0, identity=null).
+[2026-11-02T09:36:57.541Z] [SW-LOG] [BG_LOG][tab=none] 📊 [Queue Filter] Input: 3 | Duplicates: 0 | Suppressed: 0 | History-Attempted: 0 | Executable: 3
+[2026-11-02T09:36:57.554Z] [SW-LOG] [LEDGER_INIT] campaignRunId=normal_run_1793612217380_a4drjd totalImportRows=3 pending=3
+[2026-11-02T09:36:57.554Z] [SW-LOG] [BG_LOG][tab=none] [LEDGER_INIT] campaignRunId=normal_run_1793612217380_a4drjd totalImportRows=3 pending=3
+[2026-11-02T09:36:57.555Z] [SW-LOG] [BG_LOG][tab=none] [Boot] Variables initialized.
+[2026-11-02T09:36:57.556Z] [SW-LOG] [BG_LOG][tab=none] 🚀 Engine booting...
+[2026-11-02T09:36:57.563Z] [SW-LOG] [BG_LOG][tab=none] [CAMPAIGN_START] buildId=V7.0.0-RC11-20261030-THREE-MODE-CONTRACTS-PASS campaignRunId=normal_run_1793612217380_a4drjd totalTargets=3 mode=NORMAL delayMs=10000 fillDelayMs=300 submitDelayMs=4000
+[2026-11-02T09:36:57.563Z] [SW-LOG] [BG_LOG][tab=none] [Boot] Storage sync initiated.
+[2026-11-02T09:36:57.569Z] [SW-LOG] [BG_LOG][tab=none] [Boot] Target loop triggered.
+[2026-11-02T09:36:57.574Z] [SW-LOG] [SERIALIZED_GATE] Slot acquired atomically. activeTargetInFlight=true activeTargetCount=1 maxConcurrent=1
+[2026-11-02T09:36:57.575Z] [SW-LOG] [TAB_BARRIER] phase=PRE_NEXT_TARGET ownedBefore=0
+[2026-11-02T09:36:57.575Z] [SW-LOG] [TAB_BARRIER] phase=PRE_NEXT_TARGET ownedAfter=0 result=PASS
+[2026-11-02T09:36:57.582Z] [SW-LOG] [BG_LOG][tab=none] [TARGET 1/3][127.0.0.1] START
+[2026-11-02T09:36:57.583Z] [SW-LOG] [BG_LOG][tab=none] [TARGET_START] buildId=V7.0.0-RC11-20261030-THREE-MODE-CONTRACTS-PASS campaignRunId=normal_run_1793612217380_a4drjd attemptId=att_init targetIndex=1/3 targetUrl=http://127.0.0.1:8088/contact-standard.html
+[2026-11-02T09:36:57.603Z] [SW-LOG] [BG_LOG][tab=none] [EXEC_IDENTITY_PRE_NAV] attemptId=att_1793612217569_xsiiw token=tok_1793612217569_hgey7l epoch=2
+[2026-11-02T09:36:57.683Z] [SW-LOG] [TAB_BARRIER] phase=POST_NEW_TARGET_CREATE ownedBefore=0
+[2026-11-02T09:36:57.699Z] [SW-LOG] [TAB_BARRIER] phase=POST_NEW_TARGET_CREATE ownedAfter=0 result=PASS
+[2026-11-02T09:36:57.699Z] [SW-LOG] [TAB_KILL_SWITCH] keepTabId=1340504068 closedOthers=0 remainingOwned=1 result=PASS
+[2026-11-02T09:36:57.723Z] [SW-LOG] [BG_LOG][tab=1340504068] [TAB_FOCUS] tabId=1340504068 windowId=1340504062 active=true focused=true
+[2026-11-02T09:36:57.731Z] [SW-LOG] [BG_LOG][tab=1340504068] Step 1: Sniper Mode active. Searching for contact page...
+[2026-11-02T09:36:57.734Z] [SW-LOG] [BG_LOG][tab=1340504068] 🔦 Fast-scanning candidate paths (1-10)...
+[2026-11-02T09:36:57.774Z] [SW-LOG] [BG_LOG][tab=1340504068] Pre-scan complete. Identified 10 valid paths.
+[2026-11-02T09:36:57.780Z] [SW-LOG] [BG_LOG][tab=1340504068] [SniperScan] Identified 10 candidate paths in background.
+[2026-11-02T09:36:57.835Z] 🎯 Multi-target campaign active at T+0.4s! runId=normal_run_1793612217380_a4drjd
+[2026-11-02T09:36:57.835Z] Clicking Real UI Pause Button (#pause-btn) to capture NON-EMPTY queue...
+[2026-11-02T09:36:57.857Z] [SW-LOG] [BG_LOG][tab=none] [PAUSE] campaignRunId=normal_run_1793612217380_a4drjd remaining=2 inProgress=1
+[2026-11-02T09:36:57.864Z] [SW-LOG] [BG_LOG][tab=none] ⏸️ [Engine] Campaign PAUSED / STOP & SAVE requested.
+[2026-11-02T09:36:57.871Z] [SW-LOG] [BG_LOG][tab=1340504068] [ORCHESTRATION_ABORTED] abortSignal was triggered externally (PAUSE). Delegating terminal settlement to outer target lifecycle.
+[2026-11-02T09:36:57.875Z] [SW-LOG] [CONTENT_EVENT][tabId=1340504068][attemptId=att_1793612217569_xsiiw][url=http://127.0.0.1:8088/contact-standard.html] ⚠️ [Engine] Suppressing duplicate setup (Signals re-sent).
+[2026-11-02T09:36:57.876Z] [SW-LOG] [BG_LOG][tab=1340504068] [CONTENT_EVENT][tabId=1340504068][attemptId=att_1793612217569_xsiiw][url=http://127.0.0.1:8088/contact-standard.html] ⚠️ [Engine] Suppressing duplicate setup (Signals re-sent).
+[2026-11-02T09:36:57.923Z] [SW-LOG] [BG_LOG][tab=1340504068] [TARGET][127.0.0.1] emailsFoundCurrentPage=2 emailsNewGlobal=2 totalEmailsGlobal=2
+[2026-11-02T09:36:58.065Z] [SW-LOG] [TAB_CLOSE] tabId=1340504068 attempt=1 result=CLOSED
+[2026-11-02T09:36:58.070Z] [SW-LOG] [SERIALIZED_GATE] Slot released. activeTargetInFlight=false activeTargetCount=0
+[2026-11-02T09:36:58.126Z] [SW-LOG] [TAB_BARRIER] phase=PAUSE_CAMPAIGN ownedBefore=0
+[2026-11-02T09:36:58.127Z] [SW-LOG] [TAB_BARRIER] phase=PAUSE_CAMPAIGN ownedAfter=0 result=PASS
+[2026-11-02T09:36:58.129Z] [SW-LOG] [PRIVACY_SETTINGS_RESTORED] keepEnforced=true gateReady=true transportEnforced=true mode=PRIVACY_RELAY
+[2026-11-02T09:36:58.130Z] [SW-LOG] [PRIVACY_SETTINGS_RESTORED] gateReady=false transportEnforced=false
+[2026-11-02T09:36:58.133Z] [SW-LOG] [BG_LOG][tab=none] [PRIVACY_SETTINGS_RESTORED] gateReady=false transportEnforced=false
+[2026-11-02T09:36:58.135Z] [SW-LOG] [BG_LOG][tab=none] 💾 [Checkpoint] Campaign snapshot saved: 2 targets remaining.
+[2026-11-02T09:36:58.137Z] [SW-LOG] [BG_LOG][tab=none] === CAMPAIGN OUTCOME SUMMARY (currentRun) ===
+[2026-11-02T09:36:58.137Z] [SW-LOG] [BG_LOG][tab=none] CONFIRMED_SUCCESS:           0
+[2026-11-02T09:36:58.144Z] [SW-LOG] [BG_LOG][tab=none] FAILURE:                     0
+[2026-11-02T09:36:58.144Z] [SW-LOG] [BG_LOG][tab=none] TIMEOUT_LOCAL:               0
+[2026-11-02T09:36:58.145Z] [SW-LOG] [BG_LOG][tab=none] TIMEOUT_GLOBAL:              0
+[2026-11-02T09:36:58.145Z] [SW-LOG] [BG_LOG][tab=none] DELIVERY_UNKNOWN:            0
+[2026-11-02T09:36:58.145Z] [SW-LOG] [BG_LOG][tab=none] SKIPPED:                     1
+[2026-11-02T09:36:58.145Z] [SW-LOG] [BG_LOG][tab=none] PAUSED_UNKNOWN:              0
+[2026-11-02T09:36:58.146Z] [SW-LOG] [BG_LOG][tab=none] ----------------------------------------
+[2026-11-02T09:36:58.146Z] [SW-LOG] [BG_LOG][tab=none] TOTAL TERMINAL / COMPLETED:  1
+[2026-11-02T09:36:58.146Z] [SW-LOG] [CAMPAIGN_SUMMARY] success=0 failure=0 timeoutLocal=0 timeoutGlobal=0 unknown=0 skipped=1 paused=0 completed=1
+[2026-11-02T09:36:58.152Z] [SW-LOG] [BG_LOG][tab=none] ========================================
+[2026-11-02T09:36:58.254Z] ⏸️ Durable pause checkpoint captured at T+0s: remaining=2
+[2026-11-02T09:36:58.254Z] Checkpoint remainingQueue: ["http://127.0.0.1:8088/spa-delayed-contact.html","http://127.0.0.1:8088/index.html"]
+[2026-11-02T09:36:58.255Z] Pause button text after pause: "Resume"
+[2026-11-02T09:36:58.399Z] 📸 Captured screenshot: shot_sc04_popup_paused_nonempty.png
+[2026-11-02T09:36:58.399Z] 
 --- Forcibly Terminating Service Worker Process #1 via CDP ---
-[2026-11-01T04:35:13.872Z] Closing SW Target #1: 5B30BF77CC2672F358DADE2425600A24
-[2026-11-01T04:35:15.947Z] SW Target after closeTarget #1: TERMINATED_CONFIRMED (old ID: 5B30BF77CC2672F358DADE2425600A24 absent)
-[2026-11-01T04:35:15.948Z] 
+[2026-11-02T09:36:58.902Z] Closing SW Target #1: 04267121C626871EAA3FD55F38FDE49B
+[2026-11-02T09:37:00.913Z] SW Target after closeTarget #1: TERMINATED_CONFIRMED (old ID: 04267121C626871EAA3FD55F38FDE49B absent)
+[2026-11-02T09:37:00.913Z] 
 --- Waking Up Fresh Service Worker #2 & Verifying Durable Checkpoint Restoration ---
-[2026-11-01T04:35:16.465Z] Fresh SW #2 Booted: Target ID=54BCD56341EE96208A1572C52E64B4DF (verified different from old ID=5B30BF77CC2672F358DADE2425600A24)
-[2026-11-01T04:35:16.473Z] Fresh SW #2 Restored State from Checkpoint: {"isActive":false,"isPaused":true,"remainingCount":0,"pausedByOperator":true,"runId":"normal_run_1793507712250_35w376"}
+[2026-11-02T09:37:01.420Z] Fresh SW #2 Booted: Target ID=94496042A1565BC806F697A2AD31904A (verified different from old ID=04267121C626871EAA3FD55F38FDE49B)
+[2026-11-02T09:37:01.438Z] Fresh SW #2 Restored State from Checkpoint: {"isActive":false,"isPaused":true,"remainingCount":0,"pausedByOperator":true,"runId":"normal_run_1793612217380_a4drjd"}
