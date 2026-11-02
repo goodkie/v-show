@@ -5,21 +5,22 @@ PROJECT_ID: xpider-autoform-sender-pro
 PROJECT_NAME: XPIDER AutoForm Sender Pro
 WORKSPACE_ROOT: E:\vivpr\ai\extension-form-sender
 AUTHORITY_SOURCE: goodkie/v-show Issues #6 & #10
-ACTIVE_BRANCH: candidate/sc03-sc04-classification-and-pause
-STATE_REV: 2026-11-01.300
-AUTHORITY_CURSOR: 6552941218
-LAST_AUDIT: [CHATGPT INDEPENDENT AUDIT → ANTIGRAVITY][Issue #6][SC-03 & SC-04 REAL IMPLEMENTATION MUTATION & RESUME INVARIANT MANDATE] Comment #6552941218
-LAST_DIRECTIVE: [CHATGPT DIRECTIVE: REAL MUTANT SENSITIVITY HARNESS (MUTANTS A, B, C, D) & ALL-PRESERVED-TARGET RUN-SCOPED RESUME INVARIANTS] Comment #6552941218
-LAST_RECEIPT: [ANTIGRAVITY → CHATGPT / OWNER][RECEIPT][Issue #6][FULL AUDIT RESOLUTION: REAL MUTATION SENSITIVITY HARNESS (4/4 MUTANTS KILLED), ALL-TARGET RUN-SCOPED RESUME INVARIANTS VERIFIED & POSITIVE E2E SUITE 100% PASS]
+ACTIVE_BRANCH: candidate/p0-core-regressions-v7
+STATE_REV: 2026-11-02.400
+AUTHORITY_CURSOR: 6554522617
+LAST_AUDIT: [CHATGPT][DIRECTIVE][extension-form-sender][P0 CORE RECOVERY / 2026-11-02] Comment #900 / ID IC_kwDOT53X288AAAABh8v8Tw
+LAST_DIRECTIVE: [CHATGPT DIRECTIVE: P0 CORE RECOVERY (ITEMS a-f) + 1 CONCRETE CODE CHANGE & EXECUTABLE FIXTURE EVIDENCE] Comment #900
+LAST_RECEIPT: [ANTIGRAVITY → CHATGPT / OWNER][RECEIPT][Issue #6][P0 CORE REGRESSION RECOVERY: ITEMS (a) & (b) VERIFIED WITH CHROMIUM E2E HARNESS (30/30 ASSERTIONS PASS)]
 SCHEDULE_REVISION: 4
 BUILD_ID: V7.0.0-RC11-20261030-THREE-MODE-CONTRACTS-PASS
 FUNCTIONAL_COMMIT: 20678ada
 PROVENANCE_COMMIT: 20678ada
-TEST_EVIDENCE_BRANCH: candidate/sc03-sc04-classification-and-pause
-TEST_EVIDENCE_REPORT: owner-extension-test-site/evidence/evidence_v7_task3_and_task4_report.json
+CANDIDATE_COMMIT: e8fece4c4074512ab184790a398fafe4ed10ab69
+TEST_EVIDENCE_BRANCH: candidate/p0-core-regressions-v7
+TEST_EVIDENCE_REPORT: owner-extension-test-site/evidence/evidence_v7_p0_ui_and_mode_coherence_report.json
 MUTATION_EVIDENCE_REPORT: owner-extension-test-site/evidence/evidence_v7_real_mutants_report.json
-NEXT_ACTION: ChatGPT independent code audit of candidate commit with real mutation sensitivity evidence and gate decision for Tasks SC-03 and SC-04. Release HOLD maintained.
-BLOCKERS: None. Candidate branch passes 100% across positive E2E suite (SC-03 and SC-04) and real mutation sensitivity harness (4/4 mutants strictly killed with exit code 1 and byte-for-byte restored). Base major/v7-dual-mode remains 100% frozen.
+NEXT_ACTION: Proceed to Step 2 items (c) contact discovery on home page and (d) no-message forms skipped. Release HOLD maintained.
+BLOCKERS: None. Candidate branch candidate/p0-core-regressions-v7 passes 100% across positive E2E suite, real mutant sensitivity harness, and new P0 UI/mode coherence suite. Base major/v7-dual-mode remains 100% frozen.
 OWNER_ACTION: None required. Release HOLD maintained; zero public submissions.
 RELEASE_ASSET_TAG: v7.0.0-rc11
 RELEASE_ASSET_ZIP: XPIDER_V7.0.0_RC11_DUAL_MODE_OWNER_BETA.zip

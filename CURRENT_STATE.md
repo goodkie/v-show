@@ -5,12 +5,33 @@
 - Project ID: xpider-autoform-sender-pro
 - Workspace: E:\vivpr\ai\extension-form-sender
 - Authority: goodkie/v-show Issues #6 & #10
-- Branch: candidate/sc03-sc04-classification-and-pause (candidate branch isolated; base major/v7-dual-mode remains 100% frozen RC11)
-- State Rev: 2026-11-01.300
-- Authority Cursor: 6552941218 (Responding to ChatGPT Independent Audit & Mandate #6552941218)
-- Canonical Schedule Revision: 4 (Actual GitHub canonical schedule; capsule legacy text corrected without modifying schedule file per Owner directive)
-- Collaboration Mode: Manual ChatGPT ↔ Antigravity Collaboration restored per Owner Directive #6548985799.
-- Tasks SC-03 & SC-04 Full Audit Remediation on Isolated Candidate Branch:
+- Branch: candidate/p0-core-regressions-v7 (candidate branch isolated; base major/v7-dual-mode remains 100% frozen RC11)
+- State Rev: 2026-11-02.400
+- Authority Cursor: 6554522617 (Responding to ChatGPT Directive [P0 CORE RECOVERY / 2026-11-02] Comment #900)
+- Canonical Schedule Revision: 4
+- Collaboration Mode: Manual ChatGPT ↔ Antigravity Collaboration restored per Owner Directive.
+- P0 Core Recovery Implementation & Verification (Candidate Commit `e8fece4c4074512ab184790a398fafe4ed10ab69`):
+  - Addressed Items (a) and (b) of ChatGPT Directive #6554522617:
+    - (a) START -> PAUSE -> RESUME and STOP&SAVE UI states are correct and non-disappearing.
+    - (b) AUTO / SEMI-AUTO / MANUAL match CURRENT MODE after Pause -> Resume, with mode durability across popup reloads and service worker reboots.
+  - Changes in `extension/`:
+    - `extension/background.js`:
+      - Persisted `xpider_campaign_mode` in `saveCampaignState()` and `pauseCampaignOrchestrator()`.
+      - Added `'xpider_campaign_mode'` to `LIST_DATA_KEYS.autoform`.
+      - Restored `'SEMI_AUTO'` mode alongside `'MANUAL'` and `'AUTO'` in `restoreCampaignState()`.
+    - `extension/popup.js`:
+      - Added `'xpider_campaign_mode'` to `LIST_DATA_KEYS.autoform` and read from storage on hydration.
+      - Updated `hydrateCampaignState()` to reconcile mode from storage/background/checkpoint, and in `isPausedState` keep `#multi-actions` and `#stop-save-btn` visible with `#pause-btn` as "Resume" and `#start-buttons-row` hidden.
+      - Updated `stopAndSaveCampaign()` to pause and snapshot without prematurely hiding `#multi-actions` or flashing start controls.
+      - Updated `endCampaign()` to cleanly restore `#start-buttons-row` with Automatic/Manual buttons and reset HUD to READY.
+      - Updated `checkResumableCheckpoint()` to ensure `#multi-actions` is visible and `#start-buttons-row` hidden when paused checkpoint exists.
+  - New Chromium E2E Test Suite (`test/run_chromium_v7_p0_ui_and_mode_coherence.js`):
+    - 30 / 30 assertions PASSED (100% PASS, Exit Code 0).
+    - 6 visual screenshots captured in `owner-extension-test-site/evidence/p0_*.png`.
+  - Regression Suites Re-verified:
+    - `test/run_chromium_v7_task3_and_task4_suite.js`: Exit Code 0 (100% PASS for SC-03 & SC-04).
+    - `test/run_v7_real_mutant_sensitivity.js`: Exit Code 0 (4/4 Mutants A, B, C, D killed with Exit Code 1; byte-identical restoration confirmed).
+  - Verification Status: HOLD (Awaiting independent ChatGPT Code Audit). Release HOLD maintained. Zero external public submissions.
   - Candidate Branch: `candidate/sc03-sc04-classification-and-pause`
   - Base Baseline: v7.0.0-rc11 (`20678ada`, tree `d065af8f1f1438ecba9bbe7fb03cf8e18c040e05`) 100% frozen on `major/v7-dual-mode`.
   - Application Code Changes in `extension/`:
