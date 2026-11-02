@@ -567,15 +567,23 @@ async function main() {
     await cdpSend(swWs, 'Runtime.enable');
     attachSwConsole(swWs);
 
-    const restoredState = await swEval(`
-        ({
-            isActive: campaignState.isActive,
-            isPaused: campaignState.isPaused,
-            remainingCount: Array.isArray(campaignState.queue) ? campaignState.queue.length : 0,
-            pausedByOperator: campaignState.pausedByOperator,
-            runId: campaignState.campaignRunId
-        })
-    `);
+    let restoredState = null;
+    for (let i = 0; i < 20; i++) {
+        await sleep(400);
+        restoredState = await swEval(`
+            ({
+                isActive: campaignState.isActive,
+                isPaused: campaignState.isPaused,
+                remainingCount: Array.isArray(campaignState.queue) ? campaignState.queue.length : 0,
+                pausedByOperator: campaignState.pausedByOperator,
+                runId: campaignState.campaignRunId
+            })
+        `);
+        if (restoredState && restoredState.remainingCount >= 2 && restoredState.isPaused) {
+            log(`Fresh SW #2 Restored State from Checkpoint confirmed at T+${(i * 0.4).toFixed(1)}s: ${JSON.stringify(restoredState)}`);
+            break;
+        }
+    }
     log(`Fresh SW #2 Restored State from Checkpoint: ${JSON.stringify(restoredState)}`);
     assert(restoredState.remainingCount >= 2, `Restored remaining queue must be >= 2 across true SW restart (observed: ${restoredState.remainingCount})`);
     assert.strictEqual(restoredState.isPaused, true, 'Restored campaign state must be isPaused === true');

@@ -451,7 +451,8 @@ const LIST_DATA_KEYS = {
         'xpider_campaign_counters_v1',
         'xpider_saved_lists',
         'xpider_metrics',
-        'xpider_runtimeFailureReason'
+        'xpider_runtimeFailureReason',
+        'xpider_campaign_mode'
     ],
     history: [
         'xpider_history_rows',
@@ -7193,7 +7194,8 @@ async function pauseCampaignOrchestrator(saveCheckpoint = true) {
             xpider_paused_checkpoint: checkpoint,
             xpider_queue: checkpoint.remainingQueue || campaignState.queue || [],
             xpider_isPaused: true,
-            xpider_isActive: false
+            xpider_isActive: false,
+            xpider_campaign_mode: checkpoint.campaignMode || campaignState.campaignMode || 'AUTO'
         });
         logBg(null, `💾 [Checkpoint] Campaign snapshot saved: ${checkpoint.remainingQueue.length} targets remaining.`, "success");
     }
@@ -9606,7 +9608,8 @@ async function saveCampaignState() {
                     xpider_successful: campaignState.successfulUrls,
                     xpider_currentAttempt: campaignState.currentAttempt,
                     xpider_active_campaign_run_id: campaignState.campaignRunId,
-                    xpider_owner_function_test_mode_active: Boolean(campaignState.ownerFunctionTestMode)
+                    xpider_owner_function_test_mode_active: Boolean(campaignState.ownerFunctionTestMode),
+                    xpider_campaign_mode: campaignState.campaignMode || 'AUTO'
                 }, () => {
                     if (chrome.runtime.lastError) console.error("Save error:", chrome.runtime.lastError);
                     recordCurrentRunDiagEvent(`[CHECKPOINT] saved session checkpoint remaining=${campaignState.queue ? campaignState.queue.length : 0} isActive=${campaignState.isActive}`);
@@ -9699,7 +9702,7 @@ async function restoreCampaignState() {
                             v7HoldState.tabId = candidateHoldTabId;
                         }
                     }
-                    if (data.xpider_campaign_mode === 'MANUAL' || data.xpider_campaign_mode === 'AUTO') {
+                    if (data.xpider_campaign_mode === 'MANUAL' || data.xpider_campaign_mode === 'SEMI_AUTO' || data.xpider_campaign_mode === 'AUTO') {
                         campaignState.campaignMode = data.xpider_campaign_mode;
                     }
                     let visited = Array.isArray(data.xpider_visited) ? [...data.xpider_visited] : [];
