@@ -115,6 +115,9 @@
     function setNativeValue(el, val) {
         if (!el) return;
         try {
+            if (el._valueTracker) {
+                try { el._valueTracker.setValue(''); } catch (_) {}
+            }
             const proto = el.tagName === 'TEXTAREA' ? HTMLTextAreaElement.prototype
                         : el.tagName === 'SELECT' ? HTMLSelectElement.prototype
                         : HTMLInputElement.prototype;
@@ -1189,14 +1192,20 @@
             if (currentForm && _ContactGate && typeof _ContactGate.classifyFormIntent === 'function') {
                 const classification = _ContactGate.classifyFormIntent(currentForm);
                 if (!classification.eligible) {
-                    const settleReason = (classification.reason && classification.reason.startsWith('NON_INQUIRY'))
+                    const settleReason = (classification.reason && (classification.reason.startsWith('NON_INQUIRY') || classification.reason === 'NO_LONG_TEXT_INQUIRY_FIELD'))
                         ? classification.reason
                         : `NON_INQUIRY_${classification.intent}_FORM`;
-                    logDev(`[FORM_GATE] eligible=false reason=${settleReason}`);
-                    logDev(`❌ [ContactGate] Non-inquiry form rejected: ${settleReason}`, "error");
-                    currentTargetLifecycleState = TargetLifecycleState.SETTLING;
-                    finishCampaign(false, settleReason, settleReason);
-                    return;
+                    const bestContactLink = typeof findBestContactLink === 'function' ? findBestContactLink() : null;
+                    if (!bestContactLink) {
+                        logDev(`[FORM_GATE] eligible=false reason=${settleReason}`);
+                        logDev(`❌ [ContactGate] Non-inquiry form rejected with no contact links: ${settleReason}`, "error");
+                        currentTargetLifecycleState = TargetLifecycleState.SETTLING;
+                        finishCampaign(false, `SKIPPED: ${settleReason}`, settleReason);
+                        return;
+                    } else {
+                        logDev(`[FORM_GATE] eligible=false reason=${settleReason} but candidate link exists: ${bestContactLink}. Discarding ineligible form to allow navigation.`);
+                        currentForm = null;
+                    }
                 }
             }
 
@@ -1505,7 +1514,7 @@
                 return Boolean(holdOutcome && holdOutcome.success);
             }
             currentTargetLifecycleState = TargetLifecycleState.SETTLING;
-            finishCampaign(false, "NO_FORM_ON_PAGE", "NO_ACCESSIBLE_INQUIRY_FORM");
+            finishCampaign(false, "FAILURE: NO_ACCESSIBLE_INQUIRY_FORM", "NO_ACCESSIBLE_INQUIRY_FORM");
         } catch (e) {
             logDev(`🚨 [Engine] Fatal runtime error: ${e.message}`, "error");
             const isRef = (e instanceof ReferenceError) || /is not defined/i.test(e.message);
@@ -3126,6 +3135,9 @@
         // ============================================================
         function setNativeValue(el, val) {
             try {
+                if (el && el._valueTracker) {
+                    try { el._valueTracker.setValue(''); } catch (_) {}
+                }
                 const proto = el.tagName === 'TEXTAREA' ? HTMLTextAreaElement.prototype
                             : el.tagName === 'SELECT' ? HTMLSelectElement.prototype
                             : HTMLInputElement.prototype;
@@ -3695,6 +3707,23 @@
             el.blur();
             await dispatchHumanEvents(el, ['blur', 'focusout']);
             await new Promise(r => setTimeout(r, 40));
+
+            // [P0 Item (c)] Post-Blur Value Retention Assertion (React/Vue Controlled Component Safeguard)
+            if (el.contentEditable === 'true') {
+                if (el.textContent !== val) {
+                    el.textContent = val;
+                    el.dispatchEvent(new Event('input', { bubbles: true }));
+                }
+            } else {
+                if (el.value !== val) {
+                    if (el._valueTracker) {
+                        try { el._valueTracker.setValue(''); } catch (_) {}
+                    }
+                    setNativeValue(el, val);
+                    el.dispatchEvent(new Event('input', { bubbles: true }));
+                    el.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+            }
         }
 
         // ============================================================
@@ -4778,10 +4807,17 @@
                         ? ((el.type === 'checkbox' || el.type === 'radio') ? expectedEntry.checked : expectedEntry.value)
                         : expectedEntry;
                     const curVal = (el.type === 'checkbox' || el.type === 'radio') ? el.checked : (el.value || '');
-                    if ((curVal === '' || curVal === false) && expectedVal !== undefined && expectedVal !== '') {
+                    const isMismatched = (el.type === 'checkbox' || el.type === 'radio')
+                        ? (curVal !== Boolean(expectedVal))
+                        : (String(curVal).trim() !== String(expectedVal).trim());
+                    if (isMismatched && expectedVal !== undefined && expectedVal !== '') {
                         if (el.type === 'checkbox' || el.type === 'radio') {
                             el.checked = Boolean(expectedVal);
                         } else {
+                            if (el._valueTracker) {
+                                try { el._valueTracker.setValue(''); } catch (_) {}
+                            }
+                            setNativeValue(el, expectedVal);
                             el.value = expectedVal;
                             try {
                                 el.dispatchEvent(new Event('input', { bubbles: true }));
@@ -4796,7 +4832,7 @@
                 for (const el of inputs) {
                     if (isChallengeInputElement(el)) continue;
                     const key = el.name || el.id;
-                    if (key && frozenSnapshot[key] !== undefined && (!el.value || !String(el.value).trim())) {
+                    if (key && frozenSnapshot[key] !== undefined && String(el.value || '').trim() !== String(frozenSnapshot[key]).trim()) {
                         el.value = frozenSnapshot[key];
                         try {
                             el.dispatchEvent(new Event('input', { bubbles: true }));
@@ -6827,11 +6863,12 @@
     function getAuthoritativeValue(el, expected, tpl = {}) {
         const tp = (expected.type || el.type || '').toLowerCase();
         const nm = (expected.name || el.name || '').toLowerCase();
-        const isMsg = (el.tagName === 'TEXTAREA' || el.contentEditable === 'true' || (el.getAttribute && el.getAttribute('role') === 'textbox') || nm.includes('message') || nm.includes('comment') || nm.includes('content'));
-        const isEmail = (tp === 'email' || nm.includes('email') || nm.includes('mail'));
-        const isPhone = (tp === 'tel' || nm.includes('phone') || nm.includes('tel') || nm.includes('mobile'));
-        const isSubj = (nm.includes('subject') || nm.includes('topic') || nm.includes('title'));
-        const isName = (nm.includes('name') || nm.includes('author'));
+        const elId = (expected.id || el.id || '').toLowerCase();
+        const isMsg = (el.tagName === 'TEXTAREA' || el.contentEditable === 'true' || (el.getAttribute && el.getAttribute('role') === 'textbox') || nm.includes('message') || nm.includes('comment') || nm.includes('content') || elId.includes('message') || elId.includes('comment') || elId.includes('content') || elId.includes('inquiry'));
+        const isEmail = (tp === 'email' || nm.includes('email') || nm.includes('mail') || elId.includes('email') || elId.includes('mail'));
+        const isPhone = (tp === 'tel' || nm.includes('phone') || nm.includes('tel') || nm.includes('mobile') || elId.includes('phone') || elId.includes('tel') || elId.includes('mobile'));
+        const isSubj = (nm.includes('subject') || nm.includes('topic') || nm.includes('title') || elId.includes('subject') || elId.includes('topic') || elId.includes('title'));
+        const isName = (nm.includes('name') || nm.includes('author') || elId.includes('name') || elId.includes('author'));
 
         if (isMsg && tpl.message) return tpl.message;
         if (isEmail && tpl.email) return tpl.email;
@@ -6844,6 +6881,7 @@
         }
         if (expected.name && tpl[expected.name]) return tpl[expected.name];
         if (expected.id && tpl[expected.id]) return tpl[expected.id];
+        if (expected.value) return expected.value;
         return null;
     }
 
@@ -6851,13 +6889,34 @@
         if (!snapshot || snapshot.size === 0) return { intact: true };
         let repairedCount = 0;
 
+        // If form itself was unmounted / replaced by a dynamic framework (SPA)
+        const activeRoot = (form && form.isConnected && form.querySelector) ? form : (document.querySelector('form') || document);
+
         for (const [origEl, expected] of snapshot.entries()) {
             let currentEl = origEl;
 
             // 1. Check if node was unmounted / replaced in DOM (FIELD_NODE_REPLACED)
             if (currentEl.isConnected === false) {
-                const selector = expected.id ? `#${expected.id}` : (expected.name ? `[name="${expected.name}"]` : null);
-                const replacement = selector && form.querySelector ? form.querySelector(selector) : null;
+                const safeId = expected.id ? (window.CSS && CSS.escape ? CSS.escape(expected.id) : expected.id) : null;
+                const safeName = expected.name ? (window.CSS && CSS.escape ? CSS.escape(expected.name) : expected.name) : null;
+                const selector = safeId ? `#${safeId}` : (safeName ? `[name="${safeName}"]` : null);
+
+                let replacement = selector && activeRoot.querySelector ? activeRoot.querySelector(selector) : null;
+                if (!replacement && activeRoot !== document) {
+                    replacement = selector ? document.querySelector(selector) : null;
+                }
+                if (!replacement) {
+                    const searchIn = (node) => {
+                        if (!node || !node.querySelector) return null;
+                        if (expected.tagName === 'TEXTAREA' || (expected.type === 'textarea')) {
+                            return node.querySelector('textarea, [contenteditable="true"], [role="textbox"]');
+                        } else if (expected.type) {
+                            return node.querySelector(`input[type="${expected.type}"]`);
+                        }
+                        return null;
+                    };
+                    replacement = searchIn(activeRoot) || searchIn(document);
+                }
                 if (replacement) {
                     logDev(`🛡️ [Integrity] FIELD_NODE_REPLACED: Updated reference for <${expected.tagName} name="${expected.name}">`, "info");
                     currentEl = replacement;
@@ -6868,25 +6927,43 @@
 
             const currentVal = currentEl.contentEditable === 'true' ? (currentEl.textContent || '') : (currentEl.value || '');
 
-            // 2. Check if a previously filled field was cleared or lost
-            if (expected.value && expected.value.trim() !== '' && (!currentVal || currentVal.trim() === '')) {
-                const lossReason = expected.isRequired ? 'REQUIRED_FIELD_LOST_BEFORE_SUBMIT' : 'FIELD_CLEARED_BEFORE_SUBMIT';
-                logDev(`🛡️ [Integrity] ${lossReason} detected on <${currentEl.tagName} name="${expected.name}">. Applying targeted same-value repair...`, "warning");
+            // 2. Check if a previously filled field was cleared, lost, or reverted to a stale/truncated/mismatched value
+            const expectedVal = expected.value;
+            const isMismatched = expectedVal && expectedVal.trim() !== '' && (currentVal.trim() !== expectedVal.trim());
 
-                const authorVal = getAuthoritativeValue(currentEl, expected, tpl);
+            if (isMismatched) {
+                const lossReason = (!currentVal || currentVal.trim() === '')
+                    ? (expected.isRequired ? 'REQUIRED_FIELD_LOST_BEFORE_SUBMIT' : 'FIELD_CLEARED_BEFORE_SUBMIT')
+                    : 'FIELD_VALUE_MUTATED_BEFORE_SUBMIT';
+                logDev(`🛡️ [Integrity] ${lossReason} detected on <${currentEl.tagName} name="${expected.name}"> (expected="${expectedVal.substring(0, 30)}...", current="${currentVal.substring(0, 30)}..."). Applying targeted same-value repair...`, "warning");
+
+                const authorVal = getAuthoritativeValue(currentEl, expected, tpl) || expectedVal;
                 if (authorVal) {
                     if (currentEl.contentEditable === 'true') {
                         currentEl.textContent = authorVal;
+                        currentEl.dispatchEvent(new Event('input', { bubbles: true }));
                     } else {
+                        if (currentEl._valueTracker) {
+                            try { currentEl._valueTracker.setValue(''); } catch (_) {}
+                        }
                         setNativeValue(currentEl, authorVal);
                         currentEl.value = authorVal;
+                        currentEl.dispatchEvent(new Event('input', { bubbles: true }));
+                        currentEl.dispatchEvent(new Event('change', { bubbles: true }));
                     }
-                    currentEl.dispatchEvent(new Event('input', { bubbles: true }));
-                    currentEl.dispatchEvent(new Event('change', { bubbles: true }));
+
+                    // Simulate full event & blur cycle so controlled component state commits
+                    try {
+                        currentEl.dispatchEvent(new FocusEvent('focus', { bubbles: true }));
+                        currentEl.dispatchEvent(new Event('input', { bubbles: true }));
+                        currentEl.dispatchEvent(new Event('change', { bubbles: true }));
+                        currentEl.dispatchEvent(new FocusEvent('blur', { bubbles: true }));
+                    } catch (_) {}
+
                     repairedCount++;
 
                     const verifyVal = currentEl.contentEditable === 'true' ? (currentEl.textContent || '') : (currentEl.value || '');
-                    if (!verifyVal || verifyVal.trim() === '') {
+                    if (!verifyVal || verifyVal.trim() === '' || (expected.isRequired && verifyVal.trim() !== authorVal.trim())) {
                         return { intact: false, reasonCode: 'FIELD_REPAIR_FAILED', element: currentEl };
                     }
                 } else {
@@ -7386,6 +7463,10 @@
 
         // 7.1 Pre-submit readiness pass
         async checkPreSubmitReadiness(expectedSnapshot) {
+            if (this.form && !this.form.isConnected) {
+                const liveForm = (typeof document !== 'undefined') ? document.querySelector('form') : null;
+                if (liveForm) this.form = liveForm;
+            }
             const form = this.form;
             if (!form) return { ready: false, reasonCode: 'NO_FORM' };
 
@@ -7420,6 +7501,10 @@
 
         // 7.3 Activation ladder
         async execute() {
+            if (this.form && !this.form.isConnected) {
+                const liveForm = (typeof document !== 'undefined') ? document.querySelector('form') : null;
+                if (liveForm) this.form = liveForm;
+            }
             const form = this.form;
             const tpl = this.template || {};
             const options = this.options || {};
@@ -7437,9 +7522,9 @@
 
             // Pre-submit readiness check
             const readiness = await this.checkPreSubmitReadiness(options.expectedSnapshot);
-            if (!readiness.ready && readiness.reasonCode === 'FIELD_INTEGRITY_COMPROMISED') {
+            if (!readiness.ready) {
                 logDev(`❌ [SubmitExecutorR5] Pre-submit readiness failed: ${readiness.reasonCode}`, "error");
-                return { success: false, reasonCode: readiness.reasonCode };
+                return { success: false, reasonCode: readiness.reasonCode || 'PRE_SUBMIT_READINESS_FAILED' };
             }
 
             // [Receipt Integrity Defense] Snapshot any pre-existing receipt identifiers before submission

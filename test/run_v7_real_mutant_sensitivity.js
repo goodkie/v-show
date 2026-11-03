@@ -81,7 +81,8 @@ const MUTANTS = [
         file: 'extension/content-script.js',
         taskFlag: '--task=sc03',
         target: "finishCampaign(false, `SKIPPED: ${settleReason}`, settleReason);",
-        replacement: "finishCampaign(false, 'FORM_NOT_ACCESSIBLE', 'FORM_NOT_ACCESSIBLE');",
+        replacement: "finishCampaign(false, 'FAILURE: NO_LONG_TEXT_INQUIRY_FIELD', 'NO_ACCESSIBLE_INQUIRY_FORM');",
+        replaceAll: true,
         expectedErrorPattern: /Target 2 must be strictly SKIPPED/
     },
     {
@@ -141,7 +142,7 @@ async function main() {
         let runnerResult = null;
         try {
             // Apply mutation
-            const mutatedContent = originalContent.replace(activeTarget, m.replacement);
+            const mutatedContent = m.replaceAll ? originalContent.replaceAll(activeTarget, m.replacement) : originalContent.replace(activeTarget, m.replacement);
             fs.writeFileSync(filePath, mutatedContent, 'utf8');
             log(`   Applied mutation to ${m.file} (${activeTarget.length} chars replaced)`);
 

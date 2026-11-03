@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Homepage with Dead Contact Link</title>
+    <style>
+        body { font-family: sans-serif; background: #0f172a; color: #f8fafc; padding: 40px; }
+        header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; padding-bottom: 20px; }
+        a.contact-link { color: #38bdf8; font-weight: bold; text-decoration: none; padding: 8px 16px; border: 1px solid #38bdf8; border-radius: 4px; }
+        .hero { margin-top: 40px; max-width: 600px; }
+        p { color: #94a3b8; line-height: 1.6; }
+    </style>
+</head>
+<body>
+    <header>
+        <h2>Global Acme - Corporate Portal</h2>
+        <nav>
+            <!-- Link points to no-contact-page which has NO form and NO secondary contact links -->
+            <a href="no-contact-page.html" class="contact-link">Contact Us</a>
+        </nav>
+    </header>
+
+    <div class="hero">
+        <h3>Enterprise AI Solutions</h3>
+        <p>We deliver mission-critical software architectures and autonomous workflow automation platforms.</p>
+        <p>This is a marketing landing page without inline contact forms.</p>
+    </div>
+</body>
+</html>

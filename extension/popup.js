@@ -8269,7 +8269,7 @@ async function launchCampaign(options = {}) {
         currentTpl = {
             firstName: document.getElementById('tpl-first-name')?.value || (isOwnerTest ? 'John' : ''),
             lastName: document.getElementById('tpl-last-name')?.value || (isOwnerTest ? 'Doe' : ''),
-            name: document.getElementById('tpl-name')?.value || (isOwnerTest ? 'John Doe' : ''),
+            name: document.getElementById('tpl-name')?.value || `${document.getElementById('tpl-first-name')?.value || ''} ${document.getElementById('tpl-last-name')?.value || ''}`.trim() || (isOwnerTest ? 'John Doe' : ''),
             email: document.getElementById('tpl-email')?.value || (isOwnerTest ? 'test.operator@example.com' : ''),
             phone: document.getElementById('tpl-phone')?.value || (isOwnerTest ? '555-0199' : ''),
             subject: document.getElementById('tpl-subject')?.value || (isOwnerTest ? 'Software Functional Test' : ''),

@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Fixture B: Dynamically Replaced Form SPA</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0f172a; color: #f8fafc; padding: 40px; margin: 0; }
+        .container { max-width: 540px; margin: 0 auto; background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 36px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+        h1 { font-size: 20px; color: #38bdf8; margin-top: 0; margin-bottom: 8px; }
+        p.subtitle { color: #94a3b8; font-size: 13px; margin-bottom: 20px; }
+        .form-group { margin-bottom: 16px; text-align: left; }
+        label { display: block; margin-bottom: 6px; font-size: 13px; color: #94a3b8; }
+        input[type="text"], input[type="email"], textarea {
+            width: 100%; box-sizing: border-box; background: #0f172a; border: 1px solid #475569;
+            border-radius: 6px; padding: 10px 12px; color: #f8fafc; font-size: 14px; font-family: inherit;
+        }
+        textarea { height: 110px; resize: vertical; }
+        input:focus, textarea:focus { border-color: #38bdf8; outline: none; }
+        button[type="submit"] {
+            width: 100%; background: #0284c7; color: white; border: none;
+            border-radius: 6px; padding: 12px 20px; font-size: 14px; font-weight: 600; cursor: pointer; margin-top: 10px;
+        }
+        button[type="submit"]:hover { background: #0369a1; }
+        .status-box { margin-top: 20px; padding: 12px; background: #0f172a; border-radius: 6px; font-family: monospace; font-size: 12px; color: #94a3b8; }
+        .error-banner { display: none; background: rgba(239, 68, 68, 0.2); border: 1px solid #ef4444; color: #fca5a5; padding: 10px; border-radius: 6px; font-size: 13px; margin-bottom: 16px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Fixture B: Dynamic Form Replacement SPA</h1>
+        <p class="subtitle">Simulates a React/Vue SPA unmounting and replacing the entire FORM node in the DOM during the pre-submit / validation window.</p>
+
+        <div id="error-banner" class="error-banner"></div>
+        <div id="form-mount-point"></div>
+
+        <div class="status-box">
+            <strong>DOM Lifecycle Status:</strong>
+            <div id="lifecycle-log">Initial mounting...</div>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            const mount = document.getElementById('form-mount-point');
+            const logEl = document.getElementById('lifecycle-log');
+            const errorBanner = document.getElementById('error-banner');
+
+            function renderForm(version, initialValues = {}) {
+                mount.innerHTML = `
+                    <form id="contact-form-${version}" action="/contact-success.html" method="POST">
+                        <input type="hidden" name="form_version" value="${version}">
+                        <div class="form-group">
+                            <label for="name">Full Name *</label>
+                            <input type="text" id="name" name="name" required value="${initialValues.name || ''}" placeholder="Full Name">
+                        </div>
+                        <div class="form-group">
+                            <label for="email">Email Address *</label>
+                            <input type="email" id="email" name="email" required value="${initialValues.email || ''}" placeholder="Email Address">
+                        </div>
+                        <div class="form-group">
+                            <label for="subject">Subject</label>
+                            <input type="text" id="subject" name="subject" value="${initialValues.subject || ''}" placeholder="Subject">
+                        </div>
+                        <div class="form-group">
+                            <label for="message">Detailed Inquiry Message *</label>
+                            <textarea id="message" name="message" required placeholder="Inquiry Message...">${initialValues.message || ''}</textarea>
+                        </div>
+                        <button type="submit" id="submit-btn">Send Message (v${version})</button>
+                    </form>
+                `;
+
+                const newForm = document.getElementById(`contact-form-${version}`);
+                newForm.addEventListener('submit', (e) => {
+                    const msg = newForm.querySelector('#message')?.value || '';
+                    if (!msg.trim()) {
+                        e.preventDefault();
+                        errorBanner.textContent = 'Validation Error: Message cannot be empty!';
+                        errorBanner.style.display = 'block';
+                        return false;
+                    }
+                    console.log(`[FixtureB] Form v${version} submitted successfully!`);
+                });
+            }
+
+            // Initial render: Form v1
+            renderForm('1');
+            logEl.textContent = 'Form v1 mounted in DOM.';
+
+            // When autofill completes typing (or on message blur/change), trigger full DOM form replacement
+            let replaced = false;
+            mount.addEventListener('focusout', (e) => {
+                if (replaced) return;
+                // When focus leaves message textarea or another field after autofill
+                if (e.target && e.target.id === 'message') {
+                    replaced = true;
+                    logEl.textContent = 'SPA triggering full form component replacement to Form v2...';
+
+                    const curForm = mount.querySelector('form');
+                    const captured = {
+                        name: curForm.querySelector('#name')?.value || '',
+                        email: curForm.querySelector('#email')?.value || '',
+                        subject: curForm.querySelector('#subject')?.value || '',
+                        message: '' // Deliberately unmounted textarea resets to empty in fresh DOM component v2 to prove verifyFieldIntegrity repair
+                    };
+
+                    setTimeout(() => {
+                        logEl.textContent = 'Form v1 unmounted! Form v2 mounted with fresh DOM nodes.';
+                        renderForm('2', captured);
+                    }, 50);
+                }
+            }, true);
+        })();
+    </script>
+</body>
+</html>

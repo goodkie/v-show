@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Fixture A: React Controlled Component Stale Revert</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0f172a; color: #f8fafc; padding: 40px; margin: 0; }
+        .container { max-width: 540px; margin: 0 auto; background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 36px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+        h1 { font-size: 20px; color: #38bdf8; margin-top: 0; margin-bottom: 8px; }
+        p.subtitle { color: #94a3b8; font-size: 13px; margin-bottom: 20px; }
+        .form-group { margin-bottom: 16px; text-align: left; }
+        label { display: block; margin-bottom: 6px; font-size: 13px; color: #94a3b8; }
+        input[type="text"], input[type="email"], textarea {
+            width: 100%; box-sizing: border-box; background: #0f172a; border: 1px solid #475569;
+            border-radius: 6px; padding: 10px 12px; color: #f8fafc; font-size: 14px; font-family: inherit;
+        }
+        textarea { height: 110px; resize: vertical; }
+        input:focus, textarea:focus { border-color: #38bdf8; outline: none; }
+        button[type="submit"] {
+            width: 100%; background: #0284c7; color: white; border: none;
+            border-radius: 6px; padding: 12px 20px; font-size: 14px; font-weight: 600; cursor: pointer; margin-top: 10px;
+        }
+        button[type="submit"]:hover { background: #0369a1; }
+        .error-banner { display: none; background: rgba(239, 68, 68, 0.2); border: 1px solid #ef4444; color: #fca5a5; padding: 10px; border-radius: 6px; font-size: 13px; margin-bottom: 16px; }
+        .state-debug { margin-top: 20px; padding: 10px; background: #0f172a; border-radius: 6px; font-family: monospace; font-size: 12px; color: #94a3b8; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Fixture A: Controlled Message Stale Revert</h1>
+        <p class="subtitle">Controlled component that simulates a framework reverting textarea to nonempty stale draft on blur or re-render.</p>
+
+        <div id="error-banner" class="error-banner"></div>
+
+        <form id="controlled-stale-form" action="/contact-success.html" method="POST">
+            <div class="form-group">
+                <label for="name">Full Name *</label>
+                <input type="text" id="name" name="name" required placeholder="Full Name">
+            </div>
+            <div class="form-group">
+                <label for="email">Email Address *</label>
+                <input type="email" id="email" name="email" required placeholder="Email Address">
+            </div>
+            <div class="form-group">
+                <label for="subject">Subject</label>
+                <input type="text" id="subject" name="subject" placeholder="Subject">
+            </div>
+            <div class="form-group">
+                <label for="message">Detailed Inquiry Message *</label>
+                <textarea id="message" name="message" required placeholder="Inquiry Message...">STALE_DRAFT_VALUE_NON_EMPTY</textarea>
+            </div>
+            <button type="submit" id="submit-btn">Send Inquiry</button>
+        </form>
+
+        <div class="state-debug">
+            <strong>Internal Component State:</strong>
+            <pre id="react-state-display">{"message":"STALE_DRAFT_VALUE_NON_EMPTY"}</pre>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            const STALE_VALUE = 'STALE_DRAFT_VALUE_NON_EMPTY';
+            let internalMessageState = STALE_VALUE;
+
+            const form = document.getElementById('controlled-stale-form');
+            const messageEl = document.getElementById('message');
+            const errorBanner = document.getElementById('error-banner');
+            const stateDisplay = document.getElementById('react-state-display');
+
+            // React _valueTracker simulation
+            let trackedValue = messageEl.value;
+            messageEl._valueTracker = {
+                getValue() { return trackedValue; },
+                setValue(v) { trackedValue = String(v); },
+                stop() {}
+            };
+
+            messageEl.addEventListener('input', (e) => {
+                // React-like input tracker verification
+                if (messageEl._valueTracker && messageEl._valueTracker.getValue() === messageEl.value) {
+                    return;
+                }
+                if (messageEl._valueTracker) {
+                    messageEl._valueTracker.setValue(messageEl.value);
+                }
+                internalMessageState = messageEl.value;
+                stateDisplay.textContent = JSON.stringify({ message: internalMessageState });
+            });
+
+            // Simulate buggy framework component: on first blur or external re-render,
+            // if not authoritative, it reverts to STALE_VALUE unless correctly committed
+            let blurRevertCount = 0;
+            messageEl.addEventListener('blur', () => {
+                if (blurRevertCount === 0 && internalMessageState !== STALE_VALUE) {
+                    // Simulate transient controlled state rollback
+                    blurRevertCount++;
+                    console.warn('[FixtureA] Framework onBlur trigger: transiently reverting DOM to stale draft');
+                    messageEl.value = STALE_VALUE;
+                    if (messageEl._valueTracker) messageEl._valueTracker.setValue(STALE_VALUE);
+                    internalMessageState = STALE_VALUE;
+                    stateDisplay.textContent = JSON.stringify({ message: internalMessageState, status: 'REVERTED_TO_STALE' });
+                }
+            });
+
+            form.addEventListener('submit', (e) => {
+                const domVal = (messageEl ? messageEl.value : '').trim();
+                console.log('[FixtureA] Submit attempt received:', { domVal, internalState: internalMessageState });
+
+                // Submit gate: Rejects submission if message is empty OR equals the stale draft!
+                if (!domVal || domVal === STALE_VALUE || domVal.length < 15) {
+                    e.preventDefault();
+                    errorBanner.textContent = 'Validation Error: Stale or empty message rejected by server gate! Must contain genuine inquiry.';
+                    errorBanner.style.display = 'block';
+                    console.error('[FixtureA] SUBMIT_BLOCKED: Message is stale or invalid', domVal);
+                    return false;
+                }
+                errorBanner.style.display = 'none';
+                console.log('[FixtureA] SUBMIT_ACCEPTED: Valid inquiry accepted for submission');
+            });
+        })();
+    </script>
+</body>
+</html>

@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Dynamic React Controlled Contact Form</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0f172a; color: #f8fafc; padding: 40px; margin: 0; }
+        .container { max-width: 540px; margin: 0 auto; background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 36px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+        h1 { font-size: 22px; color: #38bdf8; margin-top: 0; margin-bottom: 8px; }
+        p.subtitle { color: #94a3b8; font-size: 14px; margin-bottom: 24px; }
+        .form-group { margin-bottom: 16px; text-align: left; }
+        label { display: block; margin-bottom: 6px; font-size: 13px; color: #94a3b8; }
+        input[type="text"], input[type="email"], textarea {
+            width: 100%; box-sizing: border-box; background: #0f172a; border: 1px solid #475569;
+            border-radius: 6px; padding: 10px 12px; color: #f8fafc; font-size: 14px; font-family: inherit;
+        }
+        textarea { height: 110px; resize: vertical; }
+        input:focus, textarea:focus { border-color: #38bdf8; outline: none; }
+        button[type="submit"] {
+            width: 100%; background: #0284c7; color: white; border: none;
+            border-radius: 6px; padding: 12px 20px; font-size: 14px; font-weight: 600; cursor: pointer; margin-top: 10px;
+        }
+        button[type="submit"]:hover { background: #0369a1; }
+        .error-banner { display: none; background: rgba(239, 68, 68, 0.2); border: 1px solid #ef4444; color: #fca5a5; padding: 10px; border-radius: 6px; font-size: 13px; margin-bottom: 16px; }
+        .state-debug { margin-top: 20px; padding: 10px; background: #0f172a; border-radius: 6px; font-family: monospace; font-size: 12px; color: #94a3b8; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>React Dynamic Contact Form</h1>
+        <p class="subtitle">Controlled components with React _valueTracker simulation & onBlur re-render verification.</p>
+
+        <div id="error-banner" class="error-banner"></div>
+
+        <form id="react-contact-form" action="/contact-success.html" method="POST">
+            <div class="form-group">
+                <label for="name">Full Name *</label>
+                <input type="text" id="name" name="name" required placeholder="John Doe">
+            </div>
+            <div class="form-group">
+                <label for="email">Email Address *</label>
+                <input type="email" id="email" name="email" required placeholder="john@example.com">
+            </div>
+            <div class="form-group">
+                <label for="subject">Subject</label>
+                <input type="text" id="subject" name="subject" placeholder="General Inquiry">
+            </div>
+            <div class="form-group">
+                <label for="message">Message *</label>
+                <textarea id="message" name="message" required placeholder="Please enter your detailed inquiry..."></textarea>
+            </div>
+            <button type="submit" id="submit-btn">Send Message</button>
+        </form>
+
+        <div class="state-debug">
+            <strong>React Internal State:</strong>
+            <pre id="react-state-display">{"name":"","email":"","subject":"","message":""}</pre>
+        </div>
+    </div>
+
+    <script>
+        // Real React Controlled Input & _valueTracker Simulation
+        (function() {
+            const formState = {
+                name: '',
+                email: '',
+                subject: '',
+                message: ''
+            };
+
+            const inputs = ['name', 'email', 'subject', 'message'];
+            const form = document.getElementById('react-contact-form');
+            const errorBanner = document.getElementById('error-banner');
+            const stateDisplay = document.getElementById('react-state-display');
+
+            function updateDisplay() {
+                stateDisplay.textContent = JSON.stringify(formState, null, 2);
+            }
+
+            inputs.forEach(id => {
+                const el = document.getElementById(id);
+                if (!el) return;
+
+                // Attach React's internal _valueTracker
+                let trackedValue = el.value || '';
+                el._valueTracker = {
+                    getValue() { return trackedValue; },
+                    setValue(v) { trackedValue = String(v); },
+                    stop() {}
+                };
+
+                // React onChange / onInput handler
+                const handleReactInput = (e) => {
+                    // React InputValueTracking logic:
+                    // If the tracker value matches current el.value, React considers it an internal duplicate and ignores the event!
+                    if (el._valueTracker && el._valueTracker.getValue() === el.value) {
+                        return; // Ignored by React controlled component!
+                    }
+                    if (el._valueTracker) {
+                        el._valueTracker.setValue(el.value);
+                    }
+                    formState[id] = el.value;
+                    updateDisplay();
+                };
+
+                el.addEventListener('input', handleReactInput);
+                el.addEventListener('change', handleReactInput);
+
+                // React onBlur: re-renders component from internal state!
+                el.addEventListener('blur', () => {
+                    // Re-render: synchronize DOM value with React internal state
+                    el.value = formState[id] || '';
+                    if (el._valueTracker) {
+                        el._valueTracker.setValue(el.value);
+                    }
+                    updateDisplay();
+                });
+            });
+
+            form.addEventListener('submit', (e) => {
+                const messageEl = document.getElementById('message');
+                const domMsg = (messageEl ? messageEl.value : '').trim();
+                const stateMsg = (formState.message || '').trim();
+
+                if (!domMsg || !stateMsg) {
+                    e.preventDefault();
+                    errorBanner.textContent = 'Validation Error: Message field is required and cannot be empty!';
+                    errorBanner.style.display = 'block';
+                    console.error('[ReactContact] Validation failed: message empty in DOM or React state', { domMsg, stateMsg });
+                    return false;
+                }
+                errorBanner.style.display = 'none';
+                console.log('[ReactContact] Form validated successfully! Submitting to /contact-success.html', formState);
+            });
+        })();
+    </script>
+</body>
+</html>

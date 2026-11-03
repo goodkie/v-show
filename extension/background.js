@@ -4368,7 +4368,6 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
         case 'STOP_CAMPAIGN':
         case 'STOP_AND_SAVE_CAMPAIGN':
             (async () => {
-                campaignState.runScopedDirectPrivacy = false;
                 const res = await pauseCampaignOrchestrator(true);
                 sendResponse({ success: true, ...res });
             })();
@@ -9656,6 +9655,11 @@ async function restoreCampaignState() {
                 'xpider_v7_active_hold_state', 'xpider_campaign_mode', 'xpider_run_scoped_direct_privacy'
             ], async (data) => {
                 try {
+                    if (campaignState.isActive) {
+                        logBg(null, "[Boot] Campaign active in runtime; bypassing storage state clobber.", "info");
+                        markBoot("restore_complete");
+                        return resolve();
+                    }
                     const hs = await getHistoryStoreInstance();
                     if (data.xpider_active_campaign_run_id) {
                         campaignState.campaignRunId = data.xpider_active_campaign_run_id;

@@ -1,7 +1,7 @@
 {
   "testSuite": "XPIDER_V7_P0_UI_STATE_AND_MODE_COHERENCE",
-  "startTimeUtc": "2026-11-02T10:06:02.203Z",
-  "endTimeUtc": "2026-11-02T10:06:21.460Z",
+  "startTimeUtc": "2026-11-03T07:24:20.375Z",
+  "endTimeUtc": "2026-11-03T07:24:32.985Z",
   "status": "PASS",
   "assertions": [
     {
@@ -14,7 +14,7 @@
         "modeBadge": "🚀 AUTO",
         "statusBadge": "IDLE"
       },
-      "timestamp": "2026-11-02T10:06:05.132Z"
+      "timestamp": "2026-11-03T07:24:23.384Z"
     },
     {
       "name": "INITIAL_MULTI_ACTIONS_HIDDEN",
@@ -26,7 +26,7 @@
         "modeBadge": "🚀 AUTO",
         "statusBadge": "IDLE"
       },
-      "timestamp": "2026-11-02T10:06:05.132Z"
+      "timestamp": "2026-11-03T07:24:23.384Z"
     },
     {
       "name": "INITIAL_HUD_READY",
@@ -38,13 +38,13 @@
         "modeBadge": "🚀 AUTO",
         "statusBadge": "IDLE"
       },
-      "timestamp": "2026-11-02T10:06:05.132Z"
+      "timestamp": "2026-11-03T07:24:23.384Z"
     },
     {
       "name": "CAMPAIGN_STARTED_MULTI_ACTIONS_VISIBLE",
       "passed": true,
       "detail": {},
-      "timestamp": "2026-11-02T10:06:13.405Z"
+      "timestamp": "2026-11-03T07:24:24.905Z"
     },
     {
       "name": "PAUSED_MULTI_ACTIONS_VISIBLE",
@@ -59,7 +59,7 @@
         "hudStatus": "PAUSED",
         "hudMode": "🚀 AUTO"
       },
-      "timestamp": "2026-11-02T10:06:15.153Z"
+      "timestamp": "2026-11-03T07:24:26.664Z"
     },
     {
       "name": "PAUSED_STOP_SAVE_BTN_VISIBLE",
@@ -74,7 +74,7 @@
         "hudStatus": "PAUSED",
         "hudMode": "🚀 AUTO"
       },
-      "timestamp": "2026-11-02T10:06:15.153Z"
+      "timestamp": "2026-11-03T07:24:26.664Z"
     },
     {
       "name": "PAUSED_PAUSE_BTN_SHOWS_RESUME",
@@ -89,7 +89,7 @@
         "hudStatus": "PAUSED",
         "hudMode": "🚀 AUTO"
       },
-      "timestamp": "2026-11-02T10:06:15.153Z"
+      "timestamp": "2026-11-03T07:24:26.664Z"
     },
     {
       "name": "PAUSED_START_ROW_HIDDEN",
@@ -104,7 +104,7 @@
         "hudStatus": "PAUSED",
         "hudMode": "🚀 AUTO"
       },
-      "timestamp": "2026-11-02T10:06:15.153Z"
+      "timestamp": "2026-11-03T07:24:26.664Z"
     },
     {
       "name": "PAUSED_HUD_STATUS_PAUSED",
@@ -119,7 +119,7 @@
         "hudStatus": "PAUSED",
         "hudMode": "🚀 AUTO"
       },
-      "timestamp": "2026-11-02T10:06:15.153Z"
+      "timestamp": "2026-11-03T07:24:26.664Z"
     },
     {
       "name": "RELOAD_WHILE_PAUSED_MULTI_ACTIONS_NON_DISAPPEARING",
@@ -132,7 +132,7 @@
         "hudStatus": "PAUSED",
         "hudMode": "🚀 AUTO"
       },
-      "timestamp": "2026-11-02T10:06:17.330Z"
+      "timestamp": "2026-11-03T07:24:28.832Z"
     },
     {
       "name": "RELOAD_WHILE_PAUSED_STOP_SAVE_NON_DISAPPEARING",
@@ -145,7 +145,7 @@
         "hudStatus": "PAUSED",
         "hudMode": "🚀 AUTO"
       },
-      "timestamp": "2026-11-02T10:06:17.331Z"
+      "timestamp": "2026-11-03T07:24:28.832Z"
     },
     {
       "name": "RELOAD_WHILE_PAUSED_PAUSE_BTN_RESUME",
@@ -158,7 +158,7 @@
         "hudStatus": "PAUSED",
         "hudMode": "🚀 AUTO"
       },
-      "timestamp": "2026-11-02T10:06:17.331Z"
+      "timestamp": "2026-11-03T07:24:28.832Z"
     },
     {
       "name": "RELOAD_WHILE_PAUSED_START_ROW_HIDDEN",
@@ -171,7 +171,7 @@
         "hudStatus": "PAUSED",
         "hudMode": "🚀 AUTO"
       },
-      "timestamp": "2026-11-02T10:06:17.331Z"
+      "timestamp": "2026-11-03T07:24:28.832Z"
     },
     {
       "name": "RELOAD_WHILE_PAUSED_HUD_STATUS_PAUSED",
@@ -184,7 +184,7 @@
         "hudStatus": "PAUSED",
         "hudMode": "🚀 AUTO"
       },
-      "timestamp": "2026-11-02T10:06:17.331Z"
+      "timestamp": "2026-11-03T07:24:28.832Z"
     },
     {
       "name": "RESUME_MANUAL_HUD_BADGE_MATCH",
@@ -195,7 +195,7 @@
         "hudStatus": "RUNNING",
         "currentCampaignMode": "MANUAL"
       },
-      "timestamp": "2026-11-02T10:06:18.983Z"
+      "timestamp": "2026-11-03T07:24:30.479Z"
     },
     {
       "name": "RESUME_MANUAL_PILL_MATCH",
@@ -206,7 +206,7 @@
         "hudStatus": "RUNNING",
         "currentCampaignMode": "MANUAL"
       },
-      "timestamp": "2026-11-02T10:06:18.983Z"
+      "timestamp": "2026-11-03T07:24:30.479Z"
     },
     {
       "name": "RESUME_MANUAL_LOCAL_VAR_MATCH",
@@ -217,7 +217,7 @@
         "hudStatus": "RUNNING",
         "currentCampaignMode": "MANUAL"
       },
-      "timestamp": "2026-11-02T10:06:18.983Z"
+      "timestamp": "2026-11-03T07:24:30.479Z"
     },
     {
       "name": "BG_CAMPAIGN_MODE_IS_MANUAL",
@@ -226,7 +226,7 @@
         "bgMode": "MANUAL",
         "storageMode": "MANUAL"
       },
-      "timestamp": "2026-11-02T10:06:18.985Z"
+      "timestamp": "2026-11-03T07:24:30.481Z"
     },
     {
       "name": "STORAGE_CAMPAIGN_MODE_IS_MANUAL",
@@ -235,7 +235,7 @@
         "bgMode": "MANUAL",
         "storageMode": "MANUAL"
       },
-      "timestamp": "2026-11-02T10:06:18.985Z"
+      "timestamp": "2026-11-03T07:24:30.481Z"
     },
     {
       "name": "STOP_SAVE_MULTI_ACTIONS_NON_DISAPPEARING",
@@ -249,7 +249,7 @@
         "hudStatus": "PAUSED",
         "hudMode": "🖐️ MANUAL"
       },
-      "timestamp": "2026-11-02T10:06:19.668Z"
+      "timestamp": "2026-11-03T07:24:31.194Z"
     },
     {
       "name": "STOP_SAVE_BTN_NON_DISAPPEARING",
@@ -263,7 +263,7 @@
         "hudStatus": "PAUSED",
         "hudMode": "🖐️ MANUAL"
       },
-      "timestamp": "2026-11-02T10:06:19.668Z"
+      "timestamp": "2026-11-03T07:24:31.194Z"
     },
     {
       "name": "STOP_SAVE_PAUSE_BTN_SHOWS_RESUME",
@@ -277,7 +277,7 @@
         "hudStatus": "PAUSED",
         "hudMode": "🖐️ MANUAL"
       },
-      "timestamp": "2026-11-02T10:06:19.669Z"
+      "timestamp": "2026-11-03T07:24:31.194Z"
     },
     {
       "name": "STOP_SAVE_BANNER_DISPLAYED",
@@ -291,7 +291,7 @@
         "hudStatus": "PAUSED",
         "hudMode": "🖐️ MANUAL"
       },
-      "timestamp": "2026-11-02T10:06:19.669Z"
+      "timestamp": "2026-11-03T07:24:31.194Z"
     },
     {
       "name": "STOP_SAVE_HUD_STATUS_PAUSED",
@@ -305,7 +305,7 @@
         "hudStatus": "PAUSED",
         "hudMode": "🖐️ MANUAL"
       },
-      "timestamp": "2026-11-02T10:06:19.669Z"
+      "timestamp": "2026-11-03T07:24:31.194Z"
     },
     {
       "name": "STOP_SAVE_HUD_MODE_PRESERVED",
@@ -319,7 +319,7 @@
         "hudStatus": "PAUSED",
         "hudMode": "🖐️ MANUAL"
       },
-      "timestamp": "2026-11-02T10:06:19.669Z"
+      "timestamp": "2026-11-03T07:24:31.194Z"
     },
     {
       "name": "CHECKPOINT_SAVED_WITH_MANUAL_MODE",
@@ -330,7 +330,7 @@
         "stMode": "MANUAL",
         "remainingCount": 4
       },
-      "timestamp": "2026-11-02T10:06:19.670Z"
+      "timestamp": "2026-11-03T07:24:31.196Z"
     },
     {
       "name": "END_CAMPAIGN_MULTI_ACTIONS_HIDDEN",
@@ -342,7 +342,7 @@
         "bannerHidden": true,
         "hudStatus": "READY"
       },
-      "timestamp": "2026-11-02T10:06:21.313Z"
+      "timestamp": "2026-11-03T07:24:32.845Z"
     },
     {
       "name": "END_CAMPAIGN_START_ROW_VISIBLE",
@@ -354,7 +354,7 @@
         "bannerHidden": true,
         "hudStatus": "READY"
       },
-      "timestamp": "2026-11-02T10:06:21.313Z"
+      "timestamp": "2026-11-03T07:24:32.845Z"
     },
     {
       "name": "END_CAMPAIGN_BANNER_HIDDEN",
@@ -366,7 +366,7 @@
         "bannerHidden": true,
         "hudStatus": "READY"
       },
-      "timestamp": "2026-11-02T10:06:21.313Z"
+      "timestamp": "2026-11-03T07:24:32.845Z"
     },
     {
       "name": "END_CAMPAIGN_HUD_READY",
@@ -378,7 +378,7 @@
         "bannerHidden": true,
         "hudStatus": "READY"
       },
-      "timestamp": "2026-11-02T10:06:21.313Z"
+      "timestamp": "2026-11-03T07:24:32.845Z"
     }
   ],
   "evidenceScreenshots": [

@@ -1,0 +1,220 @@
+{
+  "testSuite": "run_chromium_v7_item_c_contact_and_dynamic_message",
+  "startTimeUtc": "2026-11-03T07:20:27.684Z",
+  "assertions": [
+    {
+      "name": "ITEM_C_CAMPAIGN_ACTIVE",
+      "passed": true,
+      "details": {
+        "campaignRunId": "run_1793690430708_onom5"
+      },
+      "timestamp": "2026-11-03T07:20:32.055Z"
+    },
+    {
+      "name": "ITEM_C_CAMPAIGN_SETTLED_INACTIVE",
+      "passed": true,
+      "details": {
+        "maxWaitSeconds": 120
+      },
+      "timestamp": "2026-11-03T07:22:00.119Z"
+    },
+    {
+      "name": "ITEM_C_ATTEMPTS_COUNT_EXACT_FIVE",
+      "passed": true,
+      "details": {
+        "attemptsCount": 5
+      },
+      "timestamp": "2026-11-03T07:22:00.123Z"
+    },
+    {
+      "name": "SUBTEST_1_HOMEPAGE_ATTEMPT_RECORDED",
+      "passed": true,
+      "details": {
+        "sourceUrl": "http://127.0.0.1:8088/homepage-with-newsletter-and-contact-link.html"
+      },
+      "timestamp": "2026-11-03T07:22:00.124Z"
+    },
+    {
+      "name": "SUBTEST_1_HOMEPAGE_STATUS_SUCCESS",
+      "passed": true,
+      "details": {
+        "status": "CONFIRMED_SUCCESS",
+        "reason": "SUCCESS_CONFIRMED"
+      },
+      "timestamp": "2026-11-03T07:22:00.124Z"
+    },
+    {
+      "name": "SUBTEST_2_DYNAMIC_REACT_ATTEMPT_RECORDED",
+      "passed": true,
+      "details": {
+        "sourceUrl": "http://127.0.0.1:8088/dynamic-react-controlled-stale-revert.html"
+      },
+      "timestamp": "2026-11-03T07:22:00.124Z"
+    },
+    {
+      "name": "SUBTEST_2_DYNAMIC_REACT_STATUS_SUCCESS",
+      "passed": true,
+      "details": {
+        "status": "CONFIRMED_SUCCESS",
+        "reason": "SUCCESS_CONFIRMED"
+      },
+      "timestamp": "2026-11-03T07:22:00.124Z"
+    },
+    {
+      "name": "SUBTEST_3_DYNAMIC_REPLACED_FORM_RECORDED",
+      "passed": true,
+      "details": {
+        "sourceUrl": "http://127.0.0.1:8088/dynamic-spa-replaced-form.html"
+      },
+      "timestamp": "2026-11-03T07:22:00.124Z"
+    },
+    {
+      "name": "SUBTEST_3_DYNAMIC_REPLACED_FORM_SUCCESS",
+      "passed": true,
+      "details": {
+        "status": "CONFIRMED_SUCCESS",
+        "reason": "SUCCESS_CONFIRMED"
+      },
+      "timestamp": "2026-11-03T07:22:00.124Z"
+    },
+    {
+      "name": "SUBTEST_1_2_3_SERVER_SUBMISSIONS_RECORDED",
+      "passed": true,
+      "details": {
+        "count": 3
+      },
+      "timestamp": "2026-11-03T07:22:00.129Z"
+    },
+    {
+      "name": "SUBTEST_4_PHONE_ONLY_ATTEMPT_RECORDED",
+      "passed": true,
+      "details": {
+        "sourceUrl": "http://127.0.0.1:8088/phone-only-no-message.html"
+      },
+      "timestamp": "2026-11-03T07:22:00.129Z"
+    },
+    {
+      "name": "SUBTEST_4_PHONE_ONLY_STATUS_SKIPPED",
+      "passed": true,
+      "details": {
+        "status": "SKIPPED",
+        "reason": "NO_LONG_TEXT_INQUIRY_FIELD"
+      },
+      "timestamp": "2026-11-03T07:22:00.129Z"
+    },
+    {
+      "name": "SUBTEST_4_PHONE_ONLY_REASON_NO_LONG_TEXT",
+      "passed": true,
+      "details": {
+        "reasonCode": "NO_LONG_TEXT_INQUIRY_FIELD"
+      },
+      "timestamp": "2026-11-03T07:22:00.129Z"
+    },
+    {
+      "name": "SUBTEST_5_DEAD_ROUTE_ATTEMPT_RECORDED",
+      "passed": true,
+      "details": {
+        "sourceUrl": "http://127.0.0.1:8088/homepage-with-dead-contact-link.html"
+      },
+      "timestamp": "2026-11-03T07:22:00.129Z"
+    },
+    {
+      "name": "SUBTEST_5_DEAD_ROUTE_STATUS_FAILURE",
+      "passed": true,
+      "details": {
+        "status": "FAILURE",
+        "reason": "NO_ACCESSIBLE_INQUIRY_FORM"
+      },
+      "timestamp": "2026-11-03T07:22:00.129Z"
+    },
+    {
+      "name": "SUBTEST_5_DEAD_ROUTE_REASON_NO_FORM",
+      "passed": true,
+      "details": {
+        "reasonCode": "NO_ACCESSIBLE_INQUIRY_FORM"
+      },
+      "timestamp": "2026-11-03T07:22:00.129Z"
+    },
+    {
+      "name": "NEGATIVE_TARGETS_ZERO_SUBMISSION_DELTA",
+      "passed": true,
+      "details": {
+        "finalCount": 3,
+        "expectedCount": 3
+      },
+      "timestamp": "2026-11-03T07:22:00.133Z"
+    },
+    {
+      "name": "SCOPED_STATS_TOTAL_STARTED_FIVE",
+      "passed": true,
+      "details": {
+        "totalStarted": 5
+      },
+      "timestamp": "2026-11-03T07:22:00.135Z"
+    },
+    {
+      "name": "SCOPED_STATS_SUCCESS_THREE",
+      "passed": true,
+      "details": {
+        "success": 3
+      },
+      "timestamp": "2026-11-03T07:22:00.135Z"
+    },
+    {
+      "name": "SCOPED_STATS_SKIPPED_ONE",
+      "passed": true,
+      "details": {
+        "skipped": 1
+      },
+      "timestamp": "2026-11-03T07:22:00.135Z"
+    },
+    {
+      "name": "SCOPED_STATS_FAILURE_ONE",
+      "passed": true,
+      "details": {
+        "failure": 1
+      },
+      "timestamp": "2026-11-03T07:22:00.135Z"
+    },
+    {
+      "name": "SCOPED_STATS_MATH_INVARIANT_PRESERVED",
+      "passed": true,
+      "details": {
+        "sum": 5
+      },
+      "timestamp": "2026-11-03T07:22:00.135Z"
+    }
+  ],
+  "targets": [],
+  "status": "SUCCESS",
+  "endTimeUtc": "2026-11-03T07:22:00.305Z",
+  "summary": {
+    "campaignRunId": "run_1793690430708_onom5",
+    "totalStarted": 5,
+    "success": 3,
+    "skipped": 1,
+    "failure": 1,
+    "serverSubmissionsCount": 3,
+    "scopedStats": {
+      "scope": "currentRun",
+      "campaignRunId": "run_1793690430708_onom5",
+      "totalStarted": 5,
+      "totalImportRows": 5,
+      "pending": 0,
+      "invalid": 0,
+      "success": 3,
+      "failure": 1,
+      "unknown": 0,
+      "timeout": 0,
+      "timeoutLocal": 0,
+      "timeoutGlobal": 0,
+      "skipped": 1,
+      "paused": 0,
+      "completed": 5,
+      "failureBreakdown": {
+        "NO_ACCESSIBLE_INQUIRY_FORM": 1
+      },
+      "logStr": "[LEDGER_STATS] scope=currentRun success=3 failure=1 unknown=0 timeout=0 skipped=1"
+    }
+  }
+}

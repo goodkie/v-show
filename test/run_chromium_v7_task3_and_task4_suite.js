@@ -748,6 +748,14 @@ async function main() {
     let finalRunActive = false;
     for (let i = 0; i < 20; i++) {
         await sleep(400);
+        await cdpSend(popupWs, 'Runtime.evaluate', {
+            expression: `(() => {
+                const btn = document.getElementById('privacy-block-action-override');
+                if (btn && btn.offsetParent !== null) {
+                    btn.click();
+                }
+            })()`
+        });
         const st = await swEval(`({ isActive: campaignState.isActive })`);
         if (st?.isActive) {
             log(`▶️ Final target execution active at T+${i * 0.4}s`);

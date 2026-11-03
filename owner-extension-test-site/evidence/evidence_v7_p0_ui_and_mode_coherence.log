@@ -1,72 +1,72 @@
-[2026-11-02T10:06:02.200Z] ================================================================================
-[2026-11-02T10:06:02.203Z] 🚀 RUNNING P0 UI STATE & MODE COHERENCE CHROMIUM E2E SUITE
-[2026-11-02T10:06:02.203Z] ================================================================================
-[2026-11-02T10:06:02.269Z] Test server active on port 8088
-[2026-11-02T10:06:02.270Z] Disposable profile: C:\Users\oPus\AppData\Local\Temp\xpider-p0-mode-dl6p48
-[2026-11-02T10:06:02.281Z] Browser launched (PID=19180)
-[2026-11-02T10:06:03.242Z] Extension ID: ldlijlaccfeelfdhgnjbibniocefckjj
-[2026-11-02T10:06:05.099Z] 
+[2026-11-03T07:24:20.372Z] ================================================================================
+[2026-11-03T07:24:20.374Z] 🚀 RUNNING P0 UI STATE & MODE COHERENCE CHROMIUM E2E SUITE
+[2026-11-03T07:24:20.375Z] ================================================================================
+[2026-11-03T07:24:20.423Z] Test server active on port 8088
+[2026-11-03T07:24:20.424Z] Disposable profile: C:\Users\oPus\AppData\Local\Temp\xpider-p0-mode-73ik5j
+[2026-11-03T07:24:20.434Z] Browser launched (PID=20424)
+[2026-11-03T07:24:21.724Z] Extension ID: ldlijlaccfeelfdhgnjbibniocefckjj
+[2026-11-03T07:24:23.310Z] 
 --- SUBTEST 1: INITIAL UI STATE ---
-[2026-11-02T10:06:05.132Z] Initial UI check: {"startRowVisible":true,"multiActionsHidden":true,"hudPresent":true,"modeBadge":"🚀 AUTO","statusBadge":"IDLE"}
-[2026-11-02T10:06:05.132Z] [ASSERTION] INITIAL_START_ROW_VISIBLE => PASS
-[2026-11-02T10:06:05.132Z] [ASSERTION] INITIAL_MULTI_ACTIONS_HIDDEN => PASS
-[2026-11-02T10:06:05.132Z] [ASSERTION] INITIAL_HUD_READY => PASS
-[2026-11-02T10:06:05.132Z] 
+[2026-11-03T07:24:23.383Z] Initial UI check: {"startRowVisible":true,"multiActionsHidden":true,"hudPresent":true,"modeBadge":"🚀 AUTO","statusBadge":"IDLE"}
+[2026-11-03T07:24:23.383Z] [ASSERTION] INITIAL_START_ROW_VISIBLE => PASS
+[2026-11-03T07:24:23.384Z] [ASSERTION] INITIAL_MULTI_ACTIONS_HIDDEN => PASS
+[2026-11-03T07:24:23.384Z] [ASSERTION] INITIAL_HUD_READY => PASS
+[2026-11-03T07:24:23.384Z] 
 --- SUBTEST 2: START CAMPAIGN IN AUTO ---
-[2026-11-02T10:06:05.670Z] Clicking Start Button (#start-btn)...
-[2026-11-02T10:06:13.404Z] Campaign active detected at T+6.8s: {"isMultiVisible":true,"isStartHidden":true,"pauseBtnText":"Pause","stopSaveVisible":true}
-[2026-11-02T10:06:13.405Z] [ASSERTION] CAMPAIGN_STARTED_MULTI_ACTIONS_VISIBLE => PASS
-[2026-11-02T10:06:13.636Z] 📸 Captured screenshot: p0_01_campaign_started_running.png
-[2026-11-02T10:06:13.636Z] 
+[2026-11-03T07:24:23.926Z] Clicking Start Button (#start-btn)...
+[2026-11-03T07:24:24.905Z] Campaign active detected at T+0.4s: {"isMultiVisible":true,"isStartHidden":true,"pauseBtnText":"Pause","stopSaveVisible":true}
+[2026-11-03T07:24:24.905Z] [ASSERTION] CAMPAIGN_STARTED_MULTI_ACTIONS_VISIBLE => PASS
+[2026-11-03T07:24:25.152Z] 📸 Captured screenshot: p0_01_campaign_started_running.png
+[2026-11-03T07:24:25.152Z] 
 --- SUBTEST 3: PAUSE CAMPAIGN ---
-[2026-11-02T10:06:15.152Z] Paused UI state: {"multiActionsVisible":true,"stopSaveVisible":true,"endBtnVisible":true,"startRowHidden":true,"pauseBtnText":"▶️ Resume","pauseBtnBg":"rgb(34, 197, 94)","hudStatus":"PAUSED","hudMode":"🚀 AUTO"}
-[2026-11-02T10:06:15.153Z] [ASSERTION] PAUSED_MULTI_ACTIONS_VISIBLE => PASS
-[2026-11-02T10:06:15.153Z] [ASSERTION] PAUSED_STOP_SAVE_BTN_VISIBLE => PASS
-[2026-11-02T10:06:15.153Z] [ASSERTION] PAUSED_PAUSE_BTN_SHOWS_RESUME => PASS
-[2026-11-02T10:06:15.153Z] [ASSERTION] PAUSED_START_ROW_HIDDEN => PASS
-[2026-11-02T10:06:15.153Z] [ASSERTION] PAUSED_HUD_STATUS_PAUSED => PASS
-[2026-11-02T10:06:15.296Z] 📸 Captured screenshot: p0_02_campaign_paused_buttons_visible.png
-[2026-11-02T10:06:15.296Z] 
+[2026-11-03T07:24:26.664Z] Paused UI state: {"multiActionsVisible":true,"stopSaveVisible":true,"endBtnVisible":true,"startRowHidden":true,"pauseBtnText":"▶️ Resume","pauseBtnBg":"rgb(34, 197, 94)","hudStatus":"PAUSED","hudMode":"🚀 AUTO"}
+[2026-11-03T07:24:26.664Z] [ASSERTION] PAUSED_MULTI_ACTIONS_VISIBLE => PASS
+[2026-11-03T07:24:26.664Z] [ASSERTION] PAUSED_STOP_SAVE_BTN_VISIBLE => PASS
+[2026-11-03T07:24:26.664Z] [ASSERTION] PAUSED_PAUSE_BTN_SHOWS_RESUME => PASS
+[2026-11-03T07:24:26.664Z] [ASSERTION] PAUSED_START_ROW_HIDDEN => PASS
+[2026-11-03T07:24:26.664Z] [ASSERTION] PAUSED_HUD_STATUS_PAUSED => PASS
+[2026-11-03T07:24:26.812Z] 📸 Captured screenshot: p0_02_campaign_paused_buttons_visible.png
+[2026-11-03T07:24:26.812Z] 
 --- SUBTEST 4: POPUP RELOAD WHILE PAUSED ---
-[2026-11-02T10:06:17.330Z] Reloaded Paused UI state: {"multiActionsVisible":true,"stopSaveVisible":true,"startRowHidden":true,"pauseBtnText":"▶️ Resume","hudStatus":"PAUSED","hudMode":"🚀 AUTO"}
-[2026-11-02T10:06:17.330Z] [ASSERTION] RELOAD_WHILE_PAUSED_MULTI_ACTIONS_NON_DISAPPEARING => PASS
-[2026-11-02T10:06:17.330Z] [ASSERTION] RELOAD_WHILE_PAUSED_STOP_SAVE_NON_DISAPPEARING => PASS
-[2026-11-02T10:06:17.331Z] [ASSERTION] RELOAD_WHILE_PAUSED_PAUSE_BTN_RESUME => PASS
-[2026-11-02T10:06:17.331Z] [ASSERTION] RELOAD_WHILE_PAUSED_START_ROW_HIDDEN => PASS
-[2026-11-02T10:06:17.331Z] [ASSERTION] RELOAD_WHILE_PAUSED_HUD_STATUS_PAUSED => PASS
-[2026-11-02T10:06:17.473Z] 📸 Captured screenshot: p0_03_popup_reloaded_while_paused.png
-[2026-11-02T10:06:17.473Z] 
+[2026-11-03T07:24:28.832Z] Reloaded Paused UI state: {"multiActionsVisible":true,"stopSaveVisible":true,"startRowHidden":true,"pauseBtnText":"▶️ Resume","hudStatus":"PAUSED","hudMode":"🚀 AUTO"}
+[2026-11-03T07:24:28.832Z] [ASSERTION] RELOAD_WHILE_PAUSED_MULTI_ACTIONS_NON_DISAPPEARING => PASS
+[2026-11-03T07:24:28.832Z] [ASSERTION] RELOAD_WHILE_PAUSED_STOP_SAVE_NON_DISAPPEARING => PASS
+[2026-11-03T07:24:28.832Z] [ASSERTION] RELOAD_WHILE_PAUSED_PAUSE_BTN_RESUME => PASS
+[2026-11-03T07:24:28.832Z] [ASSERTION] RELOAD_WHILE_PAUSED_START_ROW_HIDDEN => PASS
+[2026-11-03T07:24:28.832Z] [ASSERTION] RELOAD_WHILE_PAUSED_HUD_STATUS_PAUSED => PASS
+[2026-11-03T07:24:28.972Z] 📸 Captured screenshot: p0_03_popup_reloaded_while_paused.png
+[2026-11-03T07:24:28.972Z] 
 --- SUBTEST 5: RESUME WITH MODE SWITCH TO MANUAL ---
-[2026-11-02T10:06:18.983Z] Manual mode UI check: {"badge":"🖐️ MANUAL","pill":"MODE: MANUAL (HOLD FOR REGISTER)","hudStatus":"RUNNING","currentCampaignMode":"MANUAL"}
-[2026-11-02T10:06:18.983Z] [ASSERTION] RESUME_MANUAL_HUD_BADGE_MATCH => PASS
-[2026-11-02T10:06:18.983Z] [ASSERTION] RESUME_MANUAL_PILL_MATCH => PASS
-[2026-11-02T10:06:18.983Z] [ASSERTION] RESUME_MANUAL_LOCAL_VAR_MATCH => PASS
-[2026-11-02T10:06:18.985Z] Background manual mode check: {"bgMode":"MANUAL","storageMode":"MANUAL"}
-[2026-11-02T10:06:18.985Z] [ASSERTION] BG_CAMPAIGN_MODE_IS_MANUAL => PASS
-[2026-11-02T10:06:18.985Z] [ASSERTION] STORAGE_CAMPAIGN_MODE_IS_MANUAL => PASS
-[2026-11-02T10:06:19.259Z] 📸 Captured screenshot: p0_04_resumed_in_manual_mode.png
-[2026-11-02T10:06:19.259Z] 
+[2026-11-03T07:24:30.478Z] Manual mode UI check: {"badge":"🖐️ MANUAL","pill":"MODE: MANUAL (HOLD FOR REGISTER)","hudStatus":"RUNNING","currentCampaignMode":"MANUAL"}
+[2026-11-03T07:24:30.479Z] [ASSERTION] RESUME_MANUAL_HUD_BADGE_MATCH => PASS
+[2026-11-03T07:24:30.479Z] [ASSERTION] RESUME_MANUAL_PILL_MATCH => PASS
+[2026-11-03T07:24:30.479Z] [ASSERTION] RESUME_MANUAL_LOCAL_VAR_MATCH => PASS
+[2026-11-03T07:24:30.480Z] Background manual mode check: {"bgMode":"MANUAL","storageMode":"MANUAL"}
+[2026-11-03T07:24:30.480Z] [ASSERTION] BG_CAMPAIGN_MODE_IS_MANUAL => PASS
+[2026-11-03T07:24:30.481Z] [ASSERTION] STORAGE_CAMPAIGN_MODE_IS_MANUAL => PASS
+[2026-11-03T07:24:30.776Z] 📸 Captured screenshot: p0_04_resumed_in_manual_mode.png
+[2026-11-03T07:24:30.776Z] 
 --- SUBTEST 6: STOP & SAVE ACTION ---
-[2026-11-02T10:06:19.668Z] Stop & Save UI state: {"multiActionsVisible":true,"stopSaveVisible":true,"startRowHidden":true,"pauseBtnText":"▶️ Resume","bannerVisible":true,"hudStatus":"PAUSED","hudMode":"🖐️ MANUAL"}
-[2026-11-02T10:06:19.668Z] [ASSERTION] STOP_SAVE_MULTI_ACTIONS_NON_DISAPPEARING => PASS
-[2026-11-02T10:06:19.668Z] [ASSERTION] STOP_SAVE_BTN_NON_DISAPPEARING => PASS
-[2026-11-02T10:06:19.668Z] [ASSERTION] STOP_SAVE_PAUSE_BTN_SHOWS_RESUME => PASS
-[2026-11-02T10:06:19.669Z] [ASSERTION] STOP_SAVE_BANNER_DISPLAYED => PASS
-[2026-11-02T10:06:19.669Z] [ASSERTION] STOP_SAVE_HUD_STATUS_PAUSED => PASS
-[2026-11-02T10:06:19.669Z] [ASSERTION] STOP_SAVE_HUD_MODE_PRESERVED => PASS
-[2026-11-02T10:06:19.670Z] Checkpoint verification: {"hasCp":true,"cpMode":"MANUAL","stMode":"MANUAL","remainingCount":4}
-[2026-11-02T10:06:19.670Z] [ASSERTION] CHECKPOINT_SAVED_WITH_MANUAL_MODE => PASS
-[2026-11-02T10:06:19.800Z] 📸 Captured screenshot: p0_05_stop_and_save_active.png
-[2026-11-02T10:06:19.801Z] 
+[2026-11-03T07:24:31.194Z] Stop & Save UI state: {"multiActionsVisible":true,"stopSaveVisible":true,"startRowHidden":true,"pauseBtnText":"▶️ Resume","bannerVisible":true,"hudStatus":"PAUSED","hudMode":"🖐️ MANUAL"}
+[2026-11-03T07:24:31.194Z] [ASSERTION] STOP_SAVE_MULTI_ACTIONS_NON_DISAPPEARING => PASS
+[2026-11-03T07:24:31.194Z] [ASSERTION] STOP_SAVE_BTN_NON_DISAPPEARING => PASS
+[2026-11-03T07:24:31.194Z] [ASSERTION] STOP_SAVE_PAUSE_BTN_SHOWS_RESUME => PASS
+[2026-11-03T07:24:31.194Z] [ASSERTION] STOP_SAVE_BANNER_DISPLAYED => PASS
+[2026-11-03T07:24:31.194Z] [ASSERTION] STOP_SAVE_HUD_STATUS_PAUSED => PASS
+[2026-11-03T07:24:31.194Z] [ASSERTION] STOP_SAVE_HUD_MODE_PRESERVED => PASS
+[2026-11-03T07:24:31.196Z] Checkpoint verification: {"hasCp":true,"cpMode":"MANUAL","stMode":"MANUAL","remainingCount":4}
+[2026-11-03T07:24:31.196Z] [ASSERTION] CHECKPOINT_SAVED_WITH_MANUAL_MODE => PASS
+[2026-11-03T07:24:31.335Z] 📸 Captured screenshot: p0_05_stop_and_save_active.png
+[2026-11-03T07:24:31.335Z] 
 --- SUBTEST 7: END CAMPAIGN CLEANUP ---
-[2026-11-02T10:06:21.313Z] End Campaign state: {"multiActionsHidden":true,"startRowVisible":true,"startBtnVisible":true,"bannerHidden":true,"hudStatus":"READY"}
-[2026-11-02T10:06:21.313Z] [ASSERTION] END_CAMPAIGN_MULTI_ACTIONS_HIDDEN => PASS
-[2026-11-02T10:06:21.313Z] [ASSERTION] END_CAMPAIGN_START_ROW_VISIBLE => PASS
-[2026-11-02T10:06:21.313Z] [ASSERTION] END_CAMPAIGN_BANNER_HIDDEN => PASS
-[2026-11-02T10:06:21.313Z] [ASSERTION] END_CAMPAIGN_HUD_READY => PASS
-[2026-11-02T10:06:21.460Z] 📸 Captured screenshot: p0_06_end_campaign_ready.png
-[2026-11-02T10:06:21.460Z] 
+[2026-11-03T07:24:32.845Z] End Campaign state: {"multiActionsHidden":true,"startRowVisible":true,"startBtnVisible":true,"bannerHidden":true,"hudStatus":"READY"}
+[2026-11-03T07:24:32.845Z] [ASSERTION] END_CAMPAIGN_MULTI_ACTIONS_HIDDEN => PASS
+[2026-11-03T07:24:32.845Z] [ASSERTION] END_CAMPAIGN_START_ROW_VISIBLE => PASS
+[2026-11-03T07:24:32.845Z] [ASSERTION] END_CAMPAIGN_BANNER_HIDDEN => PASS
+[2026-11-03T07:24:32.845Z] [ASSERTION] END_CAMPAIGN_HUD_READY => PASS
+[2026-11-03T07:24:32.984Z] 📸 Captured screenshot: p0_06_end_campaign_ready.png
+[2026-11-03T07:24:32.985Z] 
 ================================================================================
-[2026-11-02T10:06:21.460Z] 🎉 ALL P0 UI & MODE COHERENCE CHECKS PASSED (100% INVARIANTS VERIFIED)
-[2026-11-02T10:06:21.460Z] ================================================================================
-[2026-11-02T10:06:21.468Z] Report written to E:\vivpr\ai\extension-form-sender\owner-extension-test-site\evidence\evidence_v7_p0_ui_and_mode_coherence_report.json
+[2026-11-03T07:24:32.985Z] 🎉 ALL P0 UI & MODE COHERENCE CHECKS PASSED (100% INVARIANTS VERIFIED)
+[2026-11-03T07:24:32.985Z] ================================================================================
+[2026-11-03T07:24:32.993Z] Report written to E:\vivpr\ai\extension-form-sender\owner-extension-test-site\evidence\evidence_v7_p0_ui_and_mode_coherence_report.json

@@ -6,21 +6,21 @@ PROJECT_NAME: XPIDER AutoForm Sender Pro
 WORKSPACE_ROOT: E:\vivpr\ai\extension-form-sender
 AUTHORITY_SOURCE: goodkie/v-show Issues #6 & #10
 ACTIVE_BRANCH: candidate/p0-core-regressions-v7
-STATE_REV: 2026-11-02.400
-AUTHORITY_CURSOR: 6554522617
-LAST_AUDIT: [CHATGPT][DIRECTIVE][extension-form-sender][P0 CORE RECOVERY / 2026-11-02] Comment #900 / ID IC_kwDOT53X288AAAABh8v8Tw
-LAST_DIRECTIVE: [CHATGPT DIRECTIVE: P0 CORE RECOVERY (ITEMS a-f) + 1 CONCRETE CODE CHANGE & EXECUTABLE FIXTURE EVIDENCE] Comment #900
-LAST_RECEIPT: [ANTIGRAVITY → CHATGPT / OWNER][RECEIPT][Issue #6][P0 CORE REGRESSION RECOVERY: ITEMS (a) & (b) VERIFIED WITH CHROMIUM E2E HARNESS (30/30 ASSERTIONS PASS)]
-SCHEDULE_REVISION: 4
+STATE_REV: 2026-11-03.500
+AUTHORITY_CURSOR: IC_kwDOT53X288AAAABiTkjVg
+LAST_AUDIT: [CHATGPT][SOURCE-AUDIT / IMMEDIATE P0 PATCH TARGET][extension-form-sender][2026-11-02] Comment #903 / ID IC_kwDOT53X288AAAABiTkjVg
+LAST_DIRECTIVE: [CHATGPT DIRECTIVE: P0 CORE RECOVERY (ITEMS a-f) + IMMEDIATE PATCH TARGETS FOR VERIFY_FIELD_INTEGRITY] Comment #903
+LAST_RECEIPT: [ANTIGRAVITY → CHATGPT / OWNER][RECEIPT][Issue #6][P0 CORE RECOVERY: DYNAMIC FIELD INTEGRITY REPAIR, SPA REPLACEMENT, NEGATIVE SENSITIVITY & CHROMIUM E2E VERIFIED]
+SCHEDULE_REVISION: 5
 BUILD_ID: V7.0.0-RC11-20261030-THREE-MODE-CONTRACTS-PASS
 FUNCTIONAL_COMMIT: 20678ada
 PROVENANCE_COMMIT: 20678ada
 CANDIDATE_COMMIT: e8fece4c4074512ab184790a398fafe4ed10ab69
 TEST_EVIDENCE_BRANCH: candidate/p0-core-regressions-v7
-TEST_EVIDENCE_REPORT: owner-extension-test-site/evidence/evidence_v7_p0_ui_and_mode_coherence_report.json
+TEST_EVIDENCE_REPORT: owner-extension-test-site/evidence/evidence_v7_item_c_contact_and_dynamic_message_report.json
 MUTATION_EVIDENCE_REPORT: owner-extension-test-site/evidence/evidence_v7_real_mutants_report.json
-NEXT_ACTION: Proceed to Step 2 items (c) contact discovery on home page and (d) no-message forms skipped. Release HOLD maintained.
-BLOCKERS: None. Candidate branch candidate/p0-core-regressions-v7 passes 100% across positive E2E suite, real mutant sensitivity harness, and new P0 UI/mode coherence suite. Base major/v7-dual-mode remains 100% frozen.
+NEXT_ACTION: Awaiting independent ChatGPT Code Audit of candidate/p0-core-regressions-v7. Release HOLD maintained.
+BLOCKERS: None. Candidate branch candidate/p0-core-regressions-v7 passes 100% across positive E2E suite, real mutant sensitivity harness (4/4 mutants killed), Item C 5-target campaign, and P0 UI/mode coherence suite. Base major/v7-dual-mode remains 100% frozen.
 OWNER_ACTION: None required. Release HOLD maintained; zero public submissions.
 RELEASE_ASSET_TAG: v7.0.0-rc11
 RELEASE_ASSET_ZIP: XPIDER_V7.0.0_RC11_DUAL_MODE_OWNER_BETA.zip
