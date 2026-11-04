@@ -1,0 +1,374 @@
+{
+  "testSuite": "XPIDER_V7_MODES_AND_VISIBLE_CONTROLS_SUITE",
+  "startTimeUtc": "2026-11-04T07:47:50.179Z",
+  "endTimeUtc": "2026-11-04T07:49:31.764Z",
+  "status": "SUCCESS",
+  "assertions": [
+    {
+      "name": "AUTO_MODE_CAMPAIGN_ACTIVE",
+      "passed": true,
+      "detail": {},
+      "timestamp": "2026-11-04T07:47:54.670Z"
+    },
+    {
+      "name": "AUTO_MODE_CAMPAIGN_SETTLED",
+      "passed": true,
+      "detail": {},
+      "timestamp": "2026-11-04T07:48:18.869Z"
+    },
+    {
+      "name": "AUTO_MODE_ZERO_OPERATOR_PANEL",
+      "passed": true,
+      "detail": {
+        "autoHoldPanelObserved": false
+      },
+      "timestamp": "2026-11-04T07:48:18.869Z"
+    },
+    {
+      "name": "AUTO_MODE_SUBMISSION_RECORDED",
+      "passed": true,
+      "detail": {
+        "submissions": 1
+      },
+      "timestamp": "2026-11-04T07:48:18.871Z"
+    },
+    {
+      "name": "MANUAL_MODE_CAMPAIGN_ACTIVE",
+      "passed": true,
+      "detail": {},
+      "timestamp": "2026-11-04T07:48:19.856Z"
+    },
+    {
+      "name": "MANUAL_HOLD_PANEL_RENDERED",
+      "passed": true,
+      "detail": {
+        "exists": true,
+        "mode": "MANUAL",
+        "hasRegisterBtn": true,
+        "nameVal": "ModeTester ValUser",
+        "emailVal": "modetester@example.com",
+        "msgVal": "Modes and visible UI controls verification inquiry message."
+      },
+      "timestamp": "2026-11-04T07:48:34.169Z"
+    },
+    {
+      "name": "MANUAL_HOLD_DATA_MODE_MANUAL",
+      "passed": true,
+      "detail": {
+        "mode": "MANUAL"
+      },
+      "timestamp": "2026-11-04T07:48:34.169Z"
+    },
+    {
+      "name": "MANUAL_FIELDS_AUTOFILLED_BEFORE_SUBMIT",
+      "passed": true,
+      "detail": {
+        "exists": true,
+        "mode": "MANUAL",
+        "hasRegisterBtn": true,
+        "nameVal": "ModeTester ValUser",
+        "emailVal": "modetester@example.com",
+        "msgVal": "Modes and visible UI controls verification inquiry message."
+      },
+      "timestamp": "2026-11-04T07:48:34.169Z"
+    },
+    {
+      "name": "MANUAL_MODE_HELD_BEFORE_SUBMIT",
+      "passed": true,
+      "detail": {
+        "count": 1
+      },
+      "timestamp": "2026-11-04T07:48:34.171Z"
+    },
+    {
+      "name": "MANUAL_MODE_CAMPAIGN_SETTLED",
+      "passed": true,
+      "detail": {},
+      "timestamp": "2026-11-04T07:48:35.301Z"
+    },
+    {
+      "name": "MANUAL_MODE_SUBMISSION_RECORDED",
+      "passed": true,
+      "detail": {
+        "count": 2
+      },
+      "timestamp": "2026-11-04T07:48:35.302Z"
+    },
+    {
+      "name": "SEMI_AUTO_CLEAN_FORM_SETTLED_AUTONOMOUS",
+      "passed": true,
+      "detail": {},
+      "timestamp": "2026-11-04T07:48:59.661Z"
+    },
+    {
+      "name": "SEMI_AUTO_CLEAN_SUBMISSION_RECORDED",
+      "passed": true,
+      "detail": {
+        "count": 3
+      },
+      "timestamp": "2026-11-04T07:48:59.663Z"
+    },
+    {
+      "name": "SEMI_AUTO_CHALLENGE_HOLD_PANEL_RENDERED",
+      "passed": true,
+      "detail": {
+        "exists": true,
+        "mode": "SEMI_AUTO",
+        "validationFailed": "false"
+      },
+      "timestamp": "2026-11-04T07:49:13.476Z"
+    },
+    {
+      "name": "SEMI_AUTO_HOLD_DATA_MODE_SEMI_AUTO",
+      "passed": true,
+      "detail": {
+        "mode": "SEMI_AUTO"
+      },
+      "timestamp": "2026-11-04T07:49:13.476Z"
+    },
+    {
+      "name": "SEMI_AUTO_CHALLENGE_CAMPAIGN_SETTLED",
+      "passed": true,
+      "detail": {},
+      "timestamp": "2026-11-04T07:49:13.983Z"
+    },
+    {
+      "name": "PHONE_ONLY_CAMPAIGN_SETTLED",
+      "passed": true,
+      "detail": {},
+      "timestamp": "2026-11-04T07:49:25.956Z"
+    },
+    {
+      "name": "PHONE_ONLY_STATUS_SKIPPED",
+      "passed": true,
+      "detail": {
+        "status": "SKIPPED"
+      },
+      "timestamp": "2026-11-04T07:49:25.958Z"
+    },
+    {
+      "name": "PHONE_ONLY_REASON_NO_LONG_TEXT",
+      "passed": true,
+      "detail": {
+        "reasonCode": "NO_LONG_TEXT_INQUIRY_FIELD"
+      },
+      "timestamp": "2026-11-04T07:49:25.958Z"
+    },
+    {
+      "name": "PHONE_ONLY_ZERO_SUBMISSION_DELTA",
+      "passed": true,
+      "detail": {
+        "count": 3
+      },
+      "timestamp": "2026-11-04T07:49:25.960Z"
+    },
+    {
+      "name": "PAUSE_BTN_SHOWS_RESUME",
+      "passed": true,
+      "detail": {
+        "text": "▶️ Resume",
+        "isPaused": true
+      },
+      "timestamp": "2026-11-04T07:49:27.514Z"
+    },
+    {
+      "name": "RESUME_MODE_MODAL_OPENED_VISIBLE",
+      "passed": true,
+      "detail": {
+        "isVisible": true
+      },
+      "timestamp": "2026-11-04T07:49:27.929Z"
+    },
+    {
+      "name": "RESUMED_IN_MANUAL_MODE_HUD_BADGE",
+      "passed": true,
+      "detail": {
+        "pill": "MODE: MANUAL (HOLD FOR REGISTER)"
+      },
+      "timestamp": "2026-11-04T07:49:28.724Z"
+    },
+    {
+      "name": "SW_RESTART_MANUAL_MODE_PRESERVED",
+      "passed": true,
+      "detail": {
+        "xpider_campaign_mode": "MANUAL",
+        "xpider_paused_checkpoint": {
+          "campaignMode": "AUTO",
+          "campaignRunId": "normal_run_1793778566504_qtpgjb",
+          "counters": {
+            "captchaFailed": 0,
+            "captchaSolved": 0,
+            "completed": 1,
+            "deliveryUnknown": 0,
+            "failed": 0,
+            "failureBreakdown": {},
+            "inProgress": 0,
+            "paused": 0,
+            "remaining": 2,
+            "skipped": 1,
+            "skippedHistory": 0,
+            "success": 0,
+            "timeout": 0,
+            "total": 3
+          },
+          "delayMs": 10000,
+          "fillDelayMs": 300,
+          "outcomeHistogram": {
+            "DELIVERY_UNKNOWN": 1,
+            "NO_LONG_TEXT_INQUIRY_FIELD": 1,
+            "SUCCESS_CONFIRMED": 3
+          },
+          "ownerFunctionTestMode": false,
+          "pausedAt": 1793778567325,
+          "pausedByOperator": true,
+          "remainingQueue": [
+            "http://127.0.0.1:8088/captcha-turnstile-dom.html",
+            "http://127.0.0.1:8088/dynamic-react-controlled-stale-revert.html"
+          ],
+          "restorationLogged": true,
+          "runScopedDirectPrivacy": true,
+          "sessionId": 6,
+          "submitDelayMs": 4000,
+          "successCount": 0,
+          "successfulUrls": [],
+          "targetTimeoutMs": 180000,
+          "template": {
+            "email": "modetester@example.com",
+            "firstName": "ModeTester",
+            "id": "default",
+            "lastName": "ValUser",
+            "message": "Modes and visible UI controls verification inquiry message.",
+            "name": "ModeTester ValUser",
+            "ownerAuthorizedConsent": false,
+            "phone": "555-0199",
+            "subject": "",
+            "templateId": "default",
+            "templateVersion": 1,
+            "version": 1,
+            "website": ""
+          },
+          "templateId": "default",
+          "templateVersion": 1,
+          "totalTargets": 3,
+          "visitedUrls": [
+            "http://127.0.0.1:8088/contact-standard.html"
+          ]
+        }
+      },
+      "timestamp": "2026-11-04T07:49:30.556Z"
+    },
+    {
+      "name": "SW_RESTART_CHECKPOINT_SURVIVED",
+      "passed": true,
+      "detail": {
+        "xpider_campaign_mode": "MANUAL",
+        "xpider_paused_checkpoint": {
+          "campaignMode": "AUTO",
+          "campaignRunId": "normal_run_1793778566504_qtpgjb",
+          "counters": {
+            "captchaFailed": 0,
+            "captchaSolved": 0,
+            "completed": 1,
+            "deliveryUnknown": 0,
+            "failed": 0,
+            "failureBreakdown": {},
+            "inProgress": 0,
+            "paused": 0,
+            "remaining": 2,
+            "skipped": 1,
+            "skippedHistory": 0,
+            "success": 0,
+            "timeout": 0,
+            "total": 3
+          },
+          "delayMs": 10000,
+          "fillDelayMs": 300,
+          "outcomeHistogram": {
+            "DELIVERY_UNKNOWN": 1,
+            "NO_LONG_TEXT_INQUIRY_FIELD": 1,
+            "SUCCESS_CONFIRMED": 3
+          },
+          "ownerFunctionTestMode": false,
+          "pausedAt": 1793778567325,
+          "pausedByOperator": true,
+          "remainingQueue": [
+            "http://127.0.0.1:8088/captcha-turnstile-dom.html",
+            "http://127.0.0.1:8088/dynamic-react-controlled-stale-revert.html"
+          ],
+          "restorationLogged": true,
+          "runScopedDirectPrivacy": true,
+          "sessionId": 6,
+          "submitDelayMs": 4000,
+          "successCount": 0,
+          "successfulUrls": [],
+          "targetTimeoutMs": 180000,
+          "template": {
+            "email": "modetester@example.com",
+            "firstName": "ModeTester",
+            "id": "default",
+            "lastName": "ValUser",
+            "message": "Modes and visible UI controls verification inquiry message.",
+            "name": "ModeTester ValUser",
+            "ownerAuthorizedConsent": false,
+            "phone": "555-0199",
+            "subject": "",
+            "templateId": "default",
+            "templateVersion": 1,
+            "version": 1,
+            "website": ""
+          },
+          "templateId": "default",
+          "templateVersion": 1,
+          "totalTargets": 3,
+          "visitedUrls": [
+            "http://127.0.0.1:8088/contact-standard.html"
+          ]
+        }
+      },
+      "timestamp": "2026-11-04T07:49:30.556Z"
+    },
+    {
+      "name": "STOP_SAVE_BTN_VISIBLE_AND_ENABLED",
+      "passed": true,
+      "detail": {
+        "exists": true,
+        "visible": true,
+        "disabled": false
+      },
+      "timestamp": "2026-11-04T07:49:30.557Z"
+    },
+    {
+      "name": "STOP_SAVE_BANNER_RENDERED",
+      "passed": true,
+      "detail": {
+        "bannerVisible": true
+      },
+      "timestamp": "2026-11-04T07:49:31.179Z"
+    },
+    {
+      "name": "MATH_CAPTCHA_SOLVER_RETIRED_STUB",
+      "passed": true,
+      "detail": {
+        "mcsRetired": true
+      },
+      "timestamp": "2026-11-04T07:49:31.761Z"
+    },
+    {
+      "name": "CONTENT_SCRIPT_MATH_SOLVER_NULL",
+      "passed": true,
+      "detail": {
+        "csRetired": true
+      },
+      "timestamp": "2026-11-04T07:49:31.764Z"
+    }
+  ],
+  "screenshots": [
+    "shot_v7_modes_01_auto_completed.png",
+    "shot_v7_modes_02_manual_completed.png",
+    "shot_v7_modes_03_semi_auto_completed.png",
+    "shot_v7_modes_04_resume_modal.png",
+    "shot_v7_modes_05_stop_saved.png"
+  ],
+  "serverSubmissions": 3,
+  "exitCode": 0
+}

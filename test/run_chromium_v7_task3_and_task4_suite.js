@@ -459,7 +459,9 @@ async function main() {
                 chrome.storage.local.set({
                     xpider_queue: ${JSON.stringify(sc04Targets)},
                     xpider_total: 3,
-                    xpider_success: 0
+                    xpider_success: 0,
+                    xpider_run_scoped_direct_privacy: true,
+                    xpider_privacy_mode: 'DIRECT'
                 });
             })()
         `

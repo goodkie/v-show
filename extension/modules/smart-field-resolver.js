@@ -140,23 +140,9 @@
             }
 
             // ============================================================
-            // Section H: Human Verification Math Captcha Equation Solver
+            // Section H: Human Verification Math Captcha Equation Solver [RETIRED]
             // ============================================================
-            if (fieldContext.type !== 'textarea' && !fieldContext.isInquiryBody && _MathCaptchaSolver && typeof _MathCaptchaSolver.solveMathCaptcha === 'function') {
-                const mathVal = _MathCaptchaSolver.solveMathCaptcha(ctxText);
-                if (mathVal !== null) {
-                    const mathRes = {
-                        action: 'fill',
-                        value: String(mathVal),
-                        confidence: 0.99,
-                        source: 'math_captcha_solver',
-                        fieldCategory: 'math_captcha'
-                    };
-                    this.cache.set(cacheKey, mathRes);
-                    this.logDecision(fieldContext, mathRes);
-                    return mathRes;
-                }
-            }
+            // [V7.0 Built-in Math Solver Retired per Owner External-Extension-Only Contract]
 
             // ============================================================
             // Tier 1: Exact Template-Backed Mapping

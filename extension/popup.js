@@ -1811,7 +1811,7 @@ async function hydrateSettings(overrideV2Store = null) {
 
         // [P0 Actionable Privacy Block Decision Modal & Handlers]
         window.showPrivacyBlockDecisionModal = function(data = {}) {
-            const { reason, userMessage, actionSection, source } = data;
+            const { reason, userMessage, actionSection, source, campaignMode } = data;
             const privacyBlockModal = document.getElementById('privacy-block-modal-overlay');
             if (!privacyBlockModal) {
                 alert(`🛡️ PRIVACY GATE BLOCKED START\n\n${userMessage || reason}\n\nReason: ${reason}`);
@@ -1848,12 +1848,19 @@ async function hydrateSettings(overrideV2Store = null) {
                     privacyBlockModal.classList.add('hidden');
                     console.log('[PRIVACY_OWNER_OVERRIDE] scope=currentRun mode=DIRECT acknowledged=true');
                     addLog('⚡ [PRIVACY_OWNER_OVERRIDE] scope=currentRun mode=DIRECT acknowledged=true', 'warn');
+                    try {
+                        await chrome.storage.local.set({ xpider_run_scoped_direct_privacy: true });
+                    } catch (_) {}
                     const ind = document.getElementById('privacy-override-indicator');
                     if (ind) {
                         ind.style.display = 'flex';
                         ind.classList.remove('hidden');
                     }
-                    await launchCampaign({ source: source || 'USER_START_BUTTON', runScopedDirectPrivacy: true });
+                    await launchCampaign({
+                        source: source || 'USER_START_BUTTON',
+                        campaignMode: campaignMode || currentCampaignMode || 'AUTO',
+                        runScopedDirectPrivacy: true
+                    });
                 };
             }
 
@@ -1862,7 +1869,7 @@ async function hydrateSettings(overrideV2Store = null) {
                     privacyBlockModal.style.display = 'none';
                     privacyBlockModal.classList.add('hidden');
                     addLog('🔄 [PRIVACY_PREFLIGHT_RETRY] Retrying privacy preflight...', 'info');
-                    await launchCampaign({ source: source || 'USER_START_BUTTON' });
+                    await launchCampaign({ source: source || 'USER_START_BUTTON', campaignMode: campaignMode || currentCampaignMode || 'AUTO' });
                 };
             }
 
@@ -8361,7 +8368,15 @@ async function launchCampaign(options = {}) {
 
         // [START_STEP 06] PRIVACY_PREP_BEGIN
         currentStartStep = '06';
-        const runScopedDirect = Boolean(options.runScopedDirectPrivacy);
+        let runScopedDirect = Boolean(options.runScopedDirectPrivacy);
+        if (!runScopedDirect) {
+            try {
+                const s = await chrome.storage.local.get(['xpider_run_scoped_direct_privacy']);
+                if (s && s.xpider_run_scoped_direct_privacy) {
+                    runScopedDirect = true;
+                }
+            } catch (_) {}
+        }
         console.log(`[START_STEP] 06 PRIVACY_PREP_BEGIN runScopedDirect=${runScopedDirect} testMode=${isTestModeActive}`);
         addLog(`[START_STEP] 06 PRIVACY_PREP_BEGIN runScopedDirect=${runScopedDirect} testMode=${isTestModeActive}`, 'info');
 
@@ -8387,7 +8402,7 @@ async function launchCampaign(options = {}) {
                     resolve(res || { success: false, error: 'NO_RESPONSE_FROM_BACKGROUND' });
                 });
             });
-            const prepResult = (prepResponse && prepResponse.success && prepResponse.result) ? prepResponse.result : null;
+            const prepResult = (prepResponse && prepResponse.success && prepResponse.result) ? prepResult = prepResponse.result : null;
             if (!prepResult || !prepResult.ready) {
                 const reason = prepResult?.reason || prepResponse?.error || 'PRIVACY_START_BLOCKED';
                 const mode = prepResult?.mode || 'PRIVACY_RELAY';
@@ -8407,7 +8422,8 @@ async function launchCampaign(options = {}) {
                         actionSection: prepResult?.actionSection,
                         mode,
                         failClosed,
-                        source
+                        source,
+                        campaignMode: requestedCampaignMode
                     });
                 } else {
                     alert(`🛑 [PRIVACY GATE BLOCKED START]\n\nCampaign is ready, but Privacy Gate blocked network start.\n\nReason: ${reason}\n${userMsg}`);
@@ -8478,7 +8494,8 @@ async function launchCampaign(options = {}) {
                     userMessage: startRes?.userMessage,
                     mode: 'PRIVACY_RELAY',
                     failClosed: true,
-                    source
+                    source,
+                    campaignMode: requestedCampaignMode
                 });
             } else {
                 alert(`Start rejected by background engine: ${reason}`);

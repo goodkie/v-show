@@ -453,13 +453,7 @@
             if (tag === 'input' && type === 'tel') return { category: 'phone', isSensitive: false, isHoneypot: false };
             if (tag === 'textarea') return { category: 'message', isSensitive: false, isHoneypot: false };
 
-            // Math Captcha / Human Verification Equation Guard (field-local, exclusive)
-            if (_MathCaptchaSolver && typeof _MathCaptchaSolver.solveField === 'function') {
-                const mathVal = _MathCaptchaSolver.solveField(el, getElementContextText);
-                if (mathVal !== null) {
-                    return { category: 'math_captcha', value: String(mathVal), isSensitive: false, isHoneypot: false };
-                }
-            }
+            // [v7.0 Math Captcha In-App Solver Retired]
 
             // Sensitive Factual Guard
             if (matchesSensitiveFact(ctx)) {

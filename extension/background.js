@@ -9240,8 +9240,7 @@ async function orchestrateSending(urlInput, template, abortSignal = null) {
                             await safeScripting.executeScript({ target: { tabId }, files: [
                                 'modules/contact-gate.js',
                                 'modules/challenge-gate.js',
-                                'modules/math-captcha-solver.js',
-                                'modules/smart-field-resolver.js',
+                                                                'modules/smart-field-resolver.js',
                                 'modules/contact-discovery-engine.js',
                                 'modules/checkbox-resolver-r2.js',
                                 'modules/select-resolver-r2.js',
@@ -9357,8 +9356,7 @@ async function orchestrateSending(urlInput, template, abortSignal = null) {
                 await safeScripting.executeScript({ target: { tabId }, files: [
                     'modules/contact-gate.js',
                     'modules/challenge-gate.js',
-                    'modules/math-captcha-solver.js',
-                    'modules/smart-field-resolver.js',
+                                        'modules/smart-field-resolver.js',
                     'modules/contact-discovery-engine.js',
                     'modules/checkbox-resolver-r2.js',
                     'modules/select-resolver-r2.js',
