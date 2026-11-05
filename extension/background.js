@@ -694,6 +694,19 @@ async function syncCampaignCountersFromLedger(hsInstance = null) {
         campaignState.counters.completed = stats.completed;
         campaignState.counters.failureBreakdown = { ...stats.failureBreakdown };
 
+        // [Directive #6632185580 Fix: Run-scoped outcomeHistogram strictly reconciled from HistoryStore ledger]
+        if (campaignState.campaignRunId && Array.isArray(hs.attempts)) {
+            const runAttempts = hs.attempts.filter(a => a.campaignRunId === campaignState.campaignRunId);
+            const runHistogram = {};
+            for (const a of runAttempts) {
+                const key = a.reasonCode || a.status;
+                if (key) {
+                    runHistogram[key] = (runHistogram[key] || 0) + 1;
+                }
+            }
+            campaignState.outcomeHistogram = runHistogram;
+        }
+
         // [Counter Invariant Parity] Total is bounded by campaign totalTargets; remaining is total - completed
         const baseTotal = campaignState.totalTargets || campaignState.counters.total || stats.completed;
         campaignState.counters.total = Math.max(baseTotal, stats.completed);
@@ -3000,6 +3013,17 @@ globalThis.__xpider_testDuplicateTokenInjection = async (token) => {
         }
 
 const mainBackgroundMessageListener = (request, sender, sendResponse) => {
+    const stateActions = ['GET_STATE', 'GET_CAMPAIGN_STATE', 'GET_CAMPAIGN_MODE', 'SET_CAMPAIGN_MODE', 'RESUME_CAMPAIGN', 'STOP_AND_SAVE_CAMPAIGN', 'PAUSE_CAMPAIGN', 'START_CAMPAIGN'];
+    if (stateActions.includes(request.action) && bootPromise && typeof bootPromise.then === 'function') {
+        bootPromise.catch(() => {}).then(() => {
+            _handleMainMessageInner(request, sender, sendResponse);
+        });
+        return true;
+    }
+    return _handleMainMessageInner(request, sender, sendResponse);
+};
+
+const _handleMainMessageInner = (request, sender, sendResponse) => {
     switch (request.action) {
         case 'SEND_MESSAGE':
             handleSendMessage(request.url, request.template, sendResponse);
@@ -4386,6 +4410,30 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
             logBg(null, '[SOLVER_RETIRED_V7] Audio STT transcription retired in v7.', 'info');
             sendResponse({ success: false, error: 'INTERNAL_SOLVER_RETIRED_V7', retired: true });
             return true;
+
+        case 'SET_CAMPAIGN_MODE': {
+            const requestedMode = (request.campaignMode === 'MANUAL' || request.campaignMode === 'SEMI_AUTO' || request.campaignMode === 'AUTO')
+                ? request.campaignMode
+                : 'AUTO';
+            campaignState.campaignMode = requestedMode;
+            if (campaignState.pausedCheckpoint) {
+                campaignState.pausedCheckpoint.campaignMode = requestedMode;
+            }
+            if (campaignState.template && typeof campaignState.template === 'object') {
+                campaignState.template.campaignMode = requestedMode;
+            }
+            (async () => {
+                const st = await chrome.storage.local.get(['xpider_paused_checkpoint']);
+                const toSet = { xpider_campaign_mode: requestedMode };
+                if (st && st.xpider_paused_checkpoint) {
+                    st.xpider_paused_checkpoint.campaignMode = requestedMode;
+                    toSet.xpider_paused_checkpoint = st.xpider_paused_checkpoint;
+                }
+                await chrome.storage.local.set(toSet);
+                sendResponse({ success: true, campaignMode: requestedMode });
+            })();
+            return true;
+        }
 
         case 'GET_CAMPAIGN_MODE': {
             const callerTabId = sender && sender.tab ? sender.tab.id : (request.tabId || null);
@@ -6894,6 +6942,7 @@ async function startCampaignOrchestrator(queue, template, delayMs, fillDelayMs =
         campaignState.successfulUrls = []; 
         campaignState.captchaLedger = { detected: 0, pendingOwner: 0, autoSuccess: 0, autoFailure: 0, manualSuccess: 0, manualSkip: 0 };
         campaignState.captchaFailuresRecorded = new Set();
+        campaignState.outcomeHistogram = {}; // [Directive #6632185580: Zero historical outcome leak on new run]
         campaignState.isFaulted = false;
         campaignState.faultReason = null;
         campaignState.activeTargetInFlight = false;
@@ -7321,6 +7370,7 @@ async function resumeCampaignOrchestrator(options = {}) {
     campaignState.isLoopRunning = false;
     campaignState.lastActionTime = Date.now();
     campaignState.pausedCheckpoint = null;
+    await chrome.storage.local.remove(['xpider_paused_checkpoint']);
 
     // [RC10 P0] Authoritative triple-mode contract & Stale Hold Purge on Resume:
     campaignState.manualHoldActive = false;
@@ -9769,7 +9819,17 @@ async function restoreCampaignState() {
                     }
 
                     if (data.xpider_paused_checkpoint && Array.isArray(data.xpider_paused_checkpoint.remainingQueue) && data.xpider_paused_checkpoint.remainingQueue.length > 0) {
+                        const cpMode = data.xpider_paused_checkpoint.campaignMode;
+                        const stMode = data.xpider_campaign_mode;
+                        const effectiveMode = (cpMode === 'MANUAL' || cpMode === 'SEMI_AUTO' || cpMode === 'AUTO')
+                            ? cpMode
+                            : ((stMode === 'MANUAL' || stMode === 'SEMI_AUTO' || stMode === 'AUTO') ? stMode : 'AUTO');
+                        campaignState.campaignMode = effectiveMode;
+                        data.xpider_paused_checkpoint.campaignMode = effectiveMode;
                         campaignState.pausedCheckpoint = data.xpider_paused_checkpoint;
+                        if (data.xpider_paused_checkpoint.outcomeHistogram) {
+                            campaignState.outcomeHistogram = { ...data.xpider_paused_checkpoint.outcomeHistogram };
+                        }
                         campaignState.isPaused = true;
                         campaignState.pausedByOperator = true;
                         campaignState.isNetworkDegraded = false;
@@ -9906,12 +9966,9 @@ async function restoreCampaignState() {
 markBoot("global_functions_defined");
 markBoot("worker_online");
 
-// [v18.26.0] Delayed Restore: Prevent boot-time message collisions
-setTimeout(() => {
-    bootPromise = restoreCampaignState();
-    // [RC3.18 Privacy Relay Watchdog]
-    try { startPrivacyRelayWatchdog(); } catch (_) {}
-}, 500);
+// [Directive #6632185580 Fix: Immediate Boot Restore to avoid race on fast worker wake]
+bootPromise = restoreCampaignState();
+try { startPrivacyRelayWatchdog(); } catch (_) {}
 
 async function handleTranscription(audioData, audioUrl, sendResponse) {
     try {

@@ -9028,6 +9028,7 @@ function checkResumableCheckpoint() {
         if (!banner) return;
         if (stateResp && (stateResp.pausedCampaignMode || stateResp.campaignMode)) {
             window.__xpider_last_paused_mode = stateResp.pausedCampaignMode || stateResp.campaignMode;
+            currentCampaignMode = stateResp.pausedCampaignMode || stateResp.campaignMode;
         }
         if (stateResp && stateResp.hasPausedCheckpoint && !stateResp.isActive) {
             campaignPaused = true;

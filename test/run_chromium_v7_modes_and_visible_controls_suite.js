@@ -687,47 +687,10 @@ async function main() {
         }).then(r => r.result?.value);
         recordAssertion('RESUMED_IN_MANUAL_MODE_HUD_BADGE', Boolean(hudState?.pill?.includes('MANUAL') || hudState?.badge?.includes('MANUAL')), hudState);
 
-        // Forcibly terminate Service Worker
-        log('Forcibly terminating Service Worker via CDP Target.closeTarget...');
-        const oldSwId = swTarget.id;
-        try { swWs.close(); } catch (_) {}
-        await cdpSend(browserWs, 'Target.closeTarget', { targetId: oldSwId });
-        await sleep(1500);
-
-        // Wake fresh Service Worker
-        log('Waking up fresh Service Worker...');
-        await cdpSend(popupWs, 'Runtime.evaluate', {
-            expression: `chrome.runtime.sendMessage({ action: 'GET_CAMPAIGN_STATE' }).catch(() => {})`
-        });
-
-        let freshSwTarget = null;
-        for (let i = 0; i < 30; i++) {
-            await sleep(300);
-            targets = await fetch(`http://127.0.0.1:${CDP_PORT}/json`).then(r => r.json());
-            freshSwTarget = targets.find(t => t.type === 'service_worker' && t.url.includes('background.js') && t.id !== oldSwId);
-            if (freshSwTarget) break;
-        }
-        assert(freshSwTarget, 'Fresh SW must boot after termination');
-        swTarget = freshSwTarget;
-        swWs = await openWs(freshSwTarget.webSocketDebuggerUrl);
-        await cdpSend(swWs, 'Runtime.enable');
-        log(`Fresh SW booted (ID=${freshSwTarget.id})`);
-
-        // Assert checkpoint and MANUAL mode survived true SW restart
-        const swRestored = await swEval(`
-            new Promise(resolve => {
-                chrome.storage.local.get(['xpider_paused_checkpoint', 'xpider_campaign_mode'], res => {
-                    resolve(res);
-                });
-            })
-        `);
-        recordAssertion('SW_RESTART_MANUAL_MODE_PRESERVED', swRestored?.xpider_campaign_mode === 'MANUAL', swRestored);
-        recordAssertion('SW_RESTART_CHECKPOINT_SURVIVED', Boolean(swRestored?.xpider_paused_checkpoint), swRestored);
-
         // ====================================================================
-        // SUBTEST 6: REAL VISIBLE STOP & SAVE CLICK & DURABILITY
+        // SUBTEST 6: REAL VISIBLE STOP & SAVE CLICK, SW TERMINATION & RECOVERY
         // ====================================================================
-        log('\n--- SUBTEST 6: REAL VISIBLE STOP & SAVE CLICK & DURABILITY ---');
+        log('\n--- SUBTEST 6: REAL VISIBLE STOP & SAVE CLICK & SW TERMINATION DURABILITY ---');
 
         // Check visibility of #stop-save-btn
         const stopSaveCheck = await cdpSend(popupWs, 'Runtime.evaluate', {
@@ -761,6 +724,52 @@ async function main() {
         recordAssertion('STOP_SAVE_BANNER_RENDERED', stopState?.bannerVisible === true, stopState);
         const shotStop = await shot(popupWs, 'shot_v7_modes_05_stop_saved.png');
         report.screenshots.push(shotStop);
+
+        // Forcibly terminate Service Worker
+        log('Forcibly terminating Service Worker via CDP Target.closeTarget...');
+        const oldSwId = swTarget.id;
+        try { swWs.close(); } catch (_) {}
+        await cdpSend(browserWs, 'Target.closeTarget', { targetId: oldSwId });
+        await sleep(1500);
+
+        // Wake fresh Service Worker
+        log('Waking up fresh Service Worker...');
+        await cdpSend(popupWs, 'Runtime.evaluate', {
+            expression: `chrome.runtime.sendMessage({ action: 'GET_CAMPAIGN_STATE' }).catch(() => {})`
+        });
+
+        let freshSwTarget = null;
+        for (let i = 0; i < 30; i++) {
+            await sleep(300);
+            targets = await fetch(`http://127.0.0.1:${CDP_PORT}/json`).then(r => r.json());
+            freshSwTarget = targets.find(t => t.type === 'service_worker' && t.url.includes('background.js') && t.id !== oldSwId);
+            if (freshSwTarget) break;
+        }
+        assert(freshSwTarget, 'Fresh SW must boot after termination');
+        swTarget = freshSwTarget;
+        swWs = await openWs(freshSwTarget.webSocketDebuggerUrl);
+        await cdpSend(swWs, 'Runtime.enable');
+        log(`Fresh SW booted (ID=${freshSwTarget.id})`);
+
+        // Assert checkpoint and MANUAL mode survived true SW restart
+        const swRestored = await swEval(`
+            new Promise(resolve => {
+                chrome.storage.local.get(['xpider_paused_checkpoint', 'xpider_campaign_mode'], res => {
+                    resolve({
+                        storageMode: res.xpider_campaign_mode,
+                        checkpoint: res.xpider_paused_checkpoint,
+                        swMode: campaignState.campaignMode,
+                        swPaused: campaignState.isPaused,
+                        swRunId: campaignState.campaignRunId
+                    });
+                });
+            })
+        `);
+        recordAssertion('SW_RESTART_MANUAL_MODE_PRESERVED', swRestored?.storageMode === 'MANUAL', swRestored);
+        recordAssertion('SW_RESTART_CHECKPOINT_SURVIVED', Boolean(swRestored?.checkpoint), swRestored);
+        recordAssertion('SW_RESTART_CHECKPOINT_MODE_MANUAL', swRestored?.checkpoint?.campaignMode === 'MANUAL', swRestored);
+        recordAssertion('SW_RESTART_CAMPAIGN_STATE_MODE_MANUAL', swRestored?.swMode === 'MANUAL', swRestored);
+        recordAssertion('SW_RESTART_CHECKPOINT_RUN_ID_MATCHES', swRestored?.checkpoint?.campaignRunId === swRestored?.swRunId, swRestored);
 
         // End campaign cleanup
         await cdpSend(popupWs, 'Runtime.evaluate', { expression: `document.getElementById('end-campaign-btn')?.click()` });

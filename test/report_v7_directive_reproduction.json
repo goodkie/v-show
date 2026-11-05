@@ -1,0 +1,349 @@
+{
+  "title": "XPIDER V7 Directive Reproduction & Verification Report",
+  "startTimeUtc": "2026-11-05T03:52:20.650Z",
+  "assertions": [
+    {
+      "name": "CAMPAIGN_PAUSED_IN_AUTO",
+      "passed": true,
+      "detail": {
+        "isPaused": true,
+        "isActive": false,
+        "campaignRunId": "normal_run_1793850743134_ovcyzv",
+        "mode": "AUTO"
+      },
+      "timestamp": "2026-11-05T03:52:24.805Z"
+    },
+    {
+      "name": "RESUME_MODE_MODAL_OPENED",
+      "passed": true,
+      "detail": {
+        "isVisible": true
+      },
+      "timestamp": "2026-11-05T03:52:25.213Z"
+    },
+    {
+      "name": "RESUMED_ACTIVELY_IN_MANUAL_MODE",
+      "passed": true,
+      "detail": {
+        "isActive": true,
+        "isPaused": false,
+        "mode": "MANUAL",
+        "campaignRunId": "normal_run_1793850743134_ovcyzv"
+      },
+      "timestamp": "2026-11-05T03:52:25.820Z"
+    },
+    {
+      "name": "STOP_SAVE_CHECKPOINT_MODE_MANUAL",
+      "passed": true,
+      "detail": {
+        "storageMode": "MANUAL",
+        "checkpoint": {
+          "campaignMode": "MANUAL",
+          "campaignRunId": "normal_run_1793850743134_ovcyzv",
+          "counters": {
+            "completed": 1,
+            "deliveryUnknown": 0,
+            "failed": 0,
+            "failureBreakdown": {},
+            "inProgress": 0,
+            "paused": 0,
+            "remaining": 2,
+            "skipped": 1,
+            "skippedHistory": 0,
+            "success": 0,
+            "timeout": 0,
+            "total": 3
+          },
+          "delayMs": 10000,
+          "fillDelayMs": 300,
+          "outcomeHistogram": {
+            "PRE_SUBMIT_TERMINATED": 1
+          },
+          "ownerFunctionTestMode": false,
+          "pausedAt": 1793850746101,
+          "pausedByOperator": true,
+          "remainingQueue": [
+            "http://127.0.0.1:8088/contact-standard.html?item=2",
+            "http://127.0.0.1:8088/contact-standard.html?item=3"
+          ],
+          "restorationLogged": false,
+          "runScopedDirectPrivacy": true,
+          "sessionId": 2,
+          "submitDelayMs": 4000,
+          "successCount": 0,
+          "successfulUrls": [],
+          "targetTimeoutMs": 180000,
+          "template": {
+            "campaignMode": "MANUAL",
+            "email": "directivetest@example.com",
+            "firstName": "Directive",
+            "id": "default",
+            "lastName": "Tester",
+            "message": "Directive verification testing message body.",
+            "name": "Directive Tester",
+            "ownerAuthorizedConsent": false,
+            "phone": "555-9988",
+            "subject": "",
+            "templateId": "default",
+            "templateVersion": 1,
+            "version": 1,
+            "website": ""
+          },
+          "templateId": "default",
+          "templateVersion": 1,
+          "totalTargets": 3,
+          "visitedUrls": [
+            "http://127.0.0.1:8088/contact-standard.html"
+          ]
+        },
+        "swMode": "MANUAL",
+        "swPaused": true,
+        "swRunId": "normal_run_1793850743134_ovcyzv"
+      },
+      "timestamp": "2026-11-05T03:52:26.443Z"
+    },
+    {
+      "name": "STOP_SAVE_STORAGE_MODE_MANUAL",
+      "passed": true,
+      "detail": {
+        "storageMode": "MANUAL",
+        "checkpoint": {
+          "campaignMode": "MANUAL",
+          "campaignRunId": "normal_run_1793850743134_ovcyzv",
+          "counters": {
+            "completed": 1,
+            "deliveryUnknown": 0,
+            "failed": 0,
+            "failureBreakdown": {},
+            "inProgress": 0,
+            "paused": 0,
+            "remaining": 2,
+            "skipped": 1,
+            "skippedHistory": 0,
+            "success": 0,
+            "timeout": 0,
+            "total": 3
+          },
+          "delayMs": 10000,
+          "fillDelayMs": 300,
+          "outcomeHistogram": {
+            "PRE_SUBMIT_TERMINATED": 1
+          },
+          "ownerFunctionTestMode": false,
+          "pausedAt": 1793850746101,
+          "pausedByOperator": true,
+          "remainingQueue": [
+            "http://127.0.0.1:8088/contact-standard.html?item=2",
+            "http://127.0.0.1:8088/contact-standard.html?item=3"
+          ],
+          "restorationLogged": false,
+          "runScopedDirectPrivacy": true,
+          "sessionId": 2,
+          "submitDelayMs": 4000,
+          "successCount": 0,
+          "successfulUrls": [],
+          "targetTimeoutMs": 180000,
+          "template": {
+            "campaignMode": "MANUAL",
+            "email": "directivetest@example.com",
+            "firstName": "Directive",
+            "id": "default",
+            "lastName": "Tester",
+            "message": "Directive verification testing message body.",
+            "name": "Directive Tester",
+            "ownerAuthorizedConsent": false,
+            "phone": "555-9988",
+            "subject": "",
+            "templateId": "default",
+            "templateVersion": 1,
+            "version": 1,
+            "website": ""
+          },
+          "templateId": "default",
+          "templateVersion": 1,
+          "totalTargets": 3,
+          "visitedUrls": [
+            "http://127.0.0.1:8088/contact-standard.html"
+          ]
+        },
+        "swMode": "MANUAL",
+        "swPaused": true,
+        "swRunId": "normal_run_1793850743134_ovcyzv"
+      },
+      "timestamp": "2026-11-05T03:52:26.443Z"
+    },
+    {
+      "name": "STOP_SAVE_CHECKPOINT_RUN_ID_MATCHES",
+      "passed": true,
+      "detail": {
+        "storageMode": "MANUAL",
+        "checkpoint": {
+          "campaignMode": "MANUAL",
+          "campaignRunId": "normal_run_1793850743134_ovcyzv",
+          "counters": {
+            "completed": 1,
+            "deliveryUnknown": 0,
+            "failed": 0,
+            "failureBreakdown": {},
+            "inProgress": 0,
+            "paused": 0,
+            "remaining": 2,
+            "skipped": 1,
+            "skippedHistory": 0,
+            "success": 0,
+            "timeout": 0,
+            "total": 3
+          },
+          "delayMs": 10000,
+          "fillDelayMs": 300,
+          "outcomeHistogram": {
+            "PRE_SUBMIT_TERMINATED": 1
+          },
+          "ownerFunctionTestMode": false,
+          "pausedAt": 1793850746101,
+          "pausedByOperator": true,
+          "remainingQueue": [
+            "http://127.0.0.1:8088/contact-standard.html?item=2",
+            "http://127.0.0.1:8088/contact-standard.html?item=3"
+          ],
+          "restorationLogged": false,
+          "runScopedDirectPrivacy": true,
+          "sessionId": 2,
+          "submitDelayMs": 4000,
+          "successCount": 0,
+          "successfulUrls": [],
+          "targetTimeoutMs": 180000,
+          "template": {
+            "campaignMode": "MANUAL",
+            "email": "directivetest@example.com",
+            "firstName": "Directive",
+            "id": "default",
+            "lastName": "Tester",
+            "message": "Directive verification testing message body.",
+            "name": "Directive Tester",
+            "ownerAuthorizedConsent": false,
+            "phone": "555-9988",
+            "subject": "",
+            "templateId": "default",
+            "templateVersion": 1,
+            "version": 1,
+            "website": ""
+          },
+          "templateId": "default",
+          "templateVersion": 1,
+          "totalTargets": 3,
+          "visitedUrls": [
+            "http://127.0.0.1:8088/contact-standard.html"
+          ]
+        },
+        "swMode": "MANUAL",
+        "swPaused": true,
+        "swRunId": "normal_run_1793850743134_ovcyzv"
+      },
+      "timestamp": "2026-11-05T03:52:26.443Z"
+    },
+    {
+      "name": "CHECKPOINT_HISTOGRAM_ZERO_HISTORICAL_LEAK",
+      "passed": true,
+      "detail": {
+        "histogram": {
+          "PRE_SUBMIT_TERMINATED": 1
+        },
+        "histSuccessCount": 0
+      },
+      "timestamp": "2026-11-05T03:52:26.443Z"
+    },
+    {
+      "name": "SW_RESTART_RESTORED_CAMPAIGN_MODE_MANUAL",
+      "passed": true,
+      "detail": {
+        "storageMode": "MANUAL",
+        "checkpointMode": "MANUAL",
+        "swMode": "MANUAL",
+        "swPaused": true,
+        "swRunId": "normal_run_1793850743134_ovcyzv",
+        "checkpointRunId": "normal_run_1793850743134_ovcyzv"
+      },
+      "timestamp": "2026-11-05T03:52:28.279Z"
+    },
+    {
+      "name": "SW_RESTART_CHECKPOINT_MODE_MANUAL",
+      "passed": true,
+      "detail": {
+        "storageMode": "MANUAL",
+        "checkpointMode": "MANUAL",
+        "swMode": "MANUAL",
+        "swPaused": true,
+        "swRunId": "normal_run_1793850743134_ovcyzv",
+        "checkpointRunId": "normal_run_1793850743134_ovcyzv"
+      },
+      "timestamp": "2026-11-05T03:52:28.279Z"
+    },
+    {
+      "name": "SW_RESTART_STORAGE_MODE_MANUAL",
+      "passed": true,
+      "detail": {
+        "storageMode": "MANUAL",
+        "checkpointMode": "MANUAL",
+        "swMode": "MANUAL",
+        "swPaused": true,
+        "swRunId": "normal_run_1793850743134_ovcyzv",
+        "checkpointRunId": "normal_run_1793850743134_ovcyzv"
+      },
+      "timestamp": "2026-11-05T03:52:28.280Z"
+    },
+    {
+      "name": "POPUP_RESUMABLE_BANNER_VISIBLE",
+      "passed": true,
+      "detail": {
+        "bannerVisible": true,
+        "pillText": "MODE: MANUAL (HOLD FOR REGISTER)"
+      },
+      "timestamp": "2026-11-05T03:52:29.307Z"
+    },
+    {
+      "name": "POPUP_MODE_PILL_SHOWS_MANUAL",
+      "passed": true,
+      "detail": {
+        "bannerVisible": true,
+        "pillText": "MODE: MANUAL (HOLD FOR REGISTER)"
+      },
+      "timestamp": "2026-11-05T03:52:29.307Z"
+    },
+    {
+      "name": "ZERO_SUBMISSIONS_BEFORE_OPERATOR_ACTION",
+      "passed": true,
+      "detail": {
+        "ok": true,
+        "count": 0,
+        "submissions": []
+      },
+      "timestamp": "2026-11-05T03:52:48.096Z"
+    },
+    {
+      "name": "EXACTLY_ONE_SUBMISSION_RECORDED_AFTER_OPERATOR_REGISTER",
+      "passed": true,
+      "detail": {
+        "ok": true,
+        "count": 1,
+        "submissions": [
+          {
+            "receiptId": "rcpt_1793850768151_1",
+            "timestamp": 1793850768151,
+            "method": "POST",
+            "url": "/contact-success.html?item=2",
+            "ip": "127.0.0.1",
+            "referer": "http://127.0.0.1:8088/contact-standard.html?item=2"
+          }
+        ]
+      },
+      "timestamp": "2026-11-05T03:52:49.560Z"
+    }
+  ],
+  "screenshots": [
+    "shot_directive_01_resumable_banner.png"
+  ],
+  "endTimeUtc": "2026-11-05T03:52:49.966Z",
+  "status": "SUCCESS",
+  "exitCode": 0
+}
