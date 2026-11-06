@@ -1,185 +1,169 @@
-[2026-11-06T18:23:12.229Z] ================================================================================
-[2026-11-06T18:23:12.232Z] 🚀 RUNNING TASK SC-03 & SC-04 CHROMIUM E2E SUITE (REFINED AUDIT COMPLIANCE)
-[2026-11-06T18:23:12.232Z] ================================================================================
-[2026-11-06T18:23:12.232Z] ⚡ Task filter active: executing SC-04 only
-[2026-11-06T18:23:12.297Z] Test server active on port 8088
-[2026-11-06T18:23:12.298Z] Disposable profile: C:\Users\oPus\AppData\Local\Temp\xpider-sc03-sc04-yr34ei
-[2026-11-06T18:23:12.311Z] Browser launched (PID=27704)
-[2026-11-06T18:23:13.580Z] Extension ID: ldlijlaccfeelfdhgnjbibniocefckjj
-[2026-11-06T18:23:13.709Z] [SW-LOG] [BOOT] [SW_RESTART] XPIDER Service Worker initialized buildId=V7.0.0-RC11-20261030-THREE-MODE-CONTRACTS-PASS channel=OWNER_BETA_V7_DUAL_MODE timestamp=2026-11-06T18:23:13.706Z modules={"modules/build-provenance.js":{"status":"PASS","buildId":"V7.0.0-RC11-20261030-THREE-MODE-CONTRACTS-PASS","implementationHead":"20678ada6491bf842ec7e996a88108152c76007f"},"modules/operation-queue.js":{"status":"PASS"},"modules/template-store.js":{"status":"PASS"},"modules/history-store.js":{"status":"PASS"},"modules/email-collector.js":{"status":"PASS"},"modules/vision-submit-executor.js":{"status":"PASS"},"modules/privacy-gateway.js":{"status":"PASS"},"modules/smart-field-resolver.js":{"status":"PASS"},"modules/challenge-gate.js":{"status":"PASS"},"modules/mock-captcha-provider-adapter.js":{"status":"PASS"}}
-[2026-11-06T18:23:13.738Z] [SW-LOG] [PRIVACY_GATE] Proxy onAuthRequired asyncBlocking listener registered with bounded retries.
-[2026-11-06T18:23:13.739Z] [SW-LOG] [BootStep] solver_instantiation
-[2026-11-06T18:23:13.739Z] [SW-LOG] [X PIDER] Background script initializing (Unified Mode)...
-[2026-11-06T18:23:13.740Z] [SW-LOG] [BootStep] side_panel_config
-[2026-11-06T18:23:13.741Z] [SW-LOG] [BootStep] campaign_state_init
-[2026-11-06T18:23:13.742Z] [SW-LOG] [BootStep] global_functions_defined
-[2026-11-06T18:23:13.742Z] [SW-LOG] [BootStep] worker_online
-[2026-11-06T18:23:13.742Z] [SW-LOG] [BootStep] restoring_campaign_state
-[2026-11-06T18:23:13.743Z] [SW-LOG] [Boot] Initializing campaign state...
-[2026-11-06T18:23:13.769Z] [SW-LOG] [OWNER_TEST_GUARD] declarativeNetRequest session rules removed cleanly
-[2026-11-06T18:23:13.770Z] [SW-LOG] [BG_LOG][tab=none] [OWNER_TEST_GUARD] declarativeNetRequest session rules removed cleanly
-[2026-11-06T18:23:13.794Z] [SW-LOG] [OWNER_TEST_GUARD] declarativeNetRequest session rules removed cleanly
-[2026-11-06T18:23:13.794Z] [SW-LOG] [BG_LOG][tab=none] [OWNER_TEST_GUARD] declarativeNetRequest session rules removed cleanly
-[2026-11-06T18:23:13.815Z] [SW-LOG] [COUNTER_RECONCILE] legacySuccess=0 ledgerSuccess=0 action=LEDGER_WINS
-[2026-11-06T18:23:13.816Z] [SW-LOG] [BootStep] restore_complete
-[2026-11-06T18:23:13.825Z] [SW-LOG] [Boot] Privacy Relay configured — checking status and auto-recovering if offline...
-[2026-11-06T18:23:14.323Z] [SW-LOG] [BG_LOG][tab=none] 📦 [Migration] Safely migrated to v2 (Backup: xpider_backup_v1_1793989394309)
-[2026-11-06T18:23:15.188Z] Connected to Popup UI via CDP
-[2026-11-06T18:23:15.196Z] Initial server submissions count verified: 0
-[2026-11-06T18:23:15.197Z] 
+[2026-11-06T20:30:55.269Z] ================================================================================
+[2026-11-06T20:30:55.271Z] 🚀 RUNNING TASK SC-03 & SC-04 CHROMIUM E2E SUITE (REFINED AUDIT COMPLIANCE)
+[2026-11-06T20:30:55.272Z] ================================================================================
+[2026-11-06T20:30:55.272Z] ⚡ Task filter active: executing SC-04 only
+[2026-11-06T20:30:55.320Z] Test server active on port 8088
+[2026-11-06T20:30:55.321Z] Disposable profile: C:\Users\oPus\AppData\Local\Temp\xpider-sc03-sc04-l0eb92
+[2026-11-06T20:30:55.332Z] Browser launched (PID=11996)
+[2026-11-06T20:30:56.545Z] Extension ID: ldlijlaccfeelfdhgnjbibniocefckjj
+[2026-11-06T20:30:56.568Z] [SW-LOG] [Boot] Privacy Relay configured — checking status and auto-recovering if offline...
+[2026-11-06T20:30:57.152Z] [SW-LOG] [BG_LOG][tab=none] 📦 [Migration] Safely migrated to v2 (Backup: xpider_backup_v1_1793997057145)
+[2026-11-06T20:30:58.127Z] Connected to Popup UI via CDP
+[2026-11-06T20:30:58.133Z] Initial server submissions count verified: 0
+[2026-11-06T20:30:58.133Z] 
 =========================================================================
-[2026-11-06T18:23:15.197Z] --- TASK SC-04: NONEMPTY QUEUE PAUSE, SW RESTART & STOP & SAVE DURABILITY ---
-[2026-11-06T18:23:15.197Z] =========================================================================
-[2026-11-06T18:23:15.197Z] Setting up 3-target campaign queue in Popup DOM: ["http://127.0.0.1:8088/contact-standard.html","http://127.0.0.1:8088/spa-delayed-contact.html","http://127.0.0.1:8088/index.html"]
-[2026-11-06T18:23:15.199Z] Clicking Real UI Start Button (#start-btn)...
-[2026-11-06T18:23:15.249Z] [SW-LOG] [BUILD_HANDSHAKE] popup=20678ada6491bf842ec7e996a88108152c76007f background=20678ada6491bf842ec7e996a88108152c76007f build=V7.0.0-RC11-20261030-THREE-MODE-CONTRACTS-PASS manifest=3 result=PASS
-[2026-11-06T18:23:15.255Z] [SW-LOG] [BG_LOG][tab=none] [BUILD_HANDSHAKE] popup=20678ada6491bf842ec7e996a88108152c76007f background=20678ada6491bf842ec7e996a88108152c76007f build=V7.0.0-RC11-20261030-THREE-MODE-CONTRACTS-PASS manifest=3 result=PASS
-[2026-11-06T18:23:15.256Z] [SW-LOG] [START_BG] received queue=3
-[2026-11-06T18:23:15.258Z] [SW-LOG] [BG_LOG][tab=none] [START_BG] received queue=3
-[2026-11-06T18:23:15.260Z] [SW-LOG] [PRIVACY_OWNER_OVERRIDE] scope=currentRun mode=DIRECT acknowledged=true
-[2026-11-06T18:23:15.261Z] [SW-LOG] [BG_LOG][tab=none] [PRIVACY_OWNER_OVERRIDE] scope=currentRun mode=DIRECT acknowledged=true
-[2026-11-06T18:23:15.266Z] [SW-LOG] [OWNER_TEST_GUARD] declarativeNetRequest session rules removed cleanly
-[2026-11-06T18:23:15.269Z] [SW-LOG] [BG_LOG][tab=none] [OWNER_TEST_GUARD] declarativeNetRequest session rules removed cleanly
-[2026-11-06T18:23:15.271Z] [SW-LOG] [NORMAL_CAMPAIGN_PREFLIGHT] publicTargets=0 testMode=false result=PASS
-[2026-11-06T18:23:15.272Z] [SW-LOG] [BG_LOG][tab=none] [NORMAL_CAMPAIGN_PREFLIGHT] publicTargets=0 testMode=false result=PASS
-[2026-11-06T18:23:15.273Z] [SW-LOG] [OWNER_TEST_GUARD] declarativeNetRequest session rules removed cleanly
-[2026-11-06T18:23:15.289Z] [SW-LOG] [BG_LOG][tab=none] [OWNER_TEST_GUARD] declarativeNetRequest session rules removed cleanly
-[2026-11-06T18:23:15.290Z] [SW-LOG] [PRIVACY_GATE] mode=DIRECT transport=DIRECT failClosed=false (OWNER_FUNCTION_TEST_MODE) status=READY
-[2026-11-06T18:23:15.291Z] [SW-LOG] [BG_LOG][tab=none] [PRIVACY_GATE] mode=DIRECT transport=DIRECT failClosed=false (OWNER_FUNCTION_TEST_MODE) status=READY
-[2026-11-06T18:23:15.291Z] [SW-LOG] [START_BG_READY] privacyReady=true
-[2026-11-06T18:23:15.292Z] [SW-LOG] [BG_LOG][tab=none] [START_BG_READY] privacyReady=true
-[2026-11-06T18:23:15.299Z] [SW-LOG] [BG_LOG][tab=none] [Boot] Orchestrator entered.
-[2026-11-06T18:23:15.448Z] [SW-LOG] [SESSION_BASELINE] Captured 2 pre-existing user tabs as protected baseline.
-[2026-11-06T18:23:15.449Z] [SW-LOG] [TAB_BARRIER] phase=START_CAMPAIGN_BOOT ownedBefore=0
-[2026-11-06T18:23:15.452Z] [SW-LOG] [TAB_BARRIER] phase=START_CAMPAIGN_BOOT ownedAfter=0 result=PASS
-[2026-11-06T18:23:15.453Z] [SW-LOG] [BG_LOG][tab=none] [Boot] Previous state cleared.
-[2026-11-06T18:23:15.453Z] [SW-LOG] [BG_LOG][tab=none] [Boot] CAPTCHA solver state reset (attempts=0, identity=null).
-[2026-11-06T18:23:15.515Z] [SW-LOG] [BG_LOG][tab=none] 📊 [Queue Filter] Input: 3 | Duplicates: 0 | Suppressed: 0 | History-Attempted: 0 | Executable: 3
-[2026-11-06T18:23:15.516Z] [SW-LOG] [LEDGER_INIT] campaignRunId=normal_run_1793989395214_cprdt8 totalImportRows=3 pending=3
-[2026-11-06T18:23:15.517Z] [SW-LOG] [BG_LOG][tab=none] [LEDGER_INIT] campaignRunId=normal_run_1793989395214_cprdt8 totalImportRows=3 pending=3
-[2026-11-06T18:23:15.518Z] [SW-LOG] [BG_LOG][tab=none] [Boot] Variables initialized.
-[2026-11-06T18:23:15.519Z] [SW-LOG] [BG_LOG][tab=none] 🚀 Engine booting...
-[2026-11-06T18:23:15.520Z] [SW-LOG] [BG_LOG][tab=none] [CAMPAIGN_START] buildId=V7.0.0-RC11-20261030-THREE-MODE-CONTRACTS-PASS campaignRunId=normal_run_1793989395214_cprdt8 totalTargets=3 mode=NORMAL delayMs=10000 fillDelayMs=300 submitDelayMs=4000
-[2026-11-06T18:23:15.521Z] [SW-LOG] [BG_LOG][tab=none] [Boot] Storage sync initiated.
-[2026-11-06T18:23:15.558Z] [SW-LOG] [BG_LOG][tab=none] [Boot] Target loop triggered.
-[2026-11-06T18:23:15.558Z] [SW-LOG] [SERIALIZED_GATE] Slot acquired atomically. activeTargetInFlight=true activeTargetCount=1 maxConcurrent=1
-[2026-11-06T18:23:15.559Z] [SW-LOG] [TAB_BARRIER] phase=PRE_NEXT_TARGET ownedBefore=0
-[2026-11-06T18:23:15.559Z] [SW-LOG] [TAB_BARRIER] phase=PRE_NEXT_TARGET ownedAfter=0 result=PASS
-[2026-11-06T18:23:15.559Z] [SW-LOG] [BG_LOG][tab=none] [TARGET 1/3][127.0.0.1] START
-[2026-11-06T18:23:15.560Z] [SW-LOG] [BG_LOG][tab=none] [TARGET_START] buildId=V7.0.0-RC11-20261030-THREE-MODE-CONTRACTS-PASS campaignRunId=normal_run_1793989395214_cprdt8 attemptId=att_init targetIndex=1/3 targetUrl=http://127.0.0.1:8088/contact-standard.html
-[2026-11-06T18:23:15.563Z] [SW-LOG] [BG_LOG][tab=none] [EXEC_IDENTITY_PRE_NAV] attemptId=att_1793989395546_gtcyo token=tok_1793989395546_2chh72 epoch=2
-[2026-11-06T18:23:15.693Z] [SW-LOG] [TAB_BARRIER] phase=POST_NEW_TARGET_CREATE ownedBefore=0
-[2026-11-06T18:23:15.695Z] [SW-LOG] [TAB_BARRIER] phase=POST_NEW_TARGET_CREATE ownedAfter=0 result=PASS
-[2026-11-06T18:23:15.695Z] [SW-LOG] [TAB_KILL_SWITCH] keepTabId=1923900913 closedOthers=0 remainingOwned=1 result=PASS
-[2026-11-06T18:23:15.738Z] [SW-LOG] [BG_LOG][tab=1923900913] [TAB_FOCUS] tabId=1923900913 windowId=1923900907 active=true focused=true
-[2026-11-06T18:23:15.743Z] [SW-LOG] [BG_LOG][tab=1923900913] Step 1: Sniper Mode active. Searching for contact page...
-[2026-11-06T18:23:15.747Z] [SW-LOG] [BG_LOG][tab=1923900913] 🔦 Fast-scanning candidate paths (1-10)...
-[2026-11-06T18:23:15.797Z] [SW-LOG] [BG_LOG][tab=1923900913] Pre-scan complete. Identified 10 valid paths.
-[2026-11-06T18:23:15.806Z] [SW-LOG] [BG_LOG][tab=1923900913] [SniperScan] Identified 10 candidate paths in background.
-[2026-11-06T18:23:15.872Z] [SW-LOG] [CONTENT_EVENT][tabId=1923900913][attemptId=att_1793989395546_gtcyo][url=http://127.0.0.1:8088/contact-standard.html] ⚠️ [Engine] Suppressing duplicate setup (Signals re-sent).
-[2026-11-06T18:23:15.877Z] [SW-LOG] [BG_LOG][tab=1923900913] [CONTENT_EVENT][tabId=1923900913][attemptId=att_1793989395546_gtcyo][url=http://127.0.0.1:8088/contact-standard.html] ⚠️ [Engine] Suppressing duplicate setup (Signals re-sent).
-[2026-11-06T18:23:15.887Z] [SW-LOG] [BG_LOG][tab=1923900913] [TAB_FOCUS] tabId=1923900913 windowId=1923900907 active=true focused=true
-[2026-11-06T18:23:15.890Z] [SW-LOG] [BG_LOG][tab=1923900913] [TAB_OWNERSHIP] VERIFIED_REDIRECT source=127.0.0.1 target=127.0.0.1 relation=SAME_HOST
-[2026-11-06T18:23:15.892Z] [SW-LOG] [BG_LOG][tab=1923900913] [FOCUS_SECURED] formPageUrl=http://127.0.0.1:8088/contact-standard.html
-[2026-11-06T18:23:15.908Z] [SW-LOG] [BG_LOG][tab=1923900913] Extraction focus secured. Mapping template fields...
-[2026-11-06T18:23:15.933Z] 🎯 Multi-target campaign active at T+0.0s! runId=normal_run_1793989395214_cprdt8
-[2026-11-06T18:23:15.934Z] Clicking Real UI Pause Button (#pause-btn) to capture NON-EMPTY queue...
-[2026-11-06T18:23:16.146Z] [SW-LOG] [CONTENT_EVENT][tabId=1923900913][attemptId=att_1793989395546_gtcyo][url=http://127.0.0.1:8088/contact-standard.html] [TARGET_PAGE] url=http://127.0.0.1:8088/contact-standard.html domGeneration=1793989395933 attemptId=att_1793989395546_gtcyo
-[2026-11-06T18:23:16.147Z] [SW-LOG] [BG_LOG][tab=1923900913] [CONTENT_EVENT][tabId=1923900913][attemptId=att_1793989395546_gtcyo][url=http://127.0.0.1:8088/contact-standard.html] [TARGET_PAGE] url=http://127.0.0.1:8088/contact-standard.html domGeneration=1793989395933 attemptId=att_1793989395546_gtcyo
-[2026-11-06T18:23:16.149Z] [SW-LOG] [CONTENT_EVENT][tabId=1923900913][attemptId=att_1793989395546_gtcyo][url=http://127.0.0.1:8088/contact-standard.html] [CAPTCHA_STATE_RESET] attemptId=processCampaign epoch=current isCaptchaSolved=false captchaTokenInjected=false
-[2026-11-06T18:23:16.151Z] [SW-LOG] [BG_LOG][tab=1923900913] [CONTENT_EVENT][tabId=1923900913][attemptId=att_1793989395546_gtcyo][url=http://127.0.0.1:8088/contact-standard.html] [CAPTCHA_STATE_RESET] attemptId=processCampaign epoch=current isCaptchaSolved=false captchaTokenInjected=false
-[2026-11-06T18:23:16.176Z] [SW-LOG] [CONTENT_EVENT][tabId=1923900913][attemptId=att_1793989395546_gtcyo][url=http://127.0.0.1:8088/contact-standard.html] 🚀 [Engine] Ultra-Mode process started
-[2026-11-06T18:23:16.182Z] [SW-LOG] [BG_LOG][tab=1923900913] [CONTENT_EVENT][tabId=1923900913][attemptId=att_1793989395546_gtcyo][url=http://127.0.0.1:8088/contact-standard.html] 🚀 [Engine] Ultra-Mode process started
-[2026-11-06T18:23:16.190Z] [SW-LOG] [CONTENT_EVENT][tabId=1923900913][attemptId=att_1793989395546_gtcyo][url=http://127.0.0.1:8088/contact-standard.html] 🧹 [Cleaner] Scanning for intrusive overlays/popups and cookie banners...
-[2026-11-06T18:23:16.191Z] [SW-LOG] [BG_LOG][tab=1923900913] [CONTENT_EVENT][tabId=1923900913][attemptId=att_1793989395546_gtcyo][url=http://127.0.0.1:8088/contact-standard.html] 🧹 [Cleaner] Scanning for intrusive overlays/popups and cookie banners...
-[2026-11-06T18:23:16.196Z] [SW-LOG] [CONTENT_EVENT][tabId=1923900913][attemptId=att_1793989395546_gtcyo][url=http://127.0.0.1:8088/contact-standard.html] [TARGET_PAGE] url=http://127.0.0.1:8088/contact-standard.html recursion=0
-[2026-11-06T18:23:16.197Z] [SW-LOG] [BG_LOG][tab=1923900913] [CONTENT_EVENT][tabId=1923900913][attemptId=att_1793989395546_gtcyo][url=http://127.0.0.1:8088/contact-standard.html] [TARGET_PAGE] url=http://127.0.0.1:8088/contact-standard.html recursion=0
-[2026-11-06T18:23:16.203Z] [SW-LOG] [CONTENT_EVENT][tabId=1923900913][attemptId=att_1793989395546_gtcyo][url=http://127.0.0.1:8088/contact-standard.html] 🔍 [Discovery] URL: http://127.0.0.1:8088/contact-standard.html | Recursion: 0
-[2026-11-06T18:23:16.204Z] [SW-LOG] [BG_LOG][tab=1923900913] [CONTENT_EVENT][tabId=1923900913][attemptId=att_1793989395546_gtcyo][url=http://127.0.0.1:8088/contact-standard.html] 🔍 [Discovery] URL: http://127.0.0.1:8088/contact-standard.html | Recursion: 0
-[2026-11-06T18:23:16.209Z] [SW-LOG] [CONTENT_EVENT][tabId=1923900913][attemptId=att_1793989395546_gtcyo][url=http://127.0.0.1:8088/contact-standard.html] 🧹 [Cleaner] Scanning for intrusive overlays/popups...
-[2026-11-06T18:23:16.213Z] [SW-LOG] [BG_LOG][tab=1923900913] [CONTENT_EVENT][tabId=1923900913][attemptId=att_1793989395546_gtcyo][url=http://127.0.0.1:8088/contact-standard.html] 🧹 [Cleaner] Scanning for intrusive overlays/popups...
-[2026-11-06T18:23:16.233Z] [SW-LOG] [CONTENT_EVENT][tabId=1923900913][attemptId=att_1793989395546_gtcyo][url=http://127.0.0.1:8088/contact-standard.html] 🧐 [Discovery] Polling attempt 1/3... | URL: http://127.0.0.1:8088/contact-standard.html | Recursion: 0
-[2026-11-06T18:23:16.235Z] [SW-LOG] [BG_LOG][tab=1923900913] [CONTENT_EVENT][tabId=1923900913][attemptId=att_1793989395546_gtcyo][url=http://127.0.0.1:8088/contact-standard.html] 🧐 [Discovery] Polling attempt 1/3... | URL: http://127.0.0.1:8088/contact-standard.html | Recursion: 0
-[2026-11-06T18:23:16.243Z] [SW-LOG] [CONTENT_EVENT][tabId=1923900913][attemptId=att_1793989395546_gtcyo][url=http://127.0.0.1:8088/contact-standard.html] [FORM_SCAN] forms=1 logicalContainers=1 crossOriginFrames=0 externalFormCandidates=0
-[2026-11-06T18:23:16.244Z] [SW-LOG] [BG_LOG][tab=1923900913] [CONTENT_EVENT][tabId=1923900913][attemptId=att_1793989395546_gtcyo][url=http://127.0.0.1:8088/contact-standard.html] [FORM_SCAN] forms=1 logicalContainers=1 crossOriginFrames=0 externalFormCandidates=0
-[2026-11-06T18:23:16.246Z] [SW-LOG] [CONTENT_EVENT][tabId=1923900913][attemptId=att_1793989395546_gtcyo][url=http://127.0.0.1:8088/contact-standard.html] [PAGE_CLASS] CONTACT_FORM_PAGE
-[2026-11-06T18:23:16.250Z] [SW-LOG] [BG_LOG][tab=1923900913] [CONTENT_EVENT][tabId=1923900913][attemptId=att_1793989395546_gtcyo][url=http://127.0.0.1:8088/contact-standard.html] [PAGE_CLASS] CONTACT_FORM_PAGE
-[2026-11-06T18:23:16.259Z] [SW-LOG] [CONTENT_EVENT][tabId=1923900913][attemptId=att_1793989395546_gtcyo][url=http://127.0.0.1:8088/contact-standard.html] 🎯 Step 2: Contact form discovered. Preparing submission...
-[2026-11-06T18:23:16.261Z] [SW-LOG] [BG_LOG][tab=1923900913] [CONTENT_EVENT][tabId=1923900913][attemptId=att_1793989395546_gtcyo][url=http://127.0.0.1:8088/contact-standard.html] 🎯 Step 2: Contact form discovered. Preparing submission...
-[2026-11-06T18:23:16.271Z] [SW-LOG] [CONTENT_EVENT][tabId=1923900913][attemptId=att_1793989395546_gtcyo][url=http://127.0.0.1:8088/contact-standard.html] [STAGE] stage=CONTACT_PAGE_FOUND
-[2026-11-06T18:23:16.275Z] [SW-LOG] [BG_LOG][tab=1923900913] [CONTENT_EVENT][tabId=1923900913][attemptId=att_1793989395546_gtcyo][url=http://127.0.0.1:8088/contact-standard.html] [STAGE] stage=CONTACT_PAGE_FOUND
-[2026-11-06T18:23:16.281Z] [SW-LOG] [CONTENT_EVENT][tabId=1923900913][attemptId=att_1793989395546_gtcyo][url=http://127.0.0.1:8088/contact-standard.html] [LONG_TEXT_GATE] found=true type=textarea semantic=message
-[2026-11-06T18:23:16.281Z] [SW-LOG] [BG_LOG][tab=1923900913] [CONTENT_EVENT][tabId=1923900913][attemptId=att_1793989395546_gtcyo][url=http://127.0.0.1:8088/contact-standard.html] [LONG_TEXT_GATE] found=true type=textarea semantic=message
-[2026-11-06T18:23:16.285Z] [SW-LOG] [CONTENT_EVENT][tabId=1923900913][attemptId=att_1793989395546_gtcyo][url=http://127.0.0.1:8088/contact-standard.html] [FORM_GATE] eligible=true reason=BODY_FIELD_PRESENT
-[2026-11-06T18:23:16.285Z] [SW-LOG] [BG_LOG][tab=1923900913] [CONTENT_EVENT][tabId=1923900913][attemptId=att_1793989395546_gtcyo][url=http://127.0.0.1:8088/contact-standard.html] [FORM_GATE] eligible=true reason=BODY_FIELD_PRESENT
-[2026-11-06T18:23:16.290Z] [SW-LOG] [BG_LOG][tab=1923900913] 📍 [PIPELINE][CONTACT_PAGE_FOUND] url=http://127.0.0.1:8088/contact-standard.html
-[2026-11-06T18:23:16.293Z] [SW-LOG] [CONTENT_EVENT][tabId=1923900913][attemptId=att_1793989395546_gtcyo][url=http://127.0.0.1:8088/contact-standard.html] 🔍 [Supreme-X 5.0] Scanning for multi-location / branch links...
-[2026-11-06T18:23:16.294Z] [SW-LOG] [BG_LOG][tab=1923900913] [CONTENT_EVENT][tabId=1923900913][attemptId=att_1793989395546_gtcyo][url=http://127.0.0.1:8088/contact-standard.html] 🔍 [Supreme-X 5.0] Scanning for multi-location / branch links...
-[2026-11-06T18:23:16.296Z] [SW-LOG] [CONTENT_EVENT][tabId=1923900913][attemptId=att_1793989395546_gtcyo][url=http://127.0.0.1:8088/contact-standard.html] [AUTOFILL_LOCK] acquired=true key=att_1793989395546_gtcyo:http://127.0.0.1:8088/contact-standard.html:standard-contact-form
-[2026-11-06T18:23:16.297Z] [SW-LOG] [BG_LOG][tab=1923900913] [CONTENT_EVENT][tabId=1923900913][attemptId=att_1793989395546_gtcyo][url=http://127.0.0.1:8088/contact-standard.html] [AUTOFILL_LOCK] acquired=true key=att_1793989395546_gtcyo:http://127.0.0.1:8088/contact-standard.html:standard-contact-form
-[2026-11-06T18:23:16.299Z] [SW-LOG] [CONTENT_EVENT][tabId=1923900913][attemptId=att_1793989395546_gtcyo][url=http://127.0.0.1:8088/contact-standard.html] [CAPTCHA_STATE_RESET] attemptId=att_1793989395546_gtcyo epoch=2 isCaptchaSolved=false captchaTokenInjected=false
-[2026-11-06T18:23:16.302Z] [SW-LOG] [BG_LOG][tab=1923900913] [CONTENT_EVENT][tabId=1923900913][attemptId=att_1793989395546_gtcyo][url=http://127.0.0.1:8088/contact-standard.html] [CAPTCHA_STATE_RESET] attemptId=att_1793989395546_gtcyo epoch=2 isCaptchaSolved=false captchaTokenInjected=false
-[2026-11-06T18:23:16.303Z] [SW-LOG] [CONTENT_EVENT][tabId=1923900913][attemptId=att_1793989395546_gtcyo][url=http://127.0.0.1:8088/contact-standard.html] [CONTACT_GATE] PASS bodyField=textarea
-[2026-11-06T18:23:16.304Z] [SW-LOG] [BG_LOG][tab=1923900913] [CONTENT_EVENT][tabId=1923900913][attemptId=att_1793989395546_gtcyo][url=http://127.0.0.1:8088/contact-standard.html] [CONTACT_GATE] PASS bodyField=textarea
-[2026-11-06T18:23:16.307Z] [SW-LOG] [CONTENT_EVENT][tabId=1923900913][attemptId=att_1793989395546_gtcyo][url=http://127.0.0.1:8088/contact-standard.html] [STAGE] stage=ELIGIBLE_FORM_FOUND
-[2026-11-06T18:23:16.308Z] [SW-LOG] [BG_LOG][tab=1923900913] [CONTENT_EVENT][tabId=1923900913][attemptId=att_1793989395546_gtcyo][url=http://127.0.0.1:8088/contact-standard.html] [STAGE] stage=ELIGIBLE_FORM_FOUND
-[2026-11-06T18:23:16.310Z] [SW-LOG] [BG_LOG][tab=1923900913] [CONTACT_COMMIT] contactPageUrl=http://127.0.0.1:8088/contact-standard.html
-[2026-11-06T18:23:16.312Z] [SW-LOG] [BG_LOG][tab=1923900913] [FORM_COMMIT] formPageUrl=http://127.0.0.1:8088/contact-standard.html
-[2026-11-06T18:23:16.314Z] [SW-LOG] [BG_LOG][tab=1923900913] 📋 [PIPELINE][ELIGIBLE_FORM_FOUND] url=http://127.0.0.1:8088/contact-standard.html
-[2026-11-06T18:23:16.319Z] [SW-LOG] [CONTENT_EVENT][tabId=1923900913][attemptId=att_1793989395546_gtcyo][url=http://127.0.0.1:8088/contact-standard.html] 🛠️ Step 3: Registering message template to form fields...
-[2026-11-06T18:23:16.319Z] [SW-LOG] [BG_LOG][tab=1923900913] [CONTENT_EVENT][tabId=1923900913][attemptId=att_1793989395546_gtcyo][url=http://127.0.0.1:8088/contact-standard.html] 🛠️ Step 3: Registering message template to form fields...
-[2026-11-06T18:23:16.323Z] [SW-LOG] [CONTENT_EVENT][tabId=1923900913][attemptId=att_1793989395546_gtcyo][url=http://127.0.0.1:8088/contact-standard.html] 🛡️ [FormStabilizer] Starting bounded stabilization (max 5s, max 2 retries/element)...
-[2026-11-06T18:23:16.323Z] [SW-LOG] [BG_LOG][tab=1923900913] [CONTENT_EVENT][tabId=1923900913][attemptId=att_1793989395546_gtcyo][url=http://127.0.0.1:8088/contact-standard.html] 🛡️ [FormStabilizer] Starting bounded stabilization (max 5s, max 2 retries/element)...
-[2026-11-06T18:23:16.327Z] [SW-LOG] [CONTENT_EVENT][tabId=1923900913][attemptId=att_1793989395546_gtcyo][url=http://127.0.0.1:8088/contact-standard.html] 🛡️ [Stabilizer] Empty required field attempt 1/2: <INPUT id="name">
-[2026-11-06T18:23:16.328Z] [SW-LOG] [BG_LOG][tab=1923900913] [CONTENT_EVENT][tabId=1923900913][attemptId=att_1793989395546_gtcyo][url=http://127.0.0.1:8088/contact-standard.html] 🛡️ [Stabilizer] Empty required field attempt 1/2: <INPUT id="name">
-[2026-11-06T18:23:16.333Z] [SW-LOG] [CONTENT_EVENT][tabId=1923900913][attemptId=att_1793989395546_gtcyo][url=http://127.0.0.1:8088/contact-standard.html] 🛠️ [Action][HyperEngine v4.0] 초강력 폼 자동 등록기 시작...
-[2026-11-06T18:23:16.334Z] [SW-LOG] [BG_LOG][tab=1923900913] [CONTENT_EVENT][tabId=1923900913][attemptId=att_1793989395546_gtcyo][url=http://127.0.0.1:8088/contact-standard.html] 🛠️ [Action][HyperEngine v4.0] 초강력 폼 자동 등록기 시작...
-[2026-11-06T18:23:16.337Z] [SW-LOG] [CONTENT_EVENT][tabId=1923900913][attemptId=att_1793989395546_gtcyo][url=http://127.0.0.1:8088/contact-standard.html] 🎯 [HyperEngine v4.0] Phase 0 - 입력 필드 전수 수집...
-[2026-11-06T18:23:16.337Z] [SW-LOG] [BG_LOG][tab=1923900913] [CONTENT_EVENT][tabId=1923900913][attemptId=att_1793989395546_gtcyo][url=http://127.0.0.1:8088/contact-standard.html] 🎯 [HyperEngine v4.0] Phase 0 - 입력 필드 전수 수집...
-[2026-11-06T18:23:16.340Z] [SW-LOG] [CONTENT_EVENT][tabId=1923900913][attemptId=att_1793989395546_gtcyo][url=http://127.0.0.1:8088/contact-standard.html]    [v4.0] 총 5개 입력 필드 발견 (radio: 0, checkbox: 0)
-[2026-11-06T18:23:16.341Z] [SW-LOG] [BG_LOG][tab=1923900913] [CONTENT_EVENT][tabId=1923900913][attemptId=att_1793989395546_gtcyo][url=http://127.0.0.1:8088/contact-standard.html]    [v4.0] 총 5개 입력 필드 발견 (radio: 0, checkbox: 0)
-[2026-11-06T18:23:16.342Z] [SW-LOG] [CONTENT_EVENT][tabId=1923900913][attemptId=att_1793989395546_gtcyo][url=http://127.0.0.1:8088/contact-standard.html] 🎯 [HyperEngine v4.0] Phase 1 & 2 - 드롭다운 SelectResolverR2 전수 처리...
-[2026-11-06T18:23:16.344Z] [SW-LOG] [BG_LOG][tab=1923900913] [CONTENT_EVENT][tabId=1923900913][attemptId=att_1793989395546_gtcyo][url=http://127.0.0.1:8088/contact-standard.html] 🎯 [HyperEngine v4.0] Phase 1 & 2 - 드롭다운 SelectResolverR2 전수 처리...
-[2026-11-06T18:23:16.346Z] [SW-LOG] [CONTENT_EVENT][tabId=1923900913][attemptId=att_1793989395546_gtcyo][url=http://127.0.0.1:8088/contact-standard.html] 🎯 [HyperEngine v4.0] Phase 3 - 체크박스 CheckboxResolverR2 전수 처리...
-[2026-11-06T18:23:16.348Z] [SW-LOG] [BG_LOG][tab=1923900913] [CONTENT_EVENT][tabId=1923900913][attemptId=att_1793989395546_gtcyo][url=http://127.0.0.1:8088/contact-standard.html] 🎯 [HyperEngine v4.0] Phase 3 - 체크박스 CheckboxResolverR2 전수 처리...
-[2026-11-06T18:23:16.350Z] [SW-LOG] [CONTENT_EVENT][tabId=1923900913][attemptId=att_1793989395546_gtcyo][url=http://127.0.0.1:8088/contact-standard.html] 🎯 [HyperEngine v4.0] Phase 4 - 텍스트 필드 패턴 매칭...
-[2026-11-06T18:23:16.353Z] [SW-LOG] [BG_LOG][tab=1923900913] [CONTENT_EVENT][tabId=1923900913][attemptId=att_1793989395546_gtcyo][url=http://127.0.0.1:8088/contact-standard.html] 🎯 [HyperEngine v4.0] Phase 4 - 텍스트 필드 패턴 매칭...
-[2026-11-06T18:23:16.359Z] [SW-LOG] [CONTENT_EVENT][tabId=1923900913][attemptId=att_1793989395546_gtcyo][url=http://127.0.0.1:8088/contact-standard.html]    - [FIELD_CLASSIFY] id=name name=name tag=INPUT resolved=name confidence=0.85 reason=NAME_PATTERN
-[2026-11-06T18:23:16.359Z] [SW-LOG] [BG_LOG][tab=1923900913] [CONTENT_EVENT][tabId=1923900913][attemptId=att_1793989395546_gtcyo][url=http://127.0.0.1:8088/contact-standard.html]    - [FIELD_CLASSIFY] id=name name=name tag=INPUT resolved=name confidence=0.85 reason=NAME_PATTERN
-[2026-11-06T18:23:16.363Z] [SW-LOG] [BG_LOG][tab=none] [PAUSE] campaignRunId=normal_run_1793989395214_cprdt8 remaining=2 inProgress=1
-[2026-11-06T18:23:16.363Z] [SW-LOG] [BG_LOG][tab=none] ⏸️ [Engine] Campaign PAUSED / STOP & SAVE requested.
-[2026-11-06T18:23:16.384Z] [SW-LOG] [BG_LOG][tab=1923900913] [TARGET][127.0.0.1] emailsFoundCurrentPage=2 emailsNewGlobal=2 totalEmailsGlobal=2
-[2026-11-06T18:23:16.413Z] [SW-LOG] [BG_LOG][tab=1923900913] [ORCHESTRATION_ABORTED] abortSignal was triggered externally (PAUSE). Delegating terminal settlement to outer target lifecycle.
-[2026-11-06T18:23:16.608Z] [SW-LOG] [TAB_CLOSE] tabId=1923900913 attempt=1 result=CLOSED
-[2026-11-06T18:23:16.609Z] [SW-LOG] [SERIALIZED_GATE] Slot released. activeTargetInFlight=false activeTargetCount=0
-[2026-11-06T18:23:16.653Z] [SW-LOG] [BG_LOG][tab=none] 🔄 [Pause] Current target PREPARING re-queued to front: http://127.0.0.1:8088/contact-standard.html
-[2026-11-06T18:23:16.660Z] [SW-LOG] [TAB_BARRIER] phase=PAUSE_CAMPAIGN ownedBefore=0
-[2026-11-06T18:23:16.661Z] [SW-LOG] [TAB_BARRIER] phase=PAUSE_CAMPAIGN ownedAfter=0 result=PASS
-[2026-11-06T18:23:16.665Z] [SW-LOG] [PRIVACY_SETTINGS_RESTORED] keepEnforced=true gateReady=true transportEnforced=true mode=PRIVACY_RELAY
-[2026-11-06T18:23:16.665Z] [SW-LOG] [PRIVACY_SETTINGS_RESTORED] gateReady=true transportEnforced=true
-[2026-11-06T18:23:16.665Z] [SW-LOG] [BG_LOG][tab=none] [PRIVACY_SETTINGS_RESTORED] gateReady=true transportEnforced=true
-[2026-11-06T18:23:16.672Z] [SW-LOG] [BG_LOG][tab=none] 💾 [Checkpoint] Campaign snapshot saved: 3 targets remaining.
-[2026-11-06T18:23:16.672Z] [SW-LOG] [BG_LOG][tab=none] === CAMPAIGN OUTCOME SUMMARY (currentRun) ===
-[2026-11-06T18:23:16.672Z] [SW-LOG] [BG_LOG][tab=none] CONFIRMED_SUCCESS:           0
-[2026-11-06T18:23:16.672Z] [SW-LOG] [BG_LOG][tab=none] FAILURE:                     0
-[2026-11-06T18:23:16.681Z] [SW-LOG] [BG_LOG][tab=none] TIMEOUT_LOCAL:               0
-[2026-11-06T18:23:16.681Z] [SW-LOG] [BG_LOG][tab=none] TIMEOUT_GLOBAL:              0
-[2026-11-06T18:23:16.682Z] [SW-LOG] [BG_LOG][tab=none] DELIVERY_UNKNOWN:            0
-[2026-11-06T18:23:16.682Z] [SW-LOG] [BG_LOG][tab=none] SKIPPED:                     0
-[2026-11-06T18:23:16.682Z] [SW-LOG] [BG_LOG][tab=none] PAUSED_UNKNOWN:              0
-[2026-11-06T18:23:16.683Z] [SW-LOG] [BG_LOG][tab=none] ----------------------------------------
-[2026-11-06T18:23:16.684Z] [SW-LOG] [BG_LOG][tab=none] TOTAL TERMINAL / COMPLETED:  0
-[2026-11-06T18:23:16.684Z] [SW-LOG] [CAMPAIGN_SUMMARY] success=0 failure=0 timeoutLocal=0 timeoutGlobal=0 unknown=0 skipped=0 paused=0 completed=0
-[2026-11-06T18:23:16.684Z] [SW-LOG] [BG_LOG][tab=none] ========================================
-[2026-11-06T18:23:16.869Z] ⏸️ Durable pause checkpoint captured at T+0.4s: remaining=3
-[2026-11-06T18:23:16.870Z] Checkpoint remainingQueue: ["http://127.0.0.1:8088/contact-standard.html","http://127.0.0.1:8088/spa-delayed-contact.html","http://127.0.0.1:8088/index.html"]
-[2026-11-06T18:23:16.871Z] Pause button text after pause: "▶️ Resume"
-[2026-11-06T18:23:17.036Z] 📸 Captured screenshot: shot_sc04_popup_paused_nonempty.png
-[2026-11-06T18:23:17.036Z] 
+[2026-11-06T20:30:58.133Z] --- TASK SC-04: NONEMPTY QUEUE PAUSE, SW RESTART & STOP & SAVE DURABILITY ---
+[2026-11-06T20:30:58.133Z] =========================================================================
+[2026-11-06T20:30:58.133Z] Setting up 3-target campaign queue in Popup DOM: ["http://127.0.0.1:8088/contact-standard.html","http://127.0.0.1:8088/spa-delayed-contact.html","http://127.0.0.1:8088/index.html"]
+[2026-11-06T20:30:58.134Z] Clicking Real UI Start Button (#start-btn)...
+[2026-11-06T20:30:58.173Z] [SW-LOG] [BUILD_HANDSHAKE] popup=20678ada6491bf842ec7e996a88108152c76007f background=20678ada6491bf842ec7e996a88108152c76007f build=V7.0.0-RC11-20261030-THREE-MODE-CONTRACTS-PASS manifest=3 result=PASS
+[2026-11-06T20:30:58.174Z] [SW-LOG] [BG_LOG][tab=none] [BUILD_HANDSHAKE] popup=20678ada6491bf842ec7e996a88108152c76007f background=20678ada6491bf842ec7e996a88108152c76007f build=V7.0.0-RC11-20261030-THREE-MODE-CONTRACTS-PASS manifest=3 result=PASS
+[2026-11-06T20:30:58.174Z] [SW-LOG] [START_BG] received queue=3
+[2026-11-06T20:30:58.175Z] [SW-LOG] [BG_LOG][tab=none] [START_BG] received queue=3
+[2026-11-06T20:30:58.175Z] [SW-LOG] [PRIVACY_OWNER_OVERRIDE] scope=currentRun mode=DIRECT acknowledged=true
+[2026-11-06T20:30:58.176Z] [SW-LOG] [BG_LOG][tab=none] [PRIVACY_OWNER_OVERRIDE] scope=currentRun mode=DIRECT acknowledged=true
+[2026-11-06T20:30:58.182Z] [SW-LOG] [OWNER_TEST_GUARD] declarativeNetRequest session rules removed cleanly
+[2026-11-06T20:30:58.183Z] [SW-LOG] [BG_LOG][tab=none] [OWNER_TEST_GUARD] declarativeNetRequest session rules removed cleanly
+[2026-11-06T20:30:58.183Z] [SW-LOG] [NORMAL_CAMPAIGN_PREFLIGHT] publicTargets=0 testMode=false result=PASS
+[2026-11-06T20:30:58.185Z] [SW-LOG] [BG_LOG][tab=none] [NORMAL_CAMPAIGN_PREFLIGHT] publicTargets=0 testMode=false result=PASS
+[2026-11-06T20:30:58.187Z] [SW-LOG] [OWNER_TEST_GUARD] declarativeNetRequest session rules removed cleanly
+[2026-11-06T20:30:58.188Z] [SW-LOG] [BG_LOG][tab=none] [OWNER_TEST_GUARD] declarativeNetRequest session rules removed cleanly
+[2026-11-06T20:30:58.192Z] [SW-LOG] [PRIVACY_GATE] mode=DIRECT transport=DIRECT failClosed=false (OWNER_FUNCTION_TEST_MODE) status=READY
+[2026-11-06T20:30:58.193Z] [SW-LOG] [BG_LOG][tab=none] [PRIVACY_GATE] mode=DIRECT transport=DIRECT failClosed=false (OWNER_FUNCTION_TEST_MODE) status=READY
+[2026-11-06T20:30:58.194Z] [SW-LOG] [START_BG_READY] privacyReady=true
+[2026-11-06T20:30:58.194Z] [SW-LOG] [BG_LOG][tab=none] [START_BG_READY] privacyReady=true
+[2026-11-06T20:30:58.198Z] [SW-LOG] [BG_LOG][tab=none] [Boot] Orchestrator entered.
+[2026-11-06T20:30:58.201Z] [SW-LOG] [SESSION_BASELINE] Captured 2 pre-existing user tabs as protected baseline.
+[2026-11-06T20:30:58.203Z] [SW-LOG] [TAB_BARRIER] phase=START_CAMPAIGN_BOOT ownedBefore=0
+[2026-11-06T20:30:58.203Z] [SW-LOG] [TAB_BARRIER] phase=START_CAMPAIGN_BOOT ownedAfter=0 result=PASS
+[2026-11-06T20:30:58.207Z] [SW-LOG] [BG_LOG][tab=none] [Boot] Previous state cleared.
+[2026-11-06T20:30:58.211Z] [SW-LOG] [BG_LOG][tab=none] [Boot] CAPTCHA solver state reset (attempts=0, identity=null).
+[2026-11-06T20:30:58.213Z] [SW-LOG] [BG_LOG][tab=none] 📊 [Queue Filter] Input: 3 | Duplicates: 0 | Suppressed: 0 | History-Attempted: 0 | Executable: 3
+[2026-11-06T20:30:58.215Z] [SW-LOG] [LEDGER_INIT] campaignRunId=normal_run_1793997058145_6jl1n8 totalImportRows=3 pending=3
+[2026-11-06T20:30:58.216Z] [SW-LOG] [BG_LOG][tab=none] [LEDGER_INIT] campaignRunId=normal_run_1793997058145_6jl1n8 totalImportRows=3 pending=3
+[2026-11-06T20:30:58.217Z] [SW-LOG] [BG_LOG][tab=none] [Boot] Variables initialized.
+[2026-11-06T20:30:58.223Z] [SW-LOG] [BG_LOG][tab=none] 🚀 Engine booting...
+[2026-11-06T20:30:58.224Z] [SW-LOG] [BG_LOG][tab=none] [CAMPAIGN_START] buildId=V7.0.0-RC11-20261030-THREE-MODE-CONTRACTS-PASS campaignRunId=normal_run_1793997058145_6jl1n8 totalTargets=3 mode=NORMAL delayMs=10000 fillDelayMs=300 submitDelayMs=4000
+[2026-11-06T20:30:58.224Z] [SW-LOG] [BG_LOG][tab=none] [Boot] Storage sync initiated.
+[2026-11-06T20:30:58.230Z] [SW-LOG] [BG_LOG][tab=none] [Boot] Target loop triggered.
+[2026-11-06T20:30:58.234Z] [SW-LOG] [SERIALIZED_GATE] Slot acquired atomically. activeTargetInFlight=true activeTargetCount=1 maxConcurrent=1
+[2026-11-06T20:30:58.235Z] [SW-LOG] [TAB_BARRIER] phase=PRE_NEXT_TARGET ownedBefore=0
+[2026-11-06T20:30:58.235Z] [SW-LOG] [TAB_BARRIER] phase=PRE_NEXT_TARGET ownedAfter=0 result=PASS
+[2026-11-06T20:30:58.240Z] [SW-LOG] [BG_LOG][tab=none] [TARGET 1/3][127.0.0.1] START
+[2026-11-06T20:30:58.240Z] [SW-LOG] [BG_LOG][tab=none] [TARGET_START] buildId=V7.0.0-RC11-20261030-THREE-MODE-CONTRACTS-PASS campaignRunId=normal_run_1793997058145_6jl1n8 attemptId=att_init targetIndex=1/3 targetUrl=http://127.0.0.1:8088/contact-standard.html
+[2026-11-06T20:30:58.244Z] [SW-LOG] [BG_LOG][tab=none] [EXEC_IDENTITY_PRE_NAV] attemptId=att_1793997058232_ep2he token=tok_1793997058231_xzke2j epoch=2
+[2026-11-06T20:30:58.308Z] [SW-LOG] [TAB_BARRIER] phase=POST_NEW_TARGET_CREATE ownedBefore=0
+[2026-11-06T20:30:58.312Z] [SW-LOG] [TAB_BARRIER] phase=POST_NEW_TARGET_CREATE ownedAfter=0 result=PASS
+[2026-11-06T20:30:58.313Z] [SW-LOG] [TAB_KILL_SWITCH] keepTabId=1288984471 closedOthers=0 remainingOwned=1 result=PASS
+[2026-11-06T20:30:58.348Z] [SW-LOG] [BG_LOG][tab=1288984471] [TAB_FOCUS] tabId=1288984471 windowId=1288984465 active=true focused=true
+[2026-11-06T20:30:58.351Z] [SW-LOG] [BG_LOG][tab=1288984471] Step 1: Sniper Mode active. Searching for contact page...
+[2026-11-06T20:30:58.364Z] [SW-LOG] [BG_LOG][tab=1288984471] 🔦 Fast-scanning candidate paths (1-10)...
+[2026-11-06T20:30:58.420Z] [SW-LOG] [BG_LOG][tab=1288984471] Pre-scan complete. Identified 10 valid paths.
+[2026-11-06T20:30:58.445Z] [SW-LOG] [BG_LOG][tab=1288984471] [SniperScan] Identified 10 candidate paths in background.
+[2026-11-06T20:30:58.502Z] [SW-LOG] [CONTENT_EVENT][tabId=1288984471][attemptId=att_1793997058232_ep2he][url=http://127.0.0.1:8088/contact-standard.html] ⚠️ [Engine] Suppressing duplicate setup (Signals re-sent).
+[2026-11-06T20:30:58.502Z] [SW-LOG] [BG_LOG][tab=1288984471] [CONTENT_EVENT][tabId=1288984471][attemptId=att_1793997058232_ep2he][url=http://127.0.0.1:8088/contact-standard.html] ⚠️ [Engine] Suppressing duplicate setup (Signals re-sent).
+[2026-11-06T20:30:58.519Z] [SW-LOG] [BG_LOG][tab=1288984471] [TAB_FOCUS] tabId=1288984471 windowId=1288984465 active=true focused=true
+[2026-11-06T20:30:58.526Z] [SW-LOG] [BG_LOG][tab=1288984471] [TAB_OWNERSHIP] VERIFIED_REDIRECT source=127.0.0.1 target=127.0.0.1 relation=SAME_HOST
+[2026-11-06T20:30:58.528Z] [SW-LOG] [BG_LOG][tab=1288984471] [FOCUS_SECURED] formPageUrl=http://127.0.0.1:8088/contact-standard.html
+[2026-11-06T20:30:58.533Z] [SW-LOG] [BG_LOG][tab=1288984471] Extraction focus secured. Mapping template fields...
+[2026-11-06T20:30:58.541Z] [SW-LOG] [CONTENT_EVENT][tabId=1288984471][attemptId=att_1793997058232_ep2he][url=http://127.0.0.1:8088/contact-standard.html] [TARGET_PAGE] url=http://127.0.0.1:8088/contact-standard.html domGeneration=1793997058534 attemptId=att_1793997058232_ep2he
+[2026-11-06T20:30:58.544Z] [SW-LOG] [BG_LOG][tab=1288984471] [CONTENT_EVENT][tabId=1288984471][attemptId=att_1793997058232_ep2he][url=http://127.0.0.1:8088/contact-standard.html] [TARGET_PAGE] url=http://127.0.0.1:8088/contact-standard.html domGeneration=1793997058534 attemptId=att_1793997058232_ep2he
+[2026-11-06T20:30:58.548Z] [SW-LOG] [CONTENT_EVENT][tabId=1288984471][attemptId=att_1793997058232_ep2he][url=http://127.0.0.1:8088/contact-standard.html] [CAPTCHA_STATE_RESET] attemptId=processCampaign epoch=current isCaptchaSolved=false captchaTokenInjected=false
+[2026-11-06T20:30:58.549Z] [SW-LOG] [BG_LOG][tab=1288984471] [CONTENT_EVENT][tabId=1288984471][attemptId=att_1793997058232_ep2he][url=http://127.0.0.1:8088/contact-standard.html] [CAPTCHA_STATE_RESET] attemptId=processCampaign epoch=current isCaptchaSolved=false captchaTokenInjected=false
+[2026-11-06T20:30:58.558Z] [SW-LOG] [CONTENT_EVENT][tabId=1288984471][attemptId=att_1793997058232_ep2he][url=http://127.0.0.1:8088/contact-standard.html] 🚀 [Engine] Ultra-Mode process started
+[2026-11-06T20:30:58.559Z] [SW-LOG] [BG_LOG][tab=1288984471] [CONTENT_EVENT][tabId=1288984471][attemptId=att_1793997058232_ep2he][url=http://127.0.0.1:8088/contact-standard.html] 🚀 [Engine] Ultra-Mode process started
+[2026-11-06T20:30:58.567Z] [SW-LOG] [CONTENT_EVENT][tabId=1288984471][attemptId=att_1793997058232_ep2he][url=http://127.0.0.1:8088/contact-standard.html] 🧹 [Cleaner] Scanning for intrusive overlays/popups and cookie banners...
+[2026-11-06T20:30:58.568Z] [SW-LOG] [BG_LOG][tab=1288984471] [CONTENT_EVENT][tabId=1288984471][attemptId=att_1793997058232_ep2he][url=http://127.0.0.1:8088/contact-standard.html] 🧹 [Cleaner] Scanning for intrusive overlays/popups and cookie banners...
+[2026-11-06T20:30:58.569Z] [SW-LOG] [CONTENT_EVENT][tabId=1288984471][attemptId=att_1793997058232_ep2he][url=http://127.0.0.1:8088/contact-standard.html] [TARGET_PAGE] url=http://127.0.0.1:8088/contact-standard.html recursion=0
+[2026-11-06T20:30:58.569Z] [SW-LOG] [BG_LOG][tab=1288984471] [CONTENT_EVENT][tabId=1288984471][attemptId=att_1793997058232_ep2he][url=http://127.0.0.1:8088/contact-standard.html] [TARGET_PAGE] url=http://127.0.0.1:8088/contact-standard.html recursion=0
+[2026-11-06T20:30:58.569Z] [SW-LOG] [CONTENT_EVENT][tabId=1288984471][attemptId=att_1793997058232_ep2he][url=http://127.0.0.1:8088/contact-standard.html] 🔍 [Discovery] URL: http://127.0.0.1:8088/contact-standard.html | Recursion: 0
+[2026-11-06T20:30:58.570Z] [SW-LOG] [BG_LOG][tab=1288984471] [CONTENT_EVENT][tabId=1288984471][attemptId=att_1793997058232_ep2he][url=http://127.0.0.1:8088/contact-standard.html] 🔍 [Discovery] URL: http://127.0.0.1:8088/contact-standard.html | Recursion: 0
+[2026-11-06T20:30:58.585Z] [SW-LOG] [CONTENT_EVENT][tabId=1288984471][attemptId=att_1793997058232_ep2he][url=http://127.0.0.1:8088/contact-standard.html] 🧹 [Cleaner] Scanning for intrusive overlays/popups...
+[2026-11-06T20:30:58.585Z] [SW-LOG] [BG_LOG][tab=1288984471] [CONTENT_EVENT][tabId=1288984471][attemptId=att_1793997058232_ep2he][url=http://127.0.0.1:8088/contact-standard.html] 🧹 [Cleaner] Scanning for intrusive overlays/popups...
+[2026-11-06T20:30:58.586Z] [SW-LOG] [CONTENT_EVENT][tabId=1288984471][attemptId=att_1793997058232_ep2he][url=http://127.0.0.1:8088/contact-standard.html] 🧐 [Discovery] Polling attempt 1/3... | URL: http://127.0.0.1:8088/contact-standard.html | Recursion: 0
+[2026-11-06T20:30:58.586Z] [SW-LOG] [BG_LOG][tab=1288984471] [CONTENT_EVENT][tabId=1288984471][attemptId=att_1793997058232_ep2he][url=http://127.0.0.1:8088/contact-standard.html] 🧐 [Discovery] Polling attempt 1/3... | URL: http://127.0.0.1:8088/contact-standard.html | Recursion: 0
+[2026-11-06T20:30:58.610Z] [SW-LOG] [CONTENT_EVENT][tabId=1288984471][attemptId=att_1793997058232_ep2he][url=http://127.0.0.1:8088/contact-standard.html] [FORM_SCAN] forms=1 logicalContainers=1 crossOriginFrames=0 externalFormCandidates=0
+[2026-11-06T20:30:58.610Z] [SW-LOG] [BG_LOG][tab=1288984471] [CONTENT_EVENT][tabId=1288984471][attemptId=att_1793997058232_ep2he][url=http://127.0.0.1:8088/contact-standard.html] [FORM_SCAN] forms=1 logicalContainers=1 crossOriginFrames=0 externalFormCandidates=0
+[2026-11-06T20:30:58.611Z] [SW-LOG] [CONTENT_EVENT][tabId=1288984471][attemptId=att_1793997058232_ep2he][url=http://127.0.0.1:8088/contact-standard.html] [PAGE_CLASS] CONTACT_FORM_PAGE
+[2026-11-06T20:30:58.611Z] [SW-LOG] [BG_LOG][tab=1288984471] [CONTENT_EVENT][tabId=1288984471][attemptId=att_1793997058232_ep2he][url=http://127.0.0.1:8088/contact-standard.html] [PAGE_CLASS] CONTACT_FORM_PAGE
+[2026-11-06T20:30:58.612Z] [SW-LOG] [CONTENT_EVENT][tabId=1288984471][attemptId=att_1793997058232_ep2he][url=http://127.0.0.1:8088/contact-standard.html] 🎯 Step 2: Contact form discovered. Preparing submission...
+[2026-11-06T20:30:58.612Z] [SW-LOG] [BG_LOG][tab=1288984471] [CONTENT_EVENT][tabId=1288984471][attemptId=att_1793997058232_ep2he][url=http://127.0.0.1:8088/contact-standard.html] 🎯 Step 2: Contact form discovered. Preparing submission...
+[2026-11-06T20:30:58.612Z] [SW-LOG] [CONTENT_EVENT][tabId=1288984471][attemptId=att_1793997058232_ep2he][url=http://127.0.0.1:8088/contact-standard.html] [STAGE] stage=CONTACT_PAGE_FOUND
+[2026-11-06T20:30:58.613Z] [SW-LOG] [BG_LOG][tab=1288984471] [CONTENT_EVENT][tabId=1288984471][attemptId=att_1793997058232_ep2he][url=http://127.0.0.1:8088/contact-standard.html] [STAGE] stage=CONTACT_PAGE_FOUND
+[2026-11-06T20:30:58.613Z] [SW-LOG] [CONTENT_EVENT][tabId=1288984471][attemptId=att_1793997058232_ep2he][url=http://127.0.0.1:8088/contact-standard.html] [LONG_TEXT_GATE] found=true type=textarea semantic=message
+[2026-11-06T20:30:58.613Z] [SW-LOG] [BG_LOG][tab=1288984471] [CONTENT_EVENT][tabId=1288984471][attemptId=att_1793997058232_ep2he][url=http://127.0.0.1:8088/contact-standard.html] [LONG_TEXT_GATE] found=true type=textarea semantic=message
+[2026-11-06T20:30:58.614Z] [SW-LOG] [CONTENT_EVENT][tabId=1288984471][attemptId=att_1793997058232_ep2he][url=http://127.0.0.1:8088/contact-standard.html] [FORM_GATE] eligible=true reason=BODY_FIELD_PRESENT
+[2026-11-06T20:30:58.614Z] [SW-LOG] [BG_LOG][tab=1288984471] [CONTENT_EVENT][tabId=1288984471][attemptId=att_1793997058232_ep2he][url=http://127.0.0.1:8088/contact-standard.html] [FORM_GATE] eligible=true reason=BODY_FIELD_PRESENT
+[2026-11-06T20:30:58.637Z] [SW-LOG] [BG_LOG][tab=1288984471] 📍 [PIPELINE][CONTACT_PAGE_FOUND] url=http://127.0.0.1:8088/contact-standard.html
+[2026-11-06T20:30:58.637Z] [SW-LOG] [CONTENT_EVENT][tabId=1288984471][attemptId=att_1793997058232_ep2he][url=http://127.0.0.1:8088/contact-standard.html] 🔍 [Supreme-X 5.0] Scanning for multi-location / branch links...
+[2026-11-06T20:30:58.638Z] [SW-LOG] [BG_LOG][tab=1288984471] [CONTENT_EVENT][tabId=1288984471][attemptId=att_1793997058232_ep2he][url=http://127.0.0.1:8088/contact-standard.html] 🔍 [Supreme-X 5.0] Scanning for multi-location / branch links...
+[2026-11-06T20:30:58.641Z] [SW-LOG] [CONTENT_EVENT][tabId=1288984471][attemptId=att_1793997058232_ep2he][url=http://127.0.0.1:8088/contact-standard.html] [AUTOFILL_LOCK] acquired=true key=att_1793997058232_ep2he:http://127.0.0.1:8088/contact-standard.html:standard-contact-form
+[2026-11-06T20:30:58.641Z] [SW-LOG] [BG_LOG][tab=1288984471] [CONTENT_EVENT][tabId=1288984471][attemptId=att_1793997058232_ep2he][url=http://127.0.0.1:8088/contact-standard.html] [AUTOFILL_LOCK] acquired=true key=att_1793997058232_ep2he:http://127.0.0.1:8088/contact-standard.html:standard-contact-form
+[2026-11-06T20:30:58.642Z] [SW-LOG] [CONTENT_EVENT][tabId=1288984471][attemptId=att_1793997058232_ep2he][url=http://127.0.0.1:8088/contact-standard.html] [CAPTCHA_STATE_RESET] attemptId=att_1793997058232_ep2he epoch=2 isCaptchaSolved=false captchaTokenInjected=false
+[2026-11-06T20:30:58.643Z] [SW-LOG] [BG_LOG][tab=1288984471] [CONTENT_EVENT][tabId=1288984471][attemptId=att_1793997058232_ep2he][url=http://127.0.0.1:8088/contact-standard.html] [CAPTCHA_STATE_RESET] attemptId=att_1793997058232_ep2he epoch=2 isCaptchaSolved=false captchaTokenInjected=false
+[2026-11-06T20:30:58.643Z] [SW-LOG] [CONTENT_EVENT][tabId=1288984471][attemptId=att_1793997058232_ep2he][url=http://127.0.0.1:8088/contact-standard.html] [CONTACT_GATE] PASS bodyField=textarea
+[2026-11-06T20:30:58.643Z] [SW-LOG] [BG_LOG][tab=1288984471] [CONTENT_EVENT][tabId=1288984471][attemptId=att_1793997058232_ep2he][url=http://127.0.0.1:8088/contact-standard.html] [CONTACT_GATE] PASS bodyField=textarea
+[2026-11-06T20:30:58.644Z] [SW-LOG] [CONTENT_EVENT][tabId=1288984471][attemptId=att_1793997058232_ep2he][url=http://127.0.0.1:8088/contact-standard.html] [STAGE] stage=ELIGIBLE_FORM_FOUND
+[2026-11-06T20:30:58.644Z] [SW-LOG] [BG_LOG][tab=1288984471] [CONTENT_EVENT][tabId=1288984471][attemptId=att_1793997058232_ep2he][url=http://127.0.0.1:8088/contact-standard.html] [STAGE] stage=ELIGIBLE_FORM_FOUND
+[2026-11-06T20:30:58.644Z] [SW-LOG] [BG_LOG][tab=1288984471] [CONTACT_COMMIT] contactPageUrl=http://127.0.0.1:8088/contact-standard.html
+[2026-11-06T20:30:58.645Z] [SW-LOG] [BG_LOG][tab=1288984471] [FORM_COMMIT] formPageUrl=http://127.0.0.1:8088/contact-standard.html
+[2026-11-06T20:30:58.645Z] [SW-LOG] [BG_LOG][tab=1288984471] 📋 [PIPELINE][ELIGIBLE_FORM_FOUND] url=http://127.0.0.1:8088/contact-standard.html
+[2026-11-06T20:30:58.645Z] [SW-LOG] [CONTENT_EVENT][tabId=1288984471][attemptId=att_1793997058232_ep2he][url=http://127.0.0.1:8088/contact-standard.html] 🛠️ Step 3: Registering message template to form fields...
+[2026-11-06T20:30:58.646Z] [SW-LOG] [BG_LOG][tab=1288984471] [CONTENT_EVENT][tabId=1288984471][attemptId=att_1793997058232_ep2he][url=http://127.0.0.1:8088/contact-standard.html] 🛠️ Step 3: Registering message template to form fields...
+[2026-11-06T20:30:58.646Z] [SW-LOG] [CONTENT_EVENT][tabId=1288984471][attemptId=att_1793997058232_ep2he][url=http://127.0.0.1:8088/contact-standard.html] 🛡️ [FormStabilizer] Starting bounded stabilization (max 5s, max 2 retries/element)...
+[2026-11-06T20:30:58.666Z] [SW-LOG] [BG_LOG][tab=1288984471] [CONTENT_EVENT][tabId=1288984471][attemptId=att_1793997058232_ep2he][url=http://127.0.0.1:8088/contact-standard.html] 🛡️ [FormStabilizer] Starting bounded stabilization (max 5s, max 2 retries/element)...
+[2026-11-06T20:30:58.667Z] [SW-LOG] [CONTENT_EVENT][tabId=1288984471][attemptId=att_1793997058232_ep2he][url=http://127.0.0.1:8088/contact-standard.html] 🛡️ [Stabilizer] Empty required field attempt 1/2: <INPUT id="name">
+[2026-11-06T20:30:58.667Z] [SW-LOG] [BG_LOG][tab=1288984471] [CONTENT_EVENT][tabId=1288984471][attemptId=att_1793997058232_ep2he][url=http://127.0.0.1:8088/contact-standard.html] 🛡️ [Stabilizer] Empty required field attempt 1/2: <INPUT id="name">
+[2026-11-06T20:30:58.667Z] [SW-LOG] [CONTENT_EVENT][tabId=1288984471][attemptId=att_1793997058232_ep2he][url=http://127.0.0.1:8088/contact-standard.html] 🛠️ [Action][HyperEngine v4.0] 초강력 폼 자동 등록기 시작...
+[2026-11-06T20:30:58.668Z] [SW-LOG] [BG_LOG][tab=1288984471] [CONTENT_EVENT][tabId=1288984471][attemptId=att_1793997058232_ep2he][url=http://127.0.0.1:8088/contact-standard.html] 🛠️ [Action][HyperEngine v4.0] 초강력 폼 자동 등록기 시작...
+[2026-11-06T20:30:58.668Z] 🎯 Multi-target campaign active at T+0.0s! runId=normal_run_1793997058145_6jl1n8
+[2026-11-06T20:30:58.668Z] Clicking Real UI Pause Button (#pause-btn) to capture NON-EMPTY queue...
+[2026-11-06T20:30:58.669Z] [SW-LOG] [CONTENT_EVENT][tabId=1288984471][attemptId=att_1793997058232_ep2he][url=http://127.0.0.1:8088/contact-standard.html] 🎯 [HyperEngine v4.0] Phase 0 - 입력 필드 전수 수집...
+[2026-11-06T20:30:58.669Z] [SW-LOG] [BG_LOG][tab=1288984471] [CONTENT_EVENT][tabId=1288984471][attemptId=att_1793997058232_ep2he][url=http://127.0.0.1:8088/contact-standard.html] 🎯 [HyperEngine v4.0] Phase 0 - 입력 필드 전수 수집...
+[2026-11-06T20:30:58.669Z] [SW-LOG] [CONTENT_EVENT][tabId=1288984471][attemptId=att_1793997058232_ep2he][url=http://127.0.0.1:8088/contact-standard.html]    [v4.0] 총 5개 입력 필드 발견 (radio: 0, checkbox: 0)
+[2026-11-06T20:30:58.669Z] [SW-LOG] [BG_LOG][tab=1288984471] [CONTENT_EVENT][tabId=1288984471][attemptId=att_1793997058232_ep2he][url=http://127.0.0.1:8088/contact-standard.html]    [v4.0] 총 5개 입력 필드 발견 (radio: 0, checkbox: 0)
+[2026-11-06T20:30:58.670Z] [SW-LOG] [CONTENT_EVENT][tabId=1288984471][attemptId=att_1793997058232_ep2he][url=http://127.0.0.1:8088/contact-standard.html] 🎯 [HyperEngine v4.0] Phase 1 & 2 - 드롭다운 SelectResolverR2 전수 처리...
+[2026-11-06T20:30:58.670Z] [SW-LOG] [BG_LOG][tab=1288984471] [CONTENT_EVENT][tabId=1288984471][attemptId=att_1793997058232_ep2he][url=http://127.0.0.1:8088/contact-standard.html] 🎯 [HyperEngine v4.0] Phase 1 & 2 - 드롭다운 SelectResolverR2 전수 처리...
+[2026-11-06T20:30:58.670Z] [SW-LOG] [CONTENT_EVENT][tabId=1288984471][attemptId=att_1793997058232_ep2he][url=http://127.0.0.1:8088/contact-standard.html] 🎯 [HyperEngine v4.0] Phase 3 - 체크박스 CheckboxResolverR2 전수 처리...
+[2026-11-06T20:30:58.674Z] [SW-LOG] [BG_LOG][tab=1288984471] [CONTENT_EVENT][tabId=1288984471][attemptId=att_1793997058232_ep2he][url=http://127.0.0.1:8088/contact-standard.html] 🎯 [HyperEngine v4.0] Phase 3 - 체크박스 CheckboxResolverR2 전수 처리...
+[2026-11-06T20:30:58.674Z] [SW-LOG] [CONTENT_EVENT][tabId=1288984471][attemptId=att_1793997058232_ep2he][url=http://127.0.0.1:8088/contact-standard.html] 🎯 [HyperEngine v4.0] Phase 4 - 텍스트 필드 패턴 매칭...
+[2026-11-06T20:30:58.675Z] [SW-LOG] [BG_LOG][tab=1288984471] [CONTENT_EVENT][tabId=1288984471][attemptId=att_1793997058232_ep2he][url=http://127.0.0.1:8088/contact-standard.html] 🎯 [HyperEngine v4.0] Phase 4 - 텍스트 필드 패턴 매칭...
+[2026-11-06T20:30:58.675Z] [SW-LOG] [CONTENT_EVENT][tabId=1288984471][attemptId=att_1793997058232_ep2he][url=http://127.0.0.1:8088/contact-standard.html]    - [FIELD_CLASSIFY] id=name name=name tag=INPUT resolved=name confidence=0.85 reason=NAME_PATTERN
+[2026-11-06T20:30:58.676Z] [SW-LOG] [BG_LOG][tab=1288984471] [CONTENT_EVENT][tabId=1288984471][attemptId=att_1793997058232_ep2he][url=http://127.0.0.1:8088/contact-standard.html]    - [FIELD_CLASSIFY] id=name name=name tag=INPUT resolved=name confidence=0.85 reason=NAME_PATTERN
+[2026-11-06T20:30:58.676Z] [SW-LOG] [BG_LOG][tab=1288984471] [TARGET][127.0.0.1] emailsFoundCurrentPage=2 emailsNewGlobal=2 totalEmailsGlobal=2
+[2026-11-06T20:30:58.809Z] [SW-LOG] [BG_LOG][tab=none] [PAUSE] campaignRunId=normal_run_1793997058145_6jl1n8 remaining=2 inProgress=1
+[2026-11-06T20:30:58.815Z] [SW-LOG] [BG_LOG][tab=none] ⏸️ [Engine] Campaign PAUSED / STOP & SAVE requested.
+[2026-11-06T20:30:58.817Z] [SW-LOG] [BG_LOG][tab=1288984471] [ORCHESTRATION_ABORTED] abortSignal was triggered externally (PAUSE). Delegating terminal settlement to outer target lifecycle.
+[2026-11-06T20:30:59.009Z] [SW-LOG] [TAB_CLOSE] tabId=1288984471 attempt=1 result=CLOSED
+[2026-11-06T20:30:59.010Z] [SW-LOG] [SERIALIZED_GATE] Slot released. activeTargetInFlight=false activeTargetCount=0
+[2026-11-06T20:30:59.012Z] [SW-LOG] [BG_LOG][tab=none] 🔄 [Pause] Current target PREPARING re-queued to front: http://127.0.0.1:8088/contact-standard.html
+[2026-11-06T20:30:59.017Z] [SW-LOG] [TAB_BARRIER] phase=PAUSE_CAMPAIGN ownedBefore=0
+[2026-11-06T20:30:59.018Z] [SW-LOG] [TAB_BARRIER] phase=PAUSE_CAMPAIGN ownedAfter=0 result=PASS
+[2026-11-06T20:30:59.025Z] [SW-LOG] [PRIVACY_SETTINGS_RESTORED] keepEnforced=true gateReady=true transportEnforced=true mode=PRIVACY_RELAY
+[2026-11-06T20:30:59.026Z] [SW-LOG] [PRIVACY_SETTINGS_RESTORED] gateReady=true transportEnforced=true
+[2026-11-06T20:30:59.026Z] [SW-LOG] [BG_LOG][tab=none] [PRIVACY_SETTINGS_RESTORED] gateReady=true transportEnforced=true
+[2026-11-06T20:30:59.031Z] [SW-LOG] [BG_LOG][tab=none] 💾 [Checkpoint] Campaign snapshot saved: 3 targets remaining.
+[2026-11-06T20:30:59.036Z] [SW-LOG] [BG_LOG][tab=none] === CAMPAIGN OUTCOME SUMMARY (currentRun) ===
+[2026-11-06T20:30:59.037Z] [SW-LOG] [BG_LOG][tab=none] CONFIRMED_SUCCESS:           0
+[2026-11-06T20:30:59.037Z] [SW-LOG] [BG_LOG][tab=none] FAILURE:                     0
+[2026-11-06T20:30:59.037Z] [SW-LOG] [BG_LOG][tab=none] TIMEOUT_LOCAL:               0
+[2026-11-06T20:30:59.039Z] [SW-LOG] [BG_LOG][tab=none] TIMEOUT_GLOBAL:              0
+[2026-11-06T20:30:59.041Z] [SW-LOG] [BG_LOG][tab=none] DELIVERY_UNKNOWN:            0
+[2026-11-06T20:30:59.042Z] [SW-LOG] [BG_LOG][tab=none] SKIPPED:                     0
+[2026-11-06T20:30:59.042Z] [SW-LOG] [BG_LOG][tab=none] PAUSED_UNKNOWN:              0
+[2026-11-06T20:30:59.048Z] [SW-LOG] [BG_LOG][tab=none] ----------------------------------------
+[2026-11-06T20:30:59.048Z] [SW-LOG] [BG_LOG][tab=none] TOTAL TERMINAL / COMPLETED:  0
+[2026-11-06T20:30:59.049Z] [SW-LOG] [CAMPAIGN_SUMMARY] success=0 failure=0 timeoutLocal=0 timeoutGlobal=0 unknown=0 skipped=0 paused=0 completed=0
+[2026-11-06T20:30:59.049Z] [SW-LOG] [BG_LOG][tab=none] ========================================
+[2026-11-06T20:30:59.214Z] ⏸️ Durable pause checkpoint captured at T+0s: remaining=3
+[2026-11-06T20:30:59.214Z] Checkpoint remainingQueue: ["http://127.0.0.1:8088/contact-standard.html","http://127.0.0.1:8088/spa-delayed-contact.html","http://127.0.0.1:8088/index.html"]
+[2026-11-06T20:30:59.215Z] Pause button text after pause: "▶️ Resume"
+[2026-11-06T20:30:59.378Z] 📸 Captured screenshot: shot_sc04_popup_paused_nonempty.png
+[2026-11-06T20:30:59.378Z] 
 --- Forcibly Terminating Service Worker Process #1 via CDP ---
-[2026-11-06T18:23:17.546Z] Closing SW Target #1: 4D9A4C18A87178649BC9700952F17051
-[2026-11-06T18:23:19.553Z] SW Target after closeTarget #1: TERMINATED_CONFIRMED (old ID: 4D9A4C18A87178649BC9700952F17051 absent)
-[2026-11-06T18:23:19.553Z] 
+[2026-11-06T20:30:59.893Z] Closing SW Target #1: EEE22333985BDFB53755E6E149D6459A
+[2026-11-06T20:31:01.911Z] SW Target after closeTarget #1: TERMINATED_CONFIRMED (old ID: EEE22333985BDFB53755E6E149D6459A absent)
+[2026-11-06T20:31:01.911Z] 
 --- Waking Up Fresh Service Worker #2 & Verifying Durable Checkpoint Restoration ---
-[2026-11-06T18:23:20.063Z] Fresh SW #2 Booted: Target ID=5AB95C6747C04E1C44ABDAE74B0150DC (verified different from old ID=4D9A4C18A87178649BC9700952F17051)
-[2026-11-06T18:23:28.230Z] Fresh SW #2 Restored State from Checkpoint: {"isActive":false,"isPaused":true,"remainingCount":0,"pausedByOperator":true,"runId":"normal_run_1793989395214_cprdt8"}
+[2026-11-06T20:31:02.425Z] Fresh SW #2 Booted: Target ID=3D1823D1C547A8C45D4358A22D32B4B3 (verified different from old ID=EEE22333985BDFB53755E6E149D6459A)
+[2026-11-06T20:31:10.623Z] Fresh SW #2 Restored State from Checkpoint: {"isActive":false,"isPaused":true,"remainingCount":0,"pausedByOperator":true,"runId":"normal_run_1793997058145_6jl1n8"}

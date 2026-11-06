@@ -763,6 +763,42 @@ async function main() {
         }
         assert(targetTabWs, 'Captcha target tab not found');
 
+        // Audit AUTO mode external captcha waiting: NO intervention popup/buttons & bounded retries <= 3
+        let auditVal = null;
+        for (let i = 0; i < 60; i++) {
+            await sleep(300);
+            const hudAudit = await cdpSend(targetTabWs, 'Runtime.evaluate', {
+                expression: `(() => {
+                    const hud = document.getElementById('xpider-v7-external-captcha-hud');
+                    const holdPanel = document.getElementById('xpider-v7-manual-hold-panel');
+                    if (!hud) return null;
+                    const waitCount = parseInt(hud.getAttribute('data-wait-count') || '1', 10);
+                    const buttons = Array.from(hud.querySelectorAll('button')).map(b => b.textContent);
+                    return {
+                        hudPresent: true,
+                        holdPanelPresent: Boolean(holdPanel),
+                        waitCount,
+                        buttonsCount: buttons.length,
+                        pointerEvents: window.getComputedStyle(hud).pointerEvents
+                    };
+                })()`,
+                returnByValue: true
+            });
+            if (hudAudit?.result?.value?.hudPresent) {
+                auditVal = hudAudit.result.value;
+                log('External captcha waiting observed on tab: ' + JSON.stringify(auditVal));
+                break;
+            }
+        }
+        recordAssertion('EXTERNAL_CAPTCHA_AUTO_NO_INTERVENTION_POPUP',
+            Boolean(auditVal && auditVal.holdPanelPresent === false && auditVal.buttonsCount === 0 && auditVal.pointerEvents === 'none'),
+            auditVal || {}
+        );
+        recordAssertion('EXTERNAL_CAPTCHA_WAIT_BOUNDED_LE_3',
+            Boolean(auditVal && auditVal.waitCount >= 1 && auditVal.waitCount <= 3),
+            auditVal || {}
+        );
+
         // External extension solves Turnstile and sets token in DOM
         for (let i = 0; i < 20; i++) {
             await sleep(300);

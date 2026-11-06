@@ -93,6 +93,7 @@
         if (typeof window !== 'undefined') {
             window.__xpider_captchaTokenInjected = false;
             window.__xpider_isCaptchaSolved = false;
+            window.__xpider_external_challenge_wait_count = 0;
             window.__xpider_resetCaptchaRuntimeState = resetCaptchaRuntimeState;
             window.__xpiderResetCaptchaRuntimeState = resetCaptchaRuntimeState;
         }
@@ -4764,6 +4765,15 @@
     }
 
     async function waitForExternalOrUserChallengeV7(form, template, frozenSnapshot, challengeInfo) {
+        if (typeof window !== 'undefined') {
+            window.__xpider_external_challenge_wait_count = (window.__xpider_external_challenge_wait_count || 0) + 1;
+            if (window.__xpider_external_challenge_wait_count > 3) {
+                logDev(`❌ [CAPTCHA_EXTERNAL_MAX_RETRIES] External challenge wait/retry count (${window.__xpider_external_challenge_wait_count}) exceeded limit (<=3). Failing closed with zero duplicate POST.`, "error");
+                finishCampaign(false, 'FAILURE: CAPTCHA_EXTERNAL_MAX_RETRIES_EXCEEDED', 'CAPTCHA_EXTERNAL_MAX_RETRIES_EXCEEDED', { challengeType: challengeInfo?.type || 'unknown' });
+                return { resolved: false, hasError: true, reasonCode: 'CAPTCHA_EXTERNAL_MAX_RETRIES_EXCEEDED' };
+            }
+        }
+
         const sendFn = (typeof window !== 'undefined' && window.__xpider_sendExecutionMessage) ||
             (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage ? chrome.runtime.sendMessage.bind(chrome.runtime) : null);
 
@@ -4862,6 +4872,7 @@
                     badge.id = 'xpider-v7-external-captcha-hud';
                     badge.setAttribute('data-xpider-ui', 'true');
                     badge.setAttribute('data-mode', 'AUTO');
+                    badge.setAttribute('data-wait-count', String(window.__xpider_external_challenge_wait_count || 1));
                     badge.style.cssText = 'position:fixed;bottom:12px;right:12px;z-index:2147483647;background:rgba(15,23,42,0.88);color:#94a3b8;padding:6px 12px;border-radius:20px;font-family:system-ui,-apple-system,sans-serif;font-size:11px;font-weight:500;border:1px solid #334155;pointer-events:none;box-shadow:0 4px 12px rgba(0,0,0,0.3);display:flex;align-items:center;gap:6px;';
                     badge.innerHTML = `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#f59e0b;"></span><span>Observing external challenge (${challengeInfo?.type || 'challenge'})...</span>`;
                     document.body.appendChild(badge);
