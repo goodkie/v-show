@@ -1,6 +1,6 @@
 {
   "directive": "6688411313",
-  "startTimeUtc": "2026-11-06T22:26:54.776Z",
+  "startTimeUtc": "2026-11-06T23:40:53.656Z",
   "assertions": [
     {
       "name": "START_OPTIONS_CHECKBOX_RENDERED_DEFAULT_UNCHECKED",
@@ -11,7 +11,7 @@
         "hasWarning": true,
         "warningText": "⚠️ Warning: Enabling broadens submissions to newsletter & subscription forms without inquiry text."
       },
-      "timestamp": "2026-11-06T22:26:58.850Z"
+      "timestamp": "2026-11-06T23:40:57.682Z"
     },
     {
       "name": "START_OPTIONS_WARNING_TEXT_RENDERED",
@@ -19,7 +19,7 @@
       "details": {
         "warningText": "⚠️ Warning: Enabling broadens submissions to newsletter & subscription forms without inquiry text."
       },
-      "timestamp": "2026-11-06T22:26:58.850Z"
+      "timestamp": "2026-11-06T23:40:57.682Z"
     },
     {
       "name": "START_OPTIONS_PERSISTENCE_IN_STORAGE",
@@ -27,13 +27,13 @@
       "details": {
         "storedValue": true
       },
-      "timestamp": "2026-11-06T22:26:59.174Z"
+      "timestamp": "2026-11-06T23:40:57.994Z"
     },
     {
       "name": "FLAG_OFF_CAMPAIGN_LAUNCHED",
       "passed": true,
       "details": {},
-      "timestamp": "2026-11-06T22:27:00.556Z"
+      "timestamp": "2026-11-06T23:40:59.018Z"
     },
     {
       "name": "FLAG_OFF_SUBSCRIBE_SETTLED_AS_SKIPPED",
@@ -42,7 +42,7 @@
         "status": "SKIPPED",
         "reason": "NON_INQUIRY_SUBSCRIBE_FORM"
       },
-      "timestamp": "2026-11-06T22:27:10.739Z"
+      "timestamp": "2026-11-06T23:41:09.242Z"
     },
     {
       "name": "FLAG_OFF_REASON_NON_INQUIRY_SUBSCRIBE_FORM",
@@ -51,7 +51,7 @@
         "status": "SKIPPED",
         "reason": "NON_INQUIRY_SUBSCRIBE_FORM"
       },
-      "timestamp": "2026-11-06T22:27:10.739Z"
+      "timestamp": "2026-11-06T23:41:09.242Z"
     },
     {
       "name": "FLAG_OFF_ZERO_SERVER_SUBMISSIONS",
@@ -59,13 +59,13 @@
       "details": {
         "submissionsCount": 0
       },
-      "timestamp": "2026-11-06T22:27:10.742Z"
+      "timestamp": "2026-11-06T23:41:09.246Z"
     },
     {
       "name": "STALE_GLOBAL_IMMUNITY_CAMPAIGN_LAUNCHED",
       "passed": true,
       "details": {},
-      "timestamp": "2026-11-06T22:27:11.501Z"
+      "timestamp": "2026-11-06T23:41:10.189Z"
     },
     {
       "name": "STALE_GLOBAL_DOES_NOT_BYPASS_FLAG_OFF",
@@ -74,7 +74,7 @@
         "status": "SKIPPED",
         "reason": "NON_INQUIRY_SUBSCRIBE_FORM"
       },
-      "timestamp": "2026-11-06T22:27:21.696Z"
+      "timestamp": "2026-11-06T23:41:20.365Z"
     },
     {
       "name": "STALE_GLOBAL_ZERO_SERVER_SUBMISSIONS",
@@ -82,13 +82,13 @@
       "details": {
         "submissionsCount": 0
       },
-      "timestamp": "2026-11-06T22:27:21.699Z"
+      "timestamp": "2026-11-06T23:41:20.367Z"
     },
     {
       "name": "FLAG_ON_CAMPAIGN_LAUNCHED",
       "passed": true,
       "details": {},
-      "timestamp": "2026-11-06T22:27:22.459Z"
+      "timestamp": "2026-11-06T23:41:21.109Z"
     },
     {
       "name": "SUBTEST_3A_EMAIL_ONLY_CONFIRMED_SUCCESS",
@@ -97,9 +97,9 @@
         "url": "http://127.0.0.1:8088/subscribe-no-message.html",
         "status": "CONFIRMED_SUCCESS",
         "reason": "SUCCESS_CONFIRMED",
-        "receiptId": "rcpt_1794004048411_1"
+        "receiptId": "rcpt_1794008486724_1"
       },
-      "timestamp": "2026-11-06T22:28:26.087Z"
+      "timestamp": "2026-11-06T23:42:23.633Z"
     },
     {
       "name": "SUBTEST_3B_NAME_EMAIL_CONFIRMED_SUCCESS",
@@ -108,9 +108,9 @@
         "url": "http://127.0.0.1:8088/newsletter-name-email.html",
         "status": "CONFIRMED_SUCCESS",
         "reason": "SUCCESS_CONFIRMED",
-        "receiptId": "rcpt_1794004066453_2"
+        "receiptId": "rcpt_1794008504026_2"
       },
-      "timestamp": "2026-11-06T22:28:26.087Z"
+      "timestamp": "2026-11-06T23:42:23.633Z"
     },
     {
       "name": "SUBTEST_3C_OPTIN_REGISTRATION_CONFIRMED_SUCCESS",
@@ -119,9 +119,9 @@
         "url": "http://127.0.0.1:8088/opt-in-registration.html",
         "status": "CONFIRMED_SUCCESS",
         "reason": "SUCCESS_CONFIRMED",
-        "receiptId": "rcpt_1794004085585_3"
+        "receiptId": "rcpt_1794008523777_3"
       },
-      "timestamp": "2026-11-06T22:28:26.087Z"
+      "timestamp": "2026-11-06T23:42:23.633Z"
     },
     {
       "name": "SUBTEST_3D_DYNAMIC_SPA_CONFIRMED_SUCCESS",
@@ -130,9 +130,9 @@
         "url": "http://127.0.0.1:8088/dynamic-spa-newsletter.html",
         "status": "CONFIRMED_SUCCESS",
         "reason": "SUCCESS_CONFIRMED",
-        "receiptId": "rcpt_1794004099927_4"
+        "receiptId": "rcpt_1794008538417_4"
       },
-      "timestamp": "2026-11-06T22:28:26.087Z"
+      "timestamp": "2026-11-06T23:42:23.633Z"
     },
     {
       "name": "SERVER_SUBMISSIONS_EXACTLY_FOUR",
@@ -140,13 +140,13 @@
       "details": {
         "submissionsCount": 4
       },
-      "timestamp": "2026-11-06T22:28:26.089Z"
+      "timestamp": "2026-11-06T23:42:23.635Z"
     },
     {
       "name": "CONSECUTIVE_REVERSION_CAMPAIGN_LAUNCHED",
       "passed": true,
       "details": {},
-      "timestamp": "2026-11-06T22:28:26.879Z"
+      "timestamp": "2026-11-06T23:42:24.782Z"
     },
     {
       "name": "CONSECUTIVE_REVERSION_SKIPS_NO_MESSAGE_FORM",
@@ -155,7 +155,7 @@
         "status": "SKIPPED",
         "reason": "NON_INQUIRY_SUBSCRIBE_FORM"
       },
-      "timestamp": "2026-11-06T22:28:37.063Z"
+      "timestamp": "2026-11-06T23:42:34.951Z"
     },
     {
       "name": "CONSECUTIVE_REVERSION_ZERO_NEW_SUBMISSIONS",
@@ -163,7 +163,7 @@
       "details": {
         "submissionsCount": 4
       },
-      "timestamp": "2026-11-06T22:28:37.066Z"
+      "timestamp": "2026-11-06T23:42:34.958Z"
     },
     {
       "name": "CONTACT_FORM_PRIORITIZED_SINGLE_POST",
@@ -172,7 +172,7 @@
         "totalSubmissions": 5,
         "expected": 5
       },
-      "timestamp": "2026-11-06T22:28:53.380Z"
+      "timestamp": "2026-11-06T23:42:51.145Z"
     },
     {
       "name": "STRICT_NEGATIVE_CONTROLS_ZERO_POSTS",
@@ -181,7 +181,7 @@
         "submissionsCount": 5,
         "delta": 0
       },
-      "timestamp": "2026-11-06T22:29:31.591Z"
+      "timestamp": "2026-11-06T23:43:29.276Z"
     },
     {
       "name": "GENERIC_NAME_EMAIL_FAILS_CLOSED_WITHOUT_OPTIN_INTENT",
@@ -191,7 +191,7 @@
         "status": "SKIPPED",
         "reason": "NO_LONG_TEXT_INQUIRY_FIELD"
       },
-      "timestamp": "2026-11-06T22:29:31.592Z"
+      "timestamp": "2026-11-06T23:43:29.277Z"
     },
     {
       "name": "UNAUTHORIZED_CONSENT_CHECKBOX_FAILS_CLOSED",
@@ -201,7 +201,7 @@
         "status": "SKIPPED",
         "reason": "NON_INQUIRY_UNAUTHORIZED_CONSENT_FORM"
       },
-      "timestamp": "2026-11-06T22:29:31.592Z"
+      "timestamp": "2026-11-06T23:43:29.277Z"
     },
     {
       "name": "MISSING_REQUIRED_FIELD_FAILS_CLOSED_ZERO_POSTS",
@@ -209,7 +209,7 @@
       "details": {
         "submissionsCount": 5
       },
-      "timestamp": "2026-11-06T22:29:42.075Z"
+      "timestamp": "2026-11-06T23:43:39.349Z"
     },
     {
       "name": "UNFILLABLE_REQUIRED_INPUT_NOT_SKIPPED",
@@ -218,7 +218,7 @@
         "status": "FAILURE",
         "reason": "FINAL_NATIVE_VALIDITY_FAILED"
       },
-      "timestamp": "2026-11-06T22:29:42.077Z"
+      "timestamp": "2026-11-06T23:43:39.350Z"
     },
     {
       "name": "UNFILLABLE_REQUIRED_INPUT_STRICT_FAIL_NOT_BENIGN_SKIP",
@@ -227,7 +227,7 @@
         "status": "FAILURE",
         "reason": "FINAL_NATIVE_VALIDITY_FAILED"
       },
-      "timestamp": "2026-11-06T22:29:42.077Z"
+      "timestamp": "2026-11-06T23:43:39.350Z"
     },
     {
       "name": "EXTERNAL_CAPTCHA_AUTO_NO_INTERVENTION_POPUP",
@@ -239,7 +239,7 @@
         "buttonsCount": 0,
         "pointerEvents": "none"
       },
-      "timestamp": "2026-11-06T22:29:49.028Z"
+      "timestamp": "2026-11-06T23:43:46.322Z"
     },
     {
       "name": "EXTERNAL_CAPTCHA_WAIT_BOUNDED_LE_3",
@@ -251,7 +251,7 @@
         "buttonsCount": 0,
         "pointerEvents": "none"
       },
-      "timestamp": "2026-11-06T22:29:49.028Z"
+      "timestamp": "2026-11-06T23:43:46.322Z"
     },
     {
       "name": "EXTERNAL_CAPTCHA_NO_MESSAGE_SUCCESS_SIXTH_POST",
@@ -260,7 +260,7 @@
         "totalSubmissions": 6,
         "expected": 6
       },
-      "timestamp": "2026-11-06T22:29:54.422Z"
+      "timestamp": "2026-11-06T23:43:51.760Z"
     },
     {
       "name": "MANUAL_MODE_NO_MESSAGE_HOLDS_ON_PANEL",
@@ -268,7 +268,7 @@
       "details": {
         "holdObserved": true
       },
-      "timestamp": "2026-11-06T22:30:04.867Z"
+      "timestamp": "2026-11-06T23:44:02.081Z"
     },
     {
       "name": "MANUAL_MODE_OPERATOR_SUBMIT_SEVENTH_POST",
@@ -277,7 +277,7 @@
         "totalSubmissions": 7,
         "expected": 7
       },
-      "timestamp": "2026-11-06T22:30:05.998Z"
+      "timestamp": "2026-11-06T23:44:03.218Z"
     },
     {
       "name": "CHECKPOINT_SAVES_FROZEN_INCLUDE_NO_MESSAGE_FLAG",
@@ -285,9 +285,9 @@
       "details": {
         "hasCheckpoint": true,
         "includeFormsWithoutMessage": true,
-        "campaignRunId": "normal_run_1794004206444_nmhclh"
+        "campaignRunId": "normal_run_1794008643666_vqbxkv"
       },
-      "timestamp": "2026-11-06T22:30:07.707Z"
+      "timestamp": "2026-11-06T23:44:04.913Z"
     },
     {
       "name": "SW_REBOOT_RESTORES_FROZEN_OPTION_FROM_CHECKPOINT",
@@ -297,7 +297,7 @@
         "includeFormsWithoutMessage": true,
         "cpInclude": true
       },
-      "timestamp": "2026-11-06T22:30:09.540Z"
+      "timestamp": "2026-11-06T23:44:06.742Z"
     },
     {
       "name": "RESUMED_CAMPAIGN_COMPLETED_SUCCESSFULLY",
@@ -305,14 +305,14 @@
       "details": {
         "totalSubmissions": 9
       },
-      "timestamp": "2026-11-06T22:30:42.816Z"
+      "timestamp": "2026-11-06T23:44:41.020Z"
     },
     {
       "name": "LEDGER_STATS_SCOPED_BY_RUN_ID",
       "passed": true,
       "details": {
         "scope": "currentRun",
-        "campaignRunId": "normal_run_1794004206444_nmhclh",
+        "campaignRunId": "normal_run_1794008643666_vqbxkv",
         "totalStarted": 2,
         "totalImportRows": 2,
         "pending": 0,
@@ -329,14 +329,14 @@
         "failureBreakdown": {},
         "logStr": "[LEDGER_STATS] scope=currentRun success=2 failure=0 unknown=0 timeout=0 skipped=0"
       },
-      "timestamp": "2026-11-06T22:30:42.817Z"
+      "timestamp": "2026-11-06T23:44:41.021Z"
     },
     {
       "name": "LEDGER_BUCKETS_NON_NEGATIVE_AND_CONSISTENT",
       "passed": true,
       "details": {
         "scope": "currentRun",
-        "campaignRunId": "normal_run_1794004206444_nmhclh",
+        "campaignRunId": "normal_run_1794008643666_vqbxkv",
         "totalStarted": 2,
         "totalImportRows": 2,
         "pending": 0,
@@ -353,7 +353,7 @@
         "failureBreakdown": {},
         "logStr": "[LEDGER_STATS] scope=currentRun success=2 failure=0 unknown=0 timeout=0 skipped=0"
       },
-      "timestamp": "2026-11-06T22:30:42.817Z"
+      "timestamp": "2026-11-06T23:44:41.021Z"
     }
   ],
   "evidenceFiles": [

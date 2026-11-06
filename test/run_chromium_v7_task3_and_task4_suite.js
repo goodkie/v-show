@@ -936,7 +936,9 @@ async function main() {
     }
 }
 
-main().catch(err => {
+main().then(() => {
+    process.exit(0);
+}).catch(err => {
     console.error('\n❌ Fatal Test Runner Error:', err);
     logStream.write(`\n❌ Fatal Test Runner Error: ${err.stack || err}\n`);
     logStream.end();
