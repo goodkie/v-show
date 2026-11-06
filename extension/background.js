@@ -8483,6 +8483,9 @@ async function orchestrateSending(urlInput, template, abortSignal = null) {
 
         if (injectionTimer) clearTimeout(injectionTimer);
         logBg(tabId, "Extraction focus secured. Mapping template fields...", "info");
+        if (template && typeof template === 'object') {
+            template.includeFormsWithoutMessage = Boolean(campaignState.includeFormsWithoutMessage);
+        }
         safeTabs.sendMessage(tabId, { 
             action: 'START_SENDING', 
             attemptId: _attemptId,

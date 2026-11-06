@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Generic Name and Email Form (No Opt-in Intent)</title>
+</head>
+<body>
+    <h1>Generic Data Capture Form</h1>
+    <!-- A generic form with Name and Email, but ZERO opt-in / newsletter / subscribe signals -->
+    <form id="generic-data-form" action="/submit-feedback" method="POST">
+        <label for="user-name">Your Full Name:</label>
+        <input type="text" id="user-name" name="user_full_name" required>
+        
+        <label for="user-email">Your Work Email:</label>
+        <input type="email" id="user-email" name="user_work_email" required>
+        
+        <button type="submit" id="generic-submit-btn">Continue</button>
+    </form>
+</body>
+</html>

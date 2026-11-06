@@ -429,8 +429,8 @@ async function main() {
             ledgerOff
         );
 
-        recordAssertion('FLAG_OFF_REASON_NO_LONG_TEXT_INQUIRY_FIELD',
-            ledgerOff && (String(ledgerOff.reason).includes('NO_LONG_TEXT_INQUIRY_FIELD') || String(ledgerOff.reason).includes('NON_INQUIRY_SUBSCRIBE_FORM')),
+        recordAssertion('FLAG_OFF_REASON_NON_INQUIRY_SUBSCRIBE_FORM',
+            ledgerOff && (ledgerOff.reason === 'NON_INQUIRY_SUBSCRIBE_FORM' || ledgerOff.reason === 'NON_INQUIRY_NEWSLETTER_FORM'),
             ledgerOff
         );
 
@@ -438,6 +438,56 @@ async function main() {
         recordAssertion('FLAG_OFF_ZERO_SERVER_SUBMISSIONS',
             subOff.submissionsCount === 0,
             { submissionsCount: subOff.submissionsCount }
+        );
+
+        // =========================================================================
+        // SECTION 2B: STALE AMBIENT WINDOW GLOBAL IMMUNITY (DIRECTIVE 6690847856)
+        // Verify that flag OFF cannot be bypassed even if window.__xpider_include_forms_without_message is polluted
+        // =========================================================================
+        log('\n--- SECTION 2B: STALE AMBIENT WINDOW GLOBAL IMMUNITY (DIRECTIVE 6690847856) ---');
+
+        await setupPopup([`http://127.0.0.1:${PORT}/subscribe-no-message.html`], {}, false);
+        // Deliberately pollute popup window with true
+        await cdpSend(popupWs, 'Runtime.evaluate', {
+            expression: `window.__xpider_include_forms_without_message = true;`
+        });
+        const launchedImmunity = await clickStart('AUTO');
+        recordAssertion('STALE_GLOBAL_IMMUNITY_CAMPAIGN_LAUNCHED', launchedImmunity === true);
+
+        let settledImmunity = false;
+        for (let i = 0; i < 40; i++) {
+            await sleep(500);
+            const st = await swEval(`({
+                isActive: campaignState.isActive,
+                inFlight: campaignState.activeTargetInFlight,
+                remaining: campaignState.queue.length
+            })`);
+            if (!st?.inFlight && st?.remaining === 0) {
+                settledImmunity = true;
+                break;
+            }
+        }
+        assert(settledImmunity, 'Immunity campaign did not settle');
+
+        const ledgerImmunity = await swEval(`(async () => {
+            const hs = await getHistoryStoreInstance();
+            const attempt = hs.attempts[hs.attempts.length - 1];
+            return attempt ? {
+                status: attempt.status,
+                reason: attempt.reasonCode || attempt.reason || '',
+                terminalStatus: attempt.terminalStatus
+            } : null;
+        })()`);
+
+        recordAssertion('STALE_GLOBAL_DOES_NOT_BYPASS_FLAG_OFF',
+            ledgerImmunity && ledgerImmunity.status === 'SKIPPED',
+            ledgerImmunity
+        );
+
+        const subImmunity = await fetch(`http://127.0.0.1:${PORT}/__xpider_submissions`).then(r => r.json());
+        recordAssertion('STALE_GLOBAL_ZERO_SERVER_SUBMISSIONS',
+            subImmunity.submissionsCount === 0,
+            { submissionsCount: subImmunity.submissionsCount }
         );
 
         // =========================================================================
@@ -552,29 +602,57 @@ async function main() {
         );
 
         // =========================================================================
-        // SECTION 5: STRICT NEGATIVE CONTROLS (ZERO POSTS)
+        // SECTION 5: STRICT NEGATIVE CONTROLS (ZERO POSTS) & P0 SAFETY AUDIT
         // =========================================================================
-        log('\n--- SECTION 5: STRICT NEGATIVE CONTROLS (ZERO POSTS) ---');
+        log('\n--- SECTION 5: STRICT NEGATIVE CONTROLS & P0 SAFETY AUDIT (ZERO POSTS) ---');
 
-        await setupPopup([`http://127.0.0.1:${PORT}/negative-controls.html`], {}, true);
+        const safetyTargets = [
+            `http://127.0.0.1:${PORT}/negative-controls.html`,
+            `http://127.0.0.1:${PORT}/generic-name-email-no-optin.html`,
+            `http://127.0.0.1:${PORT}/consent-required-no-message.html`
+        ];
+
+        await setupPopup(safetyTargets, {}, true);
         await clickStart('AUTO');
 
         let settledNeg = false;
-        for (let i = 0; i < 60; i++) {
-            await sleep(500);
+        for (let i = 0; i < 90; i++) {
+            await sleep(1000);
             const st = await swEval(`({ inFlight: campaignState.activeTargetInFlight, remaining: campaignState.queue.length })`);
             if (!st?.inFlight && st?.remaining === 0) {
                 settledNeg = true;
                 break;
             }
         }
-        assert(settledNeg, 'Negative controls target did not settle');
+        assert(settledNeg, 'Negative controls and safety targets did not settle');
 
-        // Submissions count must remain exactly 5 (delta = 0)
+        // Submissions count must remain exactly 5 (delta = 0 across all negative & safety targets)
         const subNeg = await fetch(`http://127.0.0.1:${PORT}/__xpider_submissions`).then(r => r.json());
         recordAssertion('STRICT_NEGATIVE_CONTROLS_ZERO_POSTS',
             subNeg.submissionsCount === 5,
             { submissionsCount: subNeg.submissionsCount, delta: subNeg.submissionsCount - 5 }
+        );
+
+        // Verify ledger entries for generic non-optin and consent-required forms
+        const safetyLedger = await swEval(`(async () => {
+            const hs = await getHistoryStoreInstance();
+            return hs.attempts.map(a => ({
+                url: a.sourceUrl,
+                status: a.status,
+                reason: a.reasonCode || a.reason || ''
+            }));
+        })()`);
+
+        const genericAttempt = safetyLedger.find(a => a.url.includes('generic-name-email-no-optin.html'));
+        recordAssertion('GENERIC_NAME_EMAIL_FAILS_CLOSED_WITHOUT_OPTIN_INTENT',
+            genericAttempt && genericAttempt.status === 'SKIPPED',
+            genericAttempt
+        );
+
+        const consentAttempt = safetyLedger.find(a => a.url.includes('consent-required-no-message.html'));
+        recordAssertion('UNAUTHORIZED_CONSENT_CHECKBOX_FAILS_CLOSED',
+            consentAttempt && (consentAttempt.status === 'SKIPPED' || consentAttempt.status === 'REJECTED' || consentAttempt.status === 'FAILURE' || consentAttempt.status === 'FAILED'),
+            consentAttempt
         );
 
         // =========================================================================

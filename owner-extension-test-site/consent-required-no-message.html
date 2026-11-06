@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Consent Required Newsletter Form</title>
+</head>
+<body>
+    <h1>Join Our Mailing List</h1>
+    <!-- An explicit newsletter form, but with a REQUIRED marketing consent checkbox that is NOT pre-checked -->
+    <!-- Under CheckboxResolverR2 invariants, unticked marketing consent is NEVER auto-checked, so this form must fail closed -->
+    <form id="consent-newsletter-form" action="/submit-newsletter" method="POST">
+        <label for="subscriber-name">Name:</label>
+        <input type="text" id="subscriber-name" name="subscriber_name" required>
+        
+        <label for="subscriber-email">Email:</label>
+        <input type="email" id="subscriber-email" name="subscriber_email" required>
+
+        <label>
+            <input type="checkbox" id="marketing-consent-chk" name="marketing_consent" required>
+            I explicitly agree to receive promotional and marketing emails (Required).
+        </label>
+        
+        <button type="submit" id="newsletter-submit-btn">Subscribe Now</button>
+    </form>
+</body>
+</html>

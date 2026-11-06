@@ -446,6 +446,9 @@
                 // [Issue #6 R6.9E & v7.0 Triple Mode] Canonical Execution Identity & Campaign Mode Binding
                 window.__xpider_campaign_mode = (request.campaignMode === 'MANUAL' || request.campaignMode === 'SEMI_AUTO') ? request.campaignMode : 'AUTO';
                 window.__xpider_include_forms_without_message = Boolean(request.includeFormsWithoutMessage);
+                if (request.template && typeof request.template === 'object') {
+                    request.template.includeFormsWithoutMessage = Boolean(request.includeFormsWithoutMessage);
+                }
                 window.__xpider_execution_identity = {
                     attemptId: request.attemptId || attemptId,
                     targetToken: request.targetToken || null,
@@ -1151,7 +1154,7 @@
             }
 
             // [P0-2 Rule 1 & 2] bodyCandidates === 0 or no genuine inquiry body field -> hard eligible=false UNLESS includeFormsWithoutMessage opt-in passed
-            const isNoMsgOptInEarly = Boolean(window.__xpider_include_forms_without_message && currentForm && _ContactGate && _ContactGate.classifyFormIntent(currentForm, { includeFormsWithoutMessage: true }).eligible);
+            const isNoMsgOptInEarly = Boolean(window.__xpider_include_forms_without_message && currentForm && _ContactGate && _ContactGate.classifyFormIntent(currentForm, { includeFormsWithoutMessage: Boolean(window.__xpider_include_forms_without_message) }).eligible);
             if (!isNoMsgOptInEarly && (formScanBodyCandidates === 0 || !inquiryBody)) {
                 if (currentForm) {
                     console.log(`[FORM_GATE_INVARIANT_VIOLATION] bodyCandidates=${formScanBodyCandidates} hasInquiryBody=${!!inquiryBody} -> eligible=false`);
@@ -2002,7 +2005,7 @@
             if (!isAutofillSuccess) {
                 // [RC11 P0 Directive 5] Genuine message/inquiry field is REQUIRED for form submission eligibility in all modes UNLESS includeFormsWithoutMessage opt-in passed.
                 // Forms with confirmed absence of genuine message field MUST be SKIPPED before operator hold in ALL MODES.
-                const isNoMsgOptInAutofill = Boolean(window.__xpider_include_forms_without_message && form && _ContactGate && _ContactGate.classifyFormIntent(form, { includeFormsWithoutMessage: true }).eligible);
+                const isNoMsgOptInAutofill = Boolean(window.__xpider_include_forms_without_message && form && _ContactGate && _ContactGate.classifyFormIntent(form, { includeFormsWithoutMessage: Boolean(window.__xpider_include_forms_without_message) }).eligible);
                 const hasReachableMsgField = form && typeof form.querySelectorAll === 'function' &&
                     Array.from(form.querySelectorAll('input, textarea, [contenteditable="true"]')).some(el =>
                         (typeof isMsgElement === 'function' && isMsgElement(el)) ||
@@ -4447,7 +4450,7 @@
 
         const hasGenuineMessageField = finalAllInputs.some(el => isMsgElement(el) || el.tagName === 'TEXTAREA' || el.contentEditable === 'true');
         if (!messageFilled) {
-            const isNoMsgOptInForm = Boolean(window.__xpider_include_forms_without_message && _ContactGate && _ContactGate.classifyFormIntent(form, { includeFormsWithoutMessage: true }).eligible);
+            const isNoMsgOptInForm = Boolean(window.__xpider_include_forms_without_message && _ContactGate && _ContactGate.classifyFormIntent(form, { includeFormsWithoutMessage: Boolean(window.__xpider_include_forms_without_message) }).eligible);
             if (!hasGenuineMessageField) {
                 if (isNoMsgOptInForm && filledFields > 0) {
                     logDev(`ℹ️ [Fill] Form without message field accepted per includeFormsWithoutMessage opt-in (fieldsFilled=${filledFields})`, "info");
@@ -4488,7 +4491,7 @@
         const interactiveInputs = finalAllInputs.filter(el => !['hidden', 'submit', 'button', 'image', 'reset'].includes(el.type) && !isCaptchaChallengeField(el));
         const totalInputsCount = interactiveInputs.length;
         const unresolvedFields = [];
-        const isEligibleNoMsgForm = Boolean(window.__xpider_include_forms_without_message && !hasGenuineMessageField && _ContactGate && _ContactGate.classifyFormIntent(form, { includeFormsWithoutMessage: true }).eligible);
+        const isEligibleNoMsgForm = Boolean(window.__xpider_include_forms_without_message && !hasGenuineMessageField && _ContactGate && _ContactGate.classifyFormIntent(form, { includeFormsWithoutMessage: Boolean(window.__xpider_include_forms_without_message) }).eligible);
         if (!messageFilled && !isEligibleNoMsgForm) unresolvedFields.push('message_body');
         const hasNameField = interactiveInputs.some(el => /name|이름|성함/i.test(`${el.name || ''} ${el.id || ''} ${el.placeholder || ''}`));
         const nameFilled = interactiveInputs.some(el => /name|이름|성함/i.test(`${el.name || ''} ${el.id || ''} ${el.placeholder || ''}`) && (el.value || '').trim().length > 0);

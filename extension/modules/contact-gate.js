@@ -347,8 +347,20 @@
         // 4. Evaluate Negative Signals
         const combinedContext = `${headingText} ${submitText} ${formId} ${formClass} ${formAction}`;
 
-        // [P0 Directive 6688411313] Check explicit opt-in for forms without long-text inquiry field
-        const includeNoMessage = Boolean(pageContext?.includeFormsWithoutMessage || (typeof window !== 'undefined' && window.__xpider_include_forms_without_message));
+        // [P0 Directive 6690847856] Authoritative tri-state precedence:
+        // 1. Authoritative pageContext / campaign parameter takes absolute precedence (even if false).
+        // 2. Ambient window global is ONLY consulted if pageContext.includeFormsWithoutMessage is undefined/absent.
+        let includeNoMessage = false;
+        if (pageContext && typeof pageContext.includeFormsWithoutMessage === 'boolean') {
+            includeNoMessage = pageContext.includeFormsWithoutMessage;
+        } else if (typeof window !== 'undefined' && typeof window.__xpider_include_forms_without_message === 'boolean') {
+            includeNoMessage = window.__xpider_include_forms_without_message;
+        }
+
+        // [P0 Directive 6690847856] Explicit opt-in intent check to avoid accidental non-consensual signup on generic forms
+        const OPT_IN_INTENT_PATTERN = /newsletter|subscribe|subscription|opt-?in|sign\s*up|mailing\s*list|email\s*updates|join\s*list|get\s*updates|stay\s*updated|news\b/i;
+        const hasExplicitOptInIntent = OPT_IN_INTENT_PATTERN.test(combinedContext) ||
+            emailInputs.some(inp => OPT_IN_INTENT_PATTERN.test(`${inp.name || ''} ${inp.id || ''} ${inp.placeholder || ''} ${inp.className || ''}`));
 
         const hasPasswordField = formEl.querySelector && !!formEl.querySelector('input[type="password"]');
         const hasPaymentField = formEl.querySelector && !!formEl.querySelector('input[autocomplete*="cc-"], input[name*="card" i], input[id*="card" i], input[name*="cvv" i], input[id*="cvv" i], input[name*="exp" i]');
@@ -463,7 +475,7 @@
                     reason = 'ELIGIBLE_CONTACT_INQUIRY';
                 }
             }
-        } else if (isSubscribeButton || negativeSignals.some(s => s.startsWith('newsletter_token')) || (allInputs.length <= 2 && emailInputs.length >= 1)) {
+        } else if (isSubscribeButton || negativeSignals.some(s => s.startsWith('newsletter_token')) || (allInputs.length <= 2 && emailInputs.length >= 1 && hasExplicitOptInIntent)) {
             intent = isSubscribeButton ? 'SUBSCRIBE' : 'NEWSLETTER';
             if (!hasInquiryBodyField) {
                 if (includeNoMessage && (emailInputs.length >= 1 || allInputs.length >= 1)) {
@@ -498,8 +510,8 @@
             decision = 'ACCEPT';
             reason = 'ELIGIBLE_CONTACT_INQUIRY';
             positiveSignals.push(`inquiry_body:${inquiryBody.type}`);
-        } else if (includeNoMessage && (emailInputs.length >= 1 || (nameInputs.length >= 1 && allInputs.length >= 1)) && allInputs.length <= 15) {
-            // [P0 Directive 6688411313] Ordinary accessible non-message opt-in / registration form
+        } else if (includeNoMessage && hasExplicitOptInIntent && (emailInputs.length >= 1 || (nameInputs.length >= 1 && allInputs.length >= 1)) && allInputs.length <= 15) {
+            // [P0 Directive 6688411313 & 6690847856] Explicit opt-in newsletter / subscription form
             intent = 'OPT_IN_REGISTRATION';
             decision = 'ACCEPT';
             reason = 'ELIGIBLE_NO_MESSAGE_FORM';

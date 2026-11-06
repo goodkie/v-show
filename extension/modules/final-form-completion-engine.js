@@ -1163,11 +1163,15 @@
                 }
             }
 
-            // [P0 Directive 6688411313] Check if message-less forms are permitted
-            const allowNoMessage = Boolean(
-                (template && template.includeFormsWithoutMessage) ||
-                (typeof window !== 'undefined' && window.__xpider_include_forms_without_message)
-            );
+            // [P0 Directive 6688411313 & 6690847856] Authoritative tri-state precedence:
+            // 1. Authoritative template / campaign parameter takes absolute precedence (even if false).
+            // 2. Ambient window global is ONLY consulted if template.includeFormsWithoutMessage is undefined/absent.
+            let allowNoMessage = false;
+            if (template && typeof template.includeFormsWithoutMessage === 'boolean') {
+                allowNoMessage = template.includeFormsWithoutMessage;
+            } else if (typeof window !== 'undefined' && typeof window.__xpider_include_forms_without_message === 'boolean') {
+                allowNoMessage = window.__xpider_include_forms_without_message;
+            }
             const hasGenuineMessageElement = controls.some(c => {
                 const tag = (c.tagName || '').toLowerCase();
                 const cls = (typeof this.classifyControl === 'function' ? this.classifyControl(c) : {});
