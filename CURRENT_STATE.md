@@ -5,24 +5,24 @@
 - Project ID: xpider-autoform-sender-pro
 - Workspace: E:\vivpr\ai\extension-form-sender
 - Authority: goodkie/v-show Issues #6 & #10
-- Branch: candidate/p0-core-regressions-v7 (candidate branch isolated; base major/v7-dual-mode remains 100% frozen RC11 20678ada)
+- Branch: candidate/p0-core-regressions-v7 (candidate branch isolated; base major/v7-dual-mode preserves frozen RC11 code 20678ada with schedule-only updates at tip d96cd1c3)
 - Candidate Functional Base Commit: 76fab093bdfbc13f17cae9652a2339d675eb9a8f (short: 76fab093)
 - Authoritative Candidate Branch Ref: refs/heads/candidate/p0-core-regressions-v7 (live tip resolved dynamically via git ls-remote / git rev-parse HEAD)
-- State Rev: 2026-11-06.710
-- Authority Cursor: 6696461944 (Responding to ChatGPT Audit Comment #6696461944 / Node IC_kwDOT53X288AAAABjyPmeA: Independent Source Inspection Confirmed, Documentation Provenance Reconciled without Self-Referential SHA Drift, Schedule Revision 8 Target Alignment)
+- State Rev: 2026-11-06.711
+- Authority Cursor: 6697198706 (Responding to ChatGPT Audit Comment #6697198706 / Node IC_kwDOT53X288AAAABjy8kcg: Live Ref Audit Confirmed, Baseline Ref Clarified, Localhost Verification Rigor Maintained)
 - Canonical Schedule Revision: 8
 - Collaboration Mode: Manual ChatGPT ↔ Antigravity Collaboration per Owner Directive.
 - Verification Status: HOLD (Awaiting independent ChatGPT Code Audit & Gate Decision). Release HOLD maintained. Zero external public submissions.
 
 ---
 
-## 1. Directive #6696461944 Implementation & Provenance Reconciliation
+## 1. Directive #6697198706 Implementation & Provenance Reconciliation
 
-### A. Non-Self-Referential Provenance Alignment
+### A. Non-Self-Referential Provenance & Baseline Clarification
 - Authoritative Candidate Branch Ref: `refs/heads/candidate/p0-core-regressions-v7`.
 - Functional Base: `76fab093bdfbc13f17cae9652a2339d675eb9a8f` (`76fab093`).
-- Documentation commits are metadata wrappers tracking the candidate branch tip above the functional base. No self-referential commit SHAs are embedded in tracked text, eliminating recursive HEAD drift.
-- Frozen base branch: `major/v7-dual-mode` remains 100% frozen at RC11 commit `20678ada6491bf842ec7e996a88108152c76007f`.
+- Base Branch Status: `major/v7-dual-mode` code remains 100% identical to frozen RC11 (`20678ada6491bf842ec7e996a88108152c76007f`), with branch tip `d96cd1c363c895451c10d08254e186596770d0c2` containing schedule-only metadata (`.ivcs/schedules/XPIDER_FORM_SENDER.json`).
+- Documentation commits on candidate branch are metadata wrappers tracking the candidate branch tip above the functional base. No self-referential commit SHAs are embedded in tracked text, eliminating recursive HEAD drift.
 - Preserved Assets: All user profiles, templates, CSV, History/Ledger, Email Collector, and relay configurations remain completely preserved.
 
 ### B. Independent Source Audit Confirmations
@@ -55,7 +55,7 @@
 
 ## 3. Strict Safety Invariants
 
-- Base branch `major/v7-dual-mode` remains 100% frozen at RC11 `20678ada6491bf842ec7e996a88108152c76007f`.
+- Base branch `major/v7-dual-mode` code remains 100% frozen at RC11 `20678ada6491bf842ec7e996a88108152c76007f`.
 - IVCS Manager remains untouched and strictly ChatGPT-owned.
 - Zero public contact form submissions dispatched (100% isolated localhost `127.0.0.1:8088` fixtures).
 - Gate: **RELEASE HOLD** maintained pending independent ChatGPT Code Audit and Owner smoke approval.
