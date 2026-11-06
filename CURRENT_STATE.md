@@ -6,49 +6,48 @@
 - Workspace: E:\vivpr\ai\extension-form-sender
 - Authority: goodkie/v-show Issues #6 & #10
 - Branch: candidate/p0-core-regressions-v7 (candidate branch isolated; base major/v7-dual-mode remains 100% frozen RC11 20678ada)
-- Candidate Head: f56f665651c6e1c25ca48ee3bc4b0c2cb621743e
-- State Rev: 2026-11-06.702
-- Authority Cursor: 6685271700 (Responding to ChatGPT Audit + Execution Follow-Up Comment ID 6685271700 / Directive Comment #909 / ID 6657464425)
+- Candidate Functional Commit: 7cda637c2e44c14cd990df8312a4228903b93589 (short: 7cda637c)
+- Remote Branch HEAD: e945ca0dfb7dfd27594c5616822f89e694d50b74 (short: e945ca0d)
+- State Rev: 2026-11-06.703
+- Authority Cursor: 6686643497 (Responding to ChatGPT Independent Source Audit / Corrective Directive Comment #912 / ID 6686643497)
 - Canonical Schedule Revision: 5
-- Collaboration Mode: Manual ChatGPT ↔ Antigravity Collaboration restored per Owner Directive.
+- Collaboration Mode: Manual ChatGPT ↔ Antigravity Collaboration per Owner Directive.
 - Verification Status: HOLD (Awaiting independent ChatGPT Code Audit). Release HOLD maintained. Zero external public submissions.
 
 ---
 
-## 1. Directive #6657464425 & Follow-up #6685271700 Implementation & Remediations
+## 1. Directive #6686643497 Full Implementation & Clean CAPTCHA Retirement
 
-### A. External CAPTCHA Extension Contract & Observable Completion
-- **Contract Fulfillment**:
-  1. Complete owner-blocking EXTERNAL CAPTCHA EXTENSION ONLY contract without internal solvers or token bypass on isolated localhost fixtures (`http://127.0.0.1:8088`).
-  2. In `extension/modules/challenge-gate.js`: Disambiguated `[data-sitekey]` in `recaptchaWidget` so Turnstile/hCaptcha widgets are not misclassified as reCAPTCHA.
-  3. In `extension/content-script.js`:
-     - Added page error detection: checks `.cf-turnstile-error`, `[data-state="error"]`, `[data-challenge-state="error"]`, `#error-banner`. When visible error is detected, strictly fails closed with `CAPTCHA_EXTERNAL_SOLVER_ERROR` and 0 duplicate submissions.
-     - Added bounded wait: configures `externalCaptchaTimeoutMs` (default 45000ms or test-configured). Upon timeout, strictly fails closed with `CAPTCHA_EXTERNAL_SOLVER_TIMEOUT`.
-  4. In `extension/background.js`:
-     - Clears `campaignState.externalCaptchaWaitActive`, cleans up `xpider_v7_active_hold_state` storage, and resumes target deadline controller upon terminal finish.
-     - Non-blocking catch on Privacy Relay auto-recovery during worker boot.
-  5. In `extension/popup.js`:
-     - Passes `externalCaptchaTimeoutMs` through campaign launch payload.
+### A. Extension-Only CAPTCHA Full Retirement
+1. **Zero Internal Solver Execution**:
+   - `extension/solver-core.js`: Retired stub only. All methods immediately throw `INTERNAL_SOLVER_RETIRED_V7`.
+   - `extension/background.js`: Removed `solver-core.js` from `_swFoundationModules`. Gutted `handleSolveCaptchaInternal`, completely eradicating 55KB of legacy 2captcha/nopecha network calls, synthetic token injections, and test overrides.
+   - `handleTranscription` audio solver cleanly throws `INTERNAL_SOLVER_RETIRED_V7`.
+2. **Strict Negative Controls Verified (3 / 3 Pass)**:
+   - `NEG_INTERNAL_SOLVER_PROD_REJECTED`: Production call rejects with `INTERNAL_SOLVER_RETIRED_V7`.
+   - `NEG_INTERNAL_SOLVER_TEST_OVERRIDE_REJECTED`: Lab/test mock override attempt rejects with `INTERNAL_SOLVER_RETIRED_V7`.
+   - `NEG_SOLVER_CORE_NOT_IMPORTED`: Service worker foundation module list does not import `solver-core.js`.
 
-### B. Three Operation Modes & Visible Controls E2E
-- **AUTO Mode**: External Turnstile token injection observed -> unattended continuation -> 1 POST.
-- **AUTO Mode Timeout**: Bounded wait expires -> fails closed with `CAPTCHA_EXTERNAL_SOLVER_TIMEOUT` -> 0 POSTs.
-- **SEMI_AUTO Mode**: Challenge detected -> holds on `#xpider-v7-captcha-hold-hud` -> operator solves & submits -> total 2 POSTs.
-- **MANUAL Mode**: Autofill completed -> holds on `#xpider-v7-manual-hold-panel` -> operator confirms -> total 3 POSTs.
+### B. Three Operation Modes & Visible Controls Contract
+1. **AUTO Mode**:
+   - Unattended execution. Zero interruption popups or modal buttons (`I Completed Challenge`, `Skip`, `Stop & Save`).
+   - `#xpider-v7-external-captcha-hud` has `pointer-events: none` and strictly 0 buttons.
+   - Token injected by external extension -> auto continuation -> 1 POST.
+   - External solver error/timeout -> fails closed -> 0 POSTs.
+2. **SEMI_AUTO Mode**:
+   - Unattended until challenge fails or times out (`SEMI_AUTO_CHALLENGE_HOLD`), at which point operator intervention HUD renders.
+3. **MANUAL Mode**:
+   - Autofills form fields and immediately holds for operator inspection (`#xpider-v7-manual-hold-panel`).
+4. **Multi-Target Invariants & Quiescence**:
+   - Fixed ledger settlement in `background.js` `processNextCampaignTarget` finally block: paused in-flight targets are preserved without being erroneously marked `SKIPPED`.
+   - Pause, Stop & Save, CDP SW termination, and resume from storage banner verified across multi-target fixtures.
 
-### C. Coherent Multi-Target Campaign Execution
-- Campaign with real visible UI controls:
-  - Target 1: Discovery from Homepage (`homepage-with-newsletter-and-contact-link.html`) -> `contact-standard.html` -> 1 POST.
-  - Visible `#pause-btn` -> modal opened -> mode confirmed -> resumed.
-  - Target 2: Controlled Dynamic React Stale Revert (`dynamic-react-controlled-stale-revert.html`) -> 1 POST.
-  - Visible `#stop-save-btn` -> checkpoint saved -> CDP kill SW -> reopen popup -> `#resumable-campaign-banner` rendered -> `#resume-campaign-btn` clicked -> confirmed.
-  - Target 3: Phone-only form without message (`phone-only-no-message.html`) -> SKIPPED (0 POSTs).
-  - Target 4: Homepage with dead contact link (`homepage-with-dead-contact-link.html`) -> FAILURE (0 POSTs).
-- **Exact Run Ledger & Server POST Reconciliation**:
-  - Total Server Submissions: exactly 2 POSTs (Target 1 & Target 2).
-  - HistoryStore Ledger Attempts: exactly 4 records.
-  - Ledger breakdown: 2 SUCCESS, 1 SKIPPED, 1 FAILURE.
-  - Remaining queue: 0.
+### C. Explicit Declarations & Operational Boundaries
+- **Real NopeCHA Extension Interoperability**: `NOT_TESTED / UNKNOWN`. Local test fixtures simulate DOM token delivery by third-party extensions; actual NopeCHA extension runtime not verified in this runner.
+- **Live Network Privacy Relay**: `NOT_TESTED / UNKNOWN`. Tested exclusively on isolated localhost `127.0.0.1:8088` fixtures.
+- **Owner Windows Chrome Smoke**: `NOT_TESTED / UNKNOWN`. Disposable profile smoke test artifact provided for Owner evaluation.
+- **External Solver Multi-Reopen Retry**: `NOT_IMPLEMENTED (FAIL-CLOSED BY DESIGN)` (0 retries / 1 attempt to avoid duplicate submissions and tab thrashing).
+- **Independent Rerun**: `NOT_TESTED / UNKNOWN` until independent ChatGPT verification.
 
 ---
 
@@ -56,7 +55,7 @@
 
 | Test Suite / Harness | Command | Assertions / Result | Status | Exit Code | Evidence Report / Log |
 |---|---|:---:|:---:|:---:|---|
-| **Directive #6657464425 Dedicated E2E Suite** | `node test/run_chromium_v7_directive_6657464425_e2e_suite.js` | 37 / 37 | **100% PASS** | **0** | `test/evidence_v7_directive_6657464425/report_directive_6657464425_e2e.json` |
+| **Directive #6686643497 Dedicated E2E Suite** | `node test/run_chromium_v7_directive_6657464425_e2e_suite.js` | 38 / 38 | **100% PASS** | **0** | `test/evidence_v7_directive_6657464425/report_directive_6657464425_e2e.json` |
 | **Directive Reproduction & Verification Suite** | `node test/test_v7_directive_reproduction_suite.js` | 14 / 14 | **100% PASS** | **0** | `test/report_v7_directive_reproduction.json` |
 | **Modes & Visible Controls E2E Suite** | `node test/run_chromium_v7_modes_and_visible_controls_suite.js` | 32 / 32 | **100% PASS** | **0** | `test/report_v7_modes_and_visible_controls.json` |
 | **Item C & Dynamic React E2E Suite** | `node test/run_chromium_v7_item_c_contact_and_dynamic_message.js` | 22 / 22 | **100% PASS** | **0** | `owner-extension-test-site/evidence/evidence_v7_item_c_contact_and_dynamic_message_report.json` |
