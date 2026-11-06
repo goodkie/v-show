@@ -1,8 +1,8 @@
 {
   "schema": "IVCS_SCHEDULE_1",
   "project": "XPIDER_FORM_SENDER",
-  "revision": 5,
-  "updated_at": "2026-11-06T20:32:00Z",
+  "revision": 6,
+  "updated_at": "2026-11-06T20:33:24.009Z",
   "tasks": [
     {
       "id": "SC-20261031-01",
@@ -65,16 +65,16 @@
       "details": "2026-10-31 XPIDER 독립 검증 일정. 개발자 자체 PASS는 독립 검증이나 사용자 승인이 아님. 진행률은 기록된 추정치이며 직접 검증 근거가 없으면 NOT_TESTED/HOLD.",
       "owner": "Both",
       "priority": "P0",
-      "status": "PLANNED",
+      "status": "IN_PROGRESS",
       "start_at": "2026-10-31T16:15:00Z",
       "due_at": "2026-10-31T18:00:00Z",
       "dev_progress": 0,
       "verify_progress": 0,
       "verification": "NOT_TESTED",
       "weight": 4,
-      "evidence_url": "",
-      "note": "사용자 Windows 환경과 실사용 캠페인 성공은 독립 확인 전. 외부 공개 폼 제출 금지.",
-      "updated_at": "2026-10-31T12:30:00Z"
+      "evidence_url": "https://github.com/goodkie/v-show/issues/6#issuecomment-6692691817",
+      "note": "개발자 제출 증거: localhost Chromium visible-controls 32/32 PASS 주장 및 SW 재시작/Stop&Save checkpoint·Resume 시험 보고(#6692691817). 과거 SC-04 재시작 내구성 증거 #6552335990도 개발자 제출임. 독립 재실행·사용자 Windows 실제 동작은 NOT_TESTED. 개발자 자체 PASS를 독립 PASS로 승격하지 않으며 verification=NOT_TESTED, RELEASE HOLD.",
+      "updated_at": "2026-11-06T20:33:24.009Z"
     },
     {
       "id": "SC-20261031-05",
@@ -90,9 +90,9 @@
       "verify_progress": 0,
       "verification": "NOT_TESTED",
       "weight": 4,
-      "evidence_url": "",
-      "note": "사용자 Windows 환경과 실사용 캠페인 성공은 독립 확인 전. 외부 공개 폼 제출 금지.",
-      "updated_at": "2026-10-31T12:30:00Z"
+      "evidence_url": "https://github.com/goodkie/v-show/issues/6#issuecomment-6552335990",
+      "note": "localhost privacy fail-closed 모의 검증은 개발자 보고(#6552335990)로 존재. LIVE Decodo/DigitalOcean 최종 출구 IP, Owner Windows/relay, DNS/IPv6/WebRTC end-to-end는 NOT_TESTED. 실환경 설정 변경·공개 발송 금지, RELEASE HOLD.",
+      "updated_at": "2026-11-06T20:33:24.009Z"
     },
     {
       "id": "SC-20261031-06",
@@ -101,16 +101,16 @@
       "details": "2026-10-31 XPIDER 독립 검증 일정. 개발자 자체 PASS는 독립 검증이나 사용자 승인이 아님. 진행률은 기록된 추정치이며 직접 검증 근거가 없으면 NOT_TESTED/HOLD.",
       "owner": "Antigravity",
       "priority": "P0",
-      "status": "PLANNED",
+      "status": "IN_PROGRESS",
       "start_at": "2026-10-31T19:15:00Z",
       "due_at": "2026-10-31T21:00:00Z",
       "dev_progress": 0,
       "verify_progress": 0,
       "verification": "NOT_TESTED",
       "weight": 4,
-      "evidence_url": "",
-      "note": "사용자 Windows 환경과 실사용 캠페인 성공은 독립 확인 전. 외부 공개 폼 제출 금지.",
-      "updated_at": "2026-10-31T12:30:00Z"
+      "evidence_url": "https://github.com/goodkie/v-show/issues/6#issuecomment-6694288964",
+      "note": "격리 후보 candidate/p0-core-regressions-v7에서 메시지 없는 폼 옵션 기본 OFF/선택적 ON, 동의·필수입력 실패 분류, 내부 CAPTCHA 솔버 제거 및 AUTO 팝업 제약 관련 개발자 수정·테스트 보고(#6692691817). ChatGPT 원격 소스/JSON 보고 확인(#6694288964)은 일부 코드 존재 확인이지 독립 Chromium 재실행 아님. 후보 원격 HEAD 최신값 UNKNOWN; RC11 기준선 변경/병합 금지. verification=NOT_TESTED, RELEASE HOLD.",
+      "updated_at": "2026-11-06T20:33:24.009Z"
     },
     {
       "id": "SC-20261031-07",
@@ -119,16 +119,16 @@
       "details": "2026-10-31 XPIDER 독립 검증 일정. 개발자 자체 PASS는 독립 검증이나 사용자 승인이 아님. 진행률은 기록된 추정치이며 직접 검증 근거가 없으면 NOT_TESTED/HOLD.",
       "owner": "ChatGPT",
       "priority": "P0",
-      "status": "PLANNED",
+      "status": "IN_PROGRESS",
       "start_at": "2026-10-31T21:00:00Z",
       "due_at": "2026-10-31T22:30:00Z",
       "dev_progress": 0,
       "verify_progress": 0,
       "verification": "NOT_TESTED",
       "weight": 4,
-      "evidence_url": "",
-      "note": "사용자 Windows 환경과 실사용 캠페인 성공은 독립 확인 전. 외부 공개 폼 제출 금지.",
-      "updated_at": "2026-10-31T12:30:00Z"
+      "evidence_url": "https://github.com/goodkie/v-show/issues/6#issuecomment-6694288964",
+      "note": "2026-11-06 ChatGPT 원격 소스 및 개발자 테스트 JSON 파일 내용 감사 완료(#6694288964). 34/34, 38/38, 32/32, 4/4 등은 개발자 제출 테스트 결과이며 독립 Chromium 실행·Owner Windows smoke 검증은 NOT_TESTED. 독립 검증 완료 또는 출시 승인으로 간주 금지; RELEASE HOLD.",
+      "updated_at": "2026-11-06T20:33:24.009Z"
     },
     {
       "id": "SC-20261031-08",
@@ -180,9 +180,9 @@
       "verify_progress": 0,
       "verification": "NOT_TESTED",
       "weight": 4,
-      "evidence_url": "",
-      "note": "사용자 Windows 환경과 실사용 캠페인 성공은 독립 확인 전. 외부 공개 폼 제출 금지.",
-      "updated_at": "2026-10-31T12:30:00Z"
+      "evidence_url": "https://github.com/goodkie/v-show/issues/6#issuecomment-6694288964",
+      "note": "최신 ChatGPT 감사 지시(#6694288964): RELEASE HOLD 유지. 독립 Chromium 실제 실행, live Decodo/DO egress 및 사용자 Windows 최종 smoke/승인 미확인. 소유자 최종 승인은 UNKNOWN/NOT_TESTED, 공개 폼 제출·병합·배포 금지.",
+      "updated_at": "2026-11-06T20:33:24.009Z"
     }
   ]
 }
