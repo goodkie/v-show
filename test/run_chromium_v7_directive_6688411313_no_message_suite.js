@@ -722,6 +722,25 @@ async function main() {
             { submissionsCount: subMissing.submissionsCount }
         );
 
+        const ledgerMissing = await swEval(`(async () => {
+            const hs = await getHistoryStoreInstance();
+            const attempt = hs.attempts[hs.attempts.length - 1];
+            return attempt ? {
+                status: attempt.status,
+                reason: attempt.reasonCode || attempt.reason || ''
+            } : null;
+        })()`);
+
+        recordAssertion('UNFILLABLE_REQUIRED_INPUT_NOT_SKIPPED',
+            ledgerMissing && (ledgerMissing.status === 'AUTOMATION_FAILED' || ledgerMissing.status === 'FAILURE'),
+            ledgerMissing
+        );
+
+        recordAssertion('UNFILLABLE_REQUIRED_INPUT_STRICT_FAIL_NOT_BENIGN_SKIP',
+            ledgerMissing && ledgerMissing.status !== 'SKIPPED',
+            ledgerMissing
+        );
+
         // =========================================================================
         // SECTION 7: EXTERNAL CAPTCHA ON NO-MESSAGE FORM
         // =========================================================================

@@ -2891,7 +2891,9 @@ const _handleMainMessageInner = (request, sender, sendResponse) => {
                         campaignRunId: assignedRunId,
                         campaignMode: resolvedMode,
                         targetTimeoutMs: request.targetTimeoutMs || request.options?.targetTimeoutMs,
-                        includeFormsWithoutMessage: Boolean(request.includeFormsWithoutMessage || request.options?.includeFormsWithoutMessage)
+                        includeFormsWithoutMessage: (typeof request.includeFormsWithoutMessage === 'boolean')
+                            ? request.includeFormsWithoutMessage
+                            : Boolean(request.options?.includeFormsWithoutMessage)
                     });
                 } catch (e) {
                     console.error("[StartError]", e);
@@ -6185,7 +6187,11 @@ async function startCampaignOrchestrator(queue, template, delayMs, fillDelayMs =
             campaignState.campaignRunId = (isOwnerTestMode ? 'owner_test_run_' : 'run_') + Date.now() + '_' + Math.random().toString(36).substring(2, 7);
         }
         if (hs) hs.activeCampaignRunId = campaignState.campaignRunId;
-        chrome.storage.local.set({ xpider_active_campaign_run_id: campaignState.campaignRunId }).catch(() => {});
+        chrome.storage.local.set({
+            xpider_active_campaign_run_id: campaignState.campaignRunId,
+            xpider_include_forms_without_message: Boolean(campaignState.includeFormsWithoutMessage),
+            xpider_campaign_mode: campaignState.campaignMode || 'AUTO'
+        }).catch(() => {});
 
         // [F. Ledger Metadata Initialization] Ingest importRows for currentRun if not already present
         if (hs && typeof hs.ingestImportRows === 'function') {
@@ -6612,7 +6618,8 @@ async function resumeCampaignOrchestrator(options = {}) {
     await chrome.storage.local.set({
         xpider_isActive: true,
         xpider_isPaused: false,
-        xpider_campaign_mode: requestedMode
+        xpider_campaign_mode: requestedMode,
+        xpider_include_forms_without_message: Boolean(campaignState.includeFormsWithoutMessage)
     });
     logBg(null, `🚀 [Resume] Resuming campaign at task boundary in ${requestedMode} mode (previous=${previousMode}, switched=${modeSwitched}) from target ${campaignState.totalTargets - campaignState.queue.length + 1} (${campaignState.queue.length} targets remaining)...`, "start");
 
@@ -8286,7 +8293,7 @@ async function orchestrateSending(urlInput, template, abortSignal = null) {
             terminalStatus = 'DELIVERY_UNKNOWN';
         } else if (finalReason === 'TIMEOUT_LOCAL' || finalReason === 'TIMEOUT_GLOBAL') {
             terminalStatus = finalReason;
-        } else if (finalReason === 'SKIPPED' || finalReason === 'WOULD_SUBMIT' || finalReason?.includes('SKIPPED') || finalReason?.includes('NON_INQUIRY') || finalReason?.startsWith('NON_INQUIRY') || finalReason === 'EXPECTED_FAIL_PASS' || finalReason?.includes('EXPECTED_FAIL_PASS') || res?.isExpectedFailPass || finalReason === 'NO_LONG_TEXT_INQUIRY_FIELD' || finalReason === 'NO_FORM_FOUND' || finalReason === 'NO_REACHABLE_CONTACT_PAGE' || finalReason === 'MANUAL_OPERATOR_SKIP' || finalReason === 'CAPTCHA_OPERATOR_SKIP' || finalReason === 'UNAUTHORIZED_CONSENT_SKIPPED' || finalReason === 'NON_INQUIRY_UNAUTHORIZED_CONSENT_FORM' || finalReason === 'OWNER_ACTION_REQUIRED') {
+        } else if (finalReason === 'SKIPPED' || finalReason === 'WOULD_SUBMIT' || finalReason?.includes('SKIPPED') || finalReason?.includes('NON_INQUIRY') || finalReason?.startsWith('NON_INQUIRY') || finalReason === 'EXPECTED_FAIL_PASS' || finalReason?.includes('EXPECTED_FAIL_PASS') || res?.isExpectedFailPass || finalReason === 'NO_LONG_TEXT_INQUIRY_FIELD' || finalReason === 'NO_FORM_FOUND' || finalReason === 'NO_REACHABLE_CONTACT_PAGE' || finalReason === 'MANUAL_OPERATOR_SKIP' || finalReason === 'CAPTCHA_OPERATOR_SKIP' || finalReason === 'UNAUTHORIZED_CONSENT_SKIPPED' || finalReason === 'NON_INQUIRY_UNAUTHORIZED_CONSENT_FORM' || finalReason === 'LEGAL_CONSENT_REQUIRED_UNAUTHORIZED' || (finalReason === 'OWNER_ACTION_REQUIRED' && (/consent|terms|privacy/i.test(res?.context || '') || res?.audit?.unresolvedList?.some(u => /consent|terms|privacy/i.test(u.label || u.context || ''))))) {
             terminalStatus = 'SKIPPED';
         } else if (finalReason === 'REQUIRED_SELECT_UNSTABLE' || finalReason === 'REQUIRED_FIELD_LOST_BEFORE_SUBMIT' || finalReason === 'AUTOFILL_FAILED' || finalReason === 'FORM_FILL_FAILED' || finalReason === 'FINAL_CUSTOM_VALIDITY_FAILED' || finalReason === 'FINAL_NATIVE_VALIDITY_FAILED' || finalReason === 'FINAL_FORM_COMPLETION_FAILED') {
             terminalStatus = 'AUTOMATION_FAILED';
