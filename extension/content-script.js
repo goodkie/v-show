@@ -161,66 +161,8 @@
     }
 
     function updateTopSolverHUD(message, status = 'ACTIVE', options = {}) {
-        try {
-            if (typeof document === 'undefined' || !document.body) return;
-            let hud = document.getElementById('xpider-top-solver-hud');
-            if (!hud) {
-                hud = document.createElement('div');
-                hud.id = 'xpider-top-solver-hud';
-                Object.assign(hud.style, {
-                    position: 'fixed',
-                    top: '12px',
-                    right: '12px',
-                    zIndex: '2147483647',
-                    background: 'rgba(10, 15, 25, 0.95)',
-                    border: '1px solid #00ffcc',
-                    boxShadow: '0 0 15px rgba(0, 255, 204, 0.3)',
-                    borderRadius: '8px',
-                    padding: '8px 14px',
-                    color: '#e0e0e0',
-                    fontFamily: 'Inter, system-ui, sans-serif',
-                    fontSize: '12px',
-                    fontWeight: '600',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '10px',
-                    pointerEvents: 'none',
-                    backdropFilter: 'blur(6px)',
-                    transition: 'opacity 0.3s ease'
-                });
-                document.body.appendChild(hud);
-            }
-            const isSuccess = status === 'DONE' || status === 'PASS' || status === 'SUCCESS';
-            const isFail = status === 'FAIL' || status === 'ERROR';
-            const statusColor = isSuccess ? '#00ffcc' : (isFail ? '#ff3333' : '#ffaa00');
-
-            if (options && options.showButtons) {
-                hud.style.pointerEvents = 'auto';
-                hud.innerHTML = `
-                    <span style="font-size: 14px;">🤖</span>
-                    <span>[XPIDER AI Solver] <span style="color:#ffaa00">${message}</span></span>
-                    <button id="xpider-btn-manual-solved" style="background:#00ffcc;color:#000;border:none;border-radius:4px;padding:3px 9px;font-size:11px;font-weight:bold;cursor:pointer;margin-left:6px;pointer-events:auto;">✓ I Solved It</button>
-                    <button id="xpider-btn-manual-skip" style="background:#374151;color:#f3f4f6;border:1px solid #4b5563;border-radius:4px;padding:3px 9px;font-size:11px;font-weight:bold;cursor:pointer;margin-left:4px;pointer-events:auto;">⏭ Skip</button>
-                `;
-                const btnSolved = hud.querySelector('#xpider-btn-manual-solved');
-                const btnSkip = hud.querySelector('#xpider-btn-manual-skip');
-                if (btnSolved && typeof options.onSolved === 'function') {
-                    btnSolved.onclick = (e) => { e.preventDefault(); e.stopPropagation(); options.onSolved(); };
-                }
-                if (btnSkip && typeof options.onSkip === 'function') {
-                    btnSkip.onclick = (e) => { e.preventDefault(); e.stopPropagation(); options.onSkip(); };
-                }
-            } else {
-                hud.style.pointerEvents = 'none';
-                hud.innerHTML = `<span style="font-size: 14px;">🤖</span><span>[XPIDER AI Solver] <span style="color:${statusColor}">${message}</span></span>`;
-            }
-
-            if (isSuccess) {
-                setTimeout(() => { removeTopSolverHUD('SUCCESS_AUTO_DISMISS'); }, 800);
-            } else {
-                hud.style.opacity = '1';
-            }
-        } catch (_) {}
+        // [v7.0 Directive #6657464425 & Audit #6686643497] In-app AI solver HUD retired.
+        // Zero in-app solver UI elements, buttons, or toasts rendered.
     }
 
     if (typeof window !== 'undefined' && window.addEventListener) {
@@ -4882,31 +4824,22 @@
                 window.__xpiderTriggerExternalCaptchaAction = handleAction;
             }
 
-            // Render top HUD banner if document.body is available
+            // [v7.0 Directive #6657464425 & Audit #6686643497: AUTO no interruption popup]
+            const curMode = (typeof window !== 'undefined' && window.__xpider_campaign_mode) || (template && template.campaignMode) || 'AUTO';
             if (typeof document !== 'undefined' && document.body) {
                 const existing = document.getElementById('xpider-v7-external-captcha-hud');
                 if (existing) existing.remove();
 
-                const hud = document.createElement('div');
-                hud.id = 'xpider-v7-external-captcha-hud';
-                hud.setAttribute('data-xpider-ui', 'true');
-                hud.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:2147483647;background:linear-gradient(90deg,#0f172a,#1e293b);color:#f8fafc;padding:10px 16px;border-bottom:2px solid #f59e0b;display:flex;align-items:center;justify-content:space-between;gap:12px;font-family:system-ui,-apple-system,sans-serif;font-size:12px;box-shadow:0 4px 20px rgba(0,0,0,0.5);';
-                hud.innerHTML = `
-                    <div style="display:flex;align-items:center;gap:10px;flex:1;">
-                        <span style="background:#f59e0b;color:#000;font-weight:700;padding:2px 8px;border-radius:4px;font-size:11px;">AUTO MODE — CHALLENGE PENDING</span>
-                        <span id="xpider-v7-captcha-hud-msg" style="color:#fde68a;">Waiting for external extension or user completion (${challengeInfo?.type || 'challenge'})...</span>
-                    </div>
-                    <div style="display:flex;align-items:center;gap:8px;">
-                        <button type="button" id="xpider-v7-captcha-reverify-btn" style="background:#10b981;color:#fff;border:none;border-radius:4px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer;">✅ I Completed Challenge — Re-verify & Submit</button>
-                        <button type="button" id="xpider-v7-captcha-skip-btn" style="background:#475569;color:#fff;border:none;border-radius:4px;padding:5px 10px;font-size:11px;font-weight:600;cursor:pointer;">⏭️ Skip</button>
-                        <button type="button" id="xpider-v7-captcha-stop-save-btn" style="background:#d97706;color:#fff;border:none;border-radius:4px;padding:5px 10px;font-size:11px;font-weight:600;cursor:pointer;">⏸️ Stop & Save</button>
-                    </div>
-                `;
-                document.body.appendChild(hud);
-
-                hud.querySelector('#xpider-v7-captcha-reverify-btn')?.addEventListener('click', () => handleAction('REVERIFY_AND_SUBMIT'));
-                hud.querySelector('#xpider-v7-captcha-skip-btn')?.addEventListener('click', () => handleAction('SKIP'));
-                hud.querySelector('#xpider-v7-captcha-stop-save-btn')?.addEventListener('click', () => handleAction('STOP_AND_SAVE'));
+                if (curMode === 'AUTO') {
+                    // Non-blocking unobtrusive status indicator (ZERO intervention buttons)
+                    const badge = document.createElement('div');
+                    badge.id = 'xpider-v7-external-captcha-hud';
+                    badge.setAttribute('data-xpider-ui', 'true');
+                    badge.setAttribute('data-mode', 'AUTO');
+                    badge.style.cssText = 'position:fixed;bottom:12px;right:12px;z-index:2147483647;background:rgba(15,23,42,0.88);color:#94a3b8;padding:6px 12px;border-radius:20px;font-family:system-ui,-apple-system,sans-serif;font-size:11px;font-weight:500;border:1px solid #334155;pointer-events:none;box-shadow:0 4px 12px rgba(0,0,0,0.3);display:flex;align-items:center;gap:6px;';
+                    badge.innerHTML = `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#f59e0b;"></span><span>Observing external challenge (${challengeInfo?.type || 'challenge'})...</span>`;
+                    document.body.appendChild(badge);
+                }
             }
 
             const waitStartTime = Date.now();

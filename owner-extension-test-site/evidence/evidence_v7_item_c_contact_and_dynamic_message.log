@@ -1,247 +1,242 @@
-[2026-11-06T13:08:54.944Z] ================================================================================
-[2026-11-06T13:08:54.947Z] 🚀 RUNNING ITEM (C) CONTACT LINK DISCOVERY & DYNAMIC REACT MESSAGE SUITE
-[2026-11-06T13:08:54.947Z] ================================================================================
-[2026-11-06T13:08:55.012Z] Test server active on port 8088
-[2026-11-06T13:08:55.013Z] Disposable profile: C:\Users\oPus\AppData\Local\Temp\xpider-item-c-fqh22x
-[2026-11-06T13:08:55.013Z] Spawning browser binary: C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe
-[2026-11-06T13:08:55.724Z] Browser CDP connected: ws://127.0.0.1:9446/devtools/browser/ffbb977e-87f7-4df1-98aa-8e48ae95e83a
-[2026-11-06T13:08:55.993Z] Extension ID: ldlijlaccfeelfdhgnjbibniocefckjj
-[2026-11-06T13:08:57.844Z] Connected to Popup UI via CDP
-[2026-11-06T13:08:57.849Z] Initial server submissions count verified: 0
-[2026-11-06T13:08:57.850Z] 
+[2026-11-06T14:55:04.835Z] ================================================================================
+[2026-11-06T14:55:04.839Z] 🚀 RUNNING ITEM (C) CONTACT LINK DISCOVERY & DYNAMIC REACT MESSAGE SUITE
+[2026-11-06T14:55:04.839Z] ================================================================================
+[2026-11-06T14:55:04.905Z] Test server active on port 8088
+[2026-11-06T14:55:04.906Z] Disposable profile: C:\Users\oPus\AppData\Local\Temp\xpider-item-c-8irlrg
+[2026-11-06T14:55:04.906Z] Spawning browser binary: C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe
+[2026-11-06T14:55:05.711Z] Browser CDP connected: ws://127.0.0.1:9446/devtools/browser/2250add9-2357-4295-aa2b-acfb90078002
+[2026-11-06T14:55:06.251Z] Extension ID: ldlijlaccfeelfdhgnjbibniocefckjj
+[2026-11-06T14:55:07.912Z] Connected to Popup UI via CDP
+[2026-11-06T14:55:07.919Z] Initial server submissions count verified: 0
+[2026-11-06T14:55:07.920Z] 
 ================================================================================
-[2026-11-06T13:08:57.850Z] 🚀 LAUNCHING ITEM (C) 5-TARGET UNIFIED CAMPAIGN:
-[2026-11-06T13:08:57.850Z]    Target 1: Homepage Contact Link Discovery -> Standard Contact Form
-[2026-11-06T13:08:57.850Z]    Target 2: Controlled Stale Message Revert with React _valueTracker & onBlur
-[2026-11-06T13:08:57.850Z]    Target 3: Dynamically Replaced Form SPA (form unmounted and remounted)
-[2026-11-06T13:08:57.850Z]    Target 4: Phone-Only Form with NO Message Field (Strict Negative Control)
-[2026-11-06T13:08:57.850Z]    Target 5: Homepage with Dead Contact Link -> Formless Page
-[2026-11-06T13:08:57.850Z] ================================================================================
-[2026-11-06T13:08:57.926Z] Campaign Start Response: {"success":true,"status":"acknowledged","queueCount":5,"campaignRunId":"run_1793970537888_7tlo9"}
-[2026-11-06T13:08:58.379Z] Campaign Active: runId=run_1793970537888_7tlo9
-[2026-11-06T13:08:58.380Z] ✅ PASS: ITEM_C_CAMPAIGN_ACTIVE
-[2026-11-06T13:08:58.681Z] [SW_LOG] [BG_LOG][tab=953709630] [SniperScan] Identified 10 candidate paths in background.
-[2026-11-06T13:08:58.811Z] [SW_LOG] [CONTENT_EVENT][tabId=953709630][attemptId=att_1793970538130_xwlev][url=http://127.0.0.1:8088/homepage-with-newsletter-and-contact-link.html] ⚠️ [Engine] Suppressing duplicate setup (Signals re-sent).
-[2026-11-06T13:08:58.813Z] [SW_LOG] [BG_LOG][tab=953709630] [CONTENT_EVENT][tabId=953709630][attemptId=att_1793970538130_xwlev][url=http://127.0.0.1:8088/homepage-with-newsletter-and-contact-link.html] ⚠️ [Engine] Suppressing duplicate setup (Signals re-sent).
-[2026-11-06T13:08:58.951Z] [SW_LOG] [CONTENT_EVENT][tabId=953709630][attemptId=att_1793970538130_xwlev][url=http://127.0.0.1:8088/homepage-with-newsletter-and-contact-link.html] 🚀 [Engine] Ultra-Mode process started
-[2026-11-06T13:08:58.962Z] [SW_LOG] [BG_LOG][tab=953709630] [CONTENT_EVENT][tabId=953709630][attemptId=att_1793970538130_xwlev][url=http://127.0.0.1:8088/homepage-with-newsletter-and-contact-link.html] 🚀 [Engine] Ultra-Mode process started
-[2026-11-06T13:08:59.383Z] Campaign Progress T+0s: active=true queue=4 url=undefined
-[2026-11-06T13:08:59.498Z] [SW_LOG] [BG_LOG][tab=953709630] 🔓 [Engine] URL path changed. Resetting focus lock for SPA re-injection.
-[2026-11-06T13:08:59.504Z] [SW_LOG] [BG_LOG][tab=953709630] 🔄 [Engine] Internal navigation detected (SPA). Preparing re-injection...
-[2026-11-06T13:08:59.696Z] [SW_LOG] [CONTENT_EVENT][tabId=953709630][attemptId=att_1793970538130_xwlev][url=http://127.0.0.1:8088/contact-standard.html] 🚀 [Engine] Ultra-Mode process started
-[2026-11-06T13:08:59.700Z] [SW_LOG] [BG_LOG][tab=953709630] [CONTENT_EVENT][tabId=953709630][attemptId=att_1793970538130_xwlev][url=http://127.0.0.1:8088/contact-standard.html] 🚀 [Engine] Ultra-Mode process started
-[2026-11-06T13:08:59.762Z] [SW_LOG] [CONTENT_EVENT][tabId=953709630][attemptId=att_1793970538130_xwlev][url=http://127.0.0.1:8088/contact-standard.html] [STAGE] stage=CONTACT_PAGE_FOUND
-[2026-11-06T13:08:59.765Z] [SW_LOG] [BG_LOG][tab=953709630] [CONTENT_EVENT][tabId=953709630][attemptId=att_1793970538130_xwlev][url=http://127.0.0.1:8088/contact-standard.html] [STAGE] stage=CONTACT_PAGE_FOUND
-[2026-11-06T13:08:59.873Z] [SW_LOG] [CONTENT_EVENT][tabId=953709630][attemptId=att_1793970538130_xwlev][url=http://127.0.0.1:8088/contact-standard.html] [STAGE] stage=ELIGIBLE_FORM_FOUND
-[2026-11-06T13:08:59.875Z] [SW_LOG] [BG_LOG][tab=953709630] [CONTENT_EVENT][tabId=953709630][attemptId=att_1793970538130_xwlev][url=http://127.0.0.1:8088/contact-standard.html] [STAGE] stage=ELIGIBLE_FORM_FOUND
-[2026-11-06T13:09:00.396Z] Campaign Progress T+1s: active=true queue=4 url=undefined
-[2026-11-06T13:09:01.398Z] Campaign Progress T+2s: active=true queue=4 url=undefined
-[2026-11-06T13:09:02.401Z] Campaign Progress T+3s: active=true queue=4 url=undefined
-[2026-11-06T13:09:03.404Z] Campaign Progress T+4s: active=true queue=4 url=undefined
-[2026-11-06T13:09:04.411Z] Campaign Progress T+5s: active=true queue=4 url=undefined
-[2026-11-06T13:09:05.425Z] Campaign Progress T+6s: active=true queue=4 url=undefined
-[2026-11-06T13:09:06.429Z] Campaign Progress T+7s: active=true queue=4 url=undefined
-[2026-11-06T13:09:07.430Z] Campaign Progress T+8s: active=true queue=4 url=undefined
-[2026-11-06T13:09:08.447Z] Campaign Progress T+9s: active=true queue=4 url=undefined
-[2026-11-06T13:09:09.450Z] Campaign Progress T+10s: active=true queue=4 url=undefined
-[2026-11-06T13:09:10.455Z] Campaign Progress T+11s: active=true queue=4 url=undefined
-[2026-11-06T13:09:11.468Z] Campaign Progress T+12s: active=true queue=4 url=undefined
-[2026-11-06T13:09:12.481Z] Campaign Progress T+13s: active=true queue=4 url=undefined
-[2026-11-06T13:09:13.497Z] Campaign Progress T+14s: active=true queue=4 url=undefined
-[2026-11-06T13:09:14.503Z] Campaign Progress T+15s: active=true queue=4 url=undefined
-[2026-11-06T13:09:14.614Z] [SW_LOG] [CONTENT_EVENT][tabId=953709630][attemptId=att_1793970538130_xwlev][url=http://127.0.0.1:8088/contact-standard.html] [STAGE] stage=REQUIRED_FIELDS_RESOLVED
-[2026-11-06T13:09:14.614Z] [SW_LOG] [BG_LOG][tab=953709630] [CONTENT_EVENT][tabId=953709630][attemptId=att_1793970538130_xwlev][url=http://127.0.0.1:8088/contact-standard.html] [STAGE] stage=REQUIRED_FIELDS_RESOLVED
-[2026-11-06T13:09:14.627Z] [SW_LOG] [CONTENT_EVENT][tabId=953709630][attemptId=att_1793970538130_xwlev][url=http://127.0.0.1:8088/contact-standard.html] [STAGE] stage=FIELD_STATE_STABLE
-[2026-11-06T13:09:14.627Z] [SW_LOG] [BG_LOG][tab=953709630] [CONTENT_EVENT][tabId=953709630][attemptId=att_1793970538130_xwlev][url=http://127.0.0.1:8088/contact-standard.html] [STAGE] stage=FIELD_STATE_STABLE
-[2026-11-06T13:09:14.696Z] [SW_LOG] [CONTENT_EVENT][tabId=953709630][attemptId=att_1793970538130_xwlev][url=http://127.0.0.1:8088/contact-standard.html] ⏳ [Engine] Holding for visual confirmation (600ms)...
-[2026-11-06T13:09:14.698Z] [SW_LOG] [BG_LOG][tab=953709630] [CONTENT_EVENT][tabId=953709630][attemptId=att_1793970538130_xwlev][url=http://127.0.0.1:8088/contact-standard.html] ⏳ [Engine] Holding for visual confirmation (600ms)...
-[2026-11-06T13:09:15.515Z] Campaign Progress T+16s: active=true queue=4 url=undefined
-[2026-11-06T13:09:15.550Z] [SW_LOG] [CONTENT_EVENT][tabId=953709630][attemptId=att_1793970538130_xwlev][url=http://127.0.0.1:8088/contact-standard.html] [STAGE] stage=SUBMIT_ATTEMPT_STARTED
-[2026-11-06T13:09:15.550Z] [SW_LOG] [BG_LOG][tab=953709630] [CONTENT_EVENT][tabId=953709630][attemptId=att_1793970538130_xwlev][url=http://127.0.0.1:8088/contact-standard.html] [STAGE] stage=SUBMIT_ATTEMPT_STARTED
-[2026-11-06T13:09:15.560Z] [SW_LOG] [BG_LOG][tab=953709630] [STAGE_PROGRESSION] SUBMIT_ATTEMPT_STARTED -> SUBMIT_PENDING committed attemptId=att_1793970538130_xwlev
-[2026-11-06T13:09:15.652Z] [SW_LOG] [CONTENT_EVENT][tabId=953709630][attemptId=att_1793970538130_xwlev][url=http://127.0.0.1:8088/contact-standard.html] [STAGE] stage=SUBMIT_TRIGGERED
-[2026-11-06T13:09:15.652Z] [SW_LOG] [BG_LOG][tab=953709630] [CONTENT_EVENT][tabId=953709630][attemptId=att_1793970538130_xwlev][url=http://127.0.0.1:8088/contact-standard.html] [STAGE] stage=SUBMIT_TRIGGERED
-[2026-11-06T13:09:16.159Z] [SW_LOG] [CONTENT_EVENT][tabId=953709630][attemptId=att_1793970538130_xwlev][url=http://127.0.0.1:8088/contact-standard.html] [STAGE] stage=CONFIRMED_SUCCESS
-[2026-11-06T13:09:16.159Z] [SW_LOG] [BG_LOG][tab=953709630] [CONTENT_EVENT][tabId=953709630][attemptId=att_1793970538130_xwlev][url=http://127.0.0.1:8088/contact-standard.html] [STAGE] stage=CONFIRMED_SUCCESS
-[2026-11-06T13:09:16.529Z] Campaign Progress T+17s: active=true queue=4 url=undefined
-[2026-11-06T13:09:16.764Z] [SW_LOG] [BG_LOG][tab=953709630] ✨ [Engine] Submission confirmed. Maintaining tab for completion (3500ms)...
-[2026-11-06T13:09:17.539Z] Campaign Progress T+18s: active=true queue=4 url=undefined
-[2026-11-06T13:09:18.553Z] Campaign Progress T+19s: active=true queue=4 url=undefined
-[2026-11-06T13:09:19.568Z] Campaign Progress T+20s: active=true queue=4 url=undefined
-[2026-11-06T13:09:20.573Z] Campaign Progress T+21s: active=true queue=4 url=undefined
-[2026-11-06T13:09:21.592Z] Campaign Progress T+22s: active=true queue=3 url=undefined
-[2026-11-06T13:09:21.619Z] [SW_LOG] [BG_LOG][tab=953711186] [SniperScan] Identified 10 candidate paths in background.
-[2026-11-06T13:09:21.742Z] [SW_LOG] [CONTENT_EVENT][tabId=953711186][attemptId=att_1793970561478_ru6qp][url=http://127.0.0.1:8088/dynamic-react-controlled-stale-revert.html] ⚠️ [Engine] Suppressing duplicate setup (Signals re-sent).
-[2026-11-06T13:09:21.742Z] [SW_LOG] [BG_LOG][tab=953711186] [CONTENT_EVENT][tabId=953711186][attemptId=att_1793970561478_ru6qp][url=http://127.0.0.1:8088/dynamic-react-controlled-stale-revert.html] ⚠️ [Engine] Suppressing duplicate setup (Signals re-sent).
-[2026-11-06T13:09:21.782Z] [SW_LOG] [CONTENT_EVENT][tabId=953711186][attemptId=att_1793970561478_ru6qp][url=http://127.0.0.1:8088/dynamic-react-controlled-stale-revert.html] 🚀 [Engine] Ultra-Mode process started
-[2026-11-06T13:09:21.782Z] [SW_LOG] [BG_LOG][tab=953711186] [CONTENT_EVENT][tabId=953711186][attemptId=att_1793970561478_ru6qp][url=http://127.0.0.1:8088/dynamic-react-controlled-stale-revert.html] 🚀 [Engine] Ultra-Mode process started
-[2026-11-06T13:09:21.831Z] [SW_LOG] [CONTENT_EVENT][tabId=953711186][attemptId=att_1793970561478_ru6qp][url=http://127.0.0.1:8088/dynamic-react-controlled-stale-revert.html] [STAGE] stage=CONTACT_PAGE_FOUND
-[2026-11-06T13:09:21.871Z] [SW_LOG] [BG_LOG][tab=953711186] [CONTENT_EVENT][tabId=953711186][attemptId=att_1793970561478_ru6qp][url=http://127.0.0.1:8088/dynamic-react-controlled-stale-revert.html] [STAGE] stage=CONTACT_PAGE_FOUND
-[2026-11-06T13:09:21.874Z] [SW_LOG] [CONTENT_EVENT][tabId=953711186][attemptId=att_1793970561478_ru6qp][url=http://127.0.0.1:8088/dynamic-react-controlled-stale-revert.html] [STAGE] stage=ELIGIBLE_FORM_FOUND
-[2026-11-06T13:09:21.874Z] [SW_LOG] [BG_LOG][tab=953711186] [CONTENT_EVENT][tabId=953711186][attemptId=att_1793970561478_ru6qp][url=http://127.0.0.1:8088/dynamic-react-controlled-stale-revert.html] [STAGE] stage=ELIGIBLE_FORM_FOUND
-[2026-11-06T13:09:22.600Z] Campaign Progress T+23s: active=true queue=3 url=undefined
-[2026-11-06T13:09:23.607Z] Campaign Progress T+24s: active=true queue=3 url=undefined
-[2026-11-06T13:09:24.610Z] Campaign Progress T+25s: active=true queue=3 url=undefined
-[2026-11-06T13:09:25.621Z] Campaign Progress T+26s: active=true queue=3 url=undefined
-[2026-11-06T13:09:26.626Z] Campaign Progress T+27s: active=true queue=3 url=undefined
-[2026-11-06T13:09:27.627Z] Campaign Progress T+28s: active=true queue=3 url=undefined
-[2026-11-06T13:09:28.637Z] Campaign Progress T+29s: active=true queue=3 url=undefined
-[2026-11-06T13:09:29.648Z] Campaign Progress T+30s: active=true queue=3 url=undefined
-[2026-11-06T13:09:30.660Z] Campaign Progress T+31s: active=true queue=3 url=undefined
-[2026-11-06T13:09:31.665Z] Campaign Progress T+32s: active=true queue=3 url=undefined
-[2026-11-06T13:09:32.674Z] Campaign Progress T+33s: active=true queue=3 url=undefined
-[2026-11-06T13:09:33.702Z] Campaign Progress T+34s: active=true queue=3 url=undefined
-[2026-11-06T13:09:33.765Z] [SW_LOG] [CONTENT_EVENT][tabId=953711186][attemptId=att_1793970561478_ru6qp][url=http://127.0.0.1:8088/dynamic-react-controlled-stale-revert.html] [STAGE] stage=REQUIRED_FIELDS_RESOLVED
-[2026-11-06T13:09:33.780Z] [SW_LOG] [BG_LOG][tab=953711186] [CONTENT_EVENT][tabId=953711186][attemptId=att_1793970561478_ru6qp][url=http://127.0.0.1:8088/dynamic-react-controlled-stale-revert.html] [STAGE] stage=REQUIRED_FIELDS_RESOLVED
-[2026-11-06T13:09:33.780Z] [SW_LOG] [CONTENT_EVENT][tabId=953711186][attemptId=att_1793970561478_ru6qp][url=http://127.0.0.1:8088/dynamic-react-controlled-stale-revert.html] [STAGE] stage=FIELD_STATE_STABLE
-[2026-11-06T13:09:33.781Z] [SW_LOG] [BG_LOG][tab=953711186] [CONTENT_EVENT][tabId=953711186][attemptId=att_1793970561478_ru6qp][url=http://127.0.0.1:8088/dynamic-react-controlled-stale-revert.html] [STAGE] stage=FIELD_STATE_STABLE
-[2026-11-06T13:09:33.841Z] [SW_LOG] [CONTENT_EVENT][tabId=953711186][attemptId=att_1793970561478_ru6qp][url=http://127.0.0.1:8088/dynamic-react-controlled-stale-revert.html] ⏳ [Engine] Holding for visual confirmation (600ms)...
-[2026-11-06T13:09:33.841Z] [SW_LOG] [BG_LOG][tab=953711186] [CONTENT_EVENT][tabId=953711186][attemptId=att_1793970561478_ru6qp][url=http://127.0.0.1:8088/dynamic-react-controlled-stale-revert.html] ⏳ [Engine] Holding for visual confirmation (600ms)...
-[2026-11-06T13:09:34.699Z] [SW_LOG] [CONTENT_EVENT][tabId=953711186][attemptId=att_1793970561478_ru6qp][url=http://127.0.0.1:8088/dynamic-react-controlled-stale-revert.html] [STAGE] stage=SUBMIT_ATTEMPT_STARTED
-[2026-11-06T13:09:34.700Z] [SW_LOG] [BG_LOG][tab=953711186] [CONTENT_EVENT][tabId=953711186][attemptId=att_1793970561478_ru6qp][url=http://127.0.0.1:8088/dynamic-react-controlled-stale-revert.html] [STAGE] stage=SUBMIT_ATTEMPT_STARTED
-[2026-11-06T13:09:34.708Z] Campaign Progress T+35s: active=true queue=3 url=undefined
-[2026-11-06T13:09:34.709Z] [SW_LOG] [BG_LOG][tab=953711186] [STAGE_PROGRESSION] SUBMIT_ATTEMPT_STARTED -> SUBMIT_PENDING committed attemptId=att_1793970561478_ru6qp
-[2026-11-06T13:09:34.782Z] [SW_LOG] [CONTENT_EVENT][tabId=953711186][attemptId=att_1793970561478_ru6qp][url=http://127.0.0.1:8088/dynamic-react-controlled-stale-revert.html] [STAGE] stage=SUBMIT_TRIGGERED
-[2026-11-06T13:09:34.782Z] [SW_LOG] [BG_LOG][tab=953711186] [CONTENT_EVENT][tabId=953711186][attemptId=att_1793970561478_ru6qp][url=http://127.0.0.1:8088/dynamic-react-controlled-stale-revert.html] [STAGE] stage=SUBMIT_TRIGGERED
-[2026-11-06T13:09:34.852Z] [SW_LOG] [BG_LOG][tab=953711186] 🔓 [Engine] URL path changed. Resetting focus lock for SPA re-injection.
-[2026-11-06T13:09:34.874Z] [SW_LOG] [BG_LOG][tab=953711186] 🔄 [Engine] Internal navigation detected (SPA). Preparing re-injection...
-[2026-11-06T13:09:34.947Z] [SW_LOG] [CONTENT_EVENT][tabId=953711186][attemptId=att_1793970561478_ru6qp][url=http://127.0.0.1:8088/contact-success.html] 🔄 [Engine] Post-Redirect Recovery active. Verifying previous attempt...
-[2026-11-06T13:09:34.947Z] [SW_LOG] [BG_LOG][tab=953711186] [CONTENT_EVENT][tabId=953711186][attemptId=att_1793970561478_ru6qp][url=http://127.0.0.1:8088/contact-success.html] 🔄 [Engine] Post-Redirect Recovery active. Verifying previous attempt...
-[2026-11-06T13:09:34.972Z] [SW_LOG] [CONTENT_EVENT][tabId=953711186][attemptId=att_1793970561478_ru6qp][url=http://127.0.0.1:8088/contact-success.html] [STAGE] stage=CONFIRMED_SUCCESS
-[2026-11-06T13:09:34.973Z] [SW_LOG] [BG_LOG][tab=953711186] [CONTENT_EVENT][tabId=953711186][attemptId=att_1793970561478_ru6qp][url=http://127.0.0.1:8088/contact-success.html] [STAGE] stage=CONFIRMED_SUCCESS
-[2026-11-06T13:09:35.721Z] Campaign Progress T+36s: active=true queue=3 url=undefined
-[2026-11-06T13:09:36.732Z] Campaign Progress T+37s: active=true queue=3 url=undefined
-[2026-11-06T13:09:37.737Z] Campaign Progress T+38s: active=true queue=3 url=undefined
-[2026-11-06T13:09:37.955Z] [SW_LOG] [BG_LOG][tab=953711186] ✨ [Engine] Submission confirmed. Maintaining tab for completion (3500ms)...
-[2026-11-06T13:09:38.744Z] Campaign Progress T+39s: active=true queue=3 url=undefined
-[2026-11-06T13:09:39.758Z] Campaign Progress T+40s: active=true queue=3 url=undefined
-[2026-11-06T13:09:40.775Z] Campaign Progress T+41s: active=true queue=3 url=undefined
-[2026-11-06T13:09:41.780Z] Campaign Progress T+42s: active=true queue=3 url=undefined
-[2026-11-06T13:09:42.799Z] Campaign Progress T+43s: active=true queue=2 url=undefined
-[2026-11-06T13:09:42.827Z] [SW_LOG] [BG_LOG][tab=953711190] [SniperScan] Identified 10 candidate paths in background.
-[2026-11-06T13:09:42.963Z] [SW_LOG] [CONTENT_EVENT][tabId=953711190][attemptId=att_1793970582654_xafw9][url=http://127.0.0.1:8088/dynamic-spa-replaced-form.html] ⚠️ [Engine] Suppressing duplicate setup (Signals re-sent).
-[2026-11-06T13:09:42.968Z] [SW_LOG] [BG_LOG][tab=953711190] [CONTENT_EVENT][tabId=953711190][attemptId=att_1793970582654_xafw9][url=http://127.0.0.1:8088/dynamic-spa-replaced-form.html] ⚠️ [Engine] Suppressing duplicate setup (Signals re-sent).
-[2026-11-06T13:09:42.993Z] [SW_LOG] [CONTENT_EVENT][tabId=953711190][attemptId=att_1793970582654_xafw9][url=http://127.0.0.1:8088/dynamic-spa-replaced-form.html] 🚀 [Engine] Ultra-Mode process started
-[2026-11-06T13:09:42.993Z] [SW_LOG] [BG_LOG][tab=953711190] [CONTENT_EVENT][tabId=953711190][attemptId=att_1793970582654_xafw9][url=http://127.0.0.1:8088/dynamic-spa-replaced-form.html] 🚀 [Engine] Ultra-Mode process started
-[2026-11-06T13:09:43.035Z] [SW_LOG] [CONTENT_EVENT][tabId=953711190][attemptId=att_1793970582654_xafw9][url=http://127.0.0.1:8088/dynamic-spa-replaced-form.html] [STAGE] stage=CONTACT_PAGE_FOUND
-[2026-11-06T13:09:43.035Z] [SW_LOG] [BG_LOG][tab=953711190] [CONTENT_EVENT][tabId=953711190][attemptId=att_1793970582654_xafw9][url=http://127.0.0.1:8088/dynamic-spa-replaced-form.html] [STAGE] stage=CONTACT_PAGE_FOUND
-[2026-11-06T13:09:43.096Z] [SW_LOG] [CONTENT_EVENT][tabId=953711190][attemptId=att_1793970582654_xafw9][url=http://127.0.0.1:8088/dynamic-spa-replaced-form.html] [STAGE] stage=ELIGIBLE_FORM_FOUND
-[2026-11-06T13:09:43.097Z] [SW_LOG] [BG_LOG][tab=953711190] [CONTENT_EVENT][tabId=953711190][attemptId=att_1793970582654_xafw9][url=http://127.0.0.1:8088/dynamic-spa-replaced-form.html] [STAGE] stage=ELIGIBLE_FORM_FOUND
-[2026-11-06T13:09:43.800Z] Campaign Progress T+44s: active=true queue=2 url=undefined
-[2026-11-06T13:09:44.801Z] Campaign Progress T+45s: active=true queue=2 url=undefined
-[2026-11-06T13:09:45.808Z] Campaign Progress T+46s: active=true queue=2 url=undefined
-[2026-11-06T13:09:46.811Z] Campaign Progress T+47s: active=true queue=2 url=undefined
-[2026-11-06T13:09:47.822Z] Campaign Progress T+48s: active=true queue=2 url=undefined
-[2026-11-06T13:09:48.825Z] Campaign Progress T+49s: active=true queue=2 url=undefined
-[2026-11-06T13:09:49.839Z] Campaign Progress T+50s: active=true queue=2 url=undefined
-[2026-11-06T13:09:50.856Z] Campaign Progress T+51s: active=true queue=2 url=undefined
-[2026-11-06T13:09:51.868Z] Campaign Progress T+52s: active=true queue=2 url=undefined
-[2026-11-06T13:09:52.883Z] Campaign Progress T+53s: active=true queue=2 url=undefined
-[2026-11-06T13:09:53.895Z] Campaign Progress T+54s: active=true queue=2 url=undefined
-[2026-11-06T13:09:54.907Z] Campaign Progress T+55s: active=true queue=2 url=undefined
-[2026-11-06T13:09:55.073Z] [SW_LOG] [CONTENT_EVENT][tabId=953711190][attemptId=att_1793970582654_xafw9][url=http://127.0.0.1:8088/dynamic-spa-replaced-form.html] [STAGE] stage=REQUIRED_FIELDS_RESOLVED
-[2026-11-06T13:09:55.073Z] [SW_LOG] [BG_LOG][tab=953711190] [CONTENT_EVENT][tabId=953711190][attemptId=att_1793970582654_xafw9][url=http://127.0.0.1:8088/dynamic-spa-replaced-form.html] [STAGE] stage=REQUIRED_FIELDS_RESOLVED
-[2026-11-06T13:09:55.074Z] [SW_LOG] [CONTENT_EVENT][tabId=953711190][attemptId=att_1793970582654_xafw9][url=http://127.0.0.1:8088/dynamic-spa-replaced-form.html] [STAGE] stage=FIELD_STATE_STABLE
-[2026-11-06T13:09:55.074Z] [SW_LOG] [BG_LOG][tab=953711190] [CONTENT_EVENT][tabId=953711190][attemptId=att_1793970582654_xafw9][url=http://127.0.0.1:8088/dynamic-spa-replaced-form.html] [STAGE] stage=FIELD_STATE_STABLE
-[2026-11-06T13:09:55.097Z] [SW_LOG] [CONTENT_EVENT][tabId=953711190][attemptId=att_1793970582654_xafw9][url=http://127.0.0.1:8088/dynamic-spa-replaced-form.html] ⏳ [Engine] Holding for visual confirmation (600ms)...
-[2026-11-06T13:09:55.101Z] [SW_LOG] [BG_LOG][tab=953711190] [CONTENT_EVENT][tabId=953711190][attemptId=att_1793970582654_xafw9][url=http://127.0.0.1:8088/dynamic-spa-replaced-form.html] ⏳ [Engine] Holding for visual confirmation (600ms)...
-[2026-11-06T13:09:55.922Z] Campaign Progress T+56s: active=true queue=2 url=undefined
-[2026-11-06T13:09:55.929Z] [SW_LOG] [CONTENT_EVENT][tabId=953711190][attemptId=att_1793970582654_xafw9][url=http://127.0.0.1:8088/dynamic-spa-replaced-form.html] [STAGE] stage=SUBMIT_ATTEMPT_STARTED
-[2026-11-06T13:09:55.929Z] [SW_LOG] [BG_LOG][tab=953711190] [CONTENT_EVENT][tabId=953711190][attemptId=att_1793970582654_xafw9][url=http://127.0.0.1:8088/dynamic-spa-replaced-form.html] [STAGE] stage=SUBMIT_ATTEMPT_STARTED
-[2026-11-06T13:09:55.933Z] [SW_LOG] [BG_LOG][tab=953711190] [STAGE_PROGRESSION] SUBMIT_ATTEMPT_STARTED -> SUBMIT_PENDING committed attemptId=att_1793970582654_xafw9
-[2026-11-06T13:09:56.013Z] [SW_LOG] [CONTENT_EVENT][tabId=953711190][attemptId=att_1793970582654_xafw9][url=http://127.0.0.1:8088/dynamic-spa-replaced-form.html] [STAGE] stage=SUBMIT_TRIGGERED
-[2026-11-06T13:09:56.014Z] [SW_LOG] [BG_LOG][tab=953711190] [CONTENT_EVENT][tabId=953711190][attemptId=att_1793970582654_xafw9][url=http://127.0.0.1:8088/dynamic-spa-replaced-form.html] [STAGE] stage=SUBMIT_TRIGGERED
-[2026-11-06T13:09:56.088Z] [SW_LOG] [BG_LOG][tab=953711190] 🔓 [Engine] URL path changed. Resetting focus lock for SPA re-injection.
-[2026-11-06T13:09:56.110Z] [SW_LOG] [BG_LOG][tab=953711190] 🔄 [Engine] Internal navigation detected (SPA). Preparing re-injection...
-[2026-11-06T13:09:56.219Z] [SW_LOG] [CONTENT_EVENT][tabId=953711190][attemptId=att_1793970582654_xafw9][url=http://127.0.0.1:8088/contact-success.html] 🔄 [Engine] Post-Redirect Recovery active. Verifying previous attempt...
-[2026-11-06T13:09:56.219Z] [SW_LOG] [BG_LOG][tab=953711190] [CONTENT_EVENT][tabId=953711190][attemptId=att_1793970582654_xafw9][url=http://127.0.0.1:8088/contact-success.html] 🔄 [Engine] Post-Redirect Recovery active. Verifying previous attempt...
-[2026-11-06T13:09:56.246Z] [SW_LOG] [CONTENT_EVENT][tabId=953711190][attemptId=att_1793970582654_xafw9][url=http://127.0.0.1:8088/contact-success.html] [STAGE] stage=CONFIRMED_SUCCESS
-[2026-11-06T13:09:56.247Z] [SW_LOG] [BG_LOG][tab=953711190] [CONTENT_EVENT][tabId=953711190][attemptId=att_1793970582654_xafw9][url=http://127.0.0.1:8088/contact-success.html] [STAGE] stage=CONFIRMED_SUCCESS
-[2026-11-06T13:09:56.931Z] Campaign Progress T+57s: active=true queue=2 url=undefined
-[2026-11-06T13:09:57.933Z] Campaign Progress T+58s: active=true queue=2 url=undefined
-[2026-11-06T13:09:58.942Z] Campaign Progress T+59s: active=true queue=2 url=undefined
-[2026-11-06T13:09:59.217Z] [SW_LOG] [BG_LOG][tab=953711190] ✨ [Engine] Submission confirmed. Maintaining tab for completion (3500ms)...
-[2026-11-06T13:09:59.944Z] Campaign Progress T+60s: active=true queue=2 url=undefined
-[2026-11-06T13:10:00.960Z] Campaign Progress T+61s: active=true queue=2 url=undefined
-[2026-11-06T13:10:01.973Z] Campaign Progress T+62s: active=true queue=2 url=undefined
-[2026-11-06T13:10:02.987Z] Campaign Progress T+63s: active=true queue=2 url=undefined
-[2026-11-06T13:10:04.009Z] Campaign Progress T+64s: active=true queue=1 url=undefined
-[2026-11-06T13:10:04.038Z] [SW_LOG] [BG_LOG][tab=953711194] [SniperScan] Identified 10 candidate paths in background.
-[2026-11-06T13:10:04.192Z] [SW_LOG] [CONTENT_EVENT][tabId=953711194][attemptId=att_1793970603908_htgid][url=http://127.0.0.1:8088/phone-only-no-message.html] ⚠️ [Engine] Suppressing duplicate setup (Signals re-sent).
-[2026-11-06T13:10:04.194Z] [SW_LOG] [BG_LOG][tab=953711194] [CONTENT_EVENT][tabId=953711194][attemptId=att_1793970603908_htgid][url=http://127.0.0.1:8088/phone-only-no-message.html] ⚠️ [Engine] Suppressing duplicate setup (Signals re-sent).
-[2026-11-06T13:10:04.221Z] [SW_LOG] [CONTENT_EVENT][tabId=953711194][attemptId=att_1793970603908_htgid][url=http://127.0.0.1:8088/phone-only-no-message.html] 🚀 [Engine] Ultra-Mode process started
-[2026-11-06T13:10:04.225Z] [SW_LOG] [BG_LOG][tab=953711194] [CONTENT_EVENT][tabId=953711194][attemptId=att_1793970603908_htgid][url=http://127.0.0.1:8088/phone-only-no-message.html] 🚀 [Engine] Ultra-Mode process started
-[2026-11-06T13:10:05.016Z] Campaign Progress T+65s: active=true queue=1 url=undefined
-[2026-11-06T13:10:05.639Z] [SW_LOG] [CONTENT_EVENT][tabId=953711194][attemptId=att_1793970603908_htgid][url=http://127.0.0.1:8088/phone-only-no-message.html] 🚀 [Engine] Ultra-Mode: Scrolling to reveal lazy-loaded content...
-[2026-11-06T13:10:05.639Z] [SW_LOG] [BG_LOG][tab=953711194] [CONTENT_EVENT][tabId=953711194][attemptId=att_1793970603908_htgid][url=http://127.0.0.1:8088/phone-only-no-message.html] 🚀 [Engine] Ultra-Mode: Scrolling to reveal lazy-loaded content...
-[2026-11-06T13:10:06.033Z] Campaign Progress T+66s: active=true queue=1 url=undefined
-[2026-11-06T13:10:07.034Z] Campaign Progress T+67s: active=true queue=1 url=undefined
-[2026-11-06T13:10:08.051Z] Campaign Progress T+68s: active=true queue=1 url=undefined
-[2026-11-06T13:10:09.068Z] Campaign Progress T+69s: active=true queue=1 url=undefined
-[2026-11-06T13:10:10.070Z] Campaign Progress T+70s: active=true queue=1 url=undefined
-[2026-11-06T13:10:11.086Z] Campaign Progress T+71s: active=true queue=1 url=undefined
-[2026-11-06T13:10:12.089Z] Campaign Progress T+72s: active=true queue=1 url=undefined
-[2026-11-06T13:10:13.090Z] Campaign Progress T+73s: active=true queue=1 url=undefined
-[2026-11-06T13:10:14.129Z] Campaign Progress T+74s: active=true queue=1 url=undefined
-[2026-11-06T13:10:15.143Z] Campaign Progress T+75s: active=true queue=1 url=undefined
-[2026-11-06T13:10:15.447Z] [SW_LOG] [BG_LOG][tab=953711198] [SniperScan] Identified 10 candidate paths in background.
-[2026-11-06T13:10:15.552Z] [SW_LOG] [CONTENT_EVENT][tabId=953711198][attemptId=att_1793970615317_2mvtl][url=http://127.0.0.1:8088/homepage-with-dead-contact-link.html] ⚠️ [Engine] Suppressing duplicate setup (Signals re-sent).
-[2026-11-06T13:10:15.553Z] [SW_LOG] [BG_LOG][tab=953711198] [CONTENT_EVENT][tabId=953711198][attemptId=att_1793970615317_2mvtl][url=http://127.0.0.1:8088/homepage-with-dead-contact-link.html] ⚠️ [Engine] Suppressing duplicate setup (Signals re-sent).
-[2026-11-06T13:10:15.584Z] [SW_LOG] [CONTENT_EVENT][tabId=953711198][attemptId=att_1793970615317_2mvtl][url=http://127.0.0.1:8088/homepage-with-dead-contact-link.html] 🚀 [Engine] Ultra-Mode process started
-[2026-11-06T13:10:15.589Z] [SW_LOG] [BG_LOG][tab=953711198] [CONTENT_EVENT][tabId=953711198][attemptId=att_1793970615317_2mvtl][url=http://127.0.0.1:8088/homepage-with-dead-contact-link.html] 🚀 [Engine] Ultra-Mode process started
-[2026-11-06T13:10:16.176Z] [SW_LOG] [BG_LOG][tab=953711198] 🔓 [Engine] URL path changed. Resetting focus lock for SPA re-injection.
-[2026-11-06T13:10:16.180Z] [SW_LOG] [BG_LOG][tab=953711198] 🔄 [Engine] Internal navigation detected (SPA). Preparing re-injection...
-[2026-11-06T13:10:16.190Z] Campaign Progress T+76s: active=true queue=0 url=undefined
-[2026-11-06T13:10:16.298Z] [SW_LOG] [CONTENT_EVENT][tabId=953711198][attemptId=att_1793970615317_2mvtl][url=http://127.0.0.1:8088/article.html] 🚀 [Engine] Ultra-Mode process started
-[2026-11-06T13:10:16.299Z] [SW_LOG] [BG_LOG][tab=953711198] [CONTENT_EVENT][tabId=953711198][attemptId=att_1793970615317_2mvtl][url=http://127.0.0.1:8088/article.html] 🚀 [Engine] Ultra-Mode process started
-[2026-11-06T13:10:17.205Z] Campaign Progress T+77s: active=true queue=0 url=undefined
-[2026-11-06T13:10:17.714Z] [SW_LOG] [CONTENT_EVENT][tabId=953711198][attemptId=att_1793970615317_2mvtl][url=http://127.0.0.1:8088/article.html] 🚀 [Engine] Ultra-Mode: Scrolling to reveal lazy-loaded content...
-[2026-11-06T13:10:17.714Z] [SW_LOG] [BG_LOG][tab=953711198] [CONTENT_EVENT][tabId=953711198][attemptId=att_1793970615317_2mvtl][url=http://127.0.0.1:8088/article.html] 🚀 [Engine] Ultra-Mode: Scrolling to reveal lazy-loaded content...
-[2026-11-06T13:10:18.217Z] Campaign Progress T+78s: active=true queue=0 url=undefined
-[2026-11-06T13:10:19.222Z] Campaign Progress T+79s: active=true queue=0 url=undefined
-[2026-11-06T13:10:20.228Z] Campaign Progress T+80s: active=true queue=0 url=undefined
-[2026-11-06T13:10:21.255Z] Campaign Progress T+81s: active=true queue=0 url=undefined
-[2026-11-06T13:10:22.262Z] Campaign Progress T+82s: active=true queue=0 url=undefined
-[2026-11-06T13:10:23.277Z] Campaign Progress T+83s: active=true queue=0 url=undefined
-[2026-11-06T13:10:24.289Z] Campaign Progress T+84s: active=true queue=0 url=undefined
-[2026-11-06T13:10:25.171Z] [SW_LOG] [BG_LOG][tab=953711198] 🔓 [Engine] URL path changed. Resetting focus lock for SPA re-injection.
-[2026-11-06T13:10:25.188Z] [SW_LOG] [BG_LOG][tab=953711198] 🔄 [Engine] Internal navigation detected (SPA). Preparing re-injection...
-[2026-11-06T13:10:25.266Z] [SW_LOG] [CONTENT_EVENT][tabId=953711198][attemptId=att_1793970615317_2mvtl][url=http://127.0.0.1:8088/contact] 🚀 [Engine] Ultra-Mode process started
-[2026-11-06T13:10:25.266Z] [SW_LOG] [BG_LOG][tab=953711198] [CONTENT_EVENT][tabId=953711198][attemptId=att_1793970615317_2mvtl][url=http://127.0.0.1:8088/contact] 🚀 [Engine] Ultra-Mode process started
-[2026-11-06T13:10:25.292Z] Campaign Progress T+85s: active=true queue=0 url=undefined
-[2026-11-06T13:10:26.305Z] Campaign Progress T+86s: active=true queue=0 url=undefined
-[2026-11-06T13:10:27.311Z] Campaign Progress T+87s: active=false queue=0 url=undefined
-[2026-11-06T13:10:27.311Z] Campaign settled to inactive at T+87s
-[2026-11-06T13:10:27.311Z] ✅ PASS: ITEM_C_CAMPAIGN_SETTLED_INACTIVE
-[2026-11-06T13:10:27.315Z] Total attempts recorded for run run_1793970537888_7tlo9: 5
-[2026-11-06T13:10:27.315Z] ✅ PASS: ITEM_C_ATTEMPTS_COUNT_EXACT_FIVE
-[2026-11-06T13:10:27.315Z] ✅ PASS: SUBTEST_1_HOMEPAGE_ATTEMPT_RECORDED
-[2026-11-06T13:10:27.315Z] ✅ PASS: SUBTEST_1_HOMEPAGE_STATUS_SUCCESS
-[2026-11-06T13:10:27.315Z] Target 1 Contact Page URL: http://127.0.0.1:8088/contact-standard.html
-[2026-11-06T13:10:27.315Z] ✅ PASS: SUBTEST_2_DYNAMIC_REACT_ATTEMPT_RECORDED
-[2026-11-06T13:10:27.315Z] ✅ PASS: SUBTEST_2_DYNAMIC_REACT_STATUS_SUCCESS
-[2026-11-06T13:10:27.315Z] ✅ PASS: SUBTEST_3_DYNAMIC_REPLACED_FORM_RECORDED
-[2026-11-06T13:10:27.315Z] ✅ PASS: SUBTEST_3_DYNAMIC_REPLACED_FORM_SUCCESS
-[2026-11-06T13:10:27.319Z] Server-side submissions recorded so far: 3
-[2026-11-06T13:10:27.319Z] ✅ PASS: SUBTEST_1_2_3_SERVER_SUBMISSIONS_RECORDED
-[2026-11-06T13:10:27.320Z] ✅ PASS: SUBTEST_4_PHONE_ONLY_ATTEMPT_RECORDED
-[2026-11-06T13:10:27.320Z] ✅ PASS: SUBTEST_4_PHONE_ONLY_STATUS_SKIPPED
-[2026-11-06T13:10:27.320Z] ✅ PASS: SUBTEST_4_PHONE_ONLY_REASON_NO_LONG_TEXT
-[2026-11-06T13:10:27.320Z] ✅ PASS: SUBTEST_5_DEAD_ROUTE_ATTEMPT_RECORDED
-[2026-11-06T13:10:27.320Z] ✅ PASS: SUBTEST_5_DEAD_ROUTE_STATUS_FAILURE
-[2026-11-06T13:10:27.320Z] ✅ PASS: SUBTEST_5_DEAD_ROUTE_REASON_NO_FORM
-[2026-11-06T13:10:27.323Z] Final server-side submissions count: 3
-[2026-11-06T13:10:27.323Z] ✅ PASS: NEGATIVE_TARGETS_ZERO_SUBMISSION_DELTA
-[2026-11-06T13:10:27.324Z] Scoped Stats for runId run_1793970537888_7tlo9: {"scope":"currentRun","campaignRunId":"run_1793970537888_7tlo9","totalStarted":5,"totalImportRows":5,"pending":0,"invalid":0,"success":3,"failure":1,"unknown":0,"timeout":0,"timeoutLocal":0,"timeoutGlobal":0,"skipped":1,"paused":0,"completed":5,"failureBreakdown":{"NO_ACCESSIBLE_INQUIRY_FORM":1},"logStr":"[LEDGER_STATS] scope=currentRun success=3 failure=1 unknown=0 timeout=0 skipped=1"}
-[2026-11-06T13:10:27.324Z] ✅ PASS: SCOPED_STATS_TOTAL_STARTED_FIVE
-[2026-11-06T13:10:27.324Z] ✅ PASS: SCOPED_STATS_SUCCESS_THREE
-[2026-11-06T13:10:27.324Z] ✅ PASS: SCOPED_STATS_SKIPPED_ONE
-[2026-11-06T13:10:27.324Z] ✅ PASS: SCOPED_STATS_FAILURE_ONE
-[2026-11-06T13:10:27.324Z] ✅ PASS: SCOPED_STATS_MATH_INVARIANT_PRESERVED
-[2026-11-06T13:10:27.497Z] 📸 Captured screenshot: shot_item_c_popup_final_completed.png
-[2026-11-06T13:10:27.497Z] 
+[2026-11-06T14:55:07.920Z] 🚀 LAUNCHING ITEM (C) 5-TARGET UNIFIED CAMPAIGN:
+[2026-11-06T14:55:07.920Z]    Target 1: Homepage Contact Link Discovery -> Standard Contact Form
+[2026-11-06T14:55:07.920Z]    Target 2: Controlled Stale Message Revert with React _valueTracker & onBlur
+[2026-11-06T14:55:07.920Z]    Target 3: Dynamically Replaced Form SPA (form unmounted and remounted)
+[2026-11-06T14:55:07.920Z]    Target 4: Phone-Only Form with NO Message Field (Strict Negative Control)
+[2026-11-06T14:55:07.920Z]    Target 5: Homepage with Dead Contact Link -> Formless Page
+[2026-11-06T14:55:07.920Z] ================================================================================
+[2026-11-06T14:55:07.976Z] Campaign Start Response: {"success":true,"status":"acknowledged","queueCount":5,"campaignRunId":"run_1793976907954_fmtce"}
+[2026-11-06T14:55:08.705Z] Campaign Active: runId=run_1793976907954_fmtce
+[2026-11-06T14:55:08.705Z] ✅ PASS: ITEM_C_CAMPAIGN_ACTIVE
+[2026-11-06T14:55:08.946Z] [SW_LOG] [BG_LOG][tab=1132322778] [SniperScan] Identified 10 candidate paths in background.
+[2026-11-06T14:55:09.196Z] [SW_LOG] [CONTENT_EVENT][tabId=1132322778][attemptId=att_1793976908020_8gkpv][url=http://127.0.0.1:8088/homepage-with-newsletter-and-contact-link.html] 🚀 [Engine] Ultra-Mode process started
+[2026-11-06T14:55:09.202Z] [SW_LOG] [BG_LOG][tab=1132322778] [CONTENT_EVENT][tabId=1132322778][attemptId=att_1793976908020_8gkpv][url=http://127.0.0.1:8088/homepage-with-newsletter-and-contact-link.html] 🚀 [Engine] Ultra-Mode process started
+[2026-11-06T14:55:09.731Z] Campaign Progress T+0s: active=true queue=4 url=undefined
+[2026-11-06T14:55:09.765Z] [SW_LOG] [BG_LOG][tab=1132322778] 🔓 [Engine] URL path changed. Resetting focus lock for SPA re-injection.
+[2026-11-06T14:55:09.772Z] [SW_LOG] [BG_LOG][tab=1132322778] 🔄 [Engine] Internal navigation detected (SPA). Preparing re-injection...
+[2026-11-06T14:55:09.961Z] [SW_LOG] [CONTENT_EVENT][tabId=1132322778][attemptId=att_1793976908020_8gkpv][url=http://127.0.0.1:8088/contact-standard.html] 🚀 [Engine] Ultra-Mode process started
+[2026-11-06T14:55:09.961Z] [SW_LOG] [BG_LOG][tab=1132322778] [CONTENT_EVENT][tabId=1132322778][attemptId=att_1793976908020_8gkpv][url=http://127.0.0.1:8088/contact-standard.html] 🚀 [Engine] Ultra-Mode process started
+[2026-11-06T14:55:10.014Z] [SW_LOG] [CONTENT_EVENT][tabId=1132322778][attemptId=att_1793976908020_8gkpv][url=http://127.0.0.1:8088/contact-standard.html] [STAGE] stage=CONTACT_PAGE_FOUND
+[2026-11-06T14:55:10.018Z] [SW_LOG] [BG_LOG][tab=1132322778] [CONTENT_EVENT][tabId=1132322778][attemptId=att_1793976908020_8gkpv][url=http://127.0.0.1:8088/contact-standard.html] [STAGE] stage=CONTACT_PAGE_FOUND
+[2026-11-06T14:55:10.058Z] [SW_LOG] [CONTENT_EVENT][tabId=1132322778][attemptId=att_1793976908020_8gkpv][url=http://127.0.0.1:8088/contact-standard.html] [STAGE] stage=ELIGIBLE_FORM_FOUND
+[2026-11-06T14:55:10.061Z] [SW_LOG] [BG_LOG][tab=1132322778] [CONTENT_EVENT][tabId=1132322778][attemptId=att_1793976908020_8gkpv][url=http://127.0.0.1:8088/contact-standard.html] [STAGE] stage=ELIGIBLE_FORM_FOUND
+[2026-11-06T14:55:10.751Z] Campaign Progress T+1s: active=true queue=4 url=undefined
+[2026-11-06T14:55:11.753Z] Campaign Progress T+2s: active=true queue=4 url=undefined
+[2026-11-06T14:55:12.758Z] Campaign Progress T+3s: active=true queue=4 url=undefined
+[2026-11-06T14:55:13.769Z] Campaign Progress T+4s: active=true queue=4 url=undefined
+[2026-11-06T14:55:14.779Z] Campaign Progress T+5s: active=true queue=4 url=undefined
+[2026-11-06T14:55:15.788Z] Campaign Progress T+6s: active=true queue=4 url=undefined
+[2026-11-06T14:55:16.796Z] Campaign Progress T+7s: active=true queue=4 url=undefined
+[2026-11-06T14:55:17.808Z] Campaign Progress T+8s: active=true queue=4 url=undefined
+[2026-11-06T14:55:18.824Z] Campaign Progress T+9s: active=true queue=4 url=undefined
+[2026-11-06T14:55:19.832Z] Campaign Progress T+10s: active=true queue=4 url=undefined
+[2026-11-06T14:55:20.838Z] Campaign Progress T+11s: active=true queue=4 url=undefined
+[2026-11-06T14:55:21.849Z] Campaign Progress T+12s: active=true queue=4 url=undefined
+[2026-11-06T14:55:22.861Z] Campaign Progress T+13s: active=true queue=4 url=undefined
+[2026-11-06T14:55:23.353Z] [SW_LOG] [CONTENT_EVENT][tabId=1132322778][attemptId=att_1793976908020_8gkpv][url=http://127.0.0.1:8088/contact-standard.html] [STAGE] stage=REQUIRED_FIELDS_RESOLVED
+[2026-11-06T14:55:23.354Z] [SW_LOG] [BG_LOG][tab=1132322778] [CONTENT_EVENT][tabId=1132322778][attemptId=att_1793976908020_8gkpv][url=http://127.0.0.1:8088/contact-standard.html] [STAGE] stage=REQUIRED_FIELDS_RESOLVED
+[2026-11-06T14:55:23.358Z] [SW_LOG] [CONTENT_EVENT][tabId=1132322778][attemptId=att_1793976908020_8gkpv][url=http://127.0.0.1:8088/contact-standard.html] [STAGE] stage=FIELD_STATE_STABLE
+[2026-11-06T14:55:23.359Z] [SW_LOG] [BG_LOG][tab=1132322778] [CONTENT_EVENT][tabId=1132322778][attemptId=att_1793976908020_8gkpv][url=http://127.0.0.1:8088/contact-standard.html] [STAGE] stage=FIELD_STATE_STABLE
+[2026-11-06T14:55:23.380Z] [SW_LOG] [CONTENT_EVENT][tabId=1132322778][attemptId=att_1793976908020_8gkpv][url=http://127.0.0.1:8088/contact-standard.html] ⏳ [Engine] Holding for visual confirmation (600ms)...
+[2026-11-06T14:55:23.380Z] [SW_LOG] [BG_LOG][tab=1132322778] [CONTENT_EVENT][tabId=1132322778][attemptId=att_1793976908020_8gkpv][url=http://127.0.0.1:8088/contact-standard.html] ⏳ [Engine] Holding for visual confirmation (600ms)...
+[2026-11-06T14:55:23.870Z] Campaign Progress T+14s: active=true queue=4 url=undefined
+[2026-11-06T14:55:24.221Z] [SW_LOG] [CONTENT_EVENT][tabId=1132322778][attemptId=att_1793976908020_8gkpv][url=http://127.0.0.1:8088/contact-standard.html] [STAGE] stage=SUBMIT_ATTEMPT_STARTED
+[2026-11-06T14:55:24.221Z] [SW_LOG] [BG_LOG][tab=1132322778] [CONTENT_EVENT][tabId=1132322778][attemptId=att_1793976908020_8gkpv][url=http://127.0.0.1:8088/contact-standard.html] [STAGE] stage=SUBMIT_ATTEMPT_STARTED
+[2026-11-06T14:55:24.241Z] [SW_LOG] [BG_LOG][tab=1132322778] [STAGE_PROGRESSION] SUBMIT_ATTEMPT_STARTED -> SUBMIT_PENDING committed attemptId=att_1793976908020_8gkpv
+[2026-11-06T14:55:24.567Z] [SW_LOG] [CONTENT_EVENT][tabId=1132322778][attemptId=att_1793976908020_8gkpv][url=http://127.0.0.1:8088/contact-standard.html] [STAGE] stage=SUBMIT_TRIGGERED
+[2026-11-06T14:55:24.567Z] [SW_LOG] [BG_LOG][tab=1132322778] [CONTENT_EVENT][tabId=1132322778][attemptId=att_1793976908020_8gkpv][url=http://127.0.0.1:8088/contact-standard.html] [STAGE] stage=SUBMIT_TRIGGERED
+[2026-11-06T14:55:24.838Z] [SW_LOG] [CONTENT_EVENT][tabId=1132322778][attemptId=att_1793976908020_8gkpv][url=http://127.0.0.1:8088/contact-standard.html] [STAGE] stage=CONFIRMED_SUCCESS
+[2026-11-06T14:55:24.838Z] [SW_LOG] [BG_LOG][tab=1132322778] [CONTENT_EVENT][tabId=1132322778][attemptId=att_1793976908020_8gkpv][url=http://127.0.0.1:8088/contact-standard.html] [STAGE] stage=CONFIRMED_SUCCESS
+[2026-11-06T14:55:24.874Z] Campaign Progress T+15s: active=true queue=4 url=undefined
+[2026-11-06T14:55:25.533Z] [SW_LOG] [BG_LOG][tab=1132322778] ✨ [Engine] Submission confirmed. Maintaining tab for completion (3500ms)...
+[2026-11-06T14:55:25.884Z] Campaign Progress T+16s: active=true queue=4 url=undefined
+[2026-11-06T14:55:26.902Z] Campaign Progress T+17s: active=true queue=4 url=undefined
+[2026-11-06T14:55:27.924Z] Campaign Progress T+18s: active=true queue=4 url=undefined
+[2026-11-06T14:55:28.929Z] Campaign Progress T+19s: active=true queue=4 url=undefined
+[2026-11-06T14:55:29.935Z] Campaign Progress T+20s: active=true queue=4 url=undefined
+[2026-11-06T14:55:30.395Z] [SW_LOG] [BG_LOG][tab=1132324477] [SniperScan] Identified 10 candidate paths in background.
+[2026-11-06T14:55:30.547Z] [SW_LOG] [CONTENT_EVENT][tabId=1132324477][attemptId=att_1793976930237_xhphg][url=http://127.0.0.1:8088/dynamic-react-controlled-stale-revert.html] ⚠️ [Engine] Suppressing duplicate setup (Signals re-sent).
+[2026-11-06T14:55:30.551Z] [SW_LOG] [BG_LOG][tab=1132324477] [CONTENT_EVENT][tabId=1132324477][attemptId=att_1793976930237_xhphg][url=http://127.0.0.1:8088/dynamic-react-controlled-stale-revert.html] ⚠️ [Engine] Suppressing duplicate setup (Signals re-sent).
+[2026-11-06T14:55:30.826Z] [SW_LOG] [CONTENT_EVENT][tabId=1132324477][attemptId=att_1793976930237_xhphg][url=http://127.0.0.1:8088/dynamic-react-controlled-stale-revert.html] 🚀 [Engine] Ultra-Mode process started
+[2026-11-06T14:55:30.828Z] [SW_LOG] [BG_LOG][tab=1132324477] [CONTENT_EVENT][tabId=1132324477][attemptId=att_1793976930237_xhphg][url=http://127.0.0.1:8088/dynamic-react-controlled-stale-revert.html] 🚀 [Engine] Ultra-Mode process started
+[2026-11-06T14:55:30.876Z] [SW_LOG] [CONTENT_EVENT][tabId=1132324477][attemptId=att_1793976930237_xhphg][url=http://127.0.0.1:8088/dynamic-react-controlled-stale-revert.html] [STAGE] stage=CONTACT_PAGE_FOUND
+[2026-11-06T14:55:30.879Z] [SW_LOG] [BG_LOG][tab=1132324477] [CONTENT_EVENT][tabId=1132324477][attemptId=att_1793976930237_xhphg][url=http://127.0.0.1:8088/dynamic-react-controlled-stale-revert.html] [STAGE] stage=CONTACT_PAGE_FOUND
+[2026-11-06T14:55:30.907Z] [SW_LOG] [CONTENT_EVENT][tabId=1132324477][attemptId=att_1793976930237_xhphg][url=http://127.0.0.1:8088/dynamic-react-controlled-stale-revert.html] [STAGE] stage=ELIGIBLE_FORM_FOUND
+[2026-11-06T14:55:30.907Z] [SW_LOG] [BG_LOG][tab=1132324477] [CONTENT_EVENT][tabId=1132324477][attemptId=att_1793976930237_xhphg][url=http://127.0.0.1:8088/dynamic-react-controlled-stale-revert.html] [STAGE] stage=ELIGIBLE_FORM_FOUND
+[2026-11-06T14:55:30.959Z] Campaign Progress T+21s: active=true queue=3 url=undefined
+[2026-11-06T14:55:31.975Z] Campaign Progress T+22s: active=true queue=3 url=undefined
+[2026-11-06T14:55:32.988Z] Campaign Progress T+23s: active=true queue=3 url=undefined
+[2026-11-06T14:55:34.003Z] Campaign Progress T+24s: active=true queue=3 url=undefined
+[2026-11-06T14:55:35.019Z] Campaign Progress T+25s: active=true queue=3 url=undefined
+[2026-11-06T14:55:36.034Z] Campaign Progress T+26s: active=true queue=3 url=undefined
+[2026-11-06T14:55:37.049Z] Campaign Progress T+27s: active=true queue=3 url=undefined
+[2026-11-06T14:55:38.061Z] Campaign Progress T+28s: active=true queue=3 url=undefined
+[2026-11-06T14:55:39.076Z] Campaign Progress T+29s: active=true queue=3 url=undefined
+[2026-11-06T14:55:40.091Z] Campaign Progress T+30s: active=true queue=3 url=undefined
+[2026-11-06T14:55:41.103Z] Campaign Progress T+31s: active=true queue=3 url=undefined
+[2026-11-06T14:55:42.116Z] Campaign Progress T+32s: active=true queue=3 url=undefined
+[2026-11-06T14:55:42.160Z] [SW_LOG] [CONTENT_EVENT][tabId=1132324477][attemptId=att_1793976930237_xhphg][url=http://127.0.0.1:8088/dynamic-react-controlled-stale-revert.html] [STAGE] stage=REQUIRED_FIELDS_RESOLVED
+[2026-11-06T14:55:42.160Z] [SW_LOG] [BG_LOG][tab=1132324477] [CONTENT_EVENT][tabId=1132324477][attemptId=att_1793976930237_xhphg][url=http://127.0.0.1:8088/dynamic-react-controlled-stale-revert.html] [STAGE] stage=REQUIRED_FIELDS_RESOLVED
+[2026-11-06T14:55:42.166Z] [SW_LOG] [CONTENT_EVENT][tabId=1132324477][attemptId=att_1793976930237_xhphg][url=http://127.0.0.1:8088/dynamic-react-controlled-stale-revert.html] [STAGE] stage=FIELD_STATE_STABLE
+[2026-11-06T14:55:42.167Z] [SW_LOG] [BG_LOG][tab=1132324477] [CONTENT_EVENT][tabId=1132324477][attemptId=att_1793976930237_xhphg][url=http://127.0.0.1:8088/dynamic-react-controlled-stale-revert.html] [STAGE] stage=FIELD_STATE_STABLE
+[2026-11-06T14:55:42.187Z] [SW_LOG] [CONTENT_EVENT][tabId=1132324477][attemptId=att_1793976930237_xhphg][url=http://127.0.0.1:8088/dynamic-react-controlled-stale-revert.html] ⏳ [Engine] Holding for visual confirmation (600ms)...
+[2026-11-06T14:55:42.187Z] [SW_LOG] [BG_LOG][tab=1132324477] [CONTENT_EVENT][tabId=1132324477][attemptId=att_1793976930237_xhphg][url=http://127.0.0.1:8088/dynamic-react-controlled-stale-revert.html] ⏳ [Engine] Holding for visual confirmation (600ms)...
+[2026-11-06T14:55:43.024Z] [SW_LOG] [CONTENT_EVENT][tabId=1132324477][attemptId=att_1793976930237_xhphg][url=http://127.0.0.1:8088/dynamic-react-controlled-stale-revert.html] [STAGE] stage=SUBMIT_ATTEMPT_STARTED
+[2026-11-06T14:55:43.025Z] [SW_LOG] [BG_LOG][tab=1132324477] [CONTENT_EVENT][tabId=1132324477][attemptId=att_1793976930237_xhphg][url=http://127.0.0.1:8088/dynamic-react-controlled-stale-revert.html] [STAGE] stage=SUBMIT_ATTEMPT_STARTED
+[2026-11-06T14:55:43.038Z] [SW_LOG] [BG_LOG][tab=1132324477] [STAGE_PROGRESSION] SUBMIT_ATTEMPT_STARTED -> SUBMIT_PENDING committed attemptId=att_1793976930237_xhphg
+[2026-11-06T14:55:43.219Z] [SW_LOG] [CONTENT_EVENT][tabId=1132324477][attemptId=att_1793976930237_xhphg][url=http://127.0.0.1:8088/dynamic-react-controlled-stale-revert.html] [STAGE] stage=SUBMIT_TRIGGERED
+[2026-11-06T14:55:43.232Z] [SW_LOG] [BG_LOG][tab=1132324477] [CONTENT_EVENT][tabId=1132324477][attemptId=att_1793976930237_xhphg][url=http://127.0.0.1:8088/dynamic-react-controlled-stale-revert.html] [STAGE] stage=SUBMIT_TRIGGERED
+[2026-11-06T14:55:43.233Z] [SW_LOG] [BG_LOG][tab=1132324477] 🔓 [Engine] URL path changed. Resetting focus lock for SPA re-injection.
+[2026-11-06T14:55:43.234Z] [SW_LOG] [BG_LOG][tab=1132324477] 🔄 [Engine] Internal navigation detected (SPA). Preparing re-injection...
+[2026-11-06T14:55:43.234Z] Campaign Progress T+33s: active=true queue=3 url=undefined
+[2026-11-06T14:55:43.324Z] [SW_LOG] [CONTENT_EVENT][tabId=1132324477][attemptId=att_1793976930237_xhphg][url=http://127.0.0.1:8088/contact-success.html] 🔄 [Engine] Post-Redirect Recovery active. Verifying previous attempt...
+[2026-11-06T14:55:43.397Z] [SW_LOG] [BG_LOG][tab=1132324477] [CONTENT_EVENT][tabId=1132324477][attemptId=att_1793976930237_xhphg][url=http://127.0.0.1:8088/contact-success.html] 🔄 [Engine] Post-Redirect Recovery active. Verifying previous attempt...
+[2026-11-06T14:55:43.407Z] [SW_LOG] [CONTENT_EVENT][tabId=1132324477][attemptId=att_1793976930237_xhphg][url=http://127.0.0.1:8088/contact-success.html] [STAGE] stage=CONFIRMED_SUCCESS
+[2026-11-06T14:55:43.408Z] [SW_LOG] [BG_LOG][tab=1132324477] [CONTENT_EVENT][tabId=1132324477][attemptId=att_1793976930237_xhphg][url=http://127.0.0.1:8088/contact-success.html] [STAGE] stage=CONFIRMED_SUCCESS
+[2026-11-06T14:55:44.238Z] Campaign Progress T+34s: active=true queue=3 url=undefined
+[2026-11-06T14:55:45.241Z] Campaign Progress T+35s: active=true queue=3 url=undefined
+[2026-11-06T14:55:46.253Z] Campaign Progress T+36s: active=true queue=3 url=undefined
+[2026-11-06T14:55:46.342Z] [SW_LOG] [BG_LOG][tab=1132324477] ✨ [Engine] Submission confirmed. Maintaining tab for completion (3500ms)...
+[2026-11-06T14:55:47.268Z] Campaign Progress T+37s: active=true queue=3 url=undefined
+[2026-11-06T14:55:48.270Z] Campaign Progress T+38s: active=true queue=3 url=undefined
+[2026-11-06T14:55:49.282Z] Campaign Progress T+39s: active=true queue=3 url=undefined
+[2026-11-06T14:55:50.287Z] Campaign Progress T+40s: active=true queue=3 url=undefined
+[2026-11-06T14:55:51.151Z] [SW_LOG] [BG_LOG][tab=1132324481] [SniperScan] Identified 10 candidate paths in background.
+[2026-11-06T14:55:51.152Z] [SW_LOG] [BG_LOG][tab=1132324481] 🔄 [Engine] Internal navigation detected (SPA). Preparing re-injection...
+[2026-11-06T14:55:51.304Z] Campaign Progress T+41s: active=true queue=2 url=undefined
+[2026-11-06T14:55:51.410Z] [SW_LOG] [CONTENT_EVENT][tabId=1132324481][attemptId=att_1793976951037_xu1ra][url=http://127.0.0.1:8088/dynamic-spa-replaced-form.html] 🚀 [Engine] Ultra-Mode process started
+[2026-11-06T14:55:51.417Z] [SW_LOG] [BG_LOG][tab=1132324481] [CONTENT_EVENT][tabId=1132324481][attemptId=att_1793976951037_xu1ra][url=http://127.0.0.1:8088/dynamic-spa-replaced-form.html] 🚀 [Engine] Ultra-Mode process started
+[2026-11-06T14:55:51.444Z] [SW_LOG] [CONTENT_EVENT][tabId=1132324481][attemptId=att_1793976951037_xu1ra][url=http://127.0.0.1:8088/dynamic-spa-replaced-form.html] [STAGE] stage=CONTACT_PAGE_FOUND
+[2026-11-06T14:55:51.445Z] [SW_LOG] [BG_LOG][tab=1132324481] [CONTENT_EVENT][tabId=1132324481][attemptId=att_1793976951037_xu1ra][url=http://127.0.0.1:8088/dynamic-spa-replaced-form.html] [STAGE] stage=CONTACT_PAGE_FOUND
+[2026-11-06T14:55:51.479Z] [SW_LOG] [CONTENT_EVENT][tabId=1132324481][attemptId=att_1793976951037_xu1ra][url=http://127.0.0.1:8088/dynamic-spa-replaced-form.html] [STAGE] stage=ELIGIBLE_FORM_FOUND
+[2026-11-06T14:55:51.479Z] [SW_LOG] [BG_LOG][tab=1132324481] [CONTENT_EVENT][tabId=1132324481][attemptId=att_1793976951037_xu1ra][url=http://127.0.0.1:8088/dynamic-spa-replaced-form.html] [STAGE] stage=ELIGIBLE_FORM_FOUND
+[2026-11-06T14:55:52.313Z] Campaign Progress T+42s: active=true queue=2 url=undefined
+[2026-11-06T14:55:53.319Z] Campaign Progress T+43s: active=true queue=2 url=undefined
+[2026-11-06T14:55:54.329Z] Campaign Progress T+44s: active=true queue=2 url=undefined
+[2026-11-06T14:55:55.339Z] Campaign Progress T+45s: active=true queue=2 url=undefined
+[2026-11-06T14:55:56.345Z] Campaign Progress T+46s: active=true queue=2 url=undefined
+[2026-11-06T14:55:57.350Z] Campaign Progress T+47s: active=true queue=2 url=undefined
+[2026-11-06T14:55:58.356Z] Campaign Progress T+48s: active=true queue=2 url=undefined
+[2026-11-06T14:55:59.370Z] Campaign Progress T+49s: active=true queue=2 url=undefined
+[2026-11-06T14:56:00.385Z] Campaign Progress T+50s: active=true queue=2 url=undefined
+[2026-11-06T14:56:01.393Z] Campaign Progress T+51s: active=true queue=2 url=undefined
+[2026-11-06T14:56:02.407Z] Campaign Progress T+52s: active=true queue=2 url=undefined
+[2026-11-06T14:56:03.419Z] Campaign Progress T+53s: active=true queue=2 url=undefined
+[2026-11-06T14:56:03.851Z] [SW_LOG] [CONTENT_EVENT][tabId=1132324481][attemptId=att_1793976951037_xu1ra][url=http://127.0.0.1:8088/dynamic-spa-replaced-form.html] [STAGE] stage=REQUIRED_FIELDS_RESOLVED
+[2026-11-06T14:56:03.851Z] [SW_LOG] [BG_LOG][tab=1132324481] [CONTENT_EVENT][tabId=1132324481][attemptId=att_1793976951037_xu1ra][url=http://127.0.0.1:8088/dynamic-spa-replaced-form.html] [STAGE] stage=REQUIRED_FIELDS_RESOLVED
+[2026-11-06T14:56:03.852Z] [SW_LOG] [CONTENT_EVENT][tabId=1132324481][attemptId=att_1793976951037_xu1ra][url=http://127.0.0.1:8088/dynamic-spa-replaced-form.html] [STAGE] stage=FIELD_STATE_STABLE
+[2026-11-06T14:56:03.852Z] [SW_LOG] [BG_LOG][tab=1132324481] [CONTENT_EVENT][tabId=1132324481][attemptId=att_1793976951037_xu1ra][url=http://127.0.0.1:8088/dynamic-spa-replaced-form.html] [STAGE] stage=FIELD_STATE_STABLE
+[2026-11-06T14:56:03.879Z] [SW_LOG] [CONTENT_EVENT][tabId=1132324481][attemptId=att_1793976951037_xu1ra][url=http://127.0.0.1:8088/dynamic-spa-replaced-form.html] ⏳ [Engine] Holding for visual confirmation (600ms)...
+[2026-11-06T14:56:03.879Z] [SW_LOG] [BG_LOG][tab=1132324481] [CONTENT_EVENT][tabId=1132324481][attemptId=att_1793976951037_xu1ra][url=http://127.0.0.1:8088/dynamic-spa-replaced-form.html] ⏳ [Engine] Holding for visual confirmation (600ms)...
+[2026-11-06T14:56:04.429Z] Campaign Progress T+54s: active=true queue=2 url=undefined
+[2026-11-06T14:56:04.723Z] [SW_LOG] [CONTENT_EVENT][tabId=1132324481][attemptId=att_1793976951037_xu1ra][url=http://127.0.0.1:8088/dynamic-spa-replaced-form.html] [STAGE] stage=SUBMIT_ATTEMPT_STARTED
+[2026-11-06T14:56:04.723Z] [SW_LOG] [BG_LOG][tab=1132324481] [CONTENT_EVENT][tabId=1132324481][attemptId=att_1793976951037_xu1ra][url=http://127.0.0.1:8088/dynamic-spa-replaced-form.html] [STAGE] stage=SUBMIT_ATTEMPT_STARTED
+[2026-11-06T14:56:04.726Z] [SW_LOG] [BG_LOG][tab=1132324481] [STAGE_PROGRESSION] SUBMIT_ATTEMPT_STARTED -> SUBMIT_PENDING committed attemptId=att_1793976951037_xu1ra
+[2026-11-06T14:56:04.827Z] [SW_LOG] [CONTENT_EVENT][tabId=1132324481][attemptId=att_1793976951037_xu1ra][url=http://127.0.0.1:8088/dynamic-spa-replaced-form.html] [STAGE] stage=SUBMIT_TRIGGERED
+[2026-11-06T14:56:04.828Z] [SW_LOG] [BG_LOG][tab=1132324481] [CONTENT_EVENT][tabId=1132324481][attemptId=att_1793976951037_xu1ra][url=http://127.0.0.1:8088/dynamic-spa-replaced-form.html] [STAGE] stage=SUBMIT_TRIGGERED
+[2026-11-06T14:56:04.878Z] [SW_LOG] [BG_LOG][tab=1132324481] 🔓 [Engine] URL path changed. Resetting focus lock for SPA re-injection.
+[2026-11-06T14:56:04.904Z] [SW_LOG] [BG_LOG][tab=1132324481] 🔄 [Engine] Internal navigation detected (SPA). Preparing re-injection...
+[2026-11-06T14:56:04.996Z] [SW_LOG] [CONTENT_EVENT][tabId=1132324481][attemptId=att_1793976951037_xu1ra][url=http://127.0.0.1:8088/contact-success.html] 🔄 [Engine] Post-Redirect Recovery active. Verifying previous attempt...
+[2026-11-06T14:56:04.997Z] [SW_LOG] [BG_LOG][tab=1132324481] [CONTENT_EVENT][tabId=1132324481][attemptId=att_1793976951037_xu1ra][url=http://127.0.0.1:8088/contact-success.html] 🔄 [Engine] Post-Redirect Recovery active. Verifying previous attempt...
+[2026-11-06T14:56:05.033Z] [SW_LOG] [CONTENT_EVENT][tabId=1132324481][attemptId=att_1793976951037_xu1ra][url=http://127.0.0.1:8088/contact-success.html] [STAGE] stage=CONFIRMED_SUCCESS
+[2026-11-06T14:56:05.034Z] [SW_LOG] [BG_LOG][tab=1132324481] [CONTENT_EVENT][tabId=1132324481][attemptId=att_1793976951037_xu1ra][url=http://127.0.0.1:8088/contact-success.html] [STAGE] stage=CONFIRMED_SUCCESS
+[2026-11-06T14:56:05.436Z] Campaign Progress T+55s: active=true queue=2 url=undefined
+[2026-11-06T14:56:06.449Z] Campaign Progress T+56s: active=true queue=2 url=undefined
+[2026-11-06T14:56:07.452Z] Campaign Progress T+57s: active=true queue=2 url=undefined
+[2026-11-06T14:56:08.014Z] [SW_LOG] [BG_LOG][tab=1132324481] ✨ [Engine] Submission confirmed. Maintaining tab for completion (3500ms)...
+[2026-11-06T14:56:08.464Z] Campaign Progress T+58s: active=true queue=2 url=undefined
+[2026-11-06T14:56:09.476Z] Campaign Progress T+59s: active=true queue=2 url=undefined
+[2026-11-06T14:56:10.478Z] Campaign Progress T+60s: active=true queue=2 url=undefined
+[2026-11-06T14:56:11.484Z] Campaign Progress T+61s: active=true queue=2 url=undefined
+[2026-11-06T14:56:12.494Z] Campaign Progress T+62s: active=true queue=2 url=undefined
+[2026-11-06T14:56:12.865Z] [SW_LOG] [BG_LOG][tab=1132324485] [SniperScan] Identified 10 candidate paths in background.
+[2026-11-06T14:56:13.121Z] [SW_LOG] [CONTENT_EVENT][tabId=1132324485][attemptId=att_1793976972712_peykh][url=http://127.0.0.1:8088/phone-only-no-message.html] ⚠️ [Engine] Suppressing duplicate setup (Signals re-sent).
+[2026-11-06T14:56:13.124Z] [SW_LOG] [BG_LOG][tab=1132324485] [CONTENT_EVENT][tabId=1132324485][attemptId=att_1793976972712_peykh][url=http://127.0.0.1:8088/phone-only-no-message.html] ⚠️ [Engine] Suppressing duplicate setup (Signals re-sent).
+[2026-11-06T14:56:13.155Z] [SW_LOG] [CONTENT_EVENT][tabId=1132324485][attemptId=att_1793976972712_peykh][url=http://127.0.0.1:8088/phone-only-no-message.html] 🚀 [Engine] Ultra-Mode process started
+[2026-11-06T14:56:13.156Z] [SW_LOG] [BG_LOG][tab=1132324485] [CONTENT_EVENT][tabId=1132324485][attemptId=att_1793976972712_peykh][url=http://127.0.0.1:8088/phone-only-no-message.html] 🚀 [Engine] Ultra-Mode process started
+[2026-11-06T14:56:13.564Z] Campaign Progress T+63s: active=true queue=1 url=undefined
+[2026-11-06T14:56:14.571Z] Campaign Progress T+64s: active=true queue=1 url=undefined
+[2026-11-06T14:56:14.585Z] [SW_LOG] [CONTENT_EVENT][tabId=1132324485][attemptId=att_1793976972712_peykh][url=http://127.0.0.1:8088/phone-only-no-message.html] 🚀 [Engine] Ultra-Mode: Scrolling to reveal lazy-loaded content...
+[2026-11-06T14:56:14.585Z] [SW_LOG] [BG_LOG][tab=1132324485] [CONTENT_EVENT][tabId=1132324485][attemptId=att_1793976972712_peykh][url=http://127.0.0.1:8088/phone-only-no-message.html] 🚀 [Engine] Ultra-Mode: Scrolling to reveal lazy-loaded content...
+[2026-11-06T14:56:15.584Z] Campaign Progress T+65s: active=true queue=1 url=undefined
+[2026-11-06T14:56:16.597Z] Campaign Progress T+66s: active=true queue=1 url=undefined
+[2026-11-06T14:56:17.606Z] Campaign Progress T+67s: active=true queue=1 url=undefined
+[2026-11-06T14:56:18.704Z] Campaign Progress T+68s: active=true queue=1 url=undefined
+[2026-11-06T14:56:19.708Z] Campaign Progress T+69s: active=true queue=1 url=undefined
+[2026-11-06T14:56:20.720Z] Campaign Progress T+70s: active=true queue=1 url=undefined
+[2026-11-06T14:56:21.752Z] Campaign Progress T+71s: active=true queue=1 url=undefined
+[2026-11-06T14:56:22.773Z] Campaign Progress T+72s: active=true queue=1 url=undefined
+[2026-11-06T14:56:23.874Z] Campaign Progress T+73s: active=true queue=1 url=undefined
+[2026-11-06T14:56:24.414Z] [SW_LOG] [BG_LOG][tab=1132324489] [SniperScan] Identified 10 candidate paths in background.
+[2026-11-06T14:56:24.758Z] [SW_LOG] [CONTENT_EVENT][tabId=1132324489][attemptId=att_1793976984249_tbmlp][url=http://127.0.0.1:8088/homepage-with-dead-contact-link.html] ⚠️ [Engine] Suppressing duplicate setup (Signals re-sent).
+[2026-11-06T14:56:24.760Z] [SW_LOG] [BG_LOG][tab=1132324489] [CONTENT_EVENT][tabId=1132324489][attemptId=att_1793976984249_tbmlp][url=http://127.0.0.1:8088/homepage-with-dead-contact-link.html] ⚠️ [Engine] Suppressing duplicate setup (Signals re-sent).
+[2026-11-06T14:56:24.813Z] [SW_LOG] [CONTENT_EVENT][tabId=1132324489][attemptId=att_1793976984249_tbmlp][url=http://127.0.0.1:8088/homepage-with-dead-contact-link.html] 🚀 [Engine] Ultra-Mode process started
+[2026-11-06T14:56:24.814Z] [SW_LOG] [BG_LOG][tab=1132324489] [CONTENT_EVENT][tabId=1132324489][attemptId=att_1793976984249_tbmlp][url=http://127.0.0.1:8088/homepage-with-dead-contact-link.html] 🚀 [Engine] Ultra-Mode process started
+[2026-11-06T14:56:24.882Z] Campaign Progress T+74s: active=true queue=0 url=undefined
+[2026-11-06T14:56:25.421Z] [SW_LOG] [BG_LOG][tab=1132324489] 🔓 [Engine] URL path changed. Resetting focus lock for SPA re-injection.
+[2026-11-06T14:56:25.423Z] [SW_LOG] [BG_LOG][tab=1132324489] 🔄 [Engine] Internal navigation detected (SPA). Preparing re-injection...
+[2026-11-06T14:56:25.597Z] [SW_LOG] [CONTENT_EVENT][tabId=1132324489][attemptId=att_1793976984249_tbmlp][url=http://127.0.0.1:8088/article.html] 🚀 [Engine] Ultra-Mode process started
+[2026-11-06T14:56:25.601Z] [SW_LOG] [BG_LOG][tab=1132324489] [CONTENT_EVENT][tabId=1132324489][attemptId=att_1793976984249_tbmlp][url=http://127.0.0.1:8088/article.html] 🚀 [Engine] Ultra-Mode process started
+[2026-11-06T14:56:25.940Z] Campaign Progress T+75s: active=true queue=0 url=undefined
+[2026-11-06T14:56:26.954Z] Campaign Progress T+76s: active=true queue=0 url=undefined
+[2026-11-06T14:56:27.028Z] [SW_LOG] [CONTENT_EVENT][tabId=1132324489][attemptId=att_1793976984249_tbmlp][url=http://127.0.0.1:8088/article.html] 🚀 [Engine] Ultra-Mode: Scrolling to reveal lazy-loaded content...
+[2026-11-06T14:56:27.031Z] [SW_LOG] [BG_LOG][tab=1132324489] [CONTENT_EVENT][tabId=1132324489][attemptId=att_1793976984249_tbmlp][url=http://127.0.0.1:8088/article.html] 🚀 [Engine] Ultra-Mode: Scrolling to reveal lazy-loaded content...
+[2026-11-06T14:56:27.962Z] Campaign Progress T+77s: active=true queue=0 url=undefined
+[2026-11-06T14:56:28.975Z] Campaign Progress T+78s: active=true queue=0 url=undefined
+[2026-11-06T14:56:29.978Z] Campaign Progress T+79s: active=true queue=0 url=undefined
+[2026-11-06T14:56:30.994Z] Campaign Progress T+80s: active=true queue=0 url=undefined
+[2026-11-06T14:56:32.009Z] Campaign Progress T+81s: active=true queue=0 url=undefined
+[2026-11-06T14:56:33.022Z] Campaign Progress T+82s: active=true queue=0 url=undefined
+[2026-11-06T14:56:34.033Z] Campaign Progress T+83s: active=true queue=0 url=undefined
+[2026-11-06T14:56:34.493Z] [SW_LOG] [BG_LOG][tab=1132324489] 🔓 [Engine] URL path changed. Resetting focus lock for SPA re-injection.
+[2026-11-06T14:56:34.499Z] [SW_LOG] [BG_LOG][tab=1132324489] 🔄 [Engine] Internal navigation detected (SPA). Preparing re-injection...
+[2026-11-06T14:56:34.592Z] [SW_LOG] [CONTENT_EVENT][tabId=1132324489][attemptId=att_1793976984249_tbmlp][url=http://127.0.0.1:8088/contact] 🚀 [Engine] Ultra-Mode process started
+[2026-11-06T14:56:34.593Z] [SW_LOG] [BG_LOG][tab=1132324489] [CONTENT_EVENT][tabId=1132324489][attemptId=att_1793976984249_tbmlp][url=http://127.0.0.1:8088/contact] 🚀 [Engine] Ultra-Mode process started
+[2026-11-06T14:56:35.040Z] Campaign Progress T+84s: active=true queue=0 url=undefined
+[2026-11-06T14:56:36.043Z] Campaign Progress T+85s: active=false queue=0 url=undefined
+[2026-11-06T14:56:36.043Z] Campaign settled to inactive at T+85s
+[2026-11-06T14:56:36.043Z] ✅ PASS: ITEM_C_CAMPAIGN_SETTLED_INACTIVE
+[2026-11-06T14:56:36.047Z] Total attempts recorded for run run_1793976907954_fmtce: 5
+[2026-11-06T14:56:36.047Z] ✅ PASS: ITEM_C_ATTEMPTS_COUNT_EXACT_FIVE
+[2026-11-06T14:56:36.047Z] ✅ PASS: SUBTEST_1_HOMEPAGE_ATTEMPT_RECORDED
+[2026-11-06T14:56:36.047Z] ✅ PASS: SUBTEST_1_HOMEPAGE_STATUS_SUCCESS
+[2026-11-06T14:56:36.047Z] Target 1 Contact Page URL: http://127.0.0.1:8088/contact-standard.html
+[2026-11-06T14:56:36.048Z] ✅ PASS: SUBTEST_2_DYNAMIC_REACT_ATTEMPT_RECORDED
+[2026-11-06T14:56:36.048Z] ✅ PASS: SUBTEST_2_DYNAMIC_REACT_STATUS_SUCCESS
+[2026-11-06T14:56:36.048Z] ✅ PASS: SUBTEST_3_DYNAMIC_REPLACED_FORM_RECORDED
+[2026-11-06T14:56:36.048Z] ✅ PASS: SUBTEST_3_DYNAMIC_REPLACED_FORM_SUCCESS
+[2026-11-06T14:56:36.053Z] Server-side submissions recorded so far: 3
+[2026-11-06T14:56:36.053Z] ✅ PASS: SUBTEST_1_2_3_SERVER_SUBMISSIONS_RECORDED
+[2026-11-06T14:56:36.054Z] ✅ PASS: SUBTEST_4_PHONE_ONLY_ATTEMPT_RECORDED
+[2026-11-06T14:56:36.054Z] ✅ PASS: SUBTEST_4_PHONE_ONLY_STATUS_SKIPPED
+[2026-11-06T14:56:36.054Z] ✅ PASS: SUBTEST_4_PHONE_ONLY_REASON_NO_LONG_TEXT
+[2026-11-06T14:56:36.054Z] ✅ PASS: SUBTEST_5_DEAD_ROUTE_ATTEMPT_RECORDED
+[2026-11-06T14:56:36.054Z] ✅ PASS: SUBTEST_5_DEAD_ROUTE_STATUS_FAILURE
+[2026-11-06T14:56:36.054Z] ✅ PASS: SUBTEST_5_DEAD_ROUTE_REASON_NO_FORM
+[2026-11-06T14:56:36.057Z] Final server-side submissions count: 3
+[2026-11-06T14:56:36.057Z] ✅ PASS: NEGATIVE_TARGETS_ZERO_SUBMISSION_DELTA
+[2026-11-06T14:56:36.058Z] Scoped Stats for runId run_1793976907954_fmtce: {"scope":"currentRun","campaignRunId":"run_1793976907954_fmtce","totalStarted":5,"totalImportRows":5,"pending":0,"invalid":0,"success":3,"failure":1,"unknown":0,"timeout":0,"timeoutLocal":0,"timeoutGlobal":0,"skipped":1,"paused":0,"completed":5,"failureBreakdown":{"NO_ACCESSIBLE_INQUIRY_FORM":1},"logStr":"[LEDGER_STATS] scope=currentRun success=3 failure=1 unknown=0 timeout=0 skipped=1"}
+[2026-11-06T14:56:36.058Z] ✅ PASS: SCOPED_STATS_TOTAL_STARTED_FIVE
+[2026-11-06T14:56:36.058Z] ✅ PASS: SCOPED_STATS_SUCCESS_THREE
+[2026-11-06T14:56:36.058Z] ✅ PASS: SCOPED_STATS_SKIPPED_ONE
+[2026-11-06T14:56:36.059Z] ✅ PASS: SCOPED_STATS_FAILURE_ONE
+[2026-11-06T14:56:36.059Z] ✅ PASS: SCOPED_STATS_MATH_INVARIANT_PRESERVED
+[2026-11-06T14:56:36.233Z] 📸 Captured screenshot: shot_item_c_popup_final_completed.png
+[2026-11-06T14:56:36.234Z] 
 ================================================================================
-[2026-11-06T13:10:27.497Z] 🎉 ALL ITEM (C) & P0 FIXTURE AUDIT ASSERTIONS COMPLETED SUCCESSFULLY WITH EXIT 0!
-[2026-11-06T13:10:27.497Z] ================================================================================
-[2026-11-06T13:10:27.505Z] Saved final report to: E:\vivpr\ai\extension-form-sender\owner-extension-test-site\evidence\evidence_v7_item_c_contact_and_dynamic_message_report.json
-[2026-11-06T13:10:27.506Z] Terminating browser process...
+[2026-11-06T14:56:36.234Z] 🎉 ALL ITEM (C) & P0 FIXTURE AUDIT ASSERTIONS COMPLETED SUCCESSFULLY WITH EXIT 0!
+[2026-11-06T14:56:36.234Z] ================================================================================
+[2026-11-06T14:56:36.246Z] Saved final report to: E:\vivpr\ai\extension-form-sender\owner-extension-test-site\evidence\evidence_v7_item_c_contact_and_dynamic_message_report.json
+[2026-11-06T14:56:36.247Z] Terminating browser process...

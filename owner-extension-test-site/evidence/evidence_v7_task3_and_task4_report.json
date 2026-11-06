@@ -1,8 +1,8 @@
 {
   "suiteName": "XPIDER V7 SC-03 & SC-04 Deterministic Chromium E2E Suite (Refined Audit Compliance)",
-  "startTimeUtc": "2026-11-06T13:12:39.927Z",
-  "endTimeUtc": "2026-11-06T13:13:59.123Z",
-  "durationSeconds": "79.2",
+  "startTimeUtc": "2026-11-06T14:56:42.754Z",
+  "endTimeUtc": "2026-11-06T14:59:09.702Z",
+  "durationSeconds": "146.9",
   "targetBaseline": "v7.0.0-rc11",
   "candidateBranch": "candidate/sc03-sc04-classification-and-pause",
   "baselineCommit": "20678ada",
@@ -25,7 +25,7 @@
   },
   "releaseHoldStatus": "ACTIVE (Awaiting independent ChatGPT and Owner gate acceptance)",
   "sc03_no_message_classification_and_discovery": {
-    "campaignRunId": "run_1793970763350_xhg8x",
+    "campaignRunId": "run_1793977005905_r1f4d",
     "totalImportRows": 3,
     "totalStarted": 3,
     "targetsTested": 3,
@@ -39,7 +39,7 @@
         "captchaEvidenceClass": null,
         "captchaRejected": false,
         "confirmationStrength": "STRONG_DOM",
-        "evidenceTimestamp": 1793970778444,
+        "evidenceTimestamp": 1793977019182,
         "formHidden": false,
         "formReplaced": false,
         "formReset": false,
@@ -47,7 +47,7 @@
         "networkCommitObserved": false,
         "networkStatus": null,
         "physicalClickDispatched": false,
-        "receiptId": "rcpt_1793970777148_1",
+        "receiptId": "rcpt_1793977017835_1",
         "serverErrorTransition": false,
         "submitAttempted": true,
         "submitEventSeen": true,
@@ -57,7 +57,7 @@
         "validationErrorTransition": false
       },
       "serverSubmissionCount": 1,
-      "serverReceiptId": "rcpt_1793970777148_1",
+      "serverReceiptId": "rcpt_1793977017835_1",
       "serverReferer": "http://127.0.0.1:8088/contact-standard.html",
       "pass": true
     },
@@ -91,11 +91,11 @@
   },
   "sc04_nonempty_queue_and_sw_durability": {
     "initialTargetsCount": 3,
-    "pausedRemainingCount": 2,
+    "pausedRemainingCount": 3,
     "nonemptyQueuePreserved": true,
     "firstSwTerminatedAbsent": true,
     "secondSwTargetIdDiffers": true,
-    "swRestoredRemainingCount": 2,
+    "swRestoredRemainingCount": 3,
     "resumedViaRealUi": true,
     "stopSaveButtonUiCheck": {
       "exists": true,
@@ -106,19 +106,31 @@
       "visibility": "visible"
     },
     "stoppedAndSavedViaRealUi": true,
-    "checkpointRemainingCountAfterStopAndSave": 1,
+    "checkpointRemainingCountAfterStopAndSave": 3,
     "secondSwTerminatedAbsent": true,
     "thirdSwTargetIdDiffers": true,
     "checkpointPreservedAcrossPostStopKill": true,
     "exactRemainingUrlMatched": true,
     "runScopedResumeMultiTargetInvariants": {
-      "campaignRunId": "normal_run_1793970805571_ifocvk",
+      "campaignRunId": "normal_run_1793977047003_7ragif",
       "preservedTargets": [
+        "http://127.0.0.1:8088/contact-standard.html",
+        "http://127.0.0.1:8088/spa-delayed-contact.html",
         "http://127.0.0.1:8088/index.html"
       ],
       "finalQueueDrained": true,
       "finalCampaignInactive": true,
       "terminalAttemptsRecorded": [
+        {
+          "targetUrl": "http://127.0.0.1:8088/contact-standard.html",
+          "status": "CONFIRMED_SUCCESS",
+          "reasonCode": "SUCCESS_CONFIRMED"
+        },
+        {
+          "targetUrl": "http://127.0.0.1:8088/spa-delayed-contact.html",
+          "status": "CONFIRMED_SUCCESS",
+          "reasonCode": "SUCCESS_CONFIRMED"
+        },
         {
           "targetUrl": "http://127.0.0.1:8088/index.html",
           "status": "CONFIRMED_SUCCESS",

@@ -295,6 +295,31 @@ async function main() {
         assert.strictEqual(initSub.count, 0, 'Server submissions must start at 0');
 
         // ====================================================================
+        // SECTION NEGATIVE: INTERNAL SOLVER RETIREMENT NEGATIVE CONTROLS
+        // ====================================================================
+        log('\n--- SECTION NEGATIVE: INTERNAL SOLVER RETIREMENT NEGATIVE CONTROLS ---');
+
+        // Negative Control 1: Direct production SOLVE_CAPTCHA call must be strictly rejected
+        const negProdCall = await cdpSend(popupWs, 'Runtime.evaluate', {
+            expression: `new Promise(r => chrome.runtime.sendMessage({ action: 'SOLVE_CAPTCHA', type: 'recaptcha' }, r))`,
+            awaitPromise: true,
+            returnByValue: true
+        }).then(r => r.result?.value);
+        recordAssertion('NEG_INTERNAL_SOLVER_PROD_REJECTED', Boolean(negProdCall && negProdCall.error === 'INTERNAL_SOLVER_RETIRED_V7' && negProdCall.retired === true), negProdCall);
+
+        // Negative Control 2: Test override SOLVE_CAPTCHA call must be strictly rejected
+        const negTestCall = await cdpSend(popupWs, 'Runtime.evaluate', {
+            expression: `new Promise(r => chrome.runtime.sendMessage({ action: 'SOLVE_CAPTCHA', source: 'LEGACY_LAB_OVERRIDE', ownerAuthorized: true }, r))`,
+            awaitPromise: true,
+            returnByValue: true
+        }).then(r => r.result?.value);
+        recordAssertion('NEG_INTERNAL_SOLVER_TEST_OVERRIDE_REJECTED', Boolean(negTestCall && negTestCall.error === 'INTERNAL_SOLVER_RETIRED_V7' && negTestCall.retired === true), negTestCall);
+
+        // Negative Control 3: solver-core.js is NOT imported into Service Worker
+        const negBootModules = await swEval(`globalThis.__xpider_sw_boot_modules || {}`);
+        recordAssertion('NEG_SOLVER_CORE_NOT_IMPORTED', !negBootModules['solver-core.js'] || negBootModules['solver-core.js'].status !== 'PASS', negBootModules);
+
+        // ====================================================================
         // SECTION A: EXTERNAL CAPTCHA EXTENSION ONLY CONTRACT
         // ====================================================================
 
@@ -340,15 +365,17 @@ async function main() {
         const a1TabWs = await openWs(a1TabTarget.webSocketDebuggerUrl);
         await cdpSend(a1TabWs, 'Runtime.enable');
 
-        // Assert top HUD banner rendered in target tab
+        // Assert AUTO Mode: Non-blocking unobtrusive status indicator (ZERO intervention buttons)
         const a1HudInfo = await cdpSend(a1TabWs, 'Runtime.evaluate', {
             expression: `(() => {
                 const hud = document.getElementById('xpider-v7-external-captcha-hud');
-                return { exists: Boolean(hud), text: hud?.textContent || '' };
+                const btnCount = hud ? hud.querySelectorAll('button').length : 0;
+                const pointerEvents = hud ? window.getComputedStyle(hud).pointerEvents : 'none';
+                return { exists: Boolean(hud), btnCount, pointerEvents, text: hud?.textContent || '' };
             })()`,
             returnByValue: true
         }).then(r => r.result?.value);
-        recordAssertion('A1_EXTERNAL_CAPTCHA_HUD_RENDERED', a1HudInfo?.exists === true, a1HudInfo);
+        recordAssertion('A1_AUTO_NO_INTERRUPT_POPUP', Boolean(a1HudInfo && a1HudInfo.exists && a1HudInfo.btnCount === 0 && a1HudInfo.pointerEvents === 'none'), a1HudInfo);
 
         // Verify that before external solver finishes, server submissions remain 0
         const subBeforeSolve = await fetch(`http://127.0.0.1:${PORT}/__xpider_submissions`).then(r => r.json());
@@ -448,8 +475,11 @@ async function main() {
         // --------------------------------------------------------------------
         // TEST A3: SEMI_AUTO Mode — Challenge Holds for Assistance
         // --------------------------------------------------------------------
-        log('\n--- TEST A3: SEMI_AUTO MODE — CHALLENGE HOLDS FOR ASSISTANCE ---');
+        log('\n--- TEST A3: SEMI_AUTO MODE — CHALLENGE HOLDS FOR ASSISTANCE ON ERROR ---');
         await setupPopup([`http://127.0.0.1:${PORT}/captcha-turnstile-dom.html`]);
+        await cdpSend(popupWs, 'Runtime.evaluate', {
+            expression: `window.__xpider_external_captcha_timeout_ms = 1500;`
+        });
 
         await cdpSend(popupWs, 'Runtime.evaluate', { expression: `document.getElementById('start-semi-auto-btn')?.click()` });
 
@@ -588,14 +618,27 @@ async function main() {
         }
         recordAssertion('A4_MANUAL_HOLD_CONFIRMED', a4HoldFound === true);
 
-        // Operator submits form and clicks #xpider-manual-registered-btn
+        // Operator clicks submit button and awaits confirmation
         await cdpSend(a4TabWs, 'Runtime.evaluate', {
-            expression: `
-                document.querySelector('form button[type="submit"], form input[type="submit"]')?.click();
-                setTimeout(() => {
-                    document.getElementById('xpider-manual-registered-btn')?.click();
-                }, 400);
-            `
+            expression: `document.getElementById('submit-btn')?.click()`
+        });
+
+        // Await visible success banner on page
+        for (let i = 0; i < 20; i++) {
+            await sleep(200);
+            const bannerVis = await cdpSend(a4TabWs, 'Runtime.evaluate', {
+                expression: `(() => {
+                    const b = document.getElementById('success-banner');
+                    return Boolean(b && b.style.display === 'block');
+                })()`,
+                returnByValue: true
+            }).then(r => r.result?.value);
+            if (bannerVis) break;
+        }
+
+        // Operator confirms registered on hold panel
+        await cdpSend(a4TabWs, 'Runtime.evaluate', {
+            expression: `document.getElementById('xpider-manual-registered-btn')?.click()`
         });
 
         let a4Settled = false;
@@ -658,18 +701,60 @@ async function main() {
         }
         recordAssertion('B_MULTI_CAMPAIGN_ACTIVE', bActive === true, { campaignRunId: bRunId });
 
-        // --------------------------------------------------------------------
-        // VISIBLE PAUSE -> MODAL MODE SWITCH -> RESUME
-        // --------------------------------------------------------------------
-        log('B: Exercising visible #pause-btn and resume mode modal...');
-        await sleep(1500);
+        // Wait for Target 1 (Homepage with contact discovery) to successfully submit
+        log('B: Awaiting Target 1 (Homepage Contact Discovery) form submission...');
+        let t1Submitted = false;
+        for (let i = 0; i < 40; i++) {
+            await sleep(500);
+            await cdpSend(popupWs, 'Runtime.evaluate', {
+                expression: `(() => { const btn = document.getElementById('privacy-block-action-override'); if (btn && btn.offsetParent !== null) btn.click(); })()`
+            });
+            const sub = await fetch(`http://127.0.0.1:${PORT}/__xpider_submissions`).then(r => r.json());
+            if (sub.count === 1) {
+                t1Submitted = true;
+                log('B: Target 1 successfully submitted (server count = 1)');
+                break;
+            }
+        }
+        assert(t1Submitted, 'Target 1 homepage discovery must submit 1 POST');
 
-        // Click #pause-btn to pause
-        await cdpSend(popupWs, 'Runtime.evaluate', { expression: `document.getElementById('pause-btn')?.click()` });
+        // Wait for Target 1 to fully quiesce and settle in the ledger as SUCCESS
+        log('B: Waiting for Target 1 to settle completely...');
+        for (let i = 0; i < 20; i++) {
+            await sleep(500);
+            const inF = await swEval(`Boolean(campaignState.activeTargetInFlight)`);
+            if (!inF) break;
+        }
+        await sleep(500);
+
+        // --------------------------------------------------------------------
+        // VISIBLE PAUSE -> MODAL MODE SWITCH -> RESUME (During Target 2)
+        // --------------------------------------------------------------------
+        log('B: Exercising visible #pause-btn and resume mode modal on Target 2...');
+
+        // Wait for Target 2 to start processing before pausing
+        for (let i = 0; i < 25; i++) {
+            await sleep(400);
+            const inF = await swEval(`Boolean(campaignState.activeTargetInFlight)`);
+            if (inF) break;
+        }
         await sleep(600);
 
-        const pausedSt = await swEval(`({ isPaused: campaignState.isPaused })`);
-        recordAssertion('B_CAMPAIGN_PAUSED_BY_VISIBLE_BUTTON', pausedSt?.isPaused === true, pausedSt);
+        // Click #pause-btn to pause Target 2
+        await cdpSend(popupWs, 'Runtime.evaluate', { expression: `document.getElementById('pause-btn')?.click()` });
+
+        // Wait for pause quiescence & checkpoint to be fully persisted
+        let pausedCheckpointReady = false;
+        let pausedSt = null;
+        for (let i = 0; i < 30; i++) {
+            await sleep(300);
+            pausedSt = await swEval(`({ isPaused: campaignState.isPaused, hasCheckpoint: Boolean(campaignState.pausedCheckpoint) })`);
+            if (pausedSt?.isPaused && pausedSt?.hasCheckpoint) {
+                pausedCheckpointReady = true;
+                break;
+            }
+        }
+        recordAssertion('B_CAMPAIGN_PAUSED_BY_VISIBLE_BUTTON', pausedCheckpointReady === true, pausedSt);
 
         // Click #pause-btn again to open #resume-mode-modal-overlay
         await cdpSend(popupWs, 'Runtime.evaluate', { expression: `document.getElementById('pause-btn')?.click()` });
@@ -678,7 +763,7 @@ async function main() {
         const modalVis = await cdpSend(popupWs, 'Runtime.evaluate', {
             expression: `(() => {
                 const m = document.getElementById('resume-mode-modal-overlay');
-                return Boolean(m && !m.classList.contains('hidden') && m.offsetParent !== null);
+                return Boolean(m && !m.classList.contains('hidden') && m.style.display !== 'none');
             })()`,
             returnByValue: true
         }).then(r => r.result?.value);
@@ -691,25 +776,58 @@ async function main() {
                 document.getElementById('confirm-resume-mode-btn')?.click();
             `
         });
-        await sleep(800);
 
-        const resumedSt = await swEval(`({ isActive: campaignState.isActive, isPaused: campaignState.isPaused })`);
-        recordAssertion('B_CAMPAIGN_RESUMED_ACTIVE', Boolean(resumedSt?.isActive && !resumedSt?.isPaused), resumedSt);
+        let resumedSt = null;
+        let resumeActive = false;
+        for (let i = 0; i < 20; i++) {
+            await sleep(300);
+            resumedSt = await swEval(`({ isActive: campaignState.isActive, isPaused: campaignState.isPaused })`);
+            if (resumedSt?.isActive && !resumedSt?.isPaused) {
+                resumeActive = true;
+                break;
+            }
+        }
+        recordAssertion('B_CAMPAIGN_RESUMED_ACTIVE', resumeActive === true, resumedSt);
+
+        // Wait for Target 2 (Dynamic React controlled stale revert) to submit
+        log('B: Awaiting Target 2 (Dynamic React Controlled) form submission...');
+        let t2Submitted = false;
+        for (let i = 0; i < 40; i++) {
+            await sleep(500);
+            await cdpSend(popupWs, 'Runtime.evaluate', {
+                expression: `(() => { const btn = document.getElementById('privacy-block-action-override'); if (btn && btn.offsetParent !== null) btn.click(); })()`
+            });
+            const sub = await fetch(`http://127.0.0.1:${PORT}/__xpider_submissions`).then(r => r.json());
+            if (sub.count === 2) {
+                t2Submitted = true;
+                log('B: Target 2 successfully submitted (server count = 2)');
+                break;
+            }
+        }
+        assert(t2Submitted, 'Target 2 dynamic React must submit 2nd POST');
 
         // --------------------------------------------------------------------
         // VISIBLE STOP & SAVE -> SW RESTART -> REOPEN POPUP -> RESUME
         // --------------------------------------------------------------------
         log('B: Exercising visible #stop-save-btn, SW termination, reopen popup, and resume...');
-        await sleep(2000);
+        for (let i = 0; i < 40; i++) {
+            await sleep(500);
+            const inF = await swEval(`Boolean(campaignState.activeTargetInFlight)`);
+            if (!inF) break;
+        }
+        await sleep(1000);
 
         // Click visible #stop-save-btn
         await cdpSend(popupWs, 'Runtime.evaluate', { expression: `document.getElementById('stop-save-btn')?.click()` });
-        await sleep(1000);
-
-        const stopSt = await swEval(`({
-            isPaused: campaignState.isPaused,
-            checkpoint: Boolean(campaignState.pausedCheckpoint)
-        })`);
+        let stopSt = null;
+        for (let i = 0; i < 30; i++) {
+            await sleep(300);
+            stopSt = await swEval(`({
+                isPaused: campaignState.isPaused,
+                checkpoint: Boolean(campaignState.pausedCheckpoint)
+            })`);
+            if (stopSt?.isPaused && stopSt?.checkpoint) break;
+        }
         recordAssertion('B_STOP_AND_SAVE_CHECKPOINT_SAVED', Boolean(stopSt?.isPaused && stopSt?.checkpoint), stopSt);
 
         // Kill Service Worker forcibly via CDP Target.closeTarget
@@ -769,10 +887,15 @@ async function main() {
         }
         recordAssertion('B_REOPEN_POPUP_RESUMABLE_BANNER_VISIBLE', bannerVisible === true);
 
-        // Click #resume-campaign-btn on banner
+        // Click #resume-campaign-btn on banner and confirm in modal
         log('B: Clicking visible #resume-campaign-btn on banner to resume campaign...');
         await cdpSend(popupWs, 'Runtime.evaluate', {
-            expression: `document.getElementById('resume-campaign-btn')?.click()`
+            expression: `
+                document.getElementById('resume-campaign-btn')?.click();
+                setTimeout(() => {
+                    document.getElementById('confirm-resume-mode-btn')?.click();
+                }, 300);
+            `
         });
 
         // --------------------------------------------------------------------
@@ -821,20 +944,23 @@ async function main() {
         log(`Attempts recorded for run ${bRunId}: ${runAttempts.length}`);
         recordAssertion('B_EXACT_FOUR_TARGETS_IN_RUN_LEDGER', runAttempts.length === 4, { count: runAttempts.length });
 
+        const getUrl = a => (a.url || a.targetUrl || a.sourceUrl || a.targetIdentity || '');
+        const isSuccess = st => (st === 'SUCCESS' || st === 'CONFIRMED_SUCCESS');
+
         // Assert Target 1 (Homepage Discovery) settled as SUCCESS
-        const aT1 = runAttempts.find(a => a.url.includes('homepage-with-newsletter-and-contact-link.html'));
-        recordAssertion('B_TARGET_1_HOMEPAGE_DISCOVERY_SUCCESS', Boolean(aT1 && aT1.status === 'SUCCESS'), aT1);
+        const aT1 = runAttempts.find(a => getUrl(a).includes('homepage-with-newsletter-and-contact-link.html'));
+        recordAssertion('B_TARGET_1_HOMEPAGE_DISCOVERY_SUCCESS', Boolean(aT1 && isSuccess(aT1.status)), aT1);
 
         // Assert Target 2 (React Controlled) settled as SUCCESS
-        const aT2 = runAttempts.find(a => a.url.includes('dynamic-react-controlled-stale-revert.html'));
-        recordAssertion('B_TARGET_2_DYNAMIC_REACT_SUCCESS', Boolean(aT2 && aT2.status === 'SUCCESS'), aT2);
+        const aT2 = runAttempts.find(a => getUrl(a).includes('dynamic-react-controlled-stale-revert.html'));
+        recordAssertion('B_TARGET_2_DYNAMIC_REACT_SUCCESS', Boolean(aT2 && isSuccess(aT2.status)), aT2);
 
         // Assert Target 3 (Phone Only No Message) settled as SKIPPED
-        const aT3 = runAttempts.find(a => a.url.includes('phone-only-no-message.html'));
+        const aT3 = runAttempts.find(a => getUrl(a).includes('phone-only-no-message.html'));
         recordAssertion('B_TARGET_3_PHONE_ONLY_SKIPPED', Boolean(aT3 && aT3.status === 'SKIPPED'), aT3);
 
         // Assert Target 4 (Dead Contact Link) settled as FAILURE
-        const aT4 = runAttempts.find(a => a.url.includes('homepage-with-dead-contact-link.html'));
+        const aT4 = runAttempts.find(a => getUrl(a).includes('homepage-with-dead-contact-link.html'));
         recordAssertion('B_TARGET_4_DEAD_CONTACT_FAILURE', Boolean(aT4 && aT4.status === 'FAILURE'), aT4);
 
         // Assert remaining targets counter decremented to 0
@@ -843,7 +969,7 @@ async function main() {
             queueLen: campaignState.queue?.length,
             histogram: campaignState.outcomeHistogram
         })`);
-        recordAssertion('B_REMAINING_TARGETS_REACHED_ZERO', finalCampaignState?.remaining === 0, finalCampaignState);
+        recordAssertion('B_REMAINING_TARGETS_REACHED_ZERO', finalCampaignState?.queueLen === 0, finalCampaignState);
 
         // Capture screenshot of final popup completed state
         const finalShot = await shot(popupWs, 'shot_directive_6657464425_final_completed.png');

@@ -1,14 +1,14 @@
 {
   "testSuite": "run_chromium_v7_item_c_contact_and_dynamic_message",
-  "startTimeUtc": "2026-11-06T13:08:54.947Z",
+  "startTimeUtc": "2026-11-06T14:55:04.839Z",
   "assertions": [
     {
       "name": "ITEM_C_CAMPAIGN_ACTIVE",
       "passed": true,
       "details": {
-        "campaignRunId": "run_1793970537888_7tlo9"
+        "campaignRunId": "run_1793976907954_fmtce"
       },
-      "timestamp": "2026-11-06T13:08:58.380Z"
+      "timestamp": "2026-11-06T14:55:08.705Z"
     },
     {
       "name": "ITEM_C_CAMPAIGN_SETTLED_INACTIVE",
@@ -16,7 +16,7 @@
       "details": {
         "maxWaitSeconds": 120
       },
-      "timestamp": "2026-11-06T13:10:27.311Z"
+      "timestamp": "2026-11-06T14:56:36.043Z"
     },
     {
       "name": "ITEM_C_ATTEMPTS_COUNT_EXACT_FIVE",
@@ -24,7 +24,7 @@
       "details": {
         "attemptsCount": 5
       },
-      "timestamp": "2026-11-06T13:10:27.315Z"
+      "timestamp": "2026-11-06T14:56:36.047Z"
     },
     {
       "name": "SUBTEST_1_HOMEPAGE_ATTEMPT_RECORDED",
@@ -32,7 +32,7 @@
       "details": {
         "sourceUrl": "http://127.0.0.1:8088/homepage-with-newsletter-and-contact-link.html"
       },
-      "timestamp": "2026-11-06T13:10:27.315Z"
+      "timestamp": "2026-11-06T14:56:36.047Z"
     },
     {
       "name": "SUBTEST_1_HOMEPAGE_STATUS_SUCCESS",
@@ -41,7 +41,7 @@
         "status": "CONFIRMED_SUCCESS",
         "reason": "SUCCESS_CONFIRMED"
       },
-      "timestamp": "2026-11-06T13:10:27.315Z"
+      "timestamp": "2026-11-06T14:56:36.047Z"
     },
     {
       "name": "SUBTEST_2_DYNAMIC_REACT_ATTEMPT_RECORDED",
@@ -49,7 +49,7 @@
       "details": {
         "sourceUrl": "http://127.0.0.1:8088/dynamic-react-controlled-stale-revert.html"
       },
-      "timestamp": "2026-11-06T13:10:27.315Z"
+      "timestamp": "2026-11-06T14:56:36.048Z"
     },
     {
       "name": "SUBTEST_2_DYNAMIC_REACT_STATUS_SUCCESS",
@@ -58,7 +58,7 @@
         "status": "CONFIRMED_SUCCESS",
         "reason": "SUCCESS_CONFIRMED"
       },
-      "timestamp": "2026-11-06T13:10:27.315Z"
+      "timestamp": "2026-11-06T14:56:36.048Z"
     },
     {
       "name": "SUBTEST_3_DYNAMIC_REPLACED_FORM_RECORDED",
@@ -66,7 +66,7 @@
       "details": {
         "sourceUrl": "http://127.0.0.1:8088/dynamic-spa-replaced-form.html"
       },
-      "timestamp": "2026-11-06T13:10:27.315Z"
+      "timestamp": "2026-11-06T14:56:36.048Z"
     },
     {
       "name": "SUBTEST_3_DYNAMIC_REPLACED_FORM_SUCCESS",
@@ -75,7 +75,7 @@
         "status": "CONFIRMED_SUCCESS",
         "reason": "SUCCESS_CONFIRMED"
       },
-      "timestamp": "2026-11-06T13:10:27.315Z"
+      "timestamp": "2026-11-06T14:56:36.048Z"
     },
     {
       "name": "SUBTEST_1_2_3_SERVER_SUBMISSIONS_RECORDED",
@@ -83,7 +83,7 @@
       "details": {
         "count": 3
       },
-      "timestamp": "2026-11-06T13:10:27.319Z"
+      "timestamp": "2026-11-06T14:56:36.053Z"
     },
     {
       "name": "SUBTEST_4_PHONE_ONLY_ATTEMPT_RECORDED",
@@ -91,7 +91,7 @@
       "details": {
         "sourceUrl": "http://127.0.0.1:8088/phone-only-no-message.html"
       },
-      "timestamp": "2026-11-06T13:10:27.320Z"
+      "timestamp": "2026-11-06T14:56:36.054Z"
     },
     {
       "name": "SUBTEST_4_PHONE_ONLY_STATUS_SKIPPED",
@@ -100,7 +100,7 @@
         "status": "SKIPPED",
         "reason": "NO_LONG_TEXT_INQUIRY_FIELD"
       },
-      "timestamp": "2026-11-06T13:10:27.320Z"
+      "timestamp": "2026-11-06T14:56:36.054Z"
     },
     {
       "name": "SUBTEST_4_PHONE_ONLY_REASON_NO_LONG_TEXT",
@@ -108,7 +108,7 @@
       "details": {
         "reasonCode": "NO_LONG_TEXT_INQUIRY_FIELD"
       },
-      "timestamp": "2026-11-06T13:10:27.320Z"
+      "timestamp": "2026-11-06T14:56:36.054Z"
     },
     {
       "name": "SUBTEST_5_DEAD_ROUTE_ATTEMPT_RECORDED",
@@ -116,7 +116,7 @@
       "details": {
         "sourceUrl": "http://127.0.0.1:8088/homepage-with-dead-contact-link.html"
       },
-      "timestamp": "2026-11-06T13:10:27.320Z"
+      "timestamp": "2026-11-06T14:56:36.054Z"
     },
     {
       "name": "SUBTEST_5_DEAD_ROUTE_STATUS_FAILURE",
@@ -125,7 +125,7 @@
         "status": "FAILURE",
         "reason": "NO_ACCESSIBLE_INQUIRY_FORM"
       },
-      "timestamp": "2026-11-06T13:10:27.320Z"
+      "timestamp": "2026-11-06T14:56:36.054Z"
     },
     {
       "name": "SUBTEST_5_DEAD_ROUTE_REASON_NO_FORM",
@@ -133,7 +133,7 @@
       "details": {
         "reasonCode": "NO_ACCESSIBLE_INQUIRY_FORM"
       },
-      "timestamp": "2026-11-06T13:10:27.320Z"
+      "timestamp": "2026-11-06T14:56:36.054Z"
     },
     {
       "name": "NEGATIVE_TARGETS_ZERO_SUBMISSION_DELTA",
@@ -142,7 +142,7 @@
         "finalCount": 3,
         "expectedCount": 3
       },
-      "timestamp": "2026-11-06T13:10:27.323Z"
+      "timestamp": "2026-11-06T14:56:36.057Z"
     },
     {
       "name": "SCOPED_STATS_TOTAL_STARTED_FIVE",
@@ -150,7 +150,7 @@
       "details": {
         "totalStarted": 5
       },
-      "timestamp": "2026-11-06T13:10:27.324Z"
+      "timestamp": "2026-11-06T14:56:36.058Z"
     },
     {
       "name": "SCOPED_STATS_SUCCESS_THREE",
@@ -158,7 +158,7 @@
       "details": {
         "success": 3
       },
-      "timestamp": "2026-11-06T13:10:27.324Z"
+      "timestamp": "2026-11-06T14:56:36.058Z"
     },
     {
       "name": "SCOPED_STATS_SKIPPED_ONE",
@@ -166,7 +166,7 @@
       "details": {
         "skipped": 1
       },
-      "timestamp": "2026-11-06T13:10:27.324Z"
+      "timestamp": "2026-11-06T14:56:36.058Z"
     },
     {
       "name": "SCOPED_STATS_FAILURE_ONE",
@@ -174,7 +174,7 @@
       "details": {
         "failure": 1
       },
-      "timestamp": "2026-11-06T13:10:27.324Z"
+      "timestamp": "2026-11-06T14:56:36.059Z"
     },
     {
       "name": "SCOPED_STATS_MATH_INVARIANT_PRESERVED",
@@ -182,14 +182,14 @@
       "details": {
         "sum": 5
       },
-      "timestamp": "2026-11-06T13:10:27.324Z"
+      "timestamp": "2026-11-06T14:56:36.059Z"
     }
   ],
   "targets": [],
   "status": "SUCCESS",
-  "endTimeUtc": "2026-11-06T13:10:27.497Z",
+  "endTimeUtc": "2026-11-06T14:56:36.234Z",
   "summary": {
-    "campaignRunId": "run_1793970537888_7tlo9",
+    "campaignRunId": "run_1793976907954_fmtce",
     "totalStarted": 5,
     "success": 3,
     "skipped": 1,
@@ -197,7 +197,7 @@
     "serverSubmissionsCount": 3,
     "scopedStats": {
       "scope": "currentRun",
-      "campaignRunId": "run_1793970537888_7tlo9",
+      "campaignRunId": "run_1793976907954_fmtce",
       "totalStarted": 5,
       "totalImportRows": 5,
       "pending": 0,

@@ -1,6 +1,6 @@
 {
   "title": "XPIDER V7 Directive Reproduction & Verification Report",
-  "startTimeUtc": "2026-11-06T13:06:32.616Z",
+  "startTimeUtc": "2026-11-06T14:50:30.885Z",
   "assertions": [
     {
       "name": "CAMPAIGN_PAUSED_IN_AUTO",
@@ -8,10 +8,10 @@
       "detail": {
         "isPaused": true,
         "isActive": false,
-        "campaignRunId": "normal_run_1793970395333_x0xnns",
+        "campaignRunId": "normal_run_1793976633304_qouhgz",
         "mode": "AUTO"
       },
-      "timestamp": "2026-11-06T13:06:37.051Z"
+      "timestamp": "2026-11-06T14:50:34.927Z"
     },
     {
       "name": "RESUME_MODE_MODAL_OPENED",
@@ -19,7 +19,7 @@
       "detail": {
         "isVisible": true
       },
-      "timestamp": "2026-11-06T13:06:37.467Z"
+      "timestamp": "2026-11-06T14:50:35.344Z"
     },
     {
       "name": "RESUMED_ACTIVELY_IN_MANUAL_MODE",
@@ -28,9 +28,9 @@
         "isActive": true,
         "isPaused": false,
         "mode": "MANUAL",
-        "campaignRunId": "normal_run_1793970395333_x0xnns"
+        "campaignRunId": "normal_run_1793976633304_qouhgz"
       },
-      "timestamp": "2026-11-06T13:06:38.090Z"
+      "timestamp": "2026-11-06T14:50:35.985Z"
     },
     {
       "name": "STOP_SAVE_CHECKPOINT_MODE_MANUAL",
@@ -39,16 +39,16 @@
         "storageMode": "MANUAL",
         "checkpoint": {
           "campaignMode": "MANUAL",
-          "campaignRunId": "normal_run_1793970395333_x0xnns",
+          "campaignRunId": "normal_run_1793976633304_qouhgz",
           "counters": {
-            "completed": 2,
+            "completed": 0,
             "deliveryUnknown": 0,
             "failed": 0,
             "failureBreakdown": {},
             "inProgress": 0,
             "paused": 0,
-            "remaining": 1,
-            "skipped": 2,
+            "remaining": 3,
+            "skipped": 0,
             "skippedHistory": 0,
             "success": 0,
             "timeout": 0,
@@ -56,13 +56,13 @@
           },
           "delayMs": 10000,
           "fillDelayMs": 300,
-          "outcomeHistogram": {
-            "PRE_SUBMIT_TERMINATED": 2
-          },
+          "outcomeHistogram": {},
           "ownerFunctionTestMode": false,
-          "pausedAt": 1793970398334,
+          "pausedAt": 1793976636293,
           "pausedByOperator": true,
           "remainingQueue": [
+            "http://127.0.0.1:8088/contact-standard.html",
+            "http://127.0.0.1:8088/contact-standard.html?item=2",
             "http://127.0.0.1:8088/contact-standard.html?item=3"
           ],
           "restorationLogged": false,
@@ -91,16 +91,13 @@
           "templateId": "default",
           "templateVersion": 1,
           "totalTargets": 3,
-          "visitedUrls": [
-            "http://127.0.0.1:8088/contact-standard.html",
-            "http://127.0.0.1:8088/contact-standard.html?item=2"
-          ]
+          "visitedUrls": []
         },
         "swMode": "MANUAL",
         "swPaused": true,
-        "swRunId": "normal_run_1793970395333_x0xnns"
+        "swRunId": "normal_run_1793976633304_qouhgz"
       },
-      "timestamp": "2026-11-06T13:06:38.709Z"
+      "timestamp": "2026-11-06T14:50:36.660Z"
     },
     {
       "name": "STOP_SAVE_STORAGE_MODE_MANUAL",
@@ -109,16 +106,16 @@
         "storageMode": "MANUAL",
         "checkpoint": {
           "campaignMode": "MANUAL",
-          "campaignRunId": "normal_run_1793970395333_x0xnns",
+          "campaignRunId": "normal_run_1793976633304_qouhgz",
           "counters": {
-            "completed": 2,
+            "completed": 0,
             "deliveryUnknown": 0,
             "failed": 0,
             "failureBreakdown": {},
             "inProgress": 0,
             "paused": 0,
-            "remaining": 1,
-            "skipped": 2,
+            "remaining": 3,
+            "skipped": 0,
             "skippedHistory": 0,
             "success": 0,
             "timeout": 0,
@@ -126,13 +123,13 @@
           },
           "delayMs": 10000,
           "fillDelayMs": 300,
-          "outcomeHistogram": {
-            "PRE_SUBMIT_TERMINATED": 2
-          },
+          "outcomeHistogram": {},
           "ownerFunctionTestMode": false,
-          "pausedAt": 1793970398334,
+          "pausedAt": 1793976636293,
           "pausedByOperator": true,
           "remainingQueue": [
+            "http://127.0.0.1:8088/contact-standard.html",
+            "http://127.0.0.1:8088/contact-standard.html?item=2",
             "http://127.0.0.1:8088/contact-standard.html?item=3"
           ],
           "restorationLogged": false,
@@ -161,16 +158,13 @@
           "templateId": "default",
           "templateVersion": 1,
           "totalTargets": 3,
-          "visitedUrls": [
-            "http://127.0.0.1:8088/contact-standard.html",
-            "http://127.0.0.1:8088/contact-standard.html?item=2"
-          ]
+          "visitedUrls": []
         },
         "swMode": "MANUAL",
         "swPaused": true,
-        "swRunId": "normal_run_1793970395333_x0xnns"
+        "swRunId": "normal_run_1793976633304_qouhgz"
       },
-      "timestamp": "2026-11-06T13:06:38.709Z"
+      "timestamp": "2026-11-06T14:50:36.660Z"
     },
     {
       "name": "STOP_SAVE_CHECKPOINT_RUN_ID_MATCHES",
@@ -179,16 +173,16 @@
         "storageMode": "MANUAL",
         "checkpoint": {
           "campaignMode": "MANUAL",
-          "campaignRunId": "normal_run_1793970395333_x0xnns",
+          "campaignRunId": "normal_run_1793976633304_qouhgz",
           "counters": {
-            "completed": 2,
+            "completed": 0,
             "deliveryUnknown": 0,
             "failed": 0,
             "failureBreakdown": {},
             "inProgress": 0,
             "paused": 0,
-            "remaining": 1,
-            "skipped": 2,
+            "remaining": 3,
+            "skipped": 0,
             "skippedHistory": 0,
             "success": 0,
             "timeout": 0,
@@ -196,13 +190,13 @@
           },
           "delayMs": 10000,
           "fillDelayMs": 300,
-          "outcomeHistogram": {
-            "PRE_SUBMIT_TERMINATED": 2
-          },
+          "outcomeHistogram": {},
           "ownerFunctionTestMode": false,
-          "pausedAt": 1793970398334,
+          "pausedAt": 1793976636293,
           "pausedByOperator": true,
           "remainingQueue": [
+            "http://127.0.0.1:8088/contact-standard.html",
+            "http://127.0.0.1:8088/contact-standard.html?item=2",
             "http://127.0.0.1:8088/contact-standard.html?item=3"
           ],
           "restorationLogged": false,
@@ -231,27 +225,22 @@
           "templateId": "default",
           "templateVersion": 1,
           "totalTargets": 3,
-          "visitedUrls": [
-            "http://127.0.0.1:8088/contact-standard.html",
-            "http://127.0.0.1:8088/contact-standard.html?item=2"
-          ]
+          "visitedUrls": []
         },
         "swMode": "MANUAL",
         "swPaused": true,
-        "swRunId": "normal_run_1793970395333_x0xnns"
+        "swRunId": "normal_run_1793976633304_qouhgz"
       },
-      "timestamp": "2026-11-06T13:06:38.709Z"
+      "timestamp": "2026-11-06T14:50:36.660Z"
     },
     {
       "name": "CHECKPOINT_HISTOGRAM_ZERO_HISTORICAL_LEAK",
       "passed": true,
       "detail": {
-        "histogram": {
-          "PRE_SUBMIT_TERMINATED": 2
-        },
+        "histogram": {},
         "histSuccessCount": 0
       },
-      "timestamp": "2026-11-06T13:06:38.709Z"
+      "timestamp": "2026-11-06T14:50:36.660Z"
     },
     {
       "name": "SW_RESTART_RESTORED_CAMPAIGN_MODE_MANUAL",
@@ -261,10 +250,10 @@
         "checkpointMode": "MANUAL",
         "swMode": "MANUAL",
         "swPaused": true,
-        "swRunId": "normal_run_1793970395333_x0xnns",
-        "checkpointRunId": "normal_run_1793970395333_x0xnns"
+        "swRunId": "normal_run_1793976633304_qouhgz",
+        "checkpointRunId": "normal_run_1793976633304_qouhgz"
       },
-      "timestamp": "2026-11-06T13:06:40.555Z"
+      "timestamp": "2026-11-06T14:50:38.491Z"
     },
     {
       "name": "SW_RESTART_CHECKPOINT_MODE_MANUAL",
@@ -274,10 +263,10 @@
         "checkpointMode": "MANUAL",
         "swMode": "MANUAL",
         "swPaused": true,
-        "swRunId": "normal_run_1793970395333_x0xnns",
-        "checkpointRunId": "normal_run_1793970395333_x0xnns"
+        "swRunId": "normal_run_1793976633304_qouhgz",
+        "checkpointRunId": "normal_run_1793976633304_qouhgz"
       },
-      "timestamp": "2026-11-06T13:06:40.555Z"
+      "timestamp": "2026-11-06T14:50:38.491Z"
     },
     {
       "name": "SW_RESTART_STORAGE_MODE_MANUAL",
@@ -287,10 +276,10 @@
         "checkpointMode": "MANUAL",
         "swMode": "MANUAL",
         "swPaused": true,
-        "swRunId": "normal_run_1793970395333_x0xnns",
-        "checkpointRunId": "normal_run_1793970395333_x0xnns"
+        "swRunId": "normal_run_1793976633304_qouhgz",
+        "checkpointRunId": "normal_run_1793976633304_qouhgz"
       },
-      "timestamp": "2026-11-06T13:06:40.555Z"
+      "timestamp": "2026-11-06T14:50:38.491Z"
     },
     {
       "name": "POPUP_RESUMABLE_BANNER_VISIBLE",
@@ -299,7 +288,7 @@
         "bannerVisible": true,
         "pillText": "MODE: MANUAL (HOLD FOR REGISTER)"
       },
-      "timestamp": "2026-11-06T13:06:41.580Z"
+      "timestamp": "2026-11-06T14:50:39.527Z"
     },
     {
       "name": "POPUP_MODE_PILL_SHOWS_MANUAL",
@@ -308,7 +297,7 @@
         "bannerVisible": true,
         "pillText": "MODE: MANUAL (HOLD FOR REGISTER)"
       },
-      "timestamp": "2026-11-06T13:06:41.580Z"
+      "timestamp": "2026-11-06T14:50:39.527Z"
     },
     {
       "name": "ZERO_SUBMISSIONS_BEFORE_OPERATOR_ACTION",
@@ -318,7 +307,7 @@
         "count": 0,
         "submissions": []
       },
-      "timestamp": "2026-11-06T13:07:00.173Z"
+      "timestamp": "2026-11-06T14:50:58.342Z"
     },
     {
       "name": "EXACTLY_ONE_SUBMISSION_RECORDED_AFTER_OPERATOR_REGISTER",
@@ -328,22 +317,22 @@
         "count": 1,
         "submissions": [
           {
-            "receiptId": "rcpt_1793970420208_1",
-            "timestamp": 1793970420208,
+            "receiptId": "rcpt_1793976658379_1",
+            "timestamp": 1793976658379,
             "method": "POST",
-            "url": "/contact-success.html?item=3",
+            "url": "/contact-success.html",
             "ip": "127.0.0.1",
-            "referer": "http://127.0.0.1:8088/contact-standard.html?item=3"
+            "referer": "http://127.0.0.1:8088/contact-standard.html"
           }
         ]
       },
-      "timestamp": "2026-11-06T13:07:01.630Z"
+      "timestamp": "2026-11-06T14:50:59.802Z"
     }
   ],
   "screenshots": [
     "shot_directive_01_resumable_banner.png"
   ],
-  "endTimeUtc": "2026-11-06T13:07:02.053Z",
+  "endTimeUtc": "2026-11-06T14:51:00.224Z",
   "status": "SUCCESS",
   "exitCode": 0
 }

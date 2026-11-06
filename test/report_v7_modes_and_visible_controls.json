@@ -1,20 +1,20 @@
 {
   "testSuite": "XPIDER_V7_MODES_AND_VISIBLE_CONTROLS_SUITE",
-  "startTimeUtc": "2026-11-06T13:07:07.471Z",
-  "endTimeUtc": "2026-11-06T13:08:49.997Z",
+  "startTimeUtc": "2026-11-06T14:53:07.889Z",
+  "endTimeUtc": "2026-11-06T14:54:55.903Z",
   "status": "SUCCESS",
   "assertions": [
     {
       "name": "AUTO_MODE_CAMPAIGN_ACTIVE",
       "passed": true,
       "detail": {},
-      "timestamp": "2026-11-06T13:07:11.383Z"
+      "timestamp": "2026-11-06T14:53:13.779Z"
     },
     {
       "name": "AUTO_MODE_CAMPAIGN_SETTLED",
       "passed": true,
       "detail": {},
-      "timestamp": "2026-11-06T13:07:35.604Z"
+      "timestamp": "2026-11-06T14:53:38.430Z"
     },
     {
       "name": "AUTO_MODE_ZERO_OPERATOR_PANEL",
@@ -22,7 +22,7 @@
       "detail": {
         "autoHoldPanelObserved": false
       },
-      "timestamp": "2026-11-06T13:07:35.604Z"
+      "timestamp": "2026-11-06T14:53:38.430Z"
     },
     {
       "name": "AUTO_MODE_SUBMISSION_RECORDED",
@@ -30,13 +30,13 @@
       "detail": {
         "submissions": 1
       },
-      "timestamp": "2026-11-06T13:07:35.606Z"
+      "timestamp": "2026-11-06T14:53:38.434Z"
     },
     {
       "name": "MANUAL_MODE_CAMPAIGN_ACTIVE",
       "passed": true,
       "detail": {},
-      "timestamp": "2026-11-06T13:07:36.655Z"
+      "timestamp": "2026-11-06T14:53:39.813Z"
     },
     {
       "name": "MANUAL_HOLD_PANEL_RENDERED",
@@ -49,7 +49,7 @@
         "emailVal": "modetester@example.com",
         "msgVal": "Modes and visible UI controls verification inquiry message."
       },
-      "timestamp": "2026-11-06T13:07:52.101Z"
+      "timestamp": "2026-11-06T14:53:55.854Z"
     },
     {
       "name": "MANUAL_HOLD_DATA_MODE_MANUAL",
@@ -57,7 +57,7 @@
       "detail": {
         "mode": "MANUAL"
       },
-      "timestamp": "2026-11-06T13:07:52.101Z"
+      "timestamp": "2026-11-06T14:53:55.854Z"
     },
     {
       "name": "MANUAL_FIELDS_AUTOFILLED_BEFORE_SUBMIT",
@@ -70,7 +70,7 @@
         "emailVal": "modetester@example.com",
         "msgVal": "Modes and visible UI controls verification inquiry message."
       },
-      "timestamp": "2026-11-06T13:07:52.101Z"
+      "timestamp": "2026-11-06T14:53:55.854Z"
     },
     {
       "name": "MANUAL_MODE_HELD_BEFORE_SUBMIT",
@@ -78,13 +78,13 @@
       "detail": {
         "count": 1
       },
-      "timestamp": "2026-11-06T13:07:52.104Z"
+      "timestamp": "2026-11-06T14:53:55.856Z"
     },
     {
       "name": "MANUAL_MODE_CAMPAIGN_SETTLED",
       "passed": true,
       "detail": {},
-      "timestamp": "2026-11-06T13:07:53.231Z"
+      "timestamp": "2026-11-06T14:53:56.986Z"
     },
     {
       "name": "MANUAL_MODE_SUBMISSION_RECORDED",
@@ -92,13 +92,13 @@
       "detail": {
         "count": 2
       },
-      "timestamp": "2026-11-06T13:07:53.232Z"
+      "timestamp": "2026-11-06T14:53:56.988Z"
     },
     {
       "name": "SEMI_AUTO_CLEAN_FORM_SETTLED_AUTONOMOUS",
       "passed": true,
       "detail": {},
-      "timestamp": "2026-11-06T13:08:18.211Z"
+      "timestamp": "2026-11-06T14:54:22.129Z"
     },
     {
       "name": "SEMI_AUTO_CLEAN_SUBMISSION_RECORDED",
@@ -106,7 +106,7 @@
       "detail": {
         "count": 3
       },
-      "timestamp": "2026-11-06T13:08:18.213Z"
+      "timestamp": "2026-11-06T14:54:22.133Z"
     },
     {
       "name": "SEMI_AUTO_CHALLENGE_HOLD_PANEL_RENDERED",
@@ -116,7 +116,7 @@
         "mode": "SEMI_AUTO",
         "validationFailed": "false"
       },
-      "timestamp": "2026-11-06T13:08:31.987Z"
+      "timestamp": "2026-11-06T14:54:36.931Z"
     },
     {
       "name": "SEMI_AUTO_HOLD_DATA_MODE_SEMI_AUTO",
@@ -124,19 +124,19 @@
       "detail": {
         "mode": "SEMI_AUTO"
       },
-      "timestamp": "2026-11-06T13:08:31.987Z"
+      "timestamp": "2026-11-06T14:54:36.931Z"
     },
     {
       "name": "SEMI_AUTO_CHALLENGE_CAMPAIGN_SETTLED",
       "passed": true,
       "detail": {},
-      "timestamp": "2026-11-06T13:08:32.495Z"
+      "timestamp": "2026-11-06T14:54:37.457Z"
     },
     {
       "name": "PHONE_ONLY_CAMPAIGN_SETTLED",
       "passed": true,
       "detail": {},
-      "timestamp": "2026-11-06T13:08:43.929Z"
+      "timestamp": "2026-11-06T14:54:48.937Z"
     },
     {
       "name": "PHONE_ONLY_STATUS_SKIPPED",
@@ -144,7 +144,7 @@
       "detail": {
         "status": "SKIPPED"
       },
-      "timestamp": "2026-11-06T13:08:43.936Z"
+      "timestamp": "2026-11-06T14:54:48.942Z"
     },
     {
       "name": "PHONE_ONLY_REASON_NO_LONG_TEXT",
@@ -152,7 +152,7 @@
       "detail": {
         "reasonCode": "NO_LONG_TEXT_INQUIRY_FIELD"
       },
-      "timestamp": "2026-11-06T13:08:43.936Z"
+      "timestamp": "2026-11-06T14:54:48.942Z"
     },
     {
       "name": "PHONE_ONLY_ZERO_SUBMISSION_DELTA",
@@ -160,7 +160,7 @@
       "detail": {
         "count": 3
       },
-      "timestamp": "2026-11-06T13:08:43.939Z"
+      "timestamp": "2026-11-06T14:54:48.944Z"
     },
     {
       "name": "PAUSE_BTN_SHOWS_RESUME",
@@ -169,7 +169,7 @@
         "text": "▶️ Resume",
         "isPaused": true
       },
-      "timestamp": "2026-11-06T13:08:45.505Z"
+      "timestamp": "2026-11-06T14:54:50.701Z"
     },
     {
       "name": "RESUME_MODE_MODAL_OPENED_VISIBLE",
@@ -177,7 +177,7 @@
       "detail": {
         "isVisible": true
       },
-      "timestamp": "2026-11-06T13:08:45.933Z"
+      "timestamp": "2026-11-06T14:54:51.138Z"
     },
     {
       "name": "RESUMED_IN_MANUAL_MODE_HUD_BADGE",
@@ -185,7 +185,7 @@
       "detail": {
         "pill": "MODE: MANUAL (HOLD FOR REGISTER)"
       },
-      "timestamp": "2026-11-06T13:08:46.910Z"
+      "timestamp": "2026-11-06T14:54:52.353Z"
     },
     {
       "name": "STOP_SAVE_BTN_VISIBLE_AND_ENABLED",
@@ -195,7 +195,7 @@
         "visible": true,
         "disabled": false
       },
-      "timestamp": "2026-11-06T13:08:46.946Z"
+      "timestamp": "2026-11-06T14:54:52.751Z"
     },
     {
       "name": "STOP_SAVE_BANNER_RENDERED",
@@ -203,7 +203,7 @@
       "detail": {
         "bannerVisible": true
       },
-      "timestamp": "2026-11-06T13:08:47.565Z"
+      "timestamp": "2026-11-06T14:54:53.438Z"
     },
     {
       "name": "SW_RESTART_MANUAL_MODE_PRESERVED",
@@ -212,16 +212,16 @@
         "storageMode": "MANUAL",
         "checkpoint": {
           "campaignMode": "MANUAL",
-          "campaignRunId": "normal_run_1793970524500_3qpk2i",
+          "campaignRunId": "normal_run_1793976889494_640iqj",
           "counters": {
-            "completed": 2,
+            "completed": 0,
             "deliveryUnknown": 0,
             "failed": 0,
             "failureBreakdown": {},
             "inProgress": 0,
             "paused": 0,
-            "remaining": 1,
-            "skipped": 2,
+            "remaining": 3,
+            "skipped": 0,
             "skippedHistory": 0,
             "success": 0,
             "timeout": 0,
@@ -229,13 +229,13 @@
           },
           "delayMs": 10000,
           "fillDelayMs": 300,
-          "outcomeHistogram": {
-            "PRE_SUBMIT_TERMINATED": 2
-          },
+          "outcomeHistogram": {},
           "ownerFunctionTestMode": false,
-          "pausedAt": 1793970527175,
+          "pausedAt": 1793976893024,
           "pausedByOperator": true,
           "remainingQueue": [
+            "http://127.0.0.1:8088/contact-standard.html",
+            "http://127.0.0.1:8088/captcha-turnstile-dom.html",
             "http://127.0.0.1:8088/dynamic-react-controlled-stale-revert.html"
           ],
           "restorationLogged": true,
@@ -264,16 +264,13 @@
           "templateId": "default",
           "templateVersion": 1,
           "totalTargets": 3,
-          "visitedUrls": [
-            "http://127.0.0.1:8088/contact-standard.html",
-            "http://127.0.0.1:8088/captcha-turnstile-dom.html"
-          ]
+          "visitedUrls": []
         },
         "swMode": "MANUAL",
         "swPaused": true,
-        "swRunId": "normal_run_1793970524500_3qpk2i"
+        "swRunId": "normal_run_1793976889494_640iqj"
       },
-      "timestamp": "2026-11-06T13:08:49.545Z"
+      "timestamp": "2026-11-06T14:54:55.463Z"
     },
     {
       "name": "SW_RESTART_CHECKPOINT_SURVIVED",
@@ -282,16 +279,16 @@
         "storageMode": "MANUAL",
         "checkpoint": {
           "campaignMode": "MANUAL",
-          "campaignRunId": "normal_run_1793970524500_3qpk2i",
+          "campaignRunId": "normal_run_1793976889494_640iqj",
           "counters": {
-            "completed": 2,
+            "completed": 0,
             "deliveryUnknown": 0,
             "failed": 0,
             "failureBreakdown": {},
             "inProgress": 0,
             "paused": 0,
-            "remaining": 1,
-            "skipped": 2,
+            "remaining": 3,
+            "skipped": 0,
             "skippedHistory": 0,
             "success": 0,
             "timeout": 0,
@@ -299,13 +296,13 @@
           },
           "delayMs": 10000,
           "fillDelayMs": 300,
-          "outcomeHistogram": {
-            "PRE_SUBMIT_TERMINATED": 2
-          },
+          "outcomeHistogram": {},
           "ownerFunctionTestMode": false,
-          "pausedAt": 1793970527175,
+          "pausedAt": 1793976893024,
           "pausedByOperator": true,
           "remainingQueue": [
+            "http://127.0.0.1:8088/contact-standard.html",
+            "http://127.0.0.1:8088/captcha-turnstile-dom.html",
             "http://127.0.0.1:8088/dynamic-react-controlled-stale-revert.html"
           ],
           "restorationLogged": true,
@@ -334,16 +331,13 @@
           "templateId": "default",
           "templateVersion": 1,
           "totalTargets": 3,
-          "visitedUrls": [
-            "http://127.0.0.1:8088/contact-standard.html",
-            "http://127.0.0.1:8088/captcha-turnstile-dom.html"
-          ]
+          "visitedUrls": []
         },
         "swMode": "MANUAL",
         "swPaused": true,
-        "swRunId": "normal_run_1793970524500_3qpk2i"
+        "swRunId": "normal_run_1793976889494_640iqj"
       },
-      "timestamp": "2026-11-06T13:08:49.545Z"
+      "timestamp": "2026-11-06T14:54:55.463Z"
     },
     {
       "name": "SW_RESTART_CHECKPOINT_MODE_MANUAL",
@@ -352,16 +346,16 @@
         "storageMode": "MANUAL",
         "checkpoint": {
           "campaignMode": "MANUAL",
-          "campaignRunId": "normal_run_1793970524500_3qpk2i",
+          "campaignRunId": "normal_run_1793976889494_640iqj",
           "counters": {
-            "completed": 2,
+            "completed": 0,
             "deliveryUnknown": 0,
             "failed": 0,
             "failureBreakdown": {},
             "inProgress": 0,
             "paused": 0,
-            "remaining": 1,
-            "skipped": 2,
+            "remaining": 3,
+            "skipped": 0,
             "skippedHistory": 0,
             "success": 0,
             "timeout": 0,
@@ -369,13 +363,13 @@
           },
           "delayMs": 10000,
           "fillDelayMs": 300,
-          "outcomeHistogram": {
-            "PRE_SUBMIT_TERMINATED": 2
-          },
+          "outcomeHistogram": {},
           "ownerFunctionTestMode": false,
-          "pausedAt": 1793970527175,
+          "pausedAt": 1793976893024,
           "pausedByOperator": true,
           "remainingQueue": [
+            "http://127.0.0.1:8088/contact-standard.html",
+            "http://127.0.0.1:8088/captcha-turnstile-dom.html",
             "http://127.0.0.1:8088/dynamic-react-controlled-stale-revert.html"
           ],
           "restorationLogged": true,
@@ -404,16 +398,13 @@
           "templateId": "default",
           "templateVersion": 1,
           "totalTargets": 3,
-          "visitedUrls": [
-            "http://127.0.0.1:8088/contact-standard.html",
-            "http://127.0.0.1:8088/captcha-turnstile-dom.html"
-          ]
+          "visitedUrls": []
         },
         "swMode": "MANUAL",
         "swPaused": true,
-        "swRunId": "normal_run_1793970524500_3qpk2i"
+        "swRunId": "normal_run_1793976889494_640iqj"
       },
-      "timestamp": "2026-11-06T13:08:49.545Z"
+      "timestamp": "2026-11-06T14:54:55.463Z"
     },
     {
       "name": "SW_RESTART_CAMPAIGN_STATE_MODE_MANUAL",
@@ -422,16 +413,16 @@
         "storageMode": "MANUAL",
         "checkpoint": {
           "campaignMode": "MANUAL",
-          "campaignRunId": "normal_run_1793970524500_3qpk2i",
+          "campaignRunId": "normal_run_1793976889494_640iqj",
           "counters": {
-            "completed": 2,
+            "completed": 0,
             "deliveryUnknown": 0,
             "failed": 0,
             "failureBreakdown": {},
             "inProgress": 0,
             "paused": 0,
-            "remaining": 1,
-            "skipped": 2,
+            "remaining": 3,
+            "skipped": 0,
             "skippedHistory": 0,
             "success": 0,
             "timeout": 0,
@@ -439,13 +430,13 @@
           },
           "delayMs": 10000,
           "fillDelayMs": 300,
-          "outcomeHistogram": {
-            "PRE_SUBMIT_TERMINATED": 2
-          },
+          "outcomeHistogram": {},
           "ownerFunctionTestMode": false,
-          "pausedAt": 1793970527175,
+          "pausedAt": 1793976893024,
           "pausedByOperator": true,
           "remainingQueue": [
+            "http://127.0.0.1:8088/contact-standard.html",
+            "http://127.0.0.1:8088/captcha-turnstile-dom.html",
             "http://127.0.0.1:8088/dynamic-react-controlled-stale-revert.html"
           ],
           "restorationLogged": true,
@@ -474,16 +465,13 @@
           "templateId": "default",
           "templateVersion": 1,
           "totalTargets": 3,
-          "visitedUrls": [
-            "http://127.0.0.1:8088/contact-standard.html",
-            "http://127.0.0.1:8088/captcha-turnstile-dom.html"
-          ]
+          "visitedUrls": []
         },
         "swMode": "MANUAL",
         "swPaused": true,
-        "swRunId": "normal_run_1793970524500_3qpk2i"
+        "swRunId": "normal_run_1793976889494_640iqj"
       },
-      "timestamp": "2026-11-06T13:08:49.545Z"
+      "timestamp": "2026-11-06T14:54:55.463Z"
     },
     {
       "name": "SW_RESTART_CHECKPOINT_RUN_ID_MATCHES",
@@ -492,16 +480,16 @@
         "storageMode": "MANUAL",
         "checkpoint": {
           "campaignMode": "MANUAL",
-          "campaignRunId": "normal_run_1793970524500_3qpk2i",
+          "campaignRunId": "normal_run_1793976889494_640iqj",
           "counters": {
-            "completed": 2,
+            "completed": 0,
             "deliveryUnknown": 0,
             "failed": 0,
             "failureBreakdown": {},
             "inProgress": 0,
             "paused": 0,
-            "remaining": 1,
-            "skipped": 2,
+            "remaining": 3,
+            "skipped": 0,
             "skippedHistory": 0,
             "success": 0,
             "timeout": 0,
@@ -509,13 +497,13 @@
           },
           "delayMs": 10000,
           "fillDelayMs": 300,
-          "outcomeHistogram": {
-            "PRE_SUBMIT_TERMINATED": 2
-          },
+          "outcomeHistogram": {},
           "ownerFunctionTestMode": false,
-          "pausedAt": 1793970527175,
+          "pausedAt": 1793976893024,
           "pausedByOperator": true,
           "remainingQueue": [
+            "http://127.0.0.1:8088/contact-standard.html",
+            "http://127.0.0.1:8088/captcha-turnstile-dom.html",
             "http://127.0.0.1:8088/dynamic-react-controlled-stale-revert.html"
           ],
           "restorationLogged": true,
@@ -544,16 +532,13 @@
           "templateId": "default",
           "templateVersion": 1,
           "totalTargets": 3,
-          "visitedUrls": [
-            "http://127.0.0.1:8088/contact-standard.html",
-            "http://127.0.0.1:8088/captcha-turnstile-dom.html"
-          ]
+          "visitedUrls": []
         },
         "swMode": "MANUAL",
         "swPaused": true,
-        "swRunId": "normal_run_1793970524500_3qpk2i"
+        "swRunId": "normal_run_1793976889494_640iqj"
       },
-      "timestamp": "2026-11-06T13:08:49.545Z"
+      "timestamp": "2026-11-06T14:54:55.463Z"
     },
     {
       "name": "MATH_CAPTCHA_SOLVER_RETIRED_STUB",
@@ -561,7 +546,7 @@
       "detail": {
         "mcsRetired": true
       },
-      "timestamp": "2026-11-06T13:08:49.994Z"
+      "timestamp": "2026-11-06T14:54:55.895Z"
     },
     {
       "name": "CONTENT_SCRIPT_MATH_SOLVER_NULL",
@@ -569,7 +554,7 @@
       "detail": {
         "csRetired": true
       },
-      "timestamp": "2026-11-06T13:08:49.997Z"
+      "timestamp": "2026-11-06T14:54:55.903Z"
     }
   ],
   "screenshots": [

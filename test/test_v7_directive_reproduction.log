@@ -1,0 +1,63 @@
+[2026-11-06T14:50:30.882Z] ================================================================================
+[2026-11-06T14:50:30.884Z] 🚀 RUNNING XPIDER V7 DIRECTIVE REPRODUCTION & VERIFICATION SUITE
+[2026-11-06T14:50:30.885Z] ================================================================================
+[2026-11-06T14:50:30.953Z] Launching browser: C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe
+[2026-11-06T14:50:32.173Z] XPIDER Extension ID: ldlijlaccfeelfdhgnjbibniocefckjj
+[2026-11-06T14:50:32.318Z] Popup opened and CDP connected.
+[2026-11-06T14:50:32.319Z] 
+--- PHASE 1: HISTORICAL RUN 1 (Record 1 prior success in history) ---
+[2026-11-06T14:50:32.518Z] Historical attempt recorded with campaignRunId=historical_run_001
+[2026-11-06T14:50:32.518Z] 
+Setting up popup campaign inputs and storage...
+[2026-11-06T14:50:33.270Z] 
+--- PHASE 2: VISIBLE AUTO START -> VISIBLE PAUSE ---
+[2026-11-06T14:50:33.271Z] Clicking visible #start-btn...
+[2026-11-06T14:50:34.153Z] Campaign started actively: runId=normal_run_1793976633304_qouhgz
+[2026-11-06T14:50:34.153Z] Clicking visible #pause-btn to pause...
+[2026-11-06T14:50:34.927Z]   ✅ PASS: CAMPAIGN_PAUSED_IN_AUTO
+[2026-11-06T14:50:34.928Z] 
+--- PHASE 3: CHOOSE MANUAL IN VISIBLE RESUME DIALOG ---
+[2026-11-06T14:50:34.928Z] Clicking #pause-btn to open Resume-mode modal...
+[2026-11-06T14:50:35.344Z]   ✅ PASS: RESUME_MODE_MODAL_OPENED
+[2026-11-06T14:50:35.344Z] Selecting #resume-mode-radio-manual...
+[2026-11-06T14:50:35.347Z] Confirming resume with #confirm-resume-mode-btn...
+[2026-11-06T14:50:35.985Z]   ✅ PASS: RESUMED_ACTIVELY_IN_MANUAL_MODE
+[2026-11-06T14:50:35.985Z] 
+--- PHASE 4: VISIBLE STOP & SAVE CLICK ---
+[2026-11-06T14:50:35.985Z] Clicking visible #stop-save-btn...
+[2026-11-06T14:50:36.660Z] Stop & Save checkpoint: cpMode=MANUAL, storageMode=MANUAL, swMode=MANUAL
+[2026-11-06T14:50:36.660Z]   ✅ PASS: STOP_SAVE_CHECKPOINT_MODE_MANUAL
+[2026-11-06T14:50:36.660Z]   ✅ PASS: STOP_SAVE_STORAGE_MODE_MANUAL
+[2026-11-06T14:50:36.660Z]   ✅ PASS: STOP_SAVE_CHECKPOINT_RUN_ID_MATCHES
+[2026-11-06T14:50:36.660Z]   ✅ PASS: CHECKPOINT_HISTOGRAM_ZERO_HISTORICAL_LEAK
+[2026-11-06T14:50:36.660Z] 
+--- PHASE 5: TERMINATE AND RESTART MV3 SERVICE WORKER ---
+[2026-11-06T14:50:36.665Z] Terminated SW (77B65874CBD56EA03E5D5620ED36FD75). Awaiting fresh worker...
+[2026-11-06T14:50:38.489Z] Fresh SW booted (ID=08606282C4ABB77262A7008C25CB7C63)
+[2026-11-06T14:50:38.491Z] Fresh SW State: swMode=MANUAL, checkpointMode=MANUAL, storageMode=MANUAL
+[2026-11-06T14:50:38.491Z]   ✅ PASS: SW_RESTART_RESTORED_CAMPAIGN_MODE_MANUAL
+[2026-11-06T14:50:38.491Z]   ✅ PASS: SW_RESTART_CHECKPOINT_MODE_MANUAL
+[2026-11-06T14:50:38.491Z]   ✅ PASS: SW_RESTART_STORAGE_MODE_MANUAL
+[2026-11-06T14:50:38.491Z] 
+--- PHASE 6: REOPEN POPUP -> INSPECT BANNER AND MODE PILL ---
+[2026-11-06T14:50:39.527Z] Reopened popup inspection: bannerVisible=true, pillText=MODE: MANUAL (HOLD FOR REGISTER)
+[2026-11-06T14:50:39.527Z]   ✅ PASS: POPUP_RESUMABLE_BANNER_VISIBLE
+[2026-11-06T14:50:39.527Z]   ✅ PASS: POPUP_MODE_PILL_SHOWS_MANUAL
+[2026-11-06T14:50:39.680Z] 📸 Captured screenshot: shot_directive_01_resumable_banner.png
+[2026-11-06T14:50:39.681Z] 
+--- PHASE 7: RESUME FROM CHECKPOINT & VERIFY ACTUAL MANUAL BEHAVIOR ---
+[2026-11-06T14:50:39.681Z] Clicking visible #resume-campaign-btn on banner...
+[2026-11-06T14:50:40.195Z] Confirming resume modal...
+[2026-11-06T14:50:58.342Z]   ✅ PASS: ZERO_SUBMISSIONS_BEFORE_OPERATOR_ACTION
+[2026-11-06T14:50:58.342Z] Target Tab URL: http://127.0.0.1:8088/contact-standard.html
+[2026-11-06T14:50:58.342Z] Operator physically submitting form...
+[2026-11-06T14:50:58.379Z] Form submit click result: {"clicked":true,"id":"submit-btn","disabled":true}
+[2026-11-06T14:50:59.395Z] Operator clicking #xpider-manual-registered-btn...
+[2026-11-06T14:50:59.398Z] Manual registered click result: {"clicked":true,"text":"✅ I Registered — Continue"}
+[2026-11-06T14:50:59.802Z]   ✅ PASS: EXACTLY_ONE_SUBMISSION_RECORDED_AFTER_OPERATOR_REGISTER
+[2026-11-06T14:51:00.233Z] 
+================================================================================
+[2026-11-06T14:51:00.234Z] DIRECTIVE REPRODUCTION SUITE RESULT: SUCCESS (exit 0)
+[2026-11-06T14:51:00.234Z] Assertions passed: 14/14
+[2026-11-06T14:51:00.234Z] ================================================================================
+[2026-11-06T14:51:00.235Z] Terminating browser process...

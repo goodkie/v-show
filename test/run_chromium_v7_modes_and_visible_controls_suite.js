@@ -711,17 +711,28 @@ async function main() {
         // Click visible #stop-save-btn
         log('Clicking visible #stop-save-btn...');
         await cdpSend(popupWs, 'Runtime.evaluate', { expression: `document.getElementById('stop-save-btn')?.click()` });
-        await sleep(600);
 
         // Verify Stop & Save banner and storage snapshot
-        const stopState = await cdpSend(popupWs, 'Runtime.evaluate', {
-            expression: `({
-                bannerVisible: document.getElementById('resumable-campaign-banner')?.style.display !== 'none',
-                hudStatus: document.getElementById('current-status-badge')?.textContent
-            })`,
-            returnByValue: true
-        }).then(r => r.result?.value);
-        recordAssertion('STOP_SAVE_BANNER_RENDERED', stopState?.bannerVisible === true, stopState);
+        let bannerVisible = false;
+        let stopState = null;
+        for (let i = 0; i < 20; i++) {
+            await sleep(300);
+            stopState = await cdpSend(popupWs, 'Runtime.evaluate', {
+                expression: `(() => {
+                    const b = document.getElementById('resumable-campaign-banner');
+                    return {
+                        bannerVisible: Boolean(b && b.style.display !== 'none' && !b.classList.contains('hidden')),
+                        hudStatus: document.getElementById('current-status-badge')?.textContent
+                    };
+                })()`,
+                returnByValue: true
+            }).then(r => r.result?.value);
+            if (stopState?.bannerVisible) {
+                bannerVisible = true;
+                break;
+            }
+        }
+        recordAssertion('STOP_SAVE_BANNER_RENDERED', bannerVisible === true, stopState);
         const shotStop = await shot(popupWs, 'shot_v7_modes_05_stop_saved.png');
         report.screenshots.push(shotStop);
 
