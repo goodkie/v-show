@@ -1,0 +1,257 @@
+{
+  "directive": "6688411313",
+  "startTimeUtc": "2026-11-06T16:42:45.111Z",
+  "assertions": [
+    {
+      "name": "START_OPTIONS_CHECKBOX_RENDERED_DEFAULT_UNCHECKED",
+      "passed": true,
+      "details": {
+        "exists": true,
+        "checked": false,
+        "hasWarning": true,
+        "warningText": "⚠️ Warning: Enabling broadens submissions to newsletter & subscription forms without inquiry text."
+      },
+      "timestamp": "2026-11-06T16:42:49.459Z"
+    },
+    {
+      "name": "START_OPTIONS_WARNING_TEXT_RENDERED",
+      "passed": true,
+      "details": {
+        "warningText": "⚠️ Warning: Enabling broadens submissions to newsletter & subscription forms without inquiry text."
+      },
+      "timestamp": "2026-11-06T16:42:49.459Z"
+    },
+    {
+      "name": "START_OPTIONS_PERSISTENCE_IN_STORAGE",
+      "passed": true,
+      "details": {
+        "storedValue": true
+      },
+      "timestamp": "2026-11-06T16:42:49.779Z"
+    },
+    {
+      "name": "FLAG_OFF_CAMPAIGN_LAUNCHED",
+      "passed": true,
+      "details": {},
+      "timestamp": "2026-11-06T16:42:50.821Z"
+    },
+    {
+      "name": "FLAG_OFF_SUBSCRIBE_SETTLED_AS_SKIPPED",
+      "passed": true,
+      "details": {
+        "status": "SKIPPED",
+        "reason": "NON_INQUIRY_SUBSCRIBE_FORM"
+      },
+      "timestamp": "2026-11-06T16:43:01.094Z"
+    },
+    {
+      "name": "FLAG_OFF_REASON_NO_LONG_TEXT_INQUIRY_FIELD",
+      "passed": true,
+      "details": {
+        "status": "SKIPPED",
+        "reason": "NON_INQUIRY_SUBSCRIBE_FORM"
+      },
+      "timestamp": "2026-11-06T16:43:01.094Z"
+    },
+    {
+      "name": "FLAG_OFF_ZERO_SERVER_SUBMISSIONS",
+      "passed": true,
+      "details": {
+        "submissionsCount": 0
+      },
+      "timestamp": "2026-11-06T16:43:01.100Z"
+    },
+    {
+      "name": "FLAG_ON_CAMPAIGN_LAUNCHED",
+      "passed": true,
+      "details": {},
+      "timestamp": "2026-11-06T16:43:02.127Z"
+    },
+    {
+      "name": "SUBTEST_3A_EMAIL_ONLY_CONFIRMED_SUCCESS",
+      "passed": true,
+      "details": {
+        "url": "http://127.0.0.1:8088/subscribe-no-message.html",
+        "status": "CONFIRMED_SUCCESS",
+        "reason": "SUCCESS_CONFIRMED",
+        "receiptId": "rcpt_1793983388235_1"
+      },
+      "timestamp": "2026-11-06T16:44:05.853Z"
+    },
+    {
+      "name": "SUBTEST_3B_NAME_EMAIL_CONFIRMED_SUCCESS",
+      "passed": true,
+      "details": {
+        "url": "http://127.0.0.1:8088/newsletter-name-email.html",
+        "status": "CONFIRMED_SUCCESS",
+        "reason": "SUCCESS_CONFIRMED",
+        "receiptId": "rcpt_1793983405833_2"
+      },
+      "timestamp": "2026-11-06T16:44:05.853Z"
+    },
+    {
+      "name": "SUBTEST_3C_OPTIN_REGISTRATION_CONFIRMED_SUCCESS",
+      "passed": true,
+      "details": {
+        "url": "http://127.0.0.1:8088/opt-in-registration.html",
+        "status": "CONFIRMED_SUCCESS",
+        "reason": "SUCCESS_CONFIRMED",
+        "receiptId": "rcpt_1793983425599_3"
+      },
+      "timestamp": "2026-11-06T16:44:05.853Z"
+    },
+    {
+      "name": "SUBTEST_3D_DYNAMIC_SPA_CONFIRMED_SUCCESS",
+      "passed": true,
+      "details": {
+        "url": "http://127.0.0.1:8088/dynamic-spa-newsletter.html",
+        "status": "CONFIRMED_SUCCESS",
+        "reason": "SUCCESS_CONFIRMED",
+        "receiptId": "rcpt_1793983440124_4"
+      },
+      "timestamp": "2026-11-06T16:44:05.853Z"
+    },
+    {
+      "name": "SERVER_SUBMISSIONS_EXACTLY_FOUR",
+      "passed": true,
+      "details": {
+        "submissionsCount": 4
+      },
+      "timestamp": "2026-11-06T16:44:05.856Z"
+    },
+    {
+      "name": "CONTACT_FORM_PRIORITIZED_SINGLE_POST",
+      "passed": true,
+      "details": {
+        "totalSubmissions": 5,
+        "expected": 5
+      },
+      "timestamp": "2026-11-06T16:44:21.948Z"
+    },
+    {
+      "name": "STRICT_NEGATIVE_CONTROLS_ZERO_POSTS",
+      "passed": true,
+      "details": {
+        "submissionsCount": 5,
+        "delta": 0
+      },
+      "timestamp": "2026-11-06T16:44:25.877Z"
+    },
+    {
+      "name": "MISSING_REQUIRED_FIELD_FAILS_CLOSED_ZERO_POSTS",
+      "passed": true,
+      "details": {
+        "submissionsCount": 5
+      },
+      "timestamp": "2026-11-06T16:44:36.924Z"
+    },
+    {
+      "name": "EXTERNAL_CAPTCHA_NO_MESSAGE_SUCCESS_SIXTH_POST",
+      "passed": true,
+      "details": {
+        "totalSubmissions": 6,
+        "expected": 6
+      },
+      "timestamp": "2026-11-06T16:44:48.653Z"
+    },
+    {
+      "name": "MANUAL_MODE_NO_MESSAGE_HOLDS_ON_PANEL",
+      "passed": true,
+      "details": {
+        "holdObserved": true
+      },
+      "timestamp": "2026-11-06T16:44:58.780Z"
+    },
+    {
+      "name": "MANUAL_MODE_OPERATOR_SUBMIT_SEVENTH_POST",
+      "passed": true,
+      "details": {
+        "totalSubmissions": 7,
+        "expected": 7
+      },
+      "timestamp": "2026-11-06T16:44:59.901Z"
+    },
+    {
+      "name": "CHECKPOINT_SAVES_FROZEN_INCLUDE_NO_MESSAGE_FLAG",
+      "passed": true,
+      "details": {
+        "hasCheckpoint": true,
+        "includeFormsWithoutMessage": true,
+        "campaignRunId": "normal_run_1793983500346_bpm59m"
+      },
+      "timestamp": "2026-11-06T16:45:01.644Z"
+    },
+    {
+      "name": "SW_REBOOT_RESTORES_FROZEN_OPTION_FROM_CHECKPOINT",
+      "passed": true,
+      "details": {
+        "isPaused": true,
+        "includeFormsWithoutMessage": true,
+        "cpInclude": true
+      },
+      "timestamp": "2026-11-06T16:45:03.494Z"
+    },
+    {
+      "name": "RESUMED_CAMPAIGN_COMPLETED_SUCCESSFULLY",
+      "passed": true,
+      "details": {
+        "totalSubmissions": 9
+      },
+      "timestamp": "2026-11-06T16:45:36.827Z"
+    },
+    {
+      "name": "LEDGER_STATS_SCOPED_BY_RUN_ID",
+      "passed": true,
+      "details": {
+        "scope": "currentRun",
+        "campaignRunId": "normal_run_1793983500346_bpm59m",
+        "totalStarted": 2,
+        "totalImportRows": 2,
+        "pending": 0,
+        "invalid": 0,
+        "success": 2,
+        "failure": 0,
+        "unknown": 0,
+        "timeout": 0,
+        "timeoutLocal": 0,
+        "timeoutGlobal": 0,
+        "skipped": 0,
+        "paused": 0,
+        "completed": 2,
+        "failureBreakdown": {},
+        "logStr": "[LEDGER_STATS] scope=currentRun success=2 failure=0 unknown=0 timeout=0 skipped=0"
+      },
+      "timestamp": "2026-11-06T16:45:36.829Z"
+    },
+    {
+      "name": "LEDGER_BUCKETS_NON_NEGATIVE_AND_CONSISTENT",
+      "passed": true,
+      "details": {
+        "scope": "currentRun",
+        "campaignRunId": "normal_run_1793983500346_bpm59m",
+        "totalStarted": 2,
+        "totalImportRows": 2,
+        "pending": 0,
+        "invalid": 0,
+        "success": 2,
+        "failure": 0,
+        "unknown": 0,
+        "timeout": 0,
+        "timeoutLocal": 0,
+        "timeoutGlobal": 0,
+        "skipped": 0,
+        "paused": 0,
+        "completed": 2,
+        "failureBreakdown": {},
+        "logStr": "[LEDGER_STATS] scope=currentRun success=2 failure=0 unknown=0 timeout=0 skipped=0"
+      },
+      "timestamp": "2026-11-06T16:45:36.829Z"
+    }
+  ],
+  "evidenceFiles": [
+    "shot_01_start_options_checkbox.png"
+  ],
+  "status": "ALL_ASSERTIONS_PASSED",
+  "totalAssertions": 24,
+  "passedAssertions": 24
+}

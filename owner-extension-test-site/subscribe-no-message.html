@@ -24,10 +24,13 @@
         <form id="subscribe-form" class="subscribe-form" action="#" method="POST">
             <input type="email" id="email" name="subscriber_email" required placeholder="Enter your email address">
             <button type="submit" id="subscribe-btn">Subscribe</button>
+            <div id="success-banner" class="success-box wpcf7-mail-sent-ok gform_confirmation_message" style="display:none; color: #4ade80; margin-top: 15px; font-weight: 600;" role="status" aria-live="polite">
+                Thank you for subscribing!
+            </div>
         </form>
 
         <div class="badge">
-            ℹ️ Intent Classification: Negative Non-Inquiry Form (Expected: SKIPPED)
+            ℹ️ Intent Classification: Optional Non-Inquiry Form (SKIPPED by default; SUBMITTED when opted-in)
         </div>
     </div>
 
@@ -37,5 +40,40 @@
         <input type="text" id="singleWordSearch" class="singleWordSearch" placeholder="Look up single word...">
         <button type="button" id="translate-btn">Translate</button>
     </div>
+
+    <script>
+        document.getElementById('subscribe-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            var btn = document.getElementById('subscribe-btn');
+            btn.disabled = true;
+            btn.textContent = 'Subscribing...';
+            fetch('/contact-success.html', { method: 'POST' }).then(function(res) {
+                if (!res.ok) {
+                    btn.textContent = 'Server Error (500)';
+                    return;
+                }
+                var rcpt = res.headers.get('X-XPIDER-Receipt-Id');
+                if (rcpt) {
+                    var el = document.getElementById('xpider-receipt-id');
+                    if (!el) {
+                        el = document.createElement('div');
+                        el.id = 'xpider-receipt-id';
+                        el.style.display = 'none';
+                        document.body.appendChild(el);
+                    }
+                    el.setAttribute('data-receipt-id', rcpt);
+                    el.textContent = rcpt;
+                }
+                setTimeout(function() {
+                    btn.textContent = 'Subscribed!';
+                    var box = document.getElementById('success-banner');
+                    if (box) box.style.display = 'block';
+                    window.dispatchEvent(new CustomEvent('form-submitted', { detail: { status: 'SUCCESS' } }));
+                }, 300);
+            }).catch(function() {
+                btn.textContent = 'Network Failed';
+            });
+        });
+    </script>
 </body>
 </html>

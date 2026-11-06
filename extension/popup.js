@@ -1663,6 +1663,18 @@ async function hydrateSettings(overrideV2Store = null) {
         document.getElementById('random-delay-toggle').checked = !!data.xpider_random_delay;
     }
 
+    // [P0 Directive 6688411313] Hydrate Optional No-Message Forms Checkbox (Default unchecked)
+    const optNoMsgBox = document.getElementById('xpider-opt-include-no-message');
+    if (optNoMsgBox) {
+        optNoMsgBox.checked = Boolean(data.xpider_opt_include_no_message);
+        if (!optNoMsgBox.dataset.bound) {
+            optNoMsgBox.dataset.bound = 'true';
+            optNoMsgBox.addEventListener('change', () => {
+                chrome.storage.local.set({ xpider_opt_include_no_message: optNoMsgBox.checked });
+            });
+        }
+    }
+
     // [RC11] Hydrate Target Execution Max Wait (seconds)
     const targetMaxWaitInput = document.getElementById('target-max-wait-input');
     if (targetMaxWaitInput) {
@@ -8346,6 +8358,14 @@ async function launchCampaign(options = {}) {
             modePill.style.color = requestedCampaignMode === 'SEMI_AUTO' ? '#c084fc' : (requestedCampaignMode === 'MANUAL' ? '#fbbf24' : '#38bdf8');
         }
         updatePersistentModeHud(requestedCampaignMode, 'RUNNING', campaignQueue?.[0] || 'Starting...', campaignQueue?.length || 0);
+
+        // [P0 Directive 6688411313] Freeze includeFormsWithoutMessage per campaignRunId at START
+        const optNoMsgBox = document.getElementById('xpider-opt-include-no-message');
+        const includeFormsWithoutMessage = (typeof options.includeFormsWithoutMessage === 'boolean')
+            ? options.includeFormsWithoutMessage
+            : Boolean(optNoMsgBox?.checked);
+        console.log(`[START_OPTIONS] campaignRunId=${resolvedRunId} includeFormsWithoutMessage=${includeFormsWithoutMessage}`);
+
         const startPayload = {
             queue: campaignQueue,
             template: currentTpl,
@@ -8361,6 +8381,7 @@ async function launchCampaign(options = {}) {
             ownerFunctionTestMode: isTestModeActive ? true : false,
             campaignRunId: resolvedRunId,
             campaignMode: requestedCampaignMode,
+            includeFormsWithoutMessage: includeFormsWithoutMessage,
             targetTimeoutMs: (parseInt(document.getElementById('target-max-wait-input')?.value, 10) || 180) * 1000
         };
         try {
@@ -8476,7 +8497,8 @@ async function launchCampaign(options = {}) {
                 overrideSkipAttempted: startPayload.overrideSkipAttempted,
                 ownerFunctionTestMode: startPayload.ownerFunctionTestMode,
                 campaignRunId: startPayload.campaignRunId,
-                campaignMode: startPayload.campaignMode
+                campaignMode: startPayload.campaignMode,
+                includeFormsWithoutMessage: Boolean(startPayload.includeFormsWithoutMessage)
             }, (res) => {
                 if (chrome.runtime.lastError) {
                     return reject(new Error(chrome.runtime.lastError.message));

@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Webinar Free Registration</title>
+    <style>
+        body { font-family: sans-serif; background: #0f172a; color: #f8fafc; padding: 40px; }
+        .container { max-width: 500px; margin: 0 auto; background: #1e293b; padding: 30px; border-radius: 8px; border: 1px solid #334155; }
+        input { width: 100%; box-sizing: border-box; padding: 10px; margin: 8px 0; border-radius: 4px; border: 1px solid #475569; background: #0f172a; color: #fff; }
+        button { background: #10b981; color: #0f172a; border: none; padding: 12px 20px; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 10px; }
+        .success-box { display: none; background: rgba(74, 222, 128, 0.15); border: 1px solid #4ade80; color: #4ade80; padding: 12px; border-radius: 6px; margin-top: 15px; text-align: center; font-weight: 600; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Register for Live Product Demo</h2>
+        <p>Reserve your seat for our interactive architectural walkthrough.</p>
+        <form id="optin-form" action="/contact-success.html" method="POST">
+            <label for="fullname">Full Name</label>
+            <input type="text" id="fullname" name="fullname" required placeholder="Bob Builder">
+            <label for="email">Work Email</label>
+            <input type="email" id="email" name="email" required placeholder="bob@example.com">
+            <label for="phone">Phone Number</label>
+            <input type="tel" id="phone" name="phone" placeholder="+1 (555) 234-5678">
+            <button type="submit" id="submit-btn">Register Free</button>
+            <div id="success-banner" class="success-box wpcf7-mail-sent-ok" role="status">
+                Registration Successful! Check your inbox for calendar invite.
+            </div>
+        </form>
+    </div>
+    <script>
+        document.getElementById('optin-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            var btn = document.getElementById('submit-btn');
+            btn.disabled = true;
+            btn.textContent = 'Registering...';
+            fetch('/contact-success.html', { method: 'POST' }).then(function(res) {
+                if (!res.ok) return;
+                var rcpt = res.headers.get('X-XPIDER-Receipt-Id');
+                if (rcpt) {
+                    var el = document.getElementById('xpider-receipt-id');
+                    if (!el) {
+                        el = document.createElement('div');
+                        el.id = 'xpider-receipt-id';
+                        el.style.display = 'none';
+                        document.body.appendChild(el);
+                    }
+                    el.setAttribute('data-receipt-id', rcpt);
+                    el.textContent = rcpt;
+                }
+                setTimeout(function() {
+                    btn.textContent = 'Registered!';
+                    document.getElementById('success-banner').style.display = 'block';
+                    window.dispatchEvent(new CustomEvent('form-submitted', { detail: { status: 'SUCCESS' } }));
+                }, 300);
+            });
+        });
+    </script>
+</body>
+</html>
+

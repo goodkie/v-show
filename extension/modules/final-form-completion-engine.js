@@ -1163,6 +1163,18 @@
                 }
             }
 
+            // [P0 Directive 6688411313] Check if message-less forms are permitted
+            const allowNoMessage = Boolean(
+                (template && template.includeFormsWithoutMessage) ||
+                (typeof window !== 'undefined' && window.__xpider_include_forms_without_message)
+            );
+            const hasGenuineMessageElement = controls.some(c => {
+                const tag = (c.tagName || '').toLowerCase();
+                const cls = (typeof this.classifyControl === 'function' ? this.classifyControl(c) : {});
+                return tag === 'textarea' || (cls && cls.category === 'message');
+            });
+            const messageRequirementSatisfied = messageFieldFilled || (allowNoMessage && !hasGenuineMessageElement);
+
             const pass = (
                 unresolvedRequired === 0 &&
                 unstableCheckboxes === 0 &&
@@ -1171,7 +1183,7 @@
                 unstableText === 0 &&
                 nativeInvalidCount === 0 &&
                 customInvalidCount === 0 &&
-                messageFieldFilled === true
+                messageRequirementSatisfied === true
             );
 
             const emptySafeAfter = unresolvedRequired;
@@ -1187,7 +1199,7 @@
                 if (unresolvedRequired > 0 || unstableCheckboxes + unstableRadios + unstableSelects + unstableText > 0) failReason = 'REQUIRED_FIELDS_UNRESOLVED';
                 else if (nativeInvalidCount > 0) failReason = 'FINAL_NATIVE_VALIDITY_FAILED';
                 else if (customInvalidCount > 0) failReason = 'FINAL_CUSTOM_VALIDITY_FAILED';
-                else if (!messageFieldFilled) failReason = 'FINAL_MESSAGE_FIELD_EMPTY';
+                else if (!messageRequirementSatisfied) failReason = 'FINAL_MESSAGE_FIELD_EMPTY';
                 else failReason = 'FINAL_FORM_COMPLETION_FAILED';
                 if (typeof this.logger === 'function') {
                     this.logger(`[FINAL_AUDIT_DETAIL] reason=${failReason} unresolvedRequired=${unresolvedRequired} nativeInvalidCount=${nativeInvalidCount} customInvalidCount=${customInvalidCount} invalid=${JSON.stringify(invalidFields.slice(0, 8))}`);
@@ -1216,7 +1228,7 @@
                 requiredRadioResolved,
                 requiredSelectTotal,
                 requiredSelectResolved,
-                messageFieldFilled,
+                messageFieldFilled: messageRequirementSatisfied,
                 unresolvedList
             };
         }

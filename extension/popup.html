@@ -1257,6 +1257,16 @@
             </div>
 
             <div class="action-buttons">
+                <!-- START OPTIONS (P0 Directive 6688411313) -->
+                <div id="start-options-container" style="margin-bottom: 8px; padding: 6px 8px; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(148, 163, 184, 0.2); border-radius: 6px;">
+                    <label style="display: flex; align-items: flex-start; gap: 8px; font-size: 11px; color: #e2e8f0; cursor: pointer; user-select: none;">
+                        <input type="checkbox" id="xpider-opt-include-no-message" style="margin-top: 2px; accent-color: #06b6d4; cursor: pointer;">
+                        <div style="display: flex; flex-direction: column; gap: 2px;">
+                            <span style="font-weight: 600; line-height: 1.3;">Include forms without a message field (Subscribe / Newsletter / other eligible forms)</span>
+                            <span id="opt-no-message-warning" style="font-size: 9.5px; color: #f59e0b; line-height: 1.2;">⚠️ Warning: Enabling broadens submissions to newsletter &amp; subscription forms without inquiry text.</span>
+                        </div>
+                    </label>
+                </div>
                 <div id="start-buttons-row" style="display: flex; gap: 6px; width: 100%;">
                     <button id="start-btn" data-mode="AUTO" class="primary-btn pulse" style="flex: 1; padding: 9px 4px; font-size: 11px;" title="Fill fields, check verification state, and automatically submit once when verified">🚀 Automatic</button>
                     <button id="start-semi-auto-btn" data-mode="SEMI_AUTO" class="secondary-btn" style="flex: 1; padding: 9px 4px; font-size: 11px; background: linear-gradient(135deg, #7c3aed, #6d28d9); color: #fff; border: 1px solid #a78bfa; font-weight: 700;" title="Automatic submission when clear; holds at current target with assistance panel on any issue or challenge">⚡ Semi-Auto</button>

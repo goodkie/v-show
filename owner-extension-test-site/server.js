@@ -54,6 +54,7 @@ const server = http.createServer((req, res) => {
     res.end(JSON.stringify({
       ok: true,
       count: submissionLog.length,
+      submissionsCount: submissionLog.length,
       submissions: submissionLog
     }));
     return;

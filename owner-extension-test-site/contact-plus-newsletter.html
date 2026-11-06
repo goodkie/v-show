@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Contact Page with Footer Newsletter</title>
+    <style>
+        body { font-family: sans-serif; background: #0f172a; color: #f8fafc; padding: 40px; }
+        .main-container { max-width: 600px; margin: 0 auto; background: #1e293b; padding: 30px; border-radius: 8px; border: 1px solid #334155; }
+        .footer-newsletter { max-width: 600px; margin: 40px auto 0; background: #0f172a; padding: 20px; border-radius: 8px; border: 1px dashed #475569; }
+        input, textarea { width: 100%; box-sizing: border-box; padding: 10px; margin: 8px 0; border-radius: 4px; border: 1px solid #475569; background: #0f172a; color: #fff; }
+        button { background: #0284c7; color: #fff; border: none; padding: 12px 20px; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 10px; }
+        .success-box { display: none; background: rgba(74, 222, 128, 0.15); border: 1px solid #4ade80; color: #4ade80; padding: 12px; border-radius: 6px; margin-top: 15px; text-align: center; font-weight: 600; }
+    </style>
+</head>
+<body>
+    <!-- Genuine Primary Contact Form (Must be Prioritized!) -->
+    <div class="main-container">
+        <h2>Contact Enterprise Support</h2>
+        <p>Submit your inquiry directly to our technical escalation team.</p>
+        <form id="primary-contact-form" action="/contact-success.html" method="POST">
+            <label for="contact-name">Full Name</label>
+            <input type="text" id="contact-name" name="name" required placeholder="Charlie Tech">
+            <label for="contact-email">Corporate Email</label>
+            <input type="email" id="contact-email" name="email" required placeholder="charlie@enterprise.com">
+            <label for="contact-message">Inquiry Details</label>
+            <textarea id="contact-message" name="message" rows="4" required placeholder="Explain your architectural requirements..."></textarea>
+            <button type="submit" id="contact-submit-btn">Send Support Inquiry</button>
+            <div id="contact-success-banner" class="success-box wpcf7-mail-sent-ok" role="status">
+                Primary Inquiry Delivered Successfully!
+            </div>
+        </form>
+    </div>
+
+    <!-- Secondary Footer Newsletter Form (Must NOT cause double submission) -->
+    <div class="footer-newsletter">
+        <h4>Stay in the Loop</h4>
+        <form id="footer-newsletter-form" action="/contact-success.html" method="POST">
+            <input type="email" id="newsletter-email" name="newsletter_email" placeholder="quick-newsletter@example.com">
+            <button type="submit" id="newsletter-submit-btn" style="background: #475569;">Subscribe to Newsletter</button>
+            <div id="newsletter-success-banner" class="success-box" role="status">
+                Newsletter subscribed!
+            </div>
+        </form>
+    </div>
+
+    <script>
+        document.getElementById('primary-contact-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            var btn = document.getElementById('contact-submit-btn');
+            btn.disabled = true;
+            btn.textContent = 'Sending...';
+            fetch('/contact-success.html', { method: 'POST' }).then(function(res) {
+                if (!res.ok) return;
+                var rcpt = res.headers.get('X-XPIDER-Receipt-Id');
+                if (rcpt) {
+                    var el = document.getElementById('xpider-receipt-id');
+                    if (!el) {
+                        el = document.createElement('div');
+                        el.id = 'xpider-receipt-id';
+                        el.style.display = 'none';
+                        document.body.appendChild(el);
+                    }
+                    el.setAttribute('data-receipt-id', rcpt);
+                    el.textContent = rcpt;
+                }
+                setTimeout(function() {
+                    btn.textContent = 'Sent!';
+                    document.getElementById('contact-success-banner').style.display = 'block';
+                    window.dispatchEvent(new CustomEvent('form-submitted', { detail: { status: 'SUCCESS' } }));
+                }, 300);
+            });
+        });
+
+        document.getElementById('footer-newsletter-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            fetch('/contact-success.html', { method: 'POST' }).then(function(res) {
+                document.getElementById('newsletter-success-banner').style.display = 'block';
+            });
+        });
+    </script>
+</body>
+</html>
+

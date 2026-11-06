@@ -445,6 +445,7 @@
 
                 // [Issue #6 R6.9E & v7.0 Triple Mode] Canonical Execution Identity & Campaign Mode Binding
                 window.__xpider_campaign_mode = (request.campaignMode === 'MANUAL' || request.campaignMode === 'SEMI_AUTO') ? request.campaignMode : 'AUTO';
+                window.__xpider_include_forms_without_message = Boolean(request.includeFormsWithoutMessage);
                 window.__xpider_execution_identity = {
                     attemptId: request.attemptId || attemptId,
                     targetToken: request.targetToken || null,
@@ -1130,7 +1131,7 @@
 
             // [R6.9F] Hard Contact-Gate Assertion: Genuinely eligible inquiry form vs Comment / Non-Inquiry form
             if (currentForm && _ContactGate && typeof _ContactGate.classifyFormIntent === 'function') {
-                const classification = _ContactGate.classifyFormIntent(currentForm);
+                const classification = _ContactGate.classifyFormIntent(currentForm, { includeFormsWithoutMessage: Boolean(window.__xpider_include_forms_without_message) });
                 if (!classification.eligible) {
                     const settleReason = (classification.reason && (classification.reason.startsWith('NON_INQUIRY') || classification.reason === 'NO_LONG_TEXT_INQUIRY_FIELD'))
                         ? classification.reason
@@ -1149,8 +1150,9 @@
                 }
             }
 
-            // [P0-2 Rule 1 & 2] bodyCandidates === 0 or no genuine inquiry body field -> hard eligible=false
-            if (formScanBodyCandidates === 0 || !inquiryBody) {
+            // [P0-2 Rule 1 & 2] bodyCandidates === 0 or no genuine inquiry body field -> hard eligible=false UNLESS includeFormsWithoutMessage opt-in passed
+            const isNoMsgOptInEarly = Boolean(window.__xpider_include_forms_without_message && currentForm && _ContactGate && _ContactGate.classifyFormIntent(currentForm, { includeFormsWithoutMessage: true }).eligible);
+            if (!isNoMsgOptInEarly && (formScanBodyCandidates === 0 || !inquiryBody)) {
                 if (currentForm) {
                     console.log(`[FORM_GATE_INVARIANT_VIOLATION] bodyCandidates=${formScanBodyCandidates} hasInquiryBody=${!!inquiryBody} -> eligible=false`);
                     logDev(`[FORM_GATE_INVARIANT_VIOLATION] bodyCandidates=${formScanBodyCandidates} -> rejecting container`, "warning");
@@ -1286,7 +1288,11 @@
                     const pageForms = Array.from(document.querySelectorAll('form, [role="form"]'));
                     for (const pf of pageForms) {
                         if (_ContactGate && typeof _ContactGate.classifyFormIntent === 'function') {
-                            const classification = _ContactGate.classifyFormIntent(pf);
+                            const classification = _ContactGate.classifyFormIntent(pf, { includeFormsWithoutMessage: Boolean(window.__xpider_include_forms_without_message) });
+                            if (window.__xpider_include_forms_without_message && classification.eligible) {
+                                currentForm = pf;
+                                break;
+                            }
                             logDev(`[FORM_CLASSIFY] intent=${classification.intent} eligible=${classification.eligible} reason=${classification.reason}`);
                             const isNonInquiry = !classification.eligible && (
                                 (classification.reason && classification.reason.startsWith('NON_INQUIRY')) ||
@@ -1332,7 +1338,7 @@
                 logDev("🎯 Step 2: Contact form discovered. Preparing submission...", "success");
                 logDev("[STAGE] stage=CONTACT_PAGE_FOUND", "success");
                 logDev(`[LONG_TEXT_GATE] found=true type=${inquiryBody?.type || 'textarea'} semantic=${inquiryBody?.semantic || 'message'}`, "info");
-                logDev(`[FORM_GATE] eligible=true reason=BODY_FIELD_PRESENT`, "info");
+                logDev(`[FORM_GATE] eligible=true reason=${inquiryBody ? 'BODY_FIELD_PRESENT' : 'ELIGIBLE_NO_MESSAGE_FORM'}`, "info");
                 try {
                     (window.__xpider_sendExecutionMessage || chrome.runtime.sendMessage)({
                         action: 'STAGE_PROGRESSION',
@@ -1932,7 +1938,7 @@
 
             // [HARD ELIGIBILITY GATE] Verify form eligibility before any autofill or submit
             if (_ContactGate && typeof _ContactGate.classifyFormIntent === 'function') {
-                const classification = _ContactGate.classifyFormIntent(form);
+                const classification = _ContactGate.classifyFormIntent(form, { includeFormsWithoutMessage: Boolean(window.__xpider_include_forms_without_message) });
                 if (!classification.eligible) {
                     logDev(`❌ [ContactGate] Form rejected: ${classification.reason}`, "error");
                     finishCampaign(false, classification.reason, classification.reason);
@@ -1994,8 +2000,9 @@
                 : ((template && (template.campaignMode === 'MANUAL' || template.campaignMode === 'SEMI_AUTO')) ? template.campaignMode : 'AUTO');
 
             if (!isAutofillSuccess) {
-                // [RC11 P0 Directive 5] Genuine message/inquiry field is REQUIRED for form submission eligibility in all modes.
+                // [RC11 P0 Directive 5] Genuine message/inquiry field is REQUIRED for form submission eligibility in all modes UNLESS includeFormsWithoutMessage opt-in passed.
                 // Forms with confirmed absence of genuine message field MUST be SKIPPED before operator hold in ALL MODES.
+                const isNoMsgOptInAutofill = Boolean(window.__xpider_include_forms_without_message && form && _ContactGate && _ContactGate.classifyFormIntent(form, { includeFormsWithoutMessage: true }).eligible);
                 const hasReachableMsgField = form && typeof form.querySelectorAll === 'function' &&
                     Array.from(form.querySelectorAll('input, textarea, [contenteditable="true"]')).some(el =>
                         (typeof isMsgElement === 'function' && isMsgElement(el)) ||
@@ -2003,7 +2010,7 @@
                         el.getAttribute('contenteditable') === 'true'
                     );
 
-                if (!hasReachableMsgField || (result && (result.reasonCode === 'NO_LONG_TEXT_INQUIRY_FIELD' || result.terminalStatus === 'SKIPPED'))) {
+                if (!isNoMsgOptInAutofill && (!hasReachableMsgField || (result && (result.reasonCode === 'NO_LONG_TEXT_INQUIRY_FIELD' || result.terminalStatus === 'SKIPPED')))) {
                     logDev(`ℹ️ [FORM_ELIGIBILITY_GATE] Confirmed absence of genuine message/inquiry field on reachable form: settling SKIPPED in all modes (${activeCampaignMode})`, "info");
                     finishCampaign(false, 'SKIPPED: NO_LONG_TEXT_INQUIRY_FIELD', 'NO_LONG_TEXT_INQUIRY_FIELD');
                     return false;
@@ -2663,7 +2670,7 @@
 
                 // Hard eligibility gate check: Must be eligible contact inquiry
                 if (_ContactGate && typeof _ContactGate.classifyFormIntent === 'function') {
-                    const c = _ContactGate.classifyFormIntent(container);
+                    const c = _ContactGate.classifyFormIntent(container, { includeFormsWithoutMessage: Boolean(window.__xpider_include_forms_without_message) });
                     if (!c.eligible) continue;
                 }
 
@@ -2888,7 +2895,7 @@
 
                 // [HARD ELIGIBILITY GATE] Body-field gate comes BEFORE numeric form scoring
                 if (_ContactGate && typeof _ContactGate.classifyFormIntent === 'function') {
-                    const classification = _ContactGate.classifyFormIntent(el);
+                    const classification = _ContactGate.classifyFormIntent(el, { includeFormsWithoutMessage: Boolean(window.__xpider_include_forms_without_message) });
                     if (!classification.eligible) {
                         return; // Reject non-inquiry or newsletter form even if numeric score would be high
                     }
@@ -4440,12 +4447,18 @@
 
         const hasGenuineMessageField = finalAllInputs.some(el => isMsgElement(el) || el.tagName === 'TEXTAREA' || el.contentEditable === 'true');
         if (!messageFilled) {
+            const isNoMsgOptInForm = Boolean(window.__xpider_include_forms_without_message && _ContactGate && _ContactGate.classifyFormIntent(form, { includeFormsWithoutMessage: true }).eligible);
             if (!hasGenuineMessageField) {
-                logDev("ℹ️ [Fill] No genuine message field on form — legitimate non-inquiry skip", "info");
-                return { filledAny: false, reasonCode: 'NO_LONG_TEXT_INQUIRY_FIELD', terminalStatus: 'SKIPPED' };
+                if (isNoMsgOptInForm && filledFields > 0) {
+                    logDev(`ℹ️ [Fill] Form without message field accepted per includeFormsWithoutMessage opt-in (fieldsFilled=${filledFields})`, "info");
+                } else {
+                    logDev("ℹ️ [Fill] No genuine message field on form — legitimate non-inquiry skip", "info");
+                    return { filledAny: false, reasonCode: 'NO_LONG_TEXT_INQUIRY_FIELD', terminalStatus: 'SKIPPED' };
+                }
+            } else {
+                logDev("❌ [Fill] Message body was not filled", "error");
+                return { filledAny: false, reasonCode: 'REQUIRED_FIELD_LOST_BEFORE_SUBMIT' };
             }
-            logDev("❌ [Fill] Message body was not filled", "error");
-            return { filledAny: false, reasonCode: 'REQUIRED_FIELD_LOST_BEFORE_SUBMIT' };
         }
 
         logDev("[STAGE] stage=REQUIRED_FIELDS_RESOLVED", "success");
@@ -4475,7 +4488,8 @@
         const interactiveInputs = finalAllInputs.filter(el => !['hidden', 'submit', 'button', 'image', 'reset'].includes(el.type) && !isCaptchaChallengeField(el));
         const totalInputsCount = interactiveInputs.length;
         const unresolvedFields = [];
-        if (!messageFilled) unresolvedFields.push('message_body');
+        const isEligibleNoMsgForm = Boolean(window.__xpider_include_forms_without_message && !hasGenuineMessageField && _ContactGate && _ContactGate.classifyFormIntent(form, { includeFormsWithoutMessage: true }).eligible);
+        if (!messageFilled && !isEligibleNoMsgForm) unresolvedFields.push('message_body');
         const hasNameField = interactiveInputs.some(el => /name|이름|성함/i.test(`${el.name || ''} ${el.id || ''} ${el.placeholder || ''}`));
         const nameFilled = interactiveInputs.some(el => /name|이름|성함/i.test(`${el.name || ''} ${el.id || ''} ${el.placeholder || ''}`) && (el.value || '').trim().length > 0);
         if (hasNameField && !nameFilled) unresolvedFields.push('name');
@@ -5981,6 +5995,7 @@
                     if (sendResponse) sendResponse({ success: true, dismissed: true });
                     return true;
                 } else if (msg && msg.action === 'RESTORE_MANUAL_HOLD_PANEL') {
+                    if (typeof msg.includeFormsWithoutMessage === 'boolean') window.__xpider_include_forms_without_message = msg.includeFormsWithoutMessage;
                     const curMode = (typeof window !== 'undefined' && window.__xpider_campaign_mode) || (msg.template && msg.template.campaignMode) || (msg.mode) || 'AUTO';
                     if (curMode === 'AUTO' || msg.mode === 'AUTO') {
                         if (typeof document !== 'undefined') {

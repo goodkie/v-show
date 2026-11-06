@@ -347,6 +347,17 @@
         // 4. Evaluate Negative Signals
         const combinedContext = `${headingText} ${submitText} ${formId} ${formClass} ${formAction}`;
 
+        // [P0 Directive 6688411313] Check explicit opt-in for forms without long-text inquiry field
+        const includeNoMessage = Boolean(pageContext?.includeFormsWithoutMessage || (typeof window !== 'undefined' && window.__xpider_include_forms_without_message));
+
+        const hasPasswordField = formEl.querySelector && !!formEl.querySelector('input[type="password"]');
+        const hasPaymentField = formEl.querySelector && !!formEl.querySelector('input[autocomplete*="cc-"], input[name*="card" i], input[id*="card" i], input[name*="cvv" i], input[id*="cvv" i], input[name*="exp" i]');
+        const isCheckoutOrPayment = hasPaymentField || /checkout|buy now|pay now|order now|payment|billing/i.test(submitText) || /checkout|payment|cart/i.test(formAction);
+        const isUnsubscribeOrDelete = /unsubscribe|opt out|delete account|remove account|cancel subscription|탈퇴/i.test(submitText) || /unsubscribe|opt-out/i.test(formAction) || /unsubscribe|opt-out/i.test(formId);
+        const isSearchForm = (allInputs.length === 1 && (formEl.querySelector('input[type="search"]') || allInputs.some(inp => /^(q|s|query|search|keyword)$/i.test(inp.name || inp.id)))) ||
+            (formAction.includes('search') && !hasInquiryBodyField && emailInputs.length === 0) ||
+            isShopifyHelpOrSearch;
+
         for (const tok of NEWSLETTER_NEGATIVE_TOKENS) {
             if (combinedContext.includes(tok)) {
                 negativeSignals.push(`newsletter_token:${tok}`);
@@ -404,10 +415,26 @@
             decision = 'REJECT';
             reason = 'NON_INQUIRY_COMMENT_FORM';
             negativeSignals.push('comment_form_structure');
-        } else if (isShopifyHelpOrSearch || formAction.includes('search') || (negativeSignals.some(s => s.includes('search')) && !hasInquiryBodyField)) {
+        } else if (hasPasswordField || negativeSignals.some(s => s.includes('login') || s.includes('sign in') || s.includes('password'))) {
+            intent = 'LOGIN';
+            decision = 'REJECT';
+            reason = 'NON_INQUIRY_LOGIN_FORM';
+            negativeSignals.push('login_password_detected');
+        } else if (isCheckoutOrPayment) {
+            intent = 'CHECKOUT';
+            decision = 'REJECT';
+            reason = 'NON_INQUIRY_PAYMENT_FORM';
+            negativeSignals.push('checkout_payment_detected');
+        } else if (isUnsubscribeOrDelete) {
+            intent = 'UNSUBSCRIBE';
+            decision = 'REJECT';
+            reason = 'NON_INQUIRY_UNSUBSCRIBE_FORM';
+            negativeSignals.push('destructive_unsubscribe_detected');
+        } else if (isSearchForm || negativeSignals.some(s => s.includes('search')) || (formAction.includes('search') && !hasInquiryBodyField)) {
             intent = 'SEARCH';
             decision = 'REJECT';
             reason = 'NON_INQUIRY_SEARCH_FORM';
+            negativeSignals.push('search_form_detected');
         } else if (isBookingButton || hasBookingFields) {
             if (headingText.includes('appointment') || submitText.includes('appointment')) {
                 intent = 'APPOINTMENT';
@@ -439,49 +466,64 @@
         } else if (isSubscribeButton || negativeSignals.some(s => s.startsWith('newsletter_token')) || (allInputs.length <= 2 && emailInputs.length >= 1)) {
             intent = isSubscribeButton ? 'SUBSCRIBE' : 'NEWSLETTER';
             if (!hasInquiryBodyField) {
-                decision = 'REJECT';
-                reason = intent === 'SUBSCRIBE' ? 'NON_INQUIRY_SUBSCRIBE_FORM' : 'NON_INQUIRY_NEWSLETTER_FORM';
+                if (includeNoMessage && (emailInputs.length >= 1 || allInputs.length >= 1)) {
+                    // [P0 Directive 6688411313] Opt-in Subscribe / Newsletter without inquiry field
+                    decision = 'ACCEPT';
+                    reason = 'ELIGIBLE_NO_MESSAGE_FORM';
+                    positiveSignals.push('eligible_no_message_opt_in');
+                } else {
+                    decision = 'REJECT';
+                    reason = intent === 'SUBSCRIBE' ? 'NON_INQUIRY_SUBSCRIBE_FORM' : 'NON_INQUIRY_NEWSLETTER_FORM';
+                }
             } else {
                 const isPureNewsletter = !['contact', 'inquiry', '문의'].some(t => headingText.includes(t) || formId.includes(t));
                 if (isPureNewsletter) {
-                    decision = 'REJECT';
-                    reason = 'NON_INQUIRY_NEWSLETTER_FORM';
+                    if (includeNoMessage) {
+                        decision = 'ACCEPT';
+                        reason = 'ELIGIBLE_NO_MESSAGE_FORM';
+                        positiveSignals.push('eligible_no_message_opt_in');
+                    } else {
+                        decision = 'REJECT';
+                        reason = 'NON_INQUIRY_NEWSLETTER_FORM';
+                    }
                 } else {
                     intent = 'CONTACT_INQUIRY';
                     decision = 'ACCEPT';
                     reason = 'ELIGIBLE_CONTACT_INQUIRY';
                 }
             }
-        } else if (negativeSignals.some(s => s.includes('login') || s.includes('sign in') || s.includes('password'))) {
-            intent = 'LOGIN';
-            decision = 'REJECT';
-            reason = 'NON_INQUIRY_LOGIN_FORM';
-        } else if (negativeSignals.some(s => s.includes('search')) || formAction.includes('search')) {
-            intent = 'SEARCH';
-            decision = 'REJECT';
-            reason = 'NON_INQUIRY_SEARCH_FORM';
         } else if (hasInquiryBodyField) {
-            // HARD RULE: Only eligible if genuine inquiry body field exists!
+            // HARD RULE: Eligible if genuine inquiry body field exists
             intent = 'CONTACT_INQUIRY';
             decision = 'ACCEPT';
             reason = 'ELIGIBLE_CONTACT_INQUIRY';
             positiveSignals.push(`inquiry_body:${inquiryBody.type}`);
+        } else if (includeNoMessage && (emailInputs.length >= 1 || (nameInputs.length >= 1 && allInputs.length >= 1)) && allInputs.length <= 15) {
+            // [P0 Directive 6688411313] Ordinary accessible non-message opt-in / registration form
+            intent = 'OPT_IN_REGISTRATION';
+            decision = 'ACCEPT';
+            reason = 'ELIGIBLE_NO_MESSAGE_FORM';
+            positiveSignals.push('eligible_no_message_opt_in');
         } else {
             intent = 'OTHER';
             decision = 'REJECT';
             reason = 'NO_LONG_TEXT_INQUIRY_FIELD';
         }
 
-        // HARD INVARIANT: If bodyCandidates === 0 / !hasInquiryBodyField, eligible can NEVER be true!
+        // HARD INVARIANT: If !hasInquiryBodyField, eligible can NEVER be true unless explicit includeNoMessage opt-in passed
         if (!hasInquiryBodyField) {
-            decision = 'REJECT';
-            if (!reason) {
-                reason = 'NO_LONG_TEXT_INQUIRY_FIELD';
+            if (!includeNoMessage || decision !== 'ACCEPT') {
+                decision = 'REJECT';
+                if (!reason) {
+                    reason = 'NO_LONG_TEXT_INQUIRY_FIELD';
+                }
             }
         }
 
-        // Scoring: numeric score can NEVER override hard reject
-        const score = decision === 'ACCEPT' ? (100 + positiveSignals.length * 50) : -999;
+        // Scoring: Contact forms with inquiry body prioritized (200+) over no-message opt-ins (100)
+        const score = decision === 'ACCEPT' 
+            ? (hasInquiryBodyField ? (200 + positiveSignals.length * 50) : 100) 
+            : -999;
 
         const result = {
             eligible: decision === 'ACCEPT',
@@ -489,9 +531,10 @@
             gatePassed: decision === 'ACCEPT',
             intent,
             formIntent: intent,
-            bodyCandidates: hasInquiryBodyField ? 1 : 0,
+            bodyCandidates: hasInquiryBodyField ? 1 : (decision === 'ACCEPT' ? 1 : 0),
             hasInquiryBodyField,
             longTextInquiry: hasInquiryBodyField,
+            isNoMessageOptIn: decision === 'ACCEPT' && !hasInquiryBodyField,
             bodyFieldType: inquiryBody ? inquiryBody.type : null,
             inquiryBodyElement: inquiryBody ? inquiryBody.el : null,
             positiveSignals,

@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Strict Negative Controls Suite</title>
+    <style>
+        body { font-family: sans-serif; background: #0f172a; color: #f8fafc; padding: 40px; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .card { background: #1e293b; padding: 20px; border-radius: 8px; border: 1px solid #334155; }
+        input { width: 100%; box-sizing: border-box; padding: 8px; margin: 6px 0; background: #0f172a; color: #fff; border: 1px solid #475569; }
+        button { padding: 10px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 6px; }
+        .btn-red { background: #ef4444; color: #fff; }
+        .btn-blue { background: #3b82f6; color: #fff; }
+    </style>
+</head>
+<body>
+    <h2>Strict Negative Controls Suite (Expected: 0 Submissions Across All Controls)</h2>
+    <div class="grid">
+        <!-- 1. Search Form -->
+        <div class="card">
+            <h3>Search Catalog</h3>
+            <form id="search-form" action="/search" method="GET">
+                <input type="search" name="q" placeholder="Search documentation...">
+                <button type="submit" class="btn-blue">Search</button>
+            </form>
+        </div>
+
+        <!-- 2. Login / Password Form -->
+        <div class="card">
+            <h3>Operator Login</h3>
+            <form id="login-form" action="/login" method="POST">
+                <input type="text" name="username" placeholder="Username">
+                <input type="password" name="password" placeholder="Password">
+                <button type="submit" class="btn-blue">Log In</button>
+            </form>
+        </div>
+
+        <!-- 3. Checkout / Payment Form -->
+        <div class="card">
+            <h3>Checkout / Credit Card Payment</h3>
+            <form id="checkout-form" action="/checkout" method="POST">
+                <input type="text" name="card_number" autocomplete="cc-number" placeholder="Card Number">
+                <input type="text" name="cvv" autocomplete="cc-csc" placeholder="CVV">
+                <button type="submit" class="btn-blue">Pay Now ($99.00)</button>
+            </form>
+        </div>
+
+        <!-- 4. Unsubscribe / Destructive Form -->
+        <div class="card">
+            <h3>Unsubscribe from Communications</h3>
+            <form id="unsubscribe-form" action="/unsubscribe" method="POST">
+                <input type="email" name="unsub_email" placeholder="Email to remove">
+                <button type="submit" class="btn-red">Delete Account & Unsubscribe</button>
+            </form>
+        </div>
+
+        <!-- 5. Honeypot Form -->
+        <div class="card" style="grid-column: span 2;">
+            <h3>Honeypot Trapped Form</h3>
+            <form id="honeypot-form" action="/contact-success.html" method="POST">
+                <!-- Visible field -->
+                <input type="email" name="user_email" placeholder="Valid Email">
+                <!-- Hidden Honeypot trap: must remain empty! -->
+                <input type="text" name="website_url_honeypot" id="website_url_honeypot" style="display: none !important;" tabindex="-1" autocomplete="off">
+                <button type="submit" id="honeypot-submit-btn" class="btn-blue">Submit with Trap</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Track any unexpected submit
+        ['search-form', 'login-form', 'checkout-form', 'unsubscribe-form', 'honeypot-form'].forEach(function(id) {
+            document.getElementById(id).addEventListener('submit', function(e) {
+                e.preventDefault();
+                console.error('[UNEXPECTED_NEGATIVE_SUBMIT] ' + id);
+                fetch('/contact-success.html', { method: 'POST' });
+            });
+        });
+    </script>
+</body>
+</html>
+

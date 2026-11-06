@@ -583,6 +583,7 @@ class TargetDeadlineController {
 let campaignState = {
     isActive: false,
     campaignMode: 'AUTO', // [v7.0 Dual Mode] 'AUTO' | 'MANUAL'
+    includeFormsWithoutMessage: false, // [P0 Directive 6688411313] Opt-in to submit forms without long-text inquiry field
     manualHoldActive: false,
     externalCaptchaWaitActive: false,
     queue: [],
@@ -2889,7 +2890,8 @@ const _handleMainMessageInner = (request, sender, sendResponse) => {
                         ownerTestSource: request.source || null,
                         campaignRunId: assignedRunId,
                         campaignMode: resolvedMode,
-                        targetTimeoutMs: request.targetTimeoutMs || request.options?.targetTimeoutMs
+                        targetTimeoutMs: request.targetTimeoutMs || request.options?.targetTimeoutMs,
+                        includeFormsWithoutMessage: Boolean(request.includeFormsWithoutMessage || request.options?.includeFormsWithoutMessage)
                     });
                 } catch (e) {
                     console.error("[StartError]", e);
@@ -4391,7 +4393,8 @@ const _handleMainMessageInner = (request, sender, sendResponse) => {
                     pausedCampaignMode: (checkpoint && checkpoint.campaignMode) || campaignState.campaignMode || 'AUTO',
                     hasActiveLock: !!(campaignState.currentAttempt && campaignState.currentAttempt.status === 'SUBMIT_PENDING'),
                     currentAttempt: campaignState.currentAttempt,
-                    outcomeHistogram: campaignState.outcomeHistogram || {}
+                    outcomeHistogram: campaignState.outcomeHistogram || {},
+                    includeFormsWithoutMessage: Boolean(campaignState.includeFormsWithoutMessage || (checkpoint && checkpoint.includeFormsWithoutMessage))
                 });
             });
             return true;
@@ -6136,6 +6139,7 @@ async function startCampaignOrchestrator(queue, template, delayMs, fillDelayMs =
         campaignState.manualHoldActive = false;
         campaignState.externalCaptchaWaitActive = false;
         campaignState.ownerFunctionTestMode = !!options.ownerFunctionTestMode;
+        campaignState.includeFormsWithoutMessage = Boolean(options.includeFormsWithoutMessage);
         campaignState.isActive = true;
         campaignState.isPaused = false; // [v18.7] Reset pause on new start
         campaignState.pausedByOperator = false;
@@ -6447,6 +6451,7 @@ async function pauseCampaignOrchestrator(saveCheckpoint = true) {
             campaignMode: campaignState.campaignMode || 'AUTO',
             restorationLogged: false,
             ownerFunctionTestMode: Boolean(campaignState.ownerFunctionTestMode),
+            includeFormsWithoutMessage: Boolean(campaignState.includeFormsWithoutMessage),
             runScopedDirectPrivacy: Boolean(campaignState.runScopedDirectPrivacy)
         };
         campaignState.checkpointHydratedForGeneration = false;
@@ -6533,6 +6538,9 @@ async function resumeCampaignOrchestrator(options = {}) {
     campaignState.delayMs = checkpoint.delayMs || 6000;
     campaignState.fillDelayMs = checkpoint.fillDelayMs || 300;
     campaignState.submitDelayMs = checkpoint.submitDelayMs || 1500;
+    if (typeof checkpoint.includeFormsWithoutMessage === 'boolean') {
+        campaignState.includeFormsWithoutMessage = checkpoint.includeFormsWithoutMessage;
+    }
     const previousMode = (checkpoint.campaignMode === 'MANUAL' || checkpoint.campaignMode === 'SEMI_AUTO' || checkpoint.campaignMode === 'AUTO')
         ? checkpoint.campaignMode
         : ((campaignState.campaignMode === 'MANUAL' || campaignState.campaignMode === 'SEMI_AUTO' || campaignState.campaignMode === 'AUTO') ? campaignState.campaignMode : 'AUTO');
@@ -8487,7 +8495,8 @@ async function orchestrateSending(urlInput, template, abortSignal = null) {
             delayMs: campaignState.delayMs,
             fillDelayMs: campaignState.fillDelayMs || 300,
             submitDelayMs: campaignState.submitDelayMs || 1500,
-            triedUrl: currentAttemptUrl
+            triedUrl: currentAttemptUrl,
+            includeFormsWithoutMessage: Boolean(campaignState.includeFormsWithoutMessage)
         }).catch(() => {});
     };
 
@@ -8521,6 +8530,7 @@ async function orchestrateSending(urlInput, template, abortSignal = null) {
                             campaignRunId: campaignState.campaignRunId,
                             sessionId: currentSession,
                             initialHoldUrl: campaignState.manualHoldInitialUrl || currentAttemptUrl,
+                            includeFormsWithoutMessage: Boolean(campaignState.includeFormsWithoutMessage),
                             template
                         }).catch(() => {});
                     })();
@@ -9054,6 +9064,9 @@ async function restoreCampaignState() {
                         const EXPLICIT_TEST_SOURCES = ['OWNER_CORE_TEST', 'OWNER_CAPTCHA_LAB', 'OWNER_FULL_TEST', 'CLOUDFLARE_TESTKEY_LAB'];
                         const isCheckpointTest = Boolean(data.xpider_active_test_source && EXPLICIT_TEST_SOURCES.includes(data.xpider_active_test_source) && data.xpider_paused_checkpoint.ownerFunctionTestMode);
                         campaignState.ownerFunctionTestMode = isCheckpointTest;
+                        if (typeof data.xpider_paused_checkpoint.includeFormsWithoutMessage === 'boolean') {
+                            campaignState.includeFormsWithoutMessage = data.xpider_paused_checkpoint.includeFormsWithoutMessage;
+                        }
                         if (data.xpider_run_scoped_direct_privacy || data.xpider_paused_checkpoint.runScopedDirectPrivacy) {
                             campaignState.runScopedDirectPrivacy = true;
                         }

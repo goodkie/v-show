@@ -6,74 +6,77 @@
 - Workspace: E:\vivpr\ai\extension-form-sender
 - Authority: goodkie/v-show Issues #6 & #10
 - Branch: candidate/p0-core-regressions-v7 (candidate branch isolated; base major/v7-dual-mode remains 100% frozen RC11 20678ada)
-- Candidate Functional Commit: 7cda637c2e44c14cd990df8312a4228903b93589 (short: 7cda637c)
-- Remote Branch HEAD: e945ca0dfb7dfd27594c5616822f89e694d50b74 (short: e945ca0d)
-- State Rev: 2026-11-06.703
-- Authority Cursor: 6686643497 (Responding to ChatGPT Independent Source Audit / Corrective Directive Comment #912 / ID 6686643497)
+- State Rev: 2026-11-06.704
+- Authority Cursor: 6688411313 (Responding to ChatGPT Directive Comment #914 / ID 6688411313: Optional Forms Without Message Field)
 - Canonical Schedule Revision: 5
 - Collaboration Mode: Manual ChatGPT ↔ Antigravity Collaboration per Owner Directive.
-- Verification Status: HOLD (Awaiting independent ChatGPT Code Audit). Release HOLD maintained. Zero external public submissions.
+- Verification Status: HOLD (Awaiting independent ChatGPT Code Audit of Directive #6688411313). Release HOLD maintained. Zero external public submissions.
 
 ---
 
-## 1. Directive #6686643497 Full Implementation & Clean CAPTCHA Retirement
+## 1. Directive #6688411313 Implementation: Optional Forms Without Message Field
 
-### A. Extension-Only CAPTCHA Full Retirement
-1. **Zero Internal Solver Execution**:
-   - `extension/solver-core.js`: Retired stub only. All methods immediately throw `INTERNAL_SOLVER_RETIRED_V7`.
-   - `extension/background.js`: Removed `solver-core.js` from `_swFoundationModules`. Gutted `handleSolveCaptchaInternal`, completely eradicating 55KB of legacy 2captcha/nopecha network calls, synthetic token injections, and test overrides.
-   - `handleTranscription` audio solver cleanly throws `INTERNAL_SOLVER_RETIRED_V7`.
-2. **Strict Negative Controls Verified (3 / 3 Pass)**:
-   - `NEG_INTERNAL_SOLVER_PROD_REJECTED`: Production call rejects with `INTERNAL_SOLVER_RETIRED_V7`.
-   - `NEG_INTERNAL_SOLVER_TEST_OVERRIDE_REJECTED`: Lab/test mock override attempt rejects with `INTERNAL_SOLVER_RETIRED_V7`.
-   - `NEG_SOLVER_CORE_NOT_IMPORTED`: Service worker foundation module list does not import `solver-core.js`.
+### A. UI START Options Checkbox & Storage Preference
+1. **Popup UI Layout** (`extension/popup.html`):
+   - Added `#start-options-container` directly above `#start-buttons-row`.
+   - Checkbox `#xpider-opt-include-no-message` rendered with default state: **UNCHECKED**.
+   - Label: `'Include forms without a message field (Subscribe / Newsletter / other eligible forms)'`.
+   - Warning banner `#opt-no-message-warning`: `'⚠️ Warning: Enabling broadens submissions to newsletter & subscription forms without inquiry text.'`.
+2. **Persistence Preference** (`extension/popup.js`):
+   - On popup bootstrap, hydrates checkbox state from `chrome.storage.local.get(['xpider_opt_include_no_message'])`.
+   - On change, updates `chrome.storage.local.set({ xpider_opt_include_no_message: checked })` for subsequent new runs.
+3. **Run-Scoped Flag Freezing at START**:
+   - In `launchCampaign`, reads `includeFormsWithoutMessage = (typeof options.includeFormsWithoutMessage === 'boolean') ? options.includeFormsWithoutMessage : Boolean(optNoMsgBox?.checked)`.
+   - Freezes immutable `includeFormsWithoutMessage` into `startPayload` and forwards in `START_CAMPAIGN` message.
+   - Preserved in `campaignState.includeFormsWithoutMessage`.
+   - On pause / Stop & Save, frozen in `pausedCheckpoint.includeFormsWithoutMessage`.
+   - On Service Worker restart / reboot, hydrated strictly from checkpoint, NEVER re-reading UI setting.
 
-### B. Three Operation Modes & Visible Controls Contract
-1. **AUTO Mode**:
-   - Unattended execution. Zero interruption popups or modal buttons (`I Completed Challenge`, `Skip`, `Stop & Save`).
-   - `#xpider-v7-external-captcha-hud` has `pointer-events: none` and strictly 0 buttons.
-   - Token injected by external extension -> auto continuation -> 1 POST.
-   - External solver error/timeout -> fails closed -> 0 POSTs.
-2. **SEMI_AUTO Mode**:
-   - Unattended until challenge fails or times out (`SEMI_AUTO_CHALLENGE_HOLD`), at which point operator intervention HUD renders.
-3. **MANUAL Mode**:
-   - Autofills form fields and immediately holds for operator inspection (`#xpider-v7-manual-hold-panel`).
-4. **Multi-Target Invariants & Quiescence**:
-   - Fixed ledger settlement in `background.js` `processNextCampaignTarget` finally block: paused in-flight targets are preserved without being erroneously marked `SKIPPED`.
-   - Pause, Stop & Save, CDP SW termination, and resume from storage banner verified across multi-target fixtures.
+### B. Behavioral Bifurcation: OFF vs ON
+1. **Behavior OFF (Default Strict Preservation)**:
+   - Preserves all pre-existing inquiry-only routing constraints.
+   - Message-less forms are classified as `SKIPPED` with reason `NON_INQUIRY_SUBSCRIBE_FORM` / `NO_LONG_TEXT_INQUIRY_FIELD`.
+   - Zero POST requests dispatched to server (verified in Section 2).
+2. **Behavior ON (Functional Submission)**:
+   - In `contact-gate.js`: `classifyFormIntent` checks `includeNoMessage = Boolean(pageContext?.includeFormsWithoutMessage || window.__xpider_include_forms_without_message)`.
+   - When active, genuine newsletter / subscribe / email-only opt-in forms without textarea are accepted (`ELIGIBLE_NO_MESSAGE_FORM`).
+   - In `content-script.js`: `fillFormIntelligent` does not require `message_body` when `isEligibleNoMsgForm` is true.
+   - In `final-form-completion-engine.js`: `auditForm` treats `messageRequirementSatisfied = true` when `allowNoMessage && !hasGenuineMessageElement`.
+   - Exactly 1 submission dispatched per target; verified across email-only, name+email, opt-in registration, and dynamic SPA fixtures (4 POSTs verified in Section 3).
 
-### C. Explicit Declarations & Operational Boundaries
-- **Real NopeCHA Extension Interoperability**: `NOT_TESTED / UNKNOWN`. Local test fixtures simulate DOM token delivery by third-party extensions; actual NopeCHA extension runtime not verified in this runner.
-- **Live Network Privacy Relay**: `NOT_TESTED / UNKNOWN`. Tested exclusively on isolated localhost `127.0.0.1:8088` fixtures.
-- **Owner Windows Chrome Smoke**: `NOT_TESTED / UNKNOWN`. Disposable profile smoke test artifact provided for Owner evaluation.
-- **External Solver Multi-Reopen Retry**: `NOT_IMPLEMENTED (FAIL-CLOSED BY DESIGN)` (0 retries / 1 attempt to avoid duplicate submissions and tab thrashing).
-- **Independent Rerun**: `NOT_TESTED / UNKNOWN` until independent ChatGPT verification.
+### C. Strict Negative Controls & Prioritization Invariants
+1. **Strict Negative Controls (Zero POSTs)**:
+   - Login / password forms, checkout / credit card forms, search queries, delete / unsubscribe forms, and honeypot traps fail closed with 0 POSTs (Section 5).
+2. **Contact vs Newsletter Prioritization**:
+   - When a page contains both a primary contact form (with message) and a footer newsletter (without message), `contact-gate.js` scores contact form 200+ vs newsletter 100.
+   - Primary contact form is submitted; duplicate submission is strictly prevented (Section 4).
+3. **Missing Required Fields**:
+   - Unknown / unfillable required fields fail closed without submission (Section 6).
+4. **External CAPTCHA**:
+   - Fail-closed policy preserved; third-party extension solved token accepted and submitted once without internal solvers (Section 7).
+5. **Triple Modes**:
+   - AUTO: unattended submission without interruption popups.
+   - SEMI_AUTO: holds on error/assistance panel.
+   - MANUAL: autofills and holds on `#xpider-v7-manual-hold-panel` until operator click (Section 8).
+6. **Campaign Durability & Ledger**:
+   - Paused checkpoint preserves frozen option; survive CDP SW kill & reboot; finishes remaining queue; ledger 7-bucket run-scoped statistics strictly reconciled (Sections 9 & 10).
 
 ---
 
-## 2. Test Verification Matrix (100% PASS Across All 6 Suites)
+## 2. Test Verification Matrix (100% PASS Across All Suites)
 
 | Test Suite / Harness | Command | Assertions / Result | Status | Exit Code | Evidence Report / Log |
 |---|---|:---:|:---:|:---:|---|
-| **Directive #6686643497 Dedicated E2E Suite** | `node test/run_chromium_v7_directive_6657464425_e2e_suite.js` | 38 / 38 | **100% PASS** | **0** | `test/evidence_v7_directive_6657464425/report_directive_6657464425_e2e.json` |
-| **Directive Reproduction & Verification Suite** | `node test/test_v7_directive_reproduction_suite.js` | 14 / 14 | **100% PASS** | **0** | `test/report_v7_directive_reproduction.json` |
-| **Modes & Visible Controls E2E Suite** | `node test/run_chromium_v7_modes_and_visible_controls_suite.js` | 32 / 32 | **100% PASS** | **0** | `test/report_v7_modes_and_visible_controls.json` |
-| **Item C & Dynamic React E2E Suite** | `node test/run_chromium_v7_item_c_contact_and_dynamic_message.js` | 22 / 22 | **100% PASS** | **0** | `owner-extension-test-site/evidence/evidence_v7_item_c_contact_and_dynamic_message_report.json` |
-| **Real Implementation Mutant Sensitivity** | `node test/run_v7_real_mutant_sensitivity.js` | 4 / 4 Mutants Killed | **100% SENSITIVE** | **0** | `owner-extension-test-site/evidence/evidence_v7_real_mutants_report.json` |
-| **Unified SC-03 & SC-04 Invariants Suite** | `node test/run_chromium_v7_task3_and_task4_suite.js` | All Invariants Pass | **100% PASS** | **0** | `owner-extension-test-site/evidence/evidence_v7_task3_and_task4_report.json` |
+| **Directive #6688411313 Dedicated Suite** | `node test/run_chromium_v7_directive_6688411313_no_message_suite.js` | 24 / 24 | **100% PASS** | **0** | `test/evidence_v7_directive_6688411313/report_directive_6688411313_e2e.json` |
+| **Directive #6657464425 Comprehensive E2E Suite** | `node test/run_chromium_v7_directive_6657464425_e2e_suite.js` | 38 / 38 | **100% PASS** | **0** | `test/evidence_v7_directive_6657464425/report_directive_6657464425_e2e.json` |
+| **Triple Modes & Visible Controls E2E Suite** | `node test/run_chromium_v7_modes_and_visible_controls_suite.js` | 32 / 32 | **100% PASS** | **0** | `test/report_v7_modes_and_visible_controls.json` |
+| **Real Mutation Sensitivity Harness** | `node test/run_v7_real_mutant_sensitivity.js` | 4 / 4 | **100% PASS** | **0** | `owner-extension-test-site/evidence/evidence_v7_real_mutants_report.json` |
 
 ---
 
-## 3. Packaged Owner Smoke Test Artifact
-- Package File: `XPIDER_V7.0.0_RC12_CANDIDATE_OWNER_SMOKE.zip`
-- File Size: 4,482,513 bytes
-- SHA256: `F16608CBE94BE7791C5BDD5853DA88D06561044F9B316678587D5F94A9BC26F8`
-- Target Environment: Windows 10 Chrome disposable profile (`--user-data-dir=%TEMP%\xpider-smoke-test`).
-
----
-
-## 4. Baselines & Guardrails
-- **Candidate Branch**: `candidate/p0-core-regressions-v7`.
-- **Base Branch**: `major/v7-dual-mode` remains 100% frozen (RC11 `20678ada`).
-- **IVCS Manager**: Strictly ChatGPT-only, untouched.
-- **Release Hold**: Active; zero external public submissions. Localhost `127.0.0.1:8088` fixtures only.
+## 3. Commitments & Guardrails
+- Work strictly inside WORKSPACE_ROOT `E:\vivpr\ai\extension-form-sender`.
+- `major/v7-dual-mode` remains 100% frozen at RC11 `20678ada`.
+- IVCS Manager strictly ChatGPT-owned; zero modifications.
+- Zero public contact form submissions; isolated `127.0.0.1:8088` fixtures only.
+- Mandatory `🟪` completion marker appended.
