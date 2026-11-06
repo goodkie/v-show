@@ -1,573 +1,582 @@
-[2026-11-06T17:32:20.523Z] ================================================================================
-[2026-11-06T17:32:20.525Z] 🚀 LAUNCHING DIRECTIVE #6688411313 OPTIONAL NO-MESSAGE FORM CHROMIUM E2E SUITE
-[2026-11-06T17:32:20.525Z] ================================================================================
-[2026-11-06T17:32:20.585Z] Test server active on port 8088
-[2026-11-06T17:32:20.590Z] Disposable profile: C:\Users\oPus\AppData\Local\Temp\xpider-dir6688-zpdj5h
-[2026-11-06T17:32:20.591Z] Spawning browser: C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe
-[2026-11-06T17:32:21.493Z] Browser CDP connected
-[2026-11-06T17:32:22.053Z] Extension ID: ldlijlaccfeelfdhgnjbibniocefckjj
-[2026-11-06T17:32:22.073Z] Connected to Service Worker CDP
-[2026-11-06T17:32:24.669Z] 
+[2026-11-06T18:12:37.142Z] ================================================================================
+[2026-11-06T18:12:37.144Z] 🚀 LAUNCHING DIRECTIVE #6688411313 OPTIONAL NO-MESSAGE FORM CHROMIUM E2E SUITE
+[2026-11-06T18:12:37.144Z] ================================================================================
+[2026-11-06T18:12:37.201Z] Test server active on port 8088
+[2026-11-06T18:12:37.206Z] Disposable profile: C:\Users\oPus\AppData\Local\Temp\xpider-dir6688-9pyy2u
+[2026-11-06T18:12:37.206Z] Spawning browser: C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe
+[2026-11-06T18:12:39.317Z] Browser CDP connected
+[2026-11-06T18:12:39.991Z] Extension ID: ldlijlaccfeelfdhgnjbibniocefckjj
+[2026-11-06T18:12:40.021Z] Connected to Service Worker CDP
+[2026-11-06T18:12:42.619Z] 
 --- SECTION 1: START OPTIONS UI & CHECKBOX PERSISTENCE ---
-[2026-11-06T17:32:24.675Z]   ✅ [PASS] START_OPTIONS_CHECKBOX_RENDERED_DEFAULT_UNCHECKED {"exists":true,"checked":false,"hasWarning":true,"warningText":"⚠️ Warning: Enabling broadens submissions to newsletter & subscription forms without inquiry text."}
-[2026-11-06T17:32:24.675Z]   ✅ [PASS] START_OPTIONS_WARNING_TEXT_RENDERED {"warningText":"⚠️ Warning: Enabling broadens submissions to newsletter & subscription forms without inquiry text."}
-[2026-11-06T17:32:24.993Z]   ✅ [PASS] START_OPTIONS_PERSISTENCE_IN_STORAGE {"storedValue":true}
-[2026-11-06T17:32:25.148Z] 📸 Captured screenshot: shot_01_start_options_checkbox.png
-[2026-11-06T17:32:25.148Z] 
+[2026-11-06T18:12:42.622Z]   ✅ [PASS] START_OPTIONS_CHECKBOX_RENDERED_DEFAULT_UNCHECKED {"exists":true,"checked":false,"hasWarning":true,"warningText":"⚠️ Warning: Enabling broadens submissions to newsletter & subscription forms without inquiry text."}
+[2026-11-06T18:12:42.622Z]   ✅ [PASS] START_OPTIONS_WARNING_TEXT_RENDERED {"warningText":"⚠️ Warning: Enabling broadens submissions to newsletter & subscription forms without inquiry text."}
+[2026-11-06T18:12:42.926Z]   ✅ [PASS] START_OPTIONS_PERSISTENCE_IN_STORAGE {"storedValue":true}
+[2026-11-06T18:12:43.074Z] 📸 Captured screenshot: shot_01_start_options_checkbox.png
+[2026-11-06T18:12:43.074Z] 
 --- SECTION 2: BEHAVIOR OFF (UNCHECKED DEFAULT STRICT PRESERVATION) ---
-[2026-11-06T17:32:25.611Z] [SW_CONSOLE] [START_BG] received queue=1
-[2026-11-06T17:32:25.612Z] [SW_CONSOLE] [BG_LOG][tab=none] [START_BG] received queue=1
-[2026-11-06T17:32:25.623Z] [SW_CONSOLE] [NORMAL_CAMPAIGN_PREFLIGHT] publicTargets=0 testMode=false result=PASS
-[2026-11-06T17:32:25.624Z] [SW_CONSOLE] [BG_LOG][tab=none] [NORMAL_CAMPAIGN_PREFLIGHT] publicTargets=0 testMode=false result=PASS
-[2026-11-06T17:32:25.635Z] [SW_CONSOLE] [START_BG_READY] privacyReady=true
-[2026-11-06T17:32:25.635Z] [SW_CONSOLE] [BG_LOG][tab=none] [START_BG_READY] privacyReady=true
-[2026-11-06T17:32:25.649Z] [SW_CONSOLE] [TAB_BARRIER] phase=START_CAMPAIGN_BOOT ownedBefore=0
-[2026-11-06T17:32:25.650Z] [SW_CONSOLE] [TAB_BARRIER] phase=START_CAMPAIGN_BOOT ownedAfter=0 result=PASS
-[2026-11-06T17:32:25.665Z] [SW_CONSOLE] [BG_LOG][tab=none] [CAMPAIGN_START] buildId=V7.0.0-RC11-20261030-THREE-MODE-CONTRACTS-PASS campaignRunId=normal_run_1793986345575_1t42pn totalTargets=1 mode=NORMAL delayMs=3000 fillDelayMs=100 submitDelayMs=1000
-[2026-11-06T17:32:25.895Z]   ✅ [PASS] FLAG_OFF_CAMPAIGN_LAUNCHED {}
-[2026-11-06T17:32:26.078Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743177309][attemptId=att_1793986345677_67jf5][url=http://127.0.0.1:8088/subscribe.html] 🚀 [Engine] Ultra-Mode process started
-[2026-11-06T17:32:26.079Z] [SW_CONSOLE] [BG_LOG][tab=743177309] [CONTENT_EVENT][tabId=743177309][attemptId=att_1793986345677_67jf5][url=http://127.0.0.1:8088/subscribe.html] 🚀 [Engine] Ultra-Mode process started
-[2026-11-06T17:32:27.500Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743177309][attemptId=att_1793986345677_67jf5][url=http://127.0.0.1:8088/subscribe.html] 🚀 [Engine] Ultra-Mode: Scrolling to reveal lazy-loaded content...
-[2026-11-06T17:32:27.502Z] [SW_CONSOLE] [BG_LOG][tab=743177309] [CONTENT_EVENT][tabId=743177309][attemptId=att_1793986345677_67jf5][url=http://127.0.0.1:8088/subscribe.html] 🚀 [Engine] Ultra-Mode: Scrolling to reveal lazy-loaded content...
-[2026-11-06T17:32:34.904Z] [SW_CONSOLE] [BG_LOG][tab=743177309] [FINAL_CANONICAL] status=SKIPPED reason=NON_INQUIRY_SUBSCRIBE_FORM attemptId=att_1793986345677_67jf5
-[2026-11-06T17:32:34.905Z] [SW_CONSOLE] [BG_LOG][tab=743177309] [TARGET][127.0.0.1] FINAL status=SKIPPED reason=NON_INQUIRY_SUBSCRIBE_FORM
-[2026-11-06T17:32:34.913Z] [SW_CONSOLE] [BG_LOG][tab=743177309] [HISTORY_FINAL] sourceUrl=http://127.0.0.1:8088/subscribe-no-message.html contactPageUrl=http://127.0.0.1:8088/subscribe.html formPageUrl=http://127.0.0.1:8088/subscribe.html resultUrl=http://127.0.0.1:8088/subscribe.html
-[2026-11-06T17:32:36.123Z] [SW_CONSOLE] [POST_FINAL_TAB_INVARIANT] target=http://127.0.0.1:8088/subscribe-no-message.html remainingOwnedTabs=0 retainedTabs=0 result=PASS
-[2026-11-06T17:32:36.187Z] [SW_CONSOLE] [BG_LOG][tab=none] [FINISH_BARRIER] lastFinalTs=1793986356123 barrierClear. CAMPAIGN_FINISHED proceeding.
-[2026-11-06T17:32:36.191Z] [SW_CONSOLE] [TAB_BARRIER] phase=CAMPAIGN_FINISHED ownedBefore=0
-[2026-11-06T17:32:36.191Z] [SW_CONSOLE] [TAB_BARRIER] phase=CAMPAIGN_FINISHED ownedAfter=0 result=PASS
-[2026-11-06T17:32:36.620Z]   ✅ [PASS] FLAG_OFF_SUBSCRIBE_SETTLED_AS_SKIPPED {"status":"SKIPPED","reason":"NON_INQUIRY_SUBSCRIBE_FORM"}
-[2026-11-06T17:32:36.620Z]   ✅ [PASS] FLAG_OFF_REASON_NON_INQUIRY_SUBSCRIBE_FORM {"status":"SKIPPED","reason":"NON_INQUIRY_SUBSCRIBE_FORM"}
-[2026-11-06T17:32:36.624Z]   ✅ [PASS] FLAG_OFF_ZERO_SERVER_SUBMISSIONS {"submissionsCount":0}
-[2026-11-06T17:32:36.624Z] 
+[2026-11-06T18:12:43.539Z] [SW_CONSOLE] [START_BG] received queue=1
+[2026-11-06T18:12:43.540Z] [SW_CONSOLE] [BG_LOG][tab=none] [START_BG] received queue=1
+[2026-11-06T18:12:43.555Z] [SW_CONSOLE] [NORMAL_CAMPAIGN_PREFLIGHT] publicTargets=0 testMode=false result=PASS
+[2026-11-06T18:12:43.556Z] [SW_CONSOLE] [BG_LOG][tab=none] [NORMAL_CAMPAIGN_PREFLIGHT] publicTargets=0 testMode=false result=PASS
+[2026-11-06T18:12:43.563Z] [SW_CONSOLE] [START_BG_READY] privacyReady=true
+[2026-11-06T18:12:43.563Z] [SW_CONSOLE] [BG_LOG][tab=none] [START_BG_READY] privacyReady=true
+[2026-11-06T18:12:43.580Z] [SW_CONSOLE] [TAB_BARRIER] phase=START_CAMPAIGN_BOOT ownedBefore=0
+[2026-11-06T18:12:43.580Z] [SW_CONSOLE] [TAB_BARRIER] phase=START_CAMPAIGN_BOOT ownedAfter=0 result=PASS
+[2026-11-06T18:12:43.598Z] [SW_CONSOLE] [BG_LOG][tab=none] [CAMPAIGN_START] buildId=V7.0.0-RC11-20261030-THREE-MODE-CONTRACTS-PASS campaignRunId=normal_run_1793988763506_zuah6f totalTargets=1 mode=NORMAL delayMs=3000 fillDelayMs=100 submitDelayMs=1000
+[2026-11-06T18:12:43.759Z] [SW_CONSOLE] [BG_LOG][tab=78602338] 🔄 [Engine] Internal navigation detected (SPA). Preparing re-injection...
+[2026-11-06T18:12:43.825Z]   ✅ [PASS] FLAG_OFF_CAMPAIGN_LAUNCHED {}
+[2026-11-06T18:12:43.958Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=78602338][attemptId=att_1793988763607_tpae6][url=http://127.0.0.1:8088/subscribe.html] 🚀 [Engine] Ultra-Mode process started
+[2026-11-06T18:12:43.958Z] [SW_CONSOLE] [BG_LOG][tab=78602338] [CONTENT_EVENT][tabId=78602338][attemptId=att_1793988763607_tpae6][url=http://127.0.0.1:8088/subscribe.html] 🚀 [Engine] Ultra-Mode process started
+[2026-11-06T18:12:45.393Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=78602338][attemptId=att_1793988763607_tpae6][url=http://127.0.0.1:8088/subscribe.html] 🚀 [Engine] Ultra-Mode: Scrolling to reveal lazy-loaded content...
+[2026-11-06T18:12:45.394Z] [SW_CONSOLE] [BG_LOG][tab=78602338] [CONTENT_EVENT][tabId=78602338][attemptId=att_1793988763607_tpae6][url=http://127.0.0.1:8088/subscribe.html] 🚀 [Engine] Ultra-Mode: Scrolling to reveal lazy-loaded content...
+[2026-11-06T18:12:52.812Z] [SW_CONSOLE] [BG_LOG][tab=78602338] [FINAL_CANONICAL] status=SKIPPED reason=NON_INQUIRY_SUBSCRIBE_FORM attemptId=att_1793988763607_tpae6
+[2026-11-06T18:12:52.812Z] [SW_CONSOLE] [BG_LOG][tab=78602338] [TARGET][127.0.0.1] FINAL status=SKIPPED reason=NON_INQUIRY_SUBSCRIBE_FORM
+[2026-11-06T18:12:52.826Z] [SW_CONSOLE] [BG_LOG][tab=78602338] [HISTORY_FINAL] sourceUrl=http://127.0.0.1:8088/subscribe-no-message.html contactPageUrl=http://127.0.0.1:8088/subscribe.html formPageUrl=http://127.0.0.1:8088/subscribe.html resultUrl=http://127.0.0.1:8088/subscribe.html
+[2026-11-06T18:12:54.228Z] [SW_CONSOLE] [POST_FINAL_TAB_INVARIANT] target=http://127.0.0.1:8088/subscribe-no-message.html remainingOwnedTabs=0 retainedTabs=0 result=PASS
+[2026-11-06T18:12:54.395Z] [SW_CONSOLE] [BG_LOG][tab=none] [FINISH_BARRIER] lastFinalTs=1793988774214 barrierClear. CAMPAIGN_FINISHED proceeding.
+[2026-11-06T18:12:54.396Z] [SW_CONSOLE] [TAB_BARRIER] phase=CAMPAIGN_FINISHED ownedBefore=0
+[2026-11-06T18:12:54.397Z] [SW_CONSOLE] [TAB_BARRIER] phase=CAMPAIGN_FINISHED ownedAfter=0 result=PASS
+[2026-11-06T18:12:54.595Z]   ✅ [PASS] FLAG_OFF_SUBSCRIBE_SETTLED_AS_SKIPPED {"status":"SKIPPED","reason":"NON_INQUIRY_SUBSCRIBE_FORM"}
+[2026-11-06T18:12:54.595Z]   ✅ [PASS] FLAG_OFF_REASON_NON_INQUIRY_SUBSCRIBE_FORM {"status":"SKIPPED","reason":"NON_INQUIRY_SUBSCRIBE_FORM"}
+[2026-11-06T18:12:54.600Z]   ✅ [PASS] FLAG_OFF_ZERO_SERVER_SUBMISSIONS {"submissionsCount":0}
+[2026-11-06T18:12:54.600Z] 
 --- SECTION 2B: STALE AMBIENT WINDOW GLOBAL IMMUNITY (DIRECTIVE 6690847856) ---
-[2026-11-06T17:32:37.079Z] [SW_CONSOLE] [START_BG] received queue=1
-[2026-11-06T17:32:37.082Z] [SW_CONSOLE] [BG_LOG][tab=none] [START_BG] received queue=1
-[2026-11-06T17:32:37.089Z] [SW_CONSOLE] [NORMAL_CAMPAIGN_PREFLIGHT] publicTargets=0 testMode=false result=PASS
-[2026-11-06T17:32:37.091Z] [SW_CONSOLE] [BG_LOG][tab=none] [NORMAL_CAMPAIGN_PREFLIGHT] publicTargets=0 testMode=false result=PASS
-[2026-11-06T17:32:37.097Z] [SW_CONSOLE] [START_BG_READY] privacyReady=true
-[2026-11-06T17:32:37.097Z] [SW_CONSOLE] [BG_LOG][tab=none] [START_BG_READY] privacyReady=true
-[2026-11-06T17:32:37.111Z] [SW_CONSOLE] [TAB_BARRIER] phase=START_CAMPAIGN_BOOT ownedBefore=0
-[2026-11-06T17:32:37.112Z] [SW_CONSOLE] [TAB_BARRIER] phase=START_CAMPAIGN_BOOT ownedAfter=0 result=PASS
-[2026-11-06T17:32:37.135Z] [SW_CONSOLE] [BG_LOG][tab=none] [CAMPAIGN_START] buildId=V7.0.0-RC11-20261030-THREE-MODE-CONTRACTS-PASS campaignRunId=normal_run_1793986357054_g6kuzw totalTargets=1 mode=NORMAL delayMs=3000 fillDelayMs=100 submitDelayMs=1000
-[2026-11-06T17:32:37.415Z]   ✅ [PASS] STALE_GLOBAL_IMMUNITY_CAMPAIGN_LAUNCHED {}
-[2026-11-06T17:32:37.450Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179259][attemptId=att_1793986357141_m6lpw][url=http://127.0.0.1:8088/subscribe.html] ⚠️ [Engine] Suppressing duplicate setup (Signals re-sent).
-[2026-11-06T17:32:37.454Z] [SW_CONSOLE] [BG_LOG][tab=743179259] [CONTENT_EVENT][tabId=743179259][attemptId=att_1793986357141_m6lpw][url=http://127.0.0.1:8088/subscribe.html] ⚠️ [Engine] Suppressing duplicate setup (Signals re-sent).
-[2026-11-06T17:32:37.493Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179259][attemptId=att_1793986357141_m6lpw][url=http://127.0.0.1:8088/subscribe.html] 🚀 [Engine] Ultra-Mode process started
-[2026-11-06T17:32:37.493Z] [SW_CONSOLE] [BG_LOG][tab=743179259] [CONTENT_EVENT][tabId=743179259][attemptId=att_1793986357141_m6lpw][url=http://127.0.0.1:8088/subscribe.html] 🚀 [Engine] Ultra-Mode process started
-[2026-11-06T17:32:38.913Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179259][attemptId=att_1793986357141_m6lpw][url=http://127.0.0.1:8088/subscribe.html] 🚀 [Engine] Ultra-Mode: Scrolling to reveal lazy-loaded content...
-[2026-11-06T17:32:38.914Z] [SW_CONSOLE] [BG_LOG][tab=743179259] [CONTENT_EVENT][tabId=743179259][attemptId=att_1793986357141_m6lpw][url=http://127.0.0.1:8088/subscribe.html] 🚀 [Engine] Ultra-Mode: Scrolling to reveal lazy-loaded content...
-[2026-11-06T17:32:46.305Z] [SW_CONSOLE] [BG_LOG][tab=743179259] [FINAL_CANONICAL] status=SKIPPED reason=NON_INQUIRY_SUBSCRIBE_FORM attemptId=att_1793986357141_m6lpw
-[2026-11-06T17:32:46.305Z] [SW_CONSOLE] [BG_LOG][tab=743179259] [TARGET][127.0.0.1] FINAL status=SKIPPED reason=NON_INQUIRY_SUBSCRIBE_FORM
-[2026-11-06T17:32:46.319Z] [SW_CONSOLE] [BG_LOG][tab=743179259] [HISTORY_FINAL] sourceUrl=http://127.0.0.1:8088/subscribe-no-message.html contactPageUrl=http://127.0.0.1:8088/subscribe.html formPageUrl=http://127.0.0.1:8088/subscribe.html resultUrl=http://127.0.0.1:8088/subscribe.html
-[2026-11-06T17:32:47.524Z] [SW_CONSOLE] [POST_FINAL_TAB_INVARIANT] target=http://127.0.0.1:8088/subscribe-no-message.html remainingOwnedTabs=0 retainedTabs=0 result=PASS
-[2026-11-06T17:32:47.586Z] [SW_CONSOLE] [BG_LOG][tab=none] [FINISH_BARRIER] lastFinalTs=1793986367524 barrierClear. CAMPAIGN_FINISHED proceeding.
-[2026-11-06T17:32:47.589Z] [SW_CONSOLE] [TAB_BARRIER] phase=CAMPAIGN_FINISHED ownedBefore=0
-[2026-11-06T17:32:47.592Z] [SW_CONSOLE] [TAB_BARRIER] phase=CAMPAIGN_FINISHED ownedAfter=0 result=PASS
-[2026-11-06T17:32:47.663Z]   ✅ [PASS] STALE_GLOBAL_DOES_NOT_BYPASS_FLAG_OFF {"status":"SKIPPED","reason":"NON_INQUIRY_SUBSCRIBE_FORM"}
-[2026-11-06T17:32:47.667Z]   ✅ [PASS] STALE_GLOBAL_ZERO_SERVER_SUBMISSIONS {"submissionsCount":0}
-[2026-11-06T17:32:47.668Z] 
+[2026-11-06T18:12:55.097Z] [SW_CONSOLE] [START_BG] received queue=1
+[2026-11-06T18:12:55.097Z] [SW_CONSOLE] [BG_LOG][tab=none] [START_BG] received queue=1
+[2026-11-06T18:12:55.124Z] [SW_CONSOLE] [NORMAL_CAMPAIGN_PREFLIGHT] publicTargets=0 testMode=false result=PASS
+[2026-11-06T18:12:55.125Z] [SW_CONSOLE] [BG_LOG][tab=none] [NORMAL_CAMPAIGN_PREFLIGHT] publicTargets=0 testMode=false result=PASS
+[2026-11-06T18:12:55.126Z] [SW_CONSOLE] [START_BG_READY] privacyReady=true
+[2026-11-06T18:12:55.127Z] [SW_CONSOLE] [BG_LOG][tab=none] [START_BG_READY] privacyReady=true
+[2026-11-06T18:12:55.149Z] [SW_CONSOLE] [TAB_BARRIER] phase=START_CAMPAIGN_BOOT ownedBefore=0
+[2026-11-06T18:12:55.154Z] [SW_CONSOLE] [TAB_BARRIER] phase=START_CAMPAIGN_BOOT ownedAfter=0 result=PASS
+[2026-11-06T18:12:55.183Z] [SW_CONSOLE] [BG_LOG][tab=none] [CAMPAIGN_START] buildId=V7.0.0-RC11-20261030-THREE-MODE-CONTRACTS-PASS campaignRunId=normal_run_1793988775048_72kktj totalTargets=1 mode=NORMAL delayMs=3000 fillDelayMs=100 submitDelayMs=1000
+[2026-11-06T18:12:55.804Z]   ✅ [PASS] STALE_GLOBAL_IMMUNITY_CAMPAIGN_LAUNCHED {}
+[2026-11-06T18:12:56.207Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=78604332][attemptId=att_1793988775205_sf1pp][url=http://127.0.0.1:8088/subscribe.html] 🚀 [Engine] Ultra-Mode process started
+[2026-11-06T18:12:56.209Z] [SW_CONSOLE] [BG_LOG][tab=78604332] [CONTENT_EVENT][tabId=78604332][attemptId=att_1793988775205_sf1pp][url=http://127.0.0.1:8088/subscribe.html] 🚀 [Engine] Ultra-Mode process started
+[2026-11-06T18:12:57.661Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=78604332][attemptId=att_1793988775205_sf1pp][url=http://127.0.0.1:8088/subscribe.html] 🚀 [Engine] Ultra-Mode: Scrolling to reveal lazy-loaded content...
+[2026-11-06T18:12:57.664Z] [SW_CONSOLE] [BG_LOG][tab=78604332] [CONTENT_EVENT][tabId=78604332][attemptId=att_1793988775205_sf1pp][url=http://127.0.0.1:8088/subscribe.html] 🚀 [Engine] Ultra-Mode: Scrolling to reveal lazy-loaded content...
+[2026-11-06T18:13:05.049Z] [SW_CONSOLE] [BG_LOG][tab=78604332] [FINAL_CANONICAL] status=SKIPPED reason=NON_INQUIRY_SUBSCRIBE_FORM attemptId=att_1793988775205_sf1pp
+[2026-11-06T18:13:05.049Z] [SW_CONSOLE] [BG_LOG][tab=78604332] [TARGET][127.0.0.1] FINAL status=SKIPPED reason=NON_INQUIRY_SUBSCRIBE_FORM
+[2026-11-06T18:13:05.069Z] [SW_CONSOLE] [BG_LOG][tab=78604332] [HISTORY_FINAL] sourceUrl=http://127.0.0.1:8088/subscribe-no-message.html contactPageUrl=http://127.0.0.1:8088/subscribe.html formPageUrl=http://127.0.0.1:8088/subscribe.html resultUrl=http://127.0.0.1:8088/subscribe.html
+[2026-11-06T18:13:06.278Z] [SW_CONSOLE] [POST_FINAL_TAB_INVARIANT] target=http://127.0.0.1:8088/subscribe-no-message.html remainingOwnedTabs=0 retainedTabs=0 result=PASS
+[2026-11-06T18:13:06.476Z] [SW_CONSOLE] [BG_LOG][tab=none] [FINISH_BARRIER] lastFinalTs=1793988786277 barrierClear. CAMPAIGN_FINISHED proceeding.
+[2026-11-06T18:13:06.476Z] [SW_CONSOLE] [TAB_BARRIER] phase=CAMPAIGN_FINISHED ownedBefore=0
+[2026-11-06T18:13:06.477Z] [SW_CONSOLE] [TAB_BARRIER] phase=CAMPAIGN_FINISHED ownedAfter=0 result=PASS
+[2026-11-06T18:13:06.520Z]   ✅ [PASS] STALE_GLOBAL_DOES_NOT_BYPASS_FLAG_OFF {"status":"SKIPPED","reason":"NON_INQUIRY_SUBSCRIBE_FORM"}
+[2026-11-06T18:13:06.523Z]   ✅ [PASS] STALE_GLOBAL_ZERO_SERVER_SUBMISSIONS {"submissionsCount":0}
+[2026-11-06T18:13:06.523Z] 
 --- SECTION 3: BEHAVIOR ON (REAL FUNCTIONAL SUBMISSION OF NO-MESSAGE FORMS) ---
-[2026-11-06T17:32:48.136Z] [SW_CONSOLE] [START_BG] received queue=4
-[2026-11-06T17:32:48.139Z] [SW_CONSOLE] [BG_LOG][tab=none] [START_BG] received queue=4
-[2026-11-06T17:32:48.153Z] [SW_CONSOLE] [NORMAL_CAMPAIGN_PREFLIGHT] publicTargets=0 testMode=false result=PASS
-[2026-11-06T17:32:48.154Z] [SW_CONSOLE] [BG_LOG][tab=none] [NORMAL_CAMPAIGN_PREFLIGHT] publicTargets=0 testMode=false result=PASS
-[2026-11-06T17:32:48.164Z] [SW_CONSOLE] [START_BG_READY] privacyReady=true
-[2026-11-06T17:32:48.164Z] [SW_CONSOLE] [BG_LOG][tab=none] [START_BG_READY] privacyReady=true
-[2026-11-06T17:32:48.171Z] [SW_CONSOLE] [TAB_BARRIER] phase=START_CAMPAIGN_BOOT ownedBefore=0
-[2026-11-06T17:32:48.171Z] [SW_CONSOLE] [TAB_BARRIER] phase=START_CAMPAIGN_BOOT ownedAfter=0 result=PASS
-[2026-11-06T17:32:48.188Z] [SW_CONSOLE] [BG_LOG][tab=none] [CAMPAIGN_START] buildId=V7.0.0-RC11-20261030-THREE-MODE-CONTRACTS-PASS campaignRunId=normal_run_1793986368103_52nflo totalTargets=4 mode=NORMAL delayMs=3000 fillDelayMs=100 submitDelayMs=1000
-[2026-11-06T17:32:48.444Z]   ✅ [PASS] FLAG_ON_CAMPAIGN_LAUNCHED {}
-[2026-11-06T17:32:48.464Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179263][attemptId=att_1793986368196_e2x27][url=http://127.0.0.1:8088/subscribe.html] ⚠️ [Engine] Suppressing duplicate setup (Signals re-sent).
-[2026-11-06T17:32:48.468Z] [SW_CONSOLE] [BG_LOG][tab=743179263] [CONTENT_EVENT][tabId=743179263][attemptId=att_1793986368196_e2x27][url=http://127.0.0.1:8088/subscribe.html] ⚠️ [Engine] Suppressing duplicate setup (Signals re-sent).
-[2026-11-06T17:32:48.507Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179263][attemptId=att_1793986368196_e2x27][url=http://127.0.0.1:8088/subscribe.html] 🚀 [Engine] Ultra-Mode process started
-[2026-11-06T17:32:48.508Z] [SW_CONSOLE] [BG_LOG][tab=743179263] [CONTENT_EVENT][tabId=743179263][attemptId=att_1793986368196_e2x27][url=http://127.0.0.1:8088/subscribe.html] 🚀 [Engine] Ultra-Mode process started
-[2026-11-06T17:32:49.452Z] [PROGRESS ON] remaining=3 inFlight=true successes=0
-[2026-11-06T17:32:49.955Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179263][attemptId=att_1793986368196_e2x27][url=http://127.0.0.1:8088/subscribe.html] [STAGE] stage=CONTACT_PAGE_FOUND
-[2026-11-06T17:32:49.955Z] [SW_CONSOLE] [BG_LOG][tab=743179263] [CONTENT_EVENT][tabId=743179263][attemptId=att_1793986368196_e2x27][url=http://127.0.0.1:8088/subscribe.html] [STAGE] stage=CONTACT_PAGE_FOUND
-[2026-11-06T17:32:49.980Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179263][attemptId=att_1793986368196_e2x27][url=http://127.0.0.1:8088/subscribe.html] [STAGE] stage=ELIGIBLE_FORM_FOUND
-[2026-11-06T17:32:49.980Z] [SW_CONSOLE] [BG_LOG][tab=743179263] [CONTENT_EVENT][tabId=743179263][attemptId=att_1793986368196_e2x27][url=http://127.0.0.1:8088/subscribe.html] [STAGE] stage=ELIGIBLE_FORM_FOUND
-[2026-11-06T17:32:50.463Z] [PROGRESS ON] remaining=3 inFlight=true successes=0
-[2026-11-06T17:32:51.474Z] [PROGRESS ON] remaining=3 inFlight=true successes=0
-[2026-11-06T17:32:52.488Z] [PROGRESS ON] remaining=3 inFlight=true successes=0
-[2026-11-06T17:32:53.019Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179263][attemptId=att_1793986368196_e2x27][url=http://127.0.0.1:8088/subscribe.html] [STAGE] stage=REQUIRED_FIELDS_RESOLVED
-[2026-11-06T17:32:53.019Z] [SW_CONSOLE] [BG_LOG][tab=743179263] [CONTENT_EVENT][tabId=743179263][attemptId=att_1793986368196_e2x27][url=http://127.0.0.1:8088/subscribe.html] [STAGE] stage=REQUIRED_FIELDS_RESOLVED
-[2026-11-06T17:32:53.019Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179263][attemptId=att_1793986368196_e2x27][url=http://127.0.0.1:8088/subscribe.html] [STAGE] stage=FIELD_STATE_STABLE
-[2026-11-06T17:32:53.019Z] [SW_CONSOLE] [BG_LOG][tab=743179263] [CONTENT_EVENT][tabId=743179263][attemptId=att_1793986368196_e2x27][url=http://127.0.0.1:8088/subscribe.html] [STAGE] stage=FIELD_STATE_STABLE
-[2026-11-06T17:32:53.051Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179263][attemptId=att_1793986368196_e2x27][url=http://127.0.0.1:8088/subscribe.html] ⏳ [Engine] Holding for visual confirmation (1000ms)...
-[2026-11-06T17:32:53.051Z] [SW_CONSOLE] [BG_LOG][tab=743179263] [CONTENT_EVENT][tabId=743179263][attemptId=att_1793986368196_e2x27][url=http://127.0.0.1:8088/subscribe.html] ⏳ [Engine] Holding for visual confirmation (1000ms)...
-[2026-11-06T17:32:53.499Z] [PROGRESS ON] remaining=3 inFlight=true successes=0
-[2026-11-06T17:32:54.268Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179263][attemptId=att_1793986368196_e2x27][url=http://127.0.0.1:8088/subscribe.html] [FINAL_FILL] controls=1 unresolvedBefore=0 checkboxResolved=0 radioResolved=0 selectResolved=0 unresolvedAfter=0
-[2026-11-06T17:32:54.269Z] [SW_CONSOLE] [BG_LOG][tab=743179263] [CONTENT_EVENT][tabId=743179263][attemptId=att_1793986368196_e2x27][url=http://127.0.0.1:8088/subscribe.html] [FINAL_FILL] controls=1 unresolvedBefore=0 checkboxResolved=0 radioResolved=0 selectResolved=0 unresolvedAfter=0
-[2026-11-06T17:32:54.269Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179263][attemptId=att_1793986368196_e2x27][url=http://127.0.0.1:8088/subscribe.html] [FINAL_AUDIT] PASS
-[2026-11-06T17:32:54.269Z] [SW_CONSOLE] [BG_LOG][tab=743179263] [CONTENT_EVENT][tabId=743179263][attemptId=att_1793986368196_e2x27][url=http://127.0.0.1:8088/subscribe.html] [FINAL_AUDIT] PASS
-[2026-11-06T17:32:54.284Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179263][attemptId=att_1793986368196_e2x27][url=http://127.0.0.1:8088/subscribe.html] [SUBMIT_LOCK] acquired=true submittedFromUrl=http://127.0.0.1:8088/subscribe.html — post FINAL_AUDIT_PASS
-[2026-11-06T17:32:54.285Z] [SW_CONSOLE] [BG_LOG][tab=743179263] [CONTENT_EVENT][tabId=743179263][attemptId=att_1793986368196_e2x27][url=http://127.0.0.1:8088/subscribe.html] [SUBMIT_LOCK] acquired=true submittedFromUrl=http://127.0.0.1:8088/subscribe.html — post FINAL_AUDIT_PASS
-[2026-11-06T17:32:54.303Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179263][attemptId=att_1793986368196_e2x27][url=http://127.0.0.1:8088/subscribe.html] [STAGE] stage=SUBMIT_ATTEMPT_STARTED
-[2026-11-06T17:32:54.303Z] [SW_CONSOLE] [BG_LOG][tab=743179263] [CONTENT_EVENT][tabId=743179263][attemptId=att_1793986368196_e2x27][url=http://127.0.0.1:8088/subscribe.html] [STAGE] stage=SUBMIT_ATTEMPT_STARTED
-[2026-11-06T17:32:54.313Z] [SW_CONSOLE] [BG_LOG][tab=743179263] [STAGE_PROGRESSION] SUBMIT_ATTEMPT_STARTED -> SUBMIT_PENDING committed attemptId=att_1793986368196_e2x27
-[2026-11-06T17:32:54.356Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179263][attemptId=att_1793986368196_e2x27][url=http://127.0.0.1:8088/subscribe.html] [STAGE] stage=SUBMIT_TRIGGERED
-[2026-11-06T17:32:54.357Z] [SW_CONSOLE] [BG_LOG][tab=743179263] [CONTENT_EVENT][tabId=743179263][attemptId=att_1793986368196_e2x27][url=http://127.0.0.1:8088/subscribe.html] [STAGE] stage=SUBMIT_TRIGGERED
-[2026-11-06T17:32:54.513Z] [PROGRESS ON] remaining=3 inFlight=true successes=0
-[2026-11-06T17:32:54.909Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179263][attemptId=att_1793986368196_e2x27][url=http://127.0.0.1:8088/subscribe.html] [FINAL] status=CONFIRMED_SUCCESS
-[2026-11-06T17:32:54.910Z] [SW_CONSOLE] [BG_LOG][tab=743179263] [CONTENT_EVENT][tabId=743179263][attemptId=att_1793986368196_e2x27][url=http://127.0.0.1:8088/subscribe.html] [FINAL] status=CONFIRMED_SUCCESS
-[2026-11-06T17:32:54.910Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179263][attemptId=att_1793986368196_e2x27][url=http://127.0.0.1:8088/subscribe.html] [STAGE] stage=CONFIRMED_SUCCESS
-[2026-11-06T17:32:54.910Z] [SW_CONSOLE] [BG_LOG][tab=743179263] [CONTENT_EVENT][tabId=743179263][attemptId=att_1793986368196_e2x27][url=http://127.0.0.1:8088/subscribe.html] [STAGE] stage=CONFIRMED_SUCCESS
-[2026-11-06T17:32:55.522Z] [PROGRESS ON] remaining=3 inFlight=true successes=0
-[2026-11-06T17:32:55.894Z] [SW_CONSOLE] [BG_LOG][tab=743179263] [FINAL_CANONICAL] status=CONFIRMED_SUCCESS reason=SUCCESS_CONFIRMED attemptId=att_1793986368196_e2x27
-[2026-11-06T17:32:55.894Z] [SW_CONSOLE] [BG_LOG][tab=743179263] [TARGET][127.0.0.1] FINAL status=CONFIRMED_SUCCESS reason=SUCCESS_CONFIRMED
-[2026-11-06T17:32:55.899Z] [SW_CONSOLE] [BG_LOG][tab=743179263] [HISTORY_FINAL] sourceUrl=http://127.0.0.1:8088/subscribe-no-message.html contactPageUrl=http://127.0.0.1:8088/subscribe.html formPageUrl=http://127.0.0.1:8088/subscribe.html resultUrl=http://127.0.0.1:8088/subscribe.html
-[2026-11-06T17:32:55.923Z] [SW_CONSOLE] [BG_LOG][tab=743179263] ✨ [Engine] Submission confirmed. Maintaining tab for completion (3500ms)...
-[2026-11-06T17:32:56.528Z] [PROGRESS ON] remaining=3 inFlight=true successes=1
-[2026-11-06T17:32:57.535Z] [PROGRESS ON] remaining=3 inFlight=true successes=1
-[2026-11-06T17:32:58.542Z] [PROGRESS ON] remaining=3 inFlight=true successes=1
-[2026-11-06T17:32:59.559Z] [PROGRESS ON] remaining=3 inFlight=true successes=1
-[2026-11-06T17:32:59.627Z] [SW_CONSOLE] [POST_FINAL_TAB_INVARIANT] target=http://127.0.0.1:8088/subscribe-no-message.html remainingOwnedTabs=0 retainedTabs=0 result=PASS
-[2026-11-06T17:33:00.565Z] [PROGRESS ON] remaining=3 inFlight=false successes=1
-[2026-11-06T17:33:01.581Z] [PROGRESS ON] remaining=3 inFlight=false successes=1
-[2026-11-06T17:33:02.595Z] [PROGRESS ON] remaining=3 inFlight=false successes=1
-[2026-11-06T17:33:02.923Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179267][attemptId=att_1793986382644_eknrg][url=http://127.0.0.1:8088/newsletter-name-email.html] ⚠️ [Engine] Suppressing duplicate setup (Signals re-sent).
-[2026-11-06T17:33:02.923Z] [SW_CONSOLE] [BG_LOG][tab=743179267] [CONTENT_EVENT][tabId=743179267][attemptId=att_1793986382644_eknrg][url=http://127.0.0.1:8088/newsletter-name-email.html] ⚠️ [Engine] Suppressing duplicate setup (Signals re-sent).
-[2026-11-06T17:33:02.960Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179267][attemptId=att_1793986382644_eknrg][url=http://127.0.0.1:8088/newsletter-name-email.html] 🚀 [Engine] Ultra-Mode process started
-[2026-11-06T17:33:02.960Z] [SW_CONSOLE] [BG_LOG][tab=743179267] [CONTENT_EVENT][tabId=743179267][attemptId=att_1793986382644_eknrg][url=http://127.0.0.1:8088/newsletter-name-email.html] 🚀 [Engine] Ultra-Mode process started
-[2026-11-06T17:33:03.606Z] [PROGRESS ON] remaining=2 inFlight=true successes=1
-[2026-11-06T17:33:04.381Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179267][attemptId=att_1793986382644_eknrg][url=http://127.0.0.1:8088/newsletter-name-email.html] [STAGE] stage=CONTACT_PAGE_FOUND
-[2026-11-06T17:33:04.381Z] [SW_CONSOLE] [BG_LOG][tab=743179267] [CONTENT_EVENT][tabId=743179267][attemptId=att_1793986382644_eknrg][url=http://127.0.0.1:8088/newsletter-name-email.html] [STAGE] stage=CONTACT_PAGE_FOUND
-[2026-11-06T17:33:04.418Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179267][attemptId=att_1793986382644_eknrg][url=http://127.0.0.1:8088/newsletter-name-email.html] [STAGE] stage=ELIGIBLE_FORM_FOUND
-[2026-11-06T17:33:04.419Z] [SW_CONSOLE] [BG_LOG][tab=743179267] [CONTENT_EVENT][tabId=743179267][attemptId=att_1793986382644_eknrg][url=http://127.0.0.1:8088/newsletter-name-email.html] [STAGE] stage=ELIGIBLE_FORM_FOUND
-[2026-11-06T17:33:04.620Z] [PROGRESS ON] remaining=2 inFlight=true successes=1
-[2026-11-06T17:33:05.635Z] [PROGRESS ON] remaining=2 inFlight=true successes=1
-[2026-11-06T17:33:06.650Z] [PROGRESS ON] remaining=2 inFlight=true successes=1
-[2026-11-06T17:33:07.653Z] [PROGRESS ON] remaining=2 inFlight=true successes=1
-[2026-11-06T17:33:08.666Z] [PROGRESS ON] remaining=2 inFlight=true successes=1
-[2026-11-06T17:33:09.679Z] [PROGRESS ON] remaining=2 inFlight=true successes=1
-[2026-11-06T17:33:10.612Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179267][attemptId=att_1793986382644_eknrg][url=http://127.0.0.1:8088/newsletter-name-email.html] [STAGE] stage=REQUIRED_FIELDS_RESOLVED
-[2026-11-06T17:33:10.613Z] [SW_CONSOLE] [BG_LOG][tab=743179267] [CONTENT_EVENT][tabId=743179267][attemptId=att_1793986382644_eknrg][url=http://127.0.0.1:8088/newsletter-name-email.html] [STAGE] stage=REQUIRED_FIELDS_RESOLVED
-[2026-11-06T17:33:10.613Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179267][attemptId=att_1793986382644_eknrg][url=http://127.0.0.1:8088/newsletter-name-email.html] [STAGE] stage=FIELD_STATE_STABLE
-[2026-11-06T17:33:10.613Z] [SW_CONSOLE] [BG_LOG][tab=743179267] [CONTENT_EVENT][tabId=743179267][attemptId=att_1793986382644_eknrg][url=http://127.0.0.1:8088/newsletter-name-email.html] [STAGE] stage=FIELD_STATE_STABLE
-[2026-11-06T17:33:10.638Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179267][attemptId=att_1793986382644_eknrg][url=http://127.0.0.1:8088/newsletter-name-email.html] ⏳ [Engine] Holding for visual confirmation (1000ms)...
-[2026-11-06T17:33:10.638Z] [SW_CONSOLE] [BG_LOG][tab=743179267] [CONTENT_EVENT][tabId=743179267][attemptId=att_1793986382644_eknrg][url=http://127.0.0.1:8088/newsletter-name-email.html] ⏳ [Engine] Holding for visual confirmation (1000ms)...
-[2026-11-06T17:33:10.682Z] [PROGRESS ON] remaining=2 inFlight=true successes=1
-[2026-11-06T17:33:11.698Z] [PROGRESS ON] remaining=2 inFlight=true successes=1
-[2026-11-06T17:33:11.837Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179267][attemptId=att_1793986382644_eknrg][url=http://127.0.0.1:8088/newsletter-name-email.html] [FINAL_FILL] controls=2 unresolvedBefore=0 checkboxResolved=0 radioResolved=0 selectResolved=0 unresolvedAfter=0
-[2026-11-06T17:33:11.837Z] [SW_CONSOLE] [BG_LOG][tab=743179267] [CONTENT_EVENT][tabId=743179267][attemptId=att_1793986382644_eknrg][url=http://127.0.0.1:8088/newsletter-name-email.html] [FINAL_FILL] controls=2 unresolvedBefore=0 checkboxResolved=0 radioResolved=0 selectResolved=0 unresolvedAfter=0
-[2026-11-06T17:33:11.842Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179267][attemptId=att_1793986382644_eknrg][url=http://127.0.0.1:8088/newsletter-name-email.html] [FINAL_AUDIT] PASS
-[2026-11-06T17:33:11.842Z] [SW_CONSOLE] [BG_LOG][tab=743179267] [CONTENT_EVENT][tabId=743179267][attemptId=att_1793986382644_eknrg][url=http://127.0.0.1:8088/newsletter-name-email.html] [FINAL_AUDIT] PASS
-[2026-11-06T17:33:11.854Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179267][attemptId=att_1793986382644_eknrg][url=http://127.0.0.1:8088/newsletter-name-email.html] [SUBMIT_LOCK] acquired=true submittedFromUrl=http://127.0.0.1:8088/newsletter-name-email.html — post FINAL_AUDIT_PASS
-[2026-11-06T17:33:11.854Z] [SW_CONSOLE] [BG_LOG][tab=743179267] [CONTENT_EVENT][tabId=743179267][attemptId=att_1793986382644_eknrg][url=http://127.0.0.1:8088/newsletter-name-email.html] [SUBMIT_LOCK] acquired=true submittedFromUrl=http://127.0.0.1:8088/newsletter-name-email.html — post FINAL_AUDIT_PASS
-[2026-11-06T17:33:11.869Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179267][attemptId=att_1793986382644_eknrg][url=http://127.0.0.1:8088/newsletter-name-email.html] [STAGE] stage=SUBMIT_ATTEMPT_STARTED
-[2026-11-06T17:33:11.870Z] [SW_CONSOLE] [BG_LOG][tab=743179267] [CONTENT_EVENT][tabId=743179267][attemptId=att_1793986382644_eknrg][url=http://127.0.0.1:8088/newsletter-name-email.html] [STAGE] stage=SUBMIT_ATTEMPT_STARTED
-[2026-11-06T17:33:11.873Z] [SW_CONSOLE] [BG_LOG][tab=743179267] [STAGE_PROGRESSION] SUBMIT_ATTEMPT_STARTED -> SUBMIT_PENDING committed attemptId=att_1793986382644_eknrg
-[2026-11-06T17:33:11.904Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179267][attemptId=att_1793986382644_eknrg][url=http://127.0.0.1:8088/newsletter-name-email.html] [STAGE] stage=SUBMIT_TRIGGERED
-[2026-11-06T17:33:11.904Z] [SW_CONSOLE] [BG_LOG][tab=743179267] [CONTENT_EVENT][tabId=743179267][attemptId=att_1793986382644_eknrg][url=http://127.0.0.1:8088/newsletter-name-email.html] [STAGE] stage=SUBMIT_TRIGGERED
-[2026-11-06T17:33:12.442Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179267][attemptId=att_1793986382644_eknrg][url=http://127.0.0.1:8088/newsletter-name-email.html] [FINAL] status=CONFIRMED_SUCCESS
-[2026-11-06T17:33:12.443Z] [SW_CONSOLE] [BG_LOG][tab=743179267] [CONTENT_EVENT][tabId=743179267][attemptId=att_1793986382644_eknrg][url=http://127.0.0.1:8088/newsletter-name-email.html] [FINAL] status=CONFIRMED_SUCCESS
-[2026-11-06T17:33:12.443Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179267][attemptId=att_1793986382644_eknrg][url=http://127.0.0.1:8088/newsletter-name-email.html] [STAGE] stage=CONFIRMED_SUCCESS
-[2026-11-06T17:33:12.443Z] [SW_CONSOLE] [BG_LOG][tab=743179267] [CONTENT_EVENT][tabId=743179267][attemptId=att_1793986382644_eknrg][url=http://127.0.0.1:8088/newsletter-name-email.html] [STAGE] stage=CONFIRMED_SUCCESS
-[2026-11-06T17:33:12.717Z] [PROGRESS ON] remaining=2 inFlight=true successes=1
-[2026-11-06T17:33:13.428Z] [SW_CONSOLE] [BG_LOG][tab=743179267] [FINAL_CANONICAL] status=CONFIRMED_SUCCESS reason=SUCCESS_CONFIRMED attemptId=att_1793986382644_eknrg
-[2026-11-06T17:33:13.429Z] [SW_CONSOLE] [BG_LOG][tab=743179267] [TARGET][127.0.0.1] FINAL status=CONFIRMED_SUCCESS reason=SUCCESS_CONFIRMED
-[2026-11-06T17:33:13.435Z] [SW_CONSOLE] [BG_LOG][tab=743179267] [HISTORY_FINAL] sourceUrl=http://127.0.0.1:8088/newsletter-name-email.html contactPageUrl=http://127.0.0.1:8088/newsletter-name-email.html formPageUrl=http://127.0.0.1:8088/newsletter-name-email.html resultUrl=http://127.0.0.1:8088/newsletter-name-email.html
-[2026-11-06T17:33:13.447Z] [SW_CONSOLE] [BG_LOG][tab=743179267] ✨ [Engine] Submission confirmed. Maintaining tab for completion (3500ms)...
-[2026-11-06T17:33:13.731Z] [PROGRESS ON] remaining=2 inFlight=true successes=2
-[2026-11-06T17:33:14.739Z] [PROGRESS ON] remaining=2 inFlight=true successes=2
-[2026-11-06T17:33:15.742Z] [PROGRESS ON] remaining=2 inFlight=true successes=2
-[2026-11-06T17:33:16.759Z] [PROGRESS ON] remaining=2 inFlight=true successes=2
-[2026-11-06T17:33:17.137Z] [SW_CONSOLE] [POST_FINAL_TAB_INVARIANT] target=http://127.0.0.1:8088/newsletter-name-email.html remainingOwnedTabs=0 retainedTabs=0 result=PASS
-[2026-11-06T17:33:17.761Z] [PROGRESS ON] remaining=2 inFlight=false successes=2
-[2026-11-06T17:33:18.774Z] [PROGRESS ON] remaining=2 inFlight=false successes=2
-[2026-11-06T17:33:19.775Z] [PROGRESS ON] remaining=2 inFlight=false successes=2
-[2026-11-06T17:33:20.387Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179271][attemptId=att_1793986400153_4zhwl][url=http://127.0.0.1:8088/opt-in-registration.html] ⚠️ [Engine] Suppressing duplicate setup (Signals re-sent).
-[2026-11-06T17:33:20.392Z] [SW_CONSOLE] [BG_LOG][tab=743179271] [CONTENT_EVENT][tabId=743179271][attemptId=att_1793986400153_4zhwl][url=http://127.0.0.1:8088/opt-in-registration.html] ⚠️ [Engine] Suppressing duplicate setup (Signals re-sent).
-[2026-11-06T17:33:20.424Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179271][attemptId=att_1793986400153_4zhwl][url=http://127.0.0.1:8088/opt-in-registration.html] 🚀 [Engine] Ultra-Mode process started
-[2026-11-06T17:33:20.424Z] [SW_CONSOLE] [BG_LOG][tab=743179271] [CONTENT_EVENT][tabId=743179271][attemptId=att_1793986400153_4zhwl][url=http://127.0.0.1:8088/opt-in-registration.html] 🚀 [Engine] Ultra-Mode process started
-[2026-11-06T17:33:20.790Z] [PROGRESS ON] remaining=1 inFlight=true successes=2
-[2026-11-06T17:33:21.804Z] [PROGRESS ON] remaining=1 inFlight=true successes=2
-[2026-11-06T17:33:21.884Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179271][attemptId=att_1793986400153_4zhwl][url=http://127.0.0.1:8088/opt-in-registration.html] [STAGE] stage=CONTACT_PAGE_FOUND
-[2026-11-06T17:33:21.885Z] [SW_CONSOLE] [BG_LOG][tab=743179271] [CONTENT_EVENT][tabId=743179271][attemptId=att_1793986400153_4zhwl][url=http://127.0.0.1:8088/opt-in-registration.html] [STAGE] stage=CONTACT_PAGE_FOUND
-[2026-11-06T17:33:21.923Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179271][attemptId=att_1793986400153_4zhwl][url=http://127.0.0.1:8088/opt-in-registration.html] [STAGE] stage=ELIGIBLE_FORM_FOUND
-[2026-11-06T17:33:21.923Z] [SW_CONSOLE] [BG_LOG][tab=743179271] [CONTENT_EVENT][tabId=743179271][attemptId=att_1793986400153_4zhwl][url=http://127.0.0.1:8088/opt-in-registration.html] [STAGE] stage=ELIGIBLE_FORM_FOUND
-[2026-11-06T17:33:22.817Z] [PROGRESS ON] remaining=1 inFlight=true successes=2
-[2026-11-06T17:33:23.820Z] [PROGRESS ON] remaining=1 inFlight=true successes=2
-[2026-11-06T17:33:24.833Z] [PROGRESS ON] remaining=1 inFlight=true successes=2
-[2026-11-06T17:33:25.850Z] [PROGRESS ON] remaining=1 inFlight=true successes=2
-[2026-11-06T17:33:26.861Z] [PROGRESS ON] remaining=1 inFlight=true successes=2
-[2026-11-06T17:33:27.866Z] [PROGRESS ON] remaining=1 inFlight=true successes=2
-[2026-11-06T17:33:28.872Z] [PROGRESS ON] remaining=1 inFlight=true successes=2
-[2026-11-06T17:33:29.542Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179271][attemptId=att_1793986400153_4zhwl][url=http://127.0.0.1:8088/opt-in-registration.html] [STAGE] stage=REQUIRED_FIELDS_RESOLVED
-[2026-11-06T17:33:29.542Z] [SW_CONSOLE] [BG_LOG][tab=743179271] [CONTENT_EVENT][tabId=743179271][attemptId=att_1793986400153_4zhwl][url=http://127.0.0.1:8088/opt-in-registration.html] [STAGE] stage=REQUIRED_FIELDS_RESOLVED
-[2026-11-06T17:33:29.542Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179271][attemptId=att_1793986400153_4zhwl][url=http://127.0.0.1:8088/opt-in-registration.html] [STAGE] stage=FIELD_STATE_STABLE
-[2026-11-06T17:33:29.542Z] [SW_CONSOLE] [BG_LOG][tab=743179271] [CONTENT_EVENT][tabId=743179271][attemptId=att_1793986400153_4zhwl][url=http://127.0.0.1:8088/opt-in-registration.html] [STAGE] stage=FIELD_STATE_STABLE
-[2026-11-06T17:33:29.570Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179271][attemptId=att_1793986400153_4zhwl][url=http://127.0.0.1:8088/opt-in-registration.html] ⏳ [Engine] Holding for visual confirmation (1000ms)...
-[2026-11-06T17:33:29.570Z] [SW_CONSOLE] [BG_LOG][tab=743179271] [CONTENT_EVENT][tabId=743179271][attemptId=att_1793986400153_4zhwl][url=http://127.0.0.1:8088/opt-in-registration.html] ⏳ [Engine] Holding for visual confirmation (1000ms)...
-[2026-11-06T17:33:29.881Z] [PROGRESS ON] remaining=1 inFlight=true successes=2
-[2026-11-06T17:33:30.784Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179271][attemptId=att_1793986400153_4zhwl][url=http://127.0.0.1:8088/opt-in-registration.html] [FINAL_FILL] controls=3 unresolvedBefore=0 checkboxResolved=0 radioResolved=0 selectResolved=0 unresolvedAfter=0
-[2026-11-06T17:33:30.785Z] [SW_CONSOLE] [BG_LOG][tab=743179271] [CONTENT_EVENT][tabId=743179271][attemptId=att_1793986400153_4zhwl][url=http://127.0.0.1:8088/opt-in-registration.html] [FINAL_FILL] controls=3 unresolvedBefore=0 checkboxResolved=0 radioResolved=0 selectResolved=0 unresolvedAfter=0
-[2026-11-06T17:33:30.785Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179271][attemptId=att_1793986400153_4zhwl][url=http://127.0.0.1:8088/opt-in-registration.html] [FINAL_AUDIT] PASS
-[2026-11-06T17:33:30.785Z] [SW_CONSOLE] [BG_LOG][tab=743179271] [CONTENT_EVENT][tabId=743179271][attemptId=att_1793986400153_4zhwl][url=http://127.0.0.1:8088/opt-in-registration.html] [FINAL_AUDIT] PASS
-[2026-11-06T17:33:30.801Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179271][attemptId=att_1793986400153_4zhwl][url=http://127.0.0.1:8088/opt-in-registration.html] [SUBMIT_LOCK] acquired=true submittedFromUrl=http://127.0.0.1:8088/opt-in-registration.html — post FINAL_AUDIT_PASS
-[2026-11-06T17:33:30.802Z] [SW_CONSOLE] [BG_LOG][tab=743179271] [CONTENT_EVENT][tabId=743179271][attemptId=att_1793986400153_4zhwl][url=http://127.0.0.1:8088/opt-in-registration.html] [SUBMIT_LOCK] acquired=true submittedFromUrl=http://127.0.0.1:8088/opt-in-registration.html — post FINAL_AUDIT_PASS
-[2026-11-06T17:33:30.816Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179271][attemptId=att_1793986400153_4zhwl][url=http://127.0.0.1:8088/opt-in-registration.html] [STAGE] stage=SUBMIT_ATTEMPT_STARTED
-[2026-11-06T17:33:30.816Z] [SW_CONSOLE] [BG_LOG][tab=743179271] [CONTENT_EVENT][tabId=743179271][attemptId=att_1793986400153_4zhwl][url=http://127.0.0.1:8088/opt-in-registration.html] [STAGE] stage=SUBMIT_ATTEMPT_STARTED
-[2026-11-06T17:33:30.820Z] [SW_CONSOLE] [BG_LOG][tab=743179271] [STAGE_PROGRESSION] SUBMIT_ATTEMPT_STARTED -> SUBMIT_PENDING committed attemptId=att_1793986400153_4zhwl
-[2026-11-06T17:33:30.904Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179271][attemptId=att_1793986400153_4zhwl][url=http://127.0.0.1:8088/opt-in-registration.html] [STAGE] stage=SUBMIT_TRIGGERED
-[2026-11-06T17:33:30.905Z] [SW_CONSOLE] [BG_LOG][tab=743179271] [CONTENT_EVENT][tabId=743179271][attemptId=att_1793986400153_4zhwl][url=http://127.0.0.1:8088/opt-in-registration.html] [STAGE] stage=SUBMIT_TRIGGERED
-[2026-11-06T17:33:30.908Z] [PROGRESS ON] remaining=1 inFlight=true successes=2
-[2026-11-06T17:33:31.403Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179271][attemptId=att_1793986400153_4zhwl][url=http://127.0.0.1:8088/opt-in-registration.html] [FINAL] status=CONFIRMED_SUCCESS
-[2026-11-06T17:33:31.404Z] [SW_CONSOLE] [BG_LOG][tab=743179271] [CONTENT_EVENT][tabId=743179271][attemptId=att_1793986400153_4zhwl][url=http://127.0.0.1:8088/opt-in-registration.html] [FINAL] status=CONFIRMED_SUCCESS
-[2026-11-06T17:33:31.404Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179271][attemptId=att_1793986400153_4zhwl][url=http://127.0.0.1:8088/opt-in-registration.html] [STAGE] stage=CONFIRMED_SUCCESS
-[2026-11-06T17:33:31.404Z] [SW_CONSOLE] [BG_LOG][tab=743179271] [CONTENT_EVENT][tabId=743179271][attemptId=att_1793986400153_4zhwl][url=http://127.0.0.1:8088/opt-in-registration.html] [STAGE] stage=CONFIRMED_SUCCESS
-[2026-11-06T17:33:31.910Z] [PROGRESS ON] remaining=1 inFlight=true successes=2
-[2026-11-06T17:33:32.388Z] [SW_CONSOLE] [BG_LOG][tab=743179271] [FINAL_CANONICAL] status=CONFIRMED_SUCCESS reason=SUCCESS_CONFIRMED attemptId=att_1793986400153_4zhwl
-[2026-11-06T17:33:32.388Z] [SW_CONSOLE] [BG_LOG][tab=743179271] [TARGET][127.0.0.1] FINAL status=CONFIRMED_SUCCESS reason=SUCCESS_CONFIRMED
-[2026-11-06T17:33:32.394Z] [SW_CONSOLE] [BG_LOG][tab=743179271] [HISTORY_FINAL] sourceUrl=http://127.0.0.1:8088/opt-in-registration.html contactPageUrl=http://127.0.0.1:8088/opt-in-registration.html formPageUrl=http://127.0.0.1:8088/opt-in-registration.html resultUrl=http://127.0.0.1:8088/opt-in-registration.html
-[2026-11-06T17:33:32.404Z] [SW_CONSOLE] [BG_LOG][tab=743179271] ✨ [Engine] Submission confirmed. Maintaining tab for completion (3500ms)...
-[2026-11-06T17:33:32.923Z] [PROGRESS ON] remaining=1 inFlight=true successes=3
-[2026-11-06T17:33:33.934Z] [PROGRESS ON] remaining=1 inFlight=true successes=3
-[2026-11-06T17:33:34.948Z] [PROGRESS ON] remaining=1 inFlight=true successes=3
-[2026-11-06T17:33:35.965Z] [PROGRESS ON] remaining=1 inFlight=true successes=3
-[2026-11-06T17:33:36.104Z] [SW_CONSOLE] [POST_FINAL_TAB_INVARIANT] target=http://127.0.0.1:8088/opt-in-registration.html remainingOwnedTabs=0 retainedTabs=0 result=PASS
-[2026-11-06T17:33:36.971Z] [PROGRESS ON] remaining=1 inFlight=false successes=3
-[2026-11-06T17:33:38.102Z] [PROGRESS ON] remaining=1 inFlight=false successes=3
-[2026-11-06T17:33:39.114Z] [PROGRESS ON] remaining=0 inFlight=true successes=3
-[2026-11-06T17:33:39.611Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179275][attemptId=att_1793986419110_0da0n][url=http://127.0.0.1:8088/dynamic-spa-newsletter.html] 🚀 [Engine] Ultra-Mode process started
-[2026-11-06T17:33:39.611Z] [SW_CONSOLE] [BG_LOG][tab=743179275] [CONTENT_EVENT][tabId=743179275][attemptId=att_1793986419110_0da0n][url=http://127.0.0.1:8088/dynamic-spa-newsletter.html] 🚀 [Engine] Ultra-Mode process started
-[2026-11-06T17:33:40.120Z] [PROGRESS ON] remaining=0 inFlight=true successes=3
-[2026-11-06T17:33:41.057Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179275][attemptId=att_1793986419110_0da0n][url=http://127.0.0.1:8088/dynamic-spa-newsletter.html] [STAGE] stage=CONTACT_PAGE_FOUND
-[2026-11-06T17:33:41.058Z] [SW_CONSOLE] [BG_LOG][tab=743179275] [CONTENT_EVENT][tabId=743179275][attemptId=att_1793986419110_0da0n][url=http://127.0.0.1:8088/dynamic-spa-newsletter.html] [STAGE] stage=CONTACT_PAGE_FOUND
-[2026-11-06T17:33:41.077Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179275][attemptId=att_1793986419110_0da0n][url=http://127.0.0.1:8088/dynamic-spa-newsletter.html] [STAGE] stage=ELIGIBLE_FORM_FOUND
-[2026-11-06T17:33:41.077Z] [SW_CONSOLE] [BG_LOG][tab=743179275] [CONTENT_EVENT][tabId=743179275][attemptId=att_1793986419110_0da0n][url=http://127.0.0.1:8088/dynamic-spa-newsletter.html] [STAGE] stage=ELIGIBLE_FORM_FOUND
-[2026-11-06T17:33:41.121Z] [PROGRESS ON] remaining=0 inFlight=true successes=3
-[2026-11-06T17:33:42.135Z] [PROGRESS ON] remaining=0 inFlight=true successes=3
-[2026-11-06T17:33:43.140Z] [PROGRESS ON] remaining=0 inFlight=true successes=3
-[2026-11-06T17:33:44.150Z] [PROGRESS ON] remaining=0 inFlight=true successes=3
-[2026-11-06T17:33:45.000Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179275][attemptId=att_1793986419110_0da0n][url=http://127.0.0.1:8088/dynamic-spa-newsletter.html] [STAGE] stage=REQUIRED_FIELDS_RESOLVED
-[2026-11-06T17:33:45.000Z] [SW_CONSOLE] [BG_LOG][tab=743179275] [CONTENT_EVENT][tabId=743179275][attemptId=att_1793986419110_0da0n][url=http://127.0.0.1:8088/dynamic-spa-newsletter.html] [STAGE] stage=REQUIRED_FIELDS_RESOLVED
-[2026-11-06T17:33:45.006Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179275][attemptId=att_1793986419110_0da0n][url=http://127.0.0.1:8088/dynamic-spa-newsletter.html] [STAGE] stage=FIELD_STATE_STABLE
-[2026-11-06T17:33:45.006Z] [SW_CONSOLE] [BG_LOG][tab=743179275] [CONTENT_EVENT][tabId=743179275][attemptId=att_1793986419110_0da0n][url=http://127.0.0.1:8088/dynamic-spa-newsletter.html] [STAGE] stage=FIELD_STATE_STABLE
-[2026-11-06T17:33:45.114Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179275][attemptId=att_1793986419110_0da0n][url=http://127.0.0.1:8088/dynamic-spa-newsletter.html] ⏳ [Engine] Holding for visual confirmation (1000ms)...
-[2026-11-06T17:33:45.114Z] [SW_CONSOLE] [BG_LOG][tab=743179275] [CONTENT_EVENT][tabId=743179275][attemptId=att_1793986419110_0da0n][url=http://127.0.0.1:8088/dynamic-spa-newsletter.html] ⏳ [Engine] Holding for visual confirmation (1000ms)...
-[2026-11-06T17:33:45.161Z] [PROGRESS ON] remaining=0 inFlight=true successes=3
-[2026-11-06T17:33:46.175Z] [PROGRESS ON] remaining=0 inFlight=true successes=3
-[2026-11-06T17:33:46.203Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179275][attemptId=att_1793986419110_0da0n][url=http://127.0.0.1:8088/dynamic-spa-newsletter.html] [FINAL_FILL] controls=1 unresolvedBefore=0 checkboxResolved=0 radioResolved=0 selectResolved=0 unresolvedAfter=0
-[2026-11-06T17:33:46.203Z] [SW_CONSOLE] [BG_LOG][tab=743179275] [CONTENT_EVENT][tabId=743179275][attemptId=att_1793986419110_0da0n][url=http://127.0.0.1:8088/dynamic-spa-newsletter.html] [FINAL_FILL] controls=1 unresolvedBefore=0 checkboxResolved=0 radioResolved=0 selectResolved=0 unresolvedAfter=0
-[2026-11-06T17:33:46.209Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179275][attemptId=att_1793986419110_0da0n][url=http://127.0.0.1:8088/dynamic-spa-newsletter.html] [FINAL_AUDIT] PASS
-[2026-11-06T17:33:46.210Z] [SW_CONSOLE] [BG_LOG][tab=743179275] [CONTENT_EVENT][tabId=743179275][attemptId=att_1793986419110_0da0n][url=http://127.0.0.1:8088/dynamic-spa-newsletter.html] [FINAL_AUDIT] PASS
-[2026-11-06T17:33:46.218Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179275][attemptId=att_1793986419110_0da0n][url=http://127.0.0.1:8088/dynamic-spa-newsletter.html] [SUBMIT_LOCK] acquired=true submittedFromUrl=http://127.0.0.1:8088/dynamic-spa-newsletter.html — post FINAL_AUDIT_PASS
-[2026-11-06T17:33:46.218Z] [SW_CONSOLE] [BG_LOG][tab=743179275] [CONTENT_EVENT][tabId=743179275][attemptId=att_1793986419110_0da0n][url=http://127.0.0.1:8088/dynamic-spa-newsletter.html] [SUBMIT_LOCK] acquired=true submittedFromUrl=http://127.0.0.1:8088/dynamic-spa-newsletter.html — post FINAL_AUDIT_PASS
-[2026-11-06T17:33:46.231Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179275][attemptId=att_1793986419110_0da0n][url=http://127.0.0.1:8088/dynamic-spa-newsletter.html] [STAGE] stage=SUBMIT_ATTEMPT_STARTED
-[2026-11-06T17:33:46.232Z] [SW_CONSOLE] [BG_LOG][tab=743179275] [CONTENT_EVENT][tabId=743179275][attemptId=att_1793986419110_0da0n][url=http://127.0.0.1:8088/dynamic-spa-newsletter.html] [STAGE] stage=SUBMIT_ATTEMPT_STARTED
-[2026-11-06T17:33:46.236Z] [SW_CONSOLE] [BG_LOG][tab=743179275] [STAGE_PROGRESSION] SUBMIT_ATTEMPT_STARTED -> SUBMIT_PENDING committed attemptId=att_1793986419110_0da0n
-[2026-11-06T17:33:46.261Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179275][attemptId=att_1793986419110_0da0n][url=http://127.0.0.1:8088/dynamic-spa-newsletter.html] [STAGE] stage=SUBMIT_TRIGGERED
-[2026-11-06T17:33:46.262Z] [SW_CONSOLE] [BG_LOG][tab=743179275] [CONTENT_EVENT][tabId=743179275][attemptId=att_1793986419110_0da0n][url=http://127.0.0.1:8088/dynamic-spa-newsletter.html] [STAGE] stage=SUBMIT_TRIGGERED
-[2026-11-06T17:33:46.813Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179275][attemptId=att_1793986419110_0da0n][url=http://127.0.0.1:8088/dynamic-spa-newsletter.html] [FINAL] status=CONFIRMED_SUCCESS
-[2026-11-06T17:33:46.813Z] [SW_CONSOLE] [BG_LOG][tab=743179275] [CONTENT_EVENT][tabId=743179275][attemptId=att_1793986419110_0da0n][url=http://127.0.0.1:8088/dynamic-spa-newsletter.html] [FINAL] status=CONFIRMED_SUCCESS
-[2026-11-06T17:33:46.813Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179275][attemptId=att_1793986419110_0da0n][url=http://127.0.0.1:8088/dynamic-spa-newsletter.html] [STAGE] stage=CONFIRMED_SUCCESS
-[2026-11-06T17:33:46.813Z] [SW_CONSOLE] [BG_LOG][tab=743179275] [CONTENT_EVENT][tabId=743179275][attemptId=att_1793986419110_0da0n][url=http://127.0.0.1:8088/dynamic-spa-newsletter.html] [STAGE] stage=CONFIRMED_SUCCESS
-[2026-11-06T17:33:47.183Z] [PROGRESS ON] remaining=0 inFlight=true successes=3
-[2026-11-06T17:33:47.802Z] [SW_CONSOLE] [BG_LOG][tab=743179275] [FINAL_CANONICAL] status=CONFIRMED_SUCCESS reason=SUCCESS_CONFIRMED attemptId=att_1793986419110_0da0n
-[2026-11-06T17:33:47.803Z] [SW_CONSOLE] [BG_LOG][tab=743179275] [TARGET][127.0.0.1] FINAL status=CONFIRMED_SUCCESS reason=SUCCESS_CONFIRMED
-[2026-11-06T17:33:47.808Z] [SW_CONSOLE] [BG_LOG][tab=743179275] [HISTORY_FINAL] sourceUrl=http://127.0.0.1:8088/dynamic-spa-newsletter.html contactPageUrl=http://127.0.0.1:8088/dynamic-spa-newsletter.html formPageUrl=http://127.0.0.1:8088/dynamic-spa-newsletter.html resultUrl=http://127.0.0.1:8088/dynamic-spa-newsletter.html
-[2026-11-06T17:33:47.822Z] [SW_CONSOLE] [BG_LOG][tab=743179275] ✨ [Engine] Submission confirmed. Maintaining tab for completion (3500ms)...
-[2026-11-06T17:33:48.191Z] [PROGRESS ON] remaining=0 inFlight=true successes=4
-[2026-11-06T17:33:49.202Z] [PROGRESS ON] remaining=0 inFlight=true successes=4
-[2026-11-06T17:33:50.212Z] [PROGRESS ON] remaining=0 inFlight=true successes=4
-[2026-11-06T17:33:51.218Z] [PROGRESS ON] remaining=0 inFlight=true successes=4
-[2026-11-06T17:33:51.498Z] [SW_CONSOLE] [POST_FINAL_TAB_INVARIANT] target=http://127.0.0.1:8088/dynamic-spa-newsletter.html remainingOwnedTabs=0 retainedTabs=0 result=PASS
-[2026-11-06T17:33:51.560Z] [SW_CONSOLE] [BG_LOG][tab=none] [FINISH_BARRIER] lastFinalTs=1793986431498 barrierClear. CAMPAIGN_FINISHED proceeding.
-[2026-11-06T17:33:51.562Z] [SW_CONSOLE] [TAB_BARRIER] phase=CAMPAIGN_FINISHED ownedBefore=0
-[2026-11-06T17:33:51.562Z] [SW_CONSOLE] [TAB_BARRIER] phase=CAMPAIGN_FINISHED ownedAfter=0 result=PASS
-[2026-11-06T17:33:52.226Z] [PROGRESS ON] remaining=0 inFlight=false successes=4
-[2026-11-06T17:33:52.227Z] Ledger attempts ON: [
+[2026-11-06T18:13:07.005Z] [SW_CONSOLE] [START_BG] received queue=4
+[2026-11-06T18:13:07.006Z] [SW_CONSOLE] [BG_LOG][tab=none] [START_BG] received queue=4
+[2026-11-06T18:13:07.024Z] [SW_CONSOLE] [NORMAL_CAMPAIGN_PREFLIGHT] publicTargets=0 testMode=false result=PASS
+[2026-11-06T18:13:07.024Z] [SW_CONSOLE] [BG_LOG][tab=none] [NORMAL_CAMPAIGN_PREFLIGHT] publicTargets=0 testMode=false result=PASS
+[2026-11-06T18:13:07.029Z] [SW_CONSOLE] [START_BG_READY] privacyReady=true
+[2026-11-06T18:13:07.030Z] [SW_CONSOLE] [BG_LOG][tab=none] [START_BG_READY] privacyReady=true
+[2026-11-06T18:13:07.047Z] [SW_CONSOLE] [TAB_BARRIER] phase=START_CAMPAIGN_BOOT ownedBefore=0
+[2026-11-06T18:13:07.048Z] [SW_CONSOLE] [TAB_BARRIER] phase=START_CAMPAIGN_BOOT ownedAfter=0 result=PASS
+[2026-11-06T18:13:07.071Z] [SW_CONSOLE] [BG_LOG][tab=none] [CAMPAIGN_START] buildId=V7.0.0-RC11-20261030-THREE-MODE-CONTRACTS-PASS campaignRunId=normal_run_1793988786962_lmnqql totalTargets=4 mode=NORMAL delayMs=3000 fillDelayMs=100 submitDelayMs=1000
+[2026-11-06T18:13:07.293Z]   ✅ [PASS] FLAG_ON_CAMPAIGN_LAUNCHED {}
+[2026-11-06T18:13:07.958Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=78604336][attemptId=att_1793988787091_g4hr1][url=http://127.0.0.1:8088/subscribe.html] ⚠️ [Engine] Suppressing duplicate setup (Signals re-sent).
+[2026-11-06T18:13:07.959Z] [SW_CONSOLE] [BG_LOG][tab=78604336] [CONTENT_EVENT][tabId=78604336][attemptId=att_1793988787091_g4hr1][url=http://127.0.0.1:8088/subscribe.html] ⚠️ [Engine] Suppressing duplicate setup (Signals re-sent).
+[2026-11-06T18:13:08.193Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=78604336][attemptId=att_1793988787091_g4hr1][url=http://127.0.0.1:8088/subscribe.html] 🚀 [Engine] Ultra-Mode process started
+[2026-11-06T18:13:08.196Z] [SW_CONSOLE] [BG_LOG][tab=78604336] [CONTENT_EVENT][tabId=78604336][attemptId=att_1793988787091_g4hr1][url=http://127.0.0.1:8088/subscribe.html] 🚀 [Engine] Ultra-Mode process started
+[2026-11-06T18:13:08.326Z] [PROGRESS ON] remaining=3 inFlight=true successes=0
+[2026-11-06T18:13:09.508Z] [PROGRESS ON] remaining=3 inFlight=true successes=0
+[2026-11-06T18:13:09.690Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=78604336][attemptId=att_1793988787091_g4hr1][url=http://127.0.0.1:8088/subscribe.html] [STAGE] stage=CONTACT_PAGE_FOUND
+[2026-11-06T18:13:09.742Z] [SW_CONSOLE] [BG_LOG][tab=78604336] [CONTENT_EVENT][tabId=78604336][attemptId=att_1793988787091_g4hr1][url=http://127.0.0.1:8088/subscribe.html] [STAGE] stage=CONTACT_PAGE_FOUND
+[2026-11-06T18:13:10.180Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=78604336][attemptId=att_1793988787091_g4hr1][url=http://127.0.0.1:8088/subscribe.html] [STAGE] stage=ELIGIBLE_FORM_FOUND
+[2026-11-06T18:13:10.261Z] [SW_CONSOLE] [BG_LOG][tab=78604336] [CONTENT_EVENT][tabId=78604336][attemptId=att_1793988787091_g4hr1][url=http://127.0.0.1:8088/subscribe.html] [STAGE] stage=ELIGIBLE_FORM_FOUND
+[2026-11-06T18:13:10.514Z] [PROGRESS ON] remaining=3 inFlight=true successes=0
+[2026-11-06T18:13:11.530Z] [PROGRESS ON] remaining=3 inFlight=true successes=0
+[2026-11-06T18:13:12.572Z] [PROGRESS ON] remaining=3 inFlight=true successes=0
+[2026-11-06T18:13:12.857Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=78604336][attemptId=att_1793988787091_g4hr1][url=http://127.0.0.1:8088/subscribe.html] [STAGE] stage=REQUIRED_FIELDS_RESOLVED
+[2026-11-06T18:13:12.858Z] [SW_CONSOLE] [BG_LOG][tab=78604336] [CONTENT_EVENT][tabId=78604336][attemptId=att_1793988787091_g4hr1][url=http://127.0.0.1:8088/subscribe.html] [STAGE] stage=REQUIRED_FIELDS_RESOLVED
+[2026-11-06T18:13:12.869Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=78604336][attemptId=att_1793988787091_g4hr1][url=http://127.0.0.1:8088/subscribe.html] [STAGE] stage=FIELD_STATE_STABLE
+[2026-11-06T18:13:12.870Z] [SW_CONSOLE] [BG_LOG][tab=78604336] [CONTENT_EVENT][tabId=78604336][attemptId=att_1793988787091_g4hr1][url=http://127.0.0.1:8088/subscribe.html] [STAGE] stage=FIELD_STATE_STABLE
+[2026-11-06T18:13:12.892Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=78604336][attemptId=att_1793988787091_g4hr1][url=http://127.0.0.1:8088/subscribe.html] ⏳ [Engine] Holding for visual confirmation (1000ms)...
+[2026-11-06T18:13:12.894Z] [SW_CONSOLE] [BG_LOG][tab=78604336] [CONTENT_EVENT][tabId=78604336][attemptId=att_1793988787091_g4hr1][url=http://127.0.0.1:8088/subscribe.html] ⏳ [Engine] Holding for visual confirmation (1000ms)...
+[2026-11-06T18:13:13.652Z] [PROGRESS ON] remaining=3 inFlight=true successes=0
+[2026-11-06T18:13:14.095Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=78604336][attemptId=att_1793988787091_g4hr1][url=http://127.0.0.1:8088/subscribe.html] [FINAL_FILL] controls=1 unresolvedBefore=0 checkboxResolved=0 radioResolved=0 selectResolved=0 unresolvedAfter=0
+[2026-11-06T18:13:14.098Z] [SW_CONSOLE] [BG_LOG][tab=78604336] [CONTENT_EVENT][tabId=78604336][attemptId=att_1793988787091_g4hr1][url=http://127.0.0.1:8088/subscribe.html] [FINAL_FILL] controls=1 unresolvedBefore=0 checkboxResolved=0 radioResolved=0 selectResolved=0 unresolvedAfter=0
+[2026-11-06T18:13:14.105Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=78604336][attemptId=att_1793988787091_g4hr1][url=http://127.0.0.1:8088/subscribe.html] [FINAL_AUDIT] PASS
+[2026-11-06T18:13:14.111Z] [SW_CONSOLE] [BG_LOG][tab=78604336] [CONTENT_EVENT][tabId=78604336][attemptId=att_1793988787091_g4hr1][url=http://127.0.0.1:8088/subscribe.html] [FINAL_AUDIT] PASS
+[2026-11-06T18:13:14.172Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=78604336][attemptId=att_1793988787091_g4hr1][url=http://127.0.0.1:8088/subscribe.html] [SUBMIT_LOCK] acquired=true submittedFromUrl=http://127.0.0.1:8088/subscribe.html — post FINAL_AUDIT_PASS
+[2026-11-06T18:13:14.173Z] [SW_CONSOLE] [BG_LOG][tab=78604336] [CONTENT_EVENT][tabId=78604336][attemptId=att_1793988787091_g4hr1][url=http://127.0.0.1:8088/subscribe.html] [SUBMIT_LOCK] acquired=true submittedFromUrl=http://127.0.0.1:8088/subscribe.html — post FINAL_AUDIT_PASS
+[2026-11-06T18:13:14.237Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=78604336][attemptId=att_1793988787091_g4hr1][url=http://127.0.0.1:8088/subscribe.html] [STAGE] stage=SUBMIT_ATTEMPT_STARTED
+[2026-11-06T18:13:14.238Z] [SW_CONSOLE] [BG_LOG][tab=78604336] [CONTENT_EVENT][tabId=78604336][attemptId=att_1793988787091_g4hr1][url=http://127.0.0.1:8088/subscribe.html] [STAGE] stage=SUBMIT_ATTEMPT_STARTED
+[2026-11-06T18:13:14.255Z] [SW_CONSOLE] [BG_LOG][tab=78604336] [STAGE_PROGRESSION] SUBMIT_ATTEMPT_STARTED -> SUBMIT_PENDING committed attemptId=att_1793988787091_g4hr1
+[2026-11-06T18:13:14.320Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=78604336][attemptId=att_1793988787091_g4hr1][url=http://127.0.0.1:8088/subscribe.html] [STAGE] stage=SUBMIT_TRIGGERED
+[2026-11-06T18:13:14.320Z] [SW_CONSOLE] [BG_LOG][tab=78604336] [CONTENT_EVENT][tabId=78604336][attemptId=att_1793988787091_g4hr1][url=http://127.0.0.1:8088/subscribe.html] [STAGE] stage=SUBMIT_TRIGGERED
+[2026-11-06T18:13:14.914Z] [PROGRESS ON] remaining=3 inFlight=true successes=0
+[2026-11-06T18:13:15.171Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=78604336][attemptId=att_1793988787091_g4hr1][url=http://127.0.0.1:8088/subscribe.html] [FINAL] status=CONFIRMED_SUCCESS
+[2026-11-06T18:13:15.173Z] [SW_CONSOLE] [BG_LOG][tab=78604336] [CONTENT_EVENT][tabId=78604336][attemptId=att_1793988787091_g4hr1][url=http://127.0.0.1:8088/subscribe.html] [FINAL] status=CONFIRMED_SUCCESS
+[2026-11-06T18:13:15.193Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=78604336][attemptId=att_1793988787091_g4hr1][url=http://127.0.0.1:8088/subscribe.html] [STAGE] stage=CONFIRMED_SUCCESS
+[2026-11-06T18:13:15.197Z] [SW_CONSOLE] [BG_LOG][tab=78604336] [CONTENT_EVENT][tabId=78604336][attemptId=att_1793988787091_g4hr1][url=http://127.0.0.1:8088/subscribe.html] [STAGE] stage=CONFIRMED_SUCCESS
+[2026-11-06T18:13:15.858Z] [SW_CONSOLE] [BG_LOG][tab=78604336] [FINAL_CANONICAL] status=CONFIRMED_SUCCESS reason=SUCCESS_CONFIRMED attemptId=att_1793988787091_g4hr1
+[2026-11-06T18:13:15.860Z] [SW_CONSOLE] [BG_LOG][tab=78604336] [TARGET][127.0.0.1] FINAL status=CONFIRMED_SUCCESS reason=SUCCESS_CONFIRMED
+[2026-11-06T18:13:15.908Z] [SW_CONSOLE] [BG_LOG][tab=78604336] [HISTORY_FINAL] sourceUrl=http://127.0.0.1:8088/subscribe-no-message.html contactPageUrl=http://127.0.0.1:8088/subscribe.html formPageUrl=http://127.0.0.1:8088/subscribe.html resultUrl=http://127.0.0.1:8088/subscribe.html
+[2026-11-06T18:13:15.924Z] [PROGRESS ON] remaining=3 inFlight=true successes=0
+[2026-11-06T18:13:15.958Z] [SW_CONSOLE] [BG_LOG][tab=78604336] ✨ [Engine] Submission confirmed. Maintaining tab for completion (3500ms)...
+[2026-11-06T18:13:16.929Z] [PROGRESS ON] remaining=3 inFlight=true successes=1
+[2026-11-06T18:13:17.936Z] [PROGRESS ON] remaining=3 inFlight=true successes=1
+[2026-11-06T18:13:18.945Z] [PROGRESS ON] remaining=3 inFlight=true successes=1
+[2026-11-06T18:13:19.639Z] [SW_CONSOLE] [POST_FINAL_TAB_INVARIANT] target=http://127.0.0.1:8088/subscribe-no-message.html remainingOwnedTabs=0 retainedTabs=0 result=PASS
+[2026-11-06T18:13:19.947Z] [PROGRESS ON] remaining=3 inFlight=false successes=1
+[2026-11-06T18:13:20.963Z] [PROGRESS ON] remaining=3 inFlight=false successes=1
+[2026-11-06T18:13:21.977Z] [PROGRESS ON] remaining=3 inFlight=false successes=1
+[2026-11-06T18:13:22.878Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=78604340][attemptId=att_1793988802649_xf69t][url=http://127.0.0.1:8088/newsletter-name-email.html] ⚠️ [Engine] Suppressing duplicate setup (Signals re-sent).
+[2026-11-06T18:13:22.878Z] [SW_CONSOLE] [BG_LOG][tab=78604340] [CONTENT_EVENT][tabId=78604340][attemptId=att_1793988802649_xf69t][url=http://127.0.0.1:8088/newsletter-name-email.html] ⚠️ [Engine] Suppressing duplicate setup (Signals re-sent).
+[2026-11-06T18:13:22.912Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=78604340][attemptId=att_1793988802649_xf69t][url=http://127.0.0.1:8088/newsletter-name-email.html] 🚀 [Engine] Ultra-Mode process started
+[2026-11-06T18:13:22.913Z] [SW_CONSOLE] [BG_LOG][tab=78604340] [CONTENT_EVENT][tabId=78604340][attemptId=att_1793988802649_xf69t][url=http://127.0.0.1:8088/newsletter-name-email.html] 🚀 [Engine] Ultra-Mode process started
+[2026-11-06T18:13:22.992Z] [PROGRESS ON] remaining=2 inFlight=true successes=1
+[2026-11-06T18:13:23.996Z] [PROGRESS ON] remaining=2 inFlight=true successes=1
+[2026-11-06T18:13:24.354Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=78604340][attemptId=att_1793988802649_xf69t][url=http://127.0.0.1:8088/newsletter-name-email.html] [STAGE] stage=CONTACT_PAGE_FOUND
+[2026-11-06T18:13:24.375Z] [SW_CONSOLE] [BG_LOG][tab=78604340] [CONTENT_EVENT][tabId=78604340][attemptId=att_1793988802649_xf69t][url=http://127.0.0.1:8088/newsletter-name-email.html] [STAGE] stage=CONTACT_PAGE_FOUND
+[2026-11-06T18:13:24.403Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=78604340][attemptId=att_1793988802649_xf69t][url=http://127.0.0.1:8088/newsletter-name-email.html] [STAGE] stage=ELIGIBLE_FORM_FOUND
+[2026-11-06T18:13:24.403Z] [SW_CONSOLE] [BG_LOG][tab=78604340] [CONTENT_EVENT][tabId=78604340][attemptId=att_1793988802649_xf69t][url=http://127.0.0.1:8088/newsletter-name-email.html] [STAGE] stage=ELIGIBLE_FORM_FOUND
+[2026-11-06T18:13:25.002Z] [PROGRESS ON] remaining=2 inFlight=true successes=1
+[2026-11-06T18:13:26.017Z] [PROGRESS ON] remaining=2 inFlight=true successes=1
+[2026-11-06T18:13:27.020Z] [PROGRESS ON] remaining=2 inFlight=true successes=1
+[2026-11-06T18:13:28.024Z] [PROGRESS ON] remaining=2 inFlight=true successes=1
+[2026-11-06T18:13:29.030Z] [PROGRESS ON] remaining=2 inFlight=true successes=1
+[2026-11-06T18:13:30.043Z] [PROGRESS ON] remaining=2 inFlight=true successes=1
+[2026-11-06T18:13:30.861Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=78604340][attemptId=att_1793988802649_xf69t][url=http://127.0.0.1:8088/newsletter-name-email.html] [STAGE] stage=REQUIRED_FIELDS_RESOLVED
+[2026-11-06T18:13:30.861Z] [SW_CONSOLE] [BG_LOG][tab=78604340] [CONTENT_EVENT][tabId=78604340][attemptId=att_1793988802649_xf69t][url=http://127.0.0.1:8088/newsletter-name-email.html] [STAGE] stage=REQUIRED_FIELDS_RESOLVED
+[2026-11-06T18:13:30.861Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=78604340][attemptId=att_1793988802649_xf69t][url=http://127.0.0.1:8088/newsletter-name-email.html] [STAGE] stage=FIELD_STATE_STABLE
+[2026-11-06T18:13:30.862Z] [SW_CONSOLE] [BG_LOG][tab=78604340] [CONTENT_EVENT][tabId=78604340][attemptId=att_1793988802649_xf69t][url=http://127.0.0.1:8088/newsletter-name-email.html] [STAGE] stage=FIELD_STATE_STABLE
+[2026-11-06T18:13:30.884Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=78604340][attemptId=att_1793988802649_xf69t][url=http://127.0.0.1:8088/newsletter-name-email.html] ⏳ [Engine] Holding for visual confirmation (1000ms)...
+[2026-11-06T18:13:30.884Z] [SW_CONSOLE] [BG_LOG][tab=78604340] [CONTENT_EVENT][tabId=78604340][attemptId=att_1793988802649_xf69t][url=http://127.0.0.1:8088/newsletter-name-email.html] ⏳ [Engine] Holding for visual confirmation (1000ms)...
+[2026-11-06T18:13:31.044Z] [PROGRESS ON] remaining=2 inFlight=true successes=1
+[2026-11-06T18:13:32.047Z] [PROGRESS ON] remaining=2 inFlight=true successes=1
+[2026-11-06T18:13:32.093Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=78604340][attemptId=att_1793988802649_xf69t][url=http://127.0.0.1:8088/newsletter-name-email.html] [FINAL_FILL] controls=2 unresolvedBefore=0 checkboxResolved=0 radioResolved=0 selectResolved=0 unresolvedAfter=0
+[2026-11-06T18:13:32.093Z] [SW_CONSOLE] [BG_LOG][tab=78604340] [CONTENT_EVENT][tabId=78604340][attemptId=att_1793988802649_xf69t][url=http://127.0.0.1:8088/newsletter-name-email.html] [FINAL_FILL] controls=2 unresolvedBefore=0 checkboxResolved=0 radioResolved=0 selectResolved=0 unresolvedAfter=0
+[2026-11-06T18:13:32.094Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=78604340][attemptId=att_1793988802649_xf69t][url=http://127.0.0.1:8088/newsletter-name-email.html] [FINAL_AUDIT] PASS
+[2026-11-06T18:13:32.094Z] [SW_CONSOLE] [BG_LOG][tab=78604340] [CONTENT_EVENT][tabId=78604340][attemptId=att_1793988802649_xf69t][url=http://127.0.0.1:8088/newsletter-name-email.html] [FINAL_AUDIT] PASS
+[2026-11-06T18:13:32.107Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=78604340][attemptId=att_1793988802649_xf69t][url=http://127.0.0.1:8088/newsletter-name-email.html] [SUBMIT_LOCK] acquired=true submittedFromUrl=http://127.0.0.1:8088/newsletter-name-email.html — post FINAL_AUDIT_PASS
+[2026-11-06T18:13:32.107Z] [SW_CONSOLE] [BG_LOG][tab=78604340] [CONTENT_EVENT][tabId=78604340][attemptId=att_1793988802649_xf69t][url=http://127.0.0.1:8088/newsletter-name-email.html] [SUBMIT_LOCK] acquired=true submittedFromUrl=http://127.0.0.1:8088/newsletter-name-email.html — post FINAL_AUDIT_PASS
+[2026-11-06T18:13:32.125Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=78604340][attemptId=att_1793988802649_xf69t][url=http://127.0.0.1:8088/newsletter-name-email.html] [STAGE] stage=SUBMIT_ATTEMPT_STARTED
+[2026-11-06T18:13:32.125Z] [SW_CONSOLE] [BG_LOG][tab=78604340] [CONTENT_EVENT][tabId=78604340][attemptId=att_1793988802649_xf69t][url=http://127.0.0.1:8088/newsletter-name-email.html] [STAGE] stage=SUBMIT_ATTEMPT_STARTED
+[2026-11-06T18:13:32.130Z] [SW_CONSOLE] [BG_LOG][tab=78604340] [STAGE_PROGRESSION] SUBMIT_ATTEMPT_STARTED -> SUBMIT_PENDING committed attemptId=att_1793988802649_xf69t
+[2026-11-06T18:13:32.160Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=78604340][attemptId=att_1793988802649_xf69t][url=http://127.0.0.1:8088/newsletter-name-email.html] [STAGE] stage=SUBMIT_TRIGGERED
+[2026-11-06T18:13:32.162Z] [SW_CONSOLE] [BG_LOG][tab=78604340] [CONTENT_EVENT][tabId=78604340][attemptId=att_1793988802649_xf69t][url=http://127.0.0.1:8088/newsletter-name-email.html] [STAGE] stage=SUBMIT_TRIGGERED
+[2026-11-06T18:13:32.697Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=78604340][attemptId=att_1793988802649_xf69t][url=http://127.0.0.1:8088/newsletter-name-email.html] [FINAL] status=CONFIRMED_SUCCESS
+[2026-11-06T18:13:32.697Z] [SW_CONSOLE] [BG_LOG][tab=78604340] [CONTENT_EVENT][tabId=78604340][attemptId=att_1793988802649_xf69t][url=http://127.0.0.1:8088/newsletter-name-email.html] [FINAL] status=CONFIRMED_SUCCESS
+[2026-11-06T18:13:32.698Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=78604340][attemptId=att_1793988802649_xf69t][url=http://127.0.0.1:8088/newsletter-name-email.html] [STAGE] stage=CONFIRMED_SUCCESS
+[2026-11-06T18:13:32.698Z] [SW_CONSOLE] [BG_LOG][tab=78604340] [CONTENT_EVENT][tabId=78604340][attemptId=att_1793988802649_xf69t][url=http://127.0.0.1:8088/newsletter-name-email.html] [STAGE] stage=CONFIRMED_SUCCESS
+[2026-11-06T18:13:33.060Z] [PROGRESS ON] remaining=2 inFlight=true successes=1
+[2026-11-06T18:13:33.678Z] [SW_CONSOLE] [BG_LOG][tab=78604340] [FINAL_CANONICAL] status=CONFIRMED_SUCCESS reason=SUCCESS_CONFIRMED attemptId=att_1793988802649_xf69t
+[2026-11-06T18:13:33.679Z] [SW_CONSOLE] [BG_LOG][tab=78604340] [TARGET][127.0.0.1] FINAL status=CONFIRMED_SUCCESS reason=SUCCESS_CONFIRMED
+[2026-11-06T18:13:33.684Z] [SW_CONSOLE] [BG_LOG][tab=78604340] [HISTORY_FINAL] sourceUrl=http://127.0.0.1:8088/newsletter-name-email.html contactPageUrl=http://127.0.0.1:8088/newsletter-name-email.html formPageUrl=http://127.0.0.1:8088/newsletter-name-email.html resultUrl=http://127.0.0.1:8088/newsletter-name-email.html
+[2026-11-06T18:13:33.694Z] [SW_CONSOLE] [BG_LOG][tab=78604340] ✨ [Engine] Submission confirmed. Maintaining tab for completion (3500ms)...
+[2026-11-06T18:13:34.063Z] [PROGRESS ON] remaining=2 inFlight=true successes=2
+[2026-11-06T18:13:35.080Z] [PROGRESS ON] remaining=2 inFlight=true successes=2
+[2026-11-06T18:13:36.093Z] [PROGRESS ON] remaining=2 inFlight=true successes=2
+[2026-11-06T18:13:37.105Z] [PROGRESS ON] remaining=2 inFlight=true successes=2
+[2026-11-06T18:13:37.372Z] [SW_CONSOLE] [POST_FINAL_TAB_INVARIANT] target=http://127.0.0.1:8088/newsletter-name-email.html remainingOwnedTabs=0 retainedTabs=0 result=PASS
+[2026-11-06T18:13:38.116Z] [PROGRESS ON] remaining=2 inFlight=false successes=2
+[2026-11-06T18:13:39.125Z] [PROGRESS ON] remaining=2 inFlight=false successes=2
+[2026-11-06T18:13:40.128Z] [PROGRESS ON] remaining=2 inFlight=false successes=2
+[2026-11-06T18:13:40.627Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=78604344][attemptId=att_1793988820380_u3eny][url=http://127.0.0.1:8088/opt-in-registration.html] ⚠️ [Engine] Suppressing duplicate setup (Signals re-sent).
+[2026-11-06T18:13:40.628Z] [SW_CONSOLE] [BG_LOG][tab=78604344] [CONTENT_EVENT][tabId=78604344][attemptId=att_1793988820380_u3eny][url=http://127.0.0.1:8088/opt-in-registration.html] ⚠️ [Engine] Suppressing duplicate setup (Signals re-sent).
+[2026-11-06T18:13:40.657Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=78604344][attemptId=att_1793988820380_u3eny][url=http://127.0.0.1:8088/opt-in-registration.html] 🚀 [Engine] Ultra-Mode process started
+[2026-11-06T18:13:40.657Z] [SW_CONSOLE] [BG_LOG][tab=78604344] [CONTENT_EVENT][tabId=78604344][attemptId=att_1793988820380_u3eny][url=http://127.0.0.1:8088/opt-in-registration.html] 🚀 [Engine] Ultra-Mode process started
+[2026-11-06T18:13:41.135Z] [PROGRESS ON] remaining=1 inFlight=true successes=2
+[2026-11-06T18:13:42.120Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=78604344][attemptId=att_1793988820380_u3eny][url=http://127.0.0.1:8088/opt-in-registration.html] [STAGE] stage=CONTACT_PAGE_FOUND
+[2026-11-06T18:13:42.121Z] [SW_CONSOLE] [BG_LOG][tab=78604344] [CONTENT_EVENT][tabId=78604344][attemptId=att_1793988820380_u3eny][url=http://127.0.0.1:8088/opt-in-registration.html] [STAGE] stage=CONTACT_PAGE_FOUND
+[2026-11-06T18:13:42.144Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=78604344][attemptId=att_1793988820380_u3eny][url=http://127.0.0.1:8088/opt-in-registration.html] [STAGE] stage=ELIGIBLE_FORM_FOUND
+[2026-11-06T18:13:42.144Z] [SW_CONSOLE] [BG_LOG][tab=78604344] [CONTENT_EVENT][tabId=78604344][attemptId=att_1793988820380_u3eny][url=http://127.0.0.1:8088/opt-in-registration.html] [STAGE] stage=ELIGIBLE_FORM_FOUND
+[2026-11-06T18:13:42.183Z] [PROGRESS ON] remaining=1 inFlight=true successes=2
+[2026-11-06T18:13:43.187Z] [PROGRESS ON] remaining=1 inFlight=true successes=2
+[2026-11-06T18:13:44.194Z] [PROGRESS ON] remaining=1 inFlight=true successes=2
+[2026-11-06T18:13:45.198Z] [PROGRESS ON] remaining=1 inFlight=true successes=2
+[2026-11-06T18:13:46.202Z] [PROGRESS ON] remaining=1 inFlight=true successes=2
+[2026-11-06T18:13:47.212Z] [PROGRESS ON] remaining=1 inFlight=true successes=2
+[2026-11-06T18:13:48.221Z] [PROGRESS ON] remaining=1 inFlight=true successes=2
+[2026-11-06T18:13:49.234Z] [PROGRESS ON] remaining=1 inFlight=true successes=2
+[2026-11-06T18:13:49.815Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=78604344][attemptId=att_1793988820380_u3eny][url=http://127.0.0.1:8088/opt-in-registration.html] [STAGE] stage=REQUIRED_FIELDS_RESOLVED
+[2026-11-06T18:13:49.815Z] [SW_CONSOLE] [BG_LOG][tab=78604344] [CONTENT_EVENT][tabId=78604344][attemptId=att_1793988820380_u3eny][url=http://127.0.0.1:8088/opt-in-registration.html] [STAGE] stage=REQUIRED_FIELDS_RESOLVED
+[2026-11-06T18:13:49.815Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=78604344][attemptId=att_1793988820380_u3eny][url=http://127.0.0.1:8088/opt-in-registration.html] [STAGE] stage=FIELD_STATE_STABLE
+[2026-11-06T18:13:49.818Z] [SW_CONSOLE] [BG_LOG][tab=78604344] [CONTENT_EVENT][tabId=78604344][attemptId=att_1793988820380_u3eny][url=http://127.0.0.1:8088/opt-in-registration.html] [STAGE] stage=FIELD_STATE_STABLE
+[2026-11-06T18:13:49.839Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=78604344][attemptId=att_1793988820380_u3eny][url=http://127.0.0.1:8088/opt-in-registration.html] ⏳ [Engine] Holding for visual confirmation (1000ms)...
+[2026-11-06T18:13:49.839Z] [SW_CONSOLE] [BG_LOG][tab=78604344] [CONTENT_EVENT][tabId=78604344][attemptId=att_1793988820380_u3eny][url=http://127.0.0.1:8088/opt-in-registration.html] ⏳ [Engine] Holding for visual confirmation (1000ms)...
+[2026-11-06T18:13:50.243Z] [PROGRESS ON] remaining=1 inFlight=true successes=2
+[2026-11-06T18:13:51.037Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=78604344][attemptId=att_1793988820380_u3eny][url=http://127.0.0.1:8088/opt-in-registration.html] [FINAL_FILL] controls=3 unresolvedBefore=0 checkboxResolved=0 radioResolved=0 selectResolved=0 unresolvedAfter=0
+[2026-11-06T18:13:51.037Z] [SW_CONSOLE] [BG_LOG][tab=78604344] [CONTENT_EVENT][tabId=78604344][attemptId=att_1793988820380_u3eny][url=http://127.0.0.1:8088/opt-in-registration.html] [FINAL_FILL] controls=3 unresolvedBefore=0 checkboxResolved=0 radioResolved=0 selectResolved=0 unresolvedAfter=0
+[2026-11-06T18:13:51.043Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=78604344][attemptId=att_1793988820380_u3eny][url=http://127.0.0.1:8088/opt-in-registration.html] [FINAL_AUDIT] PASS
+[2026-11-06T18:13:51.043Z] [SW_CONSOLE] [BG_LOG][tab=78604344] [CONTENT_EVENT][tabId=78604344][attemptId=att_1793988820380_u3eny][url=http://127.0.0.1:8088/opt-in-registration.html] [FINAL_AUDIT] PASS
+[2026-11-06T18:13:51.056Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=78604344][attemptId=att_1793988820380_u3eny][url=http://127.0.0.1:8088/opt-in-registration.html] [SUBMIT_LOCK] acquired=true submittedFromUrl=http://127.0.0.1:8088/opt-in-registration.html — post FINAL_AUDIT_PASS
+[2026-11-06T18:13:51.056Z] [SW_CONSOLE] [BG_LOG][tab=78604344] [CONTENT_EVENT][tabId=78604344][attemptId=att_1793988820380_u3eny][url=http://127.0.0.1:8088/opt-in-registration.html] [SUBMIT_LOCK] acquired=true submittedFromUrl=http://127.0.0.1:8088/opt-in-registration.html — post FINAL_AUDIT_PASS
+[2026-11-06T18:13:51.072Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=78604344][attemptId=att_1793988820380_u3eny][url=http://127.0.0.1:8088/opt-in-registration.html] [STAGE] stage=SUBMIT_ATTEMPT_STARTED
+[2026-11-06T18:13:51.072Z] [SW_CONSOLE] [BG_LOG][tab=78604344] [CONTENT_EVENT][tabId=78604344][attemptId=att_1793988820380_u3eny][url=http://127.0.0.1:8088/opt-in-registration.html] [STAGE] stage=SUBMIT_ATTEMPT_STARTED
+[2026-11-06T18:13:51.076Z] [SW_CONSOLE] [BG_LOG][tab=78604344] [STAGE_PROGRESSION] SUBMIT_ATTEMPT_STARTED -> SUBMIT_PENDING committed attemptId=att_1793988820380_u3eny
+[2026-11-06T18:13:51.158Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=78604344][attemptId=att_1793988820380_u3eny][url=http://127.0.0.1:8088/opt-in-registration.html] [STAGE] stage=SUBMIT_TRIGGERED
+[2026-11-06T18:13:51.172Z] [SW_CONSOLE] [BG_LOG][tab=78604344] [CONTENT_EVENT][tabId=78604344][attemptId=att_1793988820380_u3eny][url=http://127.0.0.1:8088/opt-in-registration.html] [STAGE] stage=SUBMIT_TRIGGERED
+[2026-11-06T18:13:51.259Z] [PROGRESS ON] remaining=1 inFlight=true successes=2
+[2026-11-06T18:13:51.655Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=78604344][attemptId=att_1793988820380_u3eny][url=http://127.0.0.1:8088/opt-in-registration.html] [FINAL] status=CONFIRMED_SUCCESS
+[2026-11-06T18:13:51.655Z] [SW_CONSOLE] [BG_LOG][tab=78604344] [CONTENT_EVENT][tabId=78604344][attemptId=att_1793988820380_u3eny][url=http://127.0.0.1:8088/opt-in-registration.html] [FINAL] status=CONFIRMED_SUCCESS
+[2026-11-06T18:13:51.656Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=78604344][attemptId=att_1793988820380_u3eny][url=http://127.0.0.1:8088/opt-in-registration.html] [STAGE] stage=CONFIRMED_SUCCESS
+[2026-11-06T18:13:51.656Z] [SW_CONSOLE] [BG_LOG][tab=78604344] [CONTENT_EVENT][tabId=78604344][attemptId=att_1793988820380_u3eny][url=http://127.0.0.1:8088/opt-in-registration.html] [STAGE] stage=CONFIRMED_SUCCESS
+[2026-11-06T18:13:52.264Z] [PROGRESS ON] remaining=1 inFlight=true successes=2
+[2026-11-06T18:13:52.635Z] [SW_CONSOLE] [BG_LOG][tab=78604344] [FINAL_CANONICAL] status=CONFIRMED_SUCCESS reason=SUCCESS_CONFIRMED attemptId=att_1793988820380_u3eny
+[2026-11-06T18:13:52.635Z] [SW_CONSOLE] [BG_LOG][tab=78604344] [TARGET][127.0.0.1] FINAL status=CONFIRMED_SUCCESS reason=SUCCESS_CONFIRMED
+[2026-11-06T18:13:52.641Z] [SW_CONSOLE] [BG_LOG][tab=78604344] [HISTORY_FINAL] sourceUrl=http://127.0.0.1:8088/opt-in-registration.html contactPageUrl=http://127.0.0.1:8088/opt-in-registration.html formPageUrl=http://127.0.0.1:8088/opt-in-registration.html resultUrl=http://127.0.0.1:8088/opt-in-registration.html
+[2026-11-06T18:13:52.653Z] [SW_CONSOLE] [BG_LOG][tab=78604344] ✨ [Engine] Submission confirmed. Maintaining tab for completion (3500ms)...
+[2026-11-06T18:13:53.270Z] [PROGRESS ON] remaining=1 inFlight=true successes=3
+[2026-11-06T18:13:54.275Z] [PROGRESS ON] remaining=1 inFlight=true successes=3
+[2026-11-06T18:13:55.288Z] [PROGRESS ON] remaining=1 inFlight=true successes=3
+[2026-11-06T18:13:56.294Z] [PROGRESS ON] remaining=1 inFlight=true successes=3
+[2026-11-06T18:13:56.340Z] [SW_CONSOLE] [POST_FINAL_TAB_INVARIANT] target=http://127.0.0.1:8088/opt-in-registration.html remainingOwnedTabs=0 retainedTabs=0 result=PASS
+[2026-11-06T18:13:57.296Z] [PROGRESS ON] remaining=1 inFlight=false successes=3
+[2026-11-06T18:13:58.311Z] [PROGRESS ON] remaining=1 inFlight=false successes=3
+[2026-11-06T18:13:59.323Z] [PROGRESS ON] remaining=1 inFlight=false successes=3
+[2026-11-06T18:13:59.579Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=78604348][attemptId=att_1793988839355_xnt6a][url=http://127.0.0.1:8088/dynamic-spa-newsletter.html] ⚠️ [Engine] Suppressing duplicate setup (Signals re-sent).
+[2026-11-06T18:13:59.580Z] [SW_CONSOLE] [BG_LOG][tab=78604348] [CONTENT_EVENT][tabId=78604348][attemptId=att_1793988839355_xnt6a][url=http://127.0.0.1:8088/dynamic-spa-newsletter.html] ⚠️ [Engine] Suppressing duplicate setup (Signals re-sent).
+[2026-11-06T18:13:59.606Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=78604348][attemptId=att_1793988839355_xnt6a][url=http://127.0.0.1:8088/dynamic-spa-newsletter.html] 🚀 [Engine] Ultra-Mode process started
+[2026-11-06T18:13:59.607Z] [SW_CONSOLE] [BG_LOG][tab=78604348] [CONTENT_EVENT][tabId=78604348][attemptId=att_1793988839355_xnt6a][url=http://127.0.0.1:8088/dynamic-spa-newsletter.html] 🚀 [Engine] Ultra-Mode process started
+[2026-11-06T18:14:00.327Z] [PROGRESS ON] remaining=0 inFlight=true successes=3
+[2026-11-06T18:14:01.070Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=78604348][attemptId=att_1793988839355_xnt6a][url=http://127.0.0.1:8088/dynamic-spa-newsletter.html] [STAGE] stage=CONTACT_PAGE_FOUND
+[2026-11-06T18:14:01.070Z] [SW_CONSOLE] [BG_LOG][tab=78604348] [CONTENT_EVENT][tabId=78604348][attemptId=att_1793988839355_xnt6a][url=http://127.0.0.1:8088/dynamic-spa-newsletter.html] [STAGE] stage=CONTACT_PAGE_FOUND
+[2026-11-06T18:14:01.100Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=78604348][attemptId=att_1793988839355_xnt6a][url=http://127.0.0.1:8088/dynamic-spa-newsletter.html] [STAGE] stage=ELIGIBLE_FORM_FOUND
+[2026-11-06T18:14:01.100Z] [SW_CONSOLE] [BG_LOG][tab=78604348] [CONTENT_EVENT][tabId=78604348][attemptId=att_1793988839355_xnt6a][url=http://127.0.0.1:8088/dynamic-spa-newsletter.html] [STAGE] stage=ELIGIBLE_FORM_FOUND
+[2026-11-06T18:14:01.335Z] [PROGRESS ON] remaining=0 inFlight=true successes=3
+[2026-11-06T18:14:02.337Z] [PROGRESS ON] remaining=0 inFlight=true successes=3
+[2026-11-06T18:14:03.348Z] [PROGRESS ON] remaining=0 inFlight=true successes=3
+[2026-11-06T18:14:04.364Z] [PROGRESS ON] remaining=0 inFlight=true successes=3
+[2026-11-06T18:14:04.514Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=78604348][attemptId=att_1793988839355_xnt6a][url=http://127.0.0.1:8088/dynamic-spa-newsletter.html] [STAGE] stage=REQUIRED_FIELDS_RESOLVED
+[2026-11-06T18:14:04.514Z] [SW_CONSOLE] [BG_LOG][tab=78604348] [CONTENT_EVENT][tabId=78604348][attemptId=att_1793988839355_xnt6a][url=http://127.0.0.1:8088/dynamic-spa-newsletter.html] [STAGE] stage=REQUIRED_FIELDS_RESOLVED
+[2026-11-06T18:14:04.515Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=78604348][attemptId=att_1793988839355_xnt6a][url=http://127.0.0.1:8088/dynamic-spa-newsletter.html] [STAGE] stage=FIELD_STATE_STABLE
+[2026-11-06T18:14:04.515Z] [SW_CONSOLE] [BG_LOG][tab=78604348] [CONTENT_EVENT][tabId=78604348][attemptId=att_1793988839355_xnt6a][url=http://127.0.0.1:8088/dynamic-spa-newsletter.html] [STAGE] stage=FIELD_STATE_STABLE
+[2026-11-06T18:14:04.538Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=78604348][attemptId=att_1793988839355_xnt6a][url=http://127.0.0.1:8088/dynamic-spa-newsletter.html] ⏳ [Engine] Holding for visual confirmation (1000ms)...
+[2026-11-06T18:14:04.539Z] [SW_CONSOLE] [BG_LOG][tab=78604348] [CONTENT_EVENT][tabId=78604348][attemptId=att_1793988839355_xnt6a][url=http://127.0.0.1:8088/dynamic-spa-newsletter.html] ⏳ [Engine] Holding for visual confirmation (1000ms)...
+[2026-11-06T18:14:05.366Z] [PROGRESS ON] remaining=0 inFlight=true successes=3
+[2026-11-06T18:14:05.741Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=78604348][attemptId=att_1793988839355_xnt6a][url=http://127.0.0.1:8088/dynamic-spa-newsletter.html] [FINAL_FILL] controls=1 unresolvedBefore=0 checkboxResolved=0 radioResolved=0 selectResolved=0 unresolvedAfter=0
+[2026-11-06T18:14:05.742Z] [SW_CONSOLE] [BG_LOG][tab=78604348] [CONTENT_EVENT][tabId=78604348][attemptId=att_1793988839355_xnt6a][url=http://127.0.0.1:8088/dynamic-spa-newsletter.html] [FINAL_FILL] controls=1 unresolvedBefore=0 checkboxResolved=0 radioResolved=0 selectResolved=0 unresolvedAfter=0
+[2026-11-06T18:14:05.742Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=78604348][attemptId=att_1793988839355_xnt6a][url=http://127.0.0.1:8088/dynamic-spa-newsletter.html] [FINAL_AUDIT] PASS
+[2026-11-06T18:14:05.742Z] [SW_CONSOLE] [BG_LOG][tab=78604348] [CONTENT_EVENT][tabId=78604348][attemptId=att_1793988839355_xnt6a][url=http://127.0.0.1:8088/dynamic-spa-newsletter.html] [FINAL_AUDIT] PASS
+[2026-11-06T18:14:05.756Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=78604348][attemptId=att_1793988839355_xnt6a][url=http://127.0.0.1:8088/dynamic-spa-newsletter.html] [SUBMIT_LOCK] acquired=true submittedFromUrl=http://127.0.0.1:8088/dynamic-spa-newsletter.html — post FINAL_AUDIT_PASS
+[2026-11-06T18:14:05.757Z] [SW_CONSOLE] [BG_LOG][tab=78604348] [CONTENT_EVENT][tabId=78604348][attemptId=att_1793988839355_xnt6a][url=http://127.0.0.1:8088/dynamic-spa-newsletter.html] [SUBMIT_LOCK] acquired=true submittedFromUrl=http://127.0.0.1:8088/dynamic-spa-newsletter.html — post FINAL_AUDIT_PASS
+[2026-11-06T18:14:05.771Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=78604348][attemptId=att_1793988839355_xnt6a][url=http://127.0.0.1:8088/dynamic-spa-newsletter.html] [STAGE] stage=SUBMIT_ATTEMPT_STARTED
+[2026-11-06T18:14:05.772Z] [SW_CONSOLE] [BG_LOG][tab=78604348] [CONTENT_EVENT][tabId=78604348][attemptId=att_1793988839355_xnt6a][url=http://127.0.0.1:8088/dynamic-spa-newsletter.html] [STAGE] stage=SUBMIT_ATTEMPT_STARTED
+[2026-11-06T18:14:05.775Z] [SW_CONSOLE] [BG_LOG][tab=78604348] [STAGE_PROGRESSION] SUBMIT_ATTEMPT_STARTED -> SUBMIT_PENDING committed attemptId=att_1793988839355_xnt6a
+[2026-11-06T18:14:05.805Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=78604348][attemptId=att_1793988839355_xnt6a][url=http://127.0.0.1:8088/dynamic-spa-newsletter.html] [STAGE] stage=SUBMIT_TRIGGERED
+[2026-11-06T18:14:05.806Z] [SW_CONSOLE] [BG_LOG][tab=78604348] [CONTENT_EVENT][tabId=78604348][attemptId=att_1793988839355_xnt6a][url=http://127.0.0.1:8088/dynamic-spa-newsletter.html] [STAGE] stage=SUBMIT_TRIGGERED
+[2026-11-06T18:14:06.346Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=78604348][attemptId=att_1793988839355_xnt6a][url=http://127.0.0.1:8088/dynamic-spa-newsletter.html] [FINAL] status=CONFIRMED_SUCCESS
+[2026-11-06T18:14:06.346Z] [SW_CONSOLE] [BG_LOG][tab=78604348] [CONTENT_EVENT][tabId=78604348][attemptId=att_1793988839355_xnt6a][url=http://127.0.0.1:8088/dynamic-spa-newsletter.html] [FINAL] status=CONFIRMED_SUCCESS
+[2026-11-06T18:14:06.347Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=78604348][attemptId=att_1793988839355_xnt6a][url=http://127.0.0.1:8088/dynamic-spa-newsletter.html] [STAGE] stage=CONFIRMED_SUCCESS
+[2026-11-06T18:14:06.347Z] [SW_CONSOLE] [BG_LOG][tab=78604348] [CONTENT_EVENT][tabId=78604348][attemptId=att_1793988839355_xnt6a][url=http://127.0.0.1:8088/dynamic-spa-newsletter.html] [STAGE] stage=CONFIRMED_SUCCESS
+[2026-11-06T18:14:06.369Z] [PROGRESS ON] remaining=0 inFlight=true successes=3
+[2026-11-06T18:14:07.326Z] [SW_CONSOLE] [BG_LOG][tab=78604348] [FINAL_CANONICAL] status=CONFIRMED_SUCCESS reason=SUCCESS_CONFIRMED attemptId=att_1793988839355_xnt6a
+[2026-11-06T18:14:07.329Z] [SW_CONSOLE] [BG_LOG][tab=78604348] [TARGET][127.0.0.1] FINAL status=CONFIRMED_SUCCESS reason=SUCCESS_CONFIRMED
+[2026-11-06T18:14:07.334Z] [SW_CONSOLE] [BG_LOG][tab=78604348] [HISTORY_FINAL] sourceUrl=http://127.0.0.1:8088/dynamic-spa-newsletter.html contactPageUrl=http://127.0.0.1:8088/dynamic-spa-newsletter.html formPageUrl=http://127.0.0.1:8088/dynamic-spa-newsletter.html resultUrl=http://127.0.0.1:8088/dynamic-spa-newsletter.html
+[2026-11-06T18:14:07.344Z] [SW_CONSOLE] [BG_LOG][tab=78604348] ✨ [Engine] Submission confirmed. Maintaining tab for completion (3500ms)...
+[2026-11-06T18:14:07.378Z] [PROGRESS ON] remaining=0 inFlight=true successes=4
+[2026-11-06T18:14:08.390Z] [PROGRESS ON] remaining=0 inFlight=true successes=4
+[2026-11-06T18:14:09.401Z] [PROGRESS ON] remaining=0 inFlight=true successes=4
+[2026-11-06T18:14:10.414Z] [PROGRESS ON] remaining=0 inFlight=true successes=4
+[2026-11-06T18:14:11.024Z] [SW_CONSOLE] [POST_FINAL_TAB_INVARIANT] target=http://127.0.0.1:8088/dynamic-spa-newsletter.html remainingOwnedTabs=0 retainedTabs=0 result=PASS
+[2026-11-06T18:14:11.087Z] [SW_CONSOLE] [BG_LOG][tab=none] [FINISH_BARRIER] lastFinalTs=1793988851023 barrierClear. CAMPAIGN_FINISHED proceeding.
+[2026-11-06T18:14:11.091Z] [SW_CONSOLE] [TAB_BARRIER] phase=CAMPAIGN_FINISHED ownedBefore=0
+[2026-11-06T18:14:11.091Z] [SW_CONSOLE] [TAB_BARRIER] phase=CAMPAIGN_FINISHED ownedAfter=0 result=PASS
+[2026-11-06T18:14:11.427Z] [PROGRESS ON] remaining=0 inFlight=false successes=4
+[2026-11-06T18:14:11.428Z] Ledger attempts ON: [
   {
     "url": "http://127.0.0.1:8088/subscribe-no-message.html",
     "status": "CONFIRMED_SUCCESS",
     "reason": "SUCCESS_CONFIRMED",
-    "receiptId": "rcpt_1793986374349_1"
+    "receiptId": "rcpt_1793988794300_1"
   },
   {
     "url": "http://127.0.0.1:8088/newsletter-name-email.html",
     "status": "CONFIRMED_SUCCESS",
     "reason": "SUCCESS_CONFIRMED",
-    "receiptId": "rcpt_1793986391896_2"
+    "receiptId": "rcpt_1793988812153_2"
   },
   {
     "url": "http://127.0.0.1:8088/opt-in-registration.html",
     "status": "CONFIRMED_SUCCESS",
     "reason": "SUCCESS_CONFIRMED",
-    "receiptId": "rcpt_1793986410874_3"
+    "receiptId": "rcpt_1793988831136_3"
   },
   {
     "url": "http://127.0.0.1:8088/dynamic-spa-newsletter.html",
     "status": "CONFIRMED_SUCCESS",
     "reason": "SUCCESS_CONFIRMED",
-    "receiptId": "rcpt_1793986426255_4"
+    "receiptId": "rcpt_1793988845796_4"
   }
 ]
-[2026-11-06T17:33:52.227Z]   ✅ [PASS] SUBTEST_3A_EMAIL_ONLY_CONFIRMED_SUCCESS {"url":"http://127.0.0.1:8088/subscribe-no-message.html","status":"CONFIRMED_SUCCESS","reason":"SUCCESS_CONFIRMED","receiptId":"rcpt_1793986374349_1"}
-[2026-11-06T17:33:52.227Z]   ✅ [PASS] SUBTEST_3B_NAME_EMAIL_CONFIRMED_SUCCESS {"url":"http://127.0.0.1:8088/newsletter-name-email.html","status":"CONFIRMED_SUCCESS","reason":"SUCCESS_CONFIRMED","receiptId":"rcpt_1793986391896_2"}
-[2026-11-06T17:33:52.227Z]   ✅ [PASS] SUBTEST_3C_OPTIN_REGISTRATION_CONFIRMED_SUCCESS {"url":"http://127.0.0.1:8088/opt-in-registration.html","status":"CONFIRMED_SUCCESS","reason":"SUCCESS_CONFIRMED","receiptId":"rcpt_1793986410874_3"}
-[2026-11-06T17:33:52.228Z]   ✅ [PASS] SUBTEST_3D_DYNAMIC_SPA_CONFIRMED_SUCCESS {"url":"http://127.0.0.1:8088/dynamic-spa-newsletter.html","status":"CONFIRMED_SUCCESS","reason":"SUCCESS_CONFIRMED","receiptId":"rcpt_1793986426255_4"}
-[2026-11-06T17:33:52.232Z]   ✅ [PASS] SERVER_SUBMISSIONS_EXACTLY_FOUR {"submissionsCount":4}
-[2026-11-06T17:33:52.232Z] 
+[2026-11-06T18:14:11.428Z]   ✅ [PASS] SUBTEST_3A_EMAIL_ONLY_CONFIRMED_SUCCESS {"url":"http://127.0.0.1:8088/subscribe-no-message.html","status":"CONFIRMED_SUCCESS","reason":"SUCCESS_CONFIRMED","receiptId":"rcpt_1793988794300_1"}
+[2026-11-06T18:14:11.428Z]   ✅ [PASS] SUBTEST_3B_NAME_EMAIL_CONFIRMED_SUCCESS {"url":"http://127.0.0.1:8088/newsletter-name-email.html","status":"CONFIRMED_SUCCESS","reason":"SUCCESS_CONFIRMED","receiptId":"rcpt_1793988812153_2"}
+[2026-11-06T18:14:11.428Z]   ✅ [PASS] SUBTEST_3C_OPTIN_REGISTRATION_CONFIRMED_SUCCESS {"url":"http://127.0.0.1:8088/opt-in-registration.html","status":"CONFIRMED_SUCCESS","reason":"SUCCESS_CONFIRMED","receiptId":"rcpt_1793988831136_3"}
+[2026-11-06T18:14:11.428Z]   ✅ [PASS] SUBTEST_3D_DYNAMIC_SPA_CONFIRMED_SUCCESS {"url":"http://127.0.0.1:8088/dynamic-spa-newsletter.html","status":"CONFIRMED_SUCCESS","reason":"SUCCESS_CONFIRMED","receiptId":"rcpt_1793988845796_4"}
+[2026-11-06T18:14:11.432Z]   ✅ [PASS] SERVER_SUBMISSIONS_EXACTLY_FOUR {"submissionsCount":4}
+[2026-11-06T18:14:11.432Z] 
+--- SECTION 3B: CONSECUTIVE ON -> OFF REVERSION (ZERO RESIDUAL LEAKAGE) ---
+[2026-11-06T18:14:11.928Z] [SW_CONSOLE] [START_BG] received queue=1
+[2026-11-06T18:14:11.930Z] [SW_CONSOLE] [BG_LOG][tab=none] [START_BG] received queue=1
+[2026-11-06T18:14:11.936Z] [SW_CONSOLE] [NORMAL_CAMPAIGN_PREFLIGHT] publicTargets=0 testMode=false result=PASS
+[2026-11-06T18:14:11.937Z] [SW_CONSOLE] [BG_LOG][tab=none] [NORMAL_CAMPAIGN_PREFLIGHT] publicTargets=0 testMode=false result=PASS
+[2026-11-06T18:14:11.943Z] [SW_CONSOLE] [START_BG_READY] privacyReady=true
+[2026-11-06T18:14:11.944Z] [SW_CONSOLE] [BG_LOG][tab=none] [START_BG_READY] privacyReady=true
+[2026-11-06T18:14:11.956Z] [SW_CONSOLE] [TAB_BARRIER] phase=START_CAMPAIGN_BOOT ownedBefore=0
+[2026-11-06T18:14:11.957Z] [SW_CONSOLE] [TAB_BARRIER] phase=START_CAMPAIGN_BOOT ownedAfter=0 result=PASS
+[2026-11-06T18:14:11.970Z] [SW_CONSOLE] [BG_LOG][tab=none] [CAMPAIGN_START] buildId=V7.0.0-RC11-20261030-THREE-MODE-CONTRACTS-PASS campaignRunId=normal_run_1793988851873_xpwy81 totalTargets=1 mode=NORMAL delayMs=3000 fillDelayMs=100 submitDelayMs=1000
+[2026-11-06T18:14:12.236Z]   ✅ [PASS] CONSECUTIVE_REVERSION_CAMPAIGN_LAUNCHED {}
+[2026-11-06T18:14:12.257Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=78604352][attemptId=att_1793988851975_k0s0e][url=http://127.0.0.1:8088/subscribe.html] ⚠️ [Engine] Suppressing duplicate setup (Signals re-sent).
+[2026-11-06T18:14:12.259Z] [SW_CONSOLE] [BG_LOG][tab=78604352] [CONTENT_EVENT][tabId=78604352][attemptId=att_1793988851975_k0s0e][url=http://127.0.0.1:8088/subscribe.html] ⚠️ [Engine] Suppressing duplicate setup (Signals re-sent).
+[2026-11-06T18:14:12.306Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=78604352][attemptId=att_1793988851975_k0s0e][url=http://127.0.0.1:8088/subscribe.html] 🚀 [Engine] Ultra-Mode process started
+[2026-11-06T18:14:12.308Z] [SW_CONSOLE] [BG_LOG][tab=78604352] [CONTENT_EVENT][tabId=78604352][attemptId=att_1793988851975_k0s0e][url=http://127.0.0.1:8088/subscribe.html] 🚀 [Engine] Ultra-Mode process started
+[2026-11-06T18:14:13.722Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=78604352][attemptId=att_1793988851975_k0s0e][url=http://127.0.0.1:8088/subscribe.html] 🚀 [Engine] Ultra-Mode: Scrolling to reveal lazy-loaded content...
+[2026-11-06T18:14:13.725Z] [SW_CONSOLE] [BG_LOG][tab=78604352] [CONTENT_EVENT][tabId=78604352][attemptId=att_1793988851975_k0s0e][url=http://127.0.0.1:8088/subscribe.html] 🚀 [Engine] Ultra-Mode: Scrolling to reveal lazy-loaded content...
+[2026-11-06T18:14:21.119Z] [SW_CONSOLE] [BG_LOG][tab=78604352] [FINAL_CANONICAL] status=SKIPPED reason=NON_INQUIRY_SUBSCRIBE_FORM attemptId=att_1793988851975_k0s0e
+[2026-11-06T18:14:21.120Z] [SW_CONSOLE] [BG_LOG][tab=78604352] [TARGET][127.0.0.1] FINAL status=SKIPPED reason=NON_INQUIRY_SUBSCRIBE_FORM
+[2026-11-06T18:14:21.123Z] [SW_CONSOLE] [BG_LOG][tab=78604352] [HISTORY_FINAL] sourceUrl=http://127.0.0.1:8088/subscribe-no-message.html contactPageUrl=http://127.0.0.1:8088/subscribe.html formPageUrl=http://127.0.0.1:8088/subscribe.html resultUrl=http://127.0.0.1:8088/subscribe.html
+[2026-11-06T18:14:22.315Z] [SW_CONSOLE] [POST_FINAL_TAB_INVARIANT] target=http://127.0.0.1:8088/subscribe-no-message.html remainingOwnedTabs=0 retainedTabs=0 result=PASS
+[2026-11-06T18:14:22.386Z] [SW_CONSOLE] [BG_LOG][tab=none] [FINISH_BARRIER] lastFinalTs=1793988862315 barrierClear. CAMPAIGN_FINISHED proceeding.
+[2026-11-06T18:14:22.387Z] [SW_CONSOLE] [TAB_BARRIER] phase=CAMPAIGN_FINISHED ownedBefore=0
+[2026-11-06T18:14:22.389Z] [SW_CONSOLE] [TAB_BARRIER] phase=CAMPAIGN_FINISHED ownedAfter=0 result=PASS
+[2026-11-06T18:14:22.458Z]   ✅ [PASS] CONSECUTIVE_REVERSION_SKIPS_NO_MESSAGE_FORM {"status":"SKIPPED","reason":"NON_INQUIRY_SUBSCRIBE_FORM"}
+[2026-11-06T18:14:22.460Z]   ✅ [PASS] CONSECUTIVE_REVERSION_ZERO_NEW_SUBMISSIONS {"submissionsCount":4}
+[2026-11-06T18:14:22.460Z] 
 --- SECTION 4: CONTACT VS NEWSLETTER SELECTION PRIORITY & DEDUPLICATION ---
-[2026-11-06T17:33:52.777Z] [SW_CONSOLE] [START_BG] received queue=1
-[2026-11-06T17:33:52.777Z] [SW_CONSOLE] [BG_LOG][tab=none] [START_BG] received queue=1
-[2026-11-06T17:33:52.782Z] [SW_CONSOLE] [NORMAL_CAMPAIGN_PREFLIGHT] publicTargets=0 testMode=false result=PASS
-[2026-11-06T17:33:52.782Z] [SW_CONSOLE] [BG_LOG][tab=none] [NORMAL_CAMPAIGN_PREFLIGHT] publicTargets=0 testMode=false result=PASS
-[2026-11-06T17:33:52.792Z] [SW_CONSOLE] [START_BG_READY] privacyReady=true
-[2026-11-06T17:33:52.792Z] [SW_CONSOLE] [BG_LOG][tab=none] [START_BG_READY] privacyReady=true
-[2026-11-06T17:33:52.800Z] [SW_CONSOLE] [TAB_BARRIER] phase=START_CAMPAIGN_BOOT ownedBefore=0
-[2026-11-06T17:33:52.801Z] [SW_CONSOLE] [TAB_BARRIER] phase=START_CAMPAIGN_BOOT ownedAfter=0 result=PASS
-[2026-11-06T17:33:52.831Z] [SW_CONSOLE] [BG_LOG][tab=none] [CAMPAIGN_START] buildId=V7.0.0-RC11-20261030-THREE-MODE-CONTRACTS-PASS campaignRunId=normal_run_1793986432677_tisbj9 totalTargets=1 mode=NORMAL delayMs=3000 fillDelayMs=100 submitDelayMs=1000
-[2026-11-06T17:33:53.324Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179279][attemptId=att_1793986432836_fjmzh][url=http://127.0.0.1:8088/contact-plus-newsletter.html] 🚀 [Engine] Ultra-Mode process started
-[2026-11-06T17:33:53.334Z] [SW_CONSOLE] [BG_LOG][tab=743179279] [CONTENT_EVENT][tabId=743179279][attemptId=att_1793986432836_fjmzh][url=http://127.0.0.1:8088/contact-plus-newsletter.html] 🚀 [Engine] Ultra-Mode process started
-[2026-11-06T17:33:53.383Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179279][attemptId=att_1793986432836_fjmzh][url=http://127.0.0.1:8088/contact-plus-newsletter.html] [STAGE] stage=CONTACT_PAGE_FOUND
-[2026-11-06T17:33:53.383Z] [SW_CONSOLE] [BG_LOG][tab=743179279] [CONTENT_EVENT][tabId=743179279][attemptId=att_1793986432836_fjmzh][url=http://127.0.0.1:8088/contact-plus-newsletter.html] [STAGE] stage=CONTACT_PAGE_FOUND
-[2026-11-06T17:33:53.396Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179279][attemptId=att_1793986432836_fjmzh][url=http://127.0.0.1:8088/contact-plus-newsletter.html] [STAGE] stage=ELIGIBLE_FORM_FOUND
-[2026-11-06T17:33:53.413Z] [SW_CONSOLE] [BG_LOG][tab=743179279] [CONTENT_EVENT][tabId=743179279][attemptId=att_1793986432836_fjmzh][url=http://127.0.0.1:8088/contact-plus-newsletter.html] [STAGE] stage=ELIGIBLE_FORM_FOUND
-[2026-11-06T17:34:01.794Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179279][attemptId=att_1793986432836_fjmzh][url=http://127.0.0.1:8088/contact-plus-newsletter.html] [STAGE] stage=REQUIRED_FIELDS_RESOLVED
-[2026-11-06T17:34:01.794Z] [SW_CONSOLE] [BG_LOG][tab=743179279] [CONTENT_EVENT][tabId=743179279][attemptId=att_1793986432836_fjmzh][url=http://127.0.0.1:8088/contact-plus-newsletter.html] [STAGE] stage=REQUIRED_FIELDS_RESOLVED
-[2026-11-06T17:34:01.794Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179279][attemptId=att_1793986432836_fjmzh][url=http://127.0.0.1:8088/contact-plus-newsletter.html] [STAGE] stage=FIELD_STATE_STABLE
-[2026-11-06T17:34:01.794Z] [SW_CONSOLE] [BG_LOG][tab=743179279] [CONTENT_EVENT][tabId=743179279][attemptId=att_1793986432836_fjmzh][url=http://127.0.0.1:8088/contact-plus-newsletter.html] [STAGE] stage=FIELD_STATE_STABLE
-[2026-11-06T17:34:01.813Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179279][attemptId=att_1793986432836_fjmzh][url=http://127.0.0.1:8088/contact-plus-newsletter.html] ⏳ [Engine] Holding for visual confirmation (1000ms)...
-[2026-11-06T17:34:01.814Z] [SW_CONSOLE] [BG_LOG][tab=743179279] [CONTENT_EVENT][tabId=743179279][attemptId=att_1793986432836_fjmzh][url=http://127.0.0.1:8088/contact-plus-newsletter.html] ⏳ [Engine] Holding for visual confirmation (1000ms)...
-[2026-11-06T17:34:03.021Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179279][attemptId=att_1793986432836_fjmzh][url=http://127.0.0.1:8088/contact-plus-newsletter.html] [FINAL_FILL] controls=3 unresolvedBefore=0 checkboxResolved=0 radioResolved=0 selectResolved=0 unresolvedAfter=0
-[2026-11-06T17:34:03.021Z] [SW_CONSOLE] [BG_LOG][tab=743179279] [CONTENT_EVENT][tabId=743179279][attemptId=att_1793986432836_fjmzh][url=http://127.0.0.1:8088/contact-plus-newsletter.html] [FINAL_FILL] controls=3 unresolvedBefore=0 checkboxResolved=0 radioResolved=0 selectResolved=0 unresolvedAfter=0
-[2026-11-06T17:34:03.028Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179279][attemptId=att_1793986432836_fjmzh][url=http://127.0.0.1:8088/contact-plus-newsletter.html] [FINAL_AUDIT] PASS
-[2026-11-06T17:34:03.028Z] [SW_CONSOLE] [BG_LOG][tab=743179279] [CONTENT_EVENT][tabId=743179279][attemptId=att_1793986432836_fjmzh][url=http://127.0.0.1:8088/contact-plus-newsletter.html] [FINAL_AUDIT] PASS
-[2026-11-06T17:34:03.037Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179279][attemptId=att_1793986432836_fjmzh][url=http://127.0.0.1:8088/contact-plus-newsletter.html] [SUBMIT_LOCK] acquired=true submittedFromUrl=http://127.0.0.1:8088/contact-plus-newsletter.html — post FINAL_AUDIT_PASS
-[2026-11-06T17:34:03.037Z] [SW_CONSOLE] [BG_LOG][tab=743179279] [CONTENT_EVENT][tabId=743179279][attemptId=att_1793986432836_fjmzh][url=http://127.0.0.1:8088/contact-plus-newsletter.html] [SUBMIT_LOCK] acquired=true submittedFromUrl=http://127.0.0.1:8088/contact-plus-newsletter.html — post FINAL_AUDIT_PASS
-[2026-11-06T17:34:03.046Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179279][attemptId=att_1793986432836_fjmzh][url=http://127.0.0.1:8088/contact-plus-newsletter.html] [STAGE] stage=SUBMIT_ATTEMPT_STARTED
-[2026-11-06T17:34:03.047Z] [SW_CONSOLE] [BG_LOG][tab=743179279] [CONTENT_EVENT][tabId=743179279][attemptId=att_1793986432836_fjmzh][url=http://127.0.0.1:8088/contact-plus-newsletter.html] [STAGE] stage=SUBMIT_ATTEMPT_STARTED
-[2026-11-06T17:34:03.051Z] [SW_CONSOLE] [BG_LOG][tab=743179279] [STAGE_PROGRESSION] SUBMIT_ATTEMPT_STARTED -> SUBMIT_PENDING committed attemptId=att_1793986432836_fjmzh
-[2026-11-06T17:34:03.095Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179279][attemptId=att_1793986432836_fjmzh][url=http://127.0.0.1:8088/contact-plus-newsletter.html] [STAGE] stage=SUBMIT_TRIGGERED
-[2026-11-06T17:34:03.096Z] [SW_CONSOLE] [BG_LOG][tab=743179279] [CONTENT_EVENT][tabId=743179279][attemptId=att_1793986432836_fjmzh][url=http://127.0.0.1:8088/contact-plus-newsletter.html] [STAGE] stage=SUBMIT_TRIGGERED
-[2026-11-06T17:34:03.632Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179279][attemptId=att_1793986432836_fjmzh][url=http://127.0.0.1:8088/contact-plus-newsletter.html] [FINAL] status=CONFIRMED_SUCCESS
-[2026-11-06T17:34:03.632Z] [SW_CONSOLE] [BG_LOG][tab=743179279] [CONTENT_EVENT][tabId=743179279][attemptId=att_1793986432836_fjmzh][url=http://127.0.0.1:8088/contact-plus-newsletter.html] [FINAL] status=CONFIRMED_SUCCESS
-[2026-11-06T17:34:03.633Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179279][attemptId=att_1793986432836_fjmzh][url=http://127.0.0.1:8088/contact-plus-newsletter.html] [STAGE] stage=CONFIRMED_SUCCESS
-[2026-11-06T17:34:03.633Z] [SW_CONSOLE] [BG_LOG][tab=743179279] [CONTENT_EVENT][tabId=743179279][attemptId=att_1793986432836_fjmzh][url=http://127.0.0.1:8088/contact-plus-newsletter.html] [STAGE] stage=CONFIRMED_SUCCESS
-[2026-11-06T17:34:04.643Z] [SW_CONSOLE] [BG_LOG][tab=743179279] [FINAL_CANONICAL] status=CONFIRMED_SUCCESS reason=SUCCESS_CONFIRMED attemptId=att_1793986432836_fjmzh
-[2026-11-06T17:34:04.644Z] [SW_CONSOLE] [BG_LOG][tab=743179279] [TARGET][127.0.0.1] FINAL status=CONFIRMED_SUCCESS reason=SUCCESS_CONFIRMED
-[2026-11-06T17:34:04.655Z] [SW_CONSOLE] [BG_LOG][tab=743179279] [HISTORY_FINAL] sourceUrl=http://127.0.0.1:8088/contact-plus-newsletter.html contactPageUrl=http://127.0.0.1:8088/contact-plus-newsletter.html formPageUrl=http://127.0.0.1:8088/contact-plus-newsletter.html resultUrl=http://127.0.0.1:8088/contact-plus-newsletter.html
-[2026-11-06T17:34:04.675Z] [SW_CONSOLE] [BG_LOG][tab=743179279] ✨ [Engine] Submission confirmed. Maintaining tab for completion (3500ms)...
-[2026-11-06T17:34:08.378Z] [SW_CONSOLE] [POST_FINAL_TAB_INVARIANT] target=http://127.0.0.1:8088/contact-plus-newsletter.html remainingOwnedTabs=0 retainedTabs=0 result=PASS
-[2026-11-06T17:34:08.442Z] [SW_CONSOLE] [BG_LOG][tab=none] [FINISH_BARRIER] lastFinalTs=1793986448378 barrierClear. CAMPAIGN_FINISHED proceeding.
-[2026-11-06T17:34:08.445Z] [SW_CONSOLE] [TAB_BARRIER] phase=CAMPAIGN_FINISHED ownedBefore=0
-[2026-11-06T17:34:08.445Z] [SW_CONSOLE] [TAB_BARRIER] phase=CAMPAIGN_FINISHED ownedAfter=0 result=PASS
-[2026-11-06T17:34:08.862Z]   ✅ [PASS] CONTACT_FORM_PRIORITIZED_SINGLE_POST {"totalSubmissions":5,"expected":5}
-[2026-11-06T17:34:08.862Z] 
+[2026-11-06T18:14:22.970Z] [SW_CONSOLE] [START_BG] received queue=1
+[2026-11-06T18:14:22.970Z] [SW_CONSOLE] [BG_LOG][tab=none] [START_BG] received queue=1
+[2026-11-06T18:14:22.974Z] [SW_CONSOLE] [NORMAL_CAMPAIGN_PREFLIGHT] publicTargets=0 testMode=false result=PASS
+[2026-11-06T18:14:22.977Z] [SW_CONSOLE] [BG_LOG][tab=none] [NORMAL_CAMPAIGN_PREFLIGHT] publicTargets=0 testMode=false result=PASS
+[2026-11-06T18:14:22.986Z] [SW_CONSOLE] [START_BG_READY] privacyReady=true
+[2026-11-06T18:14:22.987Z] [SW_CONSOLE] [BG_LOG][tab=none] [START_BG_READY] privacyReady=true
+[2026-11-06T18:14:23.004Z] [SW_CONSOLE] [TAB_BARRIER] phase=START_CAMPAIGN_BOOT ownedBefore=0
+[2026-11-06T18:14:23.004Z] [SW_CONSOLE] [TAB_BARRIER] phase=START_CAMPAIGN_BOOT ownedAfter=0 result=PASS
+[2026-11-06T18:14:23.020Z] [SW_CONSOLE] [BG_LOG][tab=none] [CAMPAIGN_START] buildId=V7.0.0-RC11-20261030-THREE-MODE-CONTRACTS-PASS campaignRunId=normal_run_1793988862905_l3rdar totalTargets=1 mode=NORMAL delayMs=3000 fillDelayMs=100 submitDelayMs=1000
+[2026-11-06T18:14:23.155Z] [SW_CONSOLE] [BG_LOG][tab=78604356] 🔄 [Engine] Internal navigation detected (SPA). Preparing re-injection...
+[2026-11-06T18:14:23.436Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=78604356][attemptId=att_1793988863024_2tmmz][url=http://127.0.0.1:8088/contact-plus-newsletter.html] 🚀 [Engine] Ultra-Mode process started
+[2026-11-06T18:14:23.436Z] [SW_CONSOLE] [BG_LOG][tab=78604356] [CONTENT_EVENT][tabId=78604356][attemptId=att_1793988863024_2tmmz][url=http://127.0.0.1:8088/contact-plus-newsletter.html] 🚀 [Engine] Ultra-Mode process started
+[2026-11-06T18:14:23.487Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=78604356][attemptId=att_1793988863024_2tmmz][url=http://127.0.0.1:8088/contact-plus-newsletter.html] [STAGE] stage=CONTACT_PAGE_FOUND
+[2026-11-06T18:14:23.487Z] [SW_CONSOLE] [BG_LOG][tab=78604356] [CONTENT_EVENT][tabId=78604356][attemptId=att_1793988863024_2tmmz][url=http://127.0.0.1:8088/contact-plus-newsletter.html] [STAGE] stage=CONTACT_PAGE_FOUND
+[2026-11-06T18:14:23.489Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=78604356][attemptId=att_1793988863024_2tmmz][url=http://127.0.0.1:8088/contact-plus-newsletter.html] [STAGE] stage=ELIGIBLE_FORM_FOUND
+[2026-11-06T18:14:23.489Z] [SW_CONSOLE] [BG_LOG][tab=78604356] [CONTENT_EVENT][tabId=78604356][attemptId=att_1793988863024_2tmmz][url=http://127.0.0.1:8088/contact-plus-newsletter.html] [STAGE] stage=ELIGIBLE_FORM_FOUND
+[2026-11-06T18:14:31.576Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=78604356][attemptId=att_1793988863024_2tmmz][url=http://127.0.0.1:8088/contact-plus-newsletter.html] [STAGE] stage=REQUIRED_FIELDS_RESOLVED
+[2026-11-06T18:14:31.576Z] [SW_CONSOLE] [BG_LOG][tab=78604356] [CONTENT_EVENT][tabId=78604356][attemptId=att_1793988863024_2tmmz][url=http://127.0.0.1:8088/contact-plus-newsletter.html] [STAGE] stage=REQUIRED_FIELDS_RESOLVED
+[2026-11-06T18:14:31.577Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=78604356][attemptId=att_1793988863024_2tmmz][url=http://127.0.0.1:8088/contact-plus-newsletter.html] [STAGE] stage=FIELD_STATE_STABLE
+[2026-11-06T18:14:31.577Z] [SW_CONSOLE] [BG_LOG][tab=78604356] [CONTENT_EVENT][tabId=78604356][attemptId=att_1793988863024_2tmmz][url=http://127.0.0.1:8088/contact-plus-newsletter.html] [STAGE] stage=FIELD_STATE_STABLE
+[2026-11-06T18:14:31.592Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=78604356][attemptId=att_1793988863024_2tmmz][url=http://127.0.0.1:8088/contact-plus-newsletter.html] ⏳ [Engine] Holding for visual confirmation (1000ms)...
+[2026-11-06T18:14:31.593Z] [SW_CONSOLE] [BG_LOG][tab=78604356] [CONTENT_EVENT][tabId=78604356][attemptId=att_1793988863024_2tmmz][url=http://127.0.0.1:8088/contact-plus-newsletter.html] ⏳ [Engine] Holding for visual confirmation (1000ms)...
+[2026-11-06T18:14:32.810Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=78604356][attemptId=att_1793988863024_2tmmz][url=http://127.0.0.1:8088/contact-plus-newsletter.html] [FINAL_FILL] controls=3 unresolvedBefore=0 checkboxResolved=0 radioResolved=0 selectResolved=0 unresolvedAfter=0
+[2026-11-06T18:14:32.810Z] [SW_CONSOLE] [BG_LOG][tab=78604356] [CONTENT_EVENT][tabId=78604356][attemptId=att_1793988863024_2tmmz][url=http://127.0.0.1:8088/contact-plus-newsletter.html] [FINAL_FILL] controls=3 unresolvedBefore=0 checkboxResolved=0 radioResolved=0 selectResolved=0 unresolvedAfter=0
+[2026-11-06T18:14:32.811Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=78604356][attemptId=att_1793988863024_2tmmz][url=http://127.0.0.1:8088/contact-plus-newsletter.html] [FINAL_AUDIT] PASS
+[2026-11-06T18:14:32.823Z] [SW_CONSOLE] [BG_LOG][tab=78604356] [CONTENT_EVENT][tabId=78604356][attemptId=att_1793988863024_2tmmz][url=http://127.0.0.1:8088/contact-plus-newsletter.html] [FINAL_AUDIT] PASS
+[2026-11-06T18:14:32.825Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=78604356][attemptId=att_1793988863024_2tmmz][url=http://127.0.0.1:8088/contact-plus-newsletter.html] [SUBMIT_LOCK] acquired=true submittedFromUrl=http://127.0.0.1:8088/contact-plus-newsletter.html — post FINAL_AUDIT_PASS
+[2026-11-06T18:14:32.825Z] [SW_CONSOLE] [BG_LOG][tab=78604356] [CONTENT_EVENT][tabId=78604356][attemptId=att_1793988863024_2tmmz][url=http://127.0.0.1:8088/contact-plus-newsletter.html] [SUBMIT_LOCK] acquired=true submittedFromUrl=http://127.0.0.1:8088/contact-plus-newsletter.html — post FINAL_AUDIT_PASS
+[2026-11-06T18:14:32.837Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=78604356][attemptId=att_1793988863024_2tmmz][url=http://127.0.0.1:8088/contact-plus-newsletter.html] [STAGE] stage=SUBMIT_ATTEMPT_STARTED
+[2026-11-06T18:14:32.837Z] [SW_CONSOLE] [BG_LOG][tab=78604356] [CONTENT_EVENT][tabId=78604356][attemptId=att_1793988863024_2tmmz][url=http://127.0.0.1:8088/contact-plus-newsletter.html] [STAGE] stage=SUBMIT_ATTEMPT_STARTED
+[2026-11-06T18:14:32.841Z] [SW_CONSOLE] [BG_LOG][tab=78604356] [STAGE_PROGRESSION] SUBMIT_ATTEMPT_STARTED -> SUBMIT_PENDING committed attemptId=att_1793988863024_2tmmz
+[2026-11-06T18:14:32.881Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=78604356][attemptId=att_1793988863024_2tmmz][url=http://127.0.0.1:8088/contact-plus-newsletter.html] [STAGE] stage=SUBMIT_TRIGGERED
+[2026-11-06T18:14:32.881Z] [SW_CONSOLE] [BG_LOG][tab=78604356] [CONTENT_EVENT][tabId=78604356][attemptId=att_1793988863024_2tmmz][url=http://127.0.0.1:8088/contact-plus-newsletter.html] [STAGE] stage=SUBMIT_TRIGGERED
+[2026-11-06T18:14:33.422Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=78604356][attemptId=att_1793988863024_2tmmz][url=http://127.0.0.1:8088/contact-plus-newsletter.html] [FINAL] status=CONFIRMED_SUCCESS
+[2026-11-06T18:14:33.422Z] [SW_CONSOLE] [BG_LOG][tab=78604356] [CONTENT_EVENT][tabId=78604356][attemptId=att_1793988863024_2tmmz][url=http://127.0.0.1:8088/contact-plus-newsletter.html] [FINAL] status=CONFIRMED_SUCCESS
+[2026-11-06T18:14:33.432Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=78604356][attemptId=att_1793988863024_2tmmz][url=http://127.0.0.1:8088/contact-plus-newsletter.html] [STAGE] stage=CONFIRMED_SUCCESS
+[2026-11-06T18:14:33.433Z] [SW_CONSOLE] [BG_LOG][tab=78604356] [CONTENT_EVENT][tabId=78604356][attemptId=att_1793988863024_2tmmz][url=http://127.0.0.1:8088/contact-plus-newsletter.html] [STAGE] stage=CONFIRMED_SUCCESS
+[2026-11-06T18:14:34.407Z] [SW_CONSOLE] [BG_LOG][tab=78604356] [FINAL_CANONICAL] status=CONFIRMED_SUCCESS reason=SUCCESS_CONFIRMED attemptId=att_1793988863024_2tmmz
+[2026-11-06T18:14:34.409Z] [SW_CONSOLE] [BG_LOG][tab=78604356] [TARGET][127.0.0.1] FINAL status=CONFIRMED_SUCCESS reason=SUCCESS_CONFIRMED
+[2026-11-06T18:14:34.412Z] [SW_CONSOLE] [BG_LOG][tab=78604356] [HISTORY_FINAL] sourceUrl=http://127.0.0.1:8088/contact-plus-newsletter.html contactPageUrl=http://127.0.0.1:8088/contact-plus-newsletter.html formPageUrl=http://127.0.0.1:8088/contact-plus-newsletter.html resultUrl=http://127.0.0.1:8088/contact-plus-newsletter.html
+[2026-11-06T18:14:34.421Z] [SW_CONSOLE] [BG_LOG][tab=78604356] ✨ [Engine] Submission confirmed. Maintaining tab for completion (3500ms)...
+[2026-11-06T18:14:38.123Z] [SW_CONSOLE] [POST_FINAL_TAB_INVARIANT] target=http://127.0.0.1:8088/contact-plus-newsletter.html remainingOwnedTabs=0 retainedTabs=0 result=PASS
+[2026-11-06T18:14:38.185Z] [SW_CONSOLE] [BG_LOG][tab=none] [FINISH_BARRIER] lastFinalTs=1793988878122 barrierClear. CAMPAIGN_FINISHED proceeding.
+[2026-11-06T18:14:38.188Z] [SW_CONSOLE] [TAB_BARRIER] phase=CAMPAIGN_FINISHED ownedBefore=0
+[2026-11-06T18:14:38.189Z] [SW_CONSOLE] [TAB_BARRIER] phase=CAMPAIGN_FINISHED ownedAfter=0 result=PASS
+[2026-11-06T18:14:38.526Z]   ✅ [PASS] CONTACT_FORM_PRIORITIZED_SINGLE_POST {"totalSubmissions":5,"expected":5}
+[2026-11-06T18:14:38.527Z] 
 --- SECTION 5: STRICT NEGATIVE CONTROLS & P0 SAFETY AUDIT (ZERO POSTS) ---
-[2026-11-06T17:34:09.392Z] [SW_CONSOLE] [START_BG] received queue=3
-[2026-11-06T17:34:09.394Z] [SW_CONSOLE] [BG_LOG][tab=none] [START_BG] received queue=3
-[2026-11-06T17:34:09.399Z] [SW_CONSOLE] [NORMAL_CAMPAIGN_PREFLIGHT] publicTargets=0 testMode=false result=PASS
-[2026-11-06T17:34:09.405Z] [SW_CONSOLE] [BG_LOG][tab=none] [NORMAL_CAMPAIGN_PREFLIGHT] publicTargets=0 testMode=false result=PASS
-[2026-11-06T17:34:09.409Z] [SW_CONSOLE] [START_BG_READY] privacyReady=true
-[2026-11-06T17:34:09.410Z] [SW_CONSOLE] [BG_LOG][tab=none] [START_BG_READY] privacyReady=true
-[2026-11-06T17:34:09.415Z] [SW_CONSOLE] [TAB_BARRIER] phase=START_CAMPAIGN_BOOT ownedBefore=0
-[2026-11-06T17:34:09.417Z] [SW_CONSOLE] [TAB_BARRIER] phase=START_CAMPAIGN_BOOT ownedAfter=0 result=PASS
-[2026-11-06T17:34:09.435Z] [SW_CONSOLE] [BG_LOG][tab=none] [CAMPAIGN_START] buildId=V7.0.0-RC11-20261030-THREE-MODE-CONTRACTS-PASS campaignRunId=normal_run_1793986449311_q9gevc totalTargets=3 mode=NORMAL delayMs=3000 fillDelayMs=100 submitDelayMs=1000
-[2026-11-06T17:34:09.786Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179283][attemptId=att_1793986449437_y6q4t][url=http://127.0.0.1:8088/negative-controls.html] ⚠️ [Engine] Suppressing duplicate setup (Signals re-sent).
-[2026-11-06T17:34:09.786Z] [SW_CONSOLE] [BG_LOG][tab=743179283] [CONTENT_EVENT][tabId=743179283][attemptId=att_1793986449437_y6q4t][url=http://127.0.0.1:8088/negative-controls.html] ⚠️ [Engine] Suppressing duplicate setup (Signals re-sent).
-[2026-11-06T17:34:09.826Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179283][attemptId=att_1793986449437_y6q4t][url=http://127.0.0.1:8088/negative-controls.html] 🚀 [Engine] Ultra-Mode process started
-[2026-11-06T17:34:09.826Z] [SW_CONSOLE] [BG_LOG][tab=743179283] [CONTENT_EVENT][tabId=743179283][attemptId=att_1793986449437_y6q4t][url=http://127.0.0.1:8088/negative-controls.html] 🚀 [Engine] Ultra-Mode process started
-[2026-11-06T17:34:11.268Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179283][attemptId=att_1793986449437_y6q4t][url=http://127.0.0.1:8088/negative-controls.html] 🚀 [Engine] Ultra-Mode: Scrolling to reveal lazy-loaded content...
-[2026-11-06T17:34:11.269Z] [SW_CONSOLE] [BG_LOG][tab=743179283] [CONTENT_EVENT][tabId=743179283][attemptId=att_1793986449437_y6q4t][url=http://127.0.0.1:8088/negative-controls.html] 🚀 [Engine] Ultra-Mode: Scrolling to reveal lazy-loaded content...
-[2026-11-06T17:34:18.692Z] [SW_CONSOLE] [BG_LOG][tab=743179283] [FINAL_CANONICAL] status=SKIPPED reason=NON_INQUIRY_SEARCH_FORM attemptId=att_1793986449437_y6q4t
-[2026-11-06T17:34:18.692Z] [SW_CONSOLE] [BG_LOG][tab=743179283] [TARGET][127.0.0.1] FINAL status=SKIPPED reason=NON_INQUIRY_SEARCH_FORM
-[2026-11-06T17:34:18.696Z] [SW_CONSOLE] [BG_LOG][tab=743179283] [HISTORY_FINAL] sourceUrl=http://127.0.0.1:8088/negative-controls.html contactPageUrl=http://127.0.0.1:8088/negative-controls.html formPageUrl=http://127.0.0.1:8088/negative-controls.html resultUrl=http://127.0.0.1:8088/negative-controls.html
-[2026-11-06T17:34:19.913Z] [SW_CONSOLE] [POST_FINAL_TAB_INVARIANT] target=http://127.0.0.1:8088/negative-controls.html remainingOwnedTabs=0 retainedTabs=0 result=PASS
-[2026-11-06T17:34:23.196Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179287][attemptId=att_1793986462931_arbtq][url=http://127.0.0.1:8088/generic-name-email-no-optin.html] ⚠️ [Engine] Suppressing duplicate setup (Signals re-sent).
-[2026-11-06T17:34:23.196Z] [SW_CONSOLE] [BG_LOG][tab=743179287] [CONTENT_EVENT][tabId=743179287][attemptId=att_1793986462931_arbtq][url=http://127.0.0.1:8088/generic-name-email-no-optin.html] ⚠️ [Engine] Suppressing duplicate setup (Signals re-sent).
-[2026-11-06T17:34:23.228Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179287][attemptId=att_1793986462931_arbtq][url=http://127.0.0.1:8088/generic-name-email-no-optin.html] 🚀 [Engine] Ultra-Mode process started
-[2026-11-06T17:34:23.229Z] [SW_CONSOLE] [BG_LOG][tab=743179287] [CONTENT_EVENT][tabId=743179287][attemptId=att_1793986462931_arbtq][url=http://127.0.0.1:8088/generic-name-email-no-optin.html] 🚀 [Engine] Ultra-Mode process started
-[2026-11-06T17:34:24.651Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179287][attemptId=att_1793986462931_arbtq][url=http://127.0.0.1:8088/generic-name-email-no-optin.html] 🚀 [Engine] Ultra-Mode: Scrolling to reveal lazy-loaded content...
-[2026-11-06T17:34:24.651Z] [SW_CONSOLE] [BG_LOG][tab=743179287] [CONTENT_EVENT][tabId=743179287][attemptId=att_1793986462931_arbtq][url=http://127.0.0.1:8088/generic-name-email-no-optin.html] 🚀 [Engine] Ultra-Mode: Scrolling to reveal lazy-loaded content...
-[2026-11-06T17:34:32.037Z] [SW_CONSOLE] [BG_LOG][tab=743179287] [FINAL_CANONICAL] status=SKIPPED reason=NO_LONG_TEXT_INQUIRY_FIELD attemptId=att_1793986462931_arbtq
-[2026-11-06T17:34:32.037Z] [SW_CONSOLE] [BG_LOG][tab=743179287] [TARGET][127.0.0.1] FINAL status=SKIPPED reason=NO_LONG_TEXT_INQUIRY_FIELD
-[2026-11-06T17:34:32.042Z] [SW_CONSOLE] [BG_LOG][tab=743179287] [HISTORY_FINAL] sourceUrl=http://127.0.0.1:8088/generic-name-email-no-optin.html contactPageUrl=http://127.0.0.1:8088/generic-name-email-no-optin.html formPageUrl=http://127.0.0.1:8088/generic-name-email-no-optin.html resultUrl=http://127.0.0.1:8088/generic-name-email-no-optin.html
-[2026-11-06T17:34:33.247Z] [SW_CONSOLE] [POST_FINAL_TAB_INVARIANT] target=http://127.0.0.1:8088/generic-name-email-no-optin.html remainingOwnedTabs=0 retainedTabs=0 result=PASS
-[2026-11-06T17:34:36.477Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179291][attemptId=att_1793986476258_9wyju][url=http://127.0.0.1:8088/consent-required-no-message.html] ⚠️ [Engine] Suppressing duplicate setup (Signals re-sent).
-[2026-11-06T17:34:36.478Z] [SW_CONSOLE] [BG_LOG][tab=743179291] [CONTENT_EVENT][tabId=743179291][attemptId=att_1793986476258_9wyju][url=http://127.0.0.1:8088/consent-required-no-message.html] ⚠️ [Engine] Suppressing duplicate setup (Signals re-sent).
-[2026-11-06T17:34:36.503Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179291][attemptId=att_1793986476258_9wyju][url=http://127.0.0.1:8088/consent-required-no-message.html] 🚀 [Engine] Ultra-Mode process started
-[2026-11-06T17:34:36.503Z] [SW_CONSOLE] [BG_LOG][tab=743179291] [CONTENT_EVENT][tabId=743179291][attemptId=att_1793986476258_9wyju][url=http://127.0.0.1:8088/consent-required-no-message.html] 🚀 [Engine] Ultra-Mode process started
-[2026-11-06T17:34:37.979Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179291][attemptId=att_1793986476258_9wyju][url=http://127.0.0.1:8088/consent-required-no-message.html] [STAGE] stage=CONTACT_PAGE_FOUND
-[2026-11-06T17:34:37.980Z] [SW_CONSOLE] [BG_LOG][tab=743179291] [CONTENT_EVENT][tabId=743179291][attemptId=att_1793986476258_9wyju][url=http://127.0.0.1:8088/consent-required-no-message.html] [STAGE] stage=CONTACT_PAGE_FOUND
-[2026-11-06T17:34:37.982Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179291][attemptId=att_1793986476258_9wyju][url=http://127.0.0.1:8088/consent-required-no-message.html] [STAGE] stage=ELIGIBLE_FORM_FOUND
-[2026-11-06T17:34:38.024Z] [SW_CONSOLE] [BG_LOG][tab=743179291] [CONTENT_EVENT][tabId=743179291][attemptId=att_1793986476258_9wyju][url=http://127.0.0.1:8088/consent-required-no-message.html] [STAGE] stage=ELIGIBLE_FORM_FOUND
-[2026-11-06T17:34:44.433Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179291][attemptId=att_1793986476258_9wyju][url=http://127.0.0.1:8088/consent-required-no-message.html] [STAGE] stage=REQUIRED_FIELDS_RESOLVED
-[2026-11-06T17:34:44.434Z] [SW_CONSOLE] [BG_LOG][tab=743179291] [CONTENT_EVENT][tabId=743179291][attemptId=att_1793986476258_9wyju][url=http://127.0.0.1:8088/consent-required-no-message.html] [STAGE] stage=REQUIRED_FIELDS_RESOLVED
-[2026-11-06T17:34:44.434Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179291][attemptId=att_1793986476258_9wyju][url=http://127.0.0.1:8088/consent-required-no-message.html] [STAGE] stage=FIELD_STATE_STABLE
-[2026-11-06T17:34:44.434Z] [SW_CONSOLE] [BG_LOG][tab=743179291] [CONTENT_EVENT][tabId=743179291][attemptId=att_1793986476258_9wyju][url=http://127.0.0.1:8088/consent-required-no-message.html] [STAGE] stage=FIELD_STATE_STABLE
-[2026-11-06T17:34:44.465Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179291][attemptId=att_1793986476258_9wyju][url=http://127.0.0.1:8088/consent-required-no-message.html] ⏳ [Engine] Holding for visual confirmation (1000ms)...
-[2026-11-06T17:34:44.465Z] [SW_CONSOLE] [BG_LOG][tab=743179291] [CONTENT_EVENT][tabId=743179291][attemptId=att_1793986476258_9wyju][url=http://127.0.0.1:8088/consent-required-no-message.html] ⏳ [Engine] Holding for visual confirmation (1000ms)...
-[2026-11-06T17:34:45.689Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179291][attemptId=att_1793986476258_9wyju][url=http://127.0.0.1:8088/consent-required-no-message.html] [FINAL_FILL] controls=3 unresolvedBefore=0 checkboxResolved=0 radioResolved=0 selectResolved=0 unresolvedAfter=0
-[2026-11-06T17:34:45.689Z] [SW_CONSOLE] [BG_LOG][tab=743179291] [CONTENT_EVENT][tabId=743179291][attemptId=att_1793986476258_9wyju][url=http://127.0.0.1:8088/consent-required-no-message.html] [FINAL_FILL] controls=3 unresolvedBefore=0 checkboxResolved=0 radioResolved=0 selectResolved=0 unresolvedAfter=0
-[2026-11-06T17:34:45.689Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179291][attemptId=att_1793986476258_9wyju][url=http://127.0.0.1:8088/consent-required-no-message.html] [FINAL_AUDIT] PASS
-[2026-11-06T17:34:45.695Z] [SW_CONSOLE] [BG_LOG][tab=743179291] [CONTENT_EVENT][tabId=743179291][attemptId=att_1793986476258_9wyju][url=http://127.0.0.1:8088/consent-required-no-message.html] [FINAL_AUDIT] PASS
-[2026-11-06T17:34:45.705Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179291][attemptId=att_1793986476258_9wyju][url=http://127.0.0.1:8088/consent-required-no-message.html] [SUBMIT_LOCK] acquired=true submittedFromUrl=http://127.0.0.1:8088/consent-required-no-message.html — post FINAL_AUDIT_PASS
-[2026-11-06T17:34:45.705Z] [SW_CONSOLE] [BG_LOG][tab=743179291] [CONTENT_EVENT][tabId=743179291][attemptId=att_1793986476258_9wyju][url=http://127.0.0.1:8088/consent-required-no-message.html] [SUBMIT_LOCK] acquired=true submittedFromUrl=http://127.0.0.1:8088/consent-required-no-message.html — post FINAL_AUDIT_PASS
-[2026-11-06T17:34:45.714Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179291][attemptId=att_1793986476258_9wyju][url=http://127.0.0.1:8088/consent-required-no-message.html] [STAGE] stage=SUBMIT_ATTEMPT_STARTED
-[2026-11-06T17:34:45.714Z] [SW_CONSOLE] [BG_LOG][tab=743179291] [CONTENT_EVENT][tabId=743179291][attemptId=att_1793986476258_9wyju][url=http://127.0.0.1:8088/consent-required-no-message.html] [STAGE] stage=SUBMIT_ATTEMPT_STARTED
-[2026-11-06T17:34:45.718Z] [SW_CONSOLE] [BG_LOG][tab=743179291] [STAGE_PROGRESSION] SUBMIT_ATTEMPT_STARTED -> SUBMIT_PENDING committed attemptId=att_1793986476258_9wyju
-[2026-11-06T17:34:45.745Z] [SW_CONSOLE] [BG_LOG][tab=743179291] [FINAL_CANONICAL] status=FAILURE reason=VALIDATION_FAILED attemptId=att_1793986476258_9wyju
-[2026-11-06T17:34:45.746Z] [SW_CONSOLE] [BG_LOG][tab=743179291] [TARGET][127.0.0.1] FINAL status=FAILURE reason=VALIDATION_FAILED
-[2026-11-06T17:34:45.749Z] [SW_CONSOLE] [BG_LOG][tab=743179291] [HISTORY_FINAL] sourceUrl=http://127.0.0.1:8088/consent-required-no-message.html contactPageUrl=http://127.0.0.1:8088/consent-required-no-message.html formPageUrl=http://127.0.0.1:8088/consent-required-no-message.html resultUrl=http://127.0.0.1:8088/consent-required-no-message.html
-[2026-11-06T17:34:46.945Z] [SW_CONSOLE] [POST_FINAL_TAB_INVARIANT] target=http://127.0.0.1:8088/consent-required-no-message.html remainingOwnedTabs=0 retainedTabs=0 result=PASS
-[2026-11-06T17:34:47.010Z] [SW_CONSOLE] [BG_LOG][tab=none] [FINISH_BARRIER] lastFinalTs=1793986486944 barrierClear. CAMPAIGN_FINISHED proceeding.
-[2026-11-06T17:34:47.013Z] [SW_CONSOLE] [TAB_BARRIER] phase=CAMPAIGN_FINISHED ownedBefore=0
-[2026-11-06T17:34:47.013Z] [SW_CONSOLE] [TAB_BARRIER] phase=CAMPAIGN_FINISHED ownedAfter=0 result=PASS
-[2026-11-06T17:34:47.149Z]   ✅ [PASS] STRICT_NEGATIVE_CONTROLS_ZERO_POSTS {"submissionsCount":5,"delta":0}
-[2026-11-06T17:34:47.154Z]   ✅ [PASS] GENERIC_NAME_EMAIL_FAILS_CLOSED_WITHOUT_OPTIN_INTENT {"url":"http://127.0.0.1:8088/generic-name-email-no-optin.html","status":"SKIPPED","reason":"NO_LONG_TEXT_INQUIRY_FIELD"}
-[2026-11-06T17:34:47.154Z]   ✅ [PASS] UNAUTHORIZED_CONSENT_CHECKBOX_FAILS_CLOSED {"url":"http://127.0.0.1:8088/consent-required-no-message.html","status":"FAILURE","reason":"VALIDATION_FAILED"}
-[2026-11-06T17:34:47.154Z] 
+[2026-11-06T18:14:39.025Z] [SW_CONSOLE] [START_BG] received queue=3
+[2026-11-06T18:14:39.028Z] [SW_CONSOLE] [BG_LOG][tab=none] [START_BG] received queue=3
+[2026-11-06T18:14:39.031Z] [SW_CONSOLE] [NORMAL_CAMPAIGN_PREFLIGHT] publicTargets=0 testMode=false result=PASS
+[2026-11-06T18:14:39.037Z] [SW_CONSOLE] [BG_LOG][tab=none] [NORMAL_CAMPAIGN_PREFLIGHT] publicTargets=0 testMode=false result=PASS
+[2026-11-06T18:14:39.039Z] [SW_CONSOLE] [START_BG_READY] privacyReady=true
+[2026-11-06T18:14:39.039Z] [SW_CONSOLE] [BG_LOG][tab=none] [START_BG_READY] privacyReady=true
+[2026-11-06T18:14:39.044Z] [SW_CONSOLE] [TAB_BARRIER] phase=START_CAMPAIGN_BOOT ownedBefore=0
+[2026-11-06T18:14:39.044Z] [SW_CONSOLE] [TAB_BARRIER] phase=START_CAMPAIGN_BOOT ownedAfter=0 result=PASS
+[2026-11-06T18:14:39.058Z] [SW_CONSOLE] [BG_LOG][tab=none] [CAMPAIGN_START] buildId=V7.0.0-RC11-20261030-THREE-MODE-CONTRACTS-PASS campaignRunId=normal_run_1793988878958_oljig4 totalTargets=3 mode=NORMAL delayMs=3000 fillDelayMs=100 submitDelayMs=1000
+[2026-11-06T18:14:39.397Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=78604360][attemptId=att_1793988879065_dw1oh][url=http://127.0.0.1:8088/negative-controls.html] ⚠️ [Engine] Suppressing duplicate setup (Signals re-sent).
+[2026-11-06T18:14:39.397Z] [SW_CONSOLE] [BG_LOG][tab=78604360] [CONTENT_EVENT][tabId=78604360][attemptId=att_1793988879065_dw1oh][url=http://127.0.0.1:8088/negative-controls.html] ⚠️ [Engine] Suppressing duplicate setup (Signals re-sent).
+[2026-11-06T18:14:39.425Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=78604360][attemptId=att_1793988879065_dw1oh][url=http://127.0.0.1:8088/negative-controls.html] 🚀 [Engine] Ultra-Mode process started
+[2026-11-06T18:14:39.429Z] [SW_CONSOLE] [BG_LOG][tab=78604360] [CONTENT_EVENT][tabId=78604360][attemptId=att_1793988879065_dw1oh][url=http://127.0.0.1:8088/negative-controls.html] 🚀 [Engine] Ultra-Mode process started
+[2026-11-06T18:14:40.859Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=78604360][attemptId=att_1793988879065_dw1oh][url=http://127.0.0.1:8088/negative-controls.html] 🚀 [Engine] Ultra-Mode: Scrolling to reveal lazy-loaded content...
+[2026-11-06T18:14:40.861Z] [SW_CONSOLE] [BG_LOG][tab=78604360] [CONTENT_EVENT][tabId=78604360][attemptId=att_1793988879065_dw1oh][url=http://127.0.0.1:8088/negative-controls.html] 🚀 [Engine] Ultra-Mode: Scrolling to reveal lazy-loaded content...
+[2026-11-06T18:14:48.266Z] [SW_CONSOLE] [BG_LOG][tab=78604360] [FINAL_CANONICAL] status=SKIPPED reason=NON_INQUIRY_SEARCH_FORM attemptId=att_1793988879065_dw1oh
+[2026-11-06T18:14:48.266Z] [SW_CONSOLE] [BG_LOG][tab=78604360] [TARGET][127.0.0.1] FINAL status=SKIPPED reason=NON_INQUIRY_SEARCH_FORM
+[2026-11-06T18:14:48.270Z] [SW_CONSOLE] [BG_LOG][tab=78604360] [HISTORY_FINAL] sourceUrl=http://127.0.0.1:8088/negative-controls.html contactPageUrl=http://127.0.0.1:8088/negative-controls.html formPageUrl=http://127.0.0.1:8088/negative-controls.html resultUrl=http://127.0.0.1:8088/negative-controls.html
+[2026-11-06T18:14:49.465Z] [SW_CONSOLE] [POST_FINAL_TAB_INVARIANT] target=http://127.0.0.1:8088/negative-controls.html remainingOwnedTabs=0 retainedTabs=0 result=PASS
+[2026-11-06T18:14:52.714Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=78604364][attemptId=att_1793988892478_0inpw][url=http://127.0.0.1:8088/generic-name-email-no-optin.html] ⚠️ [Engine] Suppressing duplicate setup (Signals re-sent).
+[2026-11-06T18:14:52.718Z] [SW_CONSOLE] [BG_LOG][tab=78604364] [CONTENT_EVENT][tabId=78604364][attemptId=att_1793988892478_0inpw][url=http://127.0.0.1:8088/generic-name-email-no-optin.html] ⚠️ [Engine] Suppressing duplicate setup (Signals re-sent).
+[2026-11-06T18:14:52.753Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=78604364][attemptId=att_1793988892478_0inpw][url=http://127.0.0.1:8088/generic-name-email-no-optin.html] 🚀 [Engine] Ultra-Mode process started
+[2026-11-06T18:14:52.754Z] [SW_CONSOLE] [BG_LOG][tab=78604364] [CONTENT_EVENT][tabId=78604364][attemptId=att_1793988892478_0inpw][url=http://127.0.0.1:8088/generic-name-email-no-optin.html] 🚀 [Engine] Ultra-Mode process started
+[2026-11-06T18:14:54.173Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=78604364][attemptId=att_1793988892478_0inpw][url=http://127.0.0.1:8088/generic-name-email-no-optin.html] 🚀 [Engine] Ultra-Mode: Scrolling to reveal lazy-loaded content...
+[2026-11-06T18:14:54.173Z] [SW_CONSOLE] [BG_LOG][tab=78604364] [CONTENT_EVENT][tabId=78604364][attemptId=att_1793988892478_0inpw][url=http://127.0.0.1:8088/generic-name-email-no-optin.html] 🚀 [Engine] Ultra-Mode: Scrolling to reveal lazy-loaded content...
+[2026-11-06T18:15:01.573Z] [SW_CONSOLE] [BG_LOG][tab=78604364] [FINAL_CANONICAL] status=SKIPPED reason=NO_LONG_TEXT_INQUIRY_FIELD attemptId=att_1793988892478_0inpw
+[2026-11-06T18:15:01.573Z] [SW_CONSOLE] [BG_LOG][tab=78604364] [TARGET][127.0.0.1] FINAL status=SKIPPED reason=NO_LONG_TEXT_INQUIRY_FIELD
+[2026-11-06T18:15:01.582Z] [SW_CONSOLE] [BG_LOG][tab=78604364] [HISTORY_FINAL] sourceUrl=http://127.0.0.1:8088/generic-name-email-no-optin.html contactPageUrl=http://127.0.0.1:8088/generic-name-email-no-optin.html formPageUrl=http://127.0.0.1:8088/generic-name-email-no-optin.html resultUrl=http://127.0.0.1:8088/generic-name-email-no-optin.html
+[2026-11-06T18:15:02.772Z] [SW_CONSOLE] [POST_FINAL_TAB_INVARIANT] target=http://127.0.0.1:8088/generic-name-email-no-optin.html remainingOwnedTabs=0 retainedTabs=0 result=PASS
+[2026-11-06T18:15:06.044Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=78604368][attemptId=att_1793988905790_3kfk1][url=http://127.0.0.1:8088/consent-required-no-message.html] ⚠️ [Engine] Suppressing duplicate setup (Signals re-sent).
+[2026-11-06T18:15:06.048Z] [SW_CONSOLE] [BG_LOG][tab=78604368] [CONTENT_EVENT][tabId=78604368][attemptId=att_1793988905790_3kfk1][url=http://127.0.0.1:8088/consent-required-no-message.html] ⚠️ [Engine] Suppressing duplicate setup (Signals re-sent).
+[2026-11-06T18:15:06.080Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=78604368][attemptId=att_1793988905790_3kfk1][url=http://127.0.0.1:8088/consent-required-no-message.html] 🚀 [Engine] Ultra-Mode process started
+[2026-11-06T18:15:06.082Z] [SW_CONSOLE] [BG_LOG][tab=78604368] [CONTENT_EVENT][tabId=78604368][attemptId=att_1793988905790_3kfk1][url=http://127.0.0.1:8088/consent-required-no-message.html] 🚀 [Engine] Ultra-Mode process started
+[2026-11-06T18:15:07.521Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=78604368][attemptId=att_1793988905790_3kfk1][url=http://127.0.0.1:8088/consent-required-no-message.html] 🚀 [Engine] Ultra-Mode: Scrolling to reveal lazy-loaded content...
+[2026-11-06T18:15:07.521Z] [SW_CONSOLE] [BG_LOG][tab=78604368] [CONTENT_EVENT][tabId=78604368][attemptId=att_1793988905790_3kfk1][url=http://127.0.0.1:8088/consent-required-no-message.html] 🚀 [Engine] Ultra-Mode: Scrolling to reveal lazy-loaded content...
+[2026-11-06T18:15:14.894Z] [SW_CONSOLE] [BG_LOG][tab=78604368] [FINAL_CANONICAL] status=SKIPPED reason=NON_INQUIRY_UNAUTHORIZED_CONSENT_FORM attemptId=att_1793988905790_3kfk1
+[2026-11-06T18:15:14.894Z] [SW_CONSOLE] [BG_LOG][tab=78604368] [TARGET][127.0.0.1] FINAL status=SKIPPED reason=NON_INQUIRY_UNAUTHORIZED_CONSENT_FORM
+[2026-11-06T18:15:14.899Z] [SW_CONSOLE] [BG_LOG][tab=78604368] [HISTORY_FINAL] sourceUrl=http://127.0.0.1:8088/consent-required-no-message.html contactPageUrl=http://127.0.0.1:8088/consent-required-no-message.html formPageUrl=http://127.0.0.1:8088/consent-required-no-message.html resultUrl=http://127.0.0.1:8088/consent-required-no-message.html
+[2026-11-06T18:15:16.110Z] [SW_CONSOLE] [POST_FINAL_TAB_INVARIANT] target=http://127.0.0.1:8088/consent-required-no-message.html remainingOwnedTabs=0 retainedTabs=0 result=PASS
+[2026-11-06T18:15:16.175Z] [SW_CONSOLE] [BG_LOG][tab=none] [FINISH_BARRIER] lastFinalTs=1793988916110 barrierClear. CAMPAIGN_FINISHED proceeding.
+[2026-11-06T18:15:16.178Z] [SW_CONSOLE] [TAB_BARRIER] phase=CAMPAIGN_FINISHED ownedBefore=0
+[2026-11-06T18:15:16.180Z] [SW_CONSOLE] [TAB_BARRIER] phase=CAMPAIGN_FINISHED ownedAfter=0 result=PASS
+[2026-11-06T18:15:16.875Z]   ✅ [PASS] STRICT_NEGATIVE_CONTROLS_ZERO_POSTS {"submissionsCount":5,"delta":0}
+[2026-11-06T18:15:16.877Z]   ✅ [PASS] GENERIC_NAME_EMAIL_FAILS_CLOSED_WITHOUT_OPTIN_INTENT {"url":"http://127.0.0.1:8088/generic-name-email-no-optin.html","status":"SKIPPED","reason":"NO_LONG_TEXT_INQUIRY_FIELD"}
+[2026-11-06T18:15:16.877Z]   ✅ [PASS] UNAUTHORIZED_CONSENT_CHECKBOX_FAILS_CLOSED {"url":"http://127.0.0.1:8088/consent-required-no-message.html","status":"SKIPPED","reason":"NON_INQUIRY_UNAUTHORIZED_CONSENT_FORM"}
+[2026-11-06T18:15:16.877Z] 
 --- SECTION 6: UNFILLABLE / MISSING REQUIRED INPUT FAIL-CLOSED ---
-[2026-11-06T17:34:47.693Z] [SW_CONSOLE] [START_BG] received queue=1
-[2026-11-06T17:34:47.696Z] [SW_CONSOLE] [BG_LOG][tab=none] [START_BG] received queue=1
-[2026-11-06T17:34:47.699Z] [SW_CONSOLE] [NORMAL_CAMPAIGN_PREFLIGHT] publicTargets=0 testMode=false result=PASS
-[2026-11-06T17:34:47.702Z] [SW_CONSOLE] [BG_LOG][tab=none] [NORMAL_CAMPAIGN_PREFLIGHT] publicTargets=0 testMode=false result=PASS
-[2026-11-06T17:34:47.707Z] [SW_CONSOLE] [START_BG_READY] privacyReady=true
-[2026-11-06T17:34:47.707Z] [SW_CONSOLE] [BG_LOG][tab=none] [START_BG_READY] privacyReady=true
-[2026-11-06T17:34:47.714Z] [SW_CONSOLE] [TAB_BARRIER] phase=START_CAMPAIGN_BOOT ownedBefore=0
-[2026-11-06T17:34:47.715Z] [SW_CONSOLE] [TAB_BARRIER] phase=START_CAMPAIGN_BOOT ownedAfter=0 result=PASS
-[2026-11-06T17:34:47.742Z] [SW_CONSOLE] [BG_LOG][tab=none] [CAMPAIGN_START] buildId=V7.0.0-RC11-20261030-THREE-MODE-CONTRACTS-PASS campaignRunId=normal_run_1793986487602_c9h5d8 totalTargets=1 mode=NORMAL delayMs=3000 fillDelayMs=100 submitDelayMs=1000
-[2026-11-06T17:34:47.862Z] [SW_CONSOLE] [BG_LOG][tab=743179295] 🔄 [Engine] Internal navigation detected (SPA). Preparing re-injection...
-[2026-11-06T17:34:48.121Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179295][attemptId=att_1793986487745_9qowi][url=http://127.0.0.1:8088/missing-required-newsletter.html] 🚀 [Engine] Ultra-Mode process started
-[2026-11-06T17:34:48.121Z] [SW_CONSOLE] [BG_LOG][tab=743179295] [CONTENT_EVENT][tabId=743179295][attemptId=att_1793986487745_9qowi][url=http://127.0.0.1:8088/missing-required-newsletter.html] 🚀 [Engine] Ultra-Mode process started
-[2026-11-06T17:34:49.568Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179295][attemptId=att_1793986487745_9qowi][url=http://127.0.0.1:8088/missing-required-newsletter.html] 🚀 [Engine] Ultra-Mode: Scrolling to reveal lazy-loaded content...
-[2026-11-06T17:34:49.568Z] [SW_CONSOLE] [BG_LOG][tab=743179295] [CONTENT_EVENT][tabId=743179295][attemptId=att_1793986487745_9qowi][url=http://127.0.0.1:8088/missing-required-newsletter.html] 🚀 [Engine] Ultra-Mode: Scrolling to reveal lazy-loaded content...
-[2026-11-06T17:34:56.956Z] [SW_CONSOLE] [BG_LOG][tab=743179295] [FINAL_CANONICAL] status=SKIPPED reason=NO_LONG_TEXT_INQUIRY_FIELD attemptId=att_1793986487745_9qowi
-[2026-11-06T17:34:56.956Z] [SW_CONSOLE] [BG_LOG][tab=743179295] [TARGET][127.0.0.1] FINAL status=SKIPPED reason=NO_LONG_TEXT_INQUIRY_FIELD
-[2026-11-06T17:34:56.960Z] [SW_CONSOLE] [BG_LOG][tab=743179295] [HISTORY_FINAL] sourceUrl=http://127.0.0.1:8088/missing-required-newsletter.html contactPageUrl=http://127.0.0.1:8088/missing-required-newsletter.html formPageUrl=http://127.0.0.1:8088/missing-required-newsletter.html resultUrl=http://127.0.0.1:8088/missing-required-newsletter.html
-[2026-11-06T17:34:58.159Z] [SW_CONSOLE] [POST_FINAL_TAB_INVARIANT] target=http://127.0.0.1:8088/missing-required-newsletter.html remainingOwnedTabs=0 retainedTabs=0 result=PASS
-[2026-11-06T17:34:58.194Z]   ✅ [PASS] MISSING_REQUIRED_FIELD_FAILS_CLOSED_ZERO_POSTS {"submissionsCount":5}
-[2026-11-06T17:34:58.194Z] 
+[2026-11-06T18:15:17.518Z] [SW_CONSOLE] [START_BG] received queue=1
+[2026-11-06T18:15:17.519Z] [SW_CONSOLE] [BG_LOG][tab=none] [START_BG] received queue=1
+[2026-11-06T18:15:17.577Z] [SW_CONSOLE] [NORMAL_CAMPAIGN_PREFLIGHT] publicTargets=0 testMode=false result=PASS
+[2026-11-06T18:15:17.577Z] [SW_CONSOLE] [BG_LOG][tab=none] [NORMAL_CAMPAIGN_PREFLIGHT] publicTargets=0 testMode=false result=PASS
+[2026-11-06T18:15:17.610Z] [SW_CONSOLE] [START_BG_READY] privacyReady=true
+[2026-11-06T18:15:17.610Z] [SW_CONSOLE] [BG_LOG][tab=none] [START_BG_READY] privacyReady=true
+[2026-11-06T18:15:17.611Z] [SW_CONSOLE] [TAB_BARRIER] phase=START_CAMPAIGN_BOOT ownedBefore=0
+[2026-11-06T18:15:17.611Z] [SW_CONSOLE] [TAB_BARRIER] phase=START_CAMPAIGN_BOOT ownedAfter=0 result=PASS
+[2026-11-06T18:15:17.658Z] [SW_CONSOLE] [BG_LOG][tab=none] [CAMPAIGN_START] buildId=V7.0.0-RC11-20261030-THREE-MODE-CONTRACTS-PASS campaignRunId=normal_run_1793988917354_ajeooj totalTargets=1 mode=NORMAL delayMs=3000 fillDelayMs=100 submitDelayMs=1000
+[2026-11-06T18:15:19.612Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=78604372][attemptId=att_1793988917665_2vut8][url=http://127.0.0.1:8088/missing-required-newsletter.html] 🚀 [Engine] Ultra-Mode process started
+[2026-11-06T18:15:19.619Z] [SW_CONSOLE] [BG_LOG][tab=78604372] [CONTENT_EVENT][tabId=78604372][attemptId=att_1793988917665_2vut8][url=http://127.0.0.1:8088/missing-required-newsletter.html] 🚀 [Engine] Ultra-Mode process started
+[2026-11-06T18:15:21.047Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=78604372][attemptId=att_1793988917665_2vut8][url=http://127.0.0.1:8088/missing-required-newsletter.html] 🚀 [Engine] Ultra-Mode: Scrolling to reveal lazy-loaded content...
+[2026-11-06T18:15:21.047Z] [SW_CONSOLE] [BG_LOG][tab=78604372] [CONTENT_EVENT][tabId=78604372][attemptId=att_1793988917665_2vut8][url=http://127.0.0.1:8088/missing-required-newsletter.html] 🚀 [Engine] Ultra-Mode: Scrolling to reveal lazy-loaded content...
+[2026-11-06T18:15:28.451Z] [SW_CONSOLE] [BG_LOG][tab=78604372] [FINAL_CANONICAL] status=SKIPPED reason=NO_LONG_TEXT_INQUIRY_FIELD attemptId=att_1793988917665_2vut8
+[2026-11-06T18:15:28.451Z] [SW_CONSOLE] [BG_LOG][tab=78604372] [TARGET][127.0.0.1] FINAL status=SKIPPED reason=NO_LONG_TEXT_INQUIRY_FIELD
+[2026-11-06T18:15:28.454Z] [SW_CONSOLE] [BG_LOG][tab=78604372] [HISTORY_FINAL] sourceUrl=http://127.0.0.1:8088/missing-required-newsletter.html contactPageUrl=http://127.0.0.1:8088/missing-required-newsletter.html formPageUrl=http://127.0.0.1:8088/missing-required-newsletter.html resultUrl=http://127.0.0.1:8088/missing-required-newsletter.html
+[2026-11-06T18:15:29.659Z] [SW_CONSOLE] [POST_FINAL_TAB_INVARIANT] target=http://127.0.0.1:8088/missing-required-newsletter.html remainingOwnedTabs=0 retainedTabs=0 result=PASS
+[2026-11-06T18:15:29.732Z] [SW_CONSOLE] [BG_LOG][tab=none] [FINISH_BARRIER] lastFinalTs=1793988929657 barrierClear. CAMPAIGN_FINISHED proceeding.
+[2026-11-06T18:15:29.737Z] [SW_CONSOLE] [TAB_BARRIER] phase=CAMPAIGN_FINISHED ownedBefore=0
+[2026-11-06T18:15:29.738Z] [SW_CONSOLE] [TAB_BARRIER] phase=CAMPAIGN_FINISHED ownedAfter=0 result=PASS
+[2026-11-06T18:15:29.812Z]   ✅ [PASS] MISSING_REQUIRED_FIELD_FAILS_CLOSED_ZERO_POSTS {"submissionsCount":5}
+[2026-11-06T18:15:29.813Z] 
 --- SECTION 7: EXTERNAL CAPTCHA ON NO-MESSAGE FORM ---
-[2026-11-06T17:34:58.227Z] [SW_CONSOLE] [BG_LOG][tab=none] [FINISH_BARRIER] lastFinalTs=1793986498159 barrierClear. CAMPAIGN_FINISHED proceeding.
-[2026-11-06T17:34:58.227Z] [SW_CONSOLE] [TAB_BARRIER] phase=CAMPAIGN_FINISHED ownedBefore=0
-[2026-11-06T17:34:58.230Z] [SW_CONSOLE] [TAB_BARRIER] phase=CAMPAIGN_FINISHED ownedAfter=0 result=PASS
-[2026-11-06T17:34:58.941Z] [SW_CONSOLE] [START_BG] received queue=1
-[2026-11-06T17:34:58.944Z] [SW_CONSOLE] [BG_LOG][tab=none] [START_BG] received queue=1
-[2026-11-06T17:34:58.947Z] [SW_CONSOLE] [NORMAL_CAMPAIGN_PREFLIGHT] publicTargets=0 testMode=false result=PASS
-[2026-11-06T17:34:58.949Z] [SW_CONSOLE] [BG_LOG][tab=none] [NORMAL_CAMPAIGN_PREFLIGHT] publicTargets=0 testMode=false result=PASS
-[2026-11-06T17:34:58.954Z] [SW_CONSOLE] [START_BG_READY] privacyReady=true
-[2026-11-06T17:34:58.955Z] [SW_CONSOLE] [BG_LOG][tab=none] [START_BG_READY] privacyReady=true
-[2026-11-06T17:34:58.957Z] [SW_CONSOLE] [TAB_BARRIER] phase=START_CAMPAIGN_BOOT ownedBefore=0
-[2026-11-06T17:34:58.958Z] [SW_CONSOLE] [TAB_BARRIER] phase=START_CAMPAIGN_BOOT ownedAfter=0 result=PASS
-[2026-11-06T17:34:58.973Z] [SW_CONSOLE] [BG_LOG][tab=none] [CAMPAIGN_START] buildId=V7.0.0-RC11-20261030-THREE-MODE-CONTRACTS-PASS campaignRunId=normal_run_1793986498841_7uhv2n totalTargets=1 mode=NORMAL delayMs=3000 fillDelayMs=100 submitDelayMs=1000
-[2026-11-06T17:34:59.299Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179299][attemptId=att_1793986498978_m41jr][url=http://127.0.0.1:8088/captcha-turnstile-no-message.html] ⚠️ [Engine] Suppressing duplicate setup (Signals re-sent).
-[2026-11-06T17:34:59.299Z] [SW_CONSOLE] [BG_LOG][tab=743179299] [CONTENT_EVENT][tabId=743179299][attemptId=att_1793986498978_m41jr][url=http://127.0.0.1:8088/captcha-turnstile-no-message.html] ⚠️ [Engine] Suppressing duplicate setup (Signals re-sent).
-[2026-11-06T17:34:59.341Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179299][attemptId=att_1793986498978_m41jr][url=http://127.0.0.1:8088/captcha-turnstile-no-message.html] 🚀 [Engine] Ultra-Mode process started
-[2026-11-06T17:34:59.341Z] [SW_CONSOLE] [BG_LOG][tab=743179299] [CONTENT_EVENT][tabId=743179299][attemptId=att_1793986498978_m41jr][url=http://127.0.0.1:8088/captcha-turnstile-no-message.html] 🚀 [Engine] Ultra-Mode process started
-[2026-11-06T17:35:00.008Z] External Turnstile token simulated in DOM
-[2026-11-06T17:35:00.772Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179299][attemptId=att_1793986498978_m41jr][url=http://127.0.0.1:8088/captcha-turnstile-no-message.html] [STAGE] stage=CONTACT_PAGE_FOUND
-[2026-11-06T17:35:00.773Z] [SW_CONSOLE] [BG_LOG][tab=743179299] [CONTENT_EVENT][tabId=743179299][attemptId=att_1793986498978_m41jr][url=http://127.0.0.1:8088/captcha-turnstile-no-message.html] [STAGE] stage=CONTACT_PAGE_FOUND
-[2026-11-06T17:35:00.805Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179299][attemptId=att_1793986498978_m41jr][url=http://127.0.0.1:8088/captcha-turnstile-no-message.html] [STAGE] stage=ELIGIBLE_FORM_FOUND
-[2026-11-06T17:35:00.806Z] [SW_CONSOLE] [BG_LOG][tab=743179299] [CONTENT_EVENT][tabId=743179299][attemptId=att_1793986498978_m41jr][url=http://127.0.0.1:8088/captcha-turnstile-no-message.html] [STAGE] stage=ELIGIBLE_FORM_FOUND
-[2026-11-06T17:35:03.841Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179299][attemptId=att_1793986498978_m41jr][url=http://127.0.0.1:8088/captcha-turnstile-no-message.html] [STAGE] stage=REQUIRED_FIELDS_RESOLVED
-[2026-11-06T17:35:03.842Z] [SW_CONSOLE] [BG_LOG][tab=743179299] [CONTENT_EVENT][tabId=743179299][attemptId=att_1793986498978_m41jr][url=http://127.0.0.1:8088/captcha-turnstile-no-message.html] [STAGE] stage=REQUIRED_FIELDS_RESOLVED
-[2026-11-06T17:35:03.855Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179299][attemptId=att_1793986498978_m41jr][url=http://127.0.0.1:8088/captcha-turnstile-no-message.html] [STAGE] stage=FIELD_STATE_STABLE
-[2026-11-06T17:35:03.855Z] [SW_CONSOLE] [BG_LOG][tab=743179299] [CONTENT_EVENT][tabId=743179299][attemptId=att_1793986498978_m41jr][url=http://127.0.0.1:8088/captcha-turnstile-no-message.html] [STAGE] stage=FIELD_STATE_STABLE
-[2026-11-06T17:35:03.867Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179299][attemptId=att_1793986498978_m41jr][url=http://127.0.0.1:8088/captcha-turnstile-no-message.html] ⏳ [Engine] Holding for visual confirmation (1000ms)...
-[2026-11-06T17:35:03.867Z] [SW_CONSOLE] [BG_LOG][tab=743179299] [CONTENT_EVENT][tabId=743179299][attemptId=att_1793986498978_m41jr][url=http://127.0.0.1:8088/captcha-turnstile-no-message.html] ⏳ [Engine] Holding for visual confirmation (1000ms)...
-[2026-11-06T17:35:05.084Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179299][attemptId=att_1793986498978_m41jr][url=http://127.0.0.1:8088/captcha-turnstile-no-message.html] [FINAL_FILL] controls=2 unresolvedBefore=0 checkboxResolved=0 radioResolved=0 selectResolved=0 unresolvedAfter=0
-[2026-11-06T17:35:05.084Z] [SW_CONSOLE] [BG_LOG][tab=743179299] [CONTENT_EVENT][tabId=743179299][attemptId=att_1793986498978_m41jr][url=http://127.0.0.1:8088/captcha-turnstile-no-message.html] [FINAL_FILL] controls=2 unresolvedBefore=0 checkboxResolved=0 radioResolved=0 selectResolved=0 unresolvedAfter=0
-[2026-11-06T17:35:05.085Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179299][attemptId=att_1793986498978_m41jr][url=http://127.0.0.1:8088/captcha-turnstile-no-message.html] [FINAL_AUDIT] PASS
-[2026-11-06T17:35:05.085Z] [SW_CONSOLE] [BG_LOG][tab=743179299] [CONTENT_EVENT][tabId=743179299][attemptId=att_1793986498978_m41jr][url=http://127.0.0.1:8088/captcha-turnstile-no-message.html] [FINAL_AUDIT] PASS
-[2026-11-06T17:35:05.093Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179299][attemptId=att_1793986498978_m41jr][url=http://127.0.0.1:8088/captcha-turnstile-no-message.html] [SUBMIT_LOCK] acquired=true submittedFromUrl=http://127.0.0.1:8088/captcha-turnstile-no-message.html — post FINAL_AUDIT_PASS
-[2026-11-06T17:35:05.093Z] [SW_CONSOLE] [BG_LOG][tab=743179299] [CONTENT_EVENT][tabId=743179299][attemptId=att_1793986498978_m41jr][url=http://127.0.0.1:8088/captcha-turnstile-no-message.html] [SUBMIT_LOCK] acquired=true submittedFromUrl=http://127.0.0.1:8088/captcha-turnstile-no-message.html — post FINAL_AUDIT_PASS
-[2026-11-06T17:35:05.107Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179299][attemptId=att_1793986498978_m41jr][url=http://127.0.0.1:8088/captcha-turnstile-no-message.html] [STAGE] stage=SUBMIT_ATTEMPT_STARTED
-[2026-11-06T17:35:05.107Z] [SW_CONSOLE] [BG_LOG][tab=743179299] [CONTENT_EVENT][tabId=743179299][attemptId=att_1793986498978_m41jr][url=http://127.0.0.1:8088/captcha-turnstile-no-message.html] [STAGE] stage=SUBMIT_ATTEMPT_STARTED
-[2026-11-06T17:35:05.111Z] [SW_CONSOLE] [BG_LOG][tab=743179299] [STAGE_PROGRESSION] SUBMIT_ATTEMPT_STARTED -> SUBMIT_PENDING committed attemptId=att_1793986498978_m41jr
-[2026-11-06T17:35:05.159Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179299][attemptId=att_1793986498978_m41jr][url=http://127.0.0.1:8088/captcha-turnstile-no-message.html] [STAGE] stage=SUBMIT_TRIGGERED
-[2026-11-06T17:35:05.159Z] [SW_CONSOLE] [BG_LOG][tab=743179299] [CONTENT_EVENT][tabId=743179299][attemptId=att_1793986498978_m41jr][url=http://127.0.0.1:8088/captcha-turnstile-no-message.html] [STAGE] stage=SUBMIT_TRIGGERED
-[2026-11-06T17:35:05.160Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179299][attemptId=att_1793986498978_m41jr][url=http://127.0.0.1:8088/captcha-turnstile-no-message.html] [TURNSTILE_LIVE_FINAL] PASS
-[2026-11-06T17:35:05.161Z] [SW_CONSOLE] [BG_LOG][tab=743179299] [CONTENT_EVENT][tabId=743179299][attemptId=att_1793986498978_m41jr][url=http://127.0.0.1:8088/captcha-turnstile-no-message.html] [TURNSTILE_LIVE_FINAL] PASS
-[2026-11-06T17:35:05.182Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179299][attemptId=att_1793986498978_m41jr][url=http://127.0.0.1:8088/captcha-turnstile-no-message.html] [FINAL] status=CONFIRMED_SUCCESS
-[2026-11-06T17:35:05.183Z] [SW_CONSOLE] [BG_LOG][tab=743179299] [CONTENT_EVENT][tabId=743179299][attemptId=att_1793986498978_m41jr][url=http://127.0.0.1:8088/captcha-turnstile-no-message.html] [FINAL] status=CONFIRMED_SUCCESS
-[2026-11-06T17:35:05.196Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179299][attemptId=att_1793986498978_m41jr][url=http://127.0.0.1:8088/captcha-turnstile-no-message.html] [STAGE] stage=CONFIRMED_SUCCESS
-[2026-11-06T17:35:05.196Z] [SW_CONSOLE] [BG_LOG][tab=743179299] [CONTENT_EVENT][tabId=743179299][attemptId=att_1793986498978_m41jr][url=http://127.0.0.1:8088/captcha-turnstile-no-message.html] [STAGE] stage=CONFIRMED_SUCCESS
-[2026-11-06T17:35:06.154Z] [SW_CONSOLE] [BG_LOG][tab=743179299] [FINAL_CANONICAL] status=CONFIRMED_SUCCESS reason=SUCCESS_CONFIRMED attemptId=att_1793986498978_m41jr
-[2026-11-06T17:35:06.155Z] [SW_CONSOLE] [BG_LOG][tab=743179299] [TARGET][127.0.0.1] FINAL status=CONFIRMED_SUCCESS reason=SUCCESS_CONFIRMED
-[2026-11-06T17:35:06.159Z] [SW_CONSOLE] [BG_LOG][tab=743179299] [HISTORY_FINAL] sourceUrl=http://127.0.0.1:8088/captcha-turnstile-no-message.html contactPageUrl=http://127.0.0.1:8088/captcha-turnstile-no-message.html formPageUrl=http://127.0.0.1:8088/captcha-turnstile-no-message.html resultUrl=http://127.0.0.1:8088/captcha-turnstile-no-message.html
-[2026-11-06T17:35:06.167Z] [SW_CONSOLE] [BG_LOG][tab=743179299] ✨ [Engine] Submission confirmed. Maintaining tab for completion (3500ms)...
-[2026-11-06T17:35:09.857Z] [SW_CONSOLE] [POST_FINAL_TAB_INVARIANT] target=http://127.0.0.1:8088/captcha-turnstile-no-message.html remainingOwnedTabs=0 retainedTabs=0 result=PASS
-[2026-11-06T17:35:09.914Z] [SW_CONSOLE] [BG_LOG][tab=none] [FINISH_BARRIER] lastFinalTs=1793986509855 barrierClear. CAMPAIGN_FINISHED proceeding.
-[2026-11-06T17:35:09.919Z] [SW_CONSOLE] [TAB_BARRIER] phase=CAMPAIGN_FINISHED ownedBefore=0
-[2026-11-06T17:35:09.919Z] [SW_CONSOLE] [TAB_BARRIER] phase=CAMPAIGN_FINISHED ownedAfter=0 result=PASS
-[2026-11-06T17:35:10.228Z]   ✅ [PASS] EXTERNAL_CAPTCHA_NO_MESSAGE_SUCCESS_SIXTH_POST {"totalSubmissions":6,"expected":6}
-[2026-11-06T17:35:10.228Z] 
+[2026-11-06T18:15:30.510Z] [SW_CONSOLE] [START_BG] received queue=1
+[2026-11-06T18:15:30.511Z] [SW_CONSOLE] [BG_LOG][tab=none] [START_BG] received queue=1
+[2026-11-06T18:15:30.511Z] [SW_CONSOLE] [NORMAL_CAMPAIGN_PREFLIGHT] publicTargets=0 testMode=false result=PASS
+[2026-11-06T18:15:30.511Z] [SW_CONSOLE] [BG_LOG][tab=none] [NORMAL_CAMPAIGN_PREFLIGHT] publicTargets=0 testMode=false result=PASS
+[2026-11-06T18:15:30.512Z] [SW_CONSOLE] [START_BG_READY] privacyReady=true
+[2026-11-06T18:15:30.512Z] [SW_CONSOLE] [BG_LOG][tab=none] [START_BG_READY] privacyReady=true
+[2026-11-06T18:15:30.512Z] [SW_CONSOLE] [TAB_BARRIER] phase=START_CAMPAIGN_BOOT ownedBefore=0
+[2026-11-06T18:15:30.513Z] [SW_CONSOLE] [TAB_BARRIER] phase=START_CAMPAIGN_BOOT ownedAfter=0 result=PASS
+[2026-11-06T18:15:30.555Z] [SW_CONSOLE] [BG_LOG][tab=none] [CAMPAIGN_START] buildId=V7.0.0-RC11-20261030-THREE-MODE-CONTRACTS-PASS campaignRunId=normal_run_1793988930327_z6kaom totalTargets=1 mode=NORMAL delayMs=3000 fillDelayMs=100 submitDelayMs=1000
+[2026-11-06T18:15:31.492Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=78604376][attemptId=att_1793988930564_quw2g][url=http://127.0.0.1:8088/captcha-turnstile-no-message.html] 🚀 [Engine] Ultra-Mode process started
+[2026-11-06T18:15:31.522Z] [SW_CONSOLE] [BG_LOG][tab=78604376] [CONTENT_EVENT][tabId=78604376][attemptId=att_1793988930564_quw2g][url=http://127.0.0.1:8088/captcha-turnstile-no-message.html] 🚀 [Engine] Ultra-Mode process started
+[2026-11-06T18:15:32.277Z] External Turnstile token simulated in DOM
+[2026-11-06T18:15:33.038Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=78604376][attemptId=att_1793988930564_quw2g][url=http://127.0.0.1:8088/captcha-turnstile-no-message.html] [STAGE] stage=CONTACT_PAGE_FOUND
+[2026-11-06T18:15:33.107Z] [SW_CONSOLE] [BG_LOG][tab=78604376] [CONTENT_EVENT][tabId=78604376][attemptId=att_1793988930564_quw2g][url=http://127.0.0.1:8088/captcha-turnstile-no-message.html] [STAGE] stage=CONTACT_PAGE_FOUND
+[2026-11-06T18:15:33.145Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=78604376][attemptId=att_1793988930564_quw2g][url=http://127.0.0.1:8088/captcha-turnstile-no-message.html] [STAGE] stage=ELIGIBLE_FORM_FOUND
+[2026-11-06T18:15:33.147Z] [SW_CONSOLE] [BG_LOG][tab=78604376] [CONTENT_EVENT][tabId=78604376][attemptId=att_1793988930564_quw2g][url=http://127.0.0.1:8088/captcha-turnstile-no-message.html] [STAGE] stage=ELIGIBLE_FORM_FOUND
+[2026-11-06T18:15:36.536Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=78604376][attemptId=att_1793988930564_quw2g][url=http://127.0.0.1:8088/captcha-turnstile-no-message.html] [STAGE] stage=REQUIRED_FIELDS_RESOLVED
+[2026-11-06T18:15:36.536Z] [SW_CONSOLE] [BG_LOG][tab=78604376] [CONTENT_EVENT][tabId=78604376][attemptId=att_1793988930564_quw2g][url=http://127.0.0.1:8088/captcha-turnstile-no-message.html] [STAGE] stage=REQUIRED_FIELDS_RESOLVED
+[2026-11-06T18:15:36.536Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=78604376][attemptId=att_1793988930564_quw2g][url=http://127.0.0.1:8088/captcha-turnstile-no-message.html] [STAGE] stage=FIELD_STATE_STABLE
+[2026-11-06T18:15:36.536Z] [SW_CONSOLE] [BG_LOG][tab=78604376] [CONTENT_EVENT][tabId=78604376][attemptId=att_1793988930564_quw2g][url=http://127.0.0.1:8088/captcha-turnstile-no-message.html] [STAGE] stage=FIELD_STATE_STABLE
+[2026-11-06T18:15:36.569Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=78604376][attemptId=att_1793988930564_quw2g][url=http://127.0.0.1:8088/captcha-turnstile-no-message.html] ⏳ [Engine] Holding for visual confirmation (1000ms)...
+[2026-11-06T18:15:36.569Z] [SW_CONSOLE] [BG_LOG][tab=78604376] [CONTENT_EVENT][tabId=78604376][attemptId=att_1793988930564_quw2g][url=http://127.0.0.1:8088/captcha-turnstile-no-message.html] ⏳ [Engine] Holding for visual confirmation (1000ms)...
+[2026-11-06T18:15:37.763Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=78604376][attemptId=att_1793988930564_quw2g][url=http://127.0.0.1:8088/captcha-turnstile-no-message.html] [FINAL_FILL] controls=2 unresolvedBefore=0 checkboxResolved=0 radioResolved=0 selectResolved=0 unresolvedAfter=0
+[2026-11-06T18:15:37.763Z] [SW_CONSOLE] [BG_LOG][tab=78604376] [CONTENT_EVENT][tabId=78604376][attemptId=att_1793988930564_quw2g][url=http://127.0.0.1:8088/captcha-turnstile-no-message.html] [FINAL_FILL] controls=2 unresolvedBefore=0 checkboxResolved=0 radioResolved=0 selectResolved=0 unresolvedAfter=0
+[2026-11-06T18:15:37.768Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=78604376][attemptId=att_1793988930564_quw2g][url=http://127.0.0.1:8088/captcha-turnstile-no-message.html] [FINAL_AUDIT] PASS
+[2026-11-06T18:15:37.768Z] [SW_CONSOLE] [BG_LOG][tab=78604376] [CONTENT_EVENT][tabId=78604376][attemptId=att_1793988930564_quw2g][url=http://127.0.0.1:8088/captcha-turnstile-no-message.html] [FINAL_AUDIT] PASS
+[2026-11-06T18:15:37.776Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=78604376][attemptId=att_1793988930564_quw2g][url=http://127.0.0.1:8088/captcha-turnstile-no-message.html] [SUBMIT_LOCK] acquired=true submittedFromUrl=http://127.0.0.1:8088/captcha-turnstile-no-message.html — post FINAL_AUDIT_PASS
+[2026-11-06T18:15:37.776Z] [SW_CONSOLE] [BG_LOG][tab=78604376] [CONTENT_EVENT][tabId=78604376][attemptId=att_1793988930564_quw2g][url=http://127.0.0.1:8088/captcha-turnstile-no-message.html] [SUBMIT_LOCK] acquired=true submittedFromUrl=http://127.0.0.1:8088/captcha-turnstile-no-message.html — post FINAL_AUDIT_PASS
+[2026-11-06T18:15:37.789Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=78604376][attemptId=att_1793988930564_quw2g][url=http://127.0.0.1:8088/captcha-turnstile-no-message.html] [STAGE] stage=SUBMIT_ATTEMPT_STARTED
+[2026-11-06T18:15:37.790Z] [SW_CONSOLE] [BG_LOG][tab=78604376] [CONTENT_EVENT][tabId=78604376][attemptId=att_1793988930564_quw2g][url=http://127.0.0.1:8088/captcha-turnstile-no-message.html] [STAGE] stage=SUBMIT_ATTEMPT_STARTED
+[2026-11-06T18:15:37.794Z] [SW_CONSOLE] [BG_LOG][tab=78604376] [STAGE_PROGRESSION] SUBMIT_ATTEMPT_STARTED -> SUBMIT_PENDING committed attemptId=att_1793988930564_quw2g
+[2026-11-06T18:15:37.838Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=78604376][attemptId=att_1793988930564_quw2g][url=http://127.0.0.1:8088/captcha-turnstile-no-message.html] [STAGE] stage=SUBMIT_TRIGGERED
+[2026-11-06T18:15:37.838Z] [SW_CONSOLE] [BG_LOG][tab=78604376] [CONTENT_EVENT][tabId=78604376][attemptId=att_1793988930564_quw2g][url=http://127.0.0.1:8088/captcha-turnstile-no-message.html] [STAGE] stage=SUBMIT_TRIGGERED
+[2026-11-06T18:15:37.858Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=78604376][attemptId=att_1793988930564_quw2g][url=http://127.0.0.1:8088/captcha-turnstile-no-message.html] [TURNSTILE_LIVE_FINAL] PASS
+[2026-11-06T18:15:37.858Z] [SW_CONSOLE] [BG_LOG][tab=78604376] [CONTENT_EVENT][tabId=78604376][attemptId=att_1793988930564_quw2g][url=http://127.0.0.1:8088/captcha-turnstile-no-message.html] [TURNSTILE_LIVE_FINAL] PASS
+[2026-11-06T18:15:37.902Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=78604376][attemptId=att_1793988930564_quw2g][url=http://127.0.0.1:8088/captcha-turnstile-no-message.html] [FINAL] status=CONFIRMED_SUCCESS
+[2026-11-06T18:15:37.903Z] [SW_CONSOLE] [BG_LOG][tab=78604376] [CONTENT_EVENT][tabId=78604376][attemptId=att_1793988930564_quw2g][url=http://127.0.0.1:8088/captcha-turnstile-no-message.html] [FINAL] status=CONFIRMED_SUCCESS
+[2026-11-06T18:15:37.903Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=78604376][attemptId=att_1793988930564_quw2g][url=http://127.0.0.1:8088/captcha-turnstile-no-message.html] [STAGE] stage=CONFIRMED_SUCCESS
+[2026-11-06T18:15:37.903Z] [SW_CONSOLE] [BG_LOG][tab=78604376] [CONTENT_EVENT][tabId=78604376][attemptId=att_1793988930564_quw2g][url=http://127.0.0.1:8088/captcha-turnstile-no-message.html] [STAGE] stage=CONFIRMED_SUCCESS
+[2026-11-06T18:15:38.843Z] [SW_CONSOLE] [BG_LOG][tab=78604376] [FINAL_CANONICAL] status=CONFIRMED_SUCCESS reason=SUCCESS_CONFIRMED attemptId=att_1793988930564_quw2g
+[2026-11-06T18:15:38.844Z] [SW_CONSOLE] [BG_LOG][tab=78604376] [TARGET][127.0.0.1] FINAL status=CONFIRMED_SUCCESS reason=SUCCESS_CONFIRMED
+[2026-11-06T18:15:38.847Z] [SW_CONSOLE] [BG_LOG][tab=78604376] [HISTORY_FINAL] sourceUrl=http://127.0.0.1:8088/captcha-turnstile-no-message.html contactPageUrl=http://127.0.0.1:8088/captcha-turnstile-no-message.html formPageUrl=http://127.0.0.1:8088/captcha-turnstile-no-message.html resultUrl=http://127.0.0.1:8088/captcha-turnstile-no-message.html
+[2026-11-06T18:15:38.862Z] [SW_CONSOLE] [BG_LOG][tab=78604376] ✨ [Engine] Submission confirmed. Maintaining tab for completion (3500ms)...
+[2026-11-06T18:15:42.559Z] [SW_CONSOLE] [POST_FINAL_TAB_INVARIANT] target=http://127.0.0.1:8088/captcha-turnstile-no-message.html remainingOwnedTabs=0 retainedTabs=0 result=PASS
+[2026-11-06T18:15:42.626Z] [SW_CONSOLE] [BG_LOG][tab=none] [FINISH_BARRIER] lastFinalTs=1793988942559 barrierClear. CAMPAIGN_FINISHED proceeding.
+[2026-11-06T18:15:42.629Z] [SW_CONSOLE] [TAB_BARRIER] phase=CAMPAIGN_FINISHED ownedBefore=0
+[2026-11-06T18:15:42.630Z] [SW_CONSOLE] [TAB_BARRIER] phase=CAMPAIGN_FINISHED ownedAfter=0 result=PASS
+[2026-11-06T18:15:43.002Z]   ✅ [PASS] EXTERNAL_CAPTCHA_NO_MESSAGE_SUCCESS_SIXTH_POST {"totalSubmissions":6,"expected":6}
+[2026-11-06T18:15:43.002Z] 
 --- SECTION 8: TRIPLE MODES (AUTO / SEMI_AUTO / MANUAL) ---
-[2026-11-06T17:35:10.783Z] [SW_CONSOLE] [START_BG] received queue=1
-[2026-11-06T17:35:10.786Z] [SW_CONSOLE] [BG_LOG][tab=none] [START_BG] received queue=1
-[2026-11-06T17:35:10.789Z] [SW_CONSOLE] [NORMAL_CAMPAIGN_PREFLIGHT] publicTargets=0 testMode=false result=PASS
-[2026-11-06T17:35:10.791Z] [SW_CONSOLE] [BG_LOG][tab=none] [NORMAL_CAMPAIGN_PREFLIGHT] publicTargets=0 testMode=false result=PASS
-[2026-11-06T17:35:10.795Z] [SW_CONSOLE] [START_BG_READY] privacyReady=true
-[2026-11-06T17:35:10.798Z] [SW_CONSOLE] [BG_LOG][tab=none] [START_BG_READY] privacyReady=true
-[2026-11-06T17:35:10.805Z] [SW_CONSOLE] [TAB_BARRIER] phase=START_CAMPAIGN_BOOT ownedBefore=0
-[2026-11-06T17:35:10.805Z] [SW_CONSOLE] [TAB_BARRIER] phase=START_CAMPAIGN_BOOT ownedAfter=0 result=PASS
-[2026-11-06T17:35:10.833Z] [SW_CONSOLE] [BG_LOG][tab=none] [CAMPAIGN_START] buildId=V7.0.0-RC11-20261030-THREE-MODE-CONTRACTS-PASS campaignRunId=normal_run_1793986510679_my137a totalTargets=1 mode=NORMAL delayMs=3000 fillDelayMs=100 submitDelayMs=1000
-[2026-11-06T17:35:11.289Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179303][attemptId=att_1793986510838_pwb3l][url=http://127.0.0.1:8088/newsletter-name-email.html] ⚠️ [Engine] Suppressing duplicate setup (Signals re-sent).
-[2026-11-06T17:35:11.290Z] [SW_CONSOLE] [BG_LOG][tab=743179303] [CONTENT_EVENT][tabId=743179303][attemptId=att_1793986510838_pwb3l][url=http://127.0.0.1:8088/newsletter-name-email.html] ⚠️ [Engine] Suppressing duplicate setup (Signals re-sent).
-[2026-11-06T17:35:11.323Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179303][attemptId=att_1793986510838_pwb3l][url=http://127.0.0.1:8088/newsletter-name-email.html] 🚀 [Engine] Ultra-Mode process started
-[2026-11-06T17:35:11.325Z] [SW_CONSOLE] [BG_LOG][tab=743179303] [CONTENT_EVENT][tabId=743179303][attemptId=att_1793986510838_pwb3l][url=http://127.0.0.1:8088/newsletter-name-email.html] 🚀 [Engine] Ultra-Mode process started
-[2026-11-06T17:35:12.785Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179303][attemptId=att_1793986510838_pwb3l][url=http://127.0.0.1:8088/newsletter-name-email.html] [STAGE] stage=CONTACT_PAGE_FOUND
-[2026-11-06T17:35:12.785Z] [SW_CONSOLE] [BG_LOG][tab=743179303] [CONTENT_EVENT][tabId=743179303][attemptId=att_1793986510838_pwb3l][url=http://127.0.0.1:8088/newsletter-name-email.html] [STAGE] stage=CONTACT_PAGE_FOUND
-[2026-11-06T17:35:12.807Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179303][attemptId=att_1793986510838_pwb3l][url=http://127.0.0.1:8088/newsletter-name-email.html] [STAGE] stage=ELIGIBLE_FORM_FOUND
-[2026-11-06T17:35:12.807Z] [SW_CONSOLE] [BG_LOG][tab=743179303] [CONTENT_EVENT][tabId=743179303][attemptId=att_1793986510838_pwb3l][url=http://127.0.0.1:8088/newsletter-name-email.html] [STAGE] stage=ELIGIBLE_FORM_FOUND
-[2026-11-06T17:35:18.552Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179303][attemptId=att_1793986510838_pwb3l][url=http://127.0.0.1:8088/newsletter-name-email.html] [STAGE] stage=REQUIRED_FIELDS_RESOLVED
-[2026-11-06T17:35:18.552Z] [SW_CONSOLE] [BG_LOG][tab=743179303] [CONTENT_EVENT][tabId=743179303][attemptId=att_1793986510838_pwb3l][url=http://127.0.0.1:8088/newsletter-name-email.html] [STAGE] stage=REQUIRED_FIELDS_RESOLVED
-[2026-11-06T17:35:18.553Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179303][attemptId=att_1793986510838_pwb3l][url=http://127.0.0.1:8088/newsletter-name-email.html] [STAGE] stage=FIELD_STATE_STABLE
-[2026-11-06T17:35:18.553Z] [SW_CONSOLE] [BG_LOG][tab=743179303] [CONTENT_EVENT][tabId=743179303][attemptId=att_1793986510838_pwb3l][url=http://127.0.0.1:8088/newsletter-name-email.html] [STAGE] stage=FIELD_STATE_STABLE
-[2026-11-06T17:35:18.565Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179303][attemptId=att_1793986510838_pwb3l][url=http://127.0.0.1:8088/newsletter-name-email.html] ⏳ [Engine] Holding for visual confirmation (1000ms)...
-[2026-11-06T17:35:18.566Z] [SW_CONSOLE] [BG_LOG][tab=743179303] [CONTENT_EVENT][tabId=743179303][attemptId=att_1793986510838_pwb3l][url=http://127.0.0.1:8088/newsletter-name-email.html] ⏳ [Engine] Holding for visual confirmation (1000ms)...
-[2026-11-06T17:35:19.786Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179303][attemptId=att_1793986510838_pwb3l][url=http://127.0.0.1:8088/newsletter-name-email.html] [FINAL_FILL] controls=2 unresolvedBefore=0 checkboxResolved=0 radioResolved=0 selectResolved=0 unresolvedAfter=0
-[2026-11-06T17:35:19.786Z] [SW_CONSOLE] [BG_LOG][tab=743179303] [CONTENT_EVENT][tabId=743179303][attemptId=att_1793986510838_pwb3l][url=http://127.0.0.1:8088/newsletter-name-email.html] [FINAL_FILL] controls=2 unresolvedBefore=0 checkboxResolved=0 radioResolved=0 selectResolved=0 unresolvedAfter=0
-[2026-11-06T17:35:19.787Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179303][attemptId=att_1793986510838_pwb3l][url=http://127.0.0.1:8088/newsletter-name-email.html] [FINAL_AUDIT] PASS
-[2026-11-06T17:35:19.787Z] [SW_CONSOLE] [BG_LOG][tab=743179303] [CONTENT_EVENT][tabId=743179303][attemptId=att_1793986510838_pwb3l][url=http://127.0.0.1:8088/newsletter-name-email.html] [FINAL_AUDIT] PASS
-[2026-11-06T17:35:20.108Z]   ✅ [PASS] MANUAL_MODE_NO_MESSAGE_HOLDS_ON_PANEL {"holdObserved":true}
-[2026-11-06T17:35:20.725Z] [SW_CONSOLE] [BG_LOG][tab=743179303] [FINAL_CANONICAL] status=CONFIRMED_SUCCESS reason=SUCCESS_CONFIRMED attemptId=att_1793986510838_pwb3l
-[2026-11-06T17:35:20.727Z] [SW_CONSOLE] [BG_LOG][tab=743179303] [TARGET][127.0.0.1] FINAL status=CONFIRMED_SUCCESS reason=SUCCESS_CONFIRMED
-[2026-11-06T17:35:20.730Z] [SW_CONSOLE] [BG_LOG][tab=743179303] [HISTORY_FINAL] sourceUrl=http://127.0.0.1:8088/newsletter-name-email.html contactPageUrl=http://127.0.0.1:8088/newsletter-name-email.html formPageUrl=http://127.0.0.1:8088/newsletter-name-email.html resultUrl=http://127.0.0.1:8088/newsletter-name-email.html
-[2026-11-06T17:35:20.738Z] [SW_CONSOLE] [BG_LOG][tab=743179303] ✨ [Engine] Submission confirmed. Maintaining tab for completion (20ms)...
-[2026-11-06T17:35:20.992Z] [SW_CONSOLE] [POST_FINAL_TAB_INVARIANT] target=http://127.0.0.1:8088/newsletter-name-email.html remainingOwnedTabs=0 retainedTabs=0 result=PASS
-[2026-11-06T17:35:21.062Z] [SW_CONSOLE] [BG_LOG][tab=none] [FINISH_BARRIER] lastFinalTs=1793986520987 barrierClear. CAMPAIGN_FINISHED proceeding.
-[2026-11-06T17:35:21.062Z] [SW_CONSOLE] [TAB_BARRIER] phase=CAMPAIGN_FINISHED ownedBefore=0
-[2026-11-06T17:35:21.062Z] [SW_CONSOLE] [TAB_BARRIER] phase=CAMPAIGN_FINISHED ownedAfter=0 result=PASS
-[2026-11-06T17:35:21.230Z]   ✅ [PASS] MANUAL_MODE_OPERATOR_SUBMIT_SEVENTH_POST {"totalSubmissions":7,"expected":7}
-[2026-11-06T17:35:21.230Z] 
+[2026-11-06T18:15:43.547Z] [SW_CONSOLE] [START_BG] received queue=1
+[2026-11-06T18:15:43.553Z] [SW_CONSOLE] [BG_LOG][tab=none] [START_BG] received queue=1
+[2026-11-06T18:15:43.554Z] [SW_CONSOLE] [NORMAL_CAMPAIGN_PREFLIGHT] publicTargets=0 testMode=false result=PASS
+[2026-11-06T18:15:43.556Z] [SW_CONSOLE] [BG_LOG][tab=none] [NORMAL_CAMPAIGN_PREFLIGHT] publicTargets=0 testMode=false result=PASS
+[2026-11-06T18:15:43.563Z] [SW_CONSOLE] [START_BG_READY] privacyReady=true
+[2026-11-06T18:15:43.563Z] [SW_CONSOLE] [BG_LOG][tab=none] [START_BG_READY] privacyReady=true
+[2026-11-06T18:15:43.573Z] [SW_CONSOLE] [TAB_BARRIER] phase=START_CAMPAIGN_BOOT ownedBefore=0
+[2026-11-06T18:15:43.573Z] [SW_CONSOLE] [TAB_BARRIER] phase=START_CAMPAIGN_BOOT ownedAfter=0 result=PASS
+[2026-11-06T18:15:43.604Z] [SW_CONSOLE] [BG_LOG][tab=none] [CAMPAIGN_START] buildId=V7.0.0-RC11-20261030-THREE-MODE-CONTRACTS-PASS campaignRunId=normal_run_1793988943445_75a30s totalTargets=1 mode=NORMAL delayMs=3000 fillDelayMs=100 submitDelayMs=1000
+[2026-11-06T18:15:43.948Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=78604380][attemptId=att_1793988943612_8u8fn][url=http://127.0.0.1:8088/newsletter-name-email.html] ⚠️ [Engine] Suppressing duplicate setup (Signals re-sent).
+[2026-11-06T18:15:43.948Z] [SW_CONSOLE] [BG_LOG][tab=78604380] [CONTENT_EVENT][tabId=78604380][attemptId=att_1793988943612_8u8fn][url=http://127.0.0.1:8088/newsletter-name-email.html] ⚠️ [Engine] Suppressing duplicate setup (Signals re-sent).
+[2026-11-06T18:15:43.996Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=78604380][attemptId=att_1793988943612_8u8fn][url=http://127.0.0.1:8088/newsletter-name-email.html] 🚀 [Engine] Ultra-Mode process started
+[2026-11-06T18:15:43.996Z] [SW_CONSOLE] [BG_LOG][tab=78604380] [CONTENT_EVENT][tabId=78604380][attemptId=att_1793988943612_8u8fn][url=http://127.0.0.1:8088/newsletter-name-email.html] 🚀 [Engine] Ultra-Mode process started
+[2026-11-06T18:15:45.432Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=78604380][attemptId=att_1793988943612_8u8fn][url=http://127.0.0.1:8088/newsletter-name-email.html] [STAGE] stage=CONTACT_PAGE_FOUND
+[2026-11-06T18:15:45.432Z] [SW_CONSOLE] [BG_LOG][tab=78604380] [CONTENT_EVENT][tabId=78604380][attemptId=att_1793988943612_8u8fn][url=http://127.0.0.1:8088/newsletter-name-email.html] [STAGE] stage=CONTACT_PAGE_FOUND
+[2026-11-06T18:15:45.452Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=78604380][attemptId=att_1793988943612_8u8fn][url=http://127.0.0.1:8088/newsletter-name-email.html] [STAGE] stage=ELIGIBLE_FORM_FOUND
+[2026-11-06T18:15:45.452Z] [SW_CONSOLE] [BG_LOG][tab=78604380] [CONTENT_EVENT][tabId=78604380][attemptId=att_1793988943612_8u8fn][url=http://127.0.0.1:8088/newsletter-name-email.html] [STAGE] stage=ELIGIBLE_FORM_FOUND
+[2026-11-06T18:15:52.257Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=78604380][attemptId=att_1793988943612_8u8fn][url=http://127.0.0.1:8088/newsletter-name-email.html] [STAGE] stage=REQUIRED_FIELDS_RESOLVED
+[2026-11-06T18:15:52.257Z] [SW_CONSOLE] [BG_LOG][tab=78604380] [CONTENT_EVENT][tabId=78604380][attemptId=att_1793988943612_8u8fn][url=http://127.0.0.1:8088/newsletter-name-email.html] [STAGE] stage=REQUIRED_FIELDS_RESOLVED
+[2026-11-06T18:15:52.257Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=78604380][attemptId=att_1793988943612_8u8fn][url=http://127.0.0.1:8088/newsletter-name-email.html] [STAGE] stage=FIELD_STATE_STABLE
+[2026-11-06T18:15:52.257Z] [SW_CONSOLE] [BG_LOG][tab=78604380] [CONTENT_EVENT][tabId=78604380][attemptId=att_1793988943612_8u8fn][url=http://127.0.0.1:8088/newsletter-name-email.html] [STAGE] stage=FIELD_STATE_STABLE
+[2026-11-06T18:15:52.275Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=78604380][attemptId=att_1793988943612_8u8fn][url=http://127.0.0.1:8088/newsletter-name-email.html] ⏳ [Engine] Holding for visual confirmation (1000ms)...
+[2026-11-06T18:15:52.275Z] [SW_CONSOLE] [BG_LOG][tab=78604380] [CONTENT_EVENT][tabId=78604380][attemptId=att_1793988943612_8u8fn][url=http://127.0.0.1:8088/newsletter-name-email.html] ⏳ [Engine] Holding for visual confirmation (1000ms)...
+[2026-11-06T18:15:53.487Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=78604380][attemptId=att_1793988943612_8u8fn][url=http://127.0.0.1:8088/newsletter-name-email.html] [FINAL_FILL] controls=2 unresolvedBefore=0 checkboxResolved=0 radioResolved=0 selectResolved=0 unresolvedAfter=0
+[2026-11-06T18:15:53.487Z] [SW_CONSOLE] [BG_LOG][tab=78604380] [CONTENT_EVENT][tabId=78604380][attemptId=att_1793988943612_8u8fn][url=http://127.0.0.1:8088/newsletter-name-email.html] [FINAL_FILL] controls=2 unresolvedBefore=0 checkboxResolved=0 radioResolved=0 selectResolved=0 unresolvedAfter=0
+[2026-11-06T18:15:53.487Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=78604380][attemptId=att_1793988943612_8u8fn][url=http://127.0.0.1:8088/newsletter-name-email.html] [FINAL_AUDIT] PASS
+[2026-11-06T18:15:53.487Z] [SW_CONSOLE] [BG_LOG][tab=78604380] [CONTENT_EVENT][tabId=78604380][attemptId=att_1793988943612_8u8fn][url=http://127.0.0.1:8088/newsletter-name-email.html] [FINAL_AUDIT] PASS
+[2026-11-06T18:15:53.763Z]   ✅ [PASS] MANUAL_MODE_NO_MESSAGE_HOLDS_ON_PANEL {"holdObserved":true}
+[2026-11-06T18:15:54.396Z] [SW_CONSOLE] [BG_LOG][tab=78604380] [FINAL_CANONICAL] status=CONFIRMED_SUCCESS reason=SUCCESS_CONFIRMED attemptId=att_1793988943612_8u8fn
+[2026-11-06T18:15:54.396Z] [SW_CONSOLE] [BG_LOG][tab=78604380] [TARGET][127.0.0.1] FINAL status=CONFIRMED_SUCCESS reason=SUCCESS_CONFIRMED
+[2026-11-06T18:15:54.398Z] [SW_CONSOLE] [BG_LOG][tab=78604380] [HISTORY_FINAL] sourceUrl=http://127.0.0.1:8088/newsletter-name-email.html contactPageUrl=http://127.0.0.1:8088/newsletter-name-email.html formPageUrl=http://127.0.0.1:8088/newsletter-name-email.html resultUrl=http://127.0.0.1:8088/newsletter-name-email.html
+[2026-11-06T18:15:54.409Z] [SW_CONSOLE] [BG_LOG][tab=78604380] ✨ [Engine] Submission confirmed. Maintaining tab for completion (20ms)...
+[2026-11-06T18:15:54.614Z] [SW_CONSOLE] [POST_FINAL_TAB_INVARIANT] target=http://127.0.0.1:8088/newsletter-name-email.html remainingOwnedTabs=0 retainedTabs=0 result=PASS
+[2026-11-06T18:15:54.678Z] [SW_CONSOLE] [BG_LOG][tab=none] [FINISH_BARRIER] lastFinalTs=1793988954615 barrierClear. CAMPAIGN_FINISHED proceeding.
+[2026-11-06T18:15:54.681Z] [SW_CONSOLE] [TAB_BARRIER] phase=CAMPAIGN_FINISHED ownedBefore=0
+[2026-11-06T18:15:54.687Z] [SW_CONSOLE] [TAB_BARRIER] phase=CAMPAIGN_FINISHED ownedAfter=0 result=PASS
+[2026-11-06T18:15:54.895Z]   ✅ [PASS] MANUAL_MODE_OPERATOR_SUBMIT_SEVENTH_POST {"totalSubmissions":7,"expected":7}
+[2026-11-06T18:15:54.895Z] 
 --- SECTION 9: CAMPAIGN DURABILITY & FROZEN OPTION PRESERVATION ---
-[2026-11-06T17:35:21.799Z] [SW_CONSOLE] [START_BG] received queue=2
-[2026-11-06T17:35:21.800Z] [SW_CONSOLE] [BG_LOG][tab=none] [START_BG] received queue=2
-[2026-11-06T17:35:21.805Z] [SW_CONSOLE] [NORMAL_CAMPAIGN_PREFLIGHT] publicTargets=0 testMode=false result=PASS
-[2026-11-06T17:35:21.807Z] [SW_CONSOLE] [BG_LOG][tab=none] [NORMAL_CAMPAIGN_PREFLIGHT] publicTargets=0 testMode=false result=PASS
-[2026-11-06T17:35:21.812Z] [SW_CONSOLE] [START_BG_READY] privacyReady=true
-[2026-11-06T17:35:21.812Z] [SW_CONSOLE] [BG_LOG][tab=none] [START_BG_READY] privacyReady=true
-[2026-11-06T17:35:21.817Z] [SW_CONSOLE] [TAB_BARRIER] phase=START_CAMPAIGN_BOOT ownedBefore=0
-[2026-11-06T17:35:21.818Z] [SW_CONSOLE] [TAB_BARRIER] phase=START_CAMPAIGN_BOOT ownedAfter=0 result=PASS
-[2026-11-06T17:35:21.829Z] [SW_CONSOLE] [BG_LOG][tab=none] [CAMPAIGN_START] buildId=V7.0.0-RC11-20261030-THREE-MODE-CONTRACTS-PASS campaignRunId=normal_run_1793986521681_qu7vzw totalTargets=2 mode=NORMAL delayMs=3000 fillDelayMs=100 submitDelayMs=1000
-[2026-11-06T17:35:22.135Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179307][attemptId=att_1793986521835_mi0ld][url=http://127.0.0.1:8088/newsletter-name-email.html] ⚠️ [Engine] Suppressing duplicate setup (Signals re-sent).
-[2026-11-06T17:35:22.138Z] [SW_CONSOLE] [BG_LOG][tab=743179307] [CONTENT_EVENT][tabId=743179307][attemptId=att_1793986521835_mi0ld][url=http://127.0.0.1:8088/newsletter-name-email.html] ⚠️ [Engine] Suppressing duplicate setup (Signals re-sent).
-[2026-11-06T17:35:22.158Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=743179307][attemptId=att_1793986521835_mi0ld][url=http://127.0.0.1:8088/newsletter-name-email.html] 🚀 [Engine] Ultra-Mode process started
-[2026-11-06T17:35:22.159Z] [SW_CONSOLE] [BG_LOG][tab=743179307] [CONTENT_EVENT][tabId=743179307][attemptId=att_1793986521835_mi0ld][url=http://127.0.0.1:8088/newsletter-name-email.html] 🚀 [Engine] Ultra-Mode process started
-[2026-11-06T17:35:22.709Z] [SW_CONSOLE] [BG_LOG][tab=none] ⏸️ [Engine] Campaign PAUSED / STOP & SAVE requested.
-[2026-11-06T17:35:22.947Z] [SW_CONSOLE] [TAB_BARRIER] phase=PAUSE_CAMPAIGN ownedBefore=0
-[2026-11-06T17:35:22.955Z] [SW_CONSOLE] [TAB_BARRIER] phase=PAUSE_CAMPAIGN ownedAfter=0 result=PASS
-[2026-11-06T17:35:22.973Z] [SW_CONSOLE] [BG_LOG][tab=none] === CAMPAIGN OUTCOME SUMMARY (currentRun) ===
-[2026-11-06T17:35:22.992Z] [SW_CONSOLE] [CAMPAIGN_SUMMARY] success=0 failure=0 timeoutLocal=0 timeoutGlobal=0 unknown=0 skipped=0 paused=0 completed=0
-[2026-11-06T17:35:22.992Z] Campaign paused, checkpoint saved
-[2026-11-06T17:35:22.995Z]   ✅ [PASS] CHECKPOINT_SAVES_FROZEN_INCLUDE_NO_MESSAGE_FLAG {"hasCheckpoint":true,"includeFormsWithoutMessage":true,"campaignRunId":"normal_run_1793986521681_qu7vzw"}
-[2026-11-06T17:35:22.997Z] Killing Service Worker: A989E96F9472D63CDE95CF6C770FE6C3
-[2026-11-06T17:35:24.515Z] Waking fresh Service Worker via popup message...
-[2026-11-06T17:35:24.834Z] Rebooted Service Worker CDP connected (ID=54CF528644D3EDC94BDF12CB6B38F949)
-[2026-11-06T17:35:24.835Z]   ✅ [PASS] SW_REBOOT_RESTORES_FROZEN_OPTION_FROM_CHECKPOINT {"isPaused":true,"includeFormsWithoutMessage":true,"cpInclude":true}
-[2026-11-06T17:35:24.844Z] Campaign resumed from checkpoint
-[2026-11-06T17:35:58.214Z]   ✅ [PASS] RESUMED_CAMPAIGN_COMPLETED_SUCCESSFULLY {"totalSubmissions":9}
-[2026-11-06T17:35:58.215Z] 
+[2026-11-06T18:15:55.448Z] [SW_CONSOLE] [START_BG] received queue=2
+[2026-11-06T18:15:55.452Z] [SW_CONSOLE] [BG_LOG][tab=none] [START_BG] received queue=2
+[2026-11-06T18:15:55.455Z] [SW_CONSOLE] [NORMAL_CAMPAIGN_PREFLIGHT] publicTargets=0 testMode=false result=PASS
+[2026-11-06T18:15:55.457Z] [SW_CONSOLE] [BG_LOG][tab=none] [NORMAL_CAMPAIGN_PREFLIGHT] publicTargets=0 testMode=false result=PASS
+[2026-11-06T18:15:55.460Z] [SW_CONSOLE] [START_BG_READY] privacyReady=true
+[2026-11-06T18:15:55.463Z] [SW_CONSOLE] [BG_LOG][tab=none] [START_BG_READY] privacyReady=true
+[2026-11-06T18:15:55.465Z] [SW_CONSOLE] [TAB_BARRIER] phase=START_CAMPAIGN_BOOT ownedBefore=0
+[2026-11-06T18:15:55.469Z] [SW_CONSOLE] [TAB_BARRIER] phase=START_CAMPAIGN_BOOT ownedAfter=0 result=PASS
+[2026-11-06T18:15:55.508Z] [SW_CONSOLE] [BG_LOG][tab=none] [CAMPAIGN_START] buildId=V7.0.0-RC11-20261030-THREE-MODE-CONTRACTS-PASS campaignRunId=normal_run_1793988955335_nlh8ol totalTargets=2 mode=NORMAL delayMs=3000 fillDelayMs=100 submitDelayMs=1000
+[2026-11-06T18:15:55.829Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=78604384][attemptId=att_1793988955514_denry][url=http://127.0.0.1:8088/newsletter-name-email.html] ⚠️ [Engine] Suppressing duplicate setup (Signals re-sent).
+[2026-11-06T18:15:55.830Z] [SW_CONSOLE] [BG_LOG][tab=78604384] [CONTENT_EVENT][tabId=78604384][attemptId=att_1793988955514_denry][url=http://127.0.0.1:8088/newsletter-name-email.html] ⚠️ [Engine] Suppressing duplicate setup (Signals re-sent).
+[2026-11-06T18:15:55.866Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=78604384][attemptId=att_1793988955514_denry][url=http://127.0.0.1:8088/newsletter-name-email.html] 🚀 [Engine] Ultra-Mode process started
+[2026-11-06T18:15:55.871Z] [SW_CONSOLE] [BG_LOG][tab=78604384] [CONTENT_EVENT][tabId=78604384][attemptId=att_1793988955514_denry][url=http://127.0.0.1:8088/newsletter-name-email.html] 🚀 [Engine] Ultra-Mode process started
+[2026-11-06T18:15:56.331Z] [SW_CONSOLE] [BG_LOG][tab=none] ⏸️ [Engine] Campaign PAUSED / STOP & SAVE requested.
+[2026-11-06T18:15:56.570Z] [SW_CONSOLE] [TAB_BARRIER] phase=PAUSE_CAMPAIGN ownedBefore=0
+[2026-11-06T18:15:56.570Z] [SW_CONSOLE] [TAB_BARRIER] phase=PAUSE_CAMPAIGN ownedAfter=0 result=PASS
+[2026-11-06T18:15:56.586Z] [SW_CONSOLE] [BG_LOG][tab=none] === CAMPAIGN OUTCOME SUMMARY (currentRun) ===
+[2026-11-06T18:15:56.600Z] [SW_CONSOLE] [CAMPAIGN_SUMMARY] success=0 failure=0 timeoutLocal=0 timeoutGlobal=0 unknown=0 skipped=0 paused=0 completed=0
+[2026-11-06T18:15:56.601Z] Campaign paused, checkpoint saved
+[2026-11-06T18:15:56.607Z]   ✅ [PASS] CHECKPOINT_SAVES_FROZEN_INCLUDE_NO_MESSAGE_FLAG {"hasCheckpoint":true,"includeFormsWithoutMessage":true,"campaignRunId":"normal_run_1793988955335_nlh8ol"}
+[2026-11-06T18:15:56.608Z] Killing Service Worker: E16E9B027D9535649D920CF3152BF75B
+[2026-11-06T18:15:58.123Z] Waking fresh Service Worker via popup message...
+[2026-11-06T18:15:58.443Z] Rebooted Service Worker CDP connected (ID=F0055F56E77E637FFDD77CF991ECA0A6)
+[2026-11-06T18:15:58.444Z]   ✅ [PASS] SW_REBOOT_RESTORES_FROZEN_OPTION_FROM_CHECKPOINT {"isPaused":true,"includeFormsWithoutMessage":true,"cpInclude":true}
+[2026-11-06T18:15:58.460Z] Campaign resumed from checkpoint
+[2026-11-06T18:16:31.777Z]   ✅ [PASS] RESUMED_CAMPAIGN_COMPLETED_SUCCESSFULLY {"totalSubmissions":9}
+[2026-11-06T18:16:31.777Z] 
 --- SECTION 10: LEDGER 7 BUCKETS & RUN ID SCOPING RECONCILIATION ---
-[2026-11-06T17:35:58.218Z] Ledger stats for normal_run_1793986521681_qu7vzw: {
+[2026-11-06T18:16:31.786Z] Ledger stats for normal_run_1793988955335_nlh8ol: {
   "scope": "currentRun",
-  "campaignRunId": "normal_run_1793986521681_qu7vzw",
+  "campaignRunId": "normal_run_1793988955335_nlh8ol",
   "totalStarted": 2,
   "totalImportRows": 2,
   "pending": 0,

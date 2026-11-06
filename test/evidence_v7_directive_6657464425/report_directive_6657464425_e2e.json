@@ -1,6 +1,6 @@
 {
   "testSuite": "run_chromium_v7_directive_6657464425_e2e_suite",
-  "startTimeUtc": "2026-11-06T17:36:06.999Z",
+  "startTimeUtc": "2026-11-06T18:16:41.963Z",
   "assertions": [
     {
       "name": "NEG_INTERNAL_SOLVER_PROD_REJECTED",
@@ -10,7 +10,7 @@
         "error": "INTERNAL_SOLVER_RETIRED_V7",
         "retired": true
       },
-      "timestamp": "2026-11-06T17:36:12.022Z"
+      "timestamp": "2026-11-06T18:16:46.778Z"
     },
     {
       "name": "NEG_INTERNAL_SOLVER_TEST_OVERRIDE_REJECTED",
@@ -20,7 +20,7 @@
         "error": "INTERNAL_SOLVER_RETIRED_V7",
         "retired": true
       },
-      "timestamp": "2026-11-06T17:36:12.027Z"
+      "timestamp": "2026-11-06T18:16:46.786Z"
     },
     {
       "name": "NEG_SOLVER_CORE_NOT_IMPORTED",
@@ -59,19 +59,19 @@
           "status": "PASS"
         }
       },
-      "timestamp": "2026-11-06T17:36:12.029Z"
+      "timestamp": "2026-11-06T18:16:46.788Z"
     },
     {
       "name": "A1_AUTO_CAMPAIGN_ACTIVE",
       "passed": true,
       "detail": {},
-      "timestamp": "2026-11-06T17:36:12.445Z"
+      "timestamp": "2026-11-06T18:16:47.146Z"
     },
     {
       "name": "A1_CAPTCHA_PENDING_EXTERNAL_USER_ENTERED",
       "passed": true,
       "detail": {},
-      "timestamp": "2026-11-06T17:36:25.642Z"
+      "timestamp": "2026-11-06T18:17:00.351Z"
     },
     {
       "name": "A1_AUTO_NO_INTERRUPT_POPUP",
@@ -82,7 +82,7 @@
         "pointerEvents": "none",
         "text": "Observing external challenge (turnstile)..."
       },
-      "timestamp": "2026-11-06T17:36:25.663Z"
+      "timestamp": "2026-11-06T18:17:00.369Z"
     },
     {
       "name": "A1_ZERO_SUBMIT_BEFORE_EXTERNAL_SOLVER",
@@ -93,13 +93,13 @@
         "submissionsCount": 0,
         "submissions": []
       },
-      "timestamp": "2026-11-06T17:36:25.667Z"
+      "timestamp": "2026-11-06T18:17:00.371Z"
     },
     {
       "name": "A1_AUTO_UNATTENDED_CONTINUATION_SETTLED",
       "passed": true,
       "detail": {},
-      "timestamp": "2026-11-06T17:36:37.956Z"
+      "timestamp": "2026-11-06T18:17:12.652Z"
     },
     {
       "name": "A1_AUTO_SUBMIT_RECORDED_EXACTLY_ONE",
@@ -110,8 +110,8 @@
         "submissionsCount": 1,
         "submissions": [
           {
-            "receiptId": "rcpt_1793986586075_1",
-            "timestamp": 1793986586075,
+            "receiptId": "rcpt_1793989020592_1",
+            "timestamp": 1793989020592,
             "method": "POST",
             "url": "/contact-success.html",
             "ip": "127.0.0.1",
@@ -119,19 +119,19 @@
           }
         ]
       },
-      "timestamp": "2026-11-06T17:36:37.958Z"
+      "timestamp": "2026-11-06T18:17:12.654Z"
     },
     {
       "name": "A2_TIMEOUT_CAMPAIGN_ACTIVE",
       "passed": true,
       "detail": {},
-      "timestamp": "2026-11-06T17:36:38.906Z"
+      "timestamp": "2026-11-06T18:17:13.537Z"
     },
     {
       "name": "A2_TIMEOUT_CAMPAIGN_SETTLED_FAIL_CLOSED",
       "passed": true,
       "detail": {},
-      "timestamp": "2026-11-06T17:36:56.292Z"
+      "timestamp": "2026-11-06T18:17:30.992Z"
     },
     {
       "name": "A2_ZERO_SUBMISSION_ON_SOLVER_TIMEOUT",
@@ -142,8 +142,8 @@
         "submissionsCount": 1,
         "submissions": [
           {
-            "receiptId": "rcpt_1793986586075_1",
-            "timestamp": 1793986586075,
+            "receiptId": "rcpt_1793989020592_1",
+            "timestamp": 1793989020592,
             "method": "POST",
             "url": "/contact-success.html",
             "ip": "127.0.0.1",
@@ -151,15 +151,15 @@
           }
         ]
       },
-      "timestamp": "2026-11-06T17:36:56.295Z"
+      "timestamp": "2026-11-06T18:17:30.995Z"
     },
     {
       "name": "A2_ATTEMPT_REASON_CAPTCHA_TIMEOUT",
       "passed": true,
       "detail": {
-        "attemptId": "att_1793986598620_cijgx",
+        "attemptId": "att_1793989033278_ke6ce",
         "autofillStatus": "N_A",
-        "campaignRunId": "normal_run_1793986598507_sa6r6e",
+        "campaignRunId": "normal_run_1793989033193_en077t",
         "captchaStatus": "NONE",
         "committedContactUrl": "http://127.0.0.1:8088/captcha-mock-timeout.html",
         "committedFormUrl": "http://127.0.0.1:8088/captcha-mock-timeout.html",
@@ -167,7 +167,7 @@
         "contactDiscoverySource": null,
         "contactPageHostname": "127.0.0.1",
         "contactPageUrl": "http://127.0.0.1:8088/captcha-mock-timeout.html",
-        "createdAt": 1793986598620,
+        "createdAt": 1793989033278,
         "emailsFound": 0,
         "evidence": {},
         "externalFormUrl": null,
@@ -183,7 +183,7 @@
           "buttonSuccessState": false,
           "captchaRejected": false,
           "confirmationStrength": "NONE",
-          "evidenceTimestamp": 1793986614632,
+          "evidenceTimestamp": 1793989049390,
           "formHidden": false,
           "formReplaced": false,
           "formReset": false,
@@ -201,8 +201,8 @@
         },
         "ownerManualConfirmed": false,
         "privacyFailureReason": null,
-        "privacyGateCheckedAt": "2026-11-06T17:36:38.620Z",
-        "privacyGatePassed": false,
+        "privacyGateCheckedAt": "2026-11-06T18:17:13.278Z",
+        "privacyGatePassed": true,
         "privacyMode": "PRIVACY_RELAY",
         "privacyTransport": "PRIVACY_RELAY",
         "reasonCode": "CAPTCHA_EXTERNAL_SOLVER_TIMEOUT",
@@ -210,30 +210,30 @@
         "resultUrl": "http://127.0.0.1:8088/captcha-mock-timeout.html",
         "selectedCandidateUrl": "http://127.0.0.1:8088/captcha-mock-timeout.html",
         "sessionId": null,
-        "settledAt": 1793986614632,
+        "settledAt": 1793989049390,
         "sourceHostname": "127.0.0.1",
         "sourceUrl": "http://127.0.0.1:8088/captcha-mock-timeout.html",
-        "startedAt": 1793986598620,
+        "startedAt": 1793989033278,
         "status": "FAILURE",
         "submissionStatus": "FAILURE",
         "submittedFromUrl": "http://127.0.0.1:8088/captcha-mock-timeout.html",
         "targetIdentity": "https://127.0.0.1/captcha-mock-timeout.html",
-        "targetToken": "tok_1793986598620_h80t25",
+        "targetToken": "tok_1793989033278_zqzz76",
         "templateId": "default",
         "templateVersion": 1,
         "timing": {
-          "durationMs": 16012,
-          "finalizedTime": 1793986614632,
-          "intentTime": 1793986598620
+          "durationMs": 16112,
+          "finalizedTime": 1793989049390,
+          "intentTime": 1793989033278
         }
       },
-      "timestamp": "2026-11-06T17:36:56.297Z"
+      "timestamp": "2026-11-06T18:17:30.997Z"
     },
     {
       "name": "A3_SEMI_AUTO_CAMPAIGN_ACTIVE",
       "passed": true,
       "detail": {},
-      "timestamp": "2026-11-06T17:36:57.307Z"
+      "timestamp": "2026-11-06T18:17:31.856Z"
     },
     {
       "name": "A3_SEMI_AUTO_HOLD_PANEL_RENDERED",
@@ -242,19 +242,19 @@
         "exists": true,
         "mode": "SEMI_AUTO"
       },
-      "timestamp": "2026-11-06T17:37:10.150Z"
+      "timestamp": "2026-11-06T18:17:46.687Z"
     },
     {
       "name": "A3_SEMI_AUTO_HOLD_CONFIRMED",
       "passed": true,
       "detail": {},
-      "timestamp": "2026-11-06T17:37:10.150Z"
+      "timestamp": "2026-11-06T18:17:46.687Z"
     },
     {
       "name": "A3_SEMI_AUTO_SETTLED",
       "passed": true,
       "detail": {},
-      "timestamp": "2026-11-06T17:37:11.289Z"
+      "timestamp": "2026-11-06T18:17:47.805Z"
     },
     {
       "name": "A3_SUBMISSION_RECORDED_TOTAL_TWO",
@@ -265,16 +265,16 @@
         "submissionsCount": 2,
         "submissions": [
           {
-            "receiptId": "rcpt_1793986586075_1",
-            "timestamp": 1793986586075,
+            "receiptId": "rcpt_1793989020592_1",
+            "timestamp": 1793989020592,
             "method": "POST",
             "url": "/contact-success.html",
             "ip": "127.0.0.1",
             "referer": "http://127.0.0.1:8088/captcha-turnstile-dom.html"
           },
           {
-            "receiptId": "rcpt_1793986630157_2",
-            "timestamp": 1793986630157,
+            "receiptId": "rcpt_1793989066692_2",
+            "timestamp": 1793989066692,
             "method": "POST",
             "url": "/contact-success.html",
             "ip": "127.0.0.1",
@@ -282,13 +282,13 @@
           }
         ]
       },
-      "timestamp": "2026-11-06T17:37:11.291Z"
+      "timestamp": "2026-11-06T18:17:47.807Z"
     },
     {
       "name": "A4_MANUAL_CAMPAIGN_ACTIVE",
       "passed": true,
       "detail": {},
-      "timestamp": "2026-11-06T17:37:12.171Z"
+      "timestamp": "2026-11-06T18:17:48.661Z"
     },
     {
       "name": "A4_MANUAL_HOLD_PANEL_RENDERED",
@@ -300,7 +300,7 @@
         "email": "directivetester@example.com",
         "message": "Directive 6657464425 verification inquiry message."
       },
-      "timestamp": "2026-11-06T17:37:27.100Z"
+      "timestamp": "2026-11-06T18:18:04.281Z"
     },
     {
       "name": "A4_FIELDS_AUTOFILLED_BEFORE_SUBMIT",
@@ -312,19 +312,19 @@
         "email": "directivetester@example.com",
         "message": "Directive 6657464425 verification inquiry message."
       },
-      "timestamp": "2026-11-06T17:37:27.100Z"
+      "timestamp": "2026-11-06T18:18:04.281Z"
     },
     {
       "name": "A4_MANUAL_HOLD_CONFIRMED",
       "passed": true,
       "detail": {},
-      "timestamp": "2026-11-06T17:37:27.100Z"
+      "timestamp": "2026-11-06T18:18:04.281Z"
     },
     {
       "name": "A4_MANUAL_CAMPAIGN_SETTLED",
       "passed": true,
       "detail": {},
-      "timestamp": "2026-11-06T17:37:28.042Z"
+      "timestamp": "2026-11-06T18:18:05.288Z"
     },
     {
       "name": "A4_SUBMISSION_RECORDED_TOTAL_THREE",
@@ -335,24 +335,24 @@
         "submissionsCount": 3,
         "submissions": [
           {
-            "receiptId": "rcpt_1793986586075_1",
-            "timestamp": 1793986586075,
+            "receiptId": "rcpt_1793989020592_1",
+            "timestamp": 1793989020592,
             "method": "POST",
             "url": "/contact-success.html",
             "ip": "127.0.0.1",
             "referer": "http://127.0.0.1:8088/captcha-turnstile-dom.html"
           },
           {
-            "receiptId": "rcpt_1793986630157_2",
-            "timestamp": 1793986630157,
+            "receiptId": "rcpt_1793989066692_2",
+            "timestamp": 1793989066692,
             "method": "POST",
             "url": "/contact-success.html",
             "ip": "127.0.0.1",
             "referer": "http://127.0.0.1:8088/captcha-turnstile-dom.html"
           },
           {
-            "receiptId": "rcpt_1793986647128_3",
-            "timestamp": 1793986647128,
+            "receiptId": "rcpt_1793989084311_3",
+            "timestamp": 1793989084311,
             "method": "POST",
             "url": "/contact-success.html",
             "ip": "127.0.0.1",
@@ -360,15 +360,15 @@
           }
         ]
       },
-      "timestamp": "2026-11-06T17:37:28.044Z"
+      "timestamp": "2026-11-06T18:18:05.290Z"
     },
     {
       "name": "B_MULTI_CAMPAIGN_ACTIVE",
       "passed": true,
       "detail": {
-        "campaignRunId": "normal_run_1793986648599_m61iqr"
+        "campaignRunId": "normal_run_1793989085843_bcaclc"
       },
-      "timestamp": "2026-11-06T17:37:29.014Z"
+      "timestamp": "2026-11-06T18:18:06.196Z"
     },
     {
       "name": "B_CAMPAIGN_PAUSED_BY_VISIBLE_BUTTON",
@@ -377,13 +377,13 @@
         "isPaused": true,
         "hasCheckpoint": true
       },
-      "timestamp": "2026-11-06T17:38:04.590Z"
+      "timestamp": "2026-11-06T18:18:41.764Z"
     },
     {
       "name": "B_RESUME_MODE_MODAL_OPENED",
       "passed": true,
       "detail": {},
-      "timestamp": "2026-11-06T17:38:05.264Z"
+      "timestamp": "2026-11-06T18:18:42.370Z"
     },
     {
       "name": "B_CAMPAIGN_RESUMED_ACTIVE",
@@ -392,7 +392,7 @@
         "isActive": true,
         "isPaused": false
       },
-      "timestamp": "2026-11-06T17:38:05.579Z"
+      "timestamp": "2026-11-06T18:18:42.703Z"
     },
     {
       "name": "B_STOP_AND_SAVE_CHECKPOINT_SAVED",
@@ -401,19 +401,19 @@
         "isPaused": true,
         "checkpoint": true
       },
-      "timestamp": "2026-11-06T17:38:27.662Z"
+      "timestamp": "2026-11-06T18:19:05.169Z"
     },
     {
       "name": "B_REOPEN_POPUP_RESUMABLE_BANNER_VISIBLE",
       "passed": true,
       "detail": {},
-      "timestamp": "2026-11-06T17:38:32.387Z"
+      "timestamp": "2026-11-06T18:19:09.848Z"
     },
     {
       "name": "B_MULTI_CAMPAIGN_SETTLED_INACTIVE",
       "passed": true,
       "detail": {},
-      "timestamp": "2026-11-06T17:39:04.769Z"
+      "timestamp": "2026-11-06T18:19:42.182Z"
     },
     {
       "name": "B_EXACT_SERVER_SUBMISSIONS_COUNT_TWO",
@@ -421,7 +421,7 @@
       "detail": {
         "count": 2
       },
-      "timestamp": "2026-11-06T17:39:04.771Z"
+      "timestamp": "2026-11-06T18:19:42.185Z"
     },
     {
       "name": "B_EXACT_FOUR_TARGETS_IN_RUN_LEDGER",
@@ -429,15 +429,15 @@
       "detail": {
         "count": 4
       },
-      "timestamp": "2026-11-06T17:39:04.775Z"
+      "timestamp": "2026-11-06T18:19:42.188Z"
     },
     {
       "name": "B_TARGET_1_HOMEPAGE_DISCOVERY_SUCCESS",
       "passed": true,
       "detail": {
-        "attemptId": "att_1793986648701_y3crw",
+        "attemptId": "att_1793989085931_jh6v5",
         "autofillStatus": "SUCCESS",
-        "campaignRunId": "normal_run_1793986648599_m61iqr",
+        "campaignRunId": "normal_run_1793989085843_bcaclc",
         "captchaStatus": "NONE",
         "committedContactUrl": "http://127.0.0.1:8088/contact-standard.html",
         "committedFormUrl": "http://127.0.0.1:8088/contact-standard.html",
@@ -445,7 +445,7 @@
         "contactDiscoverySource": null,
         "contactPageHostname": "127.0.0.1",
         "contactPageUrl": "http://127.0.0.1:8088/contact-standard.html",
-        "createdAt": 1793986648701,
+        "createdAt": 1793989085931,
         "emailsFound": 0,
         "evidence": {},
         "externalFormUrl": null,
@@ -462,7 +462,7 @@
           "captchaEvidenceClass": null,
           "captchaRejected": false,
           "confirmationStrength": "STRONG_DOM",
-          "evidenceTimestamp": 1793986669095,
+          "evidenceTimestamp": 1793989106189,
           "formHidden": false,
           "formReplaced": false,
           "formReset": false,
@@ -470,7 +470,7 @@
           "networkCommitObserved": false,
           "networkStatus": null,
           "physicalClickDispatched": false,
-          "receiptId": "rcpt_1793986664545_1",
+          "receiptId": "rcpt_1793989101651_1",
           "serverErrorTransition": false,
           "submitAttempted": true,
           "submitEventSeen": true,
@@ -481,41 +481,41 @@
         },
         "ownerManualConfirmed": false,
         "privacyFailureReason": null,
-        "privacyGateCheckedAt": "2026-11-06T17:37:28.701Z",
-        "privacyGatePassed": false,
+        "privacyGateCheckedAt": "2026-11-06T18:18:05.931Z",
+        "privacyGatePassed": true,
         "privacyMode": "PRIVACY_RELAY",
         "privacyTransport": "PRIVACY_RELAY",
         "reasonCode": "SUCCESS_CONFIRMED",
-        "receiptId": "rcpt_1793986664545_1",
+        "receiptId": "rcpt_1793989101651_1",
         "resultUrl": "http://127.0.0.1:8088/contact-standard.html",
         "selectedCandidateUrl": "http://127.0.0.1:8088/contact-standard.html",
         "sessionId": null,
-        "settledAt": 1793986669095,
+        "settledAt": 1793989106189,
         "sourceHostname": "127.0.0.1",
         "sourceUrl": "http://127.0.0.1:8088/homepage-with-newsletter-and-contact-link.html",
-        "startedAt": 1793986648701,
+        "startedAt": 1793989085931,
         "status": "CONFIRMED_SUCCESS",
         "submissionStatus": "CONFIRMED_SUCCESS",
         "submittedFromUrl": "http://127.0.0.1:8088/homepage-with-newsletter-and-contact-link.html",
         "targetIdentity": "https://127.0.0.1/homepage-with-newsletter-and-contact-link.html",
-        "targetToken": "tok_1793986648701_lktnmi",
+        "targetToken": "tok_1793989085931_dh7s8d",
         "templateId": "default",
         "templateVersion": 1,
         "timing": {
-          "durationMs": 20394,
-          "finalizedTime": 1793986669095,
-          "intentTime": 1793986648701
+          "durationMs": 20258,
+          "finalizedTime": 1793989106189,
+          "intentTime": 1793989085931
         }
       },
-      "timestamp": "2026-11-06T17:39:04.775Z"
+      "timestamp": "2026-11-06T18:19:42.188Z"
     },
     {
       "name": "B_TARGET_2_DYNAMIC_REACT_SUCCESS",
       "passed": true,
       "detail": {
-        "attemptId": "att_1793986685279_12g15",
+        "attemptId": "att_1793989122390_w2hs9",
         "autofillStatus": "SUCCESS",
-        "campaignRunId": "normal_run_1793986648599_m61iqr",
+        "campaignRunId": "normal_run_1793989085843_bcaclc",
         "captchaStatus": "NONE",
         "committedContactUrl": "http://127.0.0.1:8088/dynamic-react-controlled-stale-revert.html",
         "committedFormUrl": "http://127.0.0.1:8088/dynamic-react-controlled-stale-revert.html",
@@ -523,7 +523,7 @@
         "contactDiscoverySource": null,
         "contactPageHostname": "127.0.0.1",
         "contactPageUrl": "http://127.0.0.1:8088/dynamic-react-controlled-stale-revert.html",
-        "createdAt": 1793986685279,
+        "createdAt": 1793989122390,
         "emailsFound": 0,
         "evidence": {},
         "externalFormUrl": null,
@@ -540,7 +540,7 @@
           "captchaEvidenceClass": null,
           "captchaRejected": false,
           "confirmationStrength": "STRONG_DOM",
-          "evidenceTimestamp": 1793986702050,
+          "evidenceTimestamp": 1793989139624,
           "formHidden": false,
           "formReplaced": true,
           "formReset": false,
@@ -548,7 +548,7 @@
           "networkCommitObserved": false,
           "networkStatus": null,
           "physicalClickDispatched": false,
-          "receiptId": "rcpt_1793986698869_2",
+          "receiptId": "rcpt_1793989136429_2",
           "serverErrorTransition": false,
           "submitAttempted": true,
           "submitEventSeen": false,
@@ -559,47 +559,47 @@
         },
         "ownerManualConfirmed": false,
         "privacyFailureReason": null,
-        "privacyGateCheckedAt": "2026-11-06T17:38:05.279Z",
-        "privacyGatePassed": false,
+        "privacyGateCheckedAt": "2026-11-06T18:18:42.390Z",
+        "privacyGatePassed": true,
         "privacyMode": "PRIVACY_RELAY",
         "privacyTransport": "PRIVACY_RELAY",
         "reasonCode": "SUCCESS_CONFIRMED",
-        "receiptId": "rcpt_1793986698869_2",
+        "receiptId": "rcpt_1793989136429_2",
         "resultUrl": "http://127.0.0.1:8088/contact-success.html",
         "selectedCandidateUrl": "http://127.0.0.1:8088/dynamic-react-controlled-stale-revert.html",
         "sessionId": null,
-        "settledAt": 1793986702050,
+        "settledAt": 1793989139624,
         "sourceHostname": "127.0.0.1",
         "sourceUrl": "http://127.0.0.1:8088/dynamic-react-controlled-stale-revert.html",
-        "startedAt": 1793986685279,
+        "startedAt": 1793989122390,
         "status": "CONFIRMED_SUCCESS",
         "submissionStatus": "CONFIRMED_SUCCESS",
         "submittedFromUrl": "http://127.0.0.1:8088/dynamic-react-controlled-stale-revert.html",
         "targetIdentity": "https://127.0.0.1/dynamic-react-controlled-stale-revert.html",
-        "targetToken": "tok_1793986685279_8f4tsz",
+        "targetToken": "tok_1793989122390_0i84iy",
         "templateId": "default",
         "templateVersion": 1,
         "timing": {
-          "durationMs": 16771,
-          "finalizedTime": 1793986702050,
-          "intentTime": 1793986685279
+          "durationMs": 17234,
+          "finalizedTime": 1793989139624,
+          "intentTime": 1793989122390
         }
       },
-      "timestamp": "2026-11-06T17:39:04.775Z"
+      "timestamp": "2026-11-06T18:19:42.188Z"
     },
     {
       "name": "B_TARGET_3_PHONE_ONLY_SKIPPED",
       "passed": true,
       "detail": {
-        "attemptId": "att_1793986712724_6b2hj",
+        "attemptId": "att_1793989150176_0piho",
         "autofillStatus": "N_A",
-        "campaignRunId": "normal_run_1793986648599_m61iqr",
+        "campaignRunId": "normal_run_1793989085843_bcaclc",
         "captchaStatus": "NONE",
         "contactDiscoveryConfidence": 1,
         "contactDiscoverySource": null,
         "contactPageHostname": "127.0.0.1",
         "contactPageUrl": "http://127.0.0.1:8088/phone-only-no-message.html",
-        "createdAt": 1793986712724,
+        "createdAt": 1793989150176,
         "emailsFound": 0,
         "evidence": {},
         "externalFormUrl": null,
@@ -615,7 +615,7 @@
           "buttonSuccessState": false,
           "captchaRejected": false,
           "confirmationStrength": "NONE",
-          "evidenceTimestamp": 1793986721895,
+          "evidenceTimestamp": 1793989159273,
           "formHidden": false,
           "formReplaced": false,
           "formReset": false,
@@ -632,9 +632,9 @@
           "validationErrorTransition": false
         },
         "ownerManualConfirmed": false,
-        "privacyFailureReason": "RESIDENTIAL_UPSTREAM_BLOCKED (HTTP_502)",
-        "privacyGateCheckedAt": "2026-11-06T17:38:32.724Z",
-        "privacyGatePassed": false,
+        "privacyFailureReason": null,
+        "privacyGateCheckedAt": "2026-11-06T18:19:10.176Z",
+        "privacyGatePassed": true,
         "privacyMode": "PRIVACY_RELAY",
         "privacyTransport": "PRIVACY_RELAY",
         "reasonCode": "NO_LONG_TEXT_INQUIRY_FIELD",
@@ -642,38 +642,38 @@
         "resultUrl": "http://127.0.0.1:8088/phone-only-no-message.html",
         "selectedCandidateUrl": "http://127.0.0.1:8088/phone-only-no-message.html",
         "sessionId": null,
-        "settledAt": 1793986721895,
+        "settledAt": 1793989159273,
         "sourceHostname": "127.0.0.1",
         "sourceUrl": "http://127.0.0.1:8088/phone-only-no-message.html",
-        "startedAt": 1793986712724,
+        "startedAt": 1793989150176,
         "status": "SKIPPED",
         "submissionStatus": "SKIPPED",
         "submittedFromUrl": "http://127.0.0.1:8088/phone-only-no-message.html",
         "targetIdentity": "https://127.0.0.1/phone-only-no-message.html",
-        "targetToken": "tok_1793986712724_4rmxwc",
+        "targetToken": "tok_1793989150176_c8r0sj",
         "templateId": "default",
         "templateVersion": 1,
         "timing": {
-          "durationMs": 9171,
-          "finalizedTime": 1793986721895,
-          "intentTime": 1793986712724
+          "durationMs": 9097,
+          "finalizedTime": 1793989159273,
+          "intentTime": 1793989150176
         }
       },
-      "timestamp": "2026-11-06T17:39:04.775Z"
+      "timestamp": "2026-11-06T18:19:42.188Z"
     },
     {
       "name": "B_TARGET_4_DEAD_CONTACT_FAILURE",
       "passed": true,
       "detail": {
-        "attemptId": "att_1793986733144_gmx6x",
+        "attemptId": "att_1793989170501_zilkl",
         "autofillStatus": "N_A",
-        "campaignRunId": "normal_run_1793986648599_m61iqr",
+        "campaignRunId": "normal_run_1793989085843_bcaclc",
         "captchaStatus": "NONE",
         "contactDiscoveryConfidence": 1,
         "contactDiscoverySource": null,
         "contactPageHostname": "127.0.0.1",
         "contactPageUrl": "http://127.0.0.1:8088/contact",
-        "createdAt": 1793986733144,
+        "createdAt": 1793989170502,
         "emailsFound": 0,
         "evidence": {},
         "externalFormUrl": null,
@@ -689,7 +689,7 @@
           "buttonSuccessState": false,
           "captchaRejected": false,
           "confirmationStrength": "NONE",
-          "evidenceTimestamp": 1793986743308,
+          "evidenceTimestamp": 1793989180380,
           "formHidden": false,
           "formReplaced": false,
           "formReset": false,
@@ -706,9 +706,9 @@
           "validationErrorTransition": false
         },
         "ownerManualConfirmed": false,
-        "privacyFailureReason": "RESIDENTIAL_UPSTREAM_BLOCKED (HTTP_502)",
-        "privacyGateCheckedAt": "2026-11-06T17:38:53.144Z",
-        "privacyGatePassed": false,
+        "privacyFailureReason": null,
+        "privacyGateCheckedAt": "2026-11-06T18:19:30.501Z",
+        "privacyGatePassed": true,
         "privacyMode": "PRIVACY_RELAY",
         "privacyTransport": "PRIVACY_RELAY",
         "reasonCode": "NO_ACCESSIBLE_INQUIRY_FORM",
@@ -716,24 +716,24 @@
         "resultUrl": "http://127.0.0.1:8088/contact",
         "selectedCandidateUrl": "http://127.0.0.1:8088/homepage-with-dead-contact-link.html",
         "sessionId": null,
-        "settledAt": 1793986743308,
+        "settledAt": 1793989180380,
         "sourceHostname": "127.0.0.1",
         "sourceUrl": "http://127.0.0.1:8088/homepage-with-dead-contact-link.html",
-        "startedAt": 1793986733144,
+        "startedAt": 1793989170501,
         "status": "FAILURE",
         "submissionStatus": "FAILURE",
         "submittedFromUrl": "http://127.0.0.1:8088/homepage-with-dead-contact-link.html",
         "targetIdentity": "https://127.0.0.1/homepage-with-dead-contact-link.html",
-        "targetToken": "tok_1793986733144_edftc9",
+        "targetToken": "tok_1793989170501_rm0qa4",
         "templateId": "default",
         "templateVersion": 1,
         "timing": {
-          "durationMs": 10164,
-          "finalizedTime": 1793986743308,
-          "intentTime": 1793986733144
+          "durationMs": 9879,
+          "finalizedTime": 1793989180380,
+          "intentTime": 1793989170501
         }
       },
-      "timestamp": "2026-11-06T17:39:04.776Z"
+      "timestamp": "2026-11-06T18:19:42.188Z"
     },
     {
       "name": "B_REMAINING_TARGETS_REACHED_ZERO",
@@ -746,12 +746,12 @@
           "NO_ACCESSIBLE_INQUIRY_FORM": 1
         }
       },
-      "timestamp": "2026-11-06T17:39:04.777Z"
+      "timestamp": "2026-11-06T18:19:42.189Z"
     }
   ],
   "screenshots": [
     "shot_directive_6657464425_final_completed.png"
   ],
   "status": "SUCCESS",
-  "endTimeUtc": "2026-11-06T17:39:04.957Z"
+  "endTimeUtc": "2026-11-06T18:19:42.352Z"
 }

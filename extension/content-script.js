@@ -445,9 +445,17 @@
 
                 // [Issue #6 R6.9E & v7.0 Triple Mode] Canonical Execution Identity & Campaign Mode Binding
                 window.__xpider_campaign_mode = (request.campaignMode === 'MANUAL' || request.campaignMode === 'SEMI_AUTO') ? request.campaignMode : 'AUTO';
-                window.__xpider_include_forms_without_message = Boolean(request.includeFormsWithoutMessage);
+                let resolvedIncludeNoMsg = false;
+                if (typeof request.includeFormsWithoutMessage === 'boolean') {
+                    resolvedIncludeNoMsg = request.includeFormsWithoutMessage;
+                } else if (request.template && typeof request.template.includeFormsWithoutMessage === 'boolean') {
+                    resolvedIncludeNoMsg = request.template.includeFormsWithoutMessage;
+                } else if (typeof window !== 'undefined' && typeof window.__xpider_include_forms_without_message === 'boolean') {
+                    resolvedIncludeNoMsg = window.__xpider_include_forms_without_message;
+                }
+                window.__xpider_include_forms_without_message = resolvedIncludeNoMsg;
                 if (request.template && typeof request.template === 'object') {
-                    request.template.includeFormsWithoutMessage = Boolean(request.includeFormsWithoutMessage);
+                    request.template.includeFormsWithoutMessage = resolvedIncludeNoMsg;
                 }
                 window.__xpider_execution_identity = {
                     attemptId: request.attemptId || attemptId,
@@ -2142,7 +2150,8 @@
                         if (auditResult.reason === 'OWNER_ACTION_REQUIRED' ||
                             auditResult.reason === 'UNRESOLVED_REQUIRED_FACT' ||
                             auditResult.reason === 'UNRESOLVED_BUSINESS_FACT' ||
-                            auditResult.reason === 'UNRESOLVED_BUSINESS_CHOICE') {
+                            auditResult.reason === 'UNRESOLVED_BUSINESS_CHOICE' ||
+                            auditResult.reason === 'UNAUTHORIZED_CONSENT_SKIPPED') {
                             finishCampaign(false, auditResult.reason, auditResult.context || auditResult.reason, { audit: auditResult });
                             return false;
                         }
@@ -5998,7 +6007,18 @@
                     if (sendResponse) sendResponse({ success: true, dismissed: true });
                     return true;
                 } else if (msg && msg.action === 'RESTORE_MANUAL_HOLD_PANEL') {
-                    if (typeof msg.includeFormsWithoutMessage === 'boolean') window.__xpider_include_forms_without_message = msg.includeFormsWithoutMessage;
+                    let resolvedRestoreNoMsg = false;
+                    if (typeof msg.includeFormsWithoutMessage === 'boolean') {
+                        resolvedRestoreNoMsg = msg.includeFormsWithoutMessage;
+                    } else if (msg.template && typeof msg.template.includeFormsWithoutMessage === 'boolean') {
+                        resolvedRestoreNoMsg = msg.template.includeFormsWithoutMessage;
+                    } else if (typeof window !== 'undefined' && typeof window.__xpider_include_forms_without_message === 'boolean') {
+                        resolvedRestoreNoMsg = window.__xpider_include_forms_without_message;
+                    }
+                    window.__xpider_include_forms_without_message = resolvedRestoreNoMsg;
+                    if (msg.template && typeof msg.template === 'object') {
+                        msg.template.includeFormsWithoutMessage = resolvedRestoreNoMsg;
+                    }
                     const curMode = (typeof window !== 'undefined' && window.__xpider_campaign_mode) || (msg.template && msg.template.campaignMode) || (msg.mode) || 'AUTO';
                     if (curMode === 'AUTO' || msg.mode === 'AUTO') {
                         if (typeof document !== 'undefined') {

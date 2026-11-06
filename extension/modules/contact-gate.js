@@ -38,15 +38,15 @@
 }(typeof self !== 'undefined' ? self : this, function () {
 
     const INQUIRY_SEMANTIC_TOKENS = [
-        'message', 'inquiry', 'enquiry', 'question', 'comments', 'comment', 
-        'details', 'description', 'request', 'reason', 'how can we help', 
-        'tell us', 'your message', 'additional information', '문의', '질문', '메시지', 
+        'message', 'inquiry', 'enquiry', 'question', 'comments', 'comment',
+        'details', 'description', 'request', 'reason', 'how can we help',
+        'tell us', 'your message', 'additional information', '문의', '질문', '메시지',
         '내용', '상담 내용', '상담내용', '요청 사항', '요청사항', '설명', '문의내용', '문의사항'
     ];
 
     const NEWSLETTER_NEGATIVE_TOKENS = [
-        'subscribe', 'newsletter', 'mailing list', 'email updates', 'join our list', 
-        'join list', 'get updates', 'notify me', 'sign up for updates', 'get offers', 
+        'subscribe', 'newsletter', 'mailing list', 'email updates', 'join our list',
+        'join list', 'get updates', 'notify me', 'sign up for updates', 'get offers',
         'promotions', 'promo', 'coupon', 'download gate', 'email capture', 'email signup',
         'sign up', 'signup', 'join', '구독', '뉴스레터'
     ];
@@ -59,7 +59,7 @@
     ];
 
     const OTHER_NEGATIVE_TOKENS = [
-        'login', 'log in', 'sign in', 'signin', '로그인', 
+        'login', 'log in', 'sign in', 'signin', '로그인',
         'search', '검색', '찾기',
         'register account', 'create account', '회원가입',
         'password', '비밀번호'
@@ -103,7 +103,7 @@
                 const parentLabel = el.closest('label');
                 if (parentLabel) parts.push(parentLabel.textContent || '');
             }
-        } catch (_) {}
+        } catch (_) { }
         return parts.join(' ').toLowerCase();
     }
 
@@ -248,7 +248,7 @@
         // 'book' alone + date/time = pure scheduling form (T6 scenario).
         const submitHasBookToken = submitBtnText.includes('book') || submitBtnText.includes('reserve') || submitBtnText.includes('reservation');
         const isPureBookingSubmit = submitHasBookToken && !leadContext.includes('consultation') && !leadContext.includes('appointment') &&
-                                    (hasDateOrTimePicker || submitBtnText.includes('book now') || submitBtnText.includes('book online'));
+            (hasDateOrTimePicker || submitBtnText.includes('book now') || submitBtnText.includes('book online'));
 
         // [Issue #6 RC3.60 .93] Directive #6513087470 Item 11:
         // Do NOT classify forms lacking genuine message body as lead-inquiry-form!
@@ -411,16 +411,16 @@
         // Rejects WordPress / Jetpack / Article comment and reply forms based on structural evidence
         const hasWpCommentAction = formAction.includes('wp-comments-post.php') || formAction.includes('/comments/post');
         const hasCommentIdOrClass = formId.includes('commentform') || formId.includes('comment-form') || formId.includes('jp-carousel-comment-form') ||
-                                    formClass.includes('commentform') || formClass.includes('comment-form') || formClass.includes('jp-carousel-comment-form') ||
-                                    formId === 'respond' || formClass.includes('comment-respond');
+            formClass.includes('commentform') || formClass.includes('comment-form') || formClass.includes('jp-carousel-comment-form') ||
+            formId === 'respond' || formClass.includes('comment-respond');
         const hasWpCommentInputs = formEl.querySelector && !!formEl.querySelector('input[name="comment_post_ID"], input[name="comment_parent"]');
         const isPostCommentSubmit = submitText.includes('post comment') || submitText.includes('leave a comment') || submitText.includes('post reply') || submitText.includes('leave a reply');
         const hasCommentHeading = headingText.includes('leave a comment') || headingText.includes('leave a reply') || headingText.includes('add a comment') || headingText.includes('post a comment');
 
         const isCommentForm = hasWpCommentAction ||
-                              (hasCommentIdOrClass && (isPostCommentSubmit || hasWpCommentInputs || hasCommentHeading || !headingText.includes('contact'))) ||
-                              hasWpCommentInputs ||
-                              (isPostCommentSubmit && (formId.includes('comment') || formClass.includes('comment') || formAction.includes('comment')));
+            (hasCommentIdOrClass && (isPostCommentSubmit || hasWpCommentInputs || hasCommentHeading || !headingText.includes('contact'))) ||
+            hasWpCommentInputs ||
+            (isPostCommentSubmit && (formId.includes('comment') || formClass.includes('comment') || formAction.includes('comment')));
 
         if (isCommentForm) {
             intent = 'COMMENT';
@@ -463,9 +463,9 @@
                 else reason = 'NON_INQUIRY_BOOKING_FORM';
             } else {
                 const isOnlyTinyNotes = inquiryBody && (inquiryBody.name.includes('note') || inquiryBody.semantic === 'notes') &&
-                                       (dateInputs.length > 0 || timeInputs.length > 0 || isBookingButton);
+                    (dateInputs.length > 0 || timeInputs.length > 0 || isBookingButton);
                 const hasStrongContactHeader = ['contact', 'inquiry', 'message', '문의', '연락'].some(t => headingText.includes(t) || formId.includes(t));
-                
+
                 if (isOnlyTinyNotes && !hasStrongContactHeader) {
                     decision = 'REJECT';
                     reason = 'NON_INQUIRY_BOOKING_FORM';
@@ -478,7 +478,18 @@
         } else if (isSubscribeButton || negativeSignals.some(s => s.startsWith('newsletter_token')) || (allInputs.length <= 2 && emailInputs.length >= 1 && hasExplicitOptInIntent)) {
             intent = isSubscribeButton ? 'SUBSCRIBE' : 'NEWSLETTER';
             if (!hasInquiryBodyField) {
-                if (includeNoMessage && (emailInputs.length >= 1 || allInputs.length >= 1)) {
+                // Check if the form requires marketing/legal consent that is not authorized
+                const hasUnauthorizedRequiredConsent = checkboxes.some(cb => {
+                    const isReq = cb.required || (cb.getAttribute && (cb.getAttribute('required') !== null || cb.getAttribute('aria-required') === 'true'));
+                    if (!isReq) return false;
+                    const txt = ((cb.name || '') + ' ' + (cb.id || '') + ' ' + getElementContextText(cb)).toLowerCase();
+                    return /marketing|newsletter|promot|offer|agree|consent|terms|privacy/i.test(txt);
+                }) && !(pageContext && (pageContext.ownerAuthorizedConsent || pageContext.allowAutoConsent));
+
+                if (hasUnauthorizedRequiredConsent) {
+                    decision = 'REJECT';
+                    reason = 'NON_INQUIRY_UNAUTHORIZED_CONSENT_FORM';
+                } else if (includeNoMessage && (emailInputs.length >= 1 || allInputs.length >= 1)) {
                     // [P0 Directive 6688411313] Opt-in Subscribe / Newsletter without inquiry field
                     decision = 'ACCEPT';
                     reason = 'ELIGIBLE_NO_MESSAGE_FORM';
@@ -511,11 +522,25 @@
             reason = 'ELIGIBLE_CONTACT_INQUIRY';
             positiveSignals.push(`inquiry_body:${inquiryBody.type}`);
         } else if (includeNoMessage && hasExplicitOptInIntent && (emailInputs.length >= 1 || (nameInputs.length >= 1 && allInputs.length >= 1)) && allInputs.length <= 15) {
-            // [P0 Directive 6688411313 & 6690847856] Explicit opt-in newsletter / subscription form
-            intent = 'OPT_IN_REGISTRATION';
-            decision = 'ACCEPT';
-            reason = 'ELIGIBLE_NO_MESSAGE_FORM';
-            positiveSignals.push('eligible_no_message_opt_in');
+            // Check if required consent is unauthorized
+            const hasUnauthorizedRequiredConsent = checkboxes.some(cb => {
+                const isReq = cb.required || (cb.getAttribute && (cb.getAttribute('required') !== null || cb.getAttribute('aria-required') === 'true'));
+                if (!isReq) return false;
+                const txt = ((cb.name || '') + ' ' + (cb.id || '') + ' ' + getElementContextText(cb)).toLowerCase();
+                return /marketing|newsletter|promot|offer|agree|consent|terms|privacy/i.test(txt);
+            }) && !(pageContext && (pageContext.ownerAuthorizedConsent || pageContext.allowAutoConsent));
+
+            if (hasUnauthorizedRequiredConsent) {
+                intent = 'OPT_IN_REGISTRATION';
+                decision = 'REJECT';
+                reason = 'NON_INQUIRY_UNAUTHORIZED_CONSENT_FORM';
+            } else {
+                // [P0 Directive 6688411313 & 6690847856] Explicit opt-in newsletter / subscription form
+                intent = 'OPT_IN_REGISTRATION';
+                decision = 'ACCEPT';
+                reason = 'ELIGIBLE_NO_MESSAGE_FORM';
+                positiveSignals.push('eligible_no_message_opt_in');
+            }
         } else {
             intent = 'OTHER';
             decision = 'REJECT';
@@ -533,8 +558,8 @@
         }
 
         // Scoring: Contact forms with inquiry body prioritized (200+) over no-message opt-ins (100)
-        const score = decision === 'ACCEPT' 
-            ? (hasInquiryBodyField ? (200 + positiveSignals.length * 50) : 100) 
+        const score = decision === 'ACCEPT'
+            ? (hasInquiryBodyField ? (200 + positiveSignals.length * 50) : 100)
             : -999;
 
         const result = {
@@ -575,7 +600,7 @@
      */
     function classifyFormIntentWithAI(formEl, pageContext = {}) {
         const baseResult = classifyFormIntent(formEl, pageContext);
-        
+
         // Structured AI evaluation representation
         const aiEvaluation = {
             intent: baseResult.intent,

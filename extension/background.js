@@ -3781,6 +3781,7 @@ const _handleMainMessageInner = (request, sender, sendResponse) => {
                         validationFailed: Boolean(request.validationFailed),
                         validationReason: request.validationReason || '',
                         unresolvedFields: Array.isArray(request.unresolvedFields) ? request.unresolvedFields : [],
+                        includeFormsWithoutMessage: Boolean(campaignState.includeFormsWithoutMessage),
                         restorationLogged: false,
                         heldAt: Date.now()
                     }
@@ -5154,6 +5155,7 @@ const _handleMainMessageInner = (request, sender, sendResponse) => {
                                     validationFailed: true,
                                     validationReason: curReason || 'REQUIRED_FIELDS_UNRESOLVED',
                                     unresolvedFields: Array.isArray(unresolvedFields) ? unresolvedFields : [],
+                                    includeFormsWithoutMessage: Boolean(campaignState.includeFormsWithoutMessage),
                                     restorationLogged: false,
                                     heldAt: Date.now()
                                 }
@@ -8284,7 +8286,7 @@ async function orchestrateSending(urlInput, template, abortSignal = null) {
             terminalStatus = 'DELIVERY_UNKNOWN';
         } else if (finalReason === 'TIMEOUT_LOCAL' || finalReason === 'TIMEOUT_GLOBAL') {
             terminalStatus = finalReason;
-        } else if (finalReason === 'SKIPPED' || finalReason === 'WOULD_SUBMIT' || finalReason?.includes('SKIPPED') || finalReason?.includes('NON_INQUIRY') || finalReason?.startsWith('NON_INQUIRY') || finalReason === 'EXPECTED_FAIL_PASS' || finalReason?.includes('EXPECTED_FAIL_PASS') || res?.isExpectedFailPass || finalReason === 'NO_LONG_TEXT_INQUIRY_FIELD' || finalReason === 'NO_FORM_FOUND' || finalReason === 'NO_REACHABLE_CONTACT_PAGE' || finalReason === 'MANUAL_OPERATOR_SKIP' || finalReason === 'CAPTCHA_OPERATOR_SKIP') {
+        } else if (finalReason === 'SKIPPED' || finalReason === 'WOULD_SUBMIT' || finalReason?.includes('SKIPPED') || finalReason?.includes('NON_INQUIRY') || finalReason?.startsWith('NON_INQUIRY') || finalReason === 'EXPECTED_FAIL_PASS' || finalReason?.includes('EXPECTED_FAIL_PASS') || res?.isExpectedFailPass || finalReason === 'NO_LONG_TEXT_INQUIRY_FIELD' || finalReason === 'NO_FORM_FOUND' || finalReason === 'NO_REACHABLE_CONTACT_PAGE' || finalReason === 'MANUAL_OPERATOR_SKIP' || finalReason === 'CAPTCHA_OPERATOR_SKIP' || finalReason === 'UNAUTHORIZED_CONSENT_SKIPPED' || finalReason === 'NON_INQUIRY_UNAUTHORIZED_CONSENT_FORM' || finalReason === 'OWNER_ACTION_REQUIRED') {
             terminalStatus = 'SKIPPED';
         } else if (finalReason === 'REQUIRED_SELECT_UNSTABLE' || finalReason === 'REQUIRED_FIELD_LOST_BEFORE_SUBMIT' || finalReason === 'AUTOFILL_FAILED' || finalReason === 'FORM_FILL_FAILED' || finalReason === 'FINAL_CUSTOM_VALIDITY_FAILED' || finalReason === 'FINAL_NATIVE_VALIDITY_FAILED' || finalReason === 'FINAL_FORM_COMPLETION_FAILED') {
             terminalStatus = 'AUTOMATION_FAILED';
@@ -8882,6 +8884,7 @@ async function saveCampaignState() {
                     xpider_currentAttempt: campaignState.currentAttempt,
                     xpider_active_campaign_run_id: campaignState.campaignRunId,
                     xpider_owner_function_test_mode_active: Boolean(campaignState.ownerFunctionTestMode),
+                    xpider_include_forms_without_message: Boolean(campaignState.includeFormsWithoutMessage),
                     xpider_campaign_mode: campaignState.campaignMode || 'AUTO'
                 }, () => {
                     if (chrome.runtime.lastError) console.error("Save error:", chrome.runtime.lastError);
@@ -8926,7 +8929,8 @@ async function restoreCampaignState() {
                 'xpider_sessionId', 'xpider_success', 'xpider_total', 'xpider_visited', 'xpider_successful', 'xpider_currentAttempt',
                 'xpider_paused_checkpoint', 'xpider_isPaused', 'xpider_active_campaign_run_id',
                 'xpider_owner_function_test_mode', 'xpider_owner_function_test_mode_active',
-                'xpider_v7_active_hold_state', 'xpider_campaign_mode', 'xpider_run_scoped_direct_privacy'
+                'xpider_v7_active_hold_state', 'xpider_campaign_mode', 'xpider_run_scoped_direct_privacy',
+                'xpider_include_forms_without_message'
             ], async (data) => {
                 try {
                     if (campaignState.isActive) {
@@ -9100,6 +9104,9 @@ async function restoreCampaignState() {
                         campaignState.currentAttempt = null;
                         const isRestoredTest = Boolean(data.xpider_active_test_source && EXPLICIT_TEST_SOURCES.includes(data.xpider_active_test_source));
                         campaignState.ownerFunctionTestMode = isRestoredTest;
+                        if (typeof data.xpider_include_forms_without_message === 'boolean') {
+                            campaignState.includeFormsWithoutMessage = data.xpider_include_forms_without_message;
+                        }
                         
                         if (v7HoldState && Number.isInteger(v7HoldState.tabId) && v7HoldState.tabId > 0) {
                             campaignState.currentAttempt = data.xpider_currentAttempt || null;
@@ -9108,6 +9115,9 @@ async function restoreCampaignState() {
                             campaignState.currentTargetToken = v7HoldState.targetToken || null;
                             campaignState.currentTargetStage = v7HoldState.stage;
                             campaignState.campaignMode = v7HoldState.campaignMode || campaignState.campaignMode || 'AUTO';
+                            if (typeof v7HoldState.includeFormsWithoutMessage === 'boolean') {
+                                campaignState.includeFormsWithoutMessage = v7HoldState.includeFormsWithoutMessage;
+                            }
                             campaignState.manualHoldActive = (v7HoldState.stage === 'MANUAL_HOLD');
                             campaignState.externalCaptchaWaitActive = (v7HoldState.stage === 'CAPTCHA_PENDING_EXTERNAL_USER');
                             campaignState.activeTargetInFlight = true;
@@ -9131,7 +9141,10 @@ async function restoreCampaignState() {
                                         validationFailed: Boolean(v7HoldState.validationFailed),
                                         validationReason: v7HoldState.validationReason || '',
                                         unresolvedFields: v7HoldState.unresolvedFields || [],
-                                        template: campaignState.template || {}
+                                        includeFormsWithoutMessage: Boolean(campaignState.includeFormsWithoutMessage),
+                                        template: Object.assign({}, campaignState.template || {}, {
+                                            includeFormsWithoutMessage: Boolean(campaignState.includeFormsWithoutMessage)
+                                        })
                                     }).catch(() => {});
                                 } catch (_) {}
                             }

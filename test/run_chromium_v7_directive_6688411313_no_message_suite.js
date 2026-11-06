@@ -576,6 +576,47 @@ async function main() {
         );
 
         // =========================================================================
+        // SECTION 3B: CONSECUTIVE ON -> OFF REVERSION (ZERO RESIDUAL LEAKAGE)
+        // Immediately run an OFF campaign after an ON campaign to verify zero state bleed
+        // =========================================================================
+        log('\n--- SECTION 3B: CONSECUTIVE ON -> OFF REVERSION (ZERO RESIDUAL LEAKAGE) ---');
+
+        await setupPopup([`http://127.0.0.1:${PORT}/subscribe-no-message.html`], {}, false);
+        const launched3B = await clickStart('AUTO');
+        recordAssertion('CONSECUTIVE_REVERSION_CAMPAIGN_LAUNCHED', launched3B === true);
+
+        let settled3B = false;
+        for (let i = 0; i < 40; i++) {
+            await sleep(500);
+            const st = await swEval(`({ inFlight: campaignState.activeTargetInFlight, remaining: campaignState.queue.length })`);
+            if (!st?.inFlight && st?.remaining === 0) {
+                settled3B = true;
+                break;
+            }
+        }
+        assert(settled3B, 'Consecutive reversion campaign did not settle');
+
+        const ledger3B = await swEval(`(async () => {
+            const hs = await getHistoryStoreInstance();
+            const attempt = hs.attempts[hs.attempts.length - 1];
+            return attempt ? {
+                status: attempt.status,
+                reason: attempt.reasonCode || attempt.reason || ''
+            } : null;
+        })()`);
+
+        recordAssertion('CONSECUTIVE_REVERSION_SKIPS_NO_MESSAGE_FORM',
+            ledger3B && ledger3B.status === 'SKIPPED' && (ledger3B.reason === 'NON_INQUIRY_SUBSCRIBE_FORM' || ledger3B.reason === 'NON_INQUIRY_NEWSLETTER_FORM'),
+            ledger3B
+        );
+
+        const sub3B = await fetch(`http://127.0.0.1:${PORT}/__xpider_submissions`).then(r => r.json());
+        recordAssertion('CONSECUTIVE_REVERSION_ZERO_NEW_SUBMISSIONS',
+            sub3B.submissionsCount === 4,
+            { submissionsCount: sub3B.submissionsCount }
+        );
+
+        // =========================================================================
         // SECTION 4: CONTACT VS NEWSLETTER SELECTION PRIORITY & DEDUPLICATION
         // =========================================================================
         log('\n--- SECTION 4: CONTACT VS NEWSLETTER SELECTION PRIORITY & DEDUPLICATION ---');
@@ -651,7 +692,7 @@ async function main() {
 
         const consentAttempt = safetyLedger.find(a => a.url.includes('consent-required-no-message.html'));
         recordAssertion('UNAUTHORIZED_CONSENT_CHECKBOX_FAILS_CLOSED',
-            consentAttempt && (consentAttempt.status === 'SKIPPED' || consentAttempt.status === 'REJECTED' || consentAttempt.status === 'FAILURE' || consentAttempt.status === 'FAILED'),
+            consentAttempt && consentAttempt.status === 'SKIPPED' && (consentAttempt.reason === 'NON_INQUIRY_UNAUTHORIZED_CONSENT_FORM' || consentAttempt.reason === 'UNAUTHORIZED_CONSENT_SKIPPED'),
             consentAttempt
         );
 

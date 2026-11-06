@@ -671,7 +671,27 @@
                                     };
                                 }
                             } else if (OPTIONAL_MARKETING_CATEGORIES.has(classification.category)) {
-                                // Strictly remain unchecked
+                                const isMarketingConsentAuthorized = Boolean(
+                                    this.options.ownerAuthorizedConsent ||
+                                    template.ownerAuthorizedConsent ||
+                                    template.allowAutoConsent
+                                );
+                                const isReq = this.isCheckboxRequired(el, form, classification);
+                                if (isReq) {
+                                    if (isMarketingConsentAuthorized) {
+                                        setNativeChecked(el, true);
+                                        checkboxResolved++;
+                                    } else {
+                                        this.logger(`[MARKETING_CONSENT_GUARD] type=checkbox label="${getElementContextText(el)}" reason=UNAUTHORIZED_CONSENT_SKIPPED`);
+                                        return {
+                                            pass: false,
+                                            reason: 'UNAUTHORIZED_CONSENT_SKIPPED',
+                                            unresolvedField: el,
+                                            context: getElementContextText(el)
+                                        };
+                                    }
+                                }
+                                // Strictly remain unchecked if optional
                             } else {
                                 // Choice group or standalone inquiry checkbox: select ONE valid member for the group
                                 const groupMembers = this.getCheckboxGroupMembers(el, form, classification);
@@ -1200,7 +1220,12 @@
 
             let failReason = 'AUDIT_PASSED';
             if (!pass) {
-                if (unresolvedRequired > 0 || unstableCheckboxes + unstableRadios + unstableSelects + unstableText > 0) failReason = 'REQUIRED_FIELDS_UNRESOLVED';
+                const hasUnauthorizedConsentInUnresolved = unresolvedList.some(item => {
+                    const lbl = (item.label || '').toLowerCase();
+                    return /marketing|newsletter|promot|offer|agree|consent|terms|privacy/i.test(lbl);
+                });
+                if (hasUnauthorizedConsentInUnresolved) failReason = 'UNAUTHORIZED_CONSENT_SKIPPED';
+                else if (unresolvedRequired > 0 || unstableCheckboxes + unstableRadios + unstableSelects + unstableText > 0) failReason = 'REQUIRED_FIELDS_UNRESOLVED';
                 else if (nativeInvalidCount > 0) failReason = 'FINAL_NATIVE_VALIDITY_FAILED';
                 else if (customInvalidCount > 0) failReason = 'FINAL_CUSTOM_VALIDITY_FAILED';
                 else if (!messageRequirementSatisfied) failReason = 'FINAL_MESSAGE_FIELD_EMPTY';
