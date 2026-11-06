@@ -4909,6 +4909,14 @@
                 hud.querySelector('#xpider-v7-captcha-stop-save-btn')?.addEventListener('click', () => handleAction('STOP_AND_SAVE'));
             }
 
+            const waitStartTime = Date.now();
+            const externalTimeoutMs = (template && template.externalCaptchaTimeoutMs) ||
+                (typeof window !== 'undefined' && window.__xpider_external_captcha_timeout_ms) ||
+                45000;
+
+            const isElVisible = (el) => Boolean(el && el.offsetParent !== null && !el.hidden && 
+                (typeof getComputedStyle === 'function' ? (getComputedStyle(el).display !== 'none' && getComputedStyle(el).visibility !== 'hidden') : true));
+
             // Non-invasive DOM polling for independent page-level challenge completion
             pollTimer = setInterval(() => {
                 if (settled) return;
@@ -4916,6 +4924,26 @@
                     finishWait({ resolved: false, aborted: true });
                     return;
                 }
+
+                // [Directive #6657464425 Fix 1: Detect explicit external solver error on page]
+                if (typeof document !== 'undefined') {
+                    const errEl = document.querySelector('.cf-turnstile-error, [data-state="error"], [data-challenge-state="error"], #error-banner');
+                    if (errEl && isElVisible(errEl)) {
+                        logDev(`❌ [CAPTCHA_EXTERNAL_ERROR] External challenge error indicated on page. Failing closed.`, "error");
+                        finishCampaign(false, 'FAILURE: CAPTCHA_EXTERNAL_SOLVER_ERROR', 'CAPTCHA_EXTERNAL_SOLVER_ERROR', { challengeType: challengeInfo?.type || 'unknown' });
+                        finishWait({ resolved: false, hasError: true, reasonCode: 'CAPTCHA_EXTERNAL_SOLVER_ERROR' });
+                        return;
+                    }
+                }
+
+                // [Directive #6657464425 Fix 2: Bounded wait timeout for external solver]
+                if (Date.now() - waitStartTime > externalTimeoutMs) {
+                    logDev(`⏱️ [CAPTCHA_EXTERNAL_TIMEOUT] External challenge wait timed out after ${externalTimeoutMs}ms. Failing closed.`, "warning");
+                    finishCampaign(false, 'FAILURE: CAPTCHA_EXTERNAL_SOLVER_TIMEOUT', 'CAPTCHA_EXTERNAL_SOLVER_TIMEOUT', { challengeType: challengeInfo?.type || 'unknown' });
+                    finishWait({ resolved: false, timedOut: true, reasonCode: 'CAPTCHA_EXTERNAL_SOLVER_TIMEOUT' });
+                    return;
+                }
+
                 if (_ChallengeGate && typeof document !== 'undefined') {
                     const check = _ChallengeGate.detectChallenge(document);
                     if (!check.detected || check.verified) {

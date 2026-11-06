@@ -193,6 +193,9 @@ async function main() {
         await cdpSend(popupWs, 'Page.enable');
         log('Popup opened and CDP connected.');
 
+        // Reset server submissions for clean test baseline
+        await fetch(`http://127.0.0.1:${PORT}/__xpider_reset_submissions`).catch(() => {});
+
         // --------------------------------------------------------------------
         // PHASE 1: Historical run pollution creation (Run 1 with 1 success)
         // --------------------------------------------------------------------

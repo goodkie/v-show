@@ -1,7 +1,7 @@
 {
   "suiteName": "XPIDER V7 Real Implementation Mutation Sensitivity Report",
-  "startTimeUtc": "2026-11-03T07:22:19.663Z",
-  "endTimeUtc": "2026-11-03T07:24:11.454Z",
+  "startTimeUtc": "2026-11-06T13:10:33.433Z",
+  "endTimeUtc": "2026-11-06T13:12:28.445Z",
   "totalMutantsTested": 4,
   "allMutantsRejectedWithExitCode1": true,
   "mutantResults": [
@@ -14,7 +14,7 @@
       "exitCodePass": true,
       "matchedError": true,
       "capturedErrorExcerpt": "❌ Fatal Test Runner Error: AssertionError [ERR_ASSERTION]: Target 2 must be strictly SKIPPED (observed: FAILURE)",
-      "durationSeconds": "44.2",
+      "durationSeconds": "45.4",
       "restoredByteIdentical": true,
       "status": "PASS_MUTANT_REJECTED"
     },
@@ -27,7 +27,7 @@
       "exitCodePass": true,
       "matchedError": true,
       "capturedErrorExcerpt": "❌ Fatal Test Runner Error: AssertionError [ERR_ASSERTION]: #stop-save-btn must be visibly rendered (offsetParent !== null && display !== none)",
-      "durationSeconds": "8.7",
+      "durationSeconds": "8.8",
       "restoredByteIdentical": true,
       "status": "PASS_MUTANT_REJECTED"
     },
@@ -40,7 +40,7 @@
       "exitCodePass": true,
       "matchedError": true,
       "capturedErrorExcerpt": "❌ Fatal Test Runner Error: AssertionError [ERR_ASSERTION]: completed must equal 3 (observed: 2)",
-      "durationSeconds": "43.1",
+      "durationSeconds": "44.2",
       "restoredByteIdentical": true,
       "status": "PASS_MUTANT_REJECTED"
     },
@@ -53,7 +53,7 @@
       "exitCodePass": true,
       "matchedError": true,
       "capturedErrorExcerpt": "❌ Fatal Test Runner Error: AssertionError [ERR_ASSERTION]: Restored remaining queue must be >= 2 across true SW restart (observed: 0)",
-      "durationSeconds": "15.7",
+      "durationSeconds": "16.5",
       "restoredByteIdentical": true,
       "status": "PASS_MUTANT_REJECTED"
     }

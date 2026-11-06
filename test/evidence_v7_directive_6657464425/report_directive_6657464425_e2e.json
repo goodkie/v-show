@@ -1,0 +1,705 @@
+{
+  "testSuite": "run_chromium_v7_directive_6657464425_e2e_suite",
+  "startTimeUtc": "2026-11-06T02:35:22.741Z",
+  "assertions": [
+    {
+      "name": "A1_AUTO_CAMPAIGN_ACTIVE",
+      "passed": true,
+      "detail": {},
+      "timestamp": "2026-11-06T02:35:28.373Z"
+    },
+    {
+      "name": "A1_CAPTCHA_PENDING_EXTERNAL_USER_ENTERED",
+      "passed": true,
+      "detail": {},
+      "timestamp": "2026-11-06T02:35:42.417Z"
+    },
+    {
+      "name": "A1_EXTERNAL_CAPTCHA_HUD_RENDERED",
+      "passed": true,
+      "detail": {
+        "exists": true,
+        "text": "\n                    \n                        AUTO MODE — CHALLENGE PENDING\n                        Waiting for external extension or user completion (turnstile)...\n                    \n                    \n                        ✅ I Completed Challenge — Re-verify & Submit\n                        ⏭️ Skip\n                        ⏸️ Stop & Save\n                    \n                "
+      },
+      "timestamp": "2026-11-06T02:35:42.474Z"
+    },
+    {
+      "name": "A1_ZERO_SUBMIT_BEFORE_EXTERNAL_SOLVER",
+      "passed": true,
+      "detail": {
+        "ok": true,
+        "count": 0,
+        "submissions": []
+      },
+      "timestamp": "2026-11-06T02:35:42.476Z"
+    },
+    {
+      "name": "A1_AUTO_UNATTENDED_CONTINUATION_SETTLED",
+      "passed": true,
+      "detail": {},
+      "timestamp": "2026-11-06T02:35:54.677Z"
+    },
+    {
+      "name": "A1_AUTO_SUBMIT_RECORDED_EXACTLY_ONE",
+      "passed": true,
+      "detail": {
+        "ok": true,
+        "count": 1,
+        "submissions": [
+          {
+            "receiptId": "rcpt_1793932542872_1",
+            "timestamp": 1793932542872,
+            "method": "POST",
+            "url": "/contact-success.html",
+            "ip": "127.0.0.1",
+            "referer": "http://127.0.0.1:8088/captcha-turnstile-dom.html"
+          }
+        ]
+      },
+      "timestamp": "2026-11-06T02:35:54.679Z"
+    },
+    {
+      "name": "A2_TIMEOUT_CAMPAIGN_ACTIVE",
+      "passed": true,
+      "detail": {},
+      "timestamp": "2026-11-06T02:35:55.564Z"
+    },
+    {
+      "name": "A2_TIMEOUT_CAMPAIGN_SETTLED_FAIL_CLOSED",
+      "passed": true,
+      "detail": {},
+      "timestamp": "2026-11-06T02:36:12.838Z"
+    },
+    {
+      "name": "A2_ZERO_SUBMISSION_ON_SOLVER_TIMEOUT",
+      "passed": true,
+      "detail": {
+        "ok": true,
+        "count": 1,
+        "submissions": [
+          {
+            "receiptId": "rcpt_1793932542872_1",
+            "timestamp": 1793932542872,
+            "method": "POST",
+            "url": "/contact-success.html",
+            "ip": "127.0.0.1",
+            "referer": "http://127.0.0.1:8088/captcha-turnstile-dom.html"
+          }
+        ]
+      },
+      "timestamp": "2026-11-06T02:36:12.841Z"
+    },
+    {
+      "name": "A2_ATTEMPT_REASON_CAPTCHA_TIMEOUT",
+      "passed": true,
+      "detail": {
+        "attemptId": "att_1793932555342_q2wrr",
+        "autofillStatus": "N_A",
+        "campaignRunId": "normal_run_1793932555212_2g5aum",
+        "captchaStatus": "NONE",
+        "committedContactUrl": "http://127.0.0.1:8088/captcha-mock-timeout.html",
+        "committedFormUrl": "http://127.0.0.1:8088/captcha-mock-timeout.html",
+        "contactDiscoveryConfidence": 1,
+        "contactDiscoverySource": null,
+        "contactPageHostname": "127.0.0.1",
+        "contactPageUrl": "http://127.0.0.1:8088/captcha-mock-timeout.html",
+        "createdAt": 1793932555342,
+        "emailsFound": 0,
+        "evidence": {},
+        "externalFormUrl": null,
+        "failureClass": "SECURITY_BLOCKED",
+        "formDetectionStatus": "FOUND",
+        "formPageUrl": "http://127.0.0.1:8088/captcha-mock-timeout.html",
+        "generation": 0,
+        "generationId": 0,
+        "importId": null,
+        "isPreSubmitLocked": true,
+        "outcomeEvidence": {
+          "ariaLiveSuccessTransition": false,
+          "buttonSuccessState": false,
+          "captchaRejected": false,
+          "confirmationStrength": "NONE",
+          "evidenceTimestamp": 1793932571444,
+          "formHidden": false,
+          "formReplaced": false,
+          "formReset": false,
+          "frameworkSuccessState": false,
+          "networkCommitObserved": false,
+          "networkStatus": null,
+          "physicalClickDispatched": false,
+          "serverErrorTransition": false,
+          "submitAttempted": false,
+          "submitEventSeen": false,
+          "successNodeVisibleTransition": false,
+          "successTextTransition": false,
+          "thankYouUrlTransition": false,
+          "validationErrorTransition": false
+        },
+        "ownerManualConfirmed": false,
+        "privacyFailureReason": null,
+        "privacyGateCheckedAt": "2026-11-06T02:35:55.342Z",
+        "privacyGatePassed": false,
+        "privacyMode": "PRIVACY_RELAY",
+        "privacyTransport": "PRIVACY_RELAY",
+        "reasonCode": "CAPTCHA_EXTERNAL_SOLVER_TIMEOUT",
+        "receiptId": null,
+        "resultUrl": "http://127.0.0.1:8088/captcha-mock-timeout.html",
+        "selectedCandidateUrl": "http://127.0.0.1:8088/captcha-mock-timeout.html",
+        "sessionId": null,
+        "settledAt": 1793932571444,
+        "sourceHostname": "127.0.0.1",
+        "sourceUrl": "http://127.0.0.1:8088/captcha-mock-timeout.html",
+        "startedAt": 1793932555342,
+        "status": "FAILURE",
+        "submissionStatus": "FAILURE",
+        "submittedFromUrl": "http://127.0.0.1:8088/captcha-mock-timeout.html",
+        "targetIdentity": "https://127.0.0.1/captcha-mock-timeout.html",
+        "targetToken": "tok_1793932555342_4cgyqz",
+        "templateId": "default",
+        "templateVersion": 1,
+        "timing": {
+          "durationMs": 16102,
+          "finalizedTime": 1793932571444,
+          "intentTime": 1793932555342
+        }
+      },
+      "timestamp": "2026-11-06T02:36:12.843Z"
+    },
+    {
+      "name": "A3_SEMI_AUTO_CAMPAIGN_ACTIVE",
+      "passed": true,
+      "detail": {},
+      "timestamp": "2026-11-06T02:36:13.683Z"
+    },
+    {
+      "name": "A3_SEMI_AUTO_HOLD_PANEL_RENDERED",
+      "passed": true,
+      "detail": {
+        "exists": true,
+        "mode": "SEMI_AUTO"
+      },
+      "timestamp": "2026-11-06T02:36:26.895Z"
+    },
+    {
+      "name": "A3_SEMI_AUTO_HOLD_CONFIRMED",
+      "passed": true,
+      "detail": {},
+      "timestamp": "2026-11-06T02:36:26.895Z"
+    },
+    {
+      "name": "A3_SEMI_AUTO_SETTLED",
+      "passed": true,
+      "detail": {},
+      "timestamp": "2026-11-06T02:36:28.017Z"
+    },
+    {
+      "name": "A3_SUBMISSION_RECORDED_TOTAL_TWO",
+      "passed": true,
+      "detail": {
+        "ok": true,
+        "count": 2,
+        "submissions": [
+          {
+            "receiptId": "rcpt_1793932542872_1",
+            "timestamp": 1793932542872,
+            "method": "POST",
+            "url": "/contact-success.html",
+            "ip": "127.0.0.1",
+            "referer": "http://127.0.0.1:8088/captcha-turnstile-dom.html"
+          },
+          {
+            "receiptId": "rcpt_1793932586900_2",
+            "timestamp": 1793932586900,
+            "method": "POST",
+            "url": "/contact-success.html",
+            "ip": "127.0.0.1",
+            "referer": "http://127.0.0.1:8088/captcha-turnstile-dom.html"
+          }
+        ]
+      },
+      "timestamp": "2026-11-06T02:36:28.024Z"
+    },
+    {
+      "name": "A4_MANUAL_CAMPAIGN_ACTIVE",
+      "passed": true,
+      "detail": {},
+      "timestamp": "2026-11-06T02:36:28.984Z"
+    },
+    {
+      "name": "A4_MANUAL_HOLD_PANEL_RENDERED",
+      "passed": true,
+      "detail": {
+        "exists": true,
+        "mode": "MANUAL",
+        "name": "DirectiveTester ValUser",
+        "email": "directivetester@example.com",
+        "message": "Directive 6657464425 verification inquiry message."
+      },
+      "timestamp": "2026-11-06T02:36:44.157Z"
+    },
+    {
+      "name": "A4_FIELDS_AUTOFILLED_BEFORE_SUBMIT",
+      "passed": true,
+      "detail": {
+        "exists": true,
+        "mode": "MANUAL",
+        "name": "DirectiveTester ValUser",
+        "email": "directivetester@example.com",
+        "message": "Directive 6657464425 verification inquiry message."
+      },
+      "timestamp": "2026-11-06T02:36:44.157Z"
+    },
+    {
+      "name": "A4_MANUAL_HOLD_CONFIRMED",
+      "passed": true,
+      "detail": {},
+      "timestamp": "2026-11-06T02:36:44.157Z"
+    },
+    {
+      "name": "A4_MANUAL_CAMPAIGN_SETTLED",
+      "passed": true,
+      "detail": {},
+      "timestamp": "2026-11-06T02:36:45.207Z"
+    },
+    {
+      "name": "A4_SUBMISSION_RECORDED_TOTAL_THREE",
+      "passed": true,
+      "detail": {
+        "ok": true,
+        "count": 3,
+        "submissions": [
+          {
+            "receiptId": "rcpt_1793932542872_1",
+            "timestamp": 1793932542872,
+            "method": "POST",
+            "url": "/contact-success.html",
+            "ip": "127.0.0.1",
+            "referer": "http://127.0.0.1:8088/captcha-turnstile-dom.html"
+          },
+          {
+            "receiptId": "rcpt_1793932586900_2",
+            "timestamp": 1793932586900,
+            "method": "POST",
+            "url": "/contact-success.html",
+            "ip": "127.0.0.1",
+            "referer": "http://127.0.0.1:8088/captcha-turnstile-dom.html"
+          },
+          {
+            "receiptId": "rcpt_1793932604191_3",
+            "timestamp": 1793932604191,
+            "method": "POST",
+            "url": "/contact-success.html",
+            "ip": "127.0.0.1",
+            "referer": "http://127.0.0.1:8088/contact-standard.html"
+          }
+        ]
+      },
+      "timestamp": "2026-11-06T02:36:45.209Z"
+    },
+    {
+      "name": "B_MULTI_CAMPAIGN_ACTIVE",
+      "passed": true,
+      "detail": {
+        "campaignRunId": "normal_run_1793932605748_smzj94"
+      },
+      "timestamp": "2026-11-06T02:36:46.114Z"
+    },
+    {
+      "name": "B_TARGET_1_SUBMITTED_SUCCESS",
+      "passed": true,
+      "detail": {},
+      "timestamp": "2026-11-06T02:37:11.242Z"
+    },
+    {
+      "name": "B_CAMPAIGN_PAUSED_BY_VISIBLE_BUTTON",
+      "passed": true,
+      "detail": {
+        "isPaused": true,
+        "hasCheckpoint": true
+      },
+      "timestamp": "2026-11-06T02:37:12.064Z"
+    },
+    {
+      "name": "B_RESUME_MODE_MODAL_OPENED",
+      "passed": true,
+      "detail": {},
+      "timestamp": "2026-11-06T02:37:12.673Z"
+    },
+    {
+      "name": "B_CAMPAIGN_RESUMED_ACTIVE",
+      "passed": true,
+      "detail": {
+        "isActive": true,
+        "isPaused": false
+      },
+      "timestamp": "2026-11-06T02:37:13.480Z"
+    },
+    {
+      "name": "B_TARGET_2_SUBMITTED_SUCCESS",
+      "passed": true,
+      "detail": {},
+      "timestamp": "2026-11-06T02:37:33.595Z"
+    },
+    {
+      "name": "B_STOP_AND_SAVE_CHECKPOINT_SAVED",
+      "passed": true,
+      "detail": {
+        "isPaused": true,
+        "checkpoint": true
+      },
+      "timestamp": "2026-11-06T02:37:34.415Z"
+    },
+    {
+      "name": "B_REOPEN_POPUP_RESUMABLE_BANNER_VISIBLE",
+      "passed": true,
+      "detail": {},
+      "timestamp": "2026-11-06T02:37:39.090Z"
+    },
+    {
+      "name": "B_MULTI_CAMPAIGN_SETTLED_INACTIVE",
+      "passed": true,
+      "detail": {},
+      "timestamp": "2026-11-06T02:38:12.000Z"
+    },
+    {
+      "name": "B_EXACT_SERVER_SUBMISSIONS_COUNT_TWO",
+      "passed": true,
+      "detail": {
+        "count": 2
+      },
+      "timestamp": "2026-11-06T02:38:12.001Z"
+    },
+    {
+      "name": "B_EXACT_FOUR_TARGETS_IN_RUN_LEDGER",
+      "passed": true,
+      "detail": {
+        "count": 4
+      },
+      "timestamp": "2026-11-06T02:38:12.006Z"
+    },
+    {
+      "name": "B_TARGET_1_HOMEPAGE_DISCOVERY_SUCCESS",
+      "passed": true,
+      "detail": {
+        "attemptId": "att_1793932605836_4gf2v",
+        "autofillStatus": "SUCCESS",
+        "campaignRunId": "normal_run_1793932605748_smzj94",
+        "captchaStatus": "NONE",
+        "committedContactUrl": "http://127.0.0.1:8088/contact-standard.html",
+        "committedFormUrl": "http://127.0.0.1:8088/contact-standard.html",
+        "contactDiscoveryConfidence": 1,
+        "contactDiscoverySource": null,
+        "contactPageHostname": "127.0.0.1",
+        "contactPageUrl": "http://127.0.0.1:8088/contact-standard.html",
+        "createdAt": 1793932605836,
+        "emailsFound": 0,
+        "evidence": {},
+        "externalFormUrl": null,
+        "failureClass": null,
+        "formDetectionStatus": "FOUND",
+        "formPageUrl": "http://127.0.0.1:8088/contact-standard.html",
+        "generation": 0,
+        "generationId": 0,
+        "importId": null,
+        "isPreSubmitLocked": true,
+        "outcomeEvidence": {
+          "ariaLiveSuccessTransition": true,
+          "buttonSuccessState": true,
+          "captchaEvidenceClass": null,
+          "captchaRejected": false,
+          "confirmationStrength": "STRONG_DOM",
+          "evidenceTimestamp": 1793932626974,
+          "formHidden": false,
+          "formReplaced": false,
+          "formReset": false,
+          "frameworkSuccessState": true,
+          "networkCommitObserved": false,
+          "networkStatus": null,
+          "physicalClickDispatched": false,
+          "receiptId": "rcpt_1793932622434_1",
+          "serverErrorTransition": false,
+          "submitAttempted": true,
+          "submitEventSeen": true,
+          "successNodeVisibleTransition": true,
+          "successTextTransition": true,
+          "thankYouUrlTransition": false,
+          "validationErrorTransition": false
+        },
+        "ownerManualConfirmed": false,
+        "privacyFailureReason": null,
+        "privacyGateCheckedAt": "2026-11-06T02:36:45.836Z",
+        "privacyGatePassed": false,
+        "privacyMode": "PRIVACY_RELAY",
+        "privacyTransport": "PRIVACY_RELAY",
+        "reasonCode": "SUCCESS_CONFIRMED",
+        "receiptId": "rcpt_1793932622434_1",
+        "resultUrl": "http://127.0.0.1:8088/contact-standard.html",
+        "selectedCandidateUrl": "http://127.0.0.1:8088/contact-standard.html",
+        "sessionId": null,
+        "settledAt": 1793932626974,
+        "sourceHostname": "127.0.0.1",
+        "sourceUrl": "http://127.0.0.1:8088/homepage-with-newsletter-and-contact-link.html",
+        "startedAt": 1793932605836,
+        "status": "CONFIRMED_SUCCESS",
+        "submissionStatus": "CONFIRMED_SUCCESS",
+        "submittedFromUrl": "http://127.0.0.1:8088/homepage-with-newsletter-and-contact-link.html",
+        "targetIdentity": "https://127.0.0.1/homepage-with-newsletter-and-contact-link.html",
+        "targetToken": "tok_1793932605836_un3hfq",
+        "templateId": "default",
+        "templateVersion": 1,
+        "timing": {
+          "durationMs": 21138,
+          "finalizedTime": 1793932626974,
+          "intentTime": 1793932605836
+        }
+      },
+      "timestamp": "2026-11-06T02:38:12.006Z"
+    },
+    {
+      "name": "B_TARGET_2_DYNAMIC_REACT_SUCCESS",
+      "passed": true,
+      "detail": {
+        "attemptId": "att_1793932632691_zbw2j",
+        "autofillStatus": "SUCCESS",
+        "campaignRunId": "normal_run_1793932605748_smzj94",
+        "captchaStatus": "NONE",
+        "committedContactUrl": "http://127.0.0.1:8088/dynamic-react-controlled-stale-revert.html",
+        "committedFormUrl": "http://127.0.0.1:8088/dynamic-react-controlled-stale-revert.html",
+        "contactDiscoveryConfidence": 1,
+        "contactDiscoverySource": null,
+        "contactPageHostname": "127.0.0.1",
+        "contactPageUrl": "http://127.0.0.1:8088/dynamic-react-controlled-stale-revert.html",
+        "createdAt": 1793932632691,
+        "emailsFound": 0,
+        "evidence": {},
+        "externalFormUrl": null,
+        "failureClass": null,
+        "formDetectionStatus": "FOUND",
+        "formPageUrl": "http://127.0.0.1:8088/dynamic-react-controlled-stale-revert.html",
+        "generation": 0,
+        "generationId": 0,
+        "importId": null,
+        "isPreSubmitLocked": true,
+        "outcomeEvidence": {
+          "ariaLiveSuccessTransition": true,
+          "buttonSuccessState": false,
+          "captchaEvidenceClass": null,
+          "captchaRejected": false,
+          "confirmationStrength": "STRONG_DOM",
+          "evidenceTimestamp": 1793932649163,
+          "formHidden": false,
+          "formReplaced": true,
+          "formReset": false,
+          "frameworkSuccessState": true,
+          "networkCommitObserved": false,
+          "networkStatus": null,
+          "physicalClickDispatched": false,
+          "receiptId": "rcpt_1793932646019_2",
+          "serverErrorTransition": false,
+          "submitAttempted": true,
+          "submitEventSeen": false,
+          "successNodeVisibleTransition": false,
+          "successTextTransition": true,
+          "thankYouUrlTransition": false,
+          "validationErrorTransition": false
+        },
+        "ownerManualConfirmed": false,
+        "privacyFailureReason": null,
+        "privacyGateCheckedAt": "2026-11-06T02:37:12.691Z",
+        "privacyGatePassed": false,
+        "privacyMode": "PRIVACY_RELAY",
+        "privacyTransport": "PRIVACY_RELAY",
+        "reasonCode": "SUCCESS_CONFIRMED",
+        "receiptId": "rcpt_1793932646019_2",
+        "resultUrl": "http://127.0.0.1:8088/contact-success.html",
+        "selectedCandidateUrl": "http://127.0.0.1:8088/dynamic-react-controlled-stale-revert.html",
+        "sessionId": null,
+        "settledAt": 1793932649163,
+        "sourceHostname": "127.0.0.1",
+        "sourceUrl": "http://127.0.0.1:8088/dynamic-react-controlled-stale-revert.html",
+        "startedAt": 1793932632691,
+        "status": "CONFIRMED_SUCCESS",
+        "submissionStatus": "CONFIRMED_SUCCESS",
+        "submittedFromUrl": "http://127.0.0.1:8088/dynamic-react-controlled-stale-revert.html",
+        "targetIdentity": "https://127.0.0.1/dynamic-react-controlled-stale-revert.html",
+        "targetToken": "tok_1793932632691_4eq79m",
+        "templateId": "default",
+        "templateVersion": 1,
+        "timing": {
+          "durationMs": 16472,
+          "finalizedTime": 1793932649163,
+          "intentTime": 1793932632691
+        }
+      },
+      "timestamp": "2026-11-06T02:38:12.006Z"
+    },
+    {
+      "name": "B_TARGET_3_PHONE_ONLY_SKIPPED",
+      "passed": true,
+      "detail": {
+        "attemptId": "att_1793932659622_uqsm8",
+        "autofillStatus": "N_A",
+        "campaignRunId": "normal_run_1793932605748_smzj94",
+        "captchaStatus": "NONE",
+        "contactDiscoveryConfidence": 1,
+        "contactDiscoverySource": null,
+        "contactPageHostname": "127.0.0.1",
+        "contactPageUrl": "http://127.0.0.1:8088/phone-only-no-message.html",
+        "createdAt": 1793932659622,
+        "emailsFound": 0,
+        "evidence": {},
+        "externalFormUrl": null,
+        "failureClass": null,
+        "formDetectionStatus": "NOT_FOUND",
+        "formPageUrl": "http://127.0.0.1:8088/phone-only-no-message.html",
+        "generation": 1,
+        "generationId": 1,
+        "importId": null,
+        "isPreSubmitLocked": false,
+        "outcomeEvidence": {
+          "ariaLiveSuccessTransition": false,
+          "buttonSuccessState": false,
+          "captchaRejected": false,
+          "confirmationStrength": "NONE",
+          "evidenceTimestamp": 1793932668723,
+          "formHidden": false,
+          "formReplaced": false,
+          "formReset": false,
+          "frameworkSuccessState": false,
+          "networkCommitObserved": false,
+          "networkStatus": null,
+          "physicalClickDispatched": false,
+          "serverErrorTransition": false,
+          "submitAttempted": false,
+          "submitEventSeen": false,
+          "successNodeVisibleTransition": false,
+          "successTextTransition": false,
+          "thankYouUrlTransition": false,
+          "validationErrorTransition": false
+        },
+        "ownerManualConfirmed": false,
+        "privacyFailureReason": "RESIDENTIAL_UPSTREAM_BLOCKED (HTTP_407)",
+        "privacyGateCheckedAt": "2026-11-06T02:37:39.622Z",
+        "privacyGatePassed": false,
+        "privacyMode": "PRIVACY_RELAY",
+        "privacyTransport": "PRIVACY_RELAY",
+        "reasonCode": "NO_LONG_TEXT_INQUIRY_FIELD",
+        "receiptId": null,
+        "resultUrl": "http://127.0.0.1:8088/phone-only-no-message.html",
+        "selectedCandidateUrl": "http://127.0.0.1:8088/phone-only-no-message.html",
+        "sessionId": null,
+        "settledAt": 1793932668723,
+        "sourceHostname": "127.0.0.1",
+        "sourceUrl": "http://127.0.0.1:8088/phone-only-no-message.html",
+        "startedAt": 1793932659622,
+        "status": "SKIPPED",
+        "submissionStatus": "SKIPPED",
+        "submittedFromUrl": "http://127.0.0.1:8088/phone-only-no-message.html",
+        "targetIdentity": "https://127.0.0.1/phone-only-no-message.html",
+        "targetToken": "tok_1793932659622_om4paa",
+        "templateId": "default",
+        "templateVersion": 1,
+        "timing": {
+          "durationMs": 9101,
+          "finalizedTime": 1793932668723,
+          "intentTime": 1793932659622
+        }
+      },
+      "timestamp": "2026-11-06T02:38:12.006Z"
+    },
+    {
+      "name": "B_TARGET_4_DEAD_CONTACT_FAILURE",
+      "passed": true,
+      "detail": {
+        "attemptId": "att_1793932679963_9sp36",
+        "autofillStatus": "N_A",
+        "campaignRunId": "normal_run_1793932605748_smzj94",
+        "captchaStatus": "NONE",
+        "contactDiscoveryConfidence": 1,
+        "contactDiscoverySource": null,
+        "contactPageHostname": "127.0.0.1",
+        "contactPageUrl": "http://127.0.0.1:8088/contact",
+        "createdAt": 1793932679963,
+        "emailsFound": 0,
+        "evidence": {},
+        "externalFormUrl": null,
+        "failureClass": "RUNTIME_ERROR",
+        "formDetectionStatus": "NOT_FOUND",
+        "formPageUrl": "http://127.0.0.1:8088/contact",
+        "generation": 1,
+        "generationId": 1,
+        "importId": null,
+        "isPreSubmitLocked": false,
+        "outcomeEvidence": {
+          "ariaLiveSuccessTransition": false,
+          "buttonSuccessState": false,
+          "captchaRejected": false,
+          "confirmationStrength": "NONE",
+          "evidenceTimestamp": 1793932689947,
+          "formHidden": false,
+          "formReplaced": false,
+          "formReset": false,
+          "frameworkSuccessState": false,
+          "networkCommitObserved": false,
+          "networkStatus": null,
+          "physicalClickDispatched": false,
+          "serverErrorTransition": false,
+          "submitAttempted": false,
+          "submitEventSeen": false,
+          "successNodeVisibleTransition": false,
+          "successTextTransition": false,
+          "thankYouUrlTransition": false,
+          "validationErrorTransition": false
+        },
+        "ownerManualConfirmed": false,
+        "privacyFailureReason": "RESIDENTIAL_UPSTREAM_BLOCKED (HTTP_407)",
+        "privacyGateCheckedAt": "2026-11-06T02:37:59.963Z",
+        "privacyGatePassed": false,
+        "privacyMode": "PRIVACY_RELAY",
+        "privacyTransport": "PRIVACY_RELAY",
+        "reasonCode": "NO_ACCESSIBLE_INQUIRY_FORM",
+        "receiptId": null,
+        "resultUrl": "http://127.0.0.1:8088/contact",
+        "selectedCandidateUrl": "http://127.0.0.1:8088/homepage-with-dead-contact-link.html",
+        "sessionId": null,
+        "settledAt": 1793932689947,
+        "sourceHostname": "127.0.0.1",
+        "sourceUrl": "http://127.0.0.1:8088/homepage-with-dead-contact-link.html",
+        "startedAt": 1793932679963,
+        "status": "FAILURE",
+        "submissionStatus": "FAILURE",
+        "submittedFromUrl": "http://127.0.0.1:8088/homepage-with-dead-contact-link.html",
+        "targetIdentity": "https://127.0.0.1/homepage-with-dead-contact-link.html",
+        "targetToken": "tok_1793932679963_a2bzl4",
+        "templateId": "default",
+        "templateVersion": 1,
+        "timing": {
+          "durationMs": 9984,
+          "finalizedTime": 1793932689947,
+          "intentTime": 1793932679963
+        }
+      },
+      "timestamp": "2026-11-06T02:38:12.006Z"
+    },
+    {
+      "name": "B_REMAINING_TARGETS_REACHED_ZERO",
+      "passed": true,
+      "detail": {
+        "remaining": 0,
+        "countersRemaining": 0,
+        "queueLen": 0,
+        "histogram": {
+          "SUCCESS_CONFIRMED": 2,
+          "NO_LONG_TEXT_INQUIRY_FIELD": 1,
+          "NO_ACCESSIBLE_INQUIRY_FORM": 1
+        }
+      },
+      "timestamp": "2026-11-06T02:38:12.007Z"
+    }
+  ],
+  "screenshots": [
+    "shot_directive_6657464425_final_completed.png"
+  ],
+  "status": "SUCCESS",
+  "endTimeUtc": "2026-11-06T02:38:12.152Z"
+}

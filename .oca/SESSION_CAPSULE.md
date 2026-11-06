@@ -6,22 +6,22 @@ PROJECT_NAME: XPIDER AutoForm Sender Pro
 WORKSPACE_ROOT: E:\vivpr\ai\extension-form-sender
 AUTHORITY_SOURCE: goodkie/v-show Issues #6 & #10
 ACTIVE_BRANCH: candidate/p0-core-regressions-v7
-CANDIDATE_HEAD: 302ed1b193639eb52897c249e1096142a992e0ae
-STATE_REV: 2026-11-04.601
-AUTHORITY_CURSOR: IC_kwDOT53X288AAAABi08e7A
-LAST_AUDIT: [CHATGPT][INDEPENDENT SOURCE AUDIT / P0 CORRECTIVE DIRECTIVE][2026-11-04] Comment #908 / ID 6632185580
-LAST_DIRECTIVE: [CHATGPT DIRECTIVE: RECONCILE CHECKPOINT MODE, RUNID-SCOPED HISTOGRAM & SW RESTORATION] Comment #908
-LAST_RECEIPT: [ANTIGRAVITY → CHATGPT / OWNER][RECEIPT][Issue #6][RECONCILE CHECKPOINT CAMPAIGNMODE, RUNID-SCOPED HISTOGRAM & IMMEDIATE SW BOOT RESTORATION (ALL 5 SUITES PASS)]
+CANDIDATE_HEAD: [Pending Commit for Directive #6657464425 & Follow-up #6685271700]
+STATE_REV: 2026-11-06.701
+AUTHORITY_CURSOR: 6685271700
+LAST_AUDIT: [CHATGPT][AUDIT + EXECUTION FOLLOW-UP][extension-form-sender][2026-11-06] Comment ID 6685271700
+LAST_DIRECTIVE: [CHATGPT DIRECTIVE: EXTERNAL CAPTCHA EXTENSION CONTRACT, VISIBLE CONTROLS & MULTI-TARGET LEDGER] Comment #909 / ID 6657464425 & Follow-up #6685271700
+LAST_RECEIPT: [ANTIGRAVITY → CHATGPT / OWNER][RECEIPT][Issue #6][EXTERNAL CAPTCHA EXTENSION CONTRACT, THREE MODES & VISIBLE CONTROLS MULTI-TARGET CAMPAIGN VERIFIED (6/6 SUITES PASS)]
 SCHEDULE_REVISION: 5
 BUILD_ID: V7.0.0-RC11-20261030-THREE-MODE-CONTRACTS-PASS
 FUNCTIONAL_COMMIT: 20678ada
 PROVENANCE_COMMIT: 20678ada
 TEST_EVIDENCE_BRANCH: candidate/p0-core-regressions-v7
-TEST_EVIDENCE_REPORT: test/report_v7_directive_reproduction.json
+TEST_EVIDENCE_REPORT: test/evidence_v7_directive_6657464425/report_directive_6657464425_e2e.json
 MUTATION_EVIDENCE_REPORT: owner-extension-test-site/evidence/evidence_v7_real_mutants_report.json
-NEXT_ACTION: Awaiting independent ChatGPT Code Audit of candidate/p0-core-regressions-v7 (commit 302ed1b1). Release HOLD maintained.
-BLOCKERS: None. Candidate branch candidate/p0-core-regressions-v7 passes 100% across all 5 test suites: Directive Reproduction (14/14 assertions), Modes & Visible Controls (32/32 assertions), Item C 5-target campaign (22/22), Real Mutant Sensitivity (4/4 mutants killed), and SC-03/SC-04 unified suite. Base major/v7-dual-mode remains 100% frozen.
-OWNER_ACTION: None required. Release HOLD maintained; zero public submissions.
+NEXT_ACTION: Awaiting independent ChatGPT Code Audit of candidate/p0-core-regressions-v7. Release HOLD maintained.
+BLOCKERS: None. Candidate branch candidate/p0-core-regressions-v7 passes 100% across all 6 test suites: Dedicated Directive E2E (37/37 assertions), Directive Reproduction (14/14 assertions), Modes & Visible Controls (32/32 assertions), Item C 5-target campaign (22/22), Real Mutant Sensitivity (4/4 mutants killed), and SC-03/SC-04 unified suite. Base major/v7-dual-mode remains 100% frozen.
+OWNER_ACTION: Smoke test package XPIDER_V7.0.0_RC12_CANDIDATE_OWNER_SMOKE.zip available for optional verification on disposable profile. Release HOLD maintained; zero public submissions.
 RELEASE_ASSET_TAG: v7.0.0-rc11
 RELEASE_ASSET_ZIP: XPIDER_V7.0.0_RC11_DUAL_MODE_OWNER_BETA.zip
 RELEASE_ASSET_SIZE: 51693297

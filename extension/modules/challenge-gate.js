@@ -31,7 +31,7 @@
 
     // Selector registry (also used by tests to build a fake document).
     const SEL = Object.freeze({
-        recaptchaWidget: 'iframe[src*="recaptcha"], .g-recaptcha, [data-sitekey]',
+        recaptchaWidget: 'iframe[src*="recaptcha"], .g-recaptcha, .recaptcha, [data-sitekey]:not(.cf-turnstile):not(.h-captcha):not([class*="turnstile"]):not([class*="hcaptcha"])',
         recaptchaBframe: 'iframe[src*="recaptcha"][src*="bframe"], iframe[title*="recaptcha challenge" i]',
         hcaptchaWidget: 'iframe[src*="hcaptcha"], .h-captcha',
         turnstileWidget: 'iframe[src*="turnstile"], .cf-turnstile',

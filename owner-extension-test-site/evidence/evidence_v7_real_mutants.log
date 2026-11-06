@@ -1,50 +1,50 @@
-[2026-11-03T07:22:19.661Z] ================================================================================
-[2026-11-03T07:22:19.663Z] 🧬 XPIDER V7 REAL MUTATION SENSITIVITY HARNESS (CHATGPT AUDIT ITEM 1)
-[2026-11-03T07:22:19.663Z] ================================================================================
+[2026-11-06T13:10:33.431Z] ================================================================================
+[2026-11-06T13:10:33.433Z] 🧬 XPIDER V7 REAL MUTATION SENSITIVITY HARNESS (CHATGPT AUDIT ITEM 1)
+[2026-11-06T13:10:33.433Z] ================================================================================
 
-[2026-11-03T07:22:19.663Z] 
+[2026-11-06T13:10:33.433Z] 
 ------------------------------------------------------------------------
-[2026-11-03T07:22:19.663Z] 🧪 Testing MUTANT_A_PHONE_ONLY_CLASSIFIED_FAILURE: "Phone-only form classified as FAILURE instead of SKIPPED"
-[2026-11-03T07:22:19.663Z]    Target file: extension/content-script.js | Task flag: --task=sc03
-[2026-11-03T07:22:19.679Z]    Applied mutation to extension/content-script.js (64 chars replaced)
-[2026-11-03T07:22:19.679Z]    Executing Chromium E2E runner with flag --task=sc03...
-[2026-11-03T07:23:03.850Z]    Restored extension/content-script.js to pristine candidate baseline (verified byte-identical)
-[2026-11-03T07:23:03.852Z]    Result: exitCode=1 (expected 1) | errorPatternMatched=true | duration=44.2s
-[2026-11-03T07:23:03.853Z]    Captured assertion evidence: "❌ Fatal Test Runner Error: AssertionError [ERR_ASSERTION]: Target 2 must be strictly SKIPPED (observed: FAILURE)"
-[2026-11-03T07:23:03.854Z]    ✅ MUTANT_A_PHONE_ONLY_CLASSIFIED_FAILURE PASSED: Genuine mutation caused expected runner failure (exit code 1).
-[2026-11-03T07:23:03.854Z] 
+[2026-11-06T13:10:33.433Z] 🧪 Testing MUTANT_A_PHONE_ONLY_CLASSIFIED_FAILURE: "Phone-only form classified as FAILURE instead of SKIPPED"
+[2026-11-06T13:10:33.433Z]    Target file: extension/content-script.js | Task flag: --task=sc03
+[2026-11-06T13:10:33.451Z]    Applied mutation to extension/content-script.js (64 chars replaced)
+[2026-11-06T13:10:33.451Z]    Executing Chromium E2E runner with flag --task=sc03...
+[2026-11-06T13:11:18.837Z]    Restored extension/content-script.js to pristine candidate baseline (verified byte-identical)
+[2026-11-06T13:11:18.840Z]    Result: exitCode=1 (expected 1) | errorPatternMatched=true | duration=45.4s
+[2026-11-06T13:11:18.842Z]    Captured assertion evidence: "❌ Fatal Test Runner Error: AssertionError [ERR_ASSERTION]: Target 2 must be strictly SKIPPED (observed: FAILURE)"
+[2026-11-06T13:11:18.842Z]    ✅ MUTANT_A_PHONE_ONLY_CLASSIFIED_FAILURE PASSED: Genuine mutation caused expected runner failure (exit code 1).
+[2026-11-06T13:11:18.842Z] 
 ------------------------------------------------------------------------
-[2026-11-03T07:23:03.854Z] 🧪 Testing MUTANT_B_STOP_SAVE_BTN_HIDDEN: "Visible #stop-save-btn hidden at live popup"
-[2026-11-03T07:23:03.854Z]    Target file: extension/popup.html | Task flag: --task=sc04
-[2026-11-03T07:23:03.867Z]    Applied mutation to extension/popup.html (209 chars replaced)
-[2026-11-03T07:23:03.867Z]    Executing Chromium E2E runner with flag --task=sc04...
-[2026-11-03T07:23:12.594Z]    Restored extension/popup.html to pristine candidate baseline (verified byte-identical)
-[2026-11-03T07:23:12.594Z]    Result: exitCode=1 (expected 1) | errorPatternMatched=true | duration=8.7s
-[2026-11-03T07:23:12.595Z]    Captured assertion evidence: "❌ Fatal Test Runner Error: AssertionError [ERR_ASSERTION]: #stop-save-btn must be visibly rendered (offsetParent !== null && display !== none)"
-[2026-11-03T07:23:12.595Z]    ✅ MUTANT_B_STOP_SAVE_BTN_HIDDEN PASSED: Genuine mutation caused expected runner failure (exit code 1).
-[2026-11-03T07:23:12.595Z] 
+[2026-11-06T13:11:18.842Z] 🧪 Testing MUTANT_B_STOP_SAVE_BTN_HIDDEN: "Visible #stop-save-btn hidden at live popup"
+[2026-11-06T13:11:18.842Z]    Target file: extension/popup.html | Task flag: --task=sc04
+[2026-11-06T13:11:18.856Z]    Applied mutation to extension/popup.html (209 chars replaced)
+[2026-11-06T13:11:18.856Z]    Executing Chromium E2E runner with flag --task=sc04...
+[2026-11-06T13:11:27.656Z]    Restored extension/popup.html to pristine candidate baseline (verified byte-identical)
+[2026-11-06T13:11:27.656Z]    Result: exitCode=1 (expected 1) | errorPatternMatched=true | duration=8.8s
+[2026-11-06T13:11:27.657Z]    Captured assertion evidence: "❌ Fatal Test Runner Error: AssertionError [ERR_ASSERTION]: #stop-save-btn must be visibly rendered (offsetParent !== null && display !== none)"
+[2026-11-06T13:11:27.657Z]    ✅ MUTANT_B_STOP_SAVE_BTN_HIDDEN PASSED: Genuine mutation caused expected runner failure (exit code 1).
+[2026-11-06T13:11:27.657Z] 
 ------------------------------------------------------------------------
-[2026-11-03T07:23:12.595Z] 🧪 Testing MUTANT_C_LEDGER_BUCKET_DROPPED: "Real store run bucket dropped / skipped count omitted from ledger"
-[2026-11-03T07:23:12.595Z]    Target file: extension/modules/history-store.js | Task flag: --task=sc03
-[2026-11-03T07:23:12.609Z]    Applied mutation to extension/modules/history-store.js (60 chars replaced)
-[2026-11-03T07:23:12.609Z]    Executing Chromium E2E runner with flag --task=sc03...
-[2026-11-03T07:23:55.713Z]    Restored extension/modules/history-store.js to pristine candidate baseline (verified byte-identical)
-[2026-11-03T07:23:55.713Z]    Result: exitCode=1 (expected 1) | errorPatternMatched=true | duration=43.1s
-[2026-11-03T07:23:55.714Z]    Captured assertion evidence: "❌ Fatal Test Runner Error: AssertionError [ERR_ASSERTION]: completed must equal 3 (observed: 2)"
-[2026-11-03T07:23:55.714Z]    ✅ MUTANT_C_LEDGER_BUCKET_DROPPED PASSED: Genuine mutation caused expected runner failure (exit code 1).
-[2026-11-03T07:23:55.714Z] 
+[2026-11-06T13:11:27.657Z] 🧪 Testing MUTANT_C_LEDGER_BUCKET_DROPPED: "Real store run bucket dropped / skipped count omitted from ledger"
+[2026-11-06T13:11:27.657Z]    Target file: extension/modules/history-store.js | Task flag: --task=sc03
+[2026-11-06T13:11:27.671Z]    Applied mutation to extension/modules/history-store.js (60 chars replaced)
+[2026-11-06T13:11:27.672Z]    Executing Chromium E2E runner with flag --task=sc03...
+[2026-11-06T13:12:11.855Z]    Restored extension/modules/history-store.js to pristine candidate baseline (verified byte-identical)
+[2026-11-06T13:12:11.855Z]    Result: exitCode=1 (expected 1) | errorPatternMatched=true | duration=44.2s
+[2026-11-06T13:12:11.856Z]    Captured assertion evidence: "❌ Fatal Test Runner Error: AssertionError [ERR_ASSERTION]: completed must equal 3 (observed: 2)"
+[2026-11-06T13:12:11.856Z]    ✅ MUTANT_C_LEDGER_BUCKET_DROPPED PASSED: Genuine mutation caused expected runner failure (exit code 1).
+[2026-11-06T13:12:11.856Z] 
 ------------------------------------------------------------------------
-[2026-11-03T07:23:55.715Z] 🧪 Testing MUTANT_D_POST_RESTART_QUEUE_WIPED: "Actual post-restart queue wiped on SW boot"
-[2026-11-03T07:23:55.715Z]    Target file: extension/background.js | Task flag: --task=sc04
-[2026-11-03T07:23:55.734Z]    Applied mutation to extension/background.js (72 chars replaced)
-[2026-11-03T07:23:55.735Z]    Executing Chromium E2E runner with flag --task=sc04...
-[2026-11-03T07:24:11.453Z]    Restored extension/background.js to pristine candidate baseline (verified byte-identical)
-[2026-11-03T07:24:11.454Z]    Result: exitCode=1 (expected 1) | errorPatternMatched=true | duration=15.7s
-[2026-11-03T07:24:11.454Z]    Captured assertion evidence: "❌ Fatal Test Runner Error: AssertionError [ERR_ASSERTION]: Restored remaining queue must be >= 2 across true SW restart (observed: 0)"
-[2026-11-03T07:24:11.454Z]    ✅ MUTANT_D_POST_RESTART_QUEUE_WIPED PASSED: Genuine mutation caused expected runner failure (exit code 1).
-[2026-11-03T07:24:11.470Z] 
+[2026-11-06T13:12:11.857Z] 🧪 Testing MUTANT_D_POST_RESTART_QUEUE_WIPED: "Actual post-restart queue wiped on SW boot"
+[2026-11-06T13:12:11.857Z]    Target file: extension/background.js | Task flag: --task=sc04
+[2026-11-06T13:12:11.881Z]    Applied mutation to extension/background.js (72 chars replaced)
+[2026-11-06T13:12:11.881Z]    Executing Chromium E2E runner with flag --task=sc04...
+[2026-11-06T13:12:28.445Z]    Restored extension/background.js to pristine candidate baseline (verified byte-identical)
+[2026-11-06T13:12:28.445Z]    Result: exitCode=1 (expected 1) | errorPatternMatched=true | duration=16.5s
+[2026-11-06T13:12:28.445Z]    Captured assertion evidence: "❌ Fatal Test Runner Error: AssertionError [ERR_ASSERTION]: Restored remaining queue must be >= 2 across true SW restart (observed: 0)"
+[2026-11-06T13:12:28.445Z]    ✅ MUTANT_D_POST_RESTART_QUEUE_WIPED PASSED: Genuine mutation caused expected runner failure (exit code 1).
+[2026-11-06T13:12:28.458Z] 
 📄 Generated machine-readable mutation report: E:\vivpr\ai\extension-form-sender\owner-extension-test-site\evidence\evidence_v7_real_mutants_report.json
-[2026-11-03T07:24:11.470Z] 
+[2026-11-06T13:12:28.458Z] 
 ================================================================================
-[2026-11-03T07:24:11.470Z] 🎉 ALL 4 REAL CODE MUTATIONS CONFIRMED SENSITIVE (EXIT CODE 1 VERIFIED)
-[2026-11-03T07:24:11.470Z] ================================================================================
+[2026-11-06T13:12:28.458Z] 🎉 ALL 4 REAL CODE MUTATIONS CONFIRMED SENSITIVE (EXIT CODE 1 VERIFIED)
+[2026-11-06T13:12:28.458Z] ================================================================================

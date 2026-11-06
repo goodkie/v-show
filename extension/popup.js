@@ -8282,6 +8282,7 @@ async function launchCampaign(options = {}) {
             subject: document.getElementById('tpl-subject')?.value || (isOwnerTest ? 'Software Functional Test' : ''),
             message: activeMsg,
             website: isOwnerTest ? 'http://127.0.0.1:8088' : (document.getElementById('tpl-website')?.value || ''),
+            externalCaptchaTimeoutMs: (typeof window !== 'undefined' && window.__xpider_external_captcha_timeout_ms) ? Number(window.__xpider_external_captcha_timeout_ms) : undefined,
             ownerAuthorizedConsent: ownerAuthorizedConsent
         };
 

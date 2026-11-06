@@ -4902,6 +4902,17 @@ const _handleMainMessageInner = (request, sender, sendResponse) => {
                     }
                 }
 
+                // [Directive #6657464425 Fix: Clear external captcha wait on terminal finish]
+                if (campaignState.externalCaptchaWaitActive || (request.result?.reasonCode && request.result.reasonCode.startsWith('CAPTCHA_EXTERNAL_'))) {
+                    campaignState.externalCaptchaWaitActive = false;
+                    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+                        chrome.storage.local.remove('xpider_v7_active_hold_state').catch(() => {});
+                    }
+                    if (campaignState.targetDeadlineController) {
+                        try { campaignState.targetDeadlineController.resume(); } catch (_) {}
+                    }
+                }
+
                 // [RC3.33 P0-C: Immediate Runtime Exception Settlement]
                 if (request.result?.reasonCode === 'CAPTCHA_RUNTIME_EXCEPTION') {
                     const errClass = request.result.metadata?.errorClass || 'Error';
@@ -9936,14 +9947,14 @@ async function restoreCampaignState() {
 
                     markBoot("restore_complete");
 
-                    // [R6.9G.10.1] Auto-recover Privacy Relay companion on background boot if configured
+                    // [R6.9G.10.1] Auto-recover Privacy Relay companion on background boot if configured (non-blocking)
                     try {
                         const pg = (typeof PrivacyGateway !== 'undefined' && PrivacyGateway.getInstance) ? PrivacyGateway.getInstance() : null;
                         if (pg) {
                             await pg.init();
                             if (pg.config.transportMode === 'PRIVACY_RELAY') {
                                 console.log('[Boot] Privacy Relay configured — checking status and auto-recovering if offline...');
-                                await pg.ensureRelayActive(true);
+                                pg.ensureRelayActive(true).catch(e => console.warn('[Boot] Relay auto-recovery non-fatal:', e.message));
                             }
                         }
                     } catch (relayBootErr) {
