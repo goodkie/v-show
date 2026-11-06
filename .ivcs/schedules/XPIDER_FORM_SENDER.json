@@ -1,8 +1,8 @@
 {
   "schema": "IVCS_SCHEDULE_1",
   "project": "XPIDER_FORM_SENDER",
-  "revision": 8,
-  "updated_at": "2026-11-06T21:20:32.000Z",
+  "revision": 9,
+  "updated_at": "2026-11-06T23:01:33.789Z",
   "tasks": [
     {
       "id": "SC-20261031-01",
@@ -56,9 +56,9 @@
       "verify_progress": 0,
       "verification": "HOLD",
       "weight": 4,
-      "evidence_url": "https://github.com/goodkie/v-show/issues/6#issuecomment-6694968619",
-      "note": "최근 Receipt #6694968619: no-message checkbox OFF->ON->OFF, 동의 필수 폼 SKIPPED, 채울 수 없는 필수 항목 FAILURE, 재시작 옵션 보존 및 36/36 localhost 테스트 PASS 주장. 원격 후보 코드/개발자 증거 존재하나 독립 Chromium 확인 및 실사용은 NOT_TESTED. 기본 OFF 유지; 임의 구독 동의 자동 체크 금지, RELEASE HOLD.",
-      "updated_at": "2026-11-06T20:32:00Z",
+      "evidence_url": "https://github.com/goodkie/v-show/issues/6#issuecomment-6696277930",
+      "note": "최근 Receipt #6694968619: no-message checkbox OFF->ON->OFF, 동의 필수 폼 SKIPPED, 채울 수 없는 필수 항목 FAILURE, 재시작 옵션 보존 및 36/36 localhost 테스트 PASS 주장. 원격 후보 코드/개발자 증거 존재하나 독립 Chromium 확인 및 실사용은 NOT_TESTED. 기본 OFF 유지; 임의 구독 동의 자동 체크 금지, RELEASE HOLD.\n[2026-11-06 최신 증거] 개발자 Receipt #6696277930은 Revision 8 스프린트의 no-message 36/36, E2E 38/38, controls 32/32, mutant 4/4를 재보고. 후보 브랜치 테스트 보고서 blob 3d76628945da7f1b938ea3d69c18e4076b31ce77 직접 조회로 36개 assertion 기록 확인. 이는 개발자 실행 증거이며 ChatGPT 독립 Chromium 재실행 PASS가 아님. 기본 OFF/명시적 ON/후속 OFF, 동의 미승인 SKIPPED, 미충족 필수 필드 FAILURE 원칙 유지. 사용자 Windows/공개 폼 실사용 NOT_TESTED; HOLD.",
+      "updated_at": "2026-11-06T23:01:33.789Z",
       "previous_start_at": "2026-10-31T14:45:00Z",
       "previous_due_at": "2026-10-31T16:15:00Z"
     },
@@ -116,9 +116,9 @@
       "verify_progress": 0,
       "verification": "NOT_TESTED",
       "weight": 4,
-      "evidence_url": "https://github.com/goodkie/v-show/issues/6#issuecomment-6694968619",
-      "note": "최신 개발자 Receipt #6694968619: 후보 브랜치 candidate/p0-core-regressions-v7의 기능 커밋 76fab093, 보고된 원격 HEAD 416e733a. localhost visible Chromium에서 no-message 36/36, pipeline 38/38, controls 32/32, mutant 4/4 PASS 주장; 외부 CAPTCHA 대기 <=3, AUTO 개입 팝업 0개, 중복 POST 0건 보고. 개발자 제출 증거이며 독립 재실행 및 원격 HEAD 독립 확인은 미완료. 실 NopeCHA/Owner Windows/Live Relay UNKNOWN, RC11 동결, RELEASE HOLD.",
-      "updated_at": "2026-11-06T20:33:24.009Z",
+      "evidence_url": "https://github.com/goodkie/v-show/issues/6#issuecomment-6696277930",
+      "note": "최신 개발자 Receipt #6694968619: 후보 브랜치 candidate/p0-core-regressions-v7의 기능 커밋 76fab093, 보고된 원격 HEAD 416e733a. localhost visible Chromium에서 no-message 36/36, pipeline 38/38, controls 32/32, mutant 4/4 PASS 주장; 외부 CAPTCHA 대기 <=3, AUTO 개입 팝업 0개, 중복 POST 0건 보고. 개발자 제출 증거이며 독립 재실행 및 원격 HEAD 독립 확인은 미완료. 실 NopeCHA/Owner Windows/Live Relay UNKNOWN, RC11 동결, RELEASE HOLD.\n[2026-11-06 최신 출처/커밋 감사] 최신 개발자 Receipt #6696277930은 candidate 원격 HEAD 3d73c454 및 기능 커밋 76fab093을 주장. 후속 Issue #6 감사 #6697198706은 그 이후 후보 HEAD 6665617dcd38e6868f00ea4c652ffd561e765d4b를 기록; 해당 커밋 객체 직접 조회 시 문서 2개만 변경. 중요: Receipt/현재 CURRENT_STATE.md에 기재된 기능 커밋 전체 SHA 76fab093bdfbc13f17cae9652a2339d675eb9a8f는 fetch_commit 422; 접두사 76fab093으로 재조회하면 실제 커밋 76fab0933276ae163c377d39d9dca5169a33063c가 반환되고 CAPTCHA 대기 <=3 변경 diff 확인. 전체 SHA 표기 불일치로 provenance correction 필요. 기능 구현/테스트는 후보·개발자 증거 수준; 독립 런타임 NOT_TESTED, RELEASE HOLD.",
+      "updated_at": "2026-11-06T23:01:33.789Z",
       "previous_start_at": "2026-10-31T19:15:00Z",
       "previous_due_at": "2026-10-31T21:00:00Z"
     },
@@ -136,9 +136,9 @@
       "verify_progress": 0,
       "verification": "NOT_TESTED",
       "weight": 4,
-      "evidence_url": "https://github.com/goodkie/v-show/issues/6#issuecomment-6694968619",
-      "note": "Issue #6 최신 924개 댓글 조회. 신규 개발자 Receipt #6694968619의 no-message 36/36, pipeline 38/38, visible controls 32/32, mutant 4/4, CAPTCHA 대기 <=3·중복 POST 0 보고를 확인. 이는 보고서 검토이며 독립 Chromium raw 재실행/실제 Windows smoke/live relay/실 NopeCHA 통합은 NOT_TESTED. 검증 진척률 0 유지, RELEASE HOLD.",
-      "updated_at": "2026-11-06T20:33:24.009Z",
+      "evidence_url": "https://github.com/goodkie/v-show/issues/6#issuecomment-6697198706",
+      "note": "Issue #6 최신 924개 댓글 조회. 신규 개발자 Receipt #6694968619의 no-message 36/36, pipeline 38/38, visible controls 32/32, mutant 4/4, CAPTCHA 대기 <=3·중복 POST 0 보고를 확인. 이는 보고서 검토이며 독립 Chromium raw 재실행/실제 Windows smoke/live relay/실 NopeCHA 통합은 NOT_TESTED. 검증 진척률 0 유지, RELEASE HOLD.\n[2026-11-06 최신 독립 원격 점검] Issue #6 댓글 929개까지 조회. 최신 감사 #6697198706 및 개발자 Receipt #6696277930 확인. major/v7-dual-mode 최신 확인 일정 파일은 Rev8 blob 28fd75c65e55a5d7317cea8fec9cde4a0da6243d; base 브랜치 HEAD d96cd1c363c895451c10d08254e186596770d0c2는 일정 파일만 변경한 커밋으로 직접 확인. 따라서 '브랜치 HEAD=RC11 20678ada'라는 과거 표현은 부정확하며 코드 트리 전체 동일성은 독립 미검증. 개발자 보고 36/36,38/38,32/32,4/4와 GitHub report 직접 조회는 독립 Chromium 실행이 아님. 실제 NopeCHA/Decodo·DO/Owner Windows/독립 실행 UNKNOWN·NOT_TESTED, RELEASE HOLD.",
+      "updated_at": "2026-11-06T23:01:33.789Z",
       "previous_start_at": "2026-10-31T21:00:00Z",
       "previous_due_at": "2026-10-31T22:30:00Z"
     },
@@ -196,9 +196,9 @@
       "verify_progress": 0,
       "verification": "NOT_TESTED",
       "weight": 4,
-      "evidence_url": "https://github.com/goodkie/v-show/issues/6#issuecomment-6694288964",
-      "note": "최신 ChatGPT 감사 지시(#6694288964): RELEASE HOLD 유지. 독립 Chromium 실제 실행, live Decodo/DO egress 및 사용자 Windows 최종 smoke/승인 미확인. 소유자 최종 승인은 UNKNOWN/NOT_TESTED, 공개 폼 제출·병합·배포 금지.",
-      "updated_at": "2026-11-06T20:33:24.009Z",
+      "evidence_url": "https://github.com/goodkie/v-show/issues/6#issuecomment-6697198706",
+      "note": "최신 ChatGPT 감사 지시(#6694288964): RELEASE HOLD 유지. 독립 Chromium 실제 실행, live Decodo/DO egress 및 사용자 Windows 최종 smoke/승인 미확인. 소유자 최종 승인은 UNKNOWN/NOT_TESTED, 공개 폼 제출·병합·배포 금지.\n[2026-11-06 최신 게이트] Rev8 6시간 목표는 완료 판정 아님. 최신 Issue #6 감사 #6697198706에서도 독립 Chromium 실행, 실제 외부 NopeCHA, live Decodo/DO egress, Owner Windows smoke/승인 UNKNOWN·NOT_TESTED. 기능 SHA 전체 표기 불일치도 독립 확인됨. 공개 POST·병합·배포·승인 금지, RELEASE HOLD 유지.",
+      "updated_at": "2026-11-06T23:01:33.789Z",
       "previous_start_at": "2026-11-01T01:15:00Z",
       "previous_due_at": "2026-11-01T02:00:00Z"
     }
