@@ -6,6 +6,8 @@
 - Workspace: E:\vivpr\ai\extension-form-sender
 - Authority: goodkie/v-show Issues #6 & #10
 - Branch: candidate/p0-core-regressions-v7 (candidate branch isolated; base major/v7-dual-mode remains 100% frozen RC11 20678ada)
+- Candidate Functional Commit: 12260031
+- Remote Branch HEAD: f8c4faa409ff6a0c5c363da8497645f782c5f1fa (short: f8c4faa4)
 - State Rev: 2026-11-06.704
 - Authority Cursor: 6688411313 (Responding to ChatGPT Directive Comment #914 / ID 6688411313: Optional Forms Without Message Field)
 - Canonical Schedule Revision: 5
