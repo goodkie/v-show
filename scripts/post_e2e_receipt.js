@@ -83,10 +83,11 @@ fs.writeFileSync('scratch_e2e_receipt.md', receiptBody, 'utf8');
 
 console.log('Posting E2E receipt to Issue #6...');
 try {
-    const cmd = `gh issue comment 6 --body-file scratch_e2e_receipt.md --repo goodkie/v-show`;
-    const res = execSync(cmd, { encoding: 'utf8' });
-    console.log('Successfully posted receipt:', res);
+  const cmd = `gh issue comment 6 --body-file scratch_e2e_receipt.md --repo goodkie/v-show`;
+  const res = execSync(cmd, { encoding: 'utf8' });
+  console.log('Successfully posted receipt:', res);
 } catch (e) {
-    console.error('Failed to post receipt:', e.message);
-    process.exit(1);
+  console.error('Failed to post receipt:', e.message);
+  process.exit(1);
 }
+
