@@ -1,8 +1,8 @@
 {
   "schema": "IVCS_SCHEDULE_1",
   "project": "XPIDER_FORM_SENDER",
-  "revision": 4,
-  "updated_at": "2026-10-31T13:10:08.999Z",
+  "revision": 5,
+  "updated_at": "2026-11-06T20:32:00Z",
   "tasks": [
     {
       "id": "SC-20261031-01",
@@ -43,20 +43,20 @@
     {
       "id": "SC-20261031-03",
       "order": 3,
-      "title": "메시지 필드 없는 폼 차단·중복방지·Ledger 일치",
-      "details": "2026-10-31 XPIDER 독립 검증 일정. 개발자 자체 PASS는 독립 검증이나 사용자 승인이 아님. 진행률은 기록된 추정치이며 직접 검증 근거가 없으면 NOT_TESTED/HOLD.",
+      "title": "메시지 없는 폼 기본 차단 / 선택적 Subscribe 포함·Ledger 검증",
+      "details": "2026-11-06 최신 소유자 결정: START 옵션에서 Subscribe/Newsletter 등 메시지 없는 적격 폼 포함 가능. 기본 OFF, ON일 때에만 추가 제출. 과거 절대 차단 요구보다 최신 결정 우선. 원격 코드 및 개발자 테스트 보고 존재, 독립 브라우저 실사용 검증 미완료.",
       "owner": "Both",
       "priority": "P0",
-      "status": "PLANNED",
+      "status": "IN_PROGRESS",
       "start_at": "2026-10-31T14:45:00Z",
       "due_at": "2026-10-31T16:15:00Z",
       "dev_progress": 0,
       "verify_progress": 0,
-      "verification": "NOT_TESTED",
+      "verification": "HOLD",
       "weight": 4,
-      "evidence_url": "",
-      "note": "사용자 Windows 환경과 실사용 캠페인 성공은 독립 확인 전. 외부 공개 폼 제출 금지.",
-      "updated_at": "2026-10-31T12:30:00Z"
+      "evidence_url": "https://github.com/goodkie/v-show/issues/6#issuecomment-6692691817",
+      "note": "2026-11-06 개발자 Receipt: 34/34 localhost assertion PASS 주장, 원격 소스는 별도 감사 이력 있음. 독립 Chromium 최종 실행 및 사용자 PC 설치 적용은 UNKNOWN. 공개 발송 금지, RELEASE HOLD. IVCS 일정은 GitHub 원격 갱신만 확인되며 로컬 앱 자동 적용 여부 미확인.",
+      "updated_at": "2026-11-06T20:32:00Z"
     },
     {
       "id": "SC-20261031-04",
