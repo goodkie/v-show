@@ -1,20 +1,20 @@
 {
   "testSuite": "XPIDER_V7_MODES_AND_VISIBLE_CONTROLS_SUITE",
-  "startTimeUtc": "2026-11-06T14:53:07.889Z",
-  "endTimeUtc": "2026-11-06T14:54:55.903Z",
+  "startTimeUtc": "2026-11-06T17:39:12.829Z",
+  "endTimeUtc": "2026-11-06T17:40:55.321Z",
   "status": "SUCCESS",
   "assertions": [
     {
       "name": "AUTO_MODE_CAMPAIGN_ACTIVE",
       "passed": true,
       "detail": {},
-      "timestamp": "2026-11-06T14:53:13.779Z"
+      "timestamp": "2026-11-06T17:39:17.256Z"
     },
     {
       "name": "AUTO_MODE_CAMPAIGN_SETTLED",
       "passed": true,
       "detail": {},
-      "timestamp": "2026-11-06T14:53:38.430Z"
+      "timestamp": "2026-11-06T17:39:41.553Z"
     },
     {
       "name": "AUTO_MODE_ZERO_OPERATOR_PANEL",
@@ -22,7 +22,7 @@
       "detail": {
         "autoHoldPanelObserved": false
       },
-      "timestamp": "2026-11-06T14:53:38.430Z"
+      "timestamp": "2026-11-06T17:39:41.553Z"
     },
     {
       "name": "AUTO_MODE_SUBMISSION_RECORDED",
@@ -30,13 +30,13 @@
       "detail": {
         "submissions": 1
       },
-      "timestamp": "2026-11-06T14:53:38.434Z"
+      "timestamp": "2026-11-06T17:39:41.555Z"
     },
     {
       "name": "MANUAL_MODE_CAMPAIGN_ACTIVE",
       "passed": true,
       "detail": {},
-      "timestamp": "2026-11-06T14:53:39.813Z"
+      "timestamp": "2026-11-06T17:39:42.645Z"
     },
     {
       "name": "MANUAL_HOLD_PANEL_RENDERED",
@@ -49,7 +49,7 @@
         "emailVal": "modetester@example.com",
         "msgVal": "Modes and visible UI controls verification inquiry message."
       },
-      "timestamp": "2026-11-06T14:53:55.854Z"
+      "timestamp": "2026-11-06T17:39:57.018Z"
     },
     {
       "name": "MANUAL_HOLD_DATA_MODE_MANUAL",
@@ -57,7 +57,7 @@
       "detail": {
         "mode": "MANUAL"
       },
-      "timestamp": "2026-11-06T14:53:55.854Z"
+      "timestamp": "2026-11-06T17:39:57.018Z"
     },
     {
       "name": "MANUAL_FIELDS_AUTOFILLED_BEFORE_SUBMIT",
@@ -70,7 +70,7 @@
         "emailVal": "modetester@example.com",
         "msgVal": "Modes and visible UI controls verification inquiry message."
       },
-      "timestamp": "2026-11-06T14:53:55.854Z"
+      "timestamp": "2026-11-06T17:39:57.018Z"
     },
     {
       "name": "MANUAL_MODE_HELD_BEFORE_SUBMIT",
@@ -78,13 +78,13 @@
       "detail": {
         "count": 1
       },
-      "timestamp": "2026-11-06T14:53:55.856Z"
+      "timestamp": "2026-11-06T17:39:57.022Z"
     },
     {
       "name": "MANUAL_MODE_CAMPAIGN_SETTLED",
       "passed": true,
       "detail": {},
-      "timestamp": "2026-11-06T14:53:56.986Z"
+      "timestamp": "2026-11-06T17:39:58.153Z"
     },
     {
       "name": "MANUAL_MODE_SUBMISSION_RECORDED",
@@ -92,13 +92,13 @@
       "detail": {
         "count": 2
       },
-      "timestamp": "2026-11-06T14:53:56.988Z"
+      "timestamp": "2026-11-06T17:39:58.155Z"
     },
     {
       "name": "SEMI_AUTO_CLEAN_FORM_SETTLED_AUTONOMOUS",
       "passed": true,
       "detail": {},
-      "timestamp": "2026-11-06T14:54:22.129Z"
+      "timestamp": "2026-11-06T17:40:22.758Z"
     },
     {
       "name": "SEMI_AUTO_CLEAN_SUBMISSION_RECORDED",
@@ -106,7 +106,7 @@
       "detail": {
         "count": 3
       },
-      "timestamp": "2026-11-06T14:54:22.133Z"
+      "timestamp": "2026-11-06T17:40:22.760Z"
     },
     {
       "name": "SEMI_AUTO_CHALLENGE_HOLD_PANEL_RENDERED",
@@ -116,7 +116,7 @@
         "mode": "SEMI_AUTO",
         "validationFailed": "false"
       },
-      "timestamp": "2026-11-06T14:54:36.931Z"
+      "timestamp": "2026-11-06T17:40:36.273Z"
     },
     {
       "name": "SEMI_AUTO_HOLD_DATA_MODE_SEMI_AUTO",
@@ -124,19 +124,19 @@
       "detail": {
         "mode": "SEMI_AUTO"
       },
-      "timestamp": "2026-11-06T14:54:36.931Z"
+      "timestamp": "2026-11-06T17:40:36.273Z"
     },
     {
       "name": "SEMI_AUTO_CHALLENGE_CAMPAIGN_SETTLED",
       "passed": true,
       "detail": {},
-      "timestamp": "2026-11-06T14:54:37.457Z"
+      "timestamp": "2026-11-06T17:40:36.786Z"
     },
     {
       "name": "PHONE_ONLY_CAMPAIGN_SETTLED",
       "passed": true,
       "detail": {},
-      "timestamp": "2026-11-06T14:54:48.937Z"
+      "timestamp": "2026-11-06T17:40:48.479Z"
     },
     {
       "name": "PHONE_ONLY_STATUS_SKIPPED",
@@ -144,7 +144,7 @@
       "detail": {
         "status": "SKIPPED"
       },
-      "timestamp": "2026-11-06T14:54:48.942Z"
+      "timestamp": "2026-11-06T17:40:48.490Z"
     },
     {
       "name": "PHONE_ONLY_REASON_NO_LONG_TEXT",
@@ -152,7 +152,7 @@
       "detail": {
         "reasonCode": "NO_LONG_TEXT_INQUIRY_FIELD"
       },
-      "timestamp": "2026-11-06T14:54:48.942Z"
+      "timestamp": "2026-11-06T17:40:48.490Z"
     },
     {
       "name": "PHONE_ONLY_ZERO_SUBMISSION_DELTA",
@@ -160,7 +160,7 @@
       "detail": {
         "count": 3
       },
-      "timestamp": "2026-11-06T14:54:48.944Z"
+      "timestamp": "2026-11-06T17:40:48.492Z"
     },
     {
       "name": "PAUSE_BTN_SHOWS_RESUME",
@@ -169,7 +169,7 @@
         "text": "▶️ Resume",
         "isPaused": true
       },
-      "timestamp": "2026-11-06T14:54:50.701Z"
+      "timestamp": "2026-11-06T17:40:50.328Z"
     },
     {
       "name": "RESUME_MODE_MODAL_OPENED_VISIBLE",
@@ -177,7 +177,7 @@
       "detail": {
         "isVisible": true
       },
-      "timestamp": "2026-11-06T14:54:51.138Z"
+      "timestamp": "2026-11-06T17:40:50.804Z"
     },
     {
       "name": "RESUMED_IN_MANUAL_MODE_HUD_BADGE",
@@ -185,7 +185,7 @@
       "detail": {
         "pill": "MODE: MANUAL (HOLD FOR REGISTER)"
       },
-      "timestamp": "2026-11-06T14:54:52.353Z"
+      "timestamp": "2026-11-06T17:40:51.753Z"
     },
     {
       "name": "STOP_SAVE_BTN_VISIBLE_AND_ENABLED",
@@ -195,7 +195,7 @@
         "visible": true,
         "disabled": false
       },
-      "timestamp": "2026-11-06T14:54:52.751Z"
+      "timestamp": "2026-11-06T17:40:52.043Z"
     },
     {
       "name": "STOP_SAVE_BANNER_RENDERED",
@@ -203,7 +203,7 @@
       "detail": {
         "bannerVisible": true
       },
-      "timestamp": "2026-11-06T14:54:53.438Z"
+      "timestamp": "2026-11-06T17:40:52.832Z"
     },
     {
       "name": "SW_RESTART_MANUAL_MODE_PRESERVED",
@@ -212,7 +212,7 @@
         "storageMode": "MANUAL",
         "checkpoint": {
           "campaignMode": "MANUAL",
-          "campaignRunId": "normal_run_1793976889494_640iqj",
+          "campaignRunId": "normal_run_1793986849063_dghqao",
           "counters": {
             "completed": 0,
             "deliveryUnknown": 0,
@@ -229,9 +229,10 @@
           },
           "delayMs": 10000,
           "fillDelayMs": 300,
+          "includeFormsWithoutMessage": false,
           "outcomeHistogram": {},
           "ownerFunctionTestMode": false,
-          "pausedAt": 1793976893024,
+          "pausedAt": 1793986852398,
           "pausedByOperator": true,
           "remainingQueue": [
             "http://127.0.0.1:8088/contact-standard.html",
@@ -250,6 +251,7 @@
             "email": "modetester@example.com",
             "firstName": "ModeTester",
             "id": "default",
+            "includeFormsWithoutMessage": false,
             "lastName": "ValUser",
             "message": "Modes and visible UI controls verification inquiry message.",
             "name": "ModeTester ValUser",
@@ -268,9 +270,9 @@
         },
         "swMode": "MANUAL",
         "swPaused": true,
-        "swRunId": "normal_run_1793976889494_640iqj"
+        "swRunId": "normal_run_1793986849063_dghqao"
       },
-      "timestamp": "2026-11-06T14:54:55.463Z"
+      "timestamp": "2026-11-06T17:40:54.826Z"
     },
     {
       "name": "SW_RESTART_CHECKPOINT_SURVIVED",
@@ -279,7 +281,7 @@
         "storageMode": "MANUAL",
         "checkpoint": {
           "campaignMode": "MANUAL",
-          "campaignRunId": "normal_run_1793976889494_640iqj",
+          "campaignRunId": "normal_run_1793986849063_dghqao",
           "counters": {
             "completed": 0,
             "deliveryUnknown": 0,
@@ -296,9 +298,10 @@
           },
           "delayMs": 10000,
           "fillDelayMs": 300,
+          "includeFormsWithoutMessage": false,
           "outcomeHistogram": {},
           "ownerFunctionTestMode": false,
-          "pausedAt": 1793976893024,
+          "pausedAt": 1793986852398,
           "pausedByOperator": true,
           "remainingQueue": [
             "http://127.0.0.1:8088/contact-standard.html",
@@ -317,6 +320,7 @@
             "email": "modetester@example.com",
             "firstName": "ModeTester",
             "id": "default",
+            "includeFormsWithoutMessage": false,
             "lastName": "ValUser",
             "message": "Modes and visible UI controls verification inquiry message.",
             "name": "ModeTester ValUser",
@@ -335,9 +339,9 @@
         },
         "swMode": "MANUAL",
         "swPaused": true,
-        "swRunId": "normal_run_1793976889494_640iqj"
+        "swRunId": "normal_run_1793986849063_dghqao"
       },
-      "timestamp": "2026-11-06T14:54:55.463Z"
+      "timestamp": "2026-11-06T17:40:54.826Z"
     },
     {
       "name": "SW_RESTART_CHECKPOINT_MODE_MANUAL",
@@ -346,7 +350,7 @@
         "storageMode": "MANUAL",
         "checkpoint": {
           "campaignMode": "MANUAL",
-          "campaignRunId": "normal_run_1793976889494_640iqj",
+          "campaignRunId": "normal_run_1793986849063_dghqao",
           "counters": {
             "completed": 0,
             "deliveryUnknown": 0,
@@ -363,9 +367,10 @@
           },
           "delayMs": 10000,
           "fillDelayMs": 300,
+          "includeFormsWithoutMessage": false,
           "outcomeHistogram": {},
           "ownerFunctionTestMode": false,
-          "pausedAt": 1793976893024,
+          "pausedAt": 1793986852398,
           "pausedByOperator": true,
           "remainingQueue": [
             "http://127.0.0.1:8088/contact-standard.html",
@@ -384,6 +389,7 @@
             "email": "modetester@example.com",
             "firstName": "ModeTester",
             "id": "default",
+            "includeFormsWithoutMessage": false,
             "lastName": "ValUser",
             "message": "Modes and visible UI controls verification inquiry message.",
             "name": "ModeTester ValUser",
@@ -402,9 +408,9 @@
         },
         "swMode": "MANUAL",
         "swPaused": true,
-        "swRunId": "normal_run_1793976889494_640iqj"
+        "swRunId": "normal_run_1793986849063_dghqao"
       },
-      "timestamp": "2026-11-06T14:54:55.463Z"
+      "timestamp": "2026-11-06T17:40:54.827Z"
     },
     {
       "name": "SW_RESTART_CAMPAIGN_STATE_MODE_MANUAL",
@@ -413,7 +419,7 @@
         "storageMode": "MANUAL",
         "checkpoint": {
           "campaignMode": "MANUAL",
-          "campaignRunId": "normal_run_1793976889494_640iqj",
+          "campaignRunId": "normal_run_1793986849063_dghqao",
           "counters": {
             "completed": 0,
             "deliveryUnknown": 0,
@@ -430,9 +436,10 @@
           },
           "delayMs": 10000,
           "fillDelayMs": 300,
+          "includeFormsWithoutMessage": false,
           "outcomeHistogram": {},
           "ownerFunctionTestMode": false,
-          "pausedAt": 1793976893024,
+          "pausedAt": 1793986852398,
           "pausedByOperator": true,
           "remainingQueue": [
             "http://127.0.0.1:8088/contact-standard.html",
@@ -451,6 +458,7 @@
             "email": "modetester@example.com",
             "firstName": "ModeTester",
             "id": "default",
+            "includeFormsWithoutMessage": false,
             "lastName": "ValUser",
             "message": "Modes and visible UI controls verification inquiry message.",
             "name": "ModeTester ValUser",
@@ -469,9 +477,9 @@
         },
         "swMode": "MANUAL",
         "swPaused": true,
-        "swRunId": "normal_run_1793976889494_640iqj"
+        "swRunId": "normal_run_1793986849063_dghqao"
       },
-      "timestamp": "2026-11-06T14:54:55.463Z"
+      "timestamp": "2026-11-06T17:40:54.827Z"
     },
     {
       "name": "SW_RESTART_CHECKPOINT_RUN_ID_MATCHES",
@@ -480,7 +488,7 @@
         "storageMode": "MANUAL",
         "checkpoint": {
           "campaignMode": "MANUAL",
-          "campaignRunId": "normal_run_1793976889494_640iqj",
+          "campaignRunId": "normal_run_1793986849063_dghqao",
           "counters": {
             "completed": 0,
             "deliveryUnknown": 0,
@@ -497,9 +505,10 @@
           },
           "delayMs": 10000,
           "fillDelayMs": 300,
+          "includeFormsWithoutMessage": false,
           "outcomeHistogram": {},
           "ownerFunctionTestMode": false,
-          "pausedAt": 1793976893024,
+          "pausedAt": 1793986852398,
           "pausedByOperator": true,
           "remainingQueue": [
             "http://127.0.0.1:8088/contact-standard.html",
@@ -518,6 +527,7 @@
             "email": "modetester@example.com",
             "firstName": "ModeTester",
             "id": "default",
+            "includeFormsWithoutMessage": false,
             "lastName": "ValUser",
             "message": "Modes and visible UI controls verification inquiry message.",
             "name": "ModeTester ValUser",
@@ -536,9 +546,9 @@
         },
         "swMode": "MANUAL",
         "swPaused": true,
-        "swRunId": "normal_run_1793976889494_640iqj"
+        "swRunId": "normal_run_1793986849063_dghqao"
       },
-      "timestamp": "2026-11-06T14:54:55.463Z"
+      "timestamp": "2026-11-06T17:40:54.827Z"
     },
     {
       "name": "MATH_CAPTCHA_SOLVER_RETIRED_STUB",
@@ -546,7 +556,7 @@
       "detail": {
         "mcsRetired": true
       },
-      "timestamp": "2026-11-06T14:54:55.895Z"
+      "timestamp": "2026-11-06T17:40:55.313Z"
     },
     {
       "name": "CONTENT_SCRIPT_MATH_SOLVER_NULL",
@@ -554,7 +564,7 @@
       "detail": {
         "csRetired": true
       },
-      "timestamp": "2026-11-06T14:54:55.903Z"
+      "timestamp": "2026-11-06T17:40:55.321Z"
     }
   ],
   "screenshots": [

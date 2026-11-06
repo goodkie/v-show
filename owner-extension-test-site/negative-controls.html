@@ -1,18 +1,62 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <title>Strict Negative Controls Suite</title>
     <style>
-        body { font-family: sans-serif; background: #0f172a; color: #f8fafc; padding: 40px; }
-        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-        .card { background: #1e293b; padding: 20px; border-radius: 8px; border: 1px solid #334155; }
-        input { width: 100%; box-sizing: border-box; padding: 8px; margin: 6px 0; background: #0f172a; color: #fff; border: 1px solid #475569; }
-        button { padding: 10px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 6px; }
-        .btn-red { background: #ef4444; color: #fff; }
-        .btn-blue { background: #3b82f6; color: #fff; }
+        body {
+            font-family: sans-serif;
+            background: #0f172a;
+            color: #f8fafc;
+            padding: 40px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .card {
+            background: #1e293b;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #334155;
+        }
+
+        input {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 8px;
+            margin: 6px 0;
+            background: #0f172a;
+            color: #fff;
+            border: 1px solid #475569;
+        }
+
+        button {
+            padding: 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            width: 100%;
+            margin-top: 6px;
+        }
+
+        .btn-red {
+            background: #ef4444;
+            color: #fff;
+        }
+
+        .btn-blue {
+            background: #3b82f6;
+            color: #fff;
+        }
     </style>
 </head>
+
 <body>
     <h2>Strict Negative Controls Suite (Expected: 0 Submissions Across All Controls)</h2>
     <div class="grid">
@@ -61,7 +105,8 @@
                 <!-- Visible field -->
                 <input type="email" name="user_email" placeholder="Valid Email">
                 <!-- Hidden Honeypot trap: must remain empty! -->
-                <input type="text" name="website_url_honeypot" id="website_url_honeypot" style="display: none !important;" tabindex="-1" autocomplete="off">
+                <input type="text" name="website_url_honeypot" id="website_url_honeypot"
+                    style="display: none !important;" tabindex="-1" autocomplete="off">
                 <button type="submit" id="honeypot-submit-btn" class="btn-blue">Submit with Trap</button>
             </form>
         </div>
@@ -69,8 +114,8 @@
 
     <script>
         // Track any unexpected submit
-        ['search-form', 'login-form', 'checkout-form', 'unsubscribe-form', 'honeypot-form'].forEach(function(id) {
-            document.getElementById(id).addEventListener('submit', function(e) {
+        ['search-form', 'login-form', 'checkout-form', 'unsubscribe-form', 'honeypot-form'].forEach(function (id) {
+            document.getElementById(id).addEventListener('submit', function (e) {
                 e.preventDefault();
                 console.error('[UNEXPECTED_NEGATIVE_SUBMIT] ' + id);
                 fetch('/contact-success.html', { method: 'POST' });
@@ -78,5 +123,5 @@
         });
     </script>
 </body>
-</html>
 
+</html>

@@ -6,7 +6,8 @@
 - Workspace: E:\vivpr\ai\extension-form-sender
 - Authority: goodkie/v-show Issues #6 & #10
 - Branch: candidate/p0-core-regressions-v7 (candidate branch isolated; base major/v7-dual-mode remains 100% frozen RC11 20678ada)
-- Candidate Functional Commit: (pending commit)
+- Candidate Functional Commit: e2738b3c
+- Remote Branch HEAD: e2738b3c2aa6d6352bd78054014625181385738d (short: e2738b3c)
 - State Rev: 2026-11-06.705
 - Authority Cursor: 6690847856 (Responding to ChatGPT Directive Comment #916 / ID 6690847856: P0 Defect 1 Tri-State Precedence, P0 Defect 2 Non-Inquiry Label Assertion, P0 Safety Audit Explicit Opt-In & Consent Boundary)
 - Canonical Schedule Revision: 5
