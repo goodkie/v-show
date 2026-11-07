@@ -7,13 +7,14 @@ WORKSPACE_ROOT: E:\vivpr\ai\extension-form-sender
 AUTHORITY_SOURCE: goodkie/v-show Issues #6 & #10
 ACTIVE_BRANCH: candidate/p0-core-regressions-v7
 CANDIDATE_FUNCTIONAL_COMMIT: 76fab0933276ae163c377d39d9dca5169a33063c
+CANDIDATE_EXTENSION_TREE_SHA: 1d1bac897f70df6fa107cde85b00de591d5dea93
 AUTHORITATIVE_REMOTE_REF: refs/heads/candidate/p0-core-regressions-v7
-STATE_REV: 2026-11-06.716
-AUTHORITY_CURSOR: 6699964616
-LAST_AUDIT: [CHATGPT][NEXT P0 EXECUTION — CHROME OWNER ACCEPTANCE READINESS] Comment #6699947182
-LAST_DIRECTIVE: [CHATGPT][SUPPLEMENTAL SOURCE-AUDIT P0 FINDINGS] Comment #6699964616 (with #6699947182)
-LAST_RECEIPT: [ANTIGRAVITY -> CHATGPT / OWNER][CONSOLIDATED RECEIPT][Issue #6][DIRECTIVES #6699947182 & #6699964616] Comment #6700402146
-SCHEDULE_REVISION: 9
+STATE_REV: 2026-11-07.717
+AUTHORITY_CURSOR: 6703093387
+LAST_AUDIT: [CHATGPT][REV12 FINAL CANDIDATE READINESS — EVIDENCE-GATED NEXT ACTION] Comment #6703093387
+LAST_DIRECTIVE: [CHATGPT][REV12 FINAL CANDIDATE READINESS — EVIDENCE-GATED NEXT ACTION] Comment #6703093387
+LAST_RECEIPT: PENDING_POST_FOR_6703093387
+SCHEDULE_REVISION: 12
 BUILD_ID: V7.0.0-RC11-20261030-THREE-MODE-CONTRACTS-PASS
 PROVENANCE_COMMIT: 20678ada
 CANDIDATE_ARTIFACT_ZIP: dist/XPIDER_V7.0.0_CANDIDATE_P0_REV9_OWNER_SAFE.zip
@@ -28,8 +29,9 @@ CHROME_MIGRATION_REPORT: dist/report_chrome_migration_parity.json
 CHROME_UI_REGRESSIONS_REPORT: dist/report_chrome_ui_reset_collector_regressions.json
 PUBLIC_REPO_SECRET_AUDIT_REPORT: dist/report_public_repo_secret_audit.json
 OWNER_GUIDE: dist/OWNER_SAFE_UPDATE_AND_BACKUP_GUIDE.md
-NEXT_ACTION: Awaiting ChatGPT audit of consolidated receipt for Directives #6699947182 and #6699964616. Owner approval required before any apply on a live install. Release HOLD maintained.
-BLOCKERS: None. Safe update transaction suite (48/48 PASS), Google Chrome 157 migration/encrypted-backup/interruption suite (37/37 PASS), Google Chrome 157 UI/reset/CSV/collector/consent suite (18/18 PASS), and deep repo/ZIP secret audit (ALL_CLEAN) all pass 100%.
+OWNER_UAT_CHECKLIST: dist/WINDOWS_10_OWNER_UAT_CHECKLIST.md
+NEXT_ACTION: Awaiting ChatGPT final gate audit and Owner Windows 10 UAT authorization. Release HOLD maintained.
+BLOCKERS: None. Safe update + encrypted storage backup/restore transaction suite (57/57 PASS), Google Chrome 157 migration/interruption suite (37/37 PASS), Google Chrome 157 UI/reset/CSV/collector/consent suite (18/18 PASS), and deep repo/ZIP secret audit (ALL_CLEAN) all pass 100%.
 OWNER_ACTION: Release HOLD maintained; zero public submissions.
 RELEASE_ASSET_TAG: v7.0.0-rc11
 RELEASE_ASSET_ZIP: XPIDER_V7.0.0_RC11_DUAL_MODE_OWNER_BETA.zip

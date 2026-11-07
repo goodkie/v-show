@@ -196,7 +196,14 @@ function assertNoOverlap(target, backupRoot) {
     if (b.startsWith(a + al)) die('BACKUP_OVERLAPS_TARGET', 'backup-root is inside target');
     if (a.startsWith(b + al)) die('BACKUP_OVERLAPS_TARGET', 'target is inside backup-root');
 }
-function safeRel(p) { const s = String(p).replace(/\\/g, '/'); if (!s || s.startsWith('/') || /^[a-zA-Z]:/.test(s) || s.split('/').includes('..')) die('UNSAFE_JOURNAL_PATH', `Unsafe path in journal: ${p}`); return s; }
+function safeRel(p) {
+    const s = String(p).replace(/\\/g, '/');
+    const parts = s.split('/');
+    if (!s || s.startsWith('/') || s.endsWith('/') || /^[a-zA-Z]:/.test(s) || parts.some(seg => !seg || seg === '.' || seg === '..')) {
+        die('UNSAFE_JOURNAL_PATH', `Unsafe path in journal/archive: ${p}`);
+    }
+    return s;
+}
 function lockPath(target) { return path.join(os.tmpdir(), 'xpider-update-' + sha256Buf(Buffer.from(canonKey(target))).slice(0, 16) + '.lock'); }
 const TERMINAL = new Set(['COMMITTED', 'ROLLED_BACK']);
 function assertNoActiveLock(target) {
@@ -314,24 +321,59 @@ function commit(ctx, p, backupRoot) {
     }
 }
 
+function assertValidExtId(extId) {
+    if (!/^[a-p]{32}$/.test(String(extId || ''))) die('INVALID_EXT_ID', `Invalid Chromium extension ID: ${extId}`);
+}
+
+function assertNoSymlinkChain(profileDir, lesDir) {
+    const root = path.resolve(profileDir);
+    const target = path.resolve(lesDir);
+    const rel = path.relative(root, target);
+    const parts = rel ? rel.split(path.sep) : [];
+    let cur = root;
+    if (fs.existsSync(cur) && fs.lstatSync(cur).isSymbolicLink()) die('SYMLINK_FOUND', `Symlink/junction refused on profile path: ${cur}`);
+    for (const seg of parts) {
+        cur = path.join(cur, seg);
+        if (fs.existsSync(cur) && fs.lstatSync(cur).isSymbolicLink()) die('SYMLINK_FOUND', `Symlink/junction refused on storage path: ${cur}`);
+    }
+    if (fs.existsSync(target)) walk(target);
+}
+
 function resolveLesDir(profileDir, extId) {
+    assertValidExtId(extId);
     const p = path.resolve(profileDir);
     const direct = path.join(p, 'Local Extension Settings', extId);
     const def = path.join(p, 'Default', 'Local Extension Settings', extId);
-    if (fs.existsSync(direct)) return direct;
-    return def;
+    const chosen = fs.existsSync(direct) ? direct : def;
+    assertNoSymlinkChain(p, chosen);
+    return chosen;
+}
+
+function recoverInterruptedStorageRestore(lesDir) {
+    const bak = lesDir + '.pre-restore-bak';
+    if (!fs.existsSync(bak)) return false;
+    if (fs.lstatSync(bak).isSymbolicLink()) die('SYMLINK_FOUND', `Symlink/junction refused on backup path: ${bak}`);
+    if (fs.existsSync(lesDir)) fs.rmSync(lesDir, { recursive: true, force: true });
+    fs.renameSync(bak, lesDir);
+    return true;
 }
 
 function assertBrowserClosedForStorage(lesDir) {
     if (!fs.existsSync(lesDir)) return;
-    const lf = path.join(lesDir, 'LOCK');
-    if (!fs.existsSync(lf)) return;
-    const probe = lf + '.xpider-probe';
-    try {
-        fs.renameSync(lf, probe);
-        fs.renameSync(probe, lf);
-    } catch (e) {
-        die('BROWSER_RUNNING_LOCK_HELD', `Browser still holds LevelDB LOCK (${e.code || e.message}). Close Chrome/Edge completely before backup/restore.`);
+    const rels = walk(lesDir);
+    for (const rel of rels) {
+        const f = path.join(lesDir, rel);
+        const probe = f + '.xpider-probe';
+        let fd = null;
+        try {
+            fd = fs.openSync(f, 'r+');
+            fs.closeSync(fd); fd = null;
+            fs.renameSync(f, probe);
+            fs.renameSync(probe, f);
+        } catch (e) {
+            if (fd !== null) try { fs.closeSync(fd); } catch (_) {}
+            die('BROWSER_RUNNING_LOCK_HELD', `Browser or OS holds lock on LevelDB file ${rel} (${e.code || e.message}). Close Chrome/Edge completely before backup/restore.`);
+        }
     }
 }
 
@@ -347,7 +389,10 @@ function backupStorageEncrypted(a) {
     if (!a['profile-dir'] || !a.out) die('USAGE', 'backup-storage requires --profile-dir <dir> --out <file> --passphrase-env <ENV>');
     const extId = a['ext-id'] || DEFAULT_ID;
     const lesDir = resolveLesDir(a['profile-dir'], extId);
+    recoverInterruptedStorageRestore(lesDir);
     if (!fs.existsSync(lesDir)) die('STORAGE_DIR_MISSING', `Extension storage dir not found: ${lesDir}`);
+    const outPath = path.resolve(a.out);
+    assertNoOverlap(lesDir, outPath);
     assertBrowserClosedForStorage(lesDir);
     const pass = getPassphrase(a);
     const manifest = buildManifest(lesDir);
@@ -362,7 +407,6 @@ function backupStorageEncrypted(a) {
     const ct = Buffer.concat([cipher.update(payload), cipher.final()]);
     const tag = cipher.getAuthTag();
     const env = { format: 'XPIDER_ENCRYPTED_STORAGE_BACKUP_V1', kdf: 'scrypt-16384-8-1', cipher: 'aes-256-gcm', extId, fileCount: manifest.length, manifestSha256, salt: salt.toString('base64'), iv: iv.toString('base64'), tag: tag.toString('base64'), ciphertext: ct.toString('base64') };
-    const outPath = path.resolve(a.out);
     fs.mkdirSync(path.dirname(outPath), { recursive: true });
     fs.writeFileSync(outPath, JSON.stringify(env, null, 2));
     return { result: 'BACKUP_ENCRYPTED', out: outPath, fileCount: manifest.length, manifestSha256, backupSha256: sha256File(outPath) };
@@ -371,8 +415,12 @@ function backupStorageEncrypted(a) {
 function restoreStorageEncrypted(a) {
     if (!a['profile-dir'] || !a.in) die('USAGE', 'restore-storage requires --profile-dir <dir> --in <file> --passphrase-env <ENV>');
     const extId = a['ext-id'] || DEFAULT_ID;
+    const lesDir = resolveLesDir(a['profile-dir'], extId);
+    const recoveredPrior = recoverInterruptedStorageRestore(lesDir);
     const inPath = path.resolve(a.in);
+    assertNoOverlap(lesDir, inPath);
     if (!fs.existsSync(inPath)) die('BACKUP_FILE_MISSING', `Encrypted backup file not found: ${inPath}`);
+    assertBrowserClosedForStorage(lesDir);
     const pass = getPassphrase(a);
     let env;
     try { env = JSON.parse(fs.readFileSync(inPath, 'utf8')); } catch (_) { die('BACKUP_CORRUPT', 'Backup file is not valid JSON'); }
@@ -387,23 +435,33 @@ function restoreStorageEncrypted(a) {
     } catch (_) {
         die('WRONG_PASSPHRASE_OR_CORRUPT_BACKUP', 'AES-256-GCM authentication failed (wrong passphrase or corrupted backup)');
     }
+    if (!plain || plain.extId !== extId) die('BACKUP_ID_MISMATCH', `Decrypted payload extId ${plain && plain.extId} != expected ${extId}`);
+    if (!Array.isArray(plain.manifest) || !plain.manifest.length || !plain.files || typeof plain.files !== 'object') {
+        die('MANIFEST_FILES_MISMATCH', 'Decrypted payload missing valid manifest or files map');
+    }
     if (sha256Buf(Buffer.from(JSON.stringify(plain.manifest))) !== env.manifestSha256) die('MANIFEST_HASH_MISMATCH', 'Decrypted manifest hash mismatch');
-    const lesDir = resolveLesDir(a['profile-dir'], extId);
-    assertBrowserClosedForStorage(lesDir);
+    const fileKeys = Object.keys(plain.files);
+    for (const k of fileKeys) safeRel(k);
+    if (fileKeys.length !== plain.manifest.length) die('MANIFEST_FILES_MISMATCH', `Manifest count ${plain.manifest.length} != files count ${fileKeys.length}`);
+    const seenLower = new Set();
     const stage = fs.mkdtempSync(path.join(os.tmpdir(), 'xpider-les-stage-'));
     try {
         for (const e of plain.manifest) {
-            safeRel(e.path);
+            const rel = safeRel(e.path);
+            const lk = rel.toLowerCase();
+            if (seenLower.has(lk)) die('DUPLICATE_MANIFEST_PATH', `Duplicate/case-colliding path in manifest: ${rel}`);
+            seenLower.add(lk);
+            if (!Object.prototype.hasOwnProperty.call(plain.files, e.path)) die('MANIFEST_FILES_MISMATCH', `Missing file payload for ${e.path}`);
             const buf = Buffer.from(plain.files[e.path] || '', 'base64');
             if (buf.length !== e.size || sha256Buf(buf) !== e.sha256) die('FILE_INTEGRITY_MISMATCH', `Integrity mismatch for ${e.path}`);
-            const dst = path.join(stage, e.path);
+            const dst = path.join(stage, rel);
             fs.mkdirSync(path.dirname(dst), { recursive: true });
             fs.writeFileSync(dst, buf);
         }
         fs.mkdirSync(path.dirname(lesDir), { recursive: true });
         const bak = lesDir + '.pre-restore-bak';
-        if (fs.existsSync(bak)) fs.rmSync(bak, { recursive: true, force: true });
         if (fs.existsSync(lesDir)) fs.renameSync(lesDir, bak);
+        if (fault('restore-after-bak-rename')) process.exit(91);
         try {
             fs.cpSync(stage, lesDir, { recursive: true });
             const issues = cmpTree(lesDir, plain.manifest);
@@ -413,7 +471,7 @@ function restoreStorageEncrypted(a) {
             if (fs.existsSync(bak)) { fs.rmSync(lesDir, { recursive: true, force: true }); fs.renameSync(bak, lesDir); }
             throw err;
         }
-        return { result: 'RESTORED_VERIFIED', lesDir, fileCount: plain.manifest.length, manifestSha256: env.manifestSha256 };
+        return { result: 'RESTORED_VERIFIED', lesDir, fileCount: plain.manifest.length, manifestSha256: env.manifestSha256, recoveredInterruptedPrior: recoveredPrior };
     } finally {
         fs.rmSync(stage, { recursive: true, force: true });
     }

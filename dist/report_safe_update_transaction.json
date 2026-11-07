@@ -1,7 +1,7 @@
 {
   "suite": "XPIDER_SAFE_UPDATE_TRANSACTION",
   "archiveSha256": "b3f39bec4ab0711bbe348614be6bbd1f8d0657987059ec7cd3538565c2c0227e",
-  "startedAt": "2026-11-07T01:07:47.437Z",
+  "startedAt": "2026-11-07T06:05:59.024Z",
   "assertions": [
     {
       "name": "ARCHIVE_SHA_IS_EXPECTED",
@@ -77,7 +77,7 @@
       "pass": true,
       "detail": {
         "result": "COMMITTED",
-        "backupRoot": "C:\\Users\\oPus\\AppData\\Local\\Temp\\xpider-txn-XYIRRy\\bk1",
+        "backupRoot": "C:\\Users\\oPus\\AppData\\Local\\Temp\\xpider-txn-goHdoz\\bk1",
         "state": "COMMITTED"
       }
     },
@@ -108,7 +108,7 @@
       "pass": true,
       "detail": {
         "result": "ROLLED_BACK",
-        "backupRoot": "C:\\Users\\oPus\\AppData\\Local\\Temp\\xpider-txn-XYIRRy\\bk1"
+        "backupRoot": "C:\\Users\\oPus\\AppData\\Local\\Temp\\xpider-txn-goHdoz\\bk1"
       }
     },
     {
@@ -150,7 +150,7 @@
         "partialBeforeRecover": true,
         "recover": {
           "result": "ROLLED_BACK",
-          "backupRoot": "C:\\Users\\oPus\\AppData\\Local\\Temp\\xpider-txn-XYIRRy\\bk_process_crash_mid_commit"
+          "backupRoot": "C:\\Users\\oPus\\AppData\\Local\\Temp\\xpider-txn-goHdoz\\bk_process_crash_mid_commit"
         }
       }
     },
@@ -163,7 +163,7 @@
         "partialBeforeRecover": true,
         "recover": {
           "result": "ROLLED_BACK",
-          "backupRoot": "C:\\Users\\oPus\\AppData\\Local\\Temp\\xpider-txn-XYIRRy\\bk_crash_during_rollback_then_recover"
+          "backupRoot": "C:\\Users\\oPus\\AppData\\Local\\Temp\\xpider-txn-goHdoz\\bk_crash_during_rollback_then_recover"
         }
       }
     },
@@ -173,7 +173,7 @@
       "detail": {
         "result": "ABORTED",
         "code": "EPERM",
-        "message": "EPERM: operation not permitted, rename 'C:\\Users\\oPus\\AppData\\Local\\Temp\\xpider-txn-XYIRRy\\access_denied\\background.js.xpider-new' -> 'C:\\Users\\oPus\\AppData\\Local\\Temp\\xpider-txn-XYIRRy\\access_denied\\background.js'",
+        "message": "EPERM: operation not permitted, rename 'C:\\Users\\oPus\\AppData\\Local\\Temp\\xpider-txn-goHdoz\\access_denied\\background.js.xpider-new' -> 'C:\\Users\\oPus\\AppData\\Local\\Temp\\xpider-txn-goHdoz\\access_denied\\background.js'",
         "rolledBack": true
       }
     },
@@ -193,7 +193,7 @@
       "detail": {
         "result": "ABORTED",
         "code": "ARCHIVE_UNREADABLE",
-        "message": "Archive cannot be opened as ZIP: C:\\Users\\oPus\\AppData\\Local\\Temp\\xpider-txn-XYIRRy\\corrupt.zip",
+        "message": "Archive cannot be opened as ZIP: C:\\Users\\oPus\\AppData\\Local\\Temp\\xpider-txn-goHdoz\\corrupt.zip",
         "rolledBack": false
       }
     },
@@ -213,7 +213,7 @@
       "detail": {
         "result": "ABORTED",
         "code": "MANIFEST_MISSING",
-        "message": "manifest.json missing in C:\\Users\\oPus\\AppData\\Local\\Temp\\xpider-txn-XYIRRy\\nomanifest_target",
+        "message": "manifest.json missing in C:\\Users\\oPus\\AppData\\Local\\Temp\\xpider-txn-goHdoz\\nomanifest_target",
         "rolledBack": false
       }
     },
@@ -233,7 +233,7 @@
       "detail": {
         "result": "ABORTED",
         "code": "MANIFEST_MISSING",
-        "message": "manifest.json missing in C:\\Users\\oPus\\AppData\\Local\\Temp\\xpider-stage-WAAsRA",
+        "message": "manifest.json missing in C:\\Users\\oPus\\AppData\\Local\\Temp\\xpider-stage-2qUS5f",
         "rolledBack": false
       }
     },
@@ -273,7 +273,7 @@
       "detail": {
         "result": "ABORTED",
         "code": "SYMLINK_FOUND",
-        "message": "Symlink/junction refused: C:\\Users\\oPus\\AppData\\Local\\Temp\\xpider-txn-XYIRRy\\junction\\linkdir",
+        "message": "Symlink/junction refused: C:\\Users\\oPus\\AppData\\Local\\Temp\\xpider-txn-goHdoz\\junction\\linkdir",
         "rolledBack": false
       }
     },
@@ -283,7 +283,7 @@
       "detail": {
         "result": "ABORTED",
         "code": "TARGET_MISSING",
-        "message": "Target extension root not found: C:\\Users\\oPus\\AppData\\Local\\Temp\\xpider-txn-XYIRRy\\does_not_exist",
+        "message": "Target extension root not found: C:\\Users\\oPus\\AppData\\Local\\Temp\\xpider-txn-goHdoz\\does_not_exist",
         "rolledBack": false
       }
     },
@@ -353,7 +353,7 @@
       "detail": {
         "result": "ABORTED",
         "code": "ROLLBACK_TARGET_MISMATCH",
-        "message": "Journal belongs to a different target (C:\\Users\\oPus\\AppData\\Local\\Temp\\xpider-txn-XYIRRy\\rbA); refusing",
+        "message": "Journal belongs to a different target (C:\\Users\\oPus\\AppData\\Local\\Temp\\xpider-txn-goHdoz\\rbA); refusing",
         "rolledBack": false
       }
     },
@@ -383,7 +383,7 @@
       "detail": {
         "result": "ABORTED",
         "code": "UNSAFE_JOURNAL_PATH",
-        "message": "Unsafe path in journal: ../outside_victim.txt",
+        "message": "Unsafe path in journal/archive: ../outside_victim.txt",
         "rolledBack": false
       }
     },
@@ -392,7 +392,7 @@
       "pass": true,
       "detail": {
         "result": "ROLLED_BACK",
-        "backupRoot": "C:\\Users\\oPus\\AppData\\Local\\Temp\\xpider-txn-XYIRRy\\bk_stale"
+        "backupRoot": "C:\\Users\\oPus\\AppData\\Local\\Temp\\xpider-txn-goHdoz\\bk_stale"
       }
     },
     {
@@ -415,7 +415,7 @@
       "detail": {
         "result": "ABORTED",
         "code": "UPDATE_IN_PROGRESS",
-        "message": "An update/rollback on this target is unfinished (backupRoot=C:\\Users\\oPus\\AppData\\Local\\Temp\\xpider-txn-XYIRRy\\bk_lock). Run 'recover' first. Do NOT reload the extension in the browser until it finishes.",
+        "message": "An update/rollback on this target is unfinished (backupRoot=C:\\Users\\oPus\\AppData\\Local\\Temp\\xpider-txn-goHdoz\\bk_lock). Run 'recover' first. Do NOT reload the extension in the browser until it finishes.",
         "rolledBack": false
       }
     },
@@ -425,11 +425,11 @@
       "detail": {
         "rc": {
           "result": "ROLLED_BACK",
-          "backupRoot": "C:\\Users\\oPus\\AppData\\Local\\Temp\\xpider-txn-XYIRRy\\bk_lock"
+          "backupRoot": "C:\\Users\\oPus\\AppData\\Local\\Temp\\xpider-txn-goHdoz\\bk_lock"
         },
         "c3": {
           "result": "COMMITTED",
-          "backupRoot": "C:\\Users\\oPus\\AppData\\Local\\Temp\\xpider-txn-XYIRRy\\bk_lock3",
+          "backupRoot": "C:\\Users\\oPus\\AppData\\Local\\Temp\\xpider-txn-goHdoz\\bk_lock3",
           "state": "COMMITTED"
         }
       }
@@ -463,10 +463,98 @@
         ],
         "remove": []
       }
+    },
+    {
+      "name": "STORAGE_BACKUP_VALID_BASELINE_CREATED",
+      "pass": true,
+      "detail": {
+        "result": "BACKUP_ENCRYPTED",
+        "out": "C:\\Users\\oPus\\AppData\\Local\\Temp\\xpider-txn-goHdoz\\valid_storage.xpider-enc",
+        "fileCount": 2,
+        "manifestSha256": "231176d3b68c17af942bae140459d05bfa0e2336f42936e6ad715e9be66dcc86",
+        "backupSha256": "c3c3f629b8afa14b2e914ab9ba4be83af3a1a482bbda1ac4e521435ba1375fdf"
+      }
+    },
+    {
+      "name": "STORAGE_BACKUP_OUT_OVERLAPPING_LES_DIR_REFUSED",
+      "pass": true,
+      "detail": {
+        "result": "ABORTED",
+        "code": "BACKUP_OVERLAPS_TARGET",
+        "message": "backup-root is inside target",
+        "rolledBack": false
+      }
+    },
+    {
+      "name": "STORAGE_BACKUP_AND_RESTORE_REFUSED_ON_JUNCTION_LES_DIR",
+      "pass": true,
+      "detail": {
+        "bk": "SYMLINK_FOUND",
+        "rs": "SYMLINK_FOUND"
+      }
+    },
+    {
+      "name": "STORAGE_RESTORE_PATH_TRAVERSAL_IN_DECRYPTED_MANIFEST_REFUSED",
+      "pass": true,
+      "detail": {
+        "result": "ABORTED",
+        "code": "UNSAFE_JOURNAL_PATH",
+        "message": "Unsafe path in journal/archive: ../evil_escaped.txt",
+        "rolledBack": false
+      }
+    },
+    {
+      "name": "STORAGE_RESTORE_EXTRA_UNMANIFESTED_FILE_KEY_REFUSED",
+      "pass": true,
+      "detail": {
+        "result": "ABORTED",
+        "code": "MANIFEST_FILES_MISMATCH",
+        "message": "Manifest count 1 != files count 2",
+        "rolledBack": false
+      }
+    },
+    {
+      "name": "STORAGE_RESTORE_DUPLICATE_CASE_COLLIDING_PATH_REFUSED",
+      "pass": true,
+      "detail": {
+        "result": "ABORTED",
+        "code": "DUPLICATE_MANIFEST_PATH",
+        "message": "Duplicate/case-colliding path in manifest: 000003.LDB",
+        "rolledBack": false
+      }
+    },
+    {
+      "name": "STORAGE_RESTORE_INVALID_OR_MISMATCHED_EXT_ID_REFUSED",
+      "pass": true,
+      "detail": {
+        "badId": "INVALID_EXT_ID",
+        "innerId": "BACKUP_ID_MISMATCH"
+      }
+    },
+    {
+      "name": "STORAGE_RESTORE_INTERRUPTED_BETWEEN_RENAME_STEPS_PRESERVES_PRE_RESTORE_ON_FAILURE",
+      "pass": true,
+      "detail": {
+        "intStatus": 91,
+        "bakExistsAfterCrash": true,
+        "wrongCode": "WRONG_PASSPHRASE_OR_CORRUPT_BACKUP",
+        "origRestoredOnWrongRetry": true
+      }
+    },
+    {
+      "name": "STORAGE_RESTORE_INTERRUPTED_BETWEEN_RENAME_STEPS_COMPLETES_ON_RETRY",
+      "pass": true,
+      "detail": {
+        "result": "RESTORED_VERIFIED",
+        "lesDir": "C:\\Users\\oPus\\AppData\\Local\\Temp\\xpider-txn-goHdoz\\prof_dst\\Default\\Local Extension Settings\\ldlijlaccfeelfdhgnjbibniocefckjj",
+        "fileCount": 2,
+        "manifestSha256": "231176d3b68c17af942bae140459d05bfa0e2336f42936e6ad715e9be66dcc86",
+        "recoveredInterruptedPrior": true
+      }
     }
   ],
   "status": "SUCCESS",
-  "endedAt": "2026-11-07T01:10:05.023Z",
-  "total": 48,
+  "endedAt": "2026-11-07T06:08:10.029Z",
+  "total": 57,
   "failed": 0
 }

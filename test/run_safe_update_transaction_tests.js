@@ -273,6 +273,109 @@ function craftZip(out, entries) {
             const c1 = run(['apply', ...common(o), '--approve', p.out.PLAN_TOKEN, '--backup-root', path.join(work, 'bk_ml')]);
             A('MODIFIED_NONEMPTY_LEGACY_FILE_PRESERVED_AS_USER_FILE', c1.status === 0 && p.out.plan.keepUnknown.includes('retired_legacy.js') && !p.out.plan.remove.includes('retired_legacy.js') && fs.existsSync(path.join(o, 'retired_legacy.js')), { keepUnknown: p.out.plan.keepUnknown, remove: p.out.plan.remove });
         }
+        // ================= Directive #6703093387 Item 2: Encrypted Storage Backup/Restore Negative Tests =================
+        {
+            const EXT = 'ldlijlaccfeelfdhgnjbibniocefckjj';
+            const PASS = 'Test-Only-Synthetic-Passphrase-99!';
+            const pSrc = path.join(work, 'prof_src');
+            const lesSrc = path.join(pSrc, 'Default', 'Local Extension Settings', EXT);
+            fs.mkdirSync(lesSrc, { recursive: true });
+            fs.writeFileSync(path.join(lesSrc, '000003.ldb'), 'SYNTHETIC_LDB_V1');
+            fs.writeFileSync(path.join(lesSrc, 'CURRENT'), 'MANIFEST-000001\n');
+            const encOut = path.join(work, 'valid_storage.xpider-enc');
+
+            // 1. Valid backup creation for test baseline
+            const bkOk = run(['backup-storage', '--profile-dir', pSrc, '--out', encOut, '--passphrase-env', 'XP_PASS'], { XP_PASS: PASS });
+            A('STORAGE_BACKUP_VALID_BASELINE_CREATED', bkOk.status === 0 && bkOk.out.result === 'BACKUP_ENCRYPTED', bkOk.out);
+
+            // 2. Backup --out overlapping lesDir refused
+            const ovOut = run(['backup-storage', '--profile-dir', pSrc, '--out', path.join(lesSrc, 'inside.xpider-enc'), '--passphrase-env', 'XP_PASS'], { XP_PASS: PASS });
+            A('STORAGE_BACKUP_OUT_OVERLAPPING_LES_DIR_REFUSED', ovOut.status !== 0 && ovOut.out.code === 'BACKUP_OVERLAPS_TARGET' && !fs.existsSync(path.join(lesSrc, 'inside.xpider-enc')), ovOut.out);
+
+            // 3. Symlink/junction on Local Extension Settings/<id> refused on backup & restore
+            const pJn = path.join(work, 'prof_jn');
+            fs.mkdirSync(path.join(pJn, 'Default', 'Local Extension Settings'), { recursive: true });
+            const jnLes = path.join(pJn, 'Default', 'Local Extension Settings', EXT);
+            execFileSync('powershell', ['-NoProfile', '-Command', `New-Item -ItemType Junction -Path '${jnLes}' -Target '${lesSrc}' | Out-Null`]);
+            const bkJn = run(['backup-storage', '--profile-dir', pJn, '--out', path.join(work, 'jn.xpider-enc'), '--passphrase-env', 'XP_PASS'], { XP_PASS: PASS });
+            const rsJn = run(['restore-storage', '--profile-dir', pJn, '--in', encOut, '--passphrase-env', 'XP_PASS'], { XP_PASS: PASS });
+            execFileSync('cmd', ['/c', 'rmdir', jnLes]);
+            A('STORAGE_BACKUP_AND_RESTORE_REFUSED_ON_JUNCTION_LES_DIR', bkJn.out.code === 'SYMLINK_FOUND' && rsJn.out.code === 'SYMLINK_FOUND', { bk: bkJn.out.code, rs: rsJn.out.code });
+
+            // Helper to craft signed/authenticated AES-256-GCM envelope with custom plain payload
+            function craftEnc(filePath, plainObj, envOverrides = {}) {
+                const salt = crypto.randomBytes(16), iv = crypto.randomBytes(12);
+                const key = crypto.scryptSync(PASS, salt, 32, { N: 16384, r: 8, p: 1 });
+                const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
+                const ct = Buffer.concat([cipher.update(Buffer.from(JSON.stringify(plainObj), 'utf8')), cipher.final()]);
+                const tag = cipher.getAuthTag();
+                const manifestSha256 = crypto.createHash('sha256').update(Buffer.from(JSON.stringify(plainObj.manifest || []))).digest('hex');
+                const env = { format: 'XPIDER_ENCRYPTED_STORAGE_BACKUP_V1', kdf: 'scrypt-16384-8-1', cipher: 'aes-256-gcm', extId: EXT, fileCount: (plainObj.manifest || []).length, manifestSha256, salt: salt.toString('base64'), iv: iv.toString('base64'), tag: tag.toString('base64'), ciphertext: ct.toString('base64'), ...envOverrides };
+                fs.writeFileSync(filePath, JSON.stringify(env));
+            }
+
+            // 4. Path traversal in decrypted manifest/files refused before touching target profile
+            const pDst = path.join(work, 'prof_dst');
+            const lesDst = path.join(pDst, 'Default', 'Local Extension Settings', EXT);
+            fs.mkdirSync(lesDst, { recursive: true });
+            fs.writeFileSync(path.join(lesDst, '000003.ldb'), 'EXISTING_PROTECTED_DEST');
+            const dstBefore = tree(lesDst);
+            const evilFile = path.join(work, 'evil_escaped.txt');
+            const encTrav = path.join(work, 'trav.xpider-enc');
+            const evilBuf = Buffer.from('EVIL');
+            craftEnc(encTrav, {
+                version: 1, extId: EXT,
+                manifest: [{ path: '../evil_escaped.txt', size: evilBuf.length, sha256: crypto.createHash('sha256').update(evilBuf).digest('hex') }],
+                files: { '../evil_escaped.txt': evilBuf.toString('base64') }
+            });
+            const rsTrav = run(['restore-storage', '--profile-dir', pDst, '--in', encTrav, '--passphrase-env', 'XP_PASS'], { XP_PASS: PASS });
+            A('STORAGE_RESTORE_PATH_TRAVERSAL_IN_DECRYPTED_MANIFEST_REFUSED', rsTrav.out.code === 'UNSAFE_JOURNAL_PATH' && !fs.existsSync(evilFile) && tree(lesDst) === dstBefore, rsTrav.out);
+
+            // 5. Unmanifested extra key in decrypted files map refused
+            const encExtra = path.join(work, 'extra_key.xpider-enc');
+            craftEnc(encExtra, {
+                version: 1, extId: EXT,
+                manifest: [{ path: '000003.ldb', size: 4, sha256: crypto.createHash('sha256').update(Buffer.from('GOOD')).digest('hex') }],
+                files: { '000003.ldb': Buffer.from('GOOD').toString('base64'), 'unlisted.ldb': Buffer.from('HIDDEN').toString('base64') }
+            });
+            const rsExtra = run(['restore-storage', '--profile-dir', pDst, '--in', encExtra, '--passphrase-env', 'XP_PASS'], { XP_PASS: PASS });
+            A('STORAGE_RESTORE_EXTRA_UNMANIFESTED_FILE_KEY_REFUSED', rsExtra.out.code === 'MANIFEST_FILES_MISMATCH' && tree(lesDst) === dstBefore, rsExtra.out);
+
+            // 6. Duplicate case-colliding paths in manifest refused
+            const encDup = path.join(work, 'dup_case.xpider-enc');
+            const b1 = Buffer.from('AAAA');
+            const h1 = crypto.createHash('sha256').update(b1).digest('hex');
+            craftEnc(encDup, {
+                version: 1, extId: EXT,
+                manifest: [{ path: '000003.ldb', size: 4, sha256: h1 }, { path: '000003.LDB', size: 4, sha256: h1 }],
+                files: { '000003.ldb': b1.toString('base64'), '000003.LDB': b1.toString('base64') }
+            });
+            const rsDup = run(['restore-storage', '--profile-dir', pDst, '--in', encDup, '--passphrase-env', 'XP_PASS'], { XP_PASS: PASS });
+            A('STORAGE_RESTORE_DUPLICATE_CASE_COLLIDING_PATH_REFUSED', rsDup.out.code === 'DUPLICATE_MANIFEST_PATH' && tree(lesDst) === dstBefore, rsDup.out);
+
+            // 7. Invalid --ext-id traversal or mismatched inner plain.extId refused
+            const rsBadId = run(['restore-storage', '--profile-dir', pDst, '--in', encOut, '--ext-id', '../../evil', '--passphrase-env', 'XP_PASS'], { XP_PASS: PASS });
+            const encWrongInnerId = path.join(work, 'wrong_inner_id.xpider-enc');
+            craftEnc(encWrongInnerId, {
+                version: 1, extId: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+                manifest: [{ path: '000003.ldb', size: 4, sha256: h1 }],
+                files: { '000003.ldb': b1.toString('base64') }
+            });
+            const rsInnerId = run(['restore-storage', '--profile-dir', pDst, '--in', encWrongInnerId, '--passphrase-env', 'XP_PASS'], { XP_PASS: PASS });
+            A('STORAGE_RESTORE_INVALID_OR_MISMATCHED_EXT_ID_REFUSED', rsBadId.out.code === 'INVALID_EXT_ID' && rsInnerId.out.code === 'BACKUP_ID_MISMATCH' && tree(lesDst) === dstBefore, { badId: rsBadId.out.code, innerId: rsInnerId.out.code });
+
+            // 8. Restore interrupted between folder rename steps (lesDir -> .pre-restore-bak) preserves pre-restore data on failed retry and completes on valid retry
+            const intRun = run(['restore-storage', '--profile-dir', pDst, '--in', encOut, '--passphrase-env', 'XP_PASS'], { XP_PASS: PASS, XPIDER_UPDATE_FAULT: 'restore-after-bak-rename' });
+            const bakExistsAfterCrash = fs.existsSync(lesDst + '.pre-restore-bak') && !fs.existsSync(lesDst);
+            // Retry with WRONG passphrase first: must auto-recover .pre-restore-bak back to lesDst and abort without losing original data!
+            const wrongRetry = run(['restore-storage', '--profile-dir', pDst, '--in', encOut, '--passphrase-env', 'XP_PASS'], { XP_PASS: 'Wrong-Passphrase-0000' });
+            const origRestoredOnWrongRetry = fs.existsSync(lesDst) && tree(lesDst) === dstBefore;
+            // Now interrupt again and retry with CORRECT passphrase
+            run(['restore-storage', '--profile-dir', pDst, '--in', encOut, '--passphrase-env', 'XP_PASS'], { XP_PASS: PASS, XPIDER_UPDATE_FAULT: 'restore-after-bak-rename' });
+            const okRetry = run(['restore-storage', '--profile-dir', pDst, '--in', encOut, '--passphrase-env', 'XP_PASS'], { XP_PASS: PASS });
+            A('STORAGE_RESTORE_INTERRUPTED_BETWEEN_RENAME_STEPS_PRESERVES_PRE_RESTORE_ON_FAILURE', intRun.status === 91 && bakExistsAfterCrash && wrongRetry.out.code === 'WRONG_PASSPHRASE_OR_CORRUPT_BACKUP' && origRestoredOnWrongRetry, { intStatus: intRun.status, bakExistsAfterCrash, wrongCode: wrongRetry.out.code, origRestoredOnWrongRetry });
+            A('STORAGE_RESTORE_INTERRUPTED_BETWEEN_RENAME_STEPS_COMPLETES_ON_RETRY', okRetry.status === 0 && okRetry.out.recoveredInterruptedPrior === true && tree(lesDst) === tree(lesSrc) && !fs.existsSync(lesDst + '.pre-restore-bak'), okRetry.out);
+        }
     } catch (e) {
         failures++; report.error = e.stack; console.error(e);
     } finally {
