@@ -8,75 +8,119 @@
 - Branch: candidate/p0-core-regressions-v7 (candidate branch isolated; base major/v7-dual-mode preserves frozen RC11 code 20678ada with schedule-only updates at tip cf96bc08)
 - Candidate Functional Base Commit: 76fab0933276ae163c377d39d9dca5169a33063c (short: 76fab093; verified commit object)
 - Authoritative Candidate Branch Ref: refs/heads/candidate/p0-core-regressions-v7 (live tip resolved dynamically via git ls-remote / git rev-parse HEAD)
-- State Rev: 2026-11-06.712
-- Authority Cursor: 6698610534 (Responding to ChatGPT Directive #6698610534 / Rev 9 P0 Acceptance: Fresh Localhost E2E Runs, RC11 Code Tree Audit, Three Modes & Controls, 4/4 Mutant Sensitivity)
+- State Rev: 2026-11-06.713
+- Authority Cursor: 6699377538 (Responding to ChatGPT Directive #6699377538: Owner-Safe Installable Candidate Package, Clean-Room Package Chromium Load Test, 50-File Code Tree Audit, Windows 10 Acceptance Procedure, Release Hold)
 - Canonical Schedule Revision: 9 (verified canonical GitHub schedule blob 39a0243f7c334470163deeed59cf6f306b48e72a at commit cf96bc0891c422e371ba6dd3077b99e35462026e)
 - Collaboration Mode: Manual ChatGPT ↔ Antigravity Collaboration per Owner Directive.
 - Verification Status: HOLD (Awaiting independent ChatGPT Code Audit & Gate Decision). Release HOLD maintained. Zero external public submissions.
 
 ---
 
-## 1. Directive #6698610534 (Rev 9 P0 Acceptance) Execution & Code Tree Comparison
+## 1. Directive #6699377538 Execution & Deliverables
 
-### A. Non-Self-Referential Provenance & Baseline Clarification
-- Authoritative Candidate Branch Ref: `refs/heads/candidate/p0-core-regressions-v7`.
-- Functional Base: `76fab0933276ae163c377d39d9dca5169a33063c` (`76fab093`).
-- Base Branch Status: `major/v7-dual-mode` code remains 100% identical to frozen RC11 (`20678ada6491bf842ec7e996a88108152c76007f`), with branch tip `cf96bc0891c422e371ba6dd3077b99e35462026e` containing schedule-only metadata (`.ivcs/schedules/XPIDER_FORM_SENDER.json`).
-- Documentation commits on candidate branch are metadata wrappers tracking the candidate branch tip above the functional base. No self-referential commit SHAs are embedded in tracked text, eliminating recursive HEAD drift.
-- Preserved Assets: All user profiles, templates, CSV, History/Ledger, Email Collector, and relay configurations remain completely preserved.
+### A. Owner-Safe Installable Candidate Artifact
+- **Package Archive**: `dist/XPIDER_V7.0.0_CANDIDATE_P0_REV9_OWNER_SAFE.zip`
+- **File Size**: `4,467,833` bytes (~4.46 MB)
+- **SHA-256 Checksum**: `b3f39bec4ab0711bbe348614be6bbd1f8d0657987059ec7cd3538565c2c0227e`
+- **Total Files**: 50 files (100% complete extension bundle)
+- **File Inventory**: Recorded in `dist/PACKAGE_INVENTORY_SHA256.json`
+- **Secret Hygiene & Manifest Permissions**:
+  - Hardcoded credentials, private tokens, API keys: **0 VIOLATIONS (PASS)**
+  - Manifest Version: 3 | Extension Version: 7.0.0
+  - In-app solver permissions: 0 (No audio STT, No external solver API endpoints)
+  - Manifest Permissions (14): `storage`, `tabs`, `scripting`, `activeTab`, `sidePanel`, `alarms`, `downloads`, `debugger`, `privacy`, `proxy`, `webRequest`, `webRequestAuthProvider`, `nativeMessaging`, `declarativeNetRequest`
+  - Clean-room unpacked directory: `dist/clean_room_unpacked_v7` (100% byte-matched to archive)
 
-### B. Production Executable Code Tree vs Frozen RC11 (`20678ada`) Comparison
-Byte-level audit between RC11 (`20678ada`) and functional base (`76fab093`):
-- `modules/template-store.js`: **100% BYTE-IDENTICAL** (0 diffs).
-- `modules/history-store.js`: **100% BYTE-IDENTICAL** (0 diffs).
-- `modules/email-collector.js`: **100% BYTE-IDENTICAL** (0 diffs).
-- `modules/privacy-gateway.js`: **100% BYTE-IDENTICAL** (0 diffs).
-- Production executable diffs strictly isolated to P0 remediations:
-  1. `extension/background.js`: Consent-qualified `OWNER_ACTION_REQUIRED` mapping, strict operational failure categories (`REQUIRED_FIELDS_UNRESOLVED`, `UNRESOLVED_REQUIRED_FACT`, `FINAL_FORM_COMPLETION_FAILED` settle as `AUTOMATION_FAILED` / `FAILURE`, never benign `SKIPPED`), immediate storage persistence on start/resume, default-OFF.
-  2. `extension/contact-gate.js`: Explicit boolean precedence (`typeof === 'boolean'`) over ambient window, newsletter/subscribe intent classification.
-  3. `extension/content-script.js`: External CAPTCHA wait strictly bounded to `<= 3` attempts (`window.__xpider_external_challenge_wait_count`), AUTO mode renders 0 intervention buttons (`pointer-events: none`), 0 duplicate POSTs enforced via `__xpider_submitBoundaryReached` and `QUERY_SUBMIT_BOUNDARY`.
-  4. `extension/final-form-completion-engine.js`: Strict unfillable field failure settlement as `AUTOMATION_FAILED`.
-  5. `extension/popup.html` & `popup.js`: Default-OFF message-less checkbox `#include-forms-without-message-checkbox`, visible `#stop-save-btn` and `#resume-mode-modal`.
-  6. In-app solvers: All internal solvers (Wit.ai, Whisper, NopeCHA, 2Captcha, audio STT, math solver) remain 100% retired stubs throwing `IN_APP_SOLVER_RETIRED` or `INTERNAL_SOLVER_RETIRED_V7`.
-
----
-
-## 2. Verification Classification Ledger (Rev 9 Sprint Fresh Localhost Runs)
-
-### A. Developer Self-Test Automated Reports (Localhost Isolated Fixtures)
-- **Comprehensive No-Message Suite** (`test/run_chromium_v7_directive_6688411313_no_message_suite.js`):
-  - 36 / 36 PASS (100%), raw exit 0.
-  - Executed: 2026-11-06T23:40:53Z to 2026-11-06T23:44:41Z.
-  - Report: `test/evidence_v7_directive_6688411313/report_directive_6688411313_e2e.json`.
-- **Full E2E Suite** (`test/run_chromium_v7_directive_6657464425_e2e_suite.js`):
-  - 38 / 38 PASS (100%), raw exit 0.
-  - Executed: 2026-11-06T23:44:46Z to 2026-11-06T23:47:44Z.
-  - Report: `test/evidence_v7_directive_6657464425/report_directive_6657464425_e2e.json`.
-- **Triple Modes & Visible Controls Suite** (`test/run_chromium_v7_modes_and_visible_controls_suite.js`):
-  - 32 / 32 PASS (100%), raw exit 0.
-  - Executed: 2026-11-06T23:48:44Z to 2026-11-06T23:50:26Z.
-  - Report: `test/report_v7_modes_and_visible_controls.json`.
-- **Real Mutant Sensitivity Harness** (`test/run_v7_real_mutant_sensitivity.js`):
-  - 4 / 4 mutants killed (100% sensitivity, raw exit 1 verified per mutant).
-  - Executed: 2026-11-06T23:51:02Z to 2026-11-06T23:52:55Z.
-  - Report: `owner-extension-test-site/evidence/evidence_v7_real_mutants_report.json`.
-  - Guaranteed 100% byte-identical restoration confirmed across all 4 mutated files.
-
-### B. Independent Source Inspection (ChatGPT Remote Verification)
-- Verified: `background.js` consent-qualified skip mapping and default OFF.
-- Verified: `contact-gate.js` boolean precedence and opt-in intent classification.
-- Verified: Manifest MV3 compliance with zero solver permissions.
-
-### C. Formal UNKNOWNs Ledger (Pending Independent / Owner Verification)
-1. **Real NopeCHA Extension Live API Ingestion**: **UNKNOWN** (All internal 2Captcha/NopeCHA APIs are retired in v7; external extension simulation used on localhost).
-2. **Live Decodo / DigitalOcean Residential Proxy Egress**: **UNKNOWN** (Zero public egress authorized without Owner credential/billing approval; local fail-closed architecture confirmed in source and unit tests).
-3. **Owner Windows Desktop Live Chrome Smoke & Final Acceptance**: **UNKNOWN** (Developer automated tests executed in clean isolated Chromium/Edge instances; awaiting Owner final local smoke test).
+### B. Clean-Room Package-Level Chromium Load Test (`test/run_chromium_v7_clean_room_package_suite.js`)
+- **Loaded Extension**: Strictly from clean-room unpacked package `dist/clean_room_unpacked_v7` (NOT source `extension/`)
+- **Profile**: Fresh isolated disposable Chromium profile
+- **Raw Command**: `node test/run_chromium_v7_clean_room_package_suite.js`
+- **Exit Code**: `0`
+- **Execution Window**: `2026-11-07T00:22:58Z` to `2026-11-07T00:24:20Z`
+- **Assertions**: **21 / 21 PASS (100%)**
+- **Report**: `dist/report_clean_room_package_suite.json`
+- **Screenshots**:
+  1. `dist/evidence_clean_room/shot_clean_room_01_popup_visible_controls.png`: Visible START button, default-OFF `#xpider-opt-include-no-message`, mode buttons, `#stop-save-btn`.
+  2. `dist/evidence_clean_room/shot_clean_room_02_auto_submission.png`: AUTO mode autonomous submission on `contact-standard.html` (1 POST recorded).
+  3. `dist/evidence_clean_room/shot_clean_room_03_no_message_optin.png`: Message-less `subscribe-no-message.html` skipped when default OFF (0 POSTs); accepted and submitted when explicit ON (+1 POST).
+  4. `dist/evidence_clean_room/shot_clean_room_04_manual_assist_unpacked.png`: MANUAL mode renders `#xpider-v7-manual-hold-panel` (`data-mode="MANUAL"`); 0 submissions until operator click; human operator submits via `#xpider-manual-registered-btn` (+1 POST).
+  5. `dist/evidence_clean_room/shot_clean_room_05_sw_crash_restore_unpacked.png`: Stop & Save checkpoint saved; Service Worker forcibly killed via CDP `Target.closeTarget`; fresh SW reboot fully restores checkpoint, queue, and mode.
 
 ---
 
-## 3. Strict Safety Invariants
+## 2. Complete 50-File Code Tree Audit vs Frozen RC11 (`20678ada`)
 
-- Base branch `major/v7-dual-mode` code remains 100% frozen at RC11 `20678ada6491bf842ec7e996a88108152c76007f`.
-- IVCS Manager remains untouched and strictly ChatGPT-owned.
-- Zero public contact form submissions dispatched (100% isolated localhost `127.0.0.1:8088` fixtures).
-- Gate: **RELEASE HOLD** maintained pending independent ChatGPT Code Audit and Owner smoke approval.
+### A. 38 Unchanged Baseline Files (100% Byte-Identical, 0 Diff)
+- `extension/manifest.json`: 100% BYTE-IDENTICAL
+- `extension/modules/template-store.js`: 100% BYTE-IDENTICAL
+- `extension/modules/history-store.js`: 100% BYTE-IDENTICAL
+- `extension/modules/email-collector.js`: 100% BYTE-IDENTICAL
+- `extension/modules/privacy-gateway.js`: 100% BYTE-IDENTICAL
+- `extension/modules/operation-queue.js`: 100% BYTE-IDENTICAL
+- `extension/modules/vision-submit-executor.js`: 100% BYTE-IDENTICAL
+- `extension/modules/mock-captcha-provider-adapter.js`: 100% BYTE-IDENTICAL
+- `extension/popup.css`: 100% BYTE-IDENTICAL
+- `extension/options.html`: 100% BYTE-IDENTICAL
+- `extension/options.js`: 100% BYTE-IDENTICAL
+- `extension/translations.js`: 100% BYTE-IDENTICAL
+- `extension/blacklist.json`: 100% BYTE-IDENTICAL
+- 25 image/icon assets (`icons/`, `images/`): 100% BYTE-IDENTICAL
+
+### B. 12 Files with Deltas (All Classified as Intended P0 Fixes, 0 Regressions)
+1. `modules/build-provenance.js`: Intended alignment of `implementationHead` to frozen RC11 `20678ada`. Zero risk.
+2. `modules/challenge-gate.js`: Intended exclusion of `.cf-turnstile` / `.h-captcha` from `recaptchaWidget` selector. Zero risk.
+3. `modules/smart-field-resolver.js`: Intended retirement of in-app math equation solver in Section H. Zero risk.
+4. `modules/math-captcha-solver.js`: Intended retirement stub throwing `INTERNAL_SOLVER_RETIRED_V7`. Zero risk.
+5. `solver-core.js`: Intended retirement stub throwing `IN_APP_SOLVER_RETIRED` (-905 lines of legacy solver code removed). Zero risk.
+6. `modules/contact-gate.js`: Intended newsletter opt-in intent recognition when `includeFormsWithoutMessage` is explicitly ON; tri-state precedence (`typeof === 'boolean'`); unauthorized consent guard. Low risk (tested).
+7. `modules/final-form-completion-engine.js`: Intended marketing consent guard (`UNAUTHORIZED_CONSENT_SKIPPED`); tri-state precedence; unfillable required fields settle as `AUTOMATION_FAILED`. Low risk (tested).
+8. `background.js`: Intended consent-qualified skip mapping; strict operational failure settlement; solver retirement stubs; storage persistence. Low risk (tested).
+9. `content-script.js`: Intended external CAPTCHA retry bounded `<= 3`; AUTO mode renders 0 intervention buttons; single POST boundary enforcement. Low risk (tested).
+10. `popup.html`: Intended UI restoration: `#xpider-opt-include-no-message` checkbox (default OFF), `#stop-save-btn`, `#resume-mode-modal`. Zero risk.
+11. `popup.js`: Intended UI event binding for checkbox, stop-save, and resume modal. Zero risk.
+12. `PACKAGE_INVENTORY_SHA256.txt`: Intended inventory hashes update. Zero risk.
+
+---
+
+## 3. Windows 10 Owner Acceptance & Rollback Procedure
+
+### A. Candidate Installation / Update
+1. Download or locate `dist/XPIDER_V7.0.0_CANDIDATE_P0_REV9_OWNER_SAFE.zip`.
+2. Extract to a dedicated local directory, e.g. `C:\xpider-v7-candidate\`.
+3. Open Google Chrome or Microsoft Edge and navigate to `chrome://extensions` or `edge://extensions`.
+4. Enable "Developer mode" in the top-right corner.
+5. If updating existing unpacked extension: click "Reload" icon on the XPIDER extension card.
+   If fresh install: click "Load unpacked" and select `C:\xpider-v7-candidate\`.
+6. Confirm Extension ID and Version (7.0.0). Pin icon to toolbar.
+
+### B. Instant Rollback Procedure
+1. Extract frozen RC11 release zip `XPIDER_V7.0.0_RC11_DUAL_MODE_OWNER_BETA.zip` to `C:\xpider-rc11\`.
+2. At `chrome://extensions`, click "Load unpacked" and select `C:\xpider-rc11\`.
+3. All user settings, templates, CSV data, history records, and Email Collector data remain intact in `chrome.storage.local`.
+
+### C. Non-Sensitive Local Observations (Owner Testing)
+1. **External NopeCHA Interoperability**:
+   - Install official NopeCHA extension from Chrome Web Store.
+   - Run local fixture test `http://127.0.0.1:8088/captcha-turnstile-dom.html`.
+   - Observe XPIDER unobtrusive status banner (`External CAPTCHA solver active... waiting <= 3 attempts`).
+   - Confirm NopeCHA solves challenge and XPIDER submits form autonomously upon solution.
+2. **Privacy Relay & Fail-Closed**:
+   - With Privacy Relay offline, start campaign in STRICT mode: observe `PRIVACY GATE BLOCKED START` overlay.
+   - Start Privacy Relay (`node companion/privacy-relay-service.js`): observe green "PROTECTED" status.
+3. **No Public POST Invariant**: Never submit to public/external websites during acceptance testing.
+
+---
+
+## 4. Acceptance Checklist
+
+| Item | Classification | Verification / Evidence |
+|---|---|---|
+| Owner-Safe Artifact Packaging | **PASS** | `XPIDER_V7.0.0_CANDIDATE_P0_REV9_OWNER_SAFE.zip` (SHA256: `b3f39bec4ab0...`, 50 files) |
+| Clean-Room Package Chromium Load Test | **PASS** | 21 / 21 Assertions PASS (100%), Exit 0, 5 screenshots captured |
+| Code Tree & Manifest Audit (50 files) | **PASS** | 38 files 100% byte-identical, 12 files intended P0 changes, 0 regressions |
+| Secret Hygiene & Manifest Permissions | **PASS** | 0 hardcoded credentials, 0 in-app solver permissions, MV3 compliant |
+| Preserved User Data / Stores | **PASS** | TemplateStore, HistoryStore, EmailCollector, PrivacyGateway 100% identical |
+| External NopeCHA Real Extension Interop | **NOT_TESTED / UNKNOWN** | All internal solvers retired; external extension simulation used on localhost |
+| Live Decodo / DigitalOcean Billable Egress | **NOT_TESTED / UNKNOWN** | Zero unauthorized public proxy egress; local fail-closed architecture confirmed |
+| Owner Windows 10 Live Desktop Smoke | **NOT_TESTED / UNKNOWN** | Automated tests executed in isolated Chromium instances; awaiting Owner smoke |
+| Production Release Gate | **RELEASE HOLD** | Strict release hold maintained pending independent ChatGPT audit & Owner smoke |

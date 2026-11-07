@@ -1,0 +1,269 @@
+{
+  "testSuite": "XPIDER_V7_CLEAN_ROOM_PACKAGE_SUITE",
+  "packageExtensionDir": "E:\\vivpr\\ai\\extension-form-sender\\dist\\clean_room_unpacked_v7",
+  "startTimeUtc": "2026-11-07T00:22:58.192Z",
+  "endTimeUtc": "2026-11-07T00:24:20.917Z",
+  "status": "SUCCESS",
+  "assertions": [
+    {
+      "name": "CLEAN_ROOM_EXTENSION_LOADED",
+      "passed": true,
+      "detail": {
+        "extId": "ldlijlaccfeelfdhgnjbibniocefckjj",
+        "swUrl": "chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/background.js"
+      },
+      "timestamp": "2026-11-07T00:23:00.839Z"
+    },
+    {
+      "name": "START_BUTTON_RENDERED_AND_VISIBLE",
+      "passed": true,
+      "detail": {
+        "startBtnPresent": true,
+        "startBtnVisible": true,
+        "semiBtnPresent": true,
+        "manualBtnPresent": true,
+        "noMsgCbPresent": true,
+        "noMsgCbVisible": true,
+        "noMsgCbChecked": false,
+        "stopSaveBtnPresent": true,
+        "pauseBtnPresent": true
+      },
+      "timestamp": "2026-11-07T00:23:02.480Z"
+    },
+    {
+      "name": "NO_MESSAGE_CHECKBOX_DEFAULT_OFF",
+      "passed": true,
+      "detail": {
+        "startBtnPresent": true,
+        "startBtnVisible": true,
+        "semiBtnPresent": true,
+        "manualBtnPresent": true,
+        "noMsgCbPresent": true,
+        "noMsgCbVisible": true,
+        "noMsgCbChecked": false,
+        "stopSaveBtnPresent": true,
+        "pauseBtnPresent": true
+      },
+      "timestamp": "2026-11-07T00:23:02.481Z"
+    },
+    {
+      "name": "START_MODES_BUTTONS_RENDERED",
+      "passed": true,
+      "detail": {
+        "startBtnPresent": true,
+        "startBtnVisible": true,
+        "semiBtnPresent": true,
+        "manualBtnPresent": true,
+        "noMsgCbPresent": true,
+        "noMsgCbVisible": true,
+        "noMsgCbChecked": false,
+        "stopSaveBtnPresent": true,
+        "pauseBtnPresent": true
+      },
+      "timestamp": "2026-11-07T00:23:02.481Z"
+    },
+    {
+      "name": "STOP_SAVE_BTN_PRESENT",
+      "passed": true,
+      "detail": {
+        "startBtnPresent": true,
+        "startBtnVisible": true,
+        "semiBtnPresent": true,
+        "manualBtnPresent": true,
+        "noMsgCbPresent": true,
+        "noMsgCbVisible": true,
+        "noMsgCbChecked": false,
+        "stopSaveBtnPresent": true,
+        "pauseBtnPresent": true
+      },
+      "timestamp": "2026-11-07T00:23:02.481Z"
+    },
+    {
+      "name": "AUTO_MODE_CAMPAIGN_ACTIVE",
+      "passed": true,
+      "detail": {},
+      "timestamp": "2026-11-07T00:23:03.476Z"
+    },
+    {
+      "name": "AUTO_MODE_CAMPAIGN_SETTLED",
+      "passed": true,
+      "detail": {},
+      "timestamp": "2026-11-07T00:23:27.421Z"
+    },
+    {
+      "name": "AUTO_MODE_SUBMISSION_RECORDED",
+      "passed": true,
+      "detail": {
+        "expected": 1,
+        "actual": 1
+      },
+      "timestamp": "2026-11-07T00:23:27.424Z"
+    },
+    {
+      "name": "NO_MESSAGE_DEFAULT_OFF_LAUNCHED",
+      "passed": true,
+      "detail": {},
+      "timestamp": "2026-11-07T00:23:27.925Z"
+    },
+    {
+      "name": "NO_MESSAGE_DEFAULT_OFF_SETTLED",
+      "passed": true,
+      "detail": {},
+      "timestamp": "2026-11-07T00:23:38.167Z"
+    },
+    {
+      "name": "NO_MESSAGE_DEFAULT_OFF_SKIPPED",
+      "passed": true,
+      "detail": {
+        "subCountAfterAuto": 1,
+        "subCountAfterDefaultOff": 1
+      },
+      "timestamp": "2026-11-07T00:23:38.170Z"
+    },
+    {
+      "name": "NO_MESSAGE_EXPLICIT_ON_LAUNCHED",
+      "passed": true,
+      "detail": {},
+      "timestamp": "2026-11-07T00:23:38.511Z"
+    },
+    {
+      "name": "NO_MESSAGE_EXPLICIT_ON_SETTLED",
+      "passed": true,
+      "detail": {},
+      "timestamp": "2026-11-07T00:23:56.435Z"
+    },
+    {
+      "name": "NO_MESSAGE_EXPLICIT_ON_SUBMITTED",
+      "passed": true,
+      "detail": {
+        "before": 1,
+        "after": 2
+      },
+      "timestamp": "2026-11-07T00:23:56.437Z"
+    },
+    {
+      "name": "MANUAL_MODE_CAMPAIGN_LAUNCHED",
+      "passed": true,
+      "detail": {},
+      "timestamp": "2026-11-07T00:23:57.437Z"
+    },
+    {
+      "name": "MANUAL_HOLD_PANEL_RENDERED",
+      "passed": true,
+      "detail": {
+        "exists": true,
+        "mode": "MANUAL",
+        "hasRegisterBtn": true,
+        "nameVal": "CleanTester ValUser",
+        "emailVal": "cleanroom@example.com",
+        "msgVal": "Clean-room package verification inquiry message."
+      },
+      "timestamp": "2026-11-07T00:24:11.360Z"
+    },
+    {
+      "name": "MANUAL_MODE_ZERO_PRE_SUBMISSION",
+      "passed": true,
+      "detail": {},
+      "timestamp": "2026-11-07T00:24:11.362Z"
+    },
+    {
+      "name": "MANUAL_MODE_CAMPAIGN_SETTLED",
+      "passed": true,
+      "detail": {},
+      "timestamp": "2026-11-07T00:24:12.575Z"
+    },
+    {
+      "name": "MANUAL_MODE_OPERATOR_SUBMITTED",
+      "passed": true,
+      "detail": {
+        "before": 2,
+        "after": 3
+      },
+      "timestamp": "2026-11-07T00:24:12.576Z"
+    },
+    {
+      "name": "STOP_SAVE_CHECKPOINT_SAVED",
+      "passed": true,
+      "detail": {
+        "hasCheckpoint": true,
+        "isPaused": true
+      },
+      "timestamp": "2026-11-07T00:24:17.245Z"
+    },
+    {
+      "name": "SERVICE_WORKER_CRASH_AND_RESTORE",
+      "passed": true,
+      "detail": {
+        "checkpoint": {
+          "campaignMode": "AUTO",
+          "campaignRunId": "normal_run_1794011053111_p0uvb3",
+          "counters": {
+            "captchaFailed": 0,
+            "captchaSolved": 0,
+            "completed": 0,
+            "deliveryUnknown": 0,
+            "failed": 0,
+            "failureBreakdown": {},
+            "inProgress": 0,
+            "paused": 0,
+            "remaining": 3,
+            "skipped": 0,
+            "skippedHistory": 0,
+            "success": 0,
+            "timeout": 0,
+            "total": 3
+          },
+          "delayMs": 10000,
+          "fillDelayMs": 300,
+          "includeFormsWithoutMessage": false,
+          "outcomeHistogram": {},
+          "ownerFunctionTestMode": false,
+          "pausedAt": 1794011055738,
+          "pausedByOperator": true,
+          "remainingQueue": [
+            "http://127.0.0.1:8088/contact-standard.html",
+            "http://127.0.0.1:8088/contact-standard.html?q=2",
+            "http://127.0.0.1:8088/contact-standard.html?q=3"
+          ],
+          "restorationLogged": true,
+          "runScopedDirectPrivacy": true,
+          "sessionId": 5,
+          "submitDelayMs": 4000,
+          "successCount": 0,
+          "successfulUrls": [],
+          "targetTimeoutMs": 180000,
+          "template": {
+            "email": "cleanroom@example.com",
+            "firstName": "CleanTester",
+            "id": "default",
+            "includeFormsWithoutMessage": false,
+            "lastName": "ValUser",
+            "message": "Clean-room package verification inquiry message.",
+            "name": "CleanTester ValUser",
+            "ownerAuthorizedConsent": false,
+            "phone": "555-0199",
+            "subject": "",
+            "templateId": "default",
+            "templateVersion": 1,
+            "version": 1,
+            "website": ""
+          },
+          "templateId": "default",
+          "templateVersion": 1,
+          "totalTargets": 3,
+          "visitedUrls": []
+        },
+        "isPaused": true,
+        "swMode": "AUTO"
+      },
+      "timestamp": "2026-11-07T00:24:20.775Z"
+    }
+  ],
+  "screenshots": [
+    "shot_clean_room_01_popup_visible_controls.png",
+    "shot_clean_room_02_auto_submission.png",
+    "shot_clean_room_03_no_message_optin.png",
+    "shot_clean_room_04_manual_assist_unpacked.png",
+    "shot_clean_room_05_sw_crash_restore_unpacked.png"
+  ]
+}

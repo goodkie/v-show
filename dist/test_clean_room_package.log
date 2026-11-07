@@ -1,0 +1,54 @@
+[2026-11-07T00:22:58.190Z] ================================================================================
+[2026-11-07T00:22:58.192Z] 🚀 RUNNING XPIDER V7 CLEAN-ROOM PACKAGE CHROMIUM E2E SUITE
+[2026-11-07T00:22:58.192Z] ================================================================================
+[2026-11-07T00:22:58.302Z] Test server active on port 8088, submissions reset to 0
+[2026-11-07T00:22:58.302Z] Clean-room profile: C:\Users\oPus\AppData\Local\Temp\xpider-clean-room-k0czvq
+[2026-11-07T00:22:58.302Z] Package extension directory: E:\vivpr\ai\extension-form-sender\dist\clean_room_unpacked_v7
+[2026-11-07T00:23:00.839Z] Clean-room Extension ID: ldlijlaccfeelfdhgnjbibniocefckjj
+[2026-11-07T00:23:00.839Z] [ASSERTION] CLEAN_ROOM_EXTENSION_LOADED => PASS {"extId":"ldlijlaccfeelfdhgnjbibniocefckjj","swUrl":"chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/background.js"}
+[2026-11-07T00:23:02.480Z] [ASSERTION] START_BUTTON_RENDERED_AND_VISIBLE => PASS {"startBtnPresent":true,"startBtnVisible":true,"semiBtnPresent":true,"manualBtnPresent":true,"noMsgCbPresent":true,"noMsgCbVisible":true,"noMsgCbChecked":false,"stopSaveBtnPresent":true,"pauseBtnPresent":true}
+[2026-11-07T00:23:02.481Z] [ASSERTION] NO_MESSAGE_CHECKBOX_DEFAULT_OFF => PASS {"startBtnPresent":true,"startBtnVisible":true,"semiBtnPresent":true,"manualBtnPresent":true,"noMsgCbPresent":true,"noMsgCbVisible":true,"noMsgCbChecked":false,"stopSaveBtnPresent":true,"pauseBtnPresent":true}
+[2026-11-07T00:23:02.481Z] [ASSERTION] START_MODES_BUTTONS_RENDERED => PASS {"startBtnPresent":true,"startBtnVisible":true,"semiBtnPresent":true,"manualBtnPresent":true,"noMsgCbPresent":true,"noMsgCbVisible":true,"noMsgCbChecked":false,"stopSaveBtnPresent":true,"pauseBtnPresent":true}
+[2026-11-07T00:23:02.481Z] [ASSERTION] STOP_SAVE_BTN_PRESENT => PASS {"startBtnPresent":true,"startBtnVisible":true,"semiBtnPresent":true,"manualBtnPresent":true,"noMsgCbPresent":true,"noMsgCbVisible":true,"noMsgCbChecked":false,"stopSaveBtnPresent":true,"pauseBtnPresent":true}
+[2026-11-07T00:23:02.676Z] 📸 Captured screenshot: shot_clean_room_01_popup_visible_controls.png
+[2026-11-07T00:23:02.676Z] 
+--- SUBTEST 1: AUTO MODE Autonomous Form Submission ---
+[2026-11-07T00:23:03.476Z] Campaign successfully active: mode=AUTO runId=normal_run_1794010982834_tnwk1b
+[2026-11-07T00:23:03.476Z] [ASSERTION] AUTO_MODE_CAMPAIGN_ACTIVE => PASS {}
+[2026-11-07T00:23:27.420Z] Auto campaign settled at T+23.0s: successCount=1
+[2026-11-07T00:23:27.421Z] [ASSERTION] AUTO_MODE_CAMPAIGN_SETTLED => PASS {}
+[2026-11-07T00:23:27.424Z] [ASSERTION] AUTO_MODE_SUBMISSION_RECORDED => PASS {"expected":1,"actual":1}
+[2026-11-07T00:23:27.565Z] 📸 Captured screenshot: shot_clean_room_02_auto_submission.png
+[2026-11-07T00:23:27.565Z] 
+--- SUBTEST 2: Message-less Newsletter Form Behavior ---
+[2026-11-07T00:23:27.925Z] Campaign successfully active: mode=AUTO runId=normal_run_1794011007579_ibn6ox
+[2026-11-07T00:23:27.925Z] [ASSERTION] NO_MESSAGE_DEFAULT_OFF_LAUNCHED => PASS {}
+[2026-11-07T00:23:38.167Z] [ASSERTION] NO_MESSAGE_DEFAULT_OFF_SETTLED => PASS {}
+[2026-11-07T00:23:38.170Z] [ASSERTION] NO_MESSAGE_DEFAULT_OFF_SKIPPED => PASS {"subCountAfterAuto":1,"subCountAfterDefaultOff":1}
+[2026-11-07T00:23:38.511Z] Campaign successfully active: mode=AUTO runId=normal_run_1794011018188_fzj912
+[2026-11-07T00:23:38.511Z] [ASSERTION] NO_MESSAGE_EXPLICIT_ON_LAUNCHED => PASS {}
+[2026-11-07T00:23:56.435Z] [ASSERTION] NO_MESSAGE_EXPLICIT_ON_SETTLED => PASS {}
+[2026-11-07T00:23:56.437Z] [ASSERTION] NO_MESSAGE_EXPLICIT_ON_SUBMITTED => PASS {"before":1,"after":2}
+[2026-11-07T00:23:56.580Z] 📸 Captured screenshot: shot_clean_room_03_no_message_optin.png
+[2026-11-07T00:23:56.581Z] 
+--- SUBTEST 3: MANUAL MODE Pre-Submission Assist Card ---
+[2026-11-07T00:23:57.437Z] Campaign successfully active: mode=MANUAL runId=normal_run_1794011037105_b2dr9p
+[2026-11-07T00:23:57.437Z] [ASSERTION] MANUAL_MODE_CAMPAIGN_LAUNCHED => PASS {}
+[2026-11-07T00:24:11.360Z] Held tab verified: mode=MANUAL name="CleanTester ValUser" email="cleanroom@example.com"
+[2026-11-07T00:24:11.360Z] [ASSERTION] MANUAL_HOLD_PANEL_RENDERED => PASS {"exists":true,"mode":"MANUAL","hasRegisterBtn":true,"nameVal":"CleanTester ValUser","emailVal":"cleanroom@example.com","msgVal":"Clean-room package verification inquiry message."}
+[2026-11-07T00:24:11.362Z] [ASSERTION] MANUAL_MODE_ZERO_PRE_SUBMISSION => PASS {}
+[2026-11-07T00:24:11.447Z] 📸 Captured screenshot: shot_clean_room_04_manual_assist_unpacked.png
+[2026-11-07T00:24:11.448Z] Submitting form on page as human operator...
+[2026-11-07T00:24:12.057Z] Confirming manual registration by clicking #xpider-manual-registered-btn...
+[2026-11-07T00:24:12.575Z] [ASSERTION] MANUAL_MODE_CAMPAIGN_SETTLED => PASS {}
+[2026-11-07T00:24:12.577Z] [ASSERTION] MANUAL_MODE_OPERATOR_SUBMITTED => PASS {"before":2,"after":3}
+[2026-11-07T00:24:13.089Z] 
+--- SUBTEST 4: Stop & Save and Service Worker Crash Restoration ---
+[2026-11-07T00:24:13.414Z] Campaign successfully active: mode=AUTO runId=normal_run_1794011053111_p0uvb3
+[2026-11-07T00:24:17.245Z] [ASSERTION] STOP_SAVE_CHECKPOINT_SAVED => PASS {"hasCheckpoint":true,"isPaused":true}
+[2026-11-07T00:24:17.245Z] Forcibly terminating Service Worker via CDP Target.closeTarget...
+[2026-11-07T00:24:18.749Z] Waking up fresh Service Worker...
+[2026-11-07T00:24:20.775Z] [ASSERTION] SERVICE_WORKER_CRASH_AND_RESTORE => PASS {"checkpoint":{"campaignMode":"AUTO","campaignRunId":"normal_run_1794011053111_p0uvb3","counters":{"captchaFailed":0,"captchaSolved":0,"completed":0,"deliveryUnknown":0,"failed":0,"failureBreakdown":{},"inProgress":0,"paused":0,"remaining":3,"skipped":0,"skippedHistory":0,"success":0,"timeout":0,"total":3},"delayMs":10000,"fillDelayMs":300,"includeFormsWithoutMessage":false,"outcomeHistogram":{},"ownerFunctionTestMode":false,"pausedAt":1794011055738,"pausedByOperator":true,"remainingQueue":["http://127.0.0.1:8088/contact-standard.html","http://127.0.0.1:8088/contact-standard.html?q=2","http://127.0.0.1:8088/contact-standard.html?q=3"],"restorationLogged":true,"runScopedDirectPrivacy":true,"sessionId":5,"submitDelayMs":4000,"successCount":0,"successfulUrls":[],"targetTimeoutMs":180000,"template":{"email":"cleanroom@example.com","firstName":"CleanTester","id":"default","includeFormsWithoutMessage":false,"lastName":"ValUser","message":"Clean-room package verification inquiry message.","name":"CleanTester ValUser","ownerAuthorizedConsent":false,"phone":"555-0199","subject":"","templateId":"default","templateVersion":1,"version":1,"website":""},"templateId":"default","templateVersion":1,"totalTargets":3,"visitedUrls":[]},"isPaused":true,"swMode":"AUTO"}
+[2026-11-07T00:24:20.911Z] 📸 Captured screenshot: shot_clean_room_05_sw_crash_restore_unpacked.png
+[2026-11-07T00:24:20.926Z] 
+================================================================================
