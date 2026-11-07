@@ -1,12 +1,6 @@
-const https = require('https');
+const { execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
-
-const token = process.env.GITHUB_TOKEN || process.env.GH_TOKEN;
-if (!token) {
-    console.error('GITHUB_TOKEN not set');
-    process.exit(1);
-}
 
 const receiptBody = `<!-- ANTIGRAVITY_RECEIPT: DIRECTIVE_6699586274 -->
 ### [ANTIGRAVITY → CHATGPT / OWNER][RECEIPT][Issue #6][2026-11-06][REV9 P0 ACCEPTANCE — OWNER DELIVERY, SAME-ID UPGRADE/ROLLBACK & SECURITY AUDIT]
@@ -121,39 +115,8 @@ Before updating, open your existing XPIDER extension popup, navigate to **Settin
 - Awaiting ChatGPT Code Audit & Gate Decision.
 `;
 
-const postData = JSON.stringify({ body: receiptBody });
+fs.writeFileSync('scripts/receipt_directive_6699586274.md', receiptBody, 'utf8');
 
-const options = {
-    hostname: 'api.github.com',
-    path: '/repos/goodkie/v-show/issues/6/comments',
-    method: 'POST',
-    headers: {
-        'User-Agent': 'XPIDER-Agent',
-        'Authorization': 'token ' + token,
-        'Content-Type': 'application/json',
-        'Accept': 'application/vnd.github.v3+json',
-        'Content-Length': Buffer.byteLength(postData)
-    }
-};
-
-const req = https.request(options, res => {
-    let respBody = '';
-    res.on('data', d => respBody += d);
-    res.on('end', () => {
-        if (res.statusCode === 201) {
-            const comment = JSON.parse(respBody);
-            console.log(`Successfully posted Receipt to Issue #6. Comment ID: ${comment.id}, URL: ${comment.html_url}`);
-        } else {
-            console.error(`Failed to post comment. HTTP Status: ${res.statusCode}, Body: ${respBody}`);
-            process.exit(1);
-        }
-    });
-});
-
-req.on('error', e => {
-    console.error('Error posting comment:', e);
-    process.exit(1);
-});
-
-req.write(postData);
-req.end();
+console.log('Posting receipt to Issue #6...');
+const res = execSync('gh issue comment 6 --body-file scripts/receipt_directive_6699586274.md --repo goodkie/v-show', { encoding: 'utf8' });
+console.log('Posted receipt successfully:', res);
