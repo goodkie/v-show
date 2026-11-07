@@ -15,11 +15,13 @@
 
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 const assert = require('assert');
 const { spawn } = require('child_process');
 
 const PORT = 8088;
 const CDP_PORT = 9227;
+const ZIP_PATH = path.resolve(__dirname, '..', 'dist', 'XPIDER_V7.0.0_CANDIDATE_P0_REV9_OWNER_SAFE.zip');
 const PKG_EXT_DIR = path.resolve(__dirname, '..', 'dist', 'clean_room_unpacked_v7');
 const EVIDENCE_DIR = path.resolve(__dirname, '..', 'dist', 'evidence_clean_room');
 const REPORT_FILE = path.resolve(__dirname, '..', 'dist', 'report_clean_room_package_suite.json');
@@ -124,8 +126,15 @@ async function main() {
     let popupWs = null;
     let swWs = null;
 
+    const zipBytes = fs.readFileSync(ZIP_PATH);
+    const actualZipSha256 = crypto.createHash('sha256').update(zipBytes).digest('hex');
+    const actualZipBytes = zipBytes.length;
+
     const report = {
         testSuite: 'XPIDER_V7_CLEAN_ROOM_PACKAGE_SUITE',
+        archiveFile: path.basename(ZIP_PATH),
+        archiveByteSize: actualZipBytes,
+        archiveSha256: actualZipSha256,
         packageExtensionDir: PKG_EXT_DIR,
         startTimeUtc,
         endTimeUtc: null,
@@ -142,6 +151,12 @@ async function main() {
     }
 
     try {
+        recordAssertion('PACKAGE_ARCHIVE_SHA256_VERIFIED', actualZipSha256 === 'b3f39bec4ab0711bbe348614be6bbd1f8d0657987059ec7cd3538565c2c0227e', {
+            archive: path.basename(ZIP_PATH),
+            sha256: actualZipSha256,
+            byteSize: actualZipBytes
+        });
+
         await sleep(2500);
 
         // Fetch browser WebSocket & Service Worker

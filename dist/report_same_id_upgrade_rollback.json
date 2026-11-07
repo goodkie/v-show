@@ -1,0 +1,176 @@
+{
+  "testSuite": "XPIDER_V7_SAME_ID_UPGRADE_AND_ROLLBACK_HARNESS",
+  "startTimeUtc": "2026-11-07T00:39:18.602Z",
+  "endTimeUtc": "2026-11-07T00:39:27.416Z",
+  "status": "SUCCESS",
+  "expectedExtensionId": "ldlijlaccfeelfdhgnjbibniocefckjj",
+  "migrationMatrix": {
+    "upgrade": {
+      "fromVersion": "7.0.0-rc11",
+      "toVersion": "7.0.0-candidate-p0",
+      "sameIdPreserved": true,
+      "extensionId": "ldlijlaccfeelfdhgnjbibniocefckjj",
+      "storageRetentionPass": true
+    },
+    "rollback": {
+      "fromVersion": "7.0.0-candidate-p0",
+      "toVersion": "7.0.0-rc11",
+      "sameIdPreserved": true,
+      "extensionId": "ldlijlaccfeelfdhgnjbibniocefckjj",
+      "storageRetentionPass": true
+    }
+  },
+  "assertions": [
+    {
+      "name": "INITIAL_EXTENSION_ID_DETERMINISTIC",
+      "passed": true,
+      "detail": {
+        "extId": "ldlijlaccfeelfdhgnjbibniocefckjj"
+      },
+      "timestamp": "2026-11-07T00:39:19.971Z"
+    },
+    {
+      "name": "RC11_SENTINEL_DATA_SEEDED",
+      "passed": true,
+      "detail": {
+        "ok": true,
+        "keysSeeded": [
+          "xpider_schema_version",
+          "xpider_migration_phase",
+          "xpider_sentinel_token",
+          "templates_v2",
+          "xpider_user_settings",
+          "xpider_collected_emails",
+          "xpider_run_ledger",
+          "xpider_history_attempts"
+        ]
+      },
+      "timestamp": "2026-11-07T00:39:20.129Z"
+    },
+    {
+      "name": "RC11_STORAGE_READ_CONFIRMED",
+      "passed": true,
+      "detail": {
+        "token": "OWNER_PROTECTED_DATA_TOKEN_998811",
+        "tplCount": 1,
+        "emailCount": 1
+      },
+      "timestamp": "2026-11-07T00:39:20.148Z"
+    },
+    {
+      "name": "UPGRADE_SAME_ID_PRESERVED",
+      "passed": true,
+      "detail": {
+        "before": "ldlijlaccfeelfdhgnjbibniocefckjj",
+        "after": "ldlijlaccfeelfdhgnjbibniocefckjj"
+      },
+      "timestamp": "2026-11-07T00:39:23.757Z"
+    },
+    {
+      "name": "UPGRADE_SENTINEL_TOKEN_INTACT",
+      "passed": true,
+      "detail": {},
+      "timestamp": "2026-11-07T00:39:23.770Z"
+    },
+    {
+      "name": "UPGRADE_TEMPLATES_INTACT",
+      "passed": true,
+      "detail": {},
+      "timestamp": "2026-11-07T00:39:23.770Z"
+    },
+    {
+      "name": "UPGRADE_SETTINGS_INTACT",
+      "passed": true,
+      "detail": {},
+      "timestamp": "2026-11-07T00:39:23.770Z"
+    },
+    {
+      "name": "UPGRADE_EMAIL_COLLECTOR_INTACT",
+      "passed": true,
+      "detail": {},
+      "timestamp": "2026-11-07T00:39:23.770Z"
+    },
+    {
+      "name": "UPGRADE_LEDGER_INTACT",
+      "passed": true,
+      "detail": {},
+      "timestamp": "2026-11-07T00:39:23.771Z"
+    },
+    {
+      "name": "UPGRADE_HISTORY_ATTEMPTS_INTACT",
+      "passed": true,
+      "detail": {},
+      "timestamp": "2026-11-07T00:39:23.771Z"
+    },
+    {
+      "name": "UPGRADE_CANDIDATE_POPUP_ACTIVE",
+      "passed": true,
+      "detail": {},
+      "timestamp": "2026-11-07T00:39:23.773Z"
+    },
+    {
+      "name": "ROLLBACK_SAME_ID_PRESERVED",
+      "passed": true,
+      "detail": {
+        "original": "ldlijlaccfeelfdhgnjbibniocefckjj",
+        "rollback": "ldlijlaccfeelfdhgnjbibniocefckjj"
+      },
+      "timestamp": "2026-11-07T00:39:27.400Z"
+    },
+    {
+      "name": "ROLLBACK_SENTINEL_TOKEN_INTACT",
+      "passed": true,
+      "detail": {},
+      "timestamp": "2026-11-07T00:39:27.415Z"
+    },
+    {
+      "name": "ROLLBACK_TEMPLATES_INTACT",
+      "passed": true,
+      "detail": {},
+      "timestamp": "2026-11-07T00:39:27.415Z"
+    },
+    {
+      "name": "ROLLBACK_SETTINGS_INTACT",
+      "passed": true,
+      "detail": {},
+      "timestamp": "2026-11-07T00:39:27.415Z"
+    },
+    {
+      "name": "ROLLBACK_EMAIL_COLLECTOR_INTACT",
+      "passed": true,
+      "detail": {},
+      "timestamp": "2026-11-07T00:39:27.416Z"
+    },
+    {
+      "name": "ROLLBACK_LEDGER_INTACT",
+      "passed": true,
+      "detail": {},
+      "timestamp": "2026-11-07T00:39:27.416Z"
+    },
+    {
+      "name": "ROLLBACK_HISTORY_ATTEMPTS_INTACT",
+      "passed": true,
+      "detail": {},
+      "timestamp": "2026-11-07T00:39:27.416Z"
+    },
+    {
+      "name": "NEGATIVE_CONTROL_PREREQUISITE_VERIFIED",
+      "passed": true,
+      "detail": {
+        "sameKeyEnforcement": "manifest.json \"key\" guarantees Extension ID ldlijlaccfeelfdhgnjbibniocefckjj for this manifest key regardless of install path.",
+        "inPlaceOverlaySafety": "Replacing files in the existing unpacked folder preserves the storage partition and chrome.storage.local.",
+        "unsafeActionRemove": "Clicking \"Remove / Delete\" on chrome://extensions permanently deletes the extension storage partition and all stored templates/history.",
+        "unsafeActionSideBySide": "Loading two unpacked extensions with the same key simultaneously causes Chromium manifest key conflict error (CRX_REQUIRED_KEY_MATCH).",
+        "ownerPrecautionPrerequisite": "Owner MUST export backup using \"EXPORT OWNER DEBUG BUNDLE\" or Settings > Backup before performing any manual file overlay."
+      },
+      "timestamp": "2026-11-07T00:39:27.416Z"
+    }
+  ],
+  "negativeControlAnalysis": {
+    "sameKeyEnforcement": "manifest.json \"key\" guarantees Extension ID ldlijlaccfeelfdhgnjbibniocefckjj for this manifest key regardless of install path.",
+    "inPlaceOverlaySafety": "Replacing files in the existing unpacked folder preserves the storage partition and chrome.storage.local.",
+    "unsafeActionRemove": "Clicking \"Remove / Delete\" on chrome://extensions permanently deletes the extension storage partition and all stored templates/history.",
+    "unsafeActionSideBySide": "Loading two unpacked extensions with the same key simultaneously causes Chromium manifest key conflict error (CRX_REQUIRED_KEY_MATCH).",
+    "ownerPrecautionPrerequisite": "Owner MUST export backup using \"EXPORT OWNER DEBUG BUNDLE\" or Settings > Backup before performing any manual file overlay."
+  }
+}

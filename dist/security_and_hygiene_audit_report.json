@@ -1,0 +1,88 @@
+{
+  "auditSuite": "XPIDER_V7_SECURITY_HYGIENE_AND_PATH_TRAVERSAL_AUDIT",
+  "auditedAtUtc": "2026-11-07T00:31:55.329Z",
+  "zipFile": "XPIDER_V7.0.0_CANDIDATE_P0_REV9_OWNER_SAFE.zip",
+  "zipSize": 4467833,
+  "zipSha256": "b3f39bec4ab0711bbe348614be6bbd1f8d0657987059ec7cd3538565c2c0227e",
+  "totalEntries": 50,
+  "zipSlipViolations": 0,
+  "forbiddenExtViolations": 0,
+  "sensitiveFileViolations": 0,
+  "activeSolverEndpointViolations": 0,
+  "manifestVersion": 3,
+  "extensionVersion": "7.0.0",
+  "deterministicExtensionId": "ldlijlaccfeelfdhgnjbibniocefckjj",
+  "manifestPermissionsAudit": [
+    {
+      "permission": "storage",
+      "justification": "Persists templates, user settings, campaign checkpoints, and 7-bucket ledger locally.",
+      "status": "JUSTIFIED_AND_SCOPED"
+    },
+    {
+      "permission": "tabs",
+      "justification": "Navigates and manages lead inquiry form target tabs during campaign runs.",
+      "status": "JUSTIFIED_AND_SCOPED"
+    },
+    {
+      "permission": "scripting",
+      "justification": "Injects content scripts and form detection bridge into target web pages.",
+      "status": "JUSTIFIED_AND_SCOPED"
+    },
+    {
+      "permission": "activeTab",
+      "justification": "Allows interaction with the currently active form tab.",
+      "status": "JUSTIFIED_AND_SCOPED"
+    },
+    {
+      "permission": "sidePanel",
+      "justification": "Hosts the XPIDER user interface in the persistent Chrome side panel.",
+      "status": "JUSTIFIED_AND_SCOPED"
+    },
+    {
+      "permission": "alarms",
+      "justification": "Manages bounded watchdog timers for form submission and heartbeat recovery.",
+      "status": "JUSTIFIED_AND_SCOPED"
+    },
+    {
+      "permission": "downloads",
+      "justification": "Exports CSV reports and diagnostic debug bundles for the owner.",
+      "status": "JUSTIFIED_AND_SCOPED"
+    },
+    {
+      "permission": "debugger",
+      "justification": "CDP instrumentation for automated verification and advanced form inspection.",
+      "status": "JUSTIFIED_AND_SCOPED"
+    },
+    {
+      "permission": "privacy",
+      "justification": "Controls residential proxy routing and enforces Privacy Gate fail-closed.",
+      "status": "JUSTIFIED_AND_SCOPED"
+    },
+    {
+      "permission": "proxy",
+      "justification": "Configures authenticated proxy routing rules for residential egress.",
+      "status": "JUSTIFIED_AND_SCOPED"
+    },
+    {
+      "permission": "webRequest",
+      "justification": "Intercepts network requests to monitor for proxy authentication.",
+      "status": "JUSTIFIED_AND_SCOPED"
+    },
+    {
+      "permission": "webRequestAuthProvider",
+      "justification": "Provides credentials to the local Privacy Relay proxy tunnel.",
+      "status": "JUSTIFIED_AND_SCOPED"
+    },
+    {
+      "permission": "nativeMessaging",
+      "justification": "Communicates with the local Privacy Relay companion service host.",
+      "status": "JUSTIFIED_AND_SCOPED"
+    },
+    {
+      "permission": "declarativeNetRequest",
+      "justification": "Blocks tracking pixels and prevents external leaks during local test runs.",
+      "status": "JUSTIFIED_AND_SCOPED"
+    }
+  ],
+  "status": "ALL_CHECKS_PASSED"
+}

@@ -1,10 +1,23 @@
 {
   "testSuite": "XPIDER_V7_CLEAN_ROOM_PACKAGE_SUITE",
+  "archiveFile": "XPIDER_V7.0.0_CANDIDATE_P0_REV9_OWNER_SAFE.zip",
+  "archiveByteSize": 4467833,
+  "archiveSha256": "b3f39bec4ab0711bbe348614be6bbd1f8d0657987059ec7cd3538565c2c0227e",
   "packageExtensionDir": "E:\\vivpr\\ai\\extension-form-sender\\dist\\clean_room_unpacked_v7",
-  "startTimeUtc": "2026-11-07T00:22:58.192Z",
-  "endTimeUtc": "2026-11-07T00:24:20.917Z",
+  "startTimeUtc": "2026-11-07T00:40:42.858Z",
+  "endTimeUtc": "2026-11-07T00:42:05.537Z",
   "status": "SUCCESS",
   "assertions": [
+    {
+      "name": "PACKAGE_ARCHIVE_SHA256_VERIFIED",
+      "passed": true,
+      "detail": {
+        "archive": "XPIDER_V7.0.0_CANDIDATE_P0_REV9_OWNER_SAFE.zip",
+        "sha256": "b3f39bec4ab0711bbe348614be6bbd1f8d0657987059ec7cd3538565c2c0227e",
+        "byteSize": 4467833
+      },
+      "timestamp": "2026-11-07T00:40:43.004Z"
+    },
     {
       "name": "CLEAN_ROOM_EXTENSION_LOADED",
       "passed": true,
@@ -12,7 +25,7 @@
         "extId": "ldlijlaccfeelfdhgnjbibniocefckjj",
         "swUrl": "chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/background.js"
       },
-      "timestamp": "2026-11-07T00:23:00.839Z"
+      "timestamp": "2026-11-07T00:40:45.532Z"
     },
     {
       "name": "START_BUTTON_RENDERED_AND_VISIBLE",
@@ -28,7 +41,7 @@
         "stopSaveBtnPresent": true,
         "pauseBtnPresent": true
       },
-      "timestamp": "2026-11-07T00:23:02.480Z"
+      "timestamp": "2026-11-07T00:40:47.756Z"
     },
     {
       "name": "NO_MESSAGE_CHECKBOX_DEFAULT_OFF",
@@ -44,7 +57,7 @@
         "stopSaveBtnPresent": true,
         "pauseBtnPresent": true
       },
-      "timestamp": "2026-11-07T00:23:02.481Z"
+      "timestamp": "2026-11-07T00:40:47.756Z"
     },
     {
       "name": "START_MODES_BUTTONS_RENDERED",
@@ -60,7 +73,7 @@
         "stopSaveBtnPresent": true,
         "pauseBtnPresent": true
       },
-      "timestamp": "2026-11-07T00:23:02.481Z"
+      "timestamp": "2026-11-07T00:40:47.756Z"
     },
     {
       "name": "STOP_SAVE_BTN_PRESENT",
@@ -76,19 +89,19 @@
         "stopSaveBtnPresent": true,
         "pauseBtnPresent": true
       },
-      "timestamp": "2026-11-07T00:23:02.481Z"
+      "timestamp": "2026-11-07T00:40:47.756Z"
     },
     {
       "name": "AUTO_MODE_CAMPAIGN_ACTIVE",
       "passed": true,
       "detail": {},
-      "timestamp": "2026-11-07T00:23:03.476Z"
+      "timestamp": "2026-11-07T00:40:48.307Z"
     },
     {
       "name": "AUTO_MODE_CAMPAIGN_SETTLED",
       "passed": true,
       "detail": {},
-      "timestamp": "2026-11-07T00:23:27.421Z"
+      "timestamp": "2026-11-07T00:41:11.682Z"
     },
     {
       "name": "AUTO_MODE_SUBMISSION_RECORDED",
@@ -97,19 +110,19 @@
         "expected": 1,
         "actual": 1
       },
-      "timestamp": "2026-11-07T00:23:27.424Z"
+      "timestamp": "2026-11-07T00:41:11.685Z"
     },
     {
       "name": "NO_MESSAGE_DEFAULT_OFF_LAUNCHED",
       "passed": true,
       "detail": {},
-      "timestamp": "2026-11-07T00:23:27.925Z"
+      "timestamp": "2026-11-07T00:41:12.164Z"
     },
     {
       "name": "NO_MESSAGE_DEFAULT_OFF_SETTLED",
       "passed": true,
       "detail": {},
-      "timestamp": "2026-11-07T00:23:38.167Z"
+      "timestamp": "2026-11-07T00:41:22.414Z"
     },
     {
       "name": "NO_MESSAGE_DEFAULT_OFF_SKIPPED",
@@ -118,19 +131,19 @@
         "subCountAfterAuto": 1,
         "subCountAfterDefaultOff": 1
       },
-      "timestamp": "2026-11-07T00:23:38.170Z"
+      "timestamp": "2026-11-07T00:41:22.417Z"
     },
     {
       "name": "NO_MESSAGE_EXPLICIT_ON_LAUNCHED",
       "passed": true,
       "detail": {},
-      "timestamp": "2026-11-07T00:23:38.511Z"
+      "timestamp": "2026-11-07T00:41:22.765Z"
     },
     {
       "name": "NO_MESSAGE_EXPLICIT_ON_SETTLED",
       "passed": true,
       "detail": {},
-      "timestamp": "2026-11-07T00:23:56.435Z"
+      "timestamp": "2026-11-07T00:41:40.609Z"
     },
     {
       "name": "NO_MESSAGE_EXPLICIT_ON_SUBMITTED",
@@ -139,13 +152,13 @@
         "before": 1,
         "after": 2
       },
-      "timestamp": "2026-11-07T00:23:56.437Z"
+      "timestamp": "2026-11-07T00:41:40.612Z"
     },
     {
       "name": "MANUAL_MODE_CAMPAIGN_LAUNCHED",
       "passed": true,
       "detail": {},
-      "timestamp": "2026-11-07T00:23:57.437Z"
+      "timestamp": "2026-11-07T00:41:41.615Z"
     },
     {
       "name": "MANUAL_HOLD_PANEL_RENDERED",
@@ -158,19 +171,19 @@
         "emailVal": "cleanroom@example.com",
         "msgVal": "Clean-room package verification inquiry message."
       },
-      "timestamp": "2026-11-07T00:24:11.360Z"
+      "timestamp": "2026-11-07T00:41:55.939Z"
     },
     {
       "name": "MANUAL_MODE_ZERO_PRE_SUBMISSION",
       "passed": true,
       "detail": {},
-      "timestamp": "2026-11-07T00:24:11.362Z"
+      "timestamp": "2026-11-07T00:41:55.941Z"
     },
     {
       "name": "MANUAL_MODE_CAMPAIGN_SETTLED",
       "passed": true,
       "detail": {},
-      "timestamp": "2026-11-07T00:24:12.575Z"
+      "timestamp": "2026-11-07T00:41:57.147Z"
     },
     {
       "name": "MANUAL_MODE_OPERATOR_SUBMITTED",
@@ -179,7 +192,7 @@
         "before": 2,
         "after": 3
       },
-      "timestamp": "2026-11-07T00:24:12.576Z"
+      "timestamp": "2026-11-07T00:41:57.149Z"
     },
     {
       "name": "STOP_SAVE_CHECKPOINT_SAVED",
@@ -188,7 +201,7 @@
         "hasCheckpoint": true,
         "isPaused": true
       },
-      "timestamp": "2026-11-07T00:24:17.245Z"
+      "timestamp": "2026-11-07T00:42:01.855Z"
     },
     {
       "name": "SERVICE_WORKER_CRASH_AND_RESTORE",
@@ -196,7 +209,7 @@
       "detail": {
         "checkpoint": {
           "campaignMode": "AUTO",
-          "campaignRunId": "normal_run_1794011053111_p0uvb3",
+          "campaignRunId": "normal_run_1794012117694_cfvp55",
           "counters": {
             "captchaFailed": 0,
             "captchaSolved": 0,
@@ -218,7 +231,7 @@
           "includeFormsWithoutMessage": false,
           "outcomeHistogram": {},
           "ownerFunctionTestMode": false,
-          "pausedAt": 1794011055738,
+          "pausedAt": 1794012120350,
           "pausedByOperator": true,
           "remainingQueue": [
             "http://127.0.0.1:8088/contact-standard.html",
@@ -256,7 +269,7 @@
         "isPaused": true,
         "swMode": "AUTO"
       },
-      "timestamp": "2026-11-07T00:24:20.775Z"
+      "timestamp": "2026-11-07T00:42:05.385Z"
     }
   ],
   "screenshots": [
