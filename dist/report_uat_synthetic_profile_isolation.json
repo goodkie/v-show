@@ -4,7 +4,7 @@
   "browserBinary": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
   "runtimeBrowserVersion": "Chrome/157.0.8103.38",
   "extensionId": "ldlijlaccfeelfdhgnjbibniocefckjj",
-  "startedAt": "2026-11-07T07:44:02.888Z",
+  "startedAt": "2026-11-07T08:25:28.997Z",
   "networkIsolationConfig": {
     "fixtureServer": "http://127.0.0.1:8088",
     "sinkProxyServer": "http://127.0.0.1:8090",
@@ -30,125 +30,149 @@
     "firewallProfileUnchangedGuaranteed": true,
     "uatChromeProcessCount": 14,
     "uatChromePids": [
-      27464,
-      18904,
-      4628,
+      19380,
       26804,
-      23376,
-      14448,
-      26788,
-      21428,
-      1700,
-      21572,
-      11536,
-      21084,
-      24760,
-      780
+      21660,
+      24584,
+      9184,
+      16192,
+      26532,
+      25264,
+      26420,
+      25948,
+      20348,
+      19744,
+      19124,
+      5408
     ],
     "observedTcpSocketsOnUatChromePids": [
       {
         "LocalAddress": "0.0.0.0",
-        "LocalPort": 63032,
+        "LocalPort": 63921,
         "RemoteAddress": "0.0.0.0",
         "RemotePort": 0,
         "State": 100,
-        "OwningProcess": 26804
+        "OwningProcess": 24584
       },
       {
         "LocalAddress": "0.0.0.0",
-        "LocalPort": 63031,
+        "LocalPort": 63918,
         "RemoteAddress": "0.0.0.0",
         "RemotePort": 0,
         "State": 100,
-        "OwningProcess": 26804
+        "OwningProcess": 24584
       },
       {
         "LocalAddress": "0.0.0.0",
-        "LocalPort": 63030,
+        "LocalPort": 63917,
         "RemoteAddress": "0.0.0.0",
         "RemotePort": 0,
         "State": 100,
-        "OwningProcess": 26804
+        "OwningProcess": 24584
       },
       {
         "LocalAddress": "0.0.0.0",
-        "LocalPort": 63029,
+        "LocalPort": 63916,
         "RemoteAddress": "0.0.0.0",
         "RemotePort": 0,
         "State": 100,
-        "OwningProcess": 26804
+        "OwningProcess": 24584
       },
       {
         "LocalAddress": "0.0.0.0",
-        "LocalPort": 62858,
+        "LocalPort": 63759,
         "RemoteAddress": "0.0.0.0",
         "RemotePort": 0,
         "State": 100,
-        "OwningProcess": 26804
+        "OwningProcess": 24584
       },
       {
         "LocalAddress": "0.0.0.0",
-        "LocalPort": 62857,
+        "LocalPort": 63758,
         "RemoteAddress": "0.0.0.0",
         "RemotePort": 0,
         "State": 100,
-        "OwningProcess": 26804
+        "OwningProcess": 24584
       },
       {
         "LocalAddress": "127.0.0.1",
-        "LocalPort": 63032,
+        "LocalPort": 63921,
         "RemoteAddress": "127.0.0.1",
         "RemotePort": 18989,
         "State": 5,
-        "OwningProcess": 26804
+        "OwningProcess": 24584
       },
       {
         "LocalAddress": "127.0.0.1",
-        "LocalPort": 63031,
+        "LocalPort": 63918,
         "RemoteAddress": "127.0.0.1",
         "RemotePort": 18989,
         "State": 5,
-        "OwningProcess": 26804
+        "OwningProcess": 24584
       },
       {
         "LocalAddress": "127.0.0.1",
-        "LocalPort": 63030,
+        "LocalPort": 63917,
         "RemoteAddress": "127.0.0.1",
         "RemotePort": 18989,
         "State": 5,
-        "OwningProcess": 26804
+        "OwningProcess": 24584
       },
       {
         "LocalAddress": "127.0.0.1",
-        "LocalPort": 63029,
+        "LocalPort": 63916,
         "RemoteAddress": "127.0.0.1",
         "RemotePort": 18989,
         "State": 5,
-        "OwningProcess": 26804
+        "OwningProcess": 24584
       },
       {
         "LocalAddress": "127.0.0.1",
-        "LocalPort": 62858,
+        "LocalPort": 63759,
         "RemoteAddress": "127.0.0.1",
         "RemotePort": 8088,
         "State": 5,
-        "OwningProcess": 26804
+        "OwningProcess": 24584
       },
       {
         "LocalAddress": "127.0.0.1",
-        "LocalPort": 62857,
+        "LocalPort": 63758,
         "RemoteAddress": "127.0.0.1",
         "RemotePort": 8088,
         "State": 5,
-        "OwningProcess": 26804
+        "OwningProcess": 24584
       },
       {
         "LocalAddress": "127.0.0.1",
         "LocalPort": 9246,
         "RemoteAddress": "127.0.0.1",
-        "RemotePort": 62984,
+        "RemotePort": 63773,
         "State": 5,
-        "OwningProcess": 27464
+        "OwningProcess": 19380
+      },
+      {
+        "LocalAddress": "127.0.0.1",
+        "LocalPort": 9246,
+        "RemoteAddress": "127.0.0.1",
+        "RemotePort": 63864,
+        "State": 5,
+        "OwningProcess": 19380
+      },
+      {
+        "LocalAddress": "127.0.0.1",
+        "LocalPort": 9246,
+        "RemoteAddress": "127.0.0.1",
+        "RemotePort": 63755,
+        "State": 5,
+        "OwningProcess": 19380
+      },
+      {
+        "LocalAddress": "127.0.0.1",
+        "LocalPort": 9246,
+        "RemoteAddress": "127.0.0.1",
+        "RemotePort": 63772,
+        "State": 5,
+        "OwningProcess": 19380
       },
       {
         "LocalAddress": "127.0.0.1",
@@ -156,31 +180,7 @@
         "RemoteAddress": "0.0.0.0",
         "RemotePort": 0,
         "State": 2,
-        "OwningProcess": 27464
-      },
-      {
-        "LocalAddress": "127.0.0.1",
-        "LocalPort": 9246,
-        "RemoteAddress": "127.0.0.1",
-        "RemotePort": 62883,
-        "State": 5,
-        "OwningProcess": 27464
-      },
-      {
-        "LocalAddress": "127.0.0.1",
-        "LocalPort": 9246,
-        "RemoteAddress": "127.0.0.1",
-        "RemotePort": 62852,
-        "State": 5,
-        "OwningProcess": 27464
-      },
-      {
-        "LocalAddress": "127.0.0.1",
-        "LocalPort": 9246,
-        "RemoteAddress": "127.0.0.1",
-        "RemotePort": 62881,
-        "State": 5,
-        "OwningProcess": 27464
+        "OwningProcess": 19380
       }
     ],
     "observedNonLoopbackTcpSocketsOnUatChromePids": 0,
@@ -466,10 +466,10 @@
   },
   "egressCounters": {
     "counterScope": "CONFIGURED_SINK_PROXY_AND_BROWSER_DNR_CDP_ONLY_NOT_OS_FIREWALL_CERTIFICATE",
-    "attemptedExternalRequests": 22,
+    "attemptedExternalRequests": 20,
     "blockedByBrowserDnrOrCdp": 10,
-    "blockedByLocalSinkFirewall": 12,
-    "blockedExternalRequests": 22,
+    "blockedByLocalSinkFirewall": 10,
+    "blockedExternalRequests": 20,
     "transmittedViaSinkProxy": 0,
     "transmittedExternalRequests": 0,
     "allowedLoopbackRequests": 3
@@ -995,10 +995,10 @@
       "detail": {
         "egressCounters": {
           "counterScope": "CONFIGURED_SINK_PROXY_AND_BROWSER_DNR_CDP_ONLY_NOT_OS_FIREWALL_CERTIFICATE",
-          "attemptedExternalRequests": 22,
+          "attemptedExternalRequests": 20,
           "blockedByBrowserDnrOrCdp": 10,
-          "blockedByLocalSinkFirewall": 12,
-          "blockedExternalRequests": 22,
+          "blockedByLocalSinkFirewall": 10,
+          "blockedExternalRequests": 20,
           "transmittedViaSinkProxy": 0,
           "transmittedExternalRequests": 0,
           "allowedLoopbackRequests": 3
@@ -1022,7 +1022,7 @@
           "extId": "ldlijlaccfeelfdhgnjbibniocefckjj",
           "fileCount": 2,
           "manifestSha256": "d1ffcf13d7b52b520226662376955db365d1c3abd87f6db27f9fd70e4a79a39b",
-          "backupSha256": "024728d0b09c18a55bc52941d5412cfb3ed7976838968e5b818c28e5a073c737"
+          "backupSha256": "9d391a8f1b7200e3c89757df323dbc96b208101894abe6c26cffefeae3b09a96"
         },
         "wrongPassCode": "WRONG_PASSPHRASE_OR_CORRUPT_BACKUP"
       }
@@ -1043,6 +1043,97 @@
         "rejectedCredCode": "SENSITIVE_CREDENTIALS_IN_UAT_PROFILE",
         "rejectedEmailCode": "NON_SYNTHETIC_EMAIL_IN_UAT_PROFILE"
       }
+    },
+    {
+      "name": "PREFLIGHT_UAT_REJECTS_MISSING_OR_GUESSED_PATHS",
+      "pass": true,
+      "detail": {
+        "noArgs": {
+          "result": "ABORTED",
+          "code": "MISSING_EXPLICIT_PATH",
+          "message": "preflight-uat requires explicit --target <EXT_DIR> and --profile-dir <PROFILE_DIR> (paths are never guessed)",
+          "rolledBack": false
+        },
+        "onlyTarget": {
+          "result": "ABORTED",
+          "code": "MISSING_EXPLICIT_PATH",
+          "message": "preflight-uat requires explicit --target <EXT_DIR> and --profile-dir <PROFILE_DIR> (paths are never guessed)",
+          "rolledBack": false
+        }
+      }
+    },
+    {
+      "name": "PREFLIGHT_UAT_DRY_RUN_VERIFIES_KIT_AND_REPORTS_OS_FIREWALL_BLOCKED",
+      "pass": true,
+      "detail": {
+        "mode": "DRY_RUN_PREFLIGHT_UAT",
+        "modifiedTarget": false,
+        "modifiedProfile": false,
+        "nodeOk": true,
+        "nodeVersion": "v24.11.1",
+        "platform": "win32",
+        "expectedExtensionId": "ldlijlaccfeelfdhgnjbibniocefckjj",
+        "extensionZipAloneIsCompleteKit": false,
+        "staticPreflightResult": "READY_FOR_SYNTHETIC_UAT",
+        "osFirewallIsolationStatus": "BLOCKED_NO_SAFE_ELEVATED_TEST_VM",
+        "explicitPathsVerified": {
+          "targetDir": "E:\\vivpr\\ai\\extension-form-sender\\dist\\clean_room_unpacked_v7",
+          "profileDir": "C:\\Users\\oPus\\AppData\\Local\\Temp\\xpider-uat-net-iso-z1IFyH\\sim_real_owner_profile",
+          "lesDir": "C:\\Users\\oPus\\AppData\\Local\\Temp\\xpider-uat-net-iso-z1IFyH\\sim_real_owner_profile\\Default\\Local Extension Settings\\ldlijlaccfeelfdhgnjbibniocefckjj",
+          "lesExists": true,
+          "lesFileCount": 2
+        },
+        "archiveAndIdVerification": {
+          "archivePath": "E:\\vivpr\\ai\\extension-form-sender\\dist\\XPIDER_V7.0.0_CANDIDATE_P0_REV9_OWNER_SAFE.zip",
+          "archiveSha256": "b3f39bec4ab0711bbe348614be6bbd1f8d0657987059ec7cd3538565c2c0227e",
+          "expectedId": "ldlijlaccfeelfdhgnjbibniocefckjj",
+          "PLAN_TOKEN": "e0620de6f6925365"
+        },
+        "localSinkFirewallPreflight": {
+          "result": "UAT_FIREWALL_VERIFIED_FAIL_CLOSED",
+          "fixtureHost": "127.0.0.1",
+          "fixturePort": 8088,
+          "sinkProxyHost": "127.0.0.1",
+          "sinkProxyPort": 8090,
+          "httpProbeBlocked403": true,
+          "connectProbeBlocked403": true,
+          "transmittedExternalRequests": 0
+        },
+        "localSinkFirewallStatus": {
+          "result": "UAT_FIREWALL_VERIFIED_FAIL_CLOSED",
+          "fixtureHost": "127.0.0.1",
+          "fixturePort": 8088,
+          "sinkProxyHost": "127.0.0.1",
+          "sinkProxyPort": 8090,
+          "httpProbeBlocked403": true,
+          "connectProbeBlocked403": true,
+          "transmittedExternalRequests": 0
+        },
+        "osFirewallBoundary": {
+          "isAdminElevated": false,
+          "netshShowAllProfilesExitCode": 0,
+          "osFirewallIsolationStatus": "BLOCKED_NO_SAFE_ELEVATED_TEST_VM",
+          "note": "OS-level default-deny firewall test is BLOCKED on non-elevated host (requires elevated isolated test VM); browser-sink preflight and static checks succeeded separately."
+        }
+      }
+    },
+    {
+      "name": "RESTORE_STORAGE_INTO_UAT_PROFILE_BLOCKED_BY_DEFAULT",
+      "pass": true,
+      "detail": {
+        "result": "ABORTED",
+        "code": "REAL_BACKUP_RESTORE_INTO_UAT_FORBIDDEN",
+        "message": "Refusing to restore an encrypted storage backup into a UAT profile directory without --allow-synthetic-uat-restore. Real owner backups (pre_v7.xpider-enc) are strictly offline and recovery-only.",
+        "rolledBack": false
+      }
+    },
+    {
+      "name": "OWNER_HANDOFF_MANIFEST_REV14_ALL_FILES_AND_HASHES_MATCH",
+      "pass": true,
+      "detail": {
+        "manifestPath": "dist/OWNER_HANDOFF_MANIFEST_REV14.json",
+        "fileCount": 13
+      }
     }
   ],
   "status": "SUCCESS",
@@ -1058,8 +1149,8 @@
   },
   "sinkFirewallSampleBlockedLog": [
     {
-      "id": "fw_blk_1794037450929_1",
-      "timestamp": 1794037450929,
+      "id": "fw_blk_1794039935857_1",
+      "timestamp": 1794039935857,
       "kind": "HTTP",
       "method": "POST",
       "target": "http://dummy-public-target.example.com/contact",
@@ -1068,8 +1159,8 @@
       "transmittedBytes": 0
     },
     {
-      "id": "fw_blk_1794037450934_2",
-      "timestamp": 1794037450934,
+      "id": "fw_blk_1794039935864_2",
+      "timestamp": 1794039935864,
       "kind": "CONNECT",
       "method": "CONNECT",
       "target": "dummy-public-target.example.com:443",
@@ -1078,8 +1169,8 @@
       "transmittedBytes": 0
     },
     {
-      "id": "fw_blk_1794037450964_3",
-      "timestamp": 1794037450964,
+      "id": "fw_blk_1794039935901_3",
+      "timestamp": 1794039935901,
       "kind": "HTTP",
       "method": "GET",
       "target": "http://198.51.100.42:8080/leak-check",
@@ -1088,8 +1179,8 @@
       "transmittedBytes": 0
     },
     {
-      "id": "fw_blk_1794037450968_4",
-      "timestamp": 1794037450968,
+      "id": "fw_blk_1794039935906_4",
+      "timestamp": 1794039935906,
       "kind": "HTTP",
       "method": "GET",
       "target": "http://[2001:db8::42]:8080/leak-check",
@@ -1098,8 +1189,8 @@
       "transmittedBytes": 0
     },
     {
-      "id": "fw_blk_1794037451013_5",
-      "timestamp": 1794037451013,
+      "id": "fw_blk_1794039935943_5",
+      "timestamp": 1794039935943,
       "kind": "HTTP",
       "method": "GET",
       "target": "http://198.51.100.42:8080/redirected-leak",
@@ -1108,8 +1199,8 @@
       "transmittedBytes": 0
     },
     {
-      "id": "fw_blk_1794037451182_6",
-      "timestamp": 1794037451182,
+      "id": "fw_blk_1794039936103_6",
+      "timestamp": 1794039936103,
       "kind": "CONNECT",
       "method": "CONNECT",
       "target": "198.51.100.42:8080",
@@ -1118,8 +1209,8 @@
       "transmittedBytes": 0
     },
     {
-      "id": "fw_blk_1794037451187_7",
-      "timestamp": 1794037451187,
+      "id": "fw_blk_1794039936108_7",
+      "timestamp": 1794039936108,
       "kind": "HTTP",
       "method": "POST",
       "target": "http://198.51.100.42:8080/page-fetch-leak",
@@ -1128,8 +1219,8 @@
       "transmittedBytes": 0
     },
     {
-      "id": "fw_blk_1794037451205_8",
-      "timestamp": 1794037451205,
+      "id": "fw_blk_1794039936124_8",
+      "timestamp": 1794039936124,
       "kind": "HTTP",
       "method": "GET",
       "target": "http://198.51.100.42:8080/page-nav-leak",
@@ -1138,8 +1229,8 @@
       "transmittedBytes": 0
     },
     {
-      "id": "fw_blk_1794037451257_9",
-      "timestamp": 1794037451257,
+      "id": "fw_blk_1794039936172_9",
+      "timestamp": 1794039936172,
       "kind": "HTTP",
       "method": "GET",
       "target": "http://198.51.100.42:8080/sw-bg-fetch-leak",
@@ -1148,37 +1239,17 @@
       "transmittedBytes": 0
     },
     {
-      "id": "fw_blk_1794037451262_10",
-      "timestamp": 1794037451262,
+      "id": "fw_blk_1794039936177_10",
+      "timestamp": 1794039936177,
       "kind": "CONNECT",
       "method": "CONNECT",
       "target": "dummy-public-target.example.com:443",
       "clientAddr": "127.0.0.1",
       "reason": "EGRESS_DENIED_BY_LOCAL_SINK_FIREWALL_CONNECT",
       "transmittedBytes": 0
-    },
-    {
-      "id": "fw_blk_1794037452942_11",
-      "timestamp": 1794037452942,
-      "kind": "CONNECT",
-      "method": "CONNECT",
-      "target": "content-autofill.googleapis.com:443",
-      "clientAddr": "127.0.0.1",
-      "reason": "EGRESS_DENIED_BY_LOCAL_SINK_FIREWALL_CONNECT",
-      "transmittedBytes": 0
-    },
-    {
-      "id": "fw_blk_1794037454210_12",
-      "timestamp": 1794037454210,
-      "kind": "CONNECT",
-      "method": "CONNECT",
-      "target": "optimizationguide-pa.googleapis.com:443",
-      "clientAddr": "127.0.0.1",
-      "reason": "EGRESS_DENIED_BY_LOCAL_SINK_FIREWALL_CONNECT",
-      "transmittedBytes": 0
     }
   ],
-  "endedAt": "2026-11-07T07:44:18.899Z",
-  "total": 15,
+  "endedAt": "2026-11-07T08:25:47.849Z",
+  "total": 19,
   "failed": 0
 }

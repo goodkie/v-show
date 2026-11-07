@@ -790,6 +790,147 @@ function A(name, pass, detail = {}) {
             }
         );
 
+        // =========================================================================
+        // PART 6: REV14 DRY-RUN PREFLIGHT (`preflight-uat`), UAT RESTORE GUARD & HANDOFF MANIFEST
+        // =========================================================================
+        const pfNoArgs = runCli(['preflight-uat']);
+        const pfOnlyTarget = runCli(['preflight-uat', '--target', CAND]);
+        A('PREFLIGHT_UAT_REJECTS_MISSING_OR_GUESSED_PATHS',
+            pfNoArgs.status !== 0 &&
+            pfNoArgs.out && pfNoArgs.out.code === 'MISSING_EXPLICIT_PATH' &&
+            pfOnlyTarget.status !== 0 &&
+            pfOnlyTarget.out && pfOnlyTarget.out.code === 'MISSING_EXPLICIT_PATH',
+            { noArgs: pfNoArgs.out, onlyTarget: pfOnlyTarget.out }
+        );
+
+        const pfDryRun = runCli([
+            'preflight-uat',
+            '--target', CAND,
+            '--profile-dir', simRealProf,
+            '--fixture-port', String(FIXTURE_PORT),
+            '--sink-port', String(SINK_PORT)
+        ]);
+        A('PREFLIGHT_UAT_DRY_RUN_VERIFIES_KIT_AND_REPORTS_OS_FIREWALL_BLOCKED',
+            pfDryRun.status === 0 &&
+            pfDryRun.out &&
+            pfDryRun.out.mode === 'DRY_RUN_PREFLIGHT_UAT' &&
+            pfDryRun.out.modifiedTarget === false &&
+            pfDryRun.out.modifiedProfile === false &&
+            pfDryRun.out.nodeOk === true &&
+            pfDryRun.out.expectedExtensionId === EXT_ID &&
+            pfDryRun.out.localSinkFirewallStatus &&
+            pfDryRun.out.localSinkFirewallStatus.result === 'UAT_FIREWALL_VERIFIED_FAIL_CLOSED' &&
+            pfDryRun.out.osFirewallIsolationStatus === 'BLOCKED_NO_SAFE_ELEVATED_TEST_VM' &&
+            pfDryRun.out.staticPreflightResult === 'READY_FOR_SYNTHETIC_UAT',
+            pfDryRun.out
+        );
+
+        const uatRestoreTarget = path.join(work, 'uat_disposable_restore_target');
+        fs.mkdirSync(uatRestoreTarget, { recursive: true });
+        const restoreIntoUatBlocked = runCli(
+            ['restore-storage', '--profile-dir', uatRestoreTarget, '--in', encFile, '--passphrase-env', 'XP_PASS'],
+            { XP_PASS: PASS }
+        );
+        A('RESTORE_STORAGE_INTO_UAT_PROFILE_BLOCKED_BY_DEFAULT',
+            restoreIntoUatBlocked.status !== 0 &&
+            restoreIntoUatBlocked.out &&
+            restoreIntoUatBlocked.out.result === 'ABORTED' &&
+            restoreIntoUatBlocked.out.code === 'REAL_BACKUP_RESTORE_INTO_UAT_FORBIDDEN',
+            restoreIntoUatBlocked.out
+        );
+
+        // Build & Verify Consolidated Owner Handoff Manifest (`dist/OWNER_HANDOFF_MANIFEST_REV14.json`)
+        const HANDOFF_MANIFEST_PATH = path.join(DIST, 'OWNER_HANDOFF_MANIFEST_REV14.json');
+        const RAW_BASE = 'https://github.com/goodkie/v-show/raw/candidate/p0-core-regressions-v7/';
+        const handoffEntriesSpec = [
+            { role: 'extension_runtime_zip_50_files_only', relPath: 'dist/XPIDER_V7.0.0_CANDIDATE_P0_REV9_OWNER_SAFE.zip', requiredForNonNodeStaticInspect: true },
+            { role: 'standalone_transactional_updater_and_uat_cli', relPath: 'scripts/xpider_safe_update.js', requiredForNodeToolkit: true },
+            { role: 'candidate_50_file_sha256_inventory', relPath: 'dist/PACKAGE_INVENTORY_SHA256.json', requiredForNodeToolkit: true },
+            { role: 'frozen_rc11_baseline_manifest', relPath: 'dist/rc11_baseline_manifest.json', requiredForNodeToolkit: true },
+            { role: 'synthetic_only_windows_10_uat_checklist', relPath: 'dist/WINDOWS_10_OWNER_UAT_CHECKLIST.md', requiredForOwnerReview: true },
+            { role: 'owner_safe_update_backup_and_rollback_guide', relPath: 'dist/OWNER_SAFE_UPDATE_AND_BACKUP_GUIDE.md', requiredForOwnerReview: true },
+            { role: 'localhost_fixture_and_fail_closed_sink_proxy_server', relPath: 'owner-extension-test-site/server.js', requiredForSyntheticUat: true },
+            { role: 'localhost_fixture_contact_standard_html', relPath: 'owner-extension-test-site/contact-standard.html', requiredForSyntheticUat: true },
+            { role: 'localhost_fixture_subscribe_no_message_html', relPath: 'owner-extension-test-site/subscribe-no-message.html', requiredForSyntheticUat: true },
+            { role: 'localhost_fixture_consent_required_no_message_html', relPath: 'owner-extension-test-site/consent-required-no-message.html', requiredForSyntheticUat: true },
+            { role: 'localhost_fixture_contact_success_html', relPath: 'owner-extension-test-site/contact-success.html', requiredForSyntheticUat: true },
+            { role: 'automated_uat_isolation_and_preflight_harness', relPath: 'test/run_uat_synthetic_profile_isolation_check.js', requiredForAutomatedVerification: true },
+            { role: 'automated_browser_cdp_helper', relPath: 'test/lib/browser_cdp.js', requiredForAutomatedVerification: true }
+        ];
+        const handoffFiles = handoffEntriesSpec.map(item => {
+            const abs = path.join(ROOT, item.relPath);
+            const buf = fs.readFileSync(abs);
+            return {
+                role: item.role,
+                path: item.relPath,
+                size: buf.length,
+                sha256: crypto.createHash('sha256').update(buf).digest('hex'),
+                rawUrl: RAW_BASE + item.relPath
+            };
+        });
+        const handoffManifest = {
+            schemaVersion: 'XPIDER_OWNER_HANDOFF_MANIFEST_REV14',
+            directive: '#6704335953',
+            status: 'CANDIDATE_RELEASE_HOLD',
+            branch: 'candidate/p0-core-regressions-v7',
+            functionalCandidateCommit: '76fab0933276ae163c377d39d9dca5169a33063c',
+            extensionTreeSha: '1d1bac897f70df6fa107cde85b00de591d5dea93',
+            expectedExtensionId: EXT_ID,
+            extensionZipAloneIsCompleteKit: false,
+            extensionZipScopeNote: 'dist/XPIDER_V7.0.0_CANDIDATE_P0_REV9_OWNER_SAFE.zip contains ONLY the 50 Chrome MV3 runtime files from extension/. The host-side transactional updater (scripts/xpider_safe_update.js), SHA-256 inventories, guides, and localhost fixture/sink server are separate host-side files listed in this manifest.',
+            operatorCapabilityByEnvironment: {
+                withNodeJs18Plus: {
+                    supported: true,
+                    capabilities: [
+                        'preflight-uat (read-only dry-run preflight)',
+                        'backup-storage (AES-256-GCM encrypted offline backup)',
+                        'verify-storage-backup (in-memory integrity verification, writtenToDisk: false)',
+                        'plan / apply / rollback / recover (journaled transactional code update)',
+                        'owner-extension-test-site/server.js (localhost 127.0.0.1:8088 fixtures + 127.0.0.1:8090 fail-closed sink proxy)'
+                    ]
+                },
+                withoutNodeJsPowerShellOnly: {
+                    supportedForFullSyntheticCampaignUat: false,
+                    phaseBCampaignUatStatusWithoutNode: 'BLOCKED',
+                    allowedPowerShellFallbacks: [
+                        'Get-FileHash .\\dist\\XPIDER_V7.0.0_CANDIDATE_P0_REV9_OWNER_SAFE.zip -Algorithm SHA256',
+                        'Manual offline Copy-Item of Local Extension Settings\\ldlijlaccfeelfdhgnjbibniocefckjj while Chrome is closed',
+                        'Expand-Archive into a disposable copy for static UI inspection only (cannot run localhost fixtures or local sink proxy without Node.js)'
+                    ]
+                }
+            },
+            consolidatedAcceptanceMatrix: {
+                G1_candidateRuntimeFreezeAnd50FileIntegrity: 'DEV_PASS',
+                G2_chrome157AndEdge146MigrationBackupRestoreParity: 'DEV_PASS',
+                G3_chrome157FunctionalUi3ModeResetCsvConsentSuite: 'DEV_PASS',
+                G4_transactionalUpdaterFaultInjectionAndRollbackSuite: 'DEV_PASS',
+                G5_browserSinkProxyDnrQuicAndDryRunPreflightUat: 'DEV_PASS',
+                G6_osKernelDefaultDenyFirewallRuleOnTestChromeOrVm: 'BLOCKED (BLOCKED_NO_SAFE_ELEVATED_TEST_VM)',
+                G7_ownerWindows10LiveDesktopSmoke: 'OWNER_ACTION_REQUIRED (INDEPENDENT_NOT_RUN)',
+                G8_realExternalNopeChaExtensionInteroperability: 'INDEPENDENT_NOT_RUN (OWNER_ACTION_REQUIRED)',
+                G9_authorizedDigitalOceanDecodoRelayEgressVerification: 'INDEPENDENT_NOT_RUN (OWNER_ACTION_REQUIRED)',
+                G10_ownerFinalReleaseAndLiveUpdateApproval: 'OWNER_ACTION_REQUIRED'
+            },
+            files: handoffFiles
+        };
+        fs.writeFileSync(HANDOFF_MANIFEST_PATH, JSON.stringify(handoffManifest, null, 2) + '\n');
+
+        const loadedManifest = JSON.parse(fs.readFileSync(HANDOFF_MANIFEST_PATH, 'utf8'));
+        const allManifestFilesMatch = Array.isArray(loadedManifest.files) &&
+            loadedManifest.files.length === handoffEntriesSpec.length &&
+            loadedManifest.extensionZipAloneIsCompleteKit === false &&
+            loadedManifest.files.every(entry => {
+                const abs = path.join(ROOT, entry.path);
+                if (!fs.existsSync(abs)) return false;
+                const buf = fs.readFileSync(abs);
+                const actualSha = crypto.createHash('sha256').update(buf).digest('hex');
+                return buf.length === entry.size && actualSha === entry.sha256 && entry.rawUrl === RAW_BASE + entry.path;
+            });
+        A('OWNER_HANDOFF_MANIFEST_REV14_ALL_FILES_AND_HASHES_MATCH',
+            allManifestFilesMatch,
+            { manifestPath: 'dist/OWNER_HANDOFF_MANIFEST_REV14.json', fileCount: loadedManifest.files.length }
+        );
+
     } catch (e) {
         failures++;
         report.error = e.stack;

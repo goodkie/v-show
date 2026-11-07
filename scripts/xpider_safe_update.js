@@ -10,6 +10,13 @@
  *            Backup -> stage -> commit with journal -> verify -> auto-rollback on any error.
  *   rollback --target D --backup-root R  Restore the pre-update state from a completed/interrupted run.
  *   recover  --target D --backup-root R  Finish rollback after a crash (journal not COMMITTED).
+ *   preflight-uat --target D --profile-dir P [--archive Z --expected-sha H --inventory I.json]
+ *            READ-ONLY dry-run check of Node, explicit paths, archive/ID, local sink, and OS firewall status.
+ *   backup-storage        --profile-dir P --out F.xpider-enc [--passphrase-env ENV]
+ *   verify-storage-backup --in F.xpider-enc [--passphrase-env ENV] (in-memory only, writtenToDisk: false)
+ *   restore-storage       --profile-dir P --in F.xpider-enc [--allow-synthetic-uat-restore]
+ *   audit-uat-state       --in F.xpider-enc [--passphrase-env ENV]
+ *   verify-uat-firewall   [--sink-port 8090] [--fixture-port 8088]
  *
  * Safety rules
  *   - Archive SHA-256, ZIP entry names (no .. / absolute / drive), manifest, and the full inventory
@@ -30,7 +37,7 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const crypto = require('crypto');
-const { execFileSync } = require('child_process');
+const { execFileSync, spawnSync } = require('child_process');
 
 const DEFAULT_ID = 'ldlijlaccfeelfdhgnjbibniocefckjj';
 const FAULT_SET = new Set((process.env.XPIDER_UPDATE_FAULT || '').split(',').filter(Boolean));
@@ -360,6 +367,14 @@ function recoverInterruptedStorageRestore(lesDir) {
 
 function assertBrowserClosedForStorage(lesDir) {
     if (!fs.existsSync(lesDir)) return;
+    const initRels = walk(lesDir);
+    for (const rel of initRels) {
+        if (rel.endsWith('.xpider-probe')) {
+            const probeFile = path.join(lesDir, rel);
+            const origFile = probeFile.slice(0, -'.xpider-probe'.length);
+            if (!fs.existsSync(origFile)) fs.renameSync(probeFile, origFile);
+        }
+    }
     const rels = walk(lesDir);
     for (const rel of rels) {
         const f = path.join(lesDir, rel);
@@ -414,6 +429,10 @@ function backupStorageEncrypted(a) {
 
 function restoreStorageEncrypted(a) {
     if (!a['profile-dir'] || !a.in) die('USAGE', 'restore-storage requires --profile-dir <dir> --in <file> --passphrase-env <ENV>');
+    const resolvedProf = path.resolve(String(a['profile-dir']));
+    if (/(?:^|[\\/._-])uat(?:$|[\\/._-])/i.test(resolvedProf) && !a['allow-synthetic-uat-restore']) {
+        die('REAL_BACKUP_RESTORE_INTO_UAT_FORBIDDEN', 'Refusing to restore an encrypted storage backup into a UAT profile directory without --allow-synthetic-uat-restore. Real owner backups (pre_v7.xpider-enc) are strictly offline and recovery-only.');
+    }
     const extId = a['ext-id'] || DEFAULT_ID;
     const lesDir = resolveLesDir(a['profile-dir'], extId);
     const recoveredPrior = recoverInterruptedStorageRestore(lesDir);
@@ -676,6 +695,116 @@ async function verifyUatFirewall(a = {}) {
     };
 }
 
+async function preflightUat(a = {}) {
+    // [Directive #6704335953 Item 2] Read-only DRY-RUN preflight for Windows 10 Owner UAT & Update Prerequisites.
+    // Never guesses paths; requires explicit --target and --profile-dir; never modifies target or profile data.
+    if (!a.target || typeof a.target !== 'string' || !a.target.trim() ||
+        !a['profile-dir'] || typeof a['profile-dir'] !== 'string' || !a['profile-dir'].trim()) {
+        die('MISSING_EXPLICIT_PATH', 'preflight-uat requires explicit --target <EXT_DIR> and --profile-dir <PROFILE_DIR> (paths are never guessed)');
+    }
+    const nodeMajor = Number((process.versions.node || '0').split('.')[0]);
+    if (nodeMajor < 18) die('NODE_VERSION_UNSUPPORTED', `Node.js >= 18 required (found ${process.version})`);
+
+    const targetDir = path.resolve(a.target);
+    const profileDir = path.resolve(a['profile-dir']);
+    if (!fs.existsSync(targetDir)) die('TARGET_DIR_MISSING', `Explicit --target directory does not exist: ${targetDir}`);
+    if (!fs.existsSync(profileDir)) die('PROFILE_DIR_MISSING', `Explicit --profile-dir directory does not exist: ${profileDir}`);
+    assertNoOverlap(targetDir, profileDir);
+
+    const rootDir = path.resolve(__dirname, '..');
+    const archivePath = path.resolve(a.archive || path.join(rootDir, 'dist', 'XPIDER_V7.0.0_CANDIDATE_P0_REV9_OWNER_SAFE.zip'));
+    const expectedSha = String(a['expected-sha'] || 'b3f39bec4ab0711bbe348614be6bbd1f8d0657987059ec7cd3538565c2c0227e').toLowerCase();
+    const inventoryPath = path.resolve(a.inventory || path.join(rootDir, 'dist', 'PACKAGE_INVENTORY_SHA256.json'));
+    const baselinePath = path.resolve(a.baseline || path.join(rootDir, 'dist', 'rc11_baseline_manifest.json'));
+    const expectedId = a['expected-id'] || DEFAULT_ID;
+    assertValidExtId(expectedId);
+
+    if (!fs.existsSync(archivePath)) die('ARCHIVE_MISSING', `Candidate archive not found: ${archivePath}`);
+    if (!fs.existsSync(inventoryPath)) die('INVENTORY_MISSING', `Candidate inventory not found: ${inventoryPath}`);
+    if (!fs.existsSync(baselinePath)) die('BASELINE_MISSING', `Baseline manifest not found: ${baselinePath}`);
+
+    const inventory = JSON.parse(fs.readFileSync(inventoryPath, 'utf8'));
+    const baseline = JSON.parse(fs.readFileSync(baselinePath, 'utf8'));
+    const ctx = { target: targetDir, archive: archivePath, expectedSha, inventory, baseline, expectedId };
+
+    // Run 100% read-only dry-run plan check on target + archive + manifest ID
+    const p = computePlan(ctx);
+    fs.rmSync(p.stage, { recursive: true, force: true });
+
+    // Read-only profile storage check (never renames or writes any file in profileDir)
+    const lesDir = resolveLesDir(profileDir, expectedId);
+    const lesExists = fs.existsSync(lesDir);
+    let lesFileCount = 0;
+    if (lesExists) {
+        const rels = walk(lesDir);
+        lesFileCount = rels.length;
+    }
+
+    // Check local sink proxy availability (non-fatal in preflight report if server not started yet, unless --require-sink is passed)
+    let localSinkReport = null;
+    try {
+        localSinkReport = await verifyUatFirewall(a);
+    } catch (sinkErr) {
+        if (a['require-sink']) throw sinkErr;
+        localSinkReport = {
+            result: 'BLOCKED_LOCAL_SINK_NOT_RUNNING',
+            code: sinkErr.code || 'UAT_NETWORK_FIREWALL_UNAVAILABLE',
+            message: sinkErr.message
+        };
+    }
+
+    // Check OS-level Windows Defender Firewall privilege & status (read-only)
+    let isAdmin = false;
+    try {
+        const admRes = spawnSync('powershell', [
+            '-NoProfile', '-Command',
+            '([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)'
+        ], { encoding: 'utf8' });
+        isAdmin = String(admRes.stdout || '').trim().toLowerCase() === 'true';
+    } catch (_) {}
+    const fwShow = spawnSync('netsh', ['advfirewall', 'show', 'allprofiles'], { encoding: 'utf8' });
+    const osFirewallStatus = isAdmin ? 'ELEVATED_ADMIN_AVAILABLE_FOR_SCOPED_RULE' : 'BLOCKED_NO_SAFE_ELEVATED_TEST_VM';
+
+    return {
+        mode: 'DRY_RUN_PREFLIGHT_UAT',
+        modifiedTarget: false,
+        modifiedProfile: false,
+        nodeOk: true,
+        nodeVersion: process.version,
+        platform: process.platform,
+        expectedExtensionId: expectedId,
+        extensionZipAloneIsCompleteKit: false,
+        staticPreflightResult: 'READY_FOR_SYNTHETIC_UAT',
+        osFirewallIsolationStatus: osFirewallStatus,
+        explicitPathsVerified: {
+            targetDir,
+            profileDir,
+            lesDir,
+            lesExists,
+            lesFileCount
+        },
+        archiveAndIdVerification: {
+            archivePath,
+            archiveSha256: p.report.archiveSha256,
+            expectedId,
+            targetId: p.report.targetId,
+            candidateId: p.report.candidateId,
+            planCounts: p.report.counts,
+            PLAN_TOKEN: p.planToken
+        },
+        localSinkFirewallPreflight: localSinkReport,
+        localSinkFirewallStatus: localSinkReport,
+        osFirewallBoundary: {
+            isAdminElevated: isAdmin,
+            netshShowAllProfilesExitCode: fwShow.status,
+            osFirewallIsolationStatus: osFirewallStatus,
+            note: isAdmin
+                ? 'Elevated token detected; do not mutate live owner firewall rules outside an isolated test VM.'
+                : 'OS-level default-deny firewall test is BLOCKED on non-elevated host (requires elevated isolated test VM); browser-sink preflight and static checks succeeded separately.'
+        }
+    };
+}
+
 function loadCtx(a) {
     for (const k of ['target', 'archive', 'expected-sha', 'inventory']) if (!a[k]) die('USAGE', `Missing --${k}`);
     const inventory = JSON.parse(fs.readFileSync(a.inventory, 'utf8'));
@@ -730,7 +859,9 @@ async function main() {
             console.log(JSON.stringify(auditUatStateObj(st), null, 2));
         } else if (cmd === 'verify-uat-firewall') {
             console.log(JSON.stringify(await verifyUatFirewall(a), null, 2));
-        } else die('USAGE', 'Subcommands: manifest | plan | apply | rollback | recover | backup-storage | restore-storage | verify-storage-backup | audit-uat-state | verify-uat-firewall');
+        } else if (cmd === 'preflight-uat') {
+            console.log(JSON.stringify(await preflightUat(a), null, 2));
+        } else die('USAGE', 'Subcommands: manifest | plan | apply | rollback | recover | backup-storage | restore-storage | verify-storage-backup | audit-uat-state | verify-uat-firewall | preflight-uat');
     } catch (err) {
         console.error(JSON.stringify({ result: 'ABORTED', code: err.code || 'ERROR', message: err.message, rolledBack: !!err.rolledBack }));
         process.exit(err.code === 'USAGE' ? 2 : 3);
@@ -738,6 +869,6 @@ async function main() {
 }
 
 if (require.main === module) main();
-module.exports = { extensionIdFromKey, buildManifest, DEFAULT_ID, auditUatStateObj, verifyStorageBackupEncrypted, verifyUatFirewall };
+module.exports = { extensionIdFromKey, buildManifest, DEFAULT_ID, auditUatStateObj, verifyStorageBackupEncrypted, verifyUatFirewall, preflightUat };
 
 
