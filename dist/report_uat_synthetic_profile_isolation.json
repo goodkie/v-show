@@ -1,0 +1,111 @@
+{
+  "suite": "XPIDER_UAT_SYNTHETIC_PROFILE_ISOLATION_AND_IN_MEMORY_BACKUP_VERIFY",
+  "browserBinary": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+  "runtimeBrowserVersion": "Chrome/157.0.8103.38",
+  "extensionId": "ldlijlaccfeelfdhgnjbibniocefckjj",
+  "startedAt": "2026-11-07T06:17:16.465Z",
+  "assertions": [
+    {
+      "name": "OFFLINE_ENCRYPTED_BACKUP_CREATED",
+      "pass": true,
+      "detail": {}
+    },
+    {
+      "name": "IN_MEMORY_BACKUP_VERIFY_SUCCEEDS_WITHOUT_WRITING_TO_DISK",
+      "pass": true,
+      "detail": {
+        "result": "BACKUP_INTEGRITY_VERIFIED_IN_MEMORY",
+        "writtenToDisk": false,
+        "decryptedFilesWritten": 0,
+        "extId": "ldlijlaccfeelfdhgnjbibniocefckjj",
+        "fileCount": 2,
+        "manifestSha256": "d1ffcf13d7b52b520226662376955db365d1c3abd87f6db27f9fd70e4a79a39b",
+        "backupSha256": "e26043c9eb24acb95da6ef74dd18cdac213d6021fc1432bf4ab643661133b62e"
+      }
+    },
+    {
+      "name": "IN_MEMORY_BACKUP_VERIFY_WRONG_PASSPHRASE_FAILS_CLOSED",
+      "pass": true,
+      "detail": {
+        "result": "ABORTED",
+        "code": "WRONG_PASSPHRASE_OR_CORRUPT_BACKUP",
+        "message": "AES-256-GCM authentication failed (wrong passphrase or corrupted backup)",
+        "rolledBack": false
+      }
+    },
+    {
+      "name": "REAL_GOOGLE_CHROME_UAT_PROFILE_BOOTED",
+      "pass": true,
+      "detail": {
+        "version": "Chrome/157.0.8103.38"
+      }
+    },
+    {
+      "name": "UAT_STARTUP_NO_AUTO_RESUMED_CAMPAIGN_OR_EXTERNAL_TABS",
+      "pass": true,
+      "detail": {
+        "isActive": false,
+        "isLoopRunning": false,
+        "nonBlankTabs": [
+          "chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/popup.html"
+        ]
+      }
+    },
+    {
+      "name": "UAT_SYNTHETIC_STATE_PASSES_ISOLATION_AUDIT",
+      "pass": true,
+      "detail": {
+        "result": "UAT_PROFILE_ISOLATION_VERIFIED",
+        "urlsChecked": 9,
+        "emailsChecked": 5,
+        "nonLoopbackUrls": 0,
+        "sensitiveCredentials": 0,
+        "nonSyntheticEmails": 0
+      }
+    },
+    {
+      "name": "AUDIT_UAT_REJECTS_NON_LOOPBACK_TARGET_URL",
+      "pass": true,
+      "detail": {
+        "result": "ABORTED",
+        "code": "NON_LOOPBACK_TARGET_IN_UAT_PROFILE",
+        "message": "Non-loopback URL host forbidden in UAT state (topKey=savedUrlLists_v2)",
+        "rolledBack": false
+      }
+    },
+    {
+      "name": "AUDIT_UAT_REJECTS_PROXY_CREDENTIALS_WITHOUT_LOGGING_SECRET",
+      "pass": true,
+      "detail": {
+        "result": "ABORTED",
+        "code": "SENSITIVE_CREDENTIALS_IN_UAT_PROFILE",
+        "message": "Sensitive credential key (xpider_proxy_credentials) forbidden in UAT state",
+        "rolledBack": false
+      }
+    },
+    {
+      "name": "AUDIT_UAT_REJECTS_NON_SYNTHETIC_EMAIL_WITHOUT_LOGGING_LOCALPART",
+      "pass": true,
+      "detail": {
+        "result": "ABORTED",
+        "code": "NON_SYNTHETIC_EMAIL_IN_UAT_PROFILE",
+        "message": "Non-synthetic email domain forbidden in UAT state (topKey=xpider_email_collector_v1)",
+        "rolledBack": false
+      }
+    },
+    {
+      "name": "AUDIT_UAT_REJECTS_ACTIVE_CAMPAIGN_ON_STARTUP",
+      "pass": true,
+      "detail": {
+        "result": "ABORTED",
+        "code": "ACTIVE_CAMPAIGN_IN_UAT_PROFILE",
+        "message": "UAT profile must not have an active/auto-resuming campaign on startup",
+        "rolledBack": false
+      }
+    }
+  ],
+  "status": "SUCCESS",
+  "endedAt": "2026-11-07T06:17:20.564Z",
+  "total": 10,
+  "failed": 0
+}

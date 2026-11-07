@@ -13,53 +13,60 @@ Companion UAT Checklist: `dist/WINDOWS_10_OWNER_UAT_CHECKLIST.md`
 
 ---
 
-## 1. Frozen Candidate Fingerprint & Important Distinction: Extension ZIP vs Host Updater Toolkit
+## 1. Single Handoff Set: Frozen Candidate Fingerprint & Extension ZIP vs Host Updater Toolkit
 
 > [!IMPORTANT]
-> **Why the Extension ZIP SHA-256 (`b3f39bec...`) is unchanged while `scripts/xpider_safe_update.js` was updated:**
+> **Why the Extension ZIP SHA-256 (`b3f39bec...`) contains only runtime files while `scripts/xpider_safe_update.js` is separate:**
 > - `dist/XPIDER_V7.0.0_CANDIDATE_P0_REV9_OWNER_SAFE.zip` contains **only the 50 Chrome MV3 extension runtime files** (`manifest.json`, `background.js`, `popup.js`, `content-script.js`, `modules/*`, etc. from `extension/`, tree SHA `1d1bac897f70df6fa107cde85b00de591d5dea93`).
-> - The transactional updater and encrypted storage backup CLI (`scripts/xpider_safe_update.js`), file manifests (`dist/PACKAGE_INVENTORY_SHA256.json`, `dist/rc11_baseline_manifest.json`), and guides (`dist/OWNER_SAFE_UPDATE_AND_BACKUP_GUIDE.md`, `dist/WINDOWS_10_OWNER_UAT_CHECKLIST.md`) are **host-side support files delivered outside the extension ZIP** so they never pollute the browser extension directory.
+> - The transactional updater, in-memory backup verifier, and UAT isolation auditor (`scripts/xpider_safe_update.js`), file manifests (`dist/PACKAGE_INVENTORY_SHA256.json`, `dist/rc11_baseline_manifest.json`), and guides (`dist/OWNER_SAFE_UPDATE_AND_BACKUP_GUIDE.md`, `dist/WINDOWS_10_OWNER_UAT_CHECKLIST.md`) are **host-side support files delivered outside the extension ZIP** so they never pollute the browser extension directory.
 
-### Direct Download Table (All Resources Accessible on Branch `candidate/p0-core-regressions-v7`)
+### Complete Single Handoff Set (All Resources on Branch `candidate/p0-core-regressions-v7`)
 | Resource Role | Repository Path | Direct Raw URL (`https://github.com/goodkie/v-show/raw/candidate/p0-core-regressions-v7/...`) |
 | :--- | :--- | :--- |
 | **Extension Runtime Archive (50 files)** | `dist/XPIDER_V7.0.0_CANDIDATE_P0_REV9_OWNER_SAFE.zip` | `.../dist/XPIDER_V7.0.0_CANDIDATE_P0_REV9_OWNER_SAFE.zip` (`4,467,833 B`, SHA-256 `b3f39bec4ab0711bbe348614be6bbd1f8d0657987059ec7cd3538565c2c0227e`) |
-| **Transactional Updater & Encrypted Backup CLI** | `scripts/xpider_safe_update.js` | `.../scripts/xpider_safe_update.js` |
+| **Transactional Updater, Backup & UAT Auditor CLI** | `scripts/xpider_safe_update.js` | `.../scripts/xpider_safe_update.js` |
 | **50-File Candidate SHA-256 Inventory** | `dist/PACKAGE_INVENTORY_SHA256.json` | `.../dist/PACKAGE_INVENTORY_SHA256.json` |
 | **Frozen RC11 Baseline Manifest** | `dist/rc11_baseline_manifest.json` | `.../dist/rc11_baseline_manifest.json` |
-| **Windows 10 Owner UAT Checklist** | `dist/WINDOWS_10_OWNER_UAT_CHECKLIST.md` | `.../dist/WINDOWS_10_OWNER_UAT_CHECKLIST.md` |
+| **Windows 10 Owner UAT Checklist (Synthetic-Only)** | `dist/WINDOWS_10_OWNER_UAT_CHECKLIST.md` | `.../dist/WINDOWS_10_OWNER_UAT_CHECKLIST.md` |
+| **Synthetic UAT Isolation Preflight Harness** | `test/run_uat_synthetic_profile_isolation_check.js` | `.../test/run_uat_synthetic_profile_isolation_check.js` |
 
 1. **Verify Exact Extension ZIP SHA-256 on Windows PowerShell before doing anything else**:
    ```powershell
    Get-FileHash .\dist\XPIDER_V7.0.0_CANDIDATE_P0_REV9_OWNER_SAFE.zip -Algorithm SHA256
    ```
-   Must output: `B3F39BEC4AB0711BBE348614BE6BBD1F8D0657987059EC7CD3538565c2c0227e` (case-insensitive, `4,467,833 bytes`). If it does not match, **STOP**.
+   Must output: `B3F39BEC4AB0711BBE348614BE6BBD1F8D0657987059EC7CD3538565C2C0227E` (`4,467,833 bytes`). If it does not match, **STOP**.
 2. **Note on Secret Audit Scope**: `scripts/audit_public_repo_and_zip_secrets.js` (`dist/report_public_repo_secret_audit.json`) reported `ALL_CLEAN` across tracked files and the 50 candidate files, but automated pattern scanning has finite coverage and is not a proof of absence of secrets. Never commit or upload raw profile folders, `.xpider-enc` backups, or passphrases.
 
 ---
 
-## 2. Verified Storage Backup & Restore (Run BEFORE Updating, Browser Fully Closed)
-Tested and verified on both **Google Chrome `157.0.8103.38`** (`dist/report_chrome_migration_parity.json`, 37/37 PASS) and **Microsoft Edge `146.0.3856.59`**. The extension uses `chrome.storage.local` only (verified: zero extension IndexedDB directories on disk).
+## 2. Verified Storage Backup, In-Memory Verification & Recovery-Only Restore (Browser Fully Closed)
+Tested and verified on both **Google Chrome `157.0.8103.38`** (`dist/report_chrome_migration_parity.json`, 37/37 PASS; `dist/report_uat_synthetic_profile_isolation.json`, 10/10 PASS) and **Microsoft Edge `146.0.3856.59`**. The extension uses `chrome.storage.local` only (verified: zero extension IndexedDB directories on disk).
+
+> [!CAUTION]
+> **Real Backups Are Offline & Recovery-Only**: Never restore your real profile backup (`pre_v7.xpider-enc`) into a disposable UAT test browser. Disposable UAT must use an isolated clean profile with synthetic localhost-only (`127.0.0.1:8088`) fixtures (`dist/WINDOWS_10_OWNER_UAT_CHECKLIST.md` Phase B).
 
 ### Option A (Recommended): Local Passphrase-Encrypted Storage Backup (`aes-256-gcm` + `scrypt`)
-Produces a single authenticated encrypted file (`.xpider-enc`) with SHA-256 manifest verification so proxy credentials and collected emails are never stored in plaintext in the backup file.
 1. **Close ALL Chrome/Edge windows completely** (the tool probes every LevelDB file in `Local Extension Settings\ldlijlaccfeelfdhgnjbibniocefckjj` and fails closed with `BROWSER_RUNNING_LOCK_HELD` if Chrome/Edge or another process holds any lock).
-2. **Create Encrypted Backup** (passphrase stays in your local PowerShell session; `--out` must be outside the profile storage directory):
+2. **Create Offline Encrypted Backup** (passphrase stays in your local PowerShell session; `--out` must be outside the profile storage directory):
    ```powershell
    $env:XPIDER_BACKUP_PASS = "Your-Strong-Local-Passphrase-Here"
-   node scripts\xpider_safe_update.js backup-storage --profile-dir "$env:LOCALAPPDATA\Google\Chrome\User Data\Default" --out "D:\xpider_private_backups\storage_backup.xpider-enc" --passphrase-env XPIDER_BACKUP_PASS
+   node scripts\xpider_safe_update.js backup-storage --profile-dir "$env:LOCALAPPDATA\Google\Chrome\User Data\Default" --out "D:\xpider_private_backups\pre_v7.xpider-enc" --passphrase-env XPIDER_BACKUP_PASS
    ```
-3. **Verified Atomic Restore** (if ever needed, with Chrome closed):
+3. **Verify Archive Integrity In-Memory (Writes 0 Bytes to Disk)**:
    ```powershell
-   $env:XPIDER_BACKUP_PASS = "Your-Strong-Local-Passphrase-Here"
-   node scripts\xpider_safe_update.js restore-storage --profile-dir "$env:LOCALAPPDATA\Google\Chrome\User Data\Default" --in "D:\xpider_private_backups\storage_backup.xpider-enc" --passphrase-env XPIDER_BACKUP_PASS
+   node scripts\xpider_safe_update.js verify-storage-backup --in "D:\xpider_private_backups\pre_v7.xpider-enc" --passphrase-env XPIDER_BACKUP_PASS
    ```
-   - Wrong passphrase, mismatched extension ID, path traversal, or 1-byte tampering fails closed (`WRONG_PASSPHRASE_OR_CORRUPT_BACKUP` / `BACKUP_ID_MISMATCH` / `UNSAFE_JOURNAL_PATH`) in a temporary staging folder before touching your profile.
+   Verifies the AES-256-GCM authentication tag, `manifestSha256`, and every LevelDB file hash strictly in memory (`"writtenToDisk": false`, `"decryptedFilesWritten": 0`) and zeroes the buffer immediately without extracting personal data to any folder.
+4. **Recovery-Only Atomic Restore** (ONLY if emergency recovery of your real profile is ever needed, with Chrome closed and explicit Owner approval):
+   ```powershell
+   node scripts\xpider_safe_update.js restore-storage --profile-dir "$env:LOCALAPPDATA\Google\Chrome\User Data\Default" --in "D:\xpider_private_backups\pre_v7.xpider-enc" --passphrase-env XPIDER_BACKUP_PASS
+   ```
+   - Wrong passphrase, mismatched extension ID, path traversal, or 1-byte tampering fails closed (`WRONG_PASSPHRASE_OR_CORRUPT_BACKUP` / `BACKUP_ID_MISMATCH` / `UNSAFE_JOURNAL_PATH`) before touching your profile.
    - If a prior restore was interrupted between folder rename steps (`.pre-restore-bak`), the next run automatically recovers `.pre-restore-bak` before proceeding so pre-restore data is never lost.
 
 ### Option B (Manual Offline Folder Copy Fallback)
 1. Close ALL Chrome/Edge windows completely.
-2. Copy `%LOCALAPPDATA%\Google\Chrome\User Data\<Profile>\Local Extension Settings\ldlijlaccfeelfdhgnjbibniocefckjj` (or Edge `%LOCALAPPDATA%\Microsoft\Edge\User Data\<Profile>\Local Extension Settings\ldlijlaccfeelfdhgnjbibniocefckjj`) to a private offline folder outside the repository.
+2. Copy `%LOCALAPPDATA%\Google\Chrome\User Data\<Profile>\Local Extension Settings\ldlijlaccfeelfdhgnjbibniocefckjj` to a private offline folder outside the repository (recovery-only; never load into UAT).
 3. **Privacy Warning**: Raw `Local Extension Settings` contains plaintext `storage.local` data (including proxy credentials and collected emails). Keep it strictly offline and never upload it.
 
 ---
@@ -71,7 +78,7 @@ Requires Node.js 18+ on the PC.
    node scripts\xpider_safe_update.js plan --target "C:\path\to\your\xpider" --archive .\dist\XPIDER_V7.0.0_CANDIDATE_P0_REV9_OWNER_SAFE.zip --expected-sha b3f39bec4ab0711bbe348614be6bbd1f8d0657987059ec7cd3538565c2c0227e --inventory dist\PACKAGE_INVENTORY_SHA256.json --baseline dist\rc11_baseline_manifest.json
    ```
    Changes nothing on disk; prints exact files to add/replace/remove, any preserved unknown user files, and a `PLAN_TOKEN`.
-2. **Apply (Only After Owner Reviews Plan)**:
+2. **Apply (Only After Owner Reviews Plan & Completes Synthetic UAT)**:
    ```powershell
    node scripts\xpider_safe_update.js apply --target "C:\path\to\your\xpider" --archive .\dist\XPIDER_V7.0.0_CANDIDATE_P0_REV9_OWNER_SAFE.zip --expected-sha b3f39bec4ab0711bbe348614be6bbd1f8d0657987059ec7cd3538565c2c0227e --inventory dist\PACKAGE_INVENTORY_SHA256.json --baseline dist\rc11_baseline_manifest.json --backup-root "D:\xpider_update_backup_1" --approve <PLAN_TOKEN>
    ```
@@ -90,29 +97,11 @@ Requires Node.js 18+ on the PC.
   ```powershell
   node scripts\xpider_safe_update.js recover --target "C:\path\to\your\xpider" --backup-root "D:\xpider_update_backup_1"
   ```
-- Then click **Reload** (`⟳`) in `chrome://extensions`. Verified on Google Chrome `157.0.8103.38`: rolling back from V7 candidate to RC11 keeps all `storage.local` keys (`xpider_schema_version: 2`, `HistorySkip` suppression, paused checkpoints, templates, CSV queues) 100% intact and compatible.
+- Then click **Reload** (`⟳`) in `chrome://extensions`.
 
 ---
 
-## 5. Verified Destructive Edge-Case Safeguards (`56/56 PASS` in `test/run_safe_update_transaction_tests.js`)
-| Edge Case | Enforced Behavior in `scripts/xpider_safe_update.js` |
-| :--- | :--- |
-| **Browser still open or any LevelDB file locked during storage backup/restore** | Probes `r+` open + rename across every file in `Local Extension Settings\<id>`; fails closed with `BROWSER_RUNNING_LOCK_HELD` before reading or writing. |
-| **Symlink/junction on profile path, `Local Extension Settings\<id>`, or inside storage/target** | Refused on both `backup-storage`/`restore-storage` and `plan`/`apply`/`rollback` (`SYMLINK_FOUND`). |
-| **`--backup-root` or `--out`/`--in` overlaps target/storage directory** (same path, inside, parent, case alias, or Windows junction) | Canonical `fs.realpathSync.native` + lowercase check rejects with `BACKUP_OVERLAPS_TARGET` before touching disk. |
-| **Path traversal, extra unmanifested file keys, or duplicate case-colliding paths in decrypted backup** | Validated in memory/staging (`UNSAFE_JOURNAL_PATH`, `MANIFEST_FILES_MISMATCH`, `DUPLICATE_MANIFEST_PATH`) before touching profile. |
-| **Invalid/traversal `--ext-id` or mismatched inner `plain.extId` / `env.extId`** | Enforces `/^[a-p]{32}$/` (`INVALID_EXT_ID`) and exact match (`BACKUP_ID_MISMATCH`). |
-| **Interrupted storage restore between folder rename steps (`lesDir -> .pre-restore-bak`)** | `recoverInterruptedStorageRestore` automatically restores `.pre-restore-bak -> lesDir` before any new attempt so pre-restore data is never deleted on retry failure. |
-| **`rollback` / `recover` pointed at wrong `--target` or tampered backup/journal** | Verifies `canonKey(journal.target) === canonKey(target)` (`ROLLBACK_TARGET_MISMATCH`), full `backupManifest` SHA-256 (`BACKUP_INTEGRITY_FAILED`), relative path safety (`UNSAFE_JOURNAL_PATH`), and manifest key/ID before modifying a single byte. |
-| **Concurrent `apply` while an update/rollback is unfinished** | `.xpider-update.lock` + unfinished journal blocks concurrent `apply` (`UPDATE_IN_PROGRESS`) until `recover` completes. |
-| **Power loss mid-write (`.xpider-new` left on disk) or mid-commit** | Every `.xpider-new` temp file is cleaned up and `recover` restores the exact pre-update tree byte-for-byte. |
-| **Non-empty modified legacy file (`privacy-content.js`) or unknown user file** | Classified as `preserveUnknown` (never deleted); reported in `plan`, `apply`, and `rollback`. |
-| **Disk full (`ENOSPC`) or AV/read-only file lock (`EBUSY` / `EPERM`) during commit** | Automatically triggers `doRollback()` from verified backup, leaving the original installation byte-identical. |
-
----
-
-## 6. Remaining Untested / External Boundary Items
-- **Verified in Google Chrome `157.0.8103.38` on Windows 11 host**: Same-ID migration, encrypted backup/restore, rollback, interrupted update recovery (`37/37 PASS`), and UI/reset/CSV import/Email Collector/no-message/consent boundary regressions (`18/18 PASS`).
+## 5. Remaining Untested / External Boundary Items
 - **Still `NOT_TESTED / UNKNOWN`**:
   1. Live Owner Windows 10 desktop manual smoke (`NOT_TESTED` — requires Owner machine; see `dist/WINDOWS_10_OWNER_UAT_CHECKLIST.md`).
   2. Real external NopeCHA extension live cross-extension solver interaction (`NOT_TESTED` — external extension boundary).

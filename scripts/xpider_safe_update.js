@@ -477,6 +477,115 @@ function restoreStorageEncrypted(a) {
     }
 }
 
+function verifyStorageBackupEncrypted(a) {
+    if (!a.in) die('USAGE', 'verify-storage-backup requires --in <file> --passphrase-env <ENV>');
+    const extId = a['ext-id'] || DEFAULT_ID;
+    assertValidExtId(extId);
+    const inPath = path.resolve(a.in);
+    if (!fs.existsSync(inPath)) die('BACKUP_FILE_MISSING', `Encrypted backup file not found: ${inPath}`);
+    const pass = getPassphrase(a);
+    let env;
+    try { env = JSON.parse(fs.readFileSync(inPath, 'utf8')); } catch (_) { die('BACKUP_CORRUPT', 'Backup file is not valid JSON'); }
+    if (!env || env.format !== 'XPIDER_ENCRYPTED_STORAGE_BACKUP_V1') die('BACKUP_FORMAT_INVALID', 'Unsupported backup format');
+    if (env.extId !== extId) die('BACKUP_ID_MISMATCH', `Backup extId ${env.extId} != expected ${extId}`);
+    let plainBuf = null, plain = null;
+    try {
+        const key = crypto.scryptSync(pass, Buffer.from(env.salt, 'base64'), 32, { N: 16384, r: 8, p: 1 });
+        const decipher = crypto.createDecipheriv('aes-256-gcm', key, Buffer.from(env.iv, 'base64'));
+        decipher.setAuthTag(Buffer.from(env.tag, 'base64'));
+        plainBuf = Buffer.concat([decipher.update(Buffer.from(env.ciphertext, 'base64')), decipher.final()]);
+        plain = JSON.parse(plainBuf.toString('utf8'));
+    } catch (_) {
+        if (plainBuf) plainBuf.fill(0);
+        die('WRONG_PASSPHRASE_OR_CORRUPT_BACKUP', 'AES-256-GCM authentication failed (wrong passphrase or corrupted backup)');
+    }
+    try {
+        if (!plain || plain.extId !== extId) die('BACKUP_ID_MISMATCH', `Decrypted payload extId ${plain && plain.extId} != expected ${extId}`);
+        if (!Array.isArray(plain.manifest) || !plain.manifest.length || !plain.files || typeof plain.files !== 'object') {
+            die('MANIFEST_FILES_MISMATCH', 'Decrypted payload missing valid manifest or files map');
+        }
+        if (sha256Buf(Buffer.from(JSON.stringify(plain.manifest))) !== env.manifestSha256) die('MANIFEST_HASH_MISMATCH', 'Decrypted manifest hash mismatch');
+        const fileKeys = Object.keys(plain.files);
+        for (const k of fileKeys) safeRel(k);
+        if (fileKeys.length !== plain.manifest.length) die('MANIFEST_FILES_MISMATCH', `Manifest count ${plain.manifest.length} != files count ${fileKeys.length}`);
+        const seenLower = new Set();
+        for (const e of plain.manifest) {
+            const rel = safeRel(e.path);
+            const lk = rel.toLowerCase();
+            if (seenLower.has(lk)) die('DUPLICATE_MANIFEST_PATH', `Duplicate/case-colliding path in manifest: ${rel}`);
+            seenLower.add(lk);
+            if (!Object.prototype.hasOwnProperty.call(plain.files, e.path)) die('MANIFEST_FILES_MISMATCH', `Missing file payload for ${e.path}`);
+            const buf = Buffer.from(plain.files[e.path] || '', 'base64');
+            if (buf.length !== e.size || sha256Buf(buf) !== e.sha256) die('FILE_INTEGRITY_MISMATCH', `Integrity mismatch for ${e.path}`);
+            buf.fill(0);
+        }
+        return { result: 'BACKUP_INTEGRITY_VERIFIED_IN_MEMORY', writtenToDisk: false, decryptedFilesWritten: 0, extId, fileCount: plain.manifest.length, manifestSha256: env.manifestSha256, backupSha256: sha256File(inPath) };
+    } finally {
+        if (plainBuf) plainBuf.fill(0);
+    }
+}
+
+function auditUatStateObj(state) {
+    if (!state || typeof state !== 'object') die('UAT_STATE_INVALID', 'UAT state must be a JSON object');
+    const FORBIDDEN_CRED_KEYS = /^(xpider_proxy_credentials|xpider_sentinel_token|proxyPassword|authPassword|apiKey|secretKey|privateKey|decodoPassword|smartproxyPassword)$/i;
+    const URL_RE = /\bhttps?:\/\/([^\s"'<>\\\/?#]+)(?:[^\s"'<>\\]*)/gi;
+    const EMAIL_RE = /\b[A-Za-z0-9._%+-]+@([A-Za-z0-9.-]+\.[A-Za-z]{2,})\b/g;
+    const PROXY_URI_RE = /\b(?:https?|socks5?):\/\/[^/\s"'<>]+:[^@\s"'<>]+@/i;
+
+    if (state.isActive === true || state.isLoopRunning === true || state.xpider_isRunning === true) {
+        die('ACTIVE_CAMPAIGN_IN_UAT_PROFILE', 'UAT profile must not have an active/auto-resuming campaign on startup');
+    }
+    let urlsChecked = 0, emailsChecked = 0;
+    const safeKeyLabel = kp => String(kp || 'root').split('.')[0].replace(/[^A-Za-z0-9_\[\]]/g, '');
+    function checkString(val, topKey) {
+        if (PROXY_URI_RE.test(val)) die('SENSITIVE_CREDENTIALS_IN_UAT_PROFILE', `Proxy credential URI forbidden in UAT state (topKey=${topKey})`);
+        let m;
+        URL_RE.lastIndex = 0;
+        while ((m = URL_RE.exec(val)) !== null) {
+            urlsChecked++;
+            const hostPort = m[1].toLowerCase();
+            const host = hostPort.replace(/:\d+$/, '');
+            if (host !== '127.0.0.1' && host !== 'localhost') {
+                die('NON_LOOPBACK_TARGET_IN_UAT_PROFILE', `Non-loopback URL host forbidden in UAT state (topKey=${topKey})`);
+            }
+        }
+        EMAIL_RE.lastIndex = 0;
+        while ((m = EMAIL_RE.exec(val)) !== null) {
+            emailsChecked++;
+            const dom = m[1].toLowerCase();
+            if (!/\.(test|invalid|local)$/.test(dom) && dom !== 'localhost') {
+                die('NON_SYNTHETIC_EMAIL_IN_UAT_PROFILE', `Non-synthetic email domain forbidden in UAT state (topKey=${topKey})`);
+            }
+        }
+    }
+    (function walkVal(val, keyPath) {
+        if (val === null || val === undefined) return;
+        const topKey = safeKeyLabel(keyPath);
+        if (typeof val === 'string') {
+            checkString(val, topKey);
+            return;
+        }
+        if (Array.isArray(val)) {
+            val.forEach((item, idx) => walkVal(item, `${keyPath}[${idx}]`));
+            return;
+        }
+        if (typeof val === 'object') {
+            for (const [k, v] of Object.entries(val)) {
+                const curTop = safeKeyLabel(keyPath || k);
+                checkString(k, curTop);
+                if (FORBIDDEN_CRED_KEYS.test(k) && v !== null && v !== undefined && v !== '' && !(typeof v === 'object' && Object.keys(v).length === 0)) {
+                    die('SENSITIVE_CREDENTIALS_IN_UAT_PROFILE', `Sensitive credential key (${curTop}) forbidden in UAT state`);
+                }
+                if (/password|secret|token|apikey/i.test(k) && typeof v === 'string' && v.trim().length > 0) {
+                    die('SENSITIVE_CREDENTIALS_IN_UAT_PROFILE', `Populated secret field (${curTop}) forbidden in UAT state`);
+                }
+                walkVal(v, keyPath ? `${keyPath}.${k}` : k);
+            }
+        }
+    })(state, '');
+    return { result: 'UAT_PROFILE_ISOLATION_VERIFIED', urlsChecked, emailsChecked, nonLoopbackUrls: 0, sensitiveCredentials: 0, nonSyntheticEmails: 0 };
+}
+
 function loadCtx(a) {
     for (const k of ['target', 'archive', 'expected-sha', 'inventory']) if (!a[k]) die('USAGE', `Missing --${k}`);
     const inventory = JSON.parse(fs.readFileSync(a.inventory, 'utf8'));
@@ -523,7 +632,13 @@ function main() {
             console.log(JSON.stringify(backupStorageEncrypted(a), null, 2));
         } else if (cmd === 'restore-storage') {
             console.log(JSON.stringify(restoreStorageEncrypted(a), null, 2));
-        } else die('USAGE', 'Subcommands: manifest | plan | apply | rollback | recover | backup-storage | restore-storage');
+        } else if (cmd === 'verify-storage-backup') {
+            console.log(JSON.stringify(verifyStorageBackupEncrypted(a), null, 2));
+        } else if (cmd === 'audit-uat-state') {
+            if (!a.in) die('USAGE', 'audit-uat-state requires --in <state.json>');
+            const st = JSON.parse(fs.readFileSync(path.resolve(a.in), 'utf8'));
+            console.log(JSON.stringify(auditUatStateObj(st), null, 2));
+        } else die('USAGE', 'Subcommands: manifest | plan | apply | rollback | recover | backup-storage | restore-storage | verify-storage-backup | audit-uat-state');
     } catch (err) {
         console.error(JSON.stringify({ result: 'ABORTED', code: err.code || 'ERROR', message: err.message, rolledBack: !!err.rolledBack }));
         process.exit(err.code === 'USAGE' ? 2 : 3);
@@ -531,6 +646,6 @@ function main() {
 }
 
 if (require.main === module) main();
-module.exports = { extensionIdFromKey, buildManifest, DEFAULT_ID };
+module.exports = { extensionIdFromKey, buildManifest, DEFAULT_ID, auditUatStateObj, verifyStorageBackupEncrypted };
 
 
