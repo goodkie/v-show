@@ -586,6 +586,96 @@ function auditUatStateObj(state) {
     return { result: 'UAT_PROFILE_ISOLATION_VERIFIED', urlsChecked, emailsChecked, nonLoopbackUrls: 0, sensitiveCredentials: 0, nonSyntheticEmails: 0 };
 }
 
+async function verifyUatFirewall(a = {}) {
+    const http = require('http');
+    const fixturePort = Number(a['fixture-port'] || 8088);
+    const sinkPort = Number(a['sink-port'] || 8090);
+    if (!Number.isInteger(fixturePort) || fixturePort <= 0 || !Number.isInteger(sinkPort) || sinkPort <= 0) {
+        die('USAGE', 'verify-uat-firewall requires valid --fixture-port and --sink-port');
+    }
+    const httpJsonGet = (port, reqPath) => new Promise((resolve, reject) => {
+        const req = http.get({ host: '127.0.0.1', port, path: reqPath, timeout: 2500 }, (res) => {
+            let body = '';
+            res.on('data', c => body += c);
+            res.on('end', () => {
+                if (res.statusCode !== 200) return reject(new Error(`HTTP_${res.statusCode}`));
+                try { resolve(JSON.parse(body)); } catch (e) { reject(e); }
+            });
+        });
+        req.on('timeout', () => { req.destroy(new Error('TIMEOUT')); });
+        req.on('error', reject);
+    });
+    let stBefore;
+    try {
+        stBefore = await httpJsonGet(fixturePort, '/__xpider_firewall_status');
+    } catch (e) {
+        die('UAT_NETWORK_FIREWALL_UNAVAILABLE', `Local UAT fixture/firewall status endpoint (127.0.0.1:${fixturePort}) unreachable (${e.message}). UAT is BLOCKED; STOP immediately.`);
+    }
+    if (!stBefore || stBefore.firewallActive !== true || Number(stBefore.sinkProxyPort) !== sinkPort) {
+        die('UAT_NETWORK_FIREWALL_UNAVAILABLE', `Local UAT fail-closed sink firewall is not active on 127.0.0.1:${sinkPort}. UAT is BLOCKED; STOP immediately.`);
+    }
+    // Probe 1: HTTP proxy egress denial check (RFC 5737 TEST-NET-2 non-routable documentation IP)
+    const httpProbeRes = await new Promise((resolve) => {
+        const req = http.request({
+            host: '127.0.0.1',
+            port: sinkPort,
+            method: 'GET',
+            path: 'http://198.51.100.42:8080/preflight-firewall-probe',
+            headers: { Host: '198.51.100.42:8080' },
+            timeout: 2500
+        }, (res) => {
+            let body = '';
+            res.on('data', c => body += c);
+            res.on('end', () => resolve({
+                statusCode: res.statusCode,
+                firewallHeader: res.headers['x-xpider-uat-firewall'] || null,
+                body
+            }));
+        });
+        req.on('timeout', () => { req.destroy(); resolve({ error: 'TIMEOUT' }); });
+        req.on('error', (e) => resolve({ error: e.message }));
+        req.end();
+    });
+    if (httpProbeRes.statusCode !== 403 || httpProbeRes.firewallHeader !== 'BLOCKED_FAIL_CLOSED') {
+        die('UAT_NETWORK_FIREWALL_EGRESS_NOT_BLOCKED', `Sink proxy on 127.0.0.1:${sinkPort} did not fail-closed on HTTP negative-control probe. UAT is BLOCKED; STOP immediately.`);
+    }
+    // Probe 2: HTTPS CONNECT tunnel denial check
+    const connectProbeRes = await new Promise((resolve) => {
+        const req = http.request({
+            host: '127.0.0.1',
+            port: sinkPort,
+            method: 'CONNECT',
+            path: '198.51.100.42:443',
+            timeout: 2500
+        });
+        req.on('connect', (res, socket) => {
+            try { socket.destroy(); } catch (_) {}
+            resolve({ statusCode: res.statusCode, firewallHeader: res.headers['x-xpider-uat-firewall'] || null });
+        });
+        req.on('timeout', () => { req.destroy(); resolve({ error: 'TIMEOUT' }); });
+        req.on('error', (e) => resolve({ error: e.message }));
+        req.end();
+    });
+    if (connectProbeRes.statusCode !== 403 || connectProbeRes.firewallHeader !== 'BLOCKED_FAIL_CLOSED') {
+        die('UAT_NETWORK_FIREWALL_EGRESS_NOT_BLOCKED', `Sink proxy on 127.0.0.1:${sinkPort} did not fail-closed on CONNECT negative-control probe. UAT is BLOCKED; STOP immediately.`);
+    }
+    const stAfter = await httpJsonGet(fixturePort, '/__xpider_firewall_status');
+    if (stAfter.transmittedExternalRequests !== 0 || (stAfter.blockedExternalRequests - stBefore.blockedExternalRequests) < 2) {
+        die('UAT_NETWORK_FIREWALL_TELEMETRY_MISMATCH', 'Sink firewall failed to record blocked preflight probes with 0 transmitted external requests. UAT is BLOCKED; STOP immediately.');
+    }
+    await httpJsonGet(fixturePort, '/__xpider_reset_firewall_log');
+    return {
+        result: 'UAT_FIREWALL_VERIFIED_FAIL_CLOSED',
+        fixtureHost: '127.0.0.1',
+        fixturePort,
+        sinkProxyHost: '127.0.0.1',
+        sinkProxyPort: sinkPort,
+        httpProbeBlocked403: true,
+        connectProbeBlocked403: true,
+        transmittedExternalRequests: 0
+    };
+}
+
 function loadCtx(a) {
     for (const k of ['target', 'archive', 'expected-sha', 'inventory']) if (!a[k]) die('USAGE', `Missing --${k}`);
     const inventory = JSON.parse(fs.readFileSync(a.inventory, 'utf8'));
@@ -596,7 +686,7 @@ function loadCtx(a) {
     };
 }
 
-function main() {
+async function main() {
     const a = parseArgs(process.argv.slice(2));
     const cmd = a._[0];
     try {
@@ -638,7 +728,9 @@ function main() {
             if (!a.in) die('USAGE', 'audit-uat-state requires --in <state.json>');
             const st = JSON.parse(fs.readFileSync(path.resolve(a.in), 'utf8'));
             console.log(JSON.stringify(auditUatStateObj(st), null, 2));
-        } else die('USAGE', 'Subcommands: manifest | plan | apply | rollback | recover | backup-storage | restore-storage | verify-storage-backup | audit-uat-state');
+        } else if (cmd === 'verify-uat-firewall') {
+            console.log(JSON.stringify(await verifyUatFirewall(a), null, 2));
+        } else die('USAGE', 'Subcommands: manifest | plan | apply | rollback | recover | backup-storage | restore-storage | verify-storage-backup | audit-uat-state | verify-uat-firewall');
     } catch (err) {
         console.error(JSON.stringify({ result: 'ABORTED', code: err.code || 'ERROR', message: err.message, rolledBack: !!err.rolledBack }));
         process.exit(err.code === 'USAGE' ? 2 : 3);
@@ -646,6 +738,6 @@ function main() {
 }
 
 if (require.main === module) main();
-module.exports = { extensionIdFromKey, buildManifest, DEFAULT_ID, auditUatStateObj, verifyStorageBackupEncrypted };
+module.exports = { extensionIdFromKey, buildManifest, DEFAULT_ID, auditUatStateObj, verifyStorageBackupEncrypted, verifyUatFirewall };
 
 

@@ -27,15 +27,24 @@ Companion UAT Checklist: `dist/WINDOWS_10_OWNER_UAT_CHECKLIST.md`
 | **Transactional Updater, Backup & UAT Auditor CLI** | `scripts/xpider_safe_update.js` | `.../scripts/xpider_safe_update.js` |
 | **50-File Candidate SHA-256 Inventory** | `dist/PACKAGE_INVENTORY_SHA256.json` | `.../dist/PACKAGE_INVENTORY_SHA256.json` |
 | **Frozen RC11 Baseline Manifest** | `dist/rc11_baseline_manifest.json` | `.../dist/rc11_baseline_manifest.json` |
-| **Windows 10 Owner UAT Checklist (Synthetic-Only)** | `dist/WINDOWS_10_OWNER_UAT_CHECKLIST.md` | `.../dist/WINDOWS_10_OWNER_UAT_CHECKLIST.md` |
-| **Synthetic UAT Isolation Preflight Harness** | `test/run_uat_synthetic_profile_isolation_check.js` | `.../test/run_uat_synthetic_profile_isolation_check.js` |
+| **Windows 10 Owner UAT Checklist (Network-Isolated & Synthetic-Only)** | `dist/WINDOWS_10_OWNER_UAT_CHECKLIST.md` | `.../dist/WINDOWS_10_OWNER_UAT_CHECKLIST.md` |
+| **Network-Isolated UAT & Synthetic Profile Preflight Harness** | `test/run_uat_synthetic_profile_isolation_check.js` | `.../test/run_uat_synthetic_profile_isolation_check.js` |
+| **Local Fixture (`127.0.0.1:8088`) & Fail-Closed Sink Firewall (`127.0.0.1:8090`)** | `owner-extension-test-site/server.js` | `.../owner-extension-test-site/server.js` |
 
 1. **Verify Exact Extension ZIP SHA-256 on Windows PowerShell before doing anything else**:
    ```powershell
    Get-FileHash .\dist\XPIDER_V7.0.0_CANDIDATE_P0_REV9_OWNER_SAFE.zip -Algorithm SHA256
    ```
    Must output: `B3F39BEC4AB0711BBE348614BE6BBD1F8D0657987059EC7CD3538565C2C0227E` (`4,467,833 bytes`). If it does not match, **STOP**.
-2. **Note on Secret Audit Scope**: `scripts/audit_public_repo_and_zip_secrets.js` (`dist/report_public_repo_secret_audit.json`) reported `ALL_CLEAN` across tracked files and the 50 candidate files, but automated pattern scanning has finite coverage and is not a proof of absence of secrets. Never commit or upload raw profile folders, `.xpider-enc` backups, or passphrases.
+2. **Mandatory UAT Network Isolation Gate (`BLOCKED` -> `STOP` Rule)**:
+   - `--host-resolver-rules` alone is **NOT** a verified network egress firewall (literal IPv4/IPv6 URLs, redirects, or proxy paths can bypass hostname mapping).
+   - Disposable UAT in `dist/WINDOWS_10_OWNER_UAT_CHECKLIST.md` (Phase B) **must** only be executed behind the verified local fail-closed sink proxy firewall (`127.0.0.1:8090`) started by `node owner-extension-test-site\server.js` and verified **before** browser start via:
+     ```powershell
+     node scripts\xpider_safe_update.js verify-uat-firewall --fixture-port 8088 --sink-port 8090
+     ```
+   - Launch UAT Chrome with `--proxy-server="127.0.0.1:8090" --proxy-bypass-list="127.0.0.1:8088;localhost:8088;[::1]:8088" --host-resolver-rules="MAP * 127.0.0.1, EXCLUDE localhost"`, localhost-only URLs (`http://127.0.0.1:8088/*`), explicit no external proxy setting, no saved production data, and no auto-start.
+   - **If robust network isolation (`verify-uat-firewall` / local sink proxy firewall) is unavailable or fails preflight on Windows 10, the UAT step is `BLOCKED` and the Owner must `STOP` immediately rather than claiming fail-closed.**
+3. **Note on Secret Audit Scope**: `scripts/audit_public_repo_and_zip_secrets.js` (`dist/report_public_repo_secret_audit.json`) reported `ALL_CLEAN` across tracked files and the 50 candidate files, but automated pattern scanning has finite coverage and is not a proof of absence of secrets. Never commit or upload raw profile folders, `.xpider-enc` backups, or passphrases.
 
 ---
 

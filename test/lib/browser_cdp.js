@@ -17,10 +17,10 @@ function cdp(ws, method, params = {}) {
 }
 async function openWs(url) { const ws = new WebSocket(url); await new Promise((a, b) => { ws.onopen = a; ws.onerror = b; }); return ws; }
 class Br {
-    constructor(profile, extDir, port) { this.profile = profile; this.extDir = extDir; this.port = port || 9241; }
+    constructor(profile, extDir, port, extraArgs = []) { this.profile = profile; this.extDir = extDir; this.port = port || 9241; this.extraArgs = extraArgs || []; }
     async start(url = 'about:blank') {
         const extFlags = KIND === 'chrome' ? ['--enable-unsafe-extension-debugging'] : [`--disable-extensions-except=${this.extDir}`, `--load-extension=${this.extDir}`];
-        this.proc = spawn(BIN, [`--remote-debugging-port=${this.port}`, `--user-data-dir=${this.profile}`, ...extFlags, '--no-first-run', '--no-default-browser-check', '--disable-background-networking', url], { stdio: 'ignore' });
+        this.proc = spawn(BIN, [`--remote-debugging-port=${this.port}`, `--user-data-dir=${this.profile}`, ...extFlags, '--no-first-run', '--no-default-browser-check', '--disable-background-networking', ...this.extraArgs, url], { stdio: 'ignore' });
         this.exited = new Promise(r => this.proc.on('exit', r));
         for (let i = 0; i < 60; i++) { await sleep(250); try { const v = await fetch(`http://127.0.0.1:${this.port}/json/version`).then(r => r.json()); this.bws = await openWs(v.webSocketDebuggerUrl); break; } catch (_) {} }
         if (!this.bws) throw new Error('no CDP');

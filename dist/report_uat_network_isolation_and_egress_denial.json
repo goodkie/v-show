@@ -1,0 +1,949 @@
+{
+  "suite": "XPIDER_UAT_NETWORK_ISOLATION_EGRESS_DENIAL_AND_SYNTHETIC_PROFILE_HARNESS",
+  "directive": "#6703609650",
+  "browserBinary": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+  "runtimeBrowserVersion": "Chrome/157.0.8103.38",
+  "extensionId": "ldlijlaccfeelfdhgnjbibniocefckjj",
+  "startedAt": "2026-11-07T07:12:25.824Z",
+  "networkIsolationConfig": {
+    "fixtureServer": "http://127.0.0.1:8088",
+    "sinkProxyServer": "http://127.0.0.1:8090",
+    "chromeProxyFlags": [
+      "--proxy-server=127.0.0.1:8090",
+      "--proxy-bypass-list=127.0.0.1:8088;localhost:8088;[::1]:8088",
+      "--host-resolver-rules=MAP * 127.0.0.1, EXCLUDE localhost"
+    ],
+    "cdpInterceptionEnabled": true,
+    "extensionDnrSessionGuardInstalled": true
+  },
+  "packageNetworkingAudit": {
+    "totalFilesScanned": 50,
+    "manifestHostPermissions": [
+      "<all_urls>"
+    ],
+    "manifestPermissions": [
+      "storage",
+      "tabs",
+      "scripting",
+      "activeTab",
+      "sidePanel",
+      "alarms",
+      "downloads",
+      "debugger",
+      "privacy",
+      "proxy",
+      "webRequest",
+      "webRequestAuthProvider",
+      "nativeMessaging",
+      "declarativeNetRequest"
+    ],
+    "xmlHttpRequestCount": 0,
+    "webSocketClientCount": 0,
+    "sendBeaconCount": 0,
+    "fetchCallSites": [
+      {
+        "file": "modules/privacy-gateway.js",
+        "line": 341,
+        "snippet": "const resp = await fetch(probe.url, {"
+      },
+      {
+        "file": "modules/privacy-gateway.js",
+        "line": 2081,
+        "snippet": "const ctrlCheck = await fetch(`http://127.0.0.1:${ctrlPort}/health`, { cache: 'no-store' });"
+      },
+      {
+        "file": "popup.js",
+        "line": 6528,
+        "snippet": "const resp = await fetch('http://127.0.0.1:8088/__xpider_health', {"
+      },
+      {
+        "file": "popup.js",
+        "line": 6549,
+        "snippet": "const r = await fetch('http://127.0.0.1:8088/ai-required-fields.html', { method: 'HEAD', cache: 'no-store' });"
+      },
+      {
+        "file": "popup.js",
+        "line": 6568,
+        "snippet": "await fetch('http://127.0.0.1:8088/__xpider_shutdown', { method: 'POST' });"
+      },
+      {
+        "file": "popup.js",
+        "line": 6659,
+        "snippet": "const fixtureCheck = await fetch('http://127.0.0.1:8088/contact-standard.html', { method: 'HEAD', cache: 'no-store' });"
+      },
+      {
+        "file": "popup.js",
+        "line": 6665,
+        "snippet": "const aiCheck = await fetch('http://127.0.0.1:8088/ai-required-fields.html', { method: 'HEAD', cache: 'no-store' });"
+      },
+      {
+        "file": "background.js",
+        "line": 3168,
+        "snippet": "const healthResp = await fetch('http://127.0.0.1:18989/health', { cache: 'no-store' });"
+      },
+      {
+        "file": "background.js",
+        "line": 3182,
+        "snippet": "const statusResp = await fetch('http://127.0.0.1:18989/status', {"
+      },
+      {
+        "file": "background.js",
+        "line": 3534,
+        "snippet": "const res = await fetch(`http://${host}:${port}/health`, { cache: 'no-store' });"
+      },
+      {
+        "file": "background.js",
+        "line": 3833,
+        "snippet": "const resp = await fetch(`http://127.0.0.1:${ctrlPort}/storage-recovery/stage0-snapshot`, {"
+      },
+      {
+        "file": "background.js",
+        "line": 3867,
+        "snippet": "const resp = await fetch(`http://127.0.0.1:${ctrlPort}/storage-recovery/stage0-snapshot`, {"
+      },
+      {
+        "file": "background.js",
+        "line": 7779,
+        "snippet": "const response = await fetch(url, {"
+      }
+    ],
+    "declarativeNetRequestCallSites": [
+      {
+        "file": "background.js",
+        "line": 192
+      },
+      {
+        "file": "background.js",
+        "line": 276
+      },
+      {
+        "file": "background.js",
+        "line": 282
+      },
+      {
+        "file": "background.js",
+        "line": 298
+      },
+      {
+        "file": "background.js",
+        "line": 299
+      },
+      {
+        "file": "background.js",
+        "line": 315
+      },
+      {
+        "file": "background.js",
+        "line": 398
+      },
+      {
+        "file": "background.js",
+        "line": 1801
+      },
+      {
+        "file": "background.js",
+        "line": 1803
+      },
+      {
+        "file": "background.js",
+        "line": 2309
+      },
+      {
+        "file": "background.js",
+        "line": 2310
+      },
+      {
+        "file": "background.js",
+        "line": 2334
+      },
+      {
+        "file": "background.js",
+        "line": 2335
+      },
+      {
+        "file": "background.js",
+        "line": 6514
+      }
+    ],
+    "proxySettingsCallSites": [
+      {
+        "file": "modules/privacy-gateway.js",
+        "line": 93
+      },
+      {
+        "file": "modules/privacy-gateway.js",
+        "line": 96
+      },
+      {
+        "file": "modules/privacy-gateway.js",
+        "line": 104
+      },
+      {
+        "file": "modules/privacy-gateway.js",
+        "line": 110
+      },
+      {
+        "file": "modules/privacy-gateway.js",
+        "line": 524
+      },
+      {
+        "file": "modules/privacy-gateway.js",
+        "line": 535
+      },
+      {
+        "file": "modules/privacy-gateway.js",
+        "line": 1234
+      },
+      {
+        "file": "modules/privacy-gateway.js",
+        "line": 1236
+      },
+      {
+        "file": "modules/privacy-gateway.js",
+        "line": 1351
+      },
+      {
+        "file": "modules/privacy-gateway.js",
+        "line": 1354
+      },
+      {
+        "file": "modules/privacy-gateway.js",
+        "line": 1630
+      },
+      {
+        "file": "modules/privacy-gateway.js",
+        "line": 1634
+      },
+      {
+        "file": "modules/privacy-gateway.js",
+        "line": 1894
+      },
+      {
+        "file": "modules/privacy-gateway.js",
+        "line": 1897
+      },
+      {
+        "file": "modules/privacy-gateway.js",
+        "line": 1994
+      },
+      {
+        "file": "modules/privacy-gateway.js",
+        "line": 2045
+      },
+      {
+        "file": "modules/privacy-gateway.js",
+        "line": 2055
+      },
+      {
+        "file": "modules/privacy-gateway.js",
+        "line": 2128
+      },
+      {
+        "file": "modules/privacy-gateway.js",
+        "line": 2132
+      },
+      {
+        "file": "modules/privacy-gateway.js",
+        "line": 2134
+      },
+      {
+        "file": "modules/privacy-gateway.js",
+        "line": 2858
+      },
+      {
+        "file": "modules/privacy-gateway.js",
+        "line": 2862
+      },
+      {
+        "file": "modules/privacy-gateway.js",
+        "line": 2996
+      },
+      {
+        "file": "modules/privacy-gateway.js",
+        "line": 2997
+      },
+      {
+        "file": "popup.js",
+        "line": 3541
+      },
+      {
+        "file": "popup.js",
+        "line": 3542
+      },
+      {
+        "file": "popup.js",
+        "line": 3599
+      },
+      {
+        "file": "popup.js",
+        "line": 3600
+      },
+      {
+        "file": "background.js",
+        "line": 3470
+      },
+      {
+        "file": "background.js",
+        "line": 3472
+      }
+    ]
+  },
+  "egressCounters": {
+    "attemptedExternalRequests": 18,
+    "blockedByBrowserDnrOrCdp": 9,
+    "blockedByLocalSinkFirewall": 9,
+    "blockedExternalRequests": 18,
+    "transmittedExternalRequests": 0,
+    "allowedLoopbackRequests": 3
+  },
+  "negativeControls": [
+    {
+      "controlId": "NC1_DUMMY_PUBLIC_HOSTNAME_HTTP_AND_HTTPS",
+      "description": "Dummy public hostname HTTP (http://dummy-public-target.example.com/contact) & HTTPS (https://dummy-public-target.example.com/contact)",
+      "dnrLayerResult": {
+        "blocked": true,
+        "attempts": 2,
+        "results": [
+          {
+            "url": "http://dummy-public-target.example.com/contact",
+            "error": "Failed to fetch",
+            "blocked": true
+          },
+          {
+            "url": "https://dummy-public-target.example.com/contact",
+            "error": "Failed to fetch",
+            "blocked": true
+          }
+        ]
+      },
+      "sinkFirewallLayerResult": {
+        "blocked": true,
+        "attempts": 2,
+        "results": [
+          {
+            "url": "http://dummy-public-target.example.com/contact",
+            "error": "Failed to fetch",
+            "blocked": true
+          },
+          {
+            "url": "https://dummy-public-target.example.com/contact",
+            "error": "Failed to fetch",
+            "blocked": true
+          }
+        ]
+      },
+      "sinkFirewallBlockedDelta": 2,
+      "transmittedExternalRequests": 0
+    },
+    {
+      "controlId": "NC2_LITERAL_EXTERNAL_IPV4_AND_IPV6_URLS",
+      "description": "Literal external IPv4 (http://198.51.100.42:8080/leak-check) and literal external IPv6 (http://[2001:db8::42]:8080/leak-check)",
+      "dnrLayerResult": {
+        "blocked": true,
+        "attempts": 2,
+        "results": [
+          {
+            "url": "http://198.51.100.42:8080/leak-check",
+            "error": "Failed to fetch",
+            "blocked": true
+          },
+          {
+            "url": "http://[2001:db8::42]:8080/leak-check",
+            "error": "Failed to fetch",
+            "blocked": true
+          }
+        ]
+      },
+      "sinkFirewallLayerResult": {
+        "blocked": true,
+        "attempts": 2,
+        "results": [
+          {
+            "url": "http://198.51.100.42:8080/leak-check",
+            "error": "Failed to fetch",
+            "blocked": true
+          },
+          {
+            "url": "http://[2001:db8::42]:8080/leak-check",
+            "error": "Failed to fetch",
+            "blocked": true
+          }
+        ]
+      },
+      "sinkFirewallBlockedDelta": 2,
+      "transmittedExternalRequests": 0
+    },
+    {
+      "controlId": "NC3_HTTP_302_REDIRECT_LOOPBACK_TO_EXTERNAL",
+      "description": "HTTP 302 redirect from http://127.0.0.1:8089/redirect-external to http://198.51.100.42:8080/redirected-leak",
+      "dnrLayerResult": {
+        "blocked": true,
+        "error": "Failed to fetch",
+        "attempts": 1
+      },
+      "sinkFirewallLayerResult": {
+        "blocked": true,
+        "error": "Failed to fetch",
+        "attempts": 1
+      },
+      "sinkFirewallBlockedDelta": 1,
+      "transmittedExternalRequests": 0
+    },
+    {
+      "controlId": "NC4A_WEBSOCKET_AND_PAGE_FETCH_EXTERNAL",
+      "description": "WebSocket (ws://198.51.100.42:8080/ws) and Page fetch (http://198.51.100.42:8080/page-fetch-leak)",
+      "dnrLayerResult": {
+        "blocked": true,
+        "attempts": 2,
+        "wsRes": {
+          "blocked": true,
+          "state": "ERROR_BLOCKED"
+        },
+        "fetchRes": {
+          "blocked": true,
+          "error": "Failed to fetch"
+        }
+      },
+      "sinkFirewallLayerResult": {
+        "blocked": true,
+        "attempts": 2,
+        "wsRes": {
+          "blocked": true,
+          "state": "ERROR_BLOCKED"
+        },
+        "fetchRes": {
+          "blocked": true,
+          "error": "Failed to fetch"
+        }
+      },
+      "sinkFirewallBlockedDelta": 2,
+      "transmittedExternalRequests": 0
+    },
+    {
+      "controlId": "NC4B_SERVICE_WORKER_BACKGROUND_FETCH",
+      "description": "Service Worker background fetch to http://198.51.100.42:8080/sw-bg-fetch-leak and https://dummy-public-target.example.com/sw-bg-https-leak",
+      "dnrLayerResult": {
+        "blocked": true,
+        "attempts": 2,
+        "out": [
+          {
+            "url": "http://198.51.100.42:8080/sw-bg-fetch-leak",
+            "error": "Failed to fetch",
+            "blocked": true
+          },
+          {
+            "url": "https://dummy-public-target.example.com/sw-bg-https-leak",
+            "error": "Failed to fetch",
+            "blocked": true
+          }
+        ]
+      },
+      "sinkFirewallLayerResult": {
+        "blocked": true,
+        "out": [
+          {
+            "url": "http://198.51.100.42:8080/sw-bg-fetch-leak",
+            "status": 403,
+            "firewallHeader": "BLOCKED_FAIL_CLOSED",
+            "blocked": true
+          },
+          {
+            "url": "https://dummy-public-target.example.com/sw-bg-https-leak",
+            "error": "Failed to fetch",
+            "blocked": true
+          }
+        ]
+      },
+      "sinkFirewallBlockedDelta": 2,
+      "transmittedExternalRequests": 0
+    },
+    {
+      "controlId": "NC5_CONFIGURED_PROXY_AND_CAMPAIGN_START_GATES",
+      "description": "Enforced local sink proxy (fixed_servers -> 127.0.0.1:8090) + OWNER_FUNCTION_TEST_UNAUTHORIZED_BUILD/NON_LOOPBACK + PRIVACY_GATEWAY_BLOCKED preflight",
+      "proxyDetails": {
+        "levelOfControl": "controllable_by_this_extension",
+        "value": {
+          "mode": "fixed_servers",
+          "rules": {
+            "bypassList": [
+              "127.0.0.1:8088",
+              "localhost:8088",
+              "[::1]:8088"
+            ],
+            "singleProxy": {
+              "host": "127.0.0.1",
+              "port": 8090,
+              "scheme": "http"
+            }
+          }
+        }
+      },
+      "campaignStartGates": {
+        "nonLoopbackTestMode": {
+          "success": false,
+          "error": "OWNER_FUNCTION_TEST_UNAUTHORIZED_BUILD",
+          "message": "Owner Functional Test Mode is strictly forbidden: runtime build does not declare TEST_ONLY or OWNER_BETA."
+        },
+        "strictPrivacyNoProxy": {
+          "success": false,
+          "status": "PRIVACY_GATEWAY_BLOCKED",
+          "error": "PRIVACY_GATEWAY_BLOCKED",
+          "reason": "PROXY_NOT_CONFIGURED",
+          "userMessage": "Strict Privacy needs an enforced relay/proxy. No healthy egress is configured."
+        }
+      }
+    }
+  ],
+  "assertions": [
+    {
+      "name": "PREFLIGHT_FAILS_CLOSED_BEFORE_BROWSER_START_WHEN_FIREWALL_DOWN",
+      "pass": true,
+      "detail": {
+        "result": "ABORTED",
+        "code": "UAT_NETWORK_FIREWALL_UNAVAILABLE",
+        "message": "Local UAT fixture/firewall status endpoint (127.0.0.1:18089) unreachable (connect ECONNREFUSED 127.0.0.1:18089). UAT is BLOCKED; STOP immediately.",
+        "rolledBack": false
+      }
+    },
+    {
+      "name": "PREFLIGHT_VERIFIES_ACTIVE_LOCAL_SINK_FIREWALL_BEFORE_BROWSER_START",
+      "pass": true,
+      "detail": {
+        "result": "UAT_FIREWALL_VERIFIED_FAIL_CLOSED",
+        "fixtureHost": "127.0.0.1",
+        "fixturePort": 8088,
+        "sinkProxyHost": "127.0.0.1",
+        "sinkProxyPort": 8090,
+        "httpProbeBlocked403": true,
+        "connectProbeBlocked403": true,
+        "transmittedExternalRequests": 0
+      }
+    },
+    {
+      "name": "STATIC_PACKAGE_HOST_NETWORKING_AUDIT_50_FILES",
+      "pass": true,
+      "detail": {
+        "totalFilesScanned": 50,
+        "xmlHttpRequestCount": 0,
+        "webSocketClientCount": 0,
+        "sendBeaconCount": 0,
+        "fetchCallSitesCount": 13,
+        "fetchFiles": [
+          "modules/privacy-gateway.js",
+          "popup.js",
+          "background.js"
+        ]
+      }
+    },
+    {
+      "name": "REAL_GOOGLE_CHROME_BOOTED_WITH_SINK_PROXY_AND_LOOPBACK_BYPASS",
+      "pass": true,
+      "detail": {
+        "version": "Chrome/157.0.8103.38",
+        "isolationFlags": [
+          "--proxy-server=127.0.0.1:8090",
+          "--proxy-bypass-list=127.0.0.1:8088;localhost:8088;[::1]:8088",
+          "--host-resolver-rules=MAP * 127.0.0.1, EXCLUDE localhost"
+        ]
+      }
+    },
+    {
+      "name": "RUNTIME_EXTENSION_BOOT_AND_POPUP_IDLE_ZERO_EXTERNAL_HOST_NETWORKING",
+      "pass": true,
+      "detail": {
+        "swBootExternalRequestsCount": 0,
+        "swBootExternalRequests": [],
+        "sinkProxyBootBlockedCount": 19,
+        "localCompanionRelay18989ProbesBlockedBySink": 0,
+        "chromeBrowserVendorBgRequestsBlockedBySink": 19,
+        "unexpectedExtensionExternalHitsCount": 0,
+        "unexpectedExtensionExternalHits": [],
+        "transmittedExternalRequests": 0
+      }
+    },
+    {
+      "name": "EXTENSION_DNR_LOOPBACK_GUARD_INSTALLED_AND_VERIFIED",
+      "pass": true,
+      "detail": {
+        "count": 5,
+        "ids": [
+          990001,
+          990002,
+          990003,
+          990004,
+          990005
+        ]
+      }
+    },
+    {
+      "name": "POSITIVE_CONTROL_ALLOWED_LOOPBACK_FIXTURE_SUCCEEDS",
+      "pass": true,
+      "detail": {
+        "ok": true,
+        "status": 200
+      }
+    },
+    {
+      "name": "NEG_CONTROL_1_DUMMY_PUBLIC_HOSTNAME_HTTP_AND_HTTPS_BLOCKED",
+      "pass": true,
+      "detail": {
+        "controlId": "NC1_DUMMY_PUBLIC_HOSTNAME_HTTP_AND_HTTPS",
+        "description": "Dummy public hostname HTTP (http://dummy-public-target.example.com/contact) & HTTPS (https://dummy-public-target.example.com/contact)",
+        "dnrLayerResult": {
+          "blocked": true,
+          "attempts": 2,
+          "results": [
+            {
+              "url": "http://dummy-public-target.example.com/contact",
+              "error": "Failed to fetch",
+              "blocked": true
+            },
+            {
+              "url": "https://dummy-public-target.example.com/contact",
+              "error": "Failed to fetch",
+              "blocked": true
+            }
+          ]
+        },
+        "sinkFirewallLayerResult": {
+          "blocked": true,
+          "attempts": 2,
+          "results": [
+            {
+              "url": "http://dummy-public-target.example.com/contact",
+              "error": "Failed to fetch",
+              "blocked": true
+            },
+            {
+              "url": "https://dummy-public-target.example.com/contact",
+              "error": "Failed to fetch",
+              "blocked": true
+            }
+          ]
+        },
+        "sinkFirewallBlockedDelta": 2,
+        "transmittedExternalRequests": 0
+      }
+    },
+    {
+      "name": "NEG_CONTROL_2_LITERAL_EXTERNAL_IPV4_AND_IPV6_BLOCKED",
+      "pass": true,
+      "detail": {
+        "controlId": "NC2_LITERAL_EXTERNAL_IPV4_AND_IPV6_URLS",
+        "description": "Literal external IPv4 (http://198.51.100.42:8080/leak-check) and literal external IPv6 (http://[2001:db8::42]:8080/leak-check)",
+        "dnrLayerResult": {
+          "blocked": true,
+          "attempts": 2,
+          "results": [
+            {
+              "url": "http://198.51.100.42:8080/leak-check",
+              "error": "Failed to fetch",
+              "blocked": true
+            },
+            {
+              "url": "http://[2001:db8::42]:8080/leak-check",
+              "error": "Failed to fetch",
+              "blocked": true
+            }
+          ]
+        },
+        "sinkFirewallLayerResult": {
+          "blocked": true,
+          "attempts": 2,
+          "results": [
+            {
+              "url": "http://198.51.100.42:8080/leak-check",
+              "error": "Failed to fetch",
+              "blocked": true
+            },
+            {
+              "url": "http://[2001:db8::42]:8080/leak-check",
+              "error": "Failed to fetch",
+              "blocked": true
+            }
+          ]
+        },
+        "sinkFirewallBlockedDelta": 2,
+        "transmittedExternalRequests": 0
+      }
+    },
+    {
+      "name": "NEG_CONTROL_3_HTTP_302_REDIRECT_FROM_LOOPBACK_TO_EXTERNAL_BLOCKED",
+      "pass": true,
+      "detail": {
+        "controlId": "NC3_HTTP_302_REDIRECT_LOOPBACK_TO_EXTERNAL",
+        "description": "HTTP 302 redirect from http://127.0.0.1:8089/redirect-external to http://198.51.100.42:8080/redirected-leak",
+        "dnrLayerResult": {
+          "blocked": true,
+          "error": "Failed to fetch",
+          "attempts": 1
+        },
+        "sinkFirewallLayerResult": {
+          "blocked": true,
+          "error": "Failed to fetch",
+          "attempts": 1
+        },
+        "sinkFirewallBlockedDelta": 1,
+        "transmittedExternalRequests": 0
+      }
+    },
+    {
+      "name": "NEG_CONTROL_4_WEBSOCKET_PAGE_FETCH_AND_SW_BACKGROUND_FETCH_BLOCKED",
+      "pass": true,
+      "detail": {
+        "nc4WsAndPage": {
+          "controlId": "NC4A_WEBSOCKET_AND_PAGE_FETCH_EXTERNAL",
+          "description": "WebSocket (ws://198.51.100.42:8080/ws) and Page fetch (http://198.51.100.42:8080/page-fetch-leak)",
+          "dnrLayerResult": {
+            "blocked": true,
+            "attempts": 2,
+            "wsRes": {
+              "blocked": true,
+              "state": "ERROR_BLOCKED"
+            },
+            "fetchRes": {
+              "blocked": true,
+              "error": "Failed to fetch"
+            }
+          },
+          "sinkFirewallLayerResult": {
+            "blocked": true,
+            "attempts": 2,
+            "wsRes": {
+              "blocked": true,
+              "state": "ERROR_BLOCKED"
+            },
+            "fetchRes": {
+              "blocked": true,
+              "error": "Failed to fetch"
+            }
+          },
+          "sinkFirewallBlockedDelta": 2,
+          "transmittedExternalRequests": 0
+        },
+        "swBgDnrRes": {
+          "blocked": true,
+          "attempts": 2,
+          "out": [
+            {
+              "url": "http://198.51.100.42:8080/sw-bg-fetch-leak",
+              "error": "Failed to fetch",
+              "blocked": true
+            },
+            {
+              "url": "https://dummy-public-target.example.com/sw-bg-https-leak",
+              "error": "Failed to fetch",
+              "blocked": true
+            }
+          ]
+        },
+        "swBgSinkRes": {
+          "blocked": true,
+          "out": [
+            {
+              "url": "http://198.51.100.42:8080/sw-bg-fetch-leak",
+              "status": 403,
+              "firewallHeader": "BLOCKED_FAIL_CLOSED",
+              "blocked": true
+            },
+            {
+              "url": "https://dummy-public-target.example.com/sw-bg-https-leak",
+              "error": "Failed to fetch",
+              "blocked": true
+            }
+          ]
+        },
+        "swBlockedDelta": 2
+      }
+    },
+    {
+      "name": "NEG_CONTROL_5_PROXY_LOCK_AND_CAMPAIGN_PREFLIGHT_GATES_FAIL_CLOSED",
+      "pass": true,
+      "detail": {
+        "proxyDetails": {
+          "levelOfControl": "controllable_by_this_extension",
+          "value": {
+            "mode": "fixed_servers",
+            "rules": {
+              "bypassList": [
+                "127.0.0.1:8088",
+                "localhost:8088",
+                "[::1]:8088"
+              ],
+              "singleProxy": {
+                "host": "127.0.0.1",
+                "port": 8090,
+                "scheme": "http"
+              }
+            }
+          }
+        },
+        "nc5StartChecks": {
+          "nonLoopbackTestMode": {
+            "success": false,
+            "error": "OWNER_FUNCTION_TEST_UNAUTHORIZED_BUILD",
+            "message": "Owner Functional Test Mode is strictly forbidden: runtime build does not declare TEST_ONLY or OWNER_BETA."
+          },
+          "strictPrivacyNoProxy": {
+            "success": false,
+            "status": "PRIVACY_GATEWAY_BLOCKED",
+            "error": "PRIVACY_GATEWAY_BLOCKED",
+            "reason": "PROXY_NOT_CONFIGURED",
+            "userMessage": "Strict Privacy needs an enforced relay/proxy. No healthy egress is configured."
+          }
+        }
+      }
+    },
+    {
+      "name": "ZERO_EXTERNAL_TRANSMISSIONS_ACROSS_ALL_NEGATIVE_CONTROLS",
+      "pass": true,
+      "detail": {
+        "attemptedExternalRequests": 18,
+        "blockedByBrowserDnrOrCdp": 9,
+        "blockedByLocalSinkFirewall": 9,
+        "blockedExternalRequests": 18,
+        "transmittedExternalRequests": 0,
+        "allowedLoopbackRequests": 3
+      }
+    },
+    {
+      "name": "OFFLINE_BACKUP_IN_MEMORY_VERIFY_AND_WRONG_PASSPHRASE_GATE",
+      "pass": true,
+      "detail": {
+        "verifyResult": {
+          "result": "BACKUP_INTEGRITY_VERIFIED_IN_MEMORY",
+          "writtenToDisk": false,
+          "decryptedFilesWritten": 0,
+          "extId": "ldlijlaccfeelfdhgnjbibniocefckjj",
+          "fileCount": 2,
+          "manifestSha256": "d1ffcf13d7b52b520226662376955db365d1c3abd87f6db27f9fd70e4a79a39b",
+          "backupSha256": "186cd04aed90c4b48ae971f5111974f7dc803d52423b7a04c9a6a1201f4e8d5a"
+        },
+        "wrongPassCode": "WRONG_PASSPHRASE_OR_CORRUPT_BACKUP"
+      }
+    },
+    {
+      "name": "SYNTHETIC_PROFILE_STATE_AUDIT_AND_SECRET_SAFE_REJECTION_GATES",
+      "pass": true,
+      "detail": {
+        "cleanAudit": {
+          "result": "UAT_PROFILE_ISOLATION_VERIFIED",
+          "urlsChecked": 3,
+          "emailsChecked": 3,
+          "nonLoopbackUrls": 0,
+          "sensitiveCredentials": 0,
+          "nonSyntheticEmails": 0
+        },
+        "rejectedUrlCode": "NON_LOOPBACK_TARGET_IN_UAT_PROFILE",
+        "rejectedCredCode": "SENSITIVE_CREDENTIALS_IN_UAT_PROFILE",
+        "rejectedEmailCode": "NON_SYNTHETIC_EMAIL_IN_UAT_PROFILE"
+      }
+    }
+  ],
+  "status": "SUCCESS",
+  "bootNetworkingObservation": {
+    "swBootExternalRequestsCount": 0,
+    "swBootExternalRequests": [],
+    "sinkProxyBootBlockedCount": 19,
+    "localCompanionRelay18989ProbesBlockedBySink": 0,
+    "chromeBrowserVendorBgRequestsBlockedBySink": 19,
+    "unexpectedExtensionExternalHitsCount": 0,
+    "unexpectedExtensionExternalHits": [],
+    "transmittedExternalRequests": 0
+  },
+  "sinkFirewallSampleBlockedLog": [
+    {
+      "id": "fw_blk_1794035552281_1",
+      "timestamp": 1794035552281,
+      "kind": "HTTP",
+      "method": "POST",
+      "target": "http://dummy-public-target.example.com/contact",
+      "clientAddr": "127.0.0.1",
+      "reason": "EGRESS_DENIED_BY_LOCAL_SINK_FIREWALL_HTTP",
+      "transmittedBytes": 0
+    },
+    {
+      "id": "fw_blk_1794035552285_2",
+      "timestamp": 1794035552285,
+      "kind": "CONNECT",
+      "method": "CONNECT",
+      "target": "dummy-public-target.example.com:443",
+      "clientAddr": "127.0.0.1",
+      "reason": "EGRESS_DENIED_BY_LOCAL_SINK_FIREWALL_CONNECT",
+      "transmittedBytes": 0
+    },
+    {
+      "id": "fw_blk_1794035552305_3",
+      "timestamp": 1794035552305,
+      "kind": "HTTP",
+      "method": "GET",
+      "target": "http://198.51.100.42:8080/leak-check",
+      "clientAddr": "127.0.0.1",
+      "reason": "EGRESS_DENIED_BY_LOCAL_SINK_FIREWALL_HTTP",
+      "transmittedBytes": 0
+    },
+    {
+      "id": "fw_blk_1794035552308_4",
+      "timestamp": 1794035552308,
+      "kind": "HTTP",
+      "method": "GET",
+      "target": "http://[2001:db8::42]:8080/leak-check",
+      "clientAddr": "127.0.0.1",
+      "reason": "EGRESS_DENIED_BY_LOCAL_SINK_FIREWALL_HTTP",
+      "transmittedBytes": 0
+    },
+    {
+      "id": "fw_blk_1794035552335_5",
+      "timestamp": 1794035552335,
+      "kind": "HTTP",
+      "method": "GET",
+      "target": "http://198.51.100.42:8080/redirected-leak",
+      "clientAddr": "127.0.0.1",
+      "reason": "EGRESS_DENIED_BY_LOCAL_SINK_FIREWALL_HTTP",
+      "transmittedBytes": 0
+    },
+    {
+      "id": "fw_blk_1794035552354_6",
+      "timestamp": 1794035552354,
+      "kind": "CONNECT",
+      "method": "CONNECT",
+      "target": "198.51.100.42:8080",
+      "clientAddr": "127.0.0.1",
+      "reason": "EGRESS_DENIED_BY_LOCAL_SINK_FIREWALL_CONNECT",
+      "transmittedBytes": 0
+    },
+    {
+      "id": "fw_blk_1794035552357_7",
+      "timestamp": 1794035552357,
+      "kind": "HTTP",
+      "method": "POST",
+      "target": "http://198.51.100.42:8080/page-fetch-leak",
+      "clientAddr": "127.0.0.1",
+      "reason": "EGRESS_DENIED_BY_LOCAL_SINK_FIREWALL_HTTP",
+      "transmittedBytes": 0
+    },
+    {
+      "id": "fw_blk_1794035552375_8",
+      "timestamp": 1794035552375,
+      "kind": "HTTP",
+      "method": "GET",
+      "target": "http://198.51.100.42:8080/sw-bg-fetch-leak",
+      "clientAddr": "127.0.0.1",
+      "reason": "EGRESS_DENIED_BY_LOCAL_SINK_FIREWALL_HTTP",
+      "transmittedBytes": 0
+    },
+    {
+      "id": "fw_blk_1794035552378_9",
+      "timestamp": 1794035552378,
+      "kind": "CONNECT",
+      "method": "CONNECT",
+      "target": "dummy-public-target.example.com:443",
+      "clientAddr": "127.0.0.1",
+      "reason": "EGRESS_DENIED_BY_LOCAL_SINK_FIREWALL_CONNECT",
+      "transmittedBytes": 0
+    }
+  ],
+  "endedAt": "2026-11-07T07:12:37.542Z",
+  "total": 15,
+  "failed": 0
+}

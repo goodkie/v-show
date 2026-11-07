@@ -9,9 +9,40 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 
-const PORT = process.env.PORT || 8088;
+const PORT = Number(process.env.PORT || 8088);
+const SINK_PROXY_PORT = Number(process.env.SINK_PROXY_PORT || 8090);
 const HOST = '127.0.0.1';
 const BASE_DIR = __dirname;
+
+// Fail-closed local sink proxy firewall state (Action 1 & Action 2, Directive #6703609650)
+let firewallStats = {
+  attemptedExternalRequests: 0,
+  blockedExternalRequests: 0,
+  transmittedExternalRequests: 0,
+  allowedLoopbackRequests: 0,
+  blockedLog: []
+};
+
+function recordFirewallBlock(kind, method, target, clientAddr, reason) {
+  firewallStats.attemptedExternalRequests += 1;
+  firewallStats.blockedExternalRequests += 1;
+  const entry = {
+    id: `fw_blk_${Date.now()}_${firewallStats.blockedExternalRequests}`,
+    timestamp: Date.now(),
+    kind,
+    method: method || kind,
+    target: String(target || ''),
+    clientAddr: clientAddr || '127.0.0.1',
+    reason: reason || 'EGRESS_DENIED_BY_LOCAL_SINK_FIREWALL',
+    transmittedBytes: 0
+  };
+  firewallStats.blockedLog.push(entry);
+  if (firewallStats.blockedLog.length > 500) {
+    firewallStats.blockedLog.shift();
+  }
+  console.log(`[XPIDER_UAT_FIREWALL_BLOCKED] kind=${kind} method=${method} target=${target} reason=${entry.reason}`);
+  return entry;
+}
 
 const MIME_TYPES = {
   '.html': 'text/html; charset=UTF-8',
@@ -163,7 +194,9 @@ const server = http.createServer((req, res) => {
       ip: '127.0.0.1',
       service: 'XPIDER_OWNER_TEST_SERVER',
       channel: 'TEST_ONLY',
-      port: 8088,
+      port: PORT,
+      sinkProxyPort: SINK_PROXY_PORT,
+      firewallActive: true,
       fixtureSet: 'OWNER_8_V1',
       totalFixtures: 8,
       hasAiRequiredFields: true,
@@ -175,25 +208,71 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  // [Directive #6703609650] Authoritative UAT Local Sink Proxy Firewall Status & Telemetry
+  if (reqPath === '/__xpider_firewall_status') {
+    res.writeHead(200, {
+      'Content-Type': 'application/json; charset=UTF-8',
+      'Cache-Control': 'no-cache, no-store, must-revalidate'
+    });
+    res.end(JSON.stringify({
+      ok: true,
+      firewallActive: true,
+      sinkProxyHost: HOST,
+      sinkProxyPort: SINK_PROXY_PORT,
+      fixturePort: PORT,
+      allowedOrigins: [`http://127.0.0.1:${PORT}`, `http://localhost:${PORT}`, `http://[::1]:${PORT}`],
+      attemptedExternalRequests: firewallStats.attemptedExternalRequests,
+      blockedExternalRequests: firewallStats.blockedExternalRequests,
+      transmittedExternalRequests: firewallStats.transmittedExternalRequests,
+      allowedLoopbackRequests: firewallStats.allowedLoopbackRequests,
+      blockedLog: firewallStats.blockedLog
+    }));
+    return;
+  }
+
+  if (reqPath === '/__xpider_reset_firewall_log') {
+    firewallStats = {
+      attemptedExternalRequests: 0,
+      blockedExternalRequests: 0,
+      transmittedExternalRequests: 0,
+      allowedLoopbackRequests: 0,
+      blockedLog: []
+    };
+    res.writeHead(200, { 'Content-Type': 'application/json; charset=UTF-8' });
+    res.end(JSON.stringify({ ok: true, firewallStats }));
+    return;
+  }
+
+  // [Directive #6703609650 Action 2.3] Controlled 302 redirect from loopback to external target for negative control testing
+  if (reqPath === '/redirect-external') {
+    const queryParams = new URL(req.url, `http://${req.headers.host || '127.0.0.1'}`).searchParams;
+    const extTarget = queryParams.get('target') || 'http://198.51.100.42:8080/redirected-leak-check';
+    res.writeHead(302, {
+      'Location': extTarget,
+      'Cache-Control': 'no-cache, no-store, must-revalidate'
+    });
+    res.end(`Redirecting to ${extTarget}`);
+    return;
+  }
+
   // Graceful shutdown endpoint (local only)
   if (reqPath === '/__xpider_shutdown' && req.method === 'POST') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ ok: true, message: 'SHUTTING_DOWN' }));
     setTimeout(() => {
       try {
-        if (typeof server.closeAllConnections === 'function') {
-          server.closeAllConnections();
-        }
+        if (typeof server.closeAllConnections === 'function') server.closeAllConnections();
+        if (typeof sinkProxyServer.closeAllConnections === 'function') sinkProxyServer.closeAllConnections();
       } catch (_) {}
-      try {
-        server.close();
-      } catch (_) {}
+      try { server.close(); } catch (_) {}
+      try { sinkProxyServer.close(); } catch (_) {}
       process.exit(0);
     }, 50);
     return;
   }
 
   // [R6.9G.10.3.7.1.4.10] Cloudflare Turnstile Server-Side Siteverify Endpoint
+  // Strictly offline by default in local UAT unless XPIDER_ALLOW_LIVE_CF_SITEVERIFY=1 is explicitly set.
   if (reqPath === '/cf-turnstile/verify' && req.method === 'POST') {
     let body = '';
     req.on('data', chunk => { body += chunk; });
@@ -228,25 +307,33 @@ const server = http.createServer((req, res) => {
 
         let cfRes = { success: false, 'error-codes': ['missing-input-response'] };
         if (token) {
-          for (let attempt = 0; attempt < 3; attempt++) {
-            try {
-              const apiRes = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: new URLSearchParams({
-                  secret: secretKey,
-                  response: token
-                })
-              });
-              cfRes = await apiRes.json();
-              if (cfRes) break;
-            } catch (netErr) {
-              if (attempt === 2) {
-                cfRes = { success: false, 'error-codes': ['siteverify-network-error', netErr.message] };
-              } else {
-                await new Promise(r => setTimeout(r, 600));
+          if (process.env.XPIDER_ALLOW_LIVE_CF_SITEVERIFY === '1') {
+            for (let attempt = 0; attempt < 3; attempt++) {
+              try {
+                const apiRes = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                  body: new URLSearchParams({
+                    secret: secretKey,
+                    response: token
+                  })
+                });
+                cfRes = await apiRes.json();
+                if (cfRes) break;
+              } catch (netErr) {
+                if (attempt === 2) {
+                  cfRes = { success: false, 'error-codes': ['siteverify-network-error', netErr.message] };
+                } else {
+                  await new Promise(r => setTimeout(r, 600));
+                }
               }
             }
+          } else {
+            // Offline deterministic local verification (zero external network traffic during UAT)
+            const isFailSecret = secretKey.startsWith('2x') || caseKey.includes('fail');
+            cfRes = isFailSecret
+              ? { success: false, hostname: '127.0.0.1', 'error-codes': ['invalid-input-response'] }
+              : { success: true, hostname: '127.0.0.1', action: caseKey, cdata: 'local-offline-uat' };
           }
         }
 
@@ -317,27 +404,84 @@ const server = http.createServer((req, res) => {
   });
 });
 
+// [Directive #6703609650 Action 1 & Action 2] Mandatory Local Fail-Closed Sink Proxy Firewall
+// Blocks and logs all non-fixture HTTP, HTTPS CONNECT, literal IPv4/IPv6, redirect, and WebSocket egress.
+// Never opens an outbound socket to any external destination (transmittedExternalRequests === 0).
+const sinkProxyServer = http.createServer((req, res) => {
+  const target = req.url || req.headers.host || 'unknown';
+  const entry = recordFirewallBlock('HTTP', req.method, target, req.socket && req.socket.remoteAddress, 'EGRESS_DENIED_BY_LOCAL_SINK_FIREWALL_HTTP');
+  res.writeHead(403, {
+    'Content-Type': 'application/json; charset=UTF-8',
+    'X-XPIDER-UAT-Firewall': 'BLOCKED_FAIL_CLOSED',
+    'Cache-Control': 'no-cache, no-store, must-revalidate',
+    'Connection': 'close'
+  });
+  res.end(JSON.stringify({
+    blocked: true,
+    error: 'UAT_EGRESS_BLOCKED_BY_LOCAL_SINK_FIREWALL',
+    entry
+  }));
+});
+
+sinkProxyServer.on('connect', (req, clientSocket, head) => {
+  const target = req.url || req.headers.host || 'unknown';
+  recordFirewallBlock('CONNECT', 'CONNECT', target, clientSocket && clientSocket.remoteAddress, 'EGRESS_DENIED_BY_LOCAL_SINK_FIREWALL_CONNECT');
+  try {
+    clientSocket.write(
+      'HTTP/1.1 403 Forbidden\r\n' +
+      'X-XPIDER-UAT-Firewall: BLOCKED_FAIL_CLOSED\r\n' +
+      'Content-Type: text/plain; charset=UTF-8\r\n' +
+      'Connection: close\r\n\r\n' +
+      'UAT_EGRESS_BLOCKED_BY_LOCAL_SINK_FIREWALL\r\n'
+    );
+  } catch (_) {}
+  try { clientSocket.destroy(); } catch (_) {}
+});
+
+sinkProxyServer.on('upgrade', (req, socket, head) => {
+  const target = req.url || req.headers.host || 'unknown';
+  recordFirewallBlock('WS_UPGRADE', req.method || 'GET', target, socket && socket.remoteAddress, 'EGRESS_DENIED_BY_LOCAL_SINK_FIREWALL_WS');
+  try {
+    socket.write(
+      'HTTP/1.1 403 Forbidden\r\n' +
+      'X-XPIDER-UAT-Firewall: BLOCKED_FAIL_CLOSED\r\n' +
+      'Connection: close\r\n\r\n'
+    );
+  } catch (_) {}
+  try { socket.destroy(); } catch (_) {}
+});
+
+sinkProxyServer.on('error', (err) => {
+  console.error(`[XPIDER_UAT_FIREWALL_FATAL] Sink proxy failed on ${HOST}:${SINK_PROXY_PORT}: ${err.message}. Failing closed.`);
+  process.exit(1);
+});
+
 server.on('error', (err) => {
   if (err.code === 'EADDRINUSE') {
     console.error(`[XPIDER_TEST_SERVER] Port ${PORT} already in use. Exiting.`);
     process.exit(1);
   }
   console.error('[XPIDER_TEST_SERVER_ERROR]', err);
+  process.exit(1);
 });
 
-server.listen(PORT, HOST, () => {
-  console.log('========================================================================');
-  console.log(`  XPIDER CONTROLLED TEST SITE SERVER RUNNING AT http://${HOST}:${PORT}`);
-  console.log('========================================================================');
-  console.log(`  Portal URL:   http://${HOST}:${PORT}/index.html`);
-  console.log(`  Case A:       http://${HOST}:${PORT}/contact-standard.html`);
-  console.log(`  Case B:       http://${HOST}:${PORT}/contact-dropdown-checkbox.html`);
-  console.log(`  Case C:       http://${HOST}:${PORT}/contact-numeric.html`);
-  console.log(`  Case D:       http://${HOST}:${PORT}/subscribe-no-message.html`);
-  console.log(`  Case E:       http://${HOST}:${PORT}/booking-no-message.html`);
-  console.log(`  Case F:       http://${HOST}:${PORT}/no-contact-page.html`);
-  console.log('========================================================================');
-  console.log('  Press Ctrl+C to stop the test server.');
+sinkProxyServer.listen(SINK_PROXY_PORT, HOST, () => {
+  server.listen(PORT, HOST, () => {
+    console.log('========================================================================');
+    console.log(`  XPIDER CONTROLLED TEST SITE SERVER RUNNING AT http://${HOST}:${PORT}`);
+    console.log(`  XPIDER FAIL-CLOSED UAT SINK FIREWALL RUNNING AT http://${HOST}:${SINK_PROXY_PORT}`);
+    console.log('========================================================================');
+    console.log(`  Portal URL:   http://${HOST}:${PORT}/index.html`);
+    console.log(`  Firewall API: http://${HOST}:${PORT}/__xpider_firewall_status`);
+    console.log(`  Case A:       http://${HOST}:${PORT}/contact-standard.html`);
+    console.log(`  Case B:       http://${HOST}:${PORT}/contact-dropdown-checkbox.html`);
+    console.log(`  Case C:       http://${HOST}:${PORT}/contact-numeric.html`);
+    console.log(`  Case D:       http://${HOST}:${PORT}/subscribe-no-message.html`);
+    console.log(`  Case E:       http://${HOST}:${PORT}/booking-no-message.html`);
+    console.log(`  Case F:       http://${HOST}:${PORT}/no-contact-page.html`);
+    console.log('========================================================================');
+    console.log('  Press Ctrl+C to stop the test server.');
+  });
 });
 
 module.exports = server;
