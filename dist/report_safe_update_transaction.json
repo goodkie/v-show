@@ -1,0 +1,305 @@
+{
+  "suite": "XPIDER_SAFE_UPDATE_TRANSACTION",
+  "archiveSha256": "b3f39bec4ab0711bbe348614be6bbd1f8d0657987059ec7cd3538565c2c0227e",
+  "startedAt": "2026-11-07T00:48:45.940Z",
+  "assertions": [
+    {
+      "name": "ARCHIVE_SHA_IS_EXPECTED",
+      "pass": true,
+      "detail": {
+        "ZIP_SHA": "b3f39bec4ab0711bbe348614be6bbd1f8d0657987059ec7cd3538565c2c0227e"
+      }
+    },
+    {
+      "name": "DRYRUN_EXIT0_AND_TARGET_UNCHANGED",
+      "pass": true,
+      "detail": {
+        "status": 0
+      }
+    },
+    {
+      "name": "DRYRUN_PLAN_CLASSIFIES_FILES",
+      "pass": true,
+      "detail": {
+        "replace": 30,
+        "remove": [
+          "retired_legacy.js"
+        ],
+        "keep": [
+          "USER_NOTES.txt"
+        ]
+      }
+    },
+    {
+      "name": "DRYRUN_VERIFIED_50_FILE_INVENTORY",
+      "pass": true,
+      "detail": {
+        "steps": [
+          "archive SHA-256 matches expected",
+          "ZIP entry names safe (50 entries)",
+          "target manifest ID ldlijlaccfeelfdhgnjbibniocefckjj v7.0.0 verified, no symlinks",
+          "candidate staged: ID ldlijlaccfeelfdhgnjbibniocefckjj v7.0.0, 50-file inventory exact match"
+        ]
+      }
+    },
+    {
+      "name": "APPLY_WITHOUT_APPROVAL_REFUSED",
+      "pass": true,
+      "detail": {
+        "result": "ABORTED",
+        "code": "APPROVAL_REQUIRED",
+        "message": "apply requires --approve <PLAN_TOKEN> from a prior dry-run plan",
+        "rolledBack": false
+      }
+    },
+    {
+      "name": "APPLY_WRONG_TOKEN_REFUSED",
+      "pass": true,
+      "detail": {
+        "result": "ABORTED",
+        "code": "APPROVAL_TOKEN_MISMATCH",
+        "message": "Plan changed since dry-run or wrong token; re-run plan",
+        "rolledBack": false
+      }
+    },
+    {
+      "name": "SKIP_BACKUP_REFUSED",
+      "pass": true,
+      "detail": {
+        "result": "ABORTED",
+        "code": "SKIP_BACKUP_REFUSED",
+        "message": "--skip-backup is not permitted",
+        "rolledBack": false
+      }
+    },
+    {
+      "name": "APPLY_COMMITTED",
+      "pass": true,
+      "detail": {
+        "result": "COMMITTED",
+        "backupRoot": "C:\\Users\\oPus\\AppData\\Local\\Temp\\xpider-txn-uJHtiu\\bk1",
+        "state": "COMMITTED"
+      }
+    },
+    {
+      "name": "POST_APPLY_ALL_50_FILES_MATCH_INVENTORY",
+      "pass": true,
+      "detail": {
+        "bad": []
+      }
+    },
+    {
+      "name": "POST_APPLY_USER_FILE_PRESERVED",
+      "pass": true,
+      "detail": {}
+    },
+    {
+      "name": "POST_APPLY_RETIRED_BASELINE_FILE_REMOVED_ONLY_WITH_BACKUP",
+      "pass": true,
+      "detail": {}
+    },
+    {
+      "name": "POST_APPLY_NO_TEMP_LEFTOVERS",
+      "pass": true,
+      "detail": {}
+    },
+    {
+      "name": "ROLLBACK_RESTORES_BYTE_IDENTICAL_ORIGINAL",
+      "pass": true,
+      "detail": {
+        "result": "ROLLED_BACK",
+        "backupRoot": "C:\\Users\\oPus\\AppData\\Local\\Temp\\xpider-txn-uJHtiu\\bk1"
+      }
+    },
+    {
+      "name": "disk_full_during_commit: ENOSPC -> auto-rollback restores original",
+      "pass": true,
+      "detail": {
+        "result": "ABORTED",
+        "code": "ENOSPC",
+        "message": "ENOSPC: no space left on device (injected)",
+        "rolledBack": true
+      }
+    },
+    {
+      "name": "staging_fault_after_backup: FAULT_STAGE -> auto-rollback restores original",
+      "pass": true,
+      "detail": {
+        "result": "ABORTED",
+        "code": "FAULT_STAGE",
+        "message": "Injected staging fault",
+        "rolledBack": true
+      }
+    },
+    {
+      "name": "post_verify_failure: POST_VERIFY_FAILED -> auto-rollback restores original",
+      "pass": true,
+      "detail": {
+        "result": "ABORTED",
+        "code": "POST_VERIFY_FAILED",
+        "message": "Post-commit verification failed: manifest.json",
+        "rolledBack": true
+      }
+    },
+    {
+      "name": "process_crash_mid_commit: crashed(exit 88) journal=COMMITTING, recover restores original",
+      "pass": true,
+      "detail": {
+        "crashStatus": 88,
+        "journalState": "COMMITTING",
+        "partialBeforeRecover": true,
+        "recover": {
+          "result": "ROLLED_BACK",
+          "backupRoot": "C:\\Users\\oPus\\AppData\\Local\\Temp\\xpider-txn-uJHtiu\\bk_process_crash_mid_commit"
+        }
+      }
+    },
+    {
+      "name": "crash_during_rollback_then_recover: crashed(exit 77) journal=ROLLING_BACK, recover restores original",
+      "pass": true,
+      "detail": {
+        "crashStatus": 77,
+        "journalState": "ROLLING_BACK",
+        "partialBeforeRecover": true,
+        "recover": {
+          "result": "ROLLED_BACK",
+          "backupRoot": "C:\\Users\\oPus\\AppData\\Local\\Temp\\xpider-txn-uJHtiu\\bk_crash_during_rollback_then_recover"
+        }
+      }
+    },
+    {
+      "name": "ACCESS_DENIED_READONLY_FILE -> auto-rollback restores original",
+      "pass": true,
+      "detail": {
+        "result": "ABORTED",
+        "code": "EPERM",
+        "message": "EPERM: operation not permitted, rename 'C:\\Users\\oPus\\AppData\\Local\\Temp\\xpider-txn-uJHtiu\\access_denied\\background.js.xpider-new' -> 'C:\\Users\\oPus\\AppData\\Local\\Temp\\xpider-txn-uJHtiu\\access_denied\\background.js'",
+        "rolledBack": true
+      }
+    },
+    {
+      "name": "CORRUPTED_ARCHIVE_SHA_MISMATCH_ABORTS",
+      "pass": true,
+      "detail": {
+        "result": "ABORTED",
+        "code": "ARCHIVE_SHA_MISMATCH",
+        "message": "Archive SHA-256 5cd1f528040e813c66024692eba15ee6fc58822d8ed2706d11a7d28b296ab720 != expected b3f39bec4ab0711bbe348614be6bbd1f8d0657987059ec7cd3538565c2c0227e",
+        "rolledBack": false
+      }
+    },
+    {
+      "name": "CORRUPTED_ARCHIVE_EVEN_WITH_MATCHING_SHA_ABORTS",
+      "pass": true,
+      "detail": {
+        "result": "ABORTED",
+        "code": "ARCHIVE_UNREADABLE",
+        "message": "Archive cannot be opened as ZIP: C:\\Users\\oPus\\AppData\\Local\\Temp\\xpider-txn-uJHtiu\\corrupt.zip",
+        "rolledBack": false
+      }
+    },
+    {
+      "name": "WRONG_ID_TARGET_ABORTS",
+      "pass": true,
+      "detail": {
+        "result": "ABORTED",
+        "code": "TARGET_WRONG_ID",
+        "message": "Target extension ID ecmldhohmdnpedjokhfnafplljidkeof != expected ldlijlaccfeelfdhgnjbibniocefckjj",
+        "rolledBack": false
+      }
+    },
+    {
+      "name": "MISSING_MANIFEST_TARGET_ABORTS",
+      "pass": true,
+      "detail": {
+        "result": "ABORTED",
+        "code": "MANIFEST_MISSING",
+        "message": "manifest.json missing in C:\\Users\\oPus\\AppData\\Local\\Temp\\xpider-txn-uJHtiu\\nomanifest_target",
+        "rolledBack": false
+      }
+    },
+    {
+      "name": "WRONG_ID_CANDIDATE_ABORTS",
+      "pass": true,
+      "detail": {
+        "result": "ABORTED",
+        "code": "CANDIDATE_WRONG_ID",
+        "message": "Candidate extension ID dnpldkhffokaehfipgajmbjgkemonohj != expected ldlijlaccfeelfdhgnjbibniocefckjj",
+        "rolledBack": false
+      }
+    },
+    {
+      "name": "MISSING_MANIFEST_CANDIDATE_ABORTS",
+      "pass": true,
+      "detail": {
+        "result": "ABORTED",
+        "code": "MANIFEST_MISSING",
+        "message": "manifest.json missing in C:\\Users\\oPus\\AppData\\Local\\Temp\\xpider-stage-2fpc1r",
+        "rolledBack": false
+      }
+    },
+    {
+      "name": "EXTRA_UNLISTED_FILE_IN_CANDIDATE_ABORTS",
+      "pass": true,
+      "detail": {
+        "result": "ABORTED",
+        "code": "INVENTORY_MISMATCH",
+        "message": "Candidate staging differs from inventory: extra:evil.exe",
+        "rolledBack": false
+      }
+    },
+    {
+      "name": "TAMPERED_CANDIDATE_CONTENT_ABORTS",
+      "pass": true,
+      "detail": {
+        "result": "ABORTED",
+        "code": "INVENTORY_MISMATCH",
+        "message": "Candidate staging differs from inventory: differs:background.js",
+        "rolledBack": false
+      }
+    },
+    {
+      "name": "ZIP_SLIP_ENTRY_ABORTS_BEFORE_EXTRACT",
+      "pass": true,
+      "detail": {
+        "result": "ABORTED",
+        "code": "ZIP_SLIP",
+        "message": "Unsafe ZIP entry name: ../evil.txt",
+        "rolledBack": false
+      }
+    },
+    {
+      "name": "JUNCTION_IN_TARGET_ABORTS",
+      "pass": true,
+      "detail": {
+        "result": "ABORTED",
+        "code": "SYMLINK_FOUND",
+        "message": "Symlink/junction refused: C:\\Users\\oPus\\AppData\\Local\\Temp\\xpider-txn-uJHtiu\\junction\\linkdir",
+        "rolledBack": false
+      }
+    },
+    {
+      "name": "MISSING_TARGET_ABORTS",
+      "pass": true,
+      "detail": {
+        "result": "ABORTED",
+        "code": "TARGET_MISSING",
+        "message": "Target extension root not found: C:\\Users\\oPus\\AppData\\Local\\Temp\\xpider-txn-uJHtiu\\does_not_exist",
+        "rolledBack": false
+      }
+    },
+    {
+      "name": "TARGET_DRIFT_AFTER_PREVIEW_INVALIDATES_APPROVAL",
+      "pass": true,
+      "detail": {
+        "result": "ABORTED",
+        "code": "APPROVAL_TOKEN_MISMATCH",
+        "message": "Plan changed since dry-run or wrong token; re-run plan",
+        "rolledBack": false
+      }
+    }
+  ],
+  "status": "SUCCESS",
+  "endedAt": "2026-11-07T00:49:44.111Z",
+  "total": 31,
+  "failed": 0
+}

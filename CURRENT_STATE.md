@@ -1,4 +1,4 @@
-# XPIDER AutoForm Sender Pro — Current State
+﻿# XPIDER AutoForm Sender Pro ??Current State
 
 ## Identity
 - Protocol: OCA-DEV-1.4
@@ -8,12 +8,21 @@
 - Branch: candidate/p0-core-regressions-v7 (candidate branch isolated; base major/v7-dual-mode preserves frozen RC11 code 20678ada with schedule-only updates at tip cf96bc08)
 - Candidate Functional Base Commit: 76fab0933276ae163c377d39d9dca5169a33063c (short: 76fab093; verified commit object)
 - Authoritative Candidate Branch Ref: refs/heads/candidate/p0-core-regressions-v7 (live tip resolved dynamically via git ls-remote / git rev-parse HEAD)
-- State Rev: 2026-11-06.714
-- Authority Cursor: 6699586274 (Responding to ChatGPT Directive #6699586274: Owner Delivery & Verification, Same-ID Upgrade/Rollback Harness, Security/Path Traversal/Permissions Audit, Bound Clean-Room Smoke, Release Hold)
+- State Rev: 2026-11-06.715
+- Authority Cursor: 6699808184 (Responding to ChatGPT Directive #6699808184: transactional update/rollback tool, restorable backup, interruption matrix, delivery verification)
 - Canonical Schedule Revision: 9 (verified canonical GitHub schedule blob 39a0243f7c334470163deeed59cf6f306b48e72a at commit cf96bc0891c422e371ba6dd3077b99e35462026e)
-- Collaboration Mode: Manual ChatGPT ↔ Antigravity Collaboration per Owner Directive.
+- Collaboration Mode: Manual ChatGPT ??Antigravity Collaboration per Owner Directive.
 - Verification Status: HOLD (Awaiting independent ChatGPT Code Audit & Gate Decision). Release HOLD strictly maintained. Zero external public submissions.
 
+---
+
+## 0. Directive #6699808184 (State Rev .715) - CORRECTIONS AND NEW EVIDENCE
+- CORRECTION: EXPORT OWNER DEBUG BUNDLE is NOT a backup (redacted, no restore function). Earlier guidance in sections below that names it as the backup prerequisite is superseded by dist/OWNER_SAFE_UPDATE_AND_BACKUP_GUIDE.md.
+- Transactional updater: scripts/xpider_safe_update.js (plan dry-run / apply with PLAN_TOKEN / rollback / recover). Tests: test/run_safe_update_transaction_tests.js -> dist/report_safe_update_transaction.json (31/31).
+- Browser-layer parity + interruption: test/run_backup_restore_parity_harness.js -> dist/report_backup_restore_parity.json (28/28). Verified backup = copy of Local Extension Settings/<id> (browser closed), Edge only.
+- Delivery: repo goodkie/v-show is PUBLIC; anonymous download of the ZIP matched SHA-256 b3f39bec...c2227e. Not authentication-gated.
+- Functional source 76fab093; extension/ tree identical at documentation HEAD.
+- NOT_TESTED: Windows 10 owner smoke, real NopeCHA, live Decodo/DO egress, selective/global reset UI, Chrome (non-Edge) profile backup.
 ---
 
 ## 1. Directive #6699586274 Execution & Verified Deliverables
@@ -100,3 +109,4 @@
 - Base branch `major/v7-dual-mode` remains 100% frozen RC11 (`20678ada`), schedule tip `cf96bc08`.
 - Zero public form submissions (localhost `127.0.0.1:8088` only).
 - IVCS Manager completely untouched (strictly ChatGPT-owned).
+

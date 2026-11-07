@@ -1,0 +1,236 @@
+{
+  "suite": "XPIDER_BACKUP_RESTORE_PARITY_AND_UPDATER_INTERRUPTION",
+  "archiveSha256": "b3f39bec4ab0711bbe348614be6bbd1f8d0657987059ec7cd3538565c2c0227e",
+  "startedAt": "2026-11-07T00:50:44.214Z",
+  "assertions": [
+    {
+      "name": "FIXTURE_SERVER_UP_AND_ZERO_POSTS_AT_START",
+      "pass": true,
+      "detail": {
+        "bg": 0
+      }
+    },
+    {
+      "name": "RC11_AND_CANDIDATE_BACKGROUND_DIFFER (so running-code check is meaningful)",
+      "pass": true,
+      "detail": {}
+    },
+    {
+      "name": "PHASE_A_RC11_RUNNING_CODE_IS_RC11",
+      "pass": true,
+      "detail": {}
+    },
+    {
+      "name": "PHASE_A_SEEDED_ALL_KEYS_READABLE",
+      "pass": true,
+      "detail": {
+        "n": 12
+      }
+    },
+    {
+      "name": "OWNER_DEBUG_BUNDLE_HAS_NO_RESTORE_PATH",
+      "pass": true,
+      "detail": {}
+    },
+    {
+      "name": "OWNER_DEBUG_BUNDLE_IS_REDACTED_NOT_A_FAITHFUL_COPY",
+      "pass": true,
+      "detail": {
+        "fn": "function",
+        "sanitizedEqualsOriginal": false,
+        "secretPresentInBundle": false,
+        "keysKept": 28,
+        "keysOriginal": 28,
+        "checkpointKept": true,
+        "csvUrlsKept": true,
+        "settingsKept": true,
+        "emailsKept": false
+      }
+    },
+    {
+      "name": "PHASE_B_EXT_STORAGE_DIR_EXISTS_ON_DISK",
+      "pass": true,
+      "detail": {
+        "LES": "profile1\\Default\\Local Extension Settings\\ldlijlaccfeelfdhgnjbibniocefckjj"
+      }
+    },
+    {
+      "name": "NO_EXTENSION_INDEXEDDB_PRESENT (nothing to back up besides storage.local)",
+      "pass": true,
+      "detail": {
+        "idbEntries": []
+      }
+    },
+    {
+      "name": "BACKUP_COPY_NONEMPTY",
+      "pass": true,
+      "detail": {}
+    },
+    {
+      "name": "PHASE_B_FRESH_PROFILE_HAS_NO_OWNER_DATA_BEFORE_RESTORE",
+      "pass": true,
+      "detail": {}
+    },
+    {
+      "name": "RESTORE_ALL_SEEDED_KEYS_IDENTICAL (storage.local/templates/CSV queue/checkpoint/settings/history/ledger/emails)",
+      "pass": true,
+      "detail": {
+        "differing": []
+      }
+    },
+    {
+      "name": "RESTORE_NO_AUTO_CAMPAIGN_LAUNCH",
+      "pass": true,
+      "detail": {
+        "state": {
+          "fixtureTabs": 0,
+          "flags": [
+            [
+              "isActive",
+              false
+            ],
+            [
+              "manualHoldActive",
+              false
+            ],
+            [
+              "externalCaptchaWaitActive",
+              false
+            ],
+            [
+              "isLoopRunning",
+              false
+            ],
+            [
+              "focusActiveTargetTab",
+              true
+            ],
+            [
+              "activeTargetInFlight",
+              false
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "name": "RESTORE_PAUSED_CHECKPOINT_STILL_PAUSED_WITH_QUEUE",
+      "pass": true,
+      "detail": {}
+    },
+    {
+      "name": "PHASE_C_UPDATER_APPLY_COMMITTED_ON_INSTALL_DIR",
+      "pass": true,
+      "detail": {
+        "text": "{\n  \"result\": \"COMMITTED\",\n  \"backupRoot\": \"C:\\\\Users\\\\oPus\\\\AppData\\\\Local\\\\Temp\\\\xpider-brp-cGizoL\\\\upd_bk1\",\n  \"state\": \"COMMITTED\"\n}"
+      }
+    },
+    {
+      "name": "PHASE_C_RUNNING_CODE_IS_CANDIDATE_NO_STALE_CODE",
+      "pass": true,
+      "detail": {}
+    },
+    {
+      "name": "UPGRADE_SAME_ID_ALL_SEEDED_KEYS_IDENTICAL",
+      "pass": true,
+      "detail": {
+        "differing": []
+      }
+    },
+    {
+      "name": "UPGRADE_NO_DUPLICATE_LEDGER_OR_HISTORY_ENTRIES",
+      "pass": true,
+      "detail": {}
+    },
+    {
+      "name": "UPGRADE_NO_AUTO_CAMPAIGN_LAUNCH",
+      "pass": true,
+      "detail": {}
+    },
+    {
+      "name": "PHASE_D_ROLLBACK_TREE_IDENTICAL_TO_RC11",
+      "pass": true,
+      "detail": {
+        "text": "{\n  \"result\": \"ROLLED_BACK\",\n  \"backupRoot\": \"C:\\\\Users\\\\oPus\\\\AppData\\\\Local\\\\Temp\\\\xpider-brp-cGizoL\\\\upd_bk1\"\n}"
+      }
+    },
+    {
+      "name": "PHASE_D_RUNNING_CODE_IS_RC11_AFTER_DOWNGRADE",
+      "pass": true,
+      "detail": {}
+    },
+    {
+      "name": "DOWNGRADE_ALL_SEEDED_KEYS_IDENTICAL",
+      "pass": true,
+      "detail": {
+        "differing": []
+      }
+    },
+    {
+      "name": "PHASE_E_UPDATER_CRASHED_MID_COMMIT",
+      "pass": true,
+      "detail": {}
+    },
+    {
+      "name": "PHASE_E_INSTALL_DIR_IS_SPLIT_BEFORE_RECOVERY (proves recovery needed)",
+      "pass": true,
+      "detail": {}
+    },
+    {
+      "name": "PHASE_E_RECOVER_RESTORES_RC11_TREE",
+      "pass": true,
+      "detail": {}
+    },
+    {
+      "name": "PHASE_E_RUNNING_CODE_IS_RC11_AFTER_RECOVERY",
+      "pass": true,
+      "detail": {}
+    },
+    {
+      "name": "INTERRUPTED_UPDATE_RECOVERY_ALL_SEEDED_KEYS_IDENTICAL",
+      "pass": true,
+      "detail": {
+        "differing": []
+      }
+    },
+    {
+      "name": "INTERRUPTED_UPDATE_NO_AUTO_CAMPAIGN_LAUNCH",
+      "pass": true,
+      "detail": {}
+    },
+    {
+      "name": "PHASE_F_KEYLESS_TARGET_(FORK_RISK)_REFUSED",
+      "pass": true,
+      "detail": {
+        "text": "{\"result\":\"ABORTED\",\"code\":\"MANIFEST_KEY_MISSING\",\"message\":\"manifest.key missing in C:\\\\Users\\\\oPus\\\\AppData\\\\Local\\\\Temp\\\\xpider-brp-cGizoL\\\\install3 (ID woul"
+      }
+    }
+  ],
+  "notes": [
+    "Selective/global reset UI flows, real Windows 10 desktop smoke, real NopeCHA interaction, live Decodo/DO egress: NOT_TESTED in this suite."
+  ],
+  "status": "SUCCESS",
+  "ownerDebugBundleFindings": {
+    "fn": "function",
+    "sanitizedEqualsOriginal": false,
+    "secretPresentInBundle": false,
+    "keysKept": 28,
+    "keysOriginal": 28,
+    "checkpointKept": true,
+    "csvUrlsKept": true,
+    "settingsKept": true,
+    "emailsKept": false,
+    "restoreFunctionPresentInPopup": false
+  },
+  "ownerDebugBundleVerdict": "INSUFFICIENT_AS_BACKUP (diagnostic redacted export, no restore function)",
+  "backupMethod": {
+    "what": "Copy '<profile>\\Default\\Local Extension Settings\\ldlijlaccfeelfdhgnjbibniocefckjj' with the browser fully closed",
+    "sizeBytes": 5819,
+    "files": 5,
+    "includesSecrets": true,
+    "note": "contains plaintext storage.local incl. credentials; keep local/private, never upload"
+  },
+  "endedAt": "2026-11-07T00:51:11.991Z",
+  "total": 28,
+  "failed": 0
+}
