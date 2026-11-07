@@ -1,21 +1,22 @@
 {
-  "schemaVersion": "XPIDER_OWNER_HANDOFF_MANIFEST_REV15",
-  "directive": "#6706731716",
+  "schemaVersion": "XPIDER_OWNER_HANDOFF_MANIFEST_REV16",
+  "directive": "#6707178560",
   "status": "CANDIDATE_RELEASE_HOLD",
   "branch": "candidate/p0-core-regressions-v7",
   "functionalCandidateCommit": "76fab0933276ae163c377d39d9dca5169a33063c",
   "extensionTreeSha": "1d1bac897f70df6fa107cde85b00de591d5dea93",
   "expectedExtensionId": "ldlijlaccfeelfdhgnjbibniocefckjj",
   "extensionZipAloneIsCompleteKit": false,
-  "extensionZipScopeNote": "dist/XPIDER_V7.0.0_CANDIDATE_P0_REV9_OWNER_SAFE.zip contains ONLY the 50 Chrome MV3 runtime files from extension/. The complete owner-usable handoff archive is dist/XPIDER_V7.0.0_CANDIDATE_REV15_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip (built via node scripts/build_owner_complete_handoff_kit.js).",
+  "extensionZipScopeNote": "dist/XPIDER_V7.0.0_CANDIDATE_P0_REV9_OWNER_SAFE.zip contains ONLY the 50 Chrome MV3 runtime files from extension/. The complete owner-usable handoff archive is dist/XPIDER_V7.0.0_CANDIDATE_REV16_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip (built via node scripts/build_owner_complete_handoff_kit.js; prior REV15 archive preserved frozen).",
   "operatorCapabilityByEnvironment": {
     "withNodeJs18Plus": {
       "supported": true,
       "capabilities": [
         "preflight-uat (read-only dry-run preflight)",
-        "backup-storage (AES-256-GCM encrypted offline backup + --synthetic-uat-origin content audit)",
+        "init-uat-profile (creates disposable UAT profile with 256-bit uatSessionNonce in .xpider-uat-disposable-profile.json)",
+        "backup-storage & backup-uat-synthetic (AES-256-GCM encrypted offline backup + Chrome API chrome.storage.local.get(null) readback attestation)",
         "verify-storage-backup (in-memory integrity verification, writtenToDisk: false)",
-        "restore-storage (bidirectional origin-verified atomic restore; blocks real backups in UAT even with --allow-synthetic-uat-restore)",
+        "restore-storage & restore-uat-synthetic (scope-verified atomic restore; blocks real backups in UAT even with --allow-synthetic-uat-restore; allows real recovery on uat-named real folders via --confirm-offline-owner-recovery)",
         "plan / apply / rollback / recover (journaled transactional code update)",
         "owner-extension-test-site/server.js (localhost 127.0.0.1:8088 fixtures + 127.0.0.1:8090 fail-closed sink proxy)"
       ]
@@ -53,8 +54,8 @@
     {
       "role": "standalone_transactional_updater_and_uat_cli",
       "path": "scripts/xpider_safe_update.js",
-      "size": 52496,
-      "sha256": "8e9014ec4589d83ae562f15b7e02ef575143f42003f0ddc8506c47a560ba7c1b",
+      "size": 70893,
+      "sha256": "61c8f11b4c371c95d30e354ec649222267dd7174eba061b4c979cd6d29c94a03",
       "rawUrl": "https://github.com/goodkie/v-show/raw/candidate/p0-core-regressions-v7/scripts/xpider_safe_update.js"
     },
     {
@@ -74,15 +75,15 @@
     {
       "role": "synthetic_only_windows_10_uat_checklist",
       "path": "dist/WINDOWS_10_OWNER_UAT_CHECKLIST.md",
-      "size": 25727,
-      "sha256": "f12d357a43592908ba046e111f730832f03fbc8f7d35eb5afe3599bf61fa00d5",
+      "size": 27413,
+      "sha256": "57734a96782ac15dcd973d426036db447e6a928c07b9f90017a9c445177452e1",
       "rawUrl": "https://github.com/goodkie/v-show/raw/candidate/p0-core-regressions-v7/dist/WINDOWS_10_OWNER_UAT_CHECKLIST.md"
     },
     {
       "role": "owner_safe_update_backup_and_rollback_guide",
       "path": "dist/OWNER_SAFE_UPDATE_AND_BACKUP_GUIDE.md",
-      "size": 18333,
-      "sha256": "1ce289be498b18f669e02a5e13d452914c0e52032ebc6147923ee746fc38cc4d",
+      "size": 20553,
+      "sha256": "415882ac8abc2a3f94894b403830bd775f568943b1d98f31f9cb687dcfb3a51d",
       "rawUrl": "https://github.com/goodkie/v-show/raw/candidate/p0-core-regressions-v7/dist/OWNER_SAFE_UPDATE_AND_BACKUP_GUIDE.md"
     },
     {
@@ -123,8 +124,8 @@
     {
       "role": "automated_uat_isolation_and_preflight_harness",
       "path": "test/run_uat_synthetic_profile_isolation_check.js",
-      "size": 61795,
-      "sha256": "ed68a747a0e6e3b2ba8a41d296f77e0207520db91b3c26f3a32eaa757ce7d5ba",
+      "size": 72895,
+      "sha256": "37a3b4073041ce2d24ab54fb918ac23d3119cb2682fad785c530a9b30c21df2a",
       "rawUrl": "https://github.com/goodkie/v-show/raw/candidate/p0-core-regressions-v7/test/run_uat_synthetic_profile_isolation_check.js"
     },
     {

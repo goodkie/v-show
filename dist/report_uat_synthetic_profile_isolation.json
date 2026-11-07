@@ -4,7 +4,7 @@
   "browserBinary": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
   "runtimeBrowserVersion": "Chrome/157.0.8103.38",
   "extensionId": "ldlijlaccfeelfdhgnjbibniocefckjj",
-  "startedAt": "2026-11-07T12:31:36.807Z",
+  "startedAt": "2026-11-07T13:16:48.810Z",
   "networkIsolationConfig": {
     "fixtureServer": "http://127.0.0.1:8088",
     "sinkProxyServer": "http://127.0.0.1:8090",
@@ -30,141 +30,181 @@
     "firewallProfileUnchangedGuaranteed": true,
     "uatChromeProcessCount": 14,
     "uatChromePids": [
-      16184,
-      19824,
-      19012,
-      11568,
-      8020,
-      27224,
-      21964,
-      21100,
-      21440,
-      3432,
-      3472,
-      15176,
-      5540,
-      23528
+      9308,
+      2240,
+      25448,
+      25732,
+      25288,
+      24508,
+      22096,
+      25376,
+      22092,
+      22088,
+      20912,
+      18644,
+      22684,
+      16216
     ],
     "observedTcpSocketsOnUatChromePids": [
       {
         "LocalAddress": "0.0.0.0",
-        "LocalPort": 62644,
+        "LocalPort": 63725,
         "RemoteAddress": "0.0.0.0",
         "RemotePort": 0,
         "State": 100,
-        "OwningProcess": 11568
+        "OwningProcess": 25732
       },
       {
         "LocalAddress": "0.0.0.0",
-        "LocalPort": 62630,
+        "LocalPort": 63724,
         "RemoteAddress": "0.0.0.0",
         "RemotePort": 0,
         "State": 100,
-        "OwningProcess": 11568
+        "OwningProcess": 25732
       },
       {
         "LocalAddress": "0.0.0.0",
-        "LocalPort": 62627,
+        "LocalPort": 63723,
         "RemoteAddress": "0.0.0.0",
         "RemotePort": 0,
         "State": 100,
-        "OwningProcess": 11568
+        "OwningProcess": 25732
       },
       {
         "LocalAddress": "0.0.0.0",
-        "LocalPort": 62626,
+        "LocalPort": 63722,
         "RemoteAddress": "0.0.0.0",
         "RemotePort": 0,
         "State": 100,
-        "OwningProcess": 11568
+        "OwningProcess": 25732
       },
       {
         "LocalAddress": "0.0.0.0",
-        "LocalPort": 62623,
+        "LocalPort": 63721,
         "RemoteAddress": "0.0.0.0",
         "RemotePort": 0,
         "State": 100,
-        "OwningProcess": 11568
+        "OwningProcess": 25732
       },
       {
         "LocalAddress": "0.0.0.0",
-        "LocalPort": 62490,
+        "LocalPort": 63720,
         "RemoteAddress": "0.0.0.0",
         "RemotePort": 0,
         "State": 100,
-        "OwningProcess": 11568
+        "OwningProcess": 25732
       },
       {
         "LocalAddress": "0.0.0.0",
-        "LocalPort": 62489,
+        "LocalPort": 63591,
         "RemoteAddress": "0.0.0.0",
         "RemotePort": 0,
         "State": 100,
-        "OwningProcess": 11568
+        "OwningProcess": 25732
+      },
+      {
+        "LocalAddress": "0.0.0.0",
+        "LocalPort": 63590,
+        "RemoteAddress": "0.0.0.0",
+        "RemotePort": 0,
+        "State": 100,
+        "OwningProcess": 25732
       },
       {
         "LocalAddress": "127.0.0.1",
-        "LocalPort": 62644,
-        "RemoteAddress": "127.0.0.1",
-        "RemotePort": 18988,
-        "State": 5,
-        "OwningProcess": 11568
-      },
-      {
-        "LocalAddress": "127.0.0.1",
-        "LocalPort": 62630,
-        "RemoteAddress": "127.0.0.1",
-        "RemotePort": 18989,
-        "State": 5,
-        "OwningProcess": 11568
-      },
-      {
-        "LocalAddress": "127.0.0.1",
-        "LocalPort": 62627,
+        "LocalPort": 63725,
         "RemoteAddress": "127.0.0.1",
         "RemotePort": 18989,
         "State": 5,
-        "OwningProcess": 11568
+        "OwningProcess": 25732
       },
       {
         "LocalAddress": "127.0.0.1",
-        "LocalPort": 62626,
+        "LocalPort": 63724,
         "RemoteAddress": "127.0.0.1",
         "RemotePort": 18989,
         "State": 5,
-        "OwningProcess": 11568
+        "OwningProcess": 25732
       },
       {
         "LocalAddress": "127.0.0.1",
-        "LocalPort": 62623,
+        "LocalPort": 63723,
         "RemoteAddress": "127.0.0.1",
         "RemotePort": 18989,
         "State": 5,
-        "OwningProcess": 11568
+        "OwningProcess": 25732
       },
       {
         "LocalAddress": "127.0.0.1",
-        "LocalPort": 62490,
+        "LocalPort": 63722,
+        "RemoteAddress": "127.0.0.1",
+        "RemotePort": 18989,
+        "State": 5,
+        "OwningProcess": 25732
+      },
+      {
+        "LocalAddress": "127.0.0.1",
+        "LocalPort": 63721,
+        "RemoteAddress": "127.0.0.1",
+        "RemotePort": 18989,
+        "State": 5,
+        "OwningProcess": 25732
+      },
+      {
+        "LocalAddress": "127.0.0.1",
+        "LocalPort": 63720,
+        "RemoteAddress": "127.0.0.1",
+        "RemotePort": 18989,
+        "State": 5,
+        "OwningProcess": 25732
+      },
+      {
+        "LocalAddress": "127.0.0.1",
+        "LocalPort": 63591,
         "RemoteAddress": "127.0.0.1",
         "RemotePort": 8088,
         "State": 5,
-        "OwningProcess": 11568
+        "OwningProcess": 25732
       },
       {
         "LocalAddress": "127.0.0.1",
-        "LocalPort": 62489,
+        "LocalPort": 63590,
         "RemoteAddress": "127.0.0.1",
         "RemotePort": 8088,
         "State": 5,
-        "OwningProcess": 11568
+        "OwningProcess": 25732
       },
       {
         "LocalAddress": "127.0.0.1",
         "LocalPort": 9246,
         "RemoteAddress": "127.0.0.1",
-        "RemotePort": 62521,
+        "RemotePort": 63607,
         "State": 5,
-        "OwningProcess": 16184
+        "OwningProcess": 9308
+      },
+      {
+        "LocalAddress": "127.0.0.1",
+        "LocalPort": 9246,
+        "RemoteAddress": "127.0.0.1",
+        "RemotePort": 63606,
+        "State": 5,
+        "OwningProcess": 9308
+      },
+      {
+        "LocalAddress": "127.0.0.1",
+        "LocalPort": 9246,
+        "RemoteAddress": "127.0.0.1",
+        "RemotePort": 63596,
+        "State": 5,
+        "OwningProcess": 9308
+      },
+      {
+        "LocalAddress": "127.0.0.1",
+        "LocalPort": 9246,
+        "RemoteAddress": "127.0.0.1",
+        "RemotePort": 63700,
+        "State": 5,
+        "OwningProcess": 9308
       },
       {
         "LocalAddress": "127.0.0.1",
@@ -172,31 +212,7 @@
         "RemoteAddress": "0.0.0.0",
         "RemotePort": 0,
         "State": 2,
-        "OwningProcess": 16184
-      },
-      {
-        "LocalAddress": "127.0.0.1",
-        "LocalPort": 9246,
-        "RemoteAddress": "127.0.0.1",
-        "RemotePort": 62612,
-        "State": 5,
-        "OwningProcess": 16184
-      },
-      {
-        "LocalAddress": "127.0.0.1",
-        "LocalPort": 9246,
-        "RemoteAddress": "127.0.0.1",
-        "RemotePort": 62520,
-        "State": 5,
-        "OwningProcess": 16184
-      },
-      {
-        "LocalAddress": "127.0.0.1",
-        "LocalPort": 9246,
-        "RemoteAddress": "127.0.0.1",
-        "RemotePort": 62486,
-        "State": 5,
-        "OwningProcess": 16184
+        "OwningProcess": 9308
       }
     ],
     "observedNonLoopbackTcpSocketsOnUatChromePids": 0,
@@ -1037,9 +1053,13 @@
           "decryptedFilesWritten": 0,
           "extId": "ldlijlaccfeelfdhgnjbibniocefckjj",
           "backupOrigin": "OFFLINE_REAL_RECOVERY_ONLY",
+          "backupScope": "OFFLINE_OWNER_RECOVERY",
+          "uatSessionNonce": null,
+          "chromeApiReadbackSha256": null,
+          "attestationQualification": "AES-256-GCM authenticates the asserted backup scope, disposable profile session nonce, Chrome storage.local API readback hash, and LevelDB file manifest SHA-256; it is NOT mathematical proof of arbitrary uninspected LevelDB binaries.",
           "fileCount": 2,
           "manifestSha256": "d1ffcf13d7b52b520226662376955db365d1c3abd87f6db27f9fd70e4a79a39b",
-          "backupSha256": "3d710ff6a4650914c80e79ae3abb5b09d05908ca0b3d0a8ecbbd0a97408ca4c5"
+          "backupSha256": "7b570a643719e4eb2db2c645cedd1fafef68b362ee3a45e5cb7d21ae82de2a62"
         },
         "wrongPassCode": "WRONG_PASSPHRASE_OR_CORRUPT_BACKUP"
       }
@@ -1050,8 +1070,10 @@
       "detail": {
         "cleanAudit": {
           "result": "UAT_PROFILE_ISOLATION_VERIFIED",
-          "urlsChecked": 3,
+          "uatSessionNonce": "8117ac439128f6427d936e8cf03d86b142e2952ec4937477f0f174f69116bff8",
+          "urlsChecked": 5,
           "emailsChecked": 3,
+          "strictAllowlistEnforced": true,
           "nonLoopbackUrls": 0,
           "sensitiveCredentials": 0,
           "nonSyntheticEmails": 0
@@ -1095,8 +1117,8 @@
         "osFirewallIsolationStatus": "BLOCKED_NO_SAFE_ELEVATED_TEST_VM",
         "explicitPathsVerified": {
           "targetDir": "E:\\vivpr\\ai\\extension-form-sender\\dist\\clean_room_unpacked_v7",
-          "profileDir": "C:\\Users\\oPus\\AppData\\Local\\Temp\\xpider-uat-net-iso-9Rhyup\\sim_real_owner_profile",
-          "lesDir": "C:\\Users\\oPus\\AppData\\Local\\Temp\\xpider-uat-net-iso-9Rhyup\\sim_real_owner_profile\\Default\\Local Extension Settings\\ldlijlaccfeelfdhgnjbibniocefckjj",
+          "profileDir": "C:\\Users\\oPus\\AppData\\Local\\Temp\\xpider-uat-net-iso-RmJFox\\sim_real_owner_profile",
+          "lesDir": "C:\\Users\\oPus\\AppData\\Local\\Temp\\xpider-uat-net-iso-RmJFox\\sim_real_owner_profile\\Default\\Local Extension Settings\\ldlijlaccfeelfdhgnjbibniocefckjj",
           "lesExists": true,
           "lesFileCount": 2
         },
@@ -1140,7 +1162,7 @@
       "detail": {
         "result": "ABORTED",
         "code": "REAL_BACKUP_RESTORE_INTO_UAT_FORBIDDEN",
-        "message": "Refusing to restore an encrypted storage backup into a UAT profile directory without --allow-synthetic-uat-restore and verified SYNTHETIC_UAT_ONLY backup origin. Real owner backups (pre_v7.xpider-enc) are strictly offline and recovery-only.",
+        "message": "Refusing to restore into a disposable UAT profile (.xpider-uat-disposable-profile.json present) without --allow-synthetic-uat-restore and a Chrome-API-attested SYNTHETIC_UAT_ONLY backup.",
         "rolledBack": false
       }
     },
@@ -1150,7 +1172,7 @@
       "detail": {
         "result": "ABORTED",
         "code": "NON_SYNTHETIC_BACKUP_ORIGIN_IN_UAT_RESTORE",
-        "message": "Refusing UAT restore: decrypted backup origin is \"OFFLINE_REAL_RECOVERY_ONLY\" (not verifiably SYNTHETIC_UAT_ONLY). Passing --allow-synthetic-uat-restore cannot override a real or unmarked backup into a UAT profile.",
+        "message": "Refusing UAT restore: decrypted backup origin=\"OFFLINE_REAL_RECOVERY_ONLY\", scope=\"OFFLINE_OWNER_RECOVERY\" lacks verified Chrome-API readback attestation and disposable session nonce binding. Passing --allow-synthetic-uat-restore cannot override a real or unattested backup into a UAT profile.",
         "rolledBack": false
       }
     },
@@ -1158,10 +1180,34 @@
       "name": "SYNTHETIC_UAT_BACKUP_REJECTS_POLLUTED_PROFILE_AND_ALLOWS_CLEAN_SYNTHETIC_RESTORE",
       "pass": true,
       "detail": {
-        "badSynthBkCode": "NON_SYNTHETIC_BACKUP_CONTENT_FORBIDDEN",
-        "goodSynthBkOrigin": "SYNTHETIC_UAT_ONLY",
+        "noIdentityCode": "MISSING_DISPOSABLE_UAT_PROFILE_IDENTITY",
+        "noReadbackCode": "MISSING_CHROME_API_READBACK_FOR_SYNTHETIC_BACKUP",
+        "goodSynthBkScope": "SYNTHETIC_UAT_ATTESTED",
         "goodSynthRestoreResult": "RESTORED_VERIFIED",
         "synthIntoRealBlockedCode": "SYNTHETIC_BACKUP_RESTORE_INTO_REAL_PROFILE_FORBIDDEN"
+      }
+    },
+    {
+      "name": "ITEM2_NEGATIVE_CONTROLS_COMPRESSED_UNICODE_ESCAPED_SERIALIZED_UNKNOWN_KEY_AND_NON_UAT_PATH",
+      "pass": true,
+      "detail": {
+        "compressedCode": "NON_LOOPBACK_TARGET_IN_UAT_PROFILE",
+        "unicodeUrlCode": "NON_LOOPBACK_TARGET_IN_UAT_PROFILE",
+        "unicodeEmailCode": "NON_SYNTHETIC_EMAIL_IN_UAT_PROFILE",
+        "escapedUrlCode": "NON_LOOPBACK_TARGET_IN_UAT_PROFILE",
+        "serializedJsonCode": "NON_LOOPBACK_TARGET_IN_UAT_PROFILE",
+        "unknownKeyCode": "UNRECOGNIZED_STORAGE_KEY_IN_UAT_PROFILE",
+        "nonUatNoIdentityRestoreCode": "MISSING_DISPOSABLE_UAT_PROFILE_IDENTITY",
+        "nonUatDiskUntouched": true
+      }
+    },
+    {
+      "name": "ITEM3_REAL_RECOVERY_ALLOWED_ON_UAT_NAMED_REAL_DIR_WITH_CONFIRM_FLAG",
+      "pass": true,
+      "detail": {
+        "withoutConfirmCode": "REAL_BACKUP_RESTORE_INTO_UAT_FORBIDDEN",
+        "withConfirmResult": "RESTORED_VERIFIED",
+        "disposableStillBlockedCode": "REAL_BACKUP_RESTORE_INTO_UAT_FORBIDDEN"
       }
     },
     {
@@ -1186,8 +1232,8 @@
   },
   "sinkFirewallSampleBlockedLog": [
     {
-      "id": "fw_blk_1794054704838_1",
-      "timestamp": 1794054704838,
+      "id": "fw_blk_1794057415565_1",
+      "timestamp": 1794057415565,
       "kind": "HTTP",
       "method": "POST",
       "target": "http://dummy-public-target.example.com/contact",
@@ -1196,8 +1242,8 @@
       "transmittedBytes": 0
     },
     {
-      "id": "fw_blk_1794054704843_2",
-      "timestamp": 1794054704843,
+      "id": "fw_blk_1794057415571_2",
+      "timestamp": 1794057415571,
       "kind": "CONNECT",
       "method": "CONNECT",
       "target": "dummy-public-target.example.com:443",
@@ -1206,8 +1252,8 @@
       "transmittedBytes": 0
     },
     {
-      "id": "fw_blk_1794054704872_3",
-      "timestamp": 1794054704872,
+      "id": "fw_blk_1794057415593_3",
+      "timestamp": 1794057415593,
       "kind": "HTTP",
       "method": "GET",
       "target": "http://198.51.100.42:8080/leak-check",
@@ -1216,8 +1262,8 @@
       "transmittedBytes": 0
     },
     {
-      "id": "fw_blk_1794054704876_4",
-      "timestamp": 1794054704876,
+      "id": "fw_blk_1794057415598_4",
+      "timestamp": 1794057415598,
       "kind": "HTTP",
       "method": "GET",
       "target": "http://[2001:db8::42]:8080/leak-check",
@@ -1226,8 +1272,8 @@
       "transmittedBytes": 0
     },
     {
-      "id": "fw_blk_1794054704918_5",
-      "timestamp": 1794054704918,
+      "id": "fw_blk_1794057415625_5",
+      "timestamp": 1794057415625,
       "kind": "HTTP",
       "method": "GET",
       "target": "http://198.51.100.42:8080/redirected-leak",
@@ -1236,8 +1282,8 @@
       "transmittedBytes": 0
     },
     {
-      "id": "fw_blk_1794054705064_6",
-      "timestamp": 1794054705064,
+      "id": "fw_blk_1794057415742_6",
+      "timestamp": 1794057415742,
       "kind": "CONNECT",
       "method": "CONNECT",
       "target": "198.51.100.42:8080",
@@ -1246,8 +1292,8 @@
       "transmittedBytes": 0
     },
     {
-      "id": "fw_blk_1794054705068_7",
-      "timestamp": 1794054705068,
+      "id": "fw_blk_1794057415746_7",
+      "timestamp": 1794057415746,
       "kind": "HTTP",
       "method": "POST",
       "target": "http://198.51.100.42:8080/page-fetch-leak",
@@ -1256,8 +1302,8 @@
       "transmittedBytes": 0
     },
     {
-      "id": "fw_blk_1794054705082_8",
-      "timestamp": 1794054705082,
+      "id": "fw_blk_1794057415758_8",
+      "timestamp": 1794057415758,
       "kind": "HTTP",
       "method": "GET",
       "target": "http://198.51.100.42:8080/page-nav-leak",
@@ -1266,8 +1312,8 @@
       "transmittedBytes": 0
     },
     {
-      "id": "fw_blk_1794054705122_9",
-      "timestamp": 1794054705122,
+      "id": "fw_blk_1794057415803_9",
+      "timestamp": 1794057415803,
       "kind": "HTTP",
       "method": "GET",
       "target": "http://198.51.100.42:8080/sw-bg-fetch-leak",
@@ -1276,8 +1322,8 @@
       "transmittedBytes": 0
     },
     {
-      "id": "fw_blk_1794054705126_10",
-      "timestamp": 1794054705126,
+      "id": "fw_blk_1794057415808_10",
+      "timestamp": 1794057415808,
       "kind": "CONNECT",
       "method": "CONNECT",
       "target": "dummy-public-target.example.com:443",
@@ -1286,17 +1332,17 @@
       "transmittedBytes": 0
     },
     {
-      "id": "fw_blk_1794054708528_11",
-      "timestamp": 1794054708528,
+      "id": "fw_blk_1794057418564_11",
+      "timestamp": 1794057418564,
       "kind": "CONNECT",
       "method": "CONNECT",
-      "target": "optimizationguide-pa.googleapis.com:443",
+      "target": "content-autofill.googleapis.com:443",
       "clientAddr": "127.0.0.1",
       "reason": "EGRESS_DENIED_BY_LOCAL_SINK_FIREWALL_CONNECT",
       "transmittedBytes": 0
     }
   ],
-  "endedAt": "2026-11-07T12:31:57.648Z",
-  "total": 21,
+  "endedAt": "2026-11-07T13:17:09.157Z",
+  "total": 23,
   "failed": 0
 }

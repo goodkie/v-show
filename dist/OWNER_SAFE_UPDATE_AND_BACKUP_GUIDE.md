@@ -2,8 +2,8 @@
 
 Status: **CANDIDATE / RELEASE HOLD**. Do not apply to your live installation until the Owner explicitly approves.
 Functional source: commit `76fab0933276ae163c377d39d9dca5169a33063c` (`extension/` tree SHA `1d1bac897f70df6fa107cde85b00de591d5dea93` — 100% byte-identical at the latest documentation/tooling HEAD of branch `candidate/p0-core-regressions-v7`).
-Single Complete Owner-Usable Handoff Archive (REV15): `dist/XPIDER_V7.0.0_CANDIDATE_REV15_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip` (Direct Raw URL: `https://github.com/goodkie/v-show/raw/candidate/p0-core-regressions-v7/dist/XPIDER_V7.0.0_CANDIDATE_REV15_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip`, reproducible via `node scripts\build_owner_complete_handoff_kit.js`)
-Single Handoff Manifest: `dist/OWNER_HANDOFF_MANIFEST_REV15.json` (and backward-compatible `dist/OWNER_HANDOFF_MANIFEST_REV14.json`)
+Single Complete Owner-Usable Handoff Archive (REV16): `dist/XPIDER_V7.0.0_CANDIDATE_REV16_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip` (Direct Raw URL: `https://github.com/goodkie/v-show/raw/candidate/p0-core-regressions-v7/dist/XPIDER_V7.0.0_CANDIDATE_REV16_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip`, reproducible via `node scripts\build_owner_complete_handoff_kit.js`; prior `dist/XPIDER_V7.0.0_CANDIDATE_REV15_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip` is preserved frozen at SHA-256 `43a9bcdfff9651b8f31644d31dc8eba0463e8b5ee1163f198096b0d2a99959cd`)
+Single Handoff Manifest: `dist/OWNER_HANDOFF_MANIFEST_REV16.json` (with preserved frozen `dist/OWNER_HANDOFF_MANIFEST_REV15.json` and `dist/OWNER_HANDOFF_MANIFEST_REV14.json`)
 Frozen Extension Runtime Archive Inside `dist\` (50 extension runtime files ONLY — NOT the complete handoff kit by itself): `dist/XPIDER_V7.0.0_CANDIDATE_P0_REV9_OWNER_SAFE.zip` — `4,467,833 bytes` — SHA-256 `b3f39bec4ab0711bbe348614be6bbd1f8d0657987059ec7cd3538565c2c0227e`
 Extension ID (pinned by manifest `key`): `ldlijlaccfeelfdhgnjbibniocefckjj`
 Companion UAT Checklist: `dist/WINDOWS_10_OWNER_UAT_CHECKLIST.md`
@@ -15,27 +15,27 @@ Companion UAT Checklist: `dist/WINDOWS_10_OWNER_UAT_CHECKLIST.md`
 
 ---
 
-## 1. Single Complete Owner-Usable Handoff Archive (`XPIDER_V7.0.0_CANDIDATE_REV15_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip`) vs Runtime Extension ZIP
+## 1. Single Complete Owner-Usable Handoff Archive (`XPIDER_V7.0.0_CANDIDATE_REV16_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip`) vs Runtime Extension ZIP
 
 > [!IMPORTANT]
 > **Why the Runtime Extension ZIP (`dist/XPIDER_V7.0.0_CANDIDATE_P0_REV9_OWNER_SAFE.zip`, SHA-256 `b3f39bec...`) is NOT the complete handoff kit by itself:**
 > - `dist/XPIDER_V7.0.0_CANDIDATE_P0_REV9_OWNER_SAFE.zip` contains **only the 50 Chrome MV3 extension runtime files** (`manifest.json`, `background.js`, `popup.js`, `content-script.js`, `modules/*`, etc. from `extension/`, tree SHA `1d1bac897f70df6fa107cde85b00de591d5dea93`).
-> - To give the Owner **one single complete downloadable archive** that works cleanly from any new extraction directory outside the git repository, `dist/XPIDER_V7.0.0_CANDIDATE_REV15_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip` bundles the untouched frozen runtime ZIP (`dist/XPIDER_V7.0.0_CANDIDATE_P0_REV9_OWNER_SAFE.zip`) **together with** the standalone updater/backup CLI (`scripts/xpider_safe_update.js`), both SHA-256 inventories (`dist/PACKAGE_INVENTORY_SHA256.json`, `dist/rc11_baseline_manifest.json`), both guides (`dist/WINDOWS_10_OWNER_UAT_CHECKLIST.md`, `dist/OWNER_SAFE_UPDATE_AND_BACKUP_GUIDE.md`), the localhost fixture + fail-closed sink server (`owner-extension-test-site/server.js` + HTML fixtures), and the automated verification helpers (`test/run_uat_synthetic_profile_isolation_check.js`, `test/run_safe_update_transaction_tests.js`, `test/lib/browser_cdp.js`).
+> - To give the Owner **one single complete downloadable archive** that works cleanly from any new extraction directory outside the git repository, `dist/XPIDER_V7.0.0_CANDIDATE_REV16_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip` bundles the untouched frozen runtime ZIP (`dist/XPIDER_V7.0.0_CANDIDATE_P0_REV9_OWNER_SAFE.zip`) **together with** the standalone updater/backup CLI (`scripts/xpider_safe_update.js`), both SHA-256 inventories (`dist/PACKAGE_INVENTORY_SHA256.json`, `dist/rc11_baseline_manifest.json`), both guides (`dist/WINDOWS_10_OWNER_UAT_CHECKLIST.md`, `dist/OWNER_SAFE_UPDATE_AND_BACKUP_GUIDE.md`), the localhost fixture + fail-closed sink server (`owner-extension-test-site/server.js` + HTML fixtures), and the automated verification helpers (`test/run_uat_synthetic_profile_isolation_check.js`, `test/run_safe_update_transaction_tests.js`, `test/lib/browser_cdp.js`).
 
-### Unambiguous Extraction Root & Exact File Tree Inside `XPIDER_V7.0.0_CANDIDATE_REV15_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip`
-Extract the complete handoff archive into a clean directory (e.g. `D:\xpider_handoff_rev15`) and `Set-Location "D:\xpider_handoff_rev15"`:
+### Unambiguous Extraction Root & Exact File Tree Inside `XPIDER_V7.0.0_CANDIDATE_REV16_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip`
+Extract the complete handoff archive into a clean directory (e.g. `D:\xpider_handoff_rev16`) and `Set-Location "D:\xpider_handoff_rev16"`:
 ```powershell
-Expand-Archive -Path ".\XPIDER_V7.0.0_CANDIDATE_REV15_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip" -DestinationPath "D:\xpider_handoff_rev15" -Force
-Set-Location "D:\xpider_handoff_rev15"
+Expand-Archive -Path ".\XPIDER_V7.0.0_CANDIDATE_REV16_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip" -DestinationPath "D:\xpider_handoff_rev16" -Force
+Set-Location "D:\xpider_handoff_rev16"
 ```
-Extracting into `D:\xpider_handoff_rev15` produces this exact relative tree:
+Extracting into `D:\xpider_handoff_rev16` produces this exact relative tree:
 - `dist/XPIDER_V7.0.0_CANDIDATE_P0_REV9_OWNER_SAFE.zip` (Frozen 50-file runtime extension ZIP, `4,467,833 B`, SHA-256 `b3f39bec4ab0711bbe348614be6bbd1f8d0657987059ec7cd3538565c2c0227e`)
 - `dist/PACKAGE_INVENTORY_SHA256.json` (50-file candidate SHA-256 inventory)
 - `dist/rc11_baseline_manifest.json` (Frozen RC11 baseline manifest)
 - `dist/WINDOWS_10_OWNER_UAT_CHECKLIST.md` (Step-by-step Windows 10 UAT checklist)
 - `dist/OWNER_SAFE_UPDATE_AND_BACKUP_GUIDE.md` (This backup, update & rollback guide)
-- `dist/OWNER_HANDOFF_MANIFEST_REV15.json` & `dist/OWNER_HANDOFF_MANIFEST_REV14.json` (Complete file/size/SHA-256 manifests)
-- `scripts/xpider_safe_update.js` (Standalone transactional updater, `preflight-uat`, encrypted backup/restore & UAT auditor CLI)
+- `dist/OWNER_HANDOFF_MANIFEST_REV16.json` & `dist/OWNER_HANDOFF_MANIFEST_REV14.json` (Complete file/size/SHA-256 manifests)
+- `scripts/xpider_safe_update.js` (Standalone transactional updater, `preflight-uat`, `init-uat-profile`, encrypted backup/restore & UAT auditor CLI)
 - `scripts/build_owner_complete_handoff_kit.js` (Deterministic local assembly script for the complete handoff kit)
 - `owner-extension-test-site/server.js` + `contact-standard.html`, `subscribe-no-message.html`, `consent-required-no-message.html`, `contact-success.html`, `index.html` (Localhost `127.0.0.1:8088` fixtures + `127.0.0.1:8090` fail-closed sink proxy)
 - `test/run_uat_synthetic_profile_isolation_check.js`, `test/run_safe_update_transaction_tests.js`, `test/lib/browser_cdp.js` (Automated verification harnesses)
@@ -72,14 +72,17 @@ Extracting into `D:\xpider_handoff_rev15` produces this exact relative tree:
 
 ---
 
-## 2. Verified Storage Backup, In-Memory Verification & Bidirectional Origin-Verified Restore (Browser Fully Closed)
-Developer-tested on **Google Chrome `157.0.8103.38`** (`dist/report_chrome_migration_parity.json`, 37/37; `dist/report_uat_synthetic_profile_isolation.json`, 21/21) and **Microsoft Edge `146.0.3856.59`**. The extension uses `chrome.storage.local` only (verified: zero extension IndexedDB directories on disk).
+## 2. Verified Storage Backup, In-Memory Verification & Scope-Attested Restore (Browser Fully Closed)
+Developer-tested on **Google Chrome `157.0.8103.38`** (`dist/report_chrome_migration_parity.json`, 37/37; `dist/report_uat_synthetic_profile_isolation.json`, 23/23) and **Microsoft Edge `146.0.3856.59`**. The extension uses `chrome.storage.local` only (verified: zero extension IndexedDB directories on disk).
 
 > [!CAUTION]
-> **Cryptographic + Content-Inspected Boundary Between Offline Real Backups and Synthetic UAT (`NON_SYNTHETIC_BACKUP_ORIGIN_IN_UAT_RESTORE`)**:
-> 1. Normal offline backups created without `--synthetic-uat-origin` are stamped inside the AES-256-GCM authenticated payload with `"backupOrigin": "OFFLINE_REAL_RECOVERY_ONLY"`.
-> 2. **Passing `--allow-synthetic-uat-restore` CANNOT override a real or unmarked backup into a UAT profile**: `restore-storage` inspects the decrypted `backupOrigin` and raw LevelDB buffers in memory before touching disk, and fails closed with `NON_SYNTHETIC_BACKUP_ORIGIN_IN_UAT_RESTORE` / `NON_SYNTHETIC_BACKUP_CONTENT_FORBIDDEN` if the archive was not created with `--synthetic-uat-origin` or contains any non-loopback URL, non-`@uat-local.test` email, or credential marker.
-> 3. Conversely, a backup stamped `"backupOrigin": "SYNTHETIC_UAT_ONLY"` is refused by `restore-storage` if pointed at a non-UAT real profile (`SYNTHETIC_BACKUP_RESTORE_INTO_REAL_PROFILE_FORBIDDEN`).
+> **Disposable UAT Profile Identity, Chrome API Readback Validation & AES-256-GCM Provenance Qualification (`NON_SYNTHETIC_BACKUP_ORIGIN_IN_UAT_RESTORE`)**:
+> 1. **Qualification of AES-256-GCM Tag**: AES-256-GCM authenticates the asserted backup scope (`backupScope`), the disposable UAT session nonce (`uatSessionNonce` from `init-uat-profile`), and the validated `chrome.storage.local.get(null)` API readback snapshot (`chromeApiReadbackSha256`) plus heuristic raw buffer checks — **it does NOT prove mathematical provenance of arbitrary LevelDB binary `.ldb`/`.log` contents**.
+> 2. **Disposable UAT Backups (`backup-uat-synthetic`) Require Harness-Initialized Identity & Chrome API Readback**:
+>    - A synthetic UAT backup can **only** be created from a disposable profile initialized via `node scripts\xpider_safe_update.js init-uat-profile --profile-dir "D:\xpider_uat_synthetic_profile"` (which records `.xpider-uat-disposable-profile.json` with a 256-bit `uatSessionNonce`) **AND** accompanied by an explicit `chrome.storage.local.get(null)` JSON readback (`--storage-readback <readback.json>`) whose keys match the strict synthetic allowlist (`ALLOWLISTED_UAT_TOP_KEYS`, rejecting any unknown key with `UNRECOGNIZED_STORAGE_KEY_IN_UAT_PROFILE`), whose `xpider_uat_session_nonce` matches `uatSessionNonce`, whose queued URLs are all `127.0.0.1`/`localhost`/`[::1]`, and whose normalized/decoded/decompressed/deserialized values contain zero non-loopback URLs, non-`@uat-local.test` emails, or credential markers.
+> 3. **Restore Decisions Do Not Rely on Folder Name `'uat'` Alone**:
+>    - Synthetic UAT restore (`restore-uat-synthetic` or `--allow-synthetic-uat-restore`) requires the destination directory to carry a valid `.xpider-uat-disposable-profile.json` identity (`MISSING_DISPOSABLE_UAT_PROFILE_IDENTITY` if missing, even when the directory path does not contain `'uat'`) and rejects any real/unmarked backup (`NON_SYNTHETIC_BACKUP_ORIGIN_IN_UAT_RESTORE`).
+>    - Legitimate offline emergency recovery (`restore-storage --confirm-offline-owner-recovery`) restores an `OFFLINE_REAL_RECOVERY_ONLY` archive to any real profile lacking `.xpider-uat-disposable-profile.json`, **even if the real directory path happens to contain the substring `'uat'`**.
 
 ### Option A (Recommended): Local Passphrase-Encrypted Storage Backup (`aes-256-gcm` + `scrypt`)
 1. **Close ALL Chrome/Edge windows completely** (the tool probes every LevelDB file in `Local Extension Settings\ldlijlaccfeelfdhgnjbibniocefckjj` and fails closed with `BROWSER_RUNNING_LOCK_HELD` if Chrome/Edge or another process holds any lock).
@@ -94,11 +97,12 @@ Developer-tested on **Google Chrome `157.0.8103.38`** (`dist/report_chrome_migra
    node scripts\xpider_safe_update.js verify-storage-backup --in "D:\xpider_private_backups\pre_v7.xpider-enc" --passphrase-env XPIDER_BACKUP_PASS
    ```
    Verifies the AES-256-GCM authentication tag, `backupOrigin`, `manifestSha256`, and every LevelDB file hash strictly in memory (`"writtenToDisk": false`, `"decryptedFilesWritten": 0`) and zeroes the buffer immediately without extracting personal data to any folder.
-4. **Recovery-Only Atomic Restore** (ONLY if emergency recovery of your real profile is ever needed, with Chrome closed and explicit Owner approval):
+4. **Recovery-Only Atomic Restore** (ONLY if emergency recovery of your real profile is ever needed, with Chrome closed and explicit `--confirm-offline-owner-recovery`):
    ```powershell
-   node scripts\xpider_safe_update.js restore-storage --profile-dir "$env:LOCALAPPDATA\Google\Chrome\User Data\Default" --in "D:\xpider_private_backups\pre_v7.xpider-enc" --passphrase-env XPIDER_BACKUP_PASS
+   node scripts\xpider_safe_update.js restore-storage --profile-dir "$env:LOCALAPPDATA\Google\Chrome\User Data\Default" --in "D:\xpider_private_backups\pre_v7.xpider-enc" --passphrase-env XPIDER_BACKUP_PASS --confirm-offline-owner-recovery
    ```
-   - Wrong passphrase, mismatched extension ID, UAT target path (`REAL_BACKUP_RESTORE_INTO_UAT_FORBIDDEN` / `NON_SYNTHETIC_BACKUP_ORIGIN_IN_UAT_RESTORE`), path traversal, or 1-byte tampering fails closed before touching your profile.
+   - Wrong passphrase, mismatched extension ID, disposable UAT profile identity (`.xpider-uat-disposable-profile.json` -> `REAL_BACKUP_RESTORE_INTO_UAT_FORBIDDEN` / `NON_SYNTHETIC_BACKUP_ORIGIN_IN_UAT_RESTORE`), path traversal, or 1-byte tampering fails closed before touching your profile.
+   - Passing `--confirm-offline-owner-recovery` ensures legitimate emergency restoration is **never** blocked merely because a real directory name happens to contain `'uat'`.
    - If a prior restore was interrupted between folder rename steps (`.pre-restore-bak`), the next run automatically recovers `.pre-restore-bak` before proceeding so pre-restore data is never lost.
 
 ### Option B (Manual Offline Folder Copy Fallback — Works Without Node.js)
@@ -141,13 +145,13 @@ Requires Node.js 18+ on the PC. **During UAT, run `apply` only on a disposable c
 ## 5. Consolidated Acceptance & Verification Status Matrix (`SOURCE_METADATA_VERIFIED` vs `DEV_PASS` vs `BLOCKED` vs `NOT_TESTED`)
 See `dist/WINDOWS_10_OWNER_UAT_CHECKLIST.md` (Phase C) for the full 10-gate table:
 - **`SOURCE_METADATA_VERIFIED` (Separately Verifiable File/Hash Provenance)**:
-  - Frozen 50-file candidate runtime ZIP (`dist/XPIDER_V7.0.0_CANDIDATE_P0_REV9_OWNER_SAFE.zip`, SHA-256 `b3f39bec...`, `extension/` tree SHA `1d1bac897f70df6fa107cde85b00de591d5dea93`) and complete 15-file handoff archive (`dist/XPIDER_V7.0.0_CANDIDATE_REV15_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip`, indexed in `dist/OWNER_HANDOFF_MANIFEST_REV15.json`) verified by two independent hash invocations (`Node crypto` + `PowerShell Get-FileHash / .NET ZipFile`).
+  - Frozen 50-file candidate runtime ZIP (`dist/XPIDER_V7.0.0_CANDIDATE_P0_REV9_OWNER_SAFE.zip`, SHA-256 `b3f39bec...`, `extension/` tree SHA `1d1bac897f70df6fa107cde85b00de591d5dea93`), preserved frozen REV15 archive (`dist/XPIDER_V7.0.0_CANDIDATE_REV15_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip`, SHA-256 `43a9bcdf...`), and complete 18-entry REV16 handoff archive (`dist/XPIDER_V7.0.0_CANDIDATE_REV16_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip`, indexed in `dist/OWNER_HANDOFF_MANIFEST_REV16.json`) verified by two independent hash invocations (`Node crypto` + `PowerShell Get-FileHash / .NET ZipFile`).
 - **`DEV_PASS` (Developer-Executed Automated Suites Only; Not Independently Verified by ChatGPT or Owner on Windows 10)**:
-  1. Clean-room extracted handoff E2E test outside repository working tree (`dist/report_clean_extracted_handoff_kit_e2e.json`, `14/14`),
+  1. Clean-room extracted handoff E2E test outside repository working tree (`dist/report_clean_extracted_handoff_kit_e2e.json`, `16/16`),
   2. Chrome `157.0.8103.38` (`37/37`) + Edge `146.0.3856.59` (`37/37`) migration/backup/restore parity,
   3. Chrome `157.0.8103.38` (`18/18`) UI/3-mode/reset/CSV/consent suite,
   4. Transactional updater (`57/57`) fault-injection/rollback suite,
-  5. Browser-sink network isolation (`127.0.0.1:8090`), `--disable-quic`, DNR, `preflight-uat`, and cryptographic `NON_SYNTHETIC_BACKUP_ORIGIN_IN_UAT_RESTORE` guard (`21/21`, `transmittedViaSinkProxy: 0` — scoped strictly to browser proxy/DNR/CDP path, **not** proof of total host egress default-deny).
+  5. Browser-sink network isolation (`127.0.0.1:8090`), `--disable-quic`, DNR, `preflight-uat`, `init-uat-profile`, Chrome API `chrome.storage.local.get(null)` readback attestation, compressed/Unicode/escaped/serialized/unknown-key negative controls, and non-`uat` path / `--confirm-offline-owner-recovery` restore gates (`23/23`, `transmittedViaSinkProxy: 0` — scoped strictly to browser proxy/DNR/CDP path, **not** proof of total host egress default-deny; AES-256-GCM authenticates asserted scope, session nonce, and Chrome API readback hash, **not** mathematical provenance of arbitrary LevelDB binaries).
 - **`BLOCKED`**:
   6. Host OS / kernel default-deny firewall policy (`netsh advfirewall`) on disposable test Chrome / VM (`BLOCKED_NO_SAFE_ELEVATED_TEST_VM` in non-elevated session; no Admin/UAC escalation or Owner firewall modifications).
 - **`NOT_TESTED` (`OWNER_ACTION_REQUIRED`)**:

@@ -26,6 +26,7 @@
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
+const zlib = require('zlib');
 const crypto = require('crypto');
 const { spawn, spawnSync } = require('child_process');
 const { Br, cdp, openWs, sleep, BIN, EXT_ID } = require('./lib/browser_cdp');
@@ -244,9 +245,11 @@ function A(name, pass, detail = {}) {
         );
 
         // =========================================================================
-        // PART 3: LAUNCH CHROME WITH MULTI-LAYER NETWORK ISOLATION + CDP INTERCEPTION
+        // PART 3: INITIALIZE DISPOSABLE UAT PROFILE (`init-uat-profile`) & LAUNCH CHROME
         // =========================================================================
         const uatProf = path.join(work, 'uat_clean_chrome_profile');
+        const initUatProfRes = runCli(['init-uat-profile', '--profile-dir', uatProf]);
+        const uatSessionNonce = initUatProfRes.out && initUatProfRes.out.uatSessionNonce;
         const isolationFlags = [
             `--proxy-server=127.0.0.1:${SINK_PORT}`,
             `--proxy-bypass-list=127.0.0.1:${FIXTURE_PORT};localhost:${FIXTURE_PORT};[::1]:${FIXTURE_PORT}`,
@@ -732,12 +735,13 @@ function A(name, pass, detail = {}) {
             { verifyResult: verOk.out, wrongPassCode: verWrong.out.code }
         );
 
-        // Seed synthetic-only UAT state and verify `audit-uat-state` + negative controls
+        // Seed synthetic-only UAT state through Chrome extension API and verify `audit-uat-state` + negative controls
         await br.sw(`(async()=>{
             await chrome.storage.local.clear();
             await chrome.storage.local.set({
                 xpider_schema_version: 2,
                 xpider_migration_phase: 'COMPLETED',
+                xpider_uat_session_nonce: ${JSON.stringify(uatSessionNonce)},
                 templates_v2: {
                     version: 2,
                     activeTemplateId: 'uat_default',
@@ -774,7 +778,8 @@ function A(name, pass, detail = {}) {
         const liveStorage = await br.sw(`chrome.storage.local.get(null)`);
         const stateFile = path.join(work, 'live_uat_state.json');
         fs.writeFileSync(stateFile, JSON.stringify(liveStorage, null, 2));
-        const auditOk = runCli(['audit-uat-state', '--in', stateFile]);
+        fs.writeFileSync(path.join(uatProf, '.xpider-uat-storage-readback.json'), JSON.stringify(liveStorage, null, 2));
+        const auditOk = runCli(['audit-uat-state', '--in', stateFile, '--profile-dir', uatProf]);
 
         const SECRET_VAL = 'RealDecodoSecretPass_DO_NOT_PRINT_7741';
         const REAL_EMAIL_LOCAL = 'real_customer_inbox_8821';
@@ -782,7 +787,7 @@ function A(name, pass, detail = {}) {
         const badCredFile = path.join(work, 'bad_cred.json');
         const badEmailFile = path.join(work, 'bad_email.json');
         fs.writeFileSync(badUrlFile, JSON.stringify({ ...liveStorage, savedUrlLists_v2: { lists: { real: { urls: ['https://production-client.example.com/contact'] } } } }));
-        fs.writeFileSync(badCredFile, JSON.stringify({ ...liveStorage, xpider_proxy_credentials: { user: 'real_owner', password: SECRET_VAL } }));
+        fs.writeFileSync(badCredFile, JSON.stringify({ ...liveStorage, templates_v2: { activeTemplateId: 't1', templates: { t1: { email: 'operator@uat-local.test', message: `decodo_pass=${SECRET_VAL}` } } } }));
         fs.writeFileSync(badEmailFile, JSON.stringify({ ...liveStorage, xpider_email_collector_v1: { emails: { [`${REAL_EMAIL_LOCAL}@corp-domain.com`]: { email: `${REAL_EMAIL_LOCAL}@corp-domain.com` } } } }));
 
         const rejUrl = runCli(['audit-uat-state', '--in', badUrlFile]);
@@ -790,8 +795,11 @@ function A(name, pass, detail = {}) {
         const rejEmail = runCli(['audit-uat-state', '--in', badEmailFile]);
 
         A('SYNTHETIC_PROFILE_STATE_AUDIT_AND_SECRET_SAFE_REJECTION_GATES',
+            initUatProfRes.status === 0 &&
+            typeof uatSessionNonce === 'string' && uatSessionNonce.length === 64 &&
             auditOk.status === 0 &&
             auditOk.out.result === 'UAT_PROFILE_ISOLATION_VERIFIED' &&
+            auditOk.out.uatSessionNonce === uatSessionNonce &&
             rejUrl.status !== 0 && rejUrl.out.code === 'NON_LOOPBACK_TARGET_IN_UAT_PROFILE' &&
             rejCred.status !== 0 && rejCred.out.code === 'SENSITIVE_CREDENTIALS_IN_UAT_PROFILE' && !rejCred.text.includes(SECRET_VAL) &&
             rejEmail.status !== 0 && rejEmail.out.code === 'NON_SYNTHETIC_EMAIL_IN_UAT_PROFILE' && !rejEmail.text.includes(REAL_EMAIL_LOCAL),
@@ -804,7 +812,8 @@ function A(name, pass, detail = {}) {
         );
 
         // =========================================================================
-        // PART 6: REV14 DRY-RUN PREFLIGHT (`preflight-uat`), UAT RESTORE GUARD & HANDOFF MANIFEST
+        // PART 6: REV14-REV16 DRY-RUN PREFLIGHT (`preflight-uat`), CHROME API READBACK
+        //         SYNTHETIC BACKUP ATTESTATION, NEGATIVE CONTROLS & RESTORE SCOPE GATES
         // =========================================================================
         const pfNoArgs = runCli(['preflight-uat']);
         const pfOnlyTarget = runCli(['preflight-uat', '--target', CAND]);
@@ -839,12 +848,13 @@ function A(name, pass, detail = {}) {
         );
 
         const uatRestoreTarget = path.join(work, 'uat_disposable_restore_target');
-        fs.mkdirSync(uatRestoreTarget, { recursive: true });
+        const initRestoreTarget = runCli(['init-uat-profile', '--profile-dir', uatRestoreTarget]);
         const restoreIntoUatBlocked = runCli(
             ['restore-storage', '--profile-dir', uatRestoreTarget, '--in', encFile, '--passphrase-env', 'XP_PASS'],
             { XP_PASS: PASS }
         );
         A('RESTORE_STORAGE_INTO_UAT_PROFILE_BLOCKED_BY_DEFAULT',
+            initRestoreTarget.status === 0 &&
             restoreIntoUatBlocked.status !== 0 &&
             restoreIntoUatBlocked.out &&
             restoreIntoUatBlocked.out.result === 'ABORTED' &&
@@ -852,9 +862,9 @@ function A(name, pass, detail = {}) {
             restoreIntoUatBlocked.out
         );
 
-        // Item 5 (Directive #6706731716): Passing --allow-synthetic-uat-restore on a REAL/unmarked backup MUST STILL FAIL CLOSED
+        // Item 5 (Directive #6706731716) + Item 1 (Directive #6707178560): Passing --allow-synthetic-uat-restore / restore-uat-synthetic on a REAL/unmarked backup MUST STILL FAIL CLOSED
         const restoreRealWithOverrideBlocked = runCli(
-            ['restore-storage', '--profile-dir', uatRestoreTarget, '--in', encFile, '--passphrase-env', 'XP_PASS', '--allow-synthetic-uat-restore'],
+            ['restore-uat-synthetic', '--profile-dir', uatRestoreTarget, '--in', encFile, '--passphrase-env', 'XP_PASS'],
             { XP_PASS: PASS }
         );
         A('RESTORE_REAL_BACKUP_INTO_UAT_BLOCKED_EVEN_WITH_ALLOW_SYNTHETIC_FLAG',
@@ -866,48 +876,177 @@ function A(name, pass, detail = {}) {
             restoreRealWithOverrideBlocked.out
         );
 
-        // Item 5 (Directive #6706731716): Synthetic backup creation rejects polluted profile, accepts clean synthetic profile, and enforces bidirectional origin restore
-        const badSynthBkAttempt = runCli(
-            ['backup-storage', '--profile-dir', simRealProf, '--out', path.join(work, 'should_fail_synth.xpider-enc'), '--passphrase-env', 'XP_PASS', '--synthetic-uat-origin'],
+        // Item 1 (Directive #6707178560): Synthetic backup requires `init-uat-profile` identity + validated Chrome API `chrome.storage.local.get(null)` readback
+        const badSynthBkNoIdentity = runCli(
+            ['backup-uat-synthetic', '--profile-dir', simRealProf, '--out', path.join(work, 'should_fail_no_id.xpider-enc'), '--passphrase-env', 'XP_PASS'],
             { XP_PASS: PASS }
         );
         const cleanSynthProf = path.join(work, 'uat_clean_synth_source_profile');
+        const initCleanSynth = runCli(['init-uat-profile', '--profile-dir', cleanSynthProf]);
+        const cleanNonce = initCleanSynth.out && initCleanSynth.out.uatSessionNonce;
         const cleanSynthLes = path.join(cleanSynthProf, 'Default', 'Local Extension Settings', EXT_ID);
         fs.mkdirSync(cleanSynthLes, { recursive: true });
         fs.writeFileSync(path.join(cleanSynthLes, '000005.ldb'), 'SYNTHETIC_UAT_STATE url=http://127.0.0.1:8088/contact-standard.html email=operator@uat-local.test');
         fs.writeFileSync(path.join(cleanSynthLes, 'CURRENT'), 'MANIFEST-000001\n');
+
+        // Attempting synthetic backup WITHOUT Chrome API readback fails closed (`MISSING_CHROME_API_READBACK_FOR_SYNTHETIC_BACKUP`)
+        const badSynthBkNoReadback = runCli(
+            ['backup-uat-synthetic', '--profile-dir', cleanSynthProf, '--out', path.join(work, 'should_fail_no_readback.xpider-enc'), '--passphrase-env', 'XP_PASS'],
+            { XP_PASS: PASS }
+        );
+
+        // Write validated Chrome API readback tied to `cleanNonce`
+        const cleanReadbackFile = path.join(cleanSynthProf, '.xpider-uat-storage-readback.json');
+        fs.writeFileSync(cleanReadbackFile, JSON.stringify({
+            ...liveStorage,
+            xpider_uat_session_nonce: cleanNonce
+        }, null, 2));
+
         const synthEncFile = path.join(work, 'verified_synthetic_uat.xpider-enc');
         const goodSynthBk = runCli(
-            ['backup-storage', '--profile-dir', cleanSynthProf, '--out', synthEncFile, '--passphrase-env', 'XP_PASS', '--synthetic-uat-origin'],
+            ['backup-uat-synthetic', '--profile-dir', cleanSynthProf, '--storage-readback', cleanReadbackFile, '--out', synthEncFile, '--passphrase-env', 'XP_PASS'],
             { XP_PASS: PASS }
         );
         const goodSynthRestore = runCli(
-            ['restore-storage', '--profile-dir', uatRestoreTarget, '--in', synthEncFile, '--passphrase-env', 'XP_PASS', '--allow-synthetic-uat-restore'],
+            ['restore-uat-synthetic', '--profile-dir', uatRestoreTarget, '--in', synthEncFile, '--passphrase-env', 'XP_PASS'],
             { XP_PASS: PASS }
         );
         const synthIntoRealBlocked = runCli(
-            ['restore-storage', '--profile-dir', simRealProf, '--in', synthEncFile, '--passphrase-env', 'XP_PASS'],
+            ['restore-storage', '--profile-dir', simRealProf, '--in', synthEncFile, '--passphrase-env', 'XP_PASS', '--confirm-offline-owner-recovery'],
             { XP_PASS: PASS }
         );
         A('SYNTHETIC_UAT_BACKUP_REJECTS_POLLUTED_PROFILE_AND_ALLOWS_CLEAN_SYNTHETIC_RESTORE',
-            badSynthBkAttempt.status !== 0 &&
-            badSynthBkAttempt.out &&
-            badSynthBkAttempt.out.code === 'NON_SYNTHETIC_BACKUP_CONTENT_FORBIDDEN' &&
+            badSynthBkNoIdentity.status !== 0 &&
+            badSynthBkNoIdentity.out && badSynthBkNoIdentity.out.code === 'MISSING_DISPOSABLE_UAT_PROFILE_IDENTITY' &&
+            badSynthBkNoReadback.status !== 0 &&
+            badSynthBkNoReadback.out && badSynthBkNoReadback.out.code === 'MISSING_CHROME_API_READBACK_FOR_SYNTHETIC_BACKUP' &&
             goodSynthBk.status === 0 &&
             goodSynthBk.out &&
             goodSynthBk.out.backupOrigin === 'SYNTHETIC_UAT_ONLY' &&
+            goodSynthBk.out.backupScope === 'SYNTHETIC_UAT_ATTESTED' &&
+            goodSynthBk.out.uatSessionNonce === cleanNonce &&
+            typeof goodSynthBk.out.chromeApiReadbackSha256 === 'string' &&
+            typeof goodSynthBk.out.expectedSnapshotManifestSha256 === 'string' &&
+            typeof goodSynthBk.out.attestationQualification === 'string' &&
+            goodSynthBk.out.attestationQualification.includes('NOT mathematical proof of arbitrary uninspected LevelDB binaries') &&
             goodSynthRestore.status === 0 &&
             goodSynthRestore.out &&
             goodSynthRestore.out.result === 'RESTORED_VERIFIED' &&
-            goodSynthRestore.out.backupOrigin === 'SYNTHETIC_UAT_ONLY' &&
+            goodSynthRestore.out.backupScope === 'SYNTHETIC_UAT_ATTESTED' &&
             synthIntoRealBlocked.status !== 0 &&
             synthIntoRealBlocked.out &&
             synthIntoRealBlocked.out.code === 'SYNTHETIC_BACKUP_RESTORE_INTO_REAL_PROFILE_FORBIDDEN',
             {
-                badSynthBkCode: badSynthBkAttempt.out && badSynthBkAttempt.out.code,
-                goodSynthBkOrigin: goodSynthBk.out && goodSynthBk.out.backupOrigin,
+                noIdentityCode: badSynthBkNoIdentity.out && badSynthBkNoIdentity.out.code,
+                noReadbackCode: badSynthBkNoReadback.out && badSynthBkNoReadback.out.code,
+                goodSynthBkScope: goodSynthBk.out && goodSynthBk.out.backupScope,
                 goodSynthRestoreResult: goodSynthRestore.out && goodSynthRestore.out.result,
                 synthIntoRealBlockedCode: synthIntoRealBlocked.out && synthIntoRealBlocked.out.code
+            }
+        );
+
+        // Item 2 (Directive #6707178560): Negative controls using DUMMY compressed, UTF-8/Unicode, escaped URLs,
+        // split/serialized storage values, unrecognized storage keys, proxy credential sentinels, and a non-'uat' profile path
+        const compressedDummyPayload = zlib.deflateSync(Buffer.from('https://compressed-dummy-leak.example.org/contact', 'utf8')).toString('base64');
+        const negCompressedFile = path.join(work, 'neg_compressed.json');
+        const negUnicodeUrlFile = path.join(work, 'neg_unicode_url.json');
+        const negUnicodeEmailFile = path.join(work, 'neg_unicode_email.json');
+        const negEscapedUrlFile = path.join(work, 'neg_escaped_url.json');
+        const negSerializedJsonFile = path.join(work, 'neg_serialized.json');
+        const negUnknownKeyFile = path.join(work, 'neg_unknown_key.json');
+
+        fs.writeFileSync(negCompressedFile, JSON.stringify({
+            ...liveStorage,
+            templates_v2: { activeTemplateId: 'u1', templates: { u1: { email: 'operator@uat-local.test', message: compressedDummyPayload } } }
+        }));
+        fs.writeFileSync(negUnicodeUrlFile, JSON.stringify({
+            ...liveStorage,
+            templates_v2: { activeTemplateId: 'u1', templates: { u1: { email: 'operator@uat-local.test', website: 'https://더미실제고객도메인.kr/contact' } } }
+        }));
+        fs.writeFileSync(negUnicodeEmailFile, JSON.stringify({
+            ...liveStorage,
+            templates_v2: { activeTemplateId: 'u1', templates: { u1: { email: '더미고객@실제회사.kr', website: 'http://127.0.0.1:8088' } } }
+        }));
+        fs.writeFileSync(negEscapedUrlFile, JSON.stringify({
+            ...liveStorage,
+            templates_v2: { activeTemplateId: 'u1', templates: { u1: { email: 'operator@uat-local.test', message: 'target=https:\\/\\/escaped-dummy-target.example.com\\/form and \\u0068\\u0074\\u0074\\u0070\\u0073://unicode-escaped.example.com/form' } } }
+        }));
+        fs.writeFileSync(negSerializedJsonFile, JSON.stringify({
+            ...liveStorage,
+            templates_v2: { activeTemplateId: 'u1', templates: { u1: { email: 'operator@uat-local.test', message: JSON.stringify({ nested: { splitUrl: 'https://serialized-dummy-leak.example.com/lead' } }) } } }
+        }));
+        fs.writeFileSync(negUnknownKeyFile, JSON.stringify({
+            ...liveStorage,
+            unrecognized_production_stash_key: { note: 'even benign text under an unknown top-level key must fail closed' }
+        }));
+
+        const resNegCompressed = runCli(['audit-uat-state', '--in', negCompressedFile]);
+        const resNegUnicodeUrl = runCli(['audit-uat-state', '--in', negUnicodeUrlFile]);
+        const resNegUnicodeEmail = runCli(['audit-uat-state', '--in', negUnicodeEmailFile]);
+        const resNegEscapedUrl = runCli(['audit-uat-state', '--in', negEscapedUrlFile]);
+        const resNegSerialized = runCli(['audit-uat-state', '--in', negSerializedJsonFile]);
+        const resNegUnknownKey = runCli(['audit-uat-state', '--in', negUnknownKeyFile]);
+
+        // Also test restoring with `--allow-synthetic-uat-restore` into a directory path that does NOT contain 'uat' and lacks `.xpider-uat-disposable-profile.json`
+        const nonUatNamedDir = fs.mkdtempSync(path.join(os.tmpdir(), 'xpider-plain-dir-alpha-'));
+        const resRestoreIntoNonUatNoIdentity = runCli(
+            ['restore-storage', '--profile-dir', nonUatNamedDir, '--in', synthEncFile, '--passphrase-env', 'XP_PASS', '--allow-synthetic-uat-restore'],
+            { XP_PASS: PASS }
+        );
+        const nonUatDiskUntouched = !fs.existsSync(path.join(nonUatNamedDir, 'Local Extension Settings', EXT_ID, '000005.ldb'));
+        try { fs.rmSync(nonUatNamedDir, { recursive: true, force: true }); } catch (_) {}
+
+        A('ITEM2_NEGATIVE_CONTROLS_COMPRESSED_UNICODE_ESCAPED_SERIALIZED_UNKNOWN_KEY_AND_NON_UAT_PATH',
+            resNegCompressed.status !== 0 && resNegCompressed.out && resNegCompressed.out.code === 'NON_LOOPBACK_TARGET_IN_UAT_PROFILE' &&
+            resNegUnicodeUrl.status !== 0 && resNegUnicodeUrl.out && resNegUnicodeUrl.out.code === 'NON_LOOPBACK_TARGET_IN_UAT_PROFILE' &&
+            resNegUnicodeEmail.status !== 0 && resNegUnicodeEmail.out && resNegUnicodeEmail.out.code === 'NON_SYNTHETIC_EMAIL_IN_UAT_PROFILE' &&
+            resNegEscapedUrl.status !== 0 && resNegEscapedUrl.out && resNegEscapedUrl.out.code === 'NON_LOOPBACK_TARGET_IN_UAT_PROFILE' &&
+            resNegSerialized.status !== 0 && resNegSerialized.out && resNegSerialized.out.code === 'NON_LOOPBACK_TARGET_IN_UAT_PROFILE' &&
+            resNegUnknownKey.status !== 0 && resNegUnknownKey.out && resNegUnknownKey.out.code === 'UNRECOGNIZED_STORAGE_KEY_IN_UAT_PROFILE' &&
+            resRestoreIntoNonUatNoIdentity.status !== 0 &&
+            resRestoreIntoNonUatNoIdentity.out && resRestoreIntoNonUatNoIdentity.out.code === 'MISSING_DISPOSABLE_UAT_PROFILE_IDENTITY' &&
+            nonUatDiskUntouched,
+            {
+                compressedCode: resNegCompressed.out && resNegCompressed.out.code,
+                unicodeUrlCode: resNegUnicodeUrl.out && resNegUnicodeUrl.out.code,
+                unicodeEmailCode: resNegUnicodeEmail.out && resNegUnicodeEmail.out.code,
+                escapedUrlCode: resNegEscapedUrl.out && resNegEscapedUrl.out.code,
+                serializedJsonCode: resNegSerialized.out && resNegSerialized.out.code,
+                unknownKeyCode: resNegUnknownKey.out && resNegUnknownKey.out.code,
+                nonUatNoIdentityRestoreCode: resRestoreIntoNonUatNoIdentity.out && resRestoreIntoNonUatNoIdentity.out.code,
+                nonUatDiskUntouched
+            }
+        );
+
+        // Item 3 (Directive #6707178560): Legitimate offline emergency recovery is NOT blocked just because a real directory name contains 'uat'
+        // when `--confirm-offline-owner-recovery` is provided, while a harness-initialized disposable UAT directory IS still blocked!
+        const realDirWithUatSubstring = path.join(work, 'real_owner_stuart_uat_folder');
+        fs.mkdirSync(realDirWithUatSubstring, { recursive: true });
+        const realUatNameBlockedWithoutConfirm = runCli(
+            ['restore-storage', '--profile-dir', realDirWithUatSubstring, '--in', encFile, '--passphrase-env', 'XP_PASS'],
+            { XP_PASS: PASS }
+        );
+        const realUatNameAllowedWithConfirm = runCli(
+            ['restore-storage', '--profile-dir', realDirWithUatSubstring, '--in', encFile, '--passphrase-env', 'XP_PASS', '--confirm-offline-owner-recovery'],
+            { XP_PASS: PASS }
+        );
+        const disposableWithIdentityStillBlockedEvenWithConfirm = runCli(
+            ['restore-storage', '--profile-dir', uatRestoreTarget, '--in', encFile, '--passphrase-env', 'XP_PASS', '--confirm-offline-owner-recovery'],
+            { XP_PASS: PASS }
+        );
+        A('ITEM3_REAL_RECOVERY_ALLOWED_ON_UAT_NAMED_REAL_DIR_WITH_CONFIRM_FLAG',
+            realUatNameBlockedWithoutConfirm.status !== 0 &&
+            realUatNameBlockedWithoutConfirm.out && realUatNameBlockedWithoutConfirm.out.code === 'REAL_BACKUP_RESTORE_INTO_UAT_FORBIDDEN' &&
+            realUatNameAllowedWithConfirm.status === 0 &&
+            realUatNameAllowedWithConfirm.out && realUatNameAllowedWithConfirm.out.result === 'RESTORED_VERIFIED' &&
+            realUatNameAllowedWithConfirm.out.backupOrigin === 'OFFLINE_REAL_RECOVERY_ONLY' &&
+            realUatNameAllowedWithConfirm.out.backupScope === 'OFFLINE_OWNER_RECOVERY' &&
+            disposableWithIdentityStillBlockedEvenWithConfirm.status !== 0 &&
+            disposableWithIdentityStillBlockedEvenWithConfirm.out && disposableWithIdentityStillBlockedEvenWithConfirm.out.code === 'REAL_BACKUP_RESTORE_INTO_UAT_FORBIDDEN',
+            {
+                withoutConfirmCode: realUatNameBlockedWithoutConfirm.out && realUatNameBlockedWithoutConfirm.out.code,
+                withConfirmResult: realUatNameAllowedWithConfirm.out && realUatNameAllowedWithConfirm.out.result,
+                disposableStillBlockedCode: disposableWithIdentityStillBlockedEvenWithConfirm.out && disposableWithIdentityStillBlockedEvenWithConfirm.out.code
             }
         );
 
@@ -941,23 +1080,24 @@ function A(name, pass, detail = {}) {
             };
         });
         const handoffManifest = {
-            schemaVersion: 'XPIDER_OWNER_HANDOFF_MANIFEST_REV15',
-            directive: '#6706731716',
+            schemaVersion: 'XPIDER_OWNER_HANDOFF_MANIFEST_REV16',
+            directive: '#6707178560',
             status: 'CANDIDATE_RELEASE_HOLD',
             branch: 'candidate/p0-core-regressions-v7',
             functionalCandidateCommit: '76fab0933276ae163c377d39d9dca5169a33063c',
             extensionTreeSha: '1d1bac897f70df6fa107cde85b00de591d5dea93',
             expectedExtensionId: EXT_ID,
             extensionZipAloneIsCompleteKit: false,
-            extensionZipScopeNote: 'dist/XPIDER_V7.0.0_CANDIDATE_P0_REV9_OWNER_SAFE.zip contains ONLY the 50 Chrome MV3 runtime files from extension/. The complete owner-usable handoff archive is dist/XPIDER_V7.0.0_CANDIDATE_REV15_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip (built via node scripts/build_owner_complete_handoff_kit.js).',
+            extensionZipScopeNote: 'dist/XPIDER_V7.0.0_CANDIDATE_P0_REV9_OWNER_SAFE.zip contains ONLY the 50 Chrome MV3 runtime files from extension/. The complete owner-usable handoff archive is dist/XPIDER_V7.0.0_CANDIDATE_REV16_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip (built via node scripts/build_owner_complete_handoff_kit.js; prior REV15 archive preserved frozen).',
             operatorCapabilityByEnvironment: {
                 withNodeJs18Plus: {
                     supported: true,
                     capabilities: [
                         'preflight-uat (read-only dry-run preflight)',
-                        'backup-storage (AES-256-GCM encrypted offline backup + --synthetic-uat-origin content audit)',
+                        'init-uat-profile (creates disposable UAT profile with 256-bit uatSessionNonce in .xpider-uat-disposable-profile.json)',
+                        'backup-storage & backup-uat-synthetic (AES-256-GCM encrypted offline backup + Chrome API chrome.storage.local.get(null) readback attestation)',
                         'verify-storage-backup (in-memory integrity verification, writtenToDisk: false)',
-                        'restore-storage (bidirectional origin-verified atomic restore; blocks real backups in UAT even with --allow-synthetic-uat-restore)',
+                        'restore-storage & restore-uat-synthetic (scope-verified atomic restore; blocks real backups in UAT even with --allow-synthetic-uat-restore; allows real recovery on uat-named real folders via --confirm-offline-owner-recovery)',
                         'plan / apply / rollback / recover (journaled transactional code update)',
                         'owner-extension-test-site/server.js (localhost 127.0.0.1:8088 fixtures + 127.0.0.1:8090 fail-closed sink proxy)'
                     ]

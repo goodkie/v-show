@@ -1,7 +1,7 @@
 {
   "suite": "XPIDER_SAFE_UPDATE_TRANSACTION",
   "archiveSha256": "b3f39bec4ab0711bbe348614be6bbd1f8d0657987059ec7cd3538565c2c0227e",
-  "startedAt": "2026-11-07T12:31:58.860Z",
+  "startedAt": "2026-11-07T13:19:00.767Z",
   "assertions": [
     {
       "name": "ARCHIVE_SHA_IS_EXPECTED",
@@ -77,7 +77,7 @@
       "pass": true,
       "detail": {
         "result": "COMMITTED",
-        "backupRoot": "C:\\Users\\oPus\\AppData\\Local\\Temp\\xpider-txn-e9Bl9E\\bk1",
+        "backupRoot": "C:\\Users\\oPus\\AppData\\Local\\Temp\\xpider-txn-IrBMt8\\bk1",
         "state": "COMMITTED"
       }
     },
@@ -108,7 +108,7 @@
       "pass": true,
       "detail": {
         "result": "ROLLED_BACK",
-        "backupRoot": "C:\\Users\\oPus\\AppData\\Local\\Temp\\xpider-txn-e9Bl9E\\bk1"
+        "backupRoot": "C:\\Users\\oPus\\AppData\\Local\\Temp\\xpider-txn-IrBMt8\\bk1"
       }
     },
     {
@@ -150,7 +150,7 @@
         "partialBeforeRecover": true,
         "recover": {
           "result": "ROLLED_BACK",
-          "backupRoot": "C:\\Users\\oPus\\AppData\\Local\\Temp\\xpider-txn-e9Bl9E\\bk_process_crash_mid_commit"
+          "backupRoot": "C:\\Users\\oPus\\AppData\\Local\\Temp\\xpider-txn-IrBMt8\\bk_process_crash_mid_commit"
         }
       }
     },
@@ -163,7 +163,7 @@
         "partialBeforeRecover": true,
         "recover": {
           "result": "ROLLED_BACK",
-          "backupRoot": "C:\\Users\\oPus\\AppData\\Local\\Temp\\xpider-txn-e9Bl9E\\bk_crash_during_rollback_then_recover"
+          "backupRoot": "C:\\Users\\oPus\\AppData\\Local\\Temp\\xpider-txn-IrBMt8\\bk_crash_during_rollback_then_recover"
         }
       }
     },
@@ -173,7 +173,7 @@
       "detail": {
         "result": "ABORTED",
         "code": "EPERM",
-        "message": "EPERM: operation not permitted, rename 'C:\\Users\\oPus\\AppData\\Local\\Temp\\xpider-txn-e9Bl9E\\access_denied\\background.js.xpider-new' -> 'C:\\Users\\oPus\\AppData\\Local\\Temp\\xpider-txn-e9Bl9E\\access_denied\\background.js'",
+        "message": "EPERM: operation not permitted, rename 'C:\\Users\\oPus\\AppData\\Local\\Temp\\xpider-txn-IrBMt8\\access_denied\\background.js.xpider-new' -> 'C:\\Users\\oPus\\AppData\\Local\\Temp\\xpider-txn-IrBMt8\\access_denied\\background.js'",
         "rolledBack": true
       }
     },
@@ -193,7 +193,7 @@
       "detail": {
         "result": "ABORTED",
         "code": "ARCHIVE_UNREADABLE",
-        "message": "Archive cannot be opened as ZIP: C:\\Users\\oPus\\AppData\\Local\\Temp\\xpider-txn-e9Bl9E\\corrupt.zip",
+        "message": "Archive cannot be opened as ZIP: C:\\Users\\oPus\\AppData\\Local\\Temp\\xpider-txn-IrBMt8\\corrupt.zip",
         "rolledBack": false
       }
     },
@@ -213,7 +213,7 @@
       "detail": {
         "result": "ABORTED",
         "code": "MANIFEST_MISSING",
-        "message": "manifest.json missing in C:\\Users\\oPus\\AppData\\Local\\Temp\\xpider-txn-e9Bl9E\\nomanifest_target",
+        "message": "manifest.json missing in C:\\Users\\oPus\\AppData\\Local\\Temp\\xpider-txn-IrBMt8\\nomanifest_target",
         "rolledBack": false
       }
     },
@@ -233,7 +233,7 @@
       "detail": {
         "result": "ABORTED",
         "code": "MANIFEST_MISSING",
-        "message": "manifest.json missing in C:\\Users\\oPus\\AppData\\Local\\Temp\\xpider-stage-otR5bN",
+        "message": "manifest.json missing in C:\\Users\\oPus\\AppData\\Local\\Temp\\xpider-stage-ie9w6f",
         "rolledBack": false
       }
     },
@@ -273,7 +273,7 @@
       "detail": {
         "result": "ABORTED",
         "code": "SYMLINK_FOUND",
-        "message": "Symlink/junction refused: C:\\Users\\oPus\\AppData\\Local\\Temp\\xpider-txn-e9Bl9E\\junction\\linkdir",
+        "message": "Symlink/junction refused: C:\\Users\\oPus\\AppData\\Local\\Temp\\xpider-txn-IrBMt8\\junction\\linkdir",
         "rolledBack": false
       }
     },
@@ -283,7 +283,7 @@
       "detail": {
         "result": "ABORTED",
         "code": "TARGET_MISSING",
-        "message": "Target extension root not found: C:\\Users\\oPus\\AppData\\Local\\Temp\\xpider-txn-e9Bl9E\\does_not_exist",
+        "message": "Target extension root not found: C:\\Users\\oPus\\AppData\\Local\\Temp\\xpider-txn-IrBMt8\\does_not_exist",
         "rolledBack": false
       }
     },
@@ -353,7 +353,7 @@
       "detail": {
         "result": "ABORTED",
         "code": "ROLLBACK_TARGET_MISMATCH",
-        "message": "Journal belongs to a different target (C:\\Users\\oPus\\AppData\\Local\\Temp\\xpider-txn-e9Bl9E\\rbA); refusing",
+        "message": "Journal belongs to a different target (C:\\Users\\oPus\\AppData\\Local\\Temp\\xpider-txn-IrBMt8\\rbA); refusing",
         "rolledBack": false
       }
     },
@@ -392,7 +392,7 @@
       "pass": true,
       "detail": {
         "result": "ROLLED_BACK",
-        "backupRoot": "C:\\Users\\oPus\\AppData\\Local\\Temp\\xpider-txn-e9Bl9E\\bk_stale"
+        "backupRoot": "C:\\Users\\oPus\\AppData\\Local\\Temp\\xpider-txn-IrBMt8\\bk_stale"
       }
     },
     {
@@ -415,7 +415,7 @@
       "detail": {
         "result": "ABORTED",
         "code": "UPDATE_IN_PROGRESS",
-        "message": "An update/rollback on this target is unfinished (backupRoot=C:\\Users\\oPus\\AppData\\Local\\Temp\\xpider-txn-e9Bl9E\\bk_lock). Run 'recover' first. Do NOT reload the extension in the browser until it finishes.",
+        "message": "An update/rollback on this target is unfinished (backupRoot=C:\\Users\\oPus\\AppData\\Local\\Temp\\xpider-txn-IrBMt8\\bk_lock). Run 'recover' first. Do NOT reload the extension in the browser until it finishes.",
         "rolledBack": false
       }
     },
@@ -425,11 +425,11 @@
       "detail": {
         "rc": {
           "result": "ROLLED_BACK",
-          "backupRoot": "C:\\Users\\oPus\\AppData\\Local\\Temp\\xpider-txn-e9Bl9E\\bk_lock"
+          "backupRoot": "C:\\Users\\oPus\\AppData\\Local\\Temp\\xpider-txn-IrBMt8\\bk_lock"
         },
         "c3": {
           "result": "COMMITTED",
-          "backupRoot": "C:\\Users\\oPus\\AppData\\Local\\Temp\\xpider-txn-e9Bl9E\\bk_lock3",
+          "backupRoot": "C:\\Users\\oPus\\AppData\\Local\\Temp\\xpider-txn-IrBMt8\\bk_lock3",
           "state": "COMMITTED"
         }
       }
@@ -469,11 +469,16 @@
       "pass": true,
       "detail": {
         "result": "BACKUP_ENCRYPTED",
-        "out": "C:\\Users\\oPus\\AppData\\Local\\Temp\\xpider-txn-e9Bl9E\\valid_storage.xpider-enc",
+        "out": "C:\\Users\\oPus\\AppData\\Local\\Temp\\xpider-txn-IrBMt8\\valid_storage.xpider-enc",
         "backupOrigin": "OFFLINE_REAL_RECOVERY_ONLY",
+        "backupScope": "OFFLINE_OWNER_RECOVERY",
+        "uatSessionNonce": null,
+        "chromeApiReadbackSha256": null,
+        "expectedSnapshotManifestSha256": null,
+        "attestationQualification": "AES-256-GCM authenticates the asserted backup scope, disposable profile session nonce, Chrome storage.local API readback hash, and LevelDB file manifest SHA-256; it is NOT mathematical proof of arbitrary uninspected LevelDB binaries.",
         "fileCount": 2,
         "manifestSha256": "231176d3b68c17af942bae140459d05bfa0e2336f42936e6ad715e9be66dcc86",
-        "backupSha256": "e36310dea2e5706e82965c35bfe49154ee5d9c4456f2badf9c0ff0514738ed83"
+        "backupSha256": "bdfc284c725aad6d7aaf8cb1a419c18b4ee83455b0170c7e27e957344d7c9ed1"
       }
     },
     {
@@ -547,8 +552,12 @@
       "pass": true,
       "detail": {
         "result": "RESTORED_VERIFIED",
-        "lesDir": "C:\\Users\\oPus\\AppData\\Local\\Temp\\xpider-txn-e9Bl9E\\prof_dst\\Default\\Local Extension Settings\\ldlijlaccfeelfdhgnjbibniocefckjj",
+        "lesDir": "C:\\Users\\oPus\\AppData\\Local\\Temp\\xpider-txn-IrBMt8\\prof_dst\\Default\\Local Extension Settings\\ldlijlaccfeelfdhgnjbibniocefckjj",
         "backupOrigin": "OFFLINE_REAL_RECOVERY_ONLY",
+        "backupScope": "OFFLINE_OWNER_RECOVERY",
+        "uatSessionNonce": null,
+        "chromeApiReadbackSha256": null,
+        "attestationQualification": "AES-256-GCM authenticates the asserted backup scope, disposable profile session nonce, Chrome storage.local API readback hash, and LevelDB file manifest SHA-256; it is NOT mathematical proof of arbitrary uninspected LevelDB binaries.",
         "fileCount": 2,
         "manifestSha256": "231176d3b68c17af942bae140459d05bfa0e2336f42936e6ad715e9be66dcc86",
         "recoveredInterruptedPrior": true
@@ -556,7 +565,7 @@
     }
   ],
   "status": "SUCCESS",
-  "endedAt": "2026-11-07T12:34:07.907Z",
+  "endedAt": "2026-11-07T13:21:08.513Z",
   "total": 57,
   "failed": 0
 }

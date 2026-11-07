@@ -36,6 +36,7 @@
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
+const zlib = require('zlib');
 const crypto = require('crypto');
 const { execFileSync, spawnSync } = require('child_process');
 
@@ -400,42 +401,210 @@ function getPassphrase(a) {
     return pp;
 }
 
-function auditRawLevelDbBuffersForUatSafety(rawBuffersMap) {
-    const FORBIDDEN_MARKER_RE = /(xpider_proxy_credentials|xpider_sentinel_token|proxyPassword|authPassword|apiKey|secretKey|privateKey|decodoPassword|smartproxyPassword|DO_NOT_LEAK|REAL_OWNER)/i;
-    const PROXY_URI_RE = /\b(?:https?|socks5?):\/\/[^/\s"'<>]+:[^@\s"'<>]+@/i;
-    const URL_RE = /\bhttps?:\/\/([A-Za-z0-9.\-\[\]:]+)(?:[^\s"'<>\\]*)/gi;
-    const EMAIL_RE = /\b[A-Za-z0-9._%+-]+@([A-Za-z0-9.-]+\.[A-Za-z]{2,})\b/g;
+const UAT_IDENTITY_FILENAME = '.xpider-uat-disposable-profile.json';
+const UAT_READBACK_FILENAME = '.xpider-uat-storage-readback.json';
+const ATTESTATION_QUALIFICATION_NOTE = 'AES-256-GCM authenticates the asserted backup scope, disposable profile session nonce, Chrome storage.local API readback hash, and LevelDB file manifest SHA-256; it is NOT mathematical proof of arbitrary uninspected LevelDB binaries.';
 
-    for (const [relPath, buf] of Object.entries(rawBuffersMap)) {
-        const text = Buffer.isBuffer(buf) ? buf.toString('latin1') : String(buf || '');
-        const printableSpans = text.match(/[\x20-\x7E]{6,}/g) || [];
-        for (const span of printableSpans) {
-            if (FORBIDDEN_MARKER_RE.test(span) || PROXY_URI_RE.test(span)) {
+const ALLOWLISTED_UAT_TOP_KEYS = new Set([
+    'xpider_schema_version',
+    'xpider_migration_phase',
+    'templates_v2',
+    'savedUrlLists_v2',
+    'xpider_email_collector_v1',
+    'xpider_isPaused',
+    'xpider_paused_checkpoint',
+    'xpider_suppression_ledger_v2',
+    'xpider_attempt_history_v1',
+    'xpider_campaign_mode',
+    'xpider_ui_state',
+    'xpider_uat_session_nonce',
+    'ownerFunctionTestMode',
+    'runScopedDirectPrivacy'
+]);
+
+function resolveUatProfileRootDir(profileDirArg) {
+    const resolved = path.resolve(String(profileDirArg));
+    const base = path.basename(resolved);
+    return /^(default|profile\s*\d+)$/i.test(base) ? path.dirname(resolved) : resolved;
+}
+
+function initDisposableUatProfile(a) {
+    if (!a['profile-dir']) die('USAGE', 'init-uat-profile requires --profile-dir <dir>');
+    const extId = a['ext-id'] || DEFAULT_ID;
+    assertValidExtId(extId);
+    const profRoot = resolveUatProfileRootDir(a['profile-dir']);
+    if (fs.existsSync(profRoot)) {
+        assertNoSymlinks(profRoot);
+        const existingEntries = fs.readdirSync(profRoot).filter(n => n !== UAT_IDENTITY_FILENAME && n !== 'Default');
+        const lesDir = resolveLesDir(profRoot, extId);
+        if (existingEntries.length > 0 || (fs.existsSync(lesDir) && fs.readdirSync(lesDir).length > 0)) {
+            die('UAT_PROFILE_NOT_CLEAN_ON_INIT', `Disposable UAT profile directory must be brand-new or empty on initialization: ${profRoot}`);
+        }
+    } else {
+        fs.mkdirSync(profRoot, { recursive: true });
+    }
+    const uatSessionNonce = (a['session-nonce'] && /^[0-9a-f]{64}$/i.test(String(a['session-nonce'])))
+        ? String(a['session-nonce']).toLowerCase()
+        : crypto.randomBytes(32).toString('hex');
+    const identityFile = path.join(profRoot, UAT_IDENTITY_FILENAME);
+    const identityObj = {
+        schema: 'XPIDER_DISPOSABLE_UAT_PROFILE_IDENTITY_V1',
+        extId,
+        uatSessionNonce,
+        profileRoot: profRoot,
+        createdAt: new Date().toISOString()
+    };
+    fs.writeFileSync(identityFile, JSON.stringify(identityObj, null, 2) + '\n');
+    return {
+        result: 'DISPOSABLE_UAT_PROFILE_INITIALIZED',
+        profileRoot: profRoot,
+        identityFile,
+        uatSessionNonce,
+        extId
+    };
+}
+
+function readDisposableUatIdentity(profileDirArg) {
+    if (!profileDirArg) return null;
+    const resolved = path.resolve(String(profileDirArg));
+    const profRoot = resolveUatProfileRootDir(profileDirArg);
+    const candidates = [
+        path.join(resolved, UAT_IDENTITY_FILENAME),
+        path.join(profRoot, UAT_IDENTITY_FILENAME)
+    ];
+    for (const p of candidates) {
+        if (fs.existsSync(p)) {
+            try {
+                const obj = JSON.parse(fs.readFileSync(p, 'utf8'));
+                if (obj && obj.schema === 'XPIDER_DISPOSABLE_UAT_PROFILE_IDENTITY_V1' && /^[0-9a-f]{64}$/i.test(String(obj.uatSessionNonce || ''))) {
+                    return { ...obj, identityFilePath: p };
+                }
+            } catch (_) {}
+            die('CORRUPT_DISPOSABLE_UAT_PROFILE_IDENTITY', `Invalid disposable UAT profile identity file: ${p}`);
+        }
+    }
+    return null;
+}
+
+function expandNormalizedStringVariants(inputStr) {
+    const out = new Set();
+    const s0 = String(inputStr || '');
+    out.add(s0);
+    // 1. Unescape JSON/JS escaped slashes and \uXXXX / \xXX sequences
+    const unescaped = s0
+        .replace(/\\\//g, '/')
+        .replace(/\\u([0-9a-fA-F]{4})/g, (_, h) => String.fromCharCode(parseInt(h, 16)))
+        .replace(/\\x([0-9a-fA-F]{2})/g, (_, h) => String.fromCharCode(parseInt(h, 16)));
+    out.add(unescaped);
+    // 2. Percent-decoding (URL-encoded strings)
+    for (const cand of [s0, unescaped]) {
+        if (/%[0-9a-fA-F]{2}/.test(cand)) {
+            try { out.add(decodeURIComponent(cand)); } catch (_) {}
+        }
+    }
+    // 3. Base64-encoded or compressed (zlib/deflate/gzip) tokens
+    const b64Matches = s0.match(/[A-Za-z0-9+/]{16,}={0,2}/g) || [];
+    for (const tok of b64Matches) {
+        if (tok.length % 4 !== 0) continue;
+        try {
+            const raw = Buffer.from(tok, 'base64');
+            if (!raw.length) continue;
+            out.add(raw.toString('utf8'));
+            if (raw.length >= 4 && raw.length % 2 === 0) out.add(raw.toString('utf16le'));
+            for (const decompFn of [zlib.inflateSync, zlib.inflateRawSync, zlib.gunzipSync]) {
+                try {
+                    const dec = decompFn(raw);
+                    if (dec && dec.length) {
+                        out.add(dec.toString('utf8'));
+                        if (dec.length % 2 === 0) out.add(dec.toString('utf16le'));
+                    }
+                } catch (_) {}
+            }
+        } catch (_) {}
+    }
+    return Array.from(out);
+}
+
+/**
+ * Secondary defense-in-depth heuristic check over raw LevelDB buffers (UTF-8, UTF-16LE, base64, zlib).
+ * NOTE: Raw LevelDB buffer scanning does NOT prove mathematical provenance of arbitrary LevelDB binaries;
+ * primary synthetic UAT approval requires Chrome storage.local API readback + disposable profile nonce binding.
+ */
+function auditRawLevelDbBuffersForUatSafety(rawBuffersMap) {
+    const FORBIDDEN_MARKER_RE = /(xpider_proxy_credentials|xpider_sentinel_token|proxyPassword|authPassword|apiKey|secretKey|privateKey|decodoPassword|decodo_pass|smartproxyPassword|smartproxy_pass|proxy_pass|DO_NOT_LEAK|REAL_OWNER)/i;
+    const PROXY_URI_RE = /\b(?:https?|socks5?):\/\/[^/\s"'<>]+:[^@\s"'<>]+@/i;
+    const URL_RE = /https?:\/\/([^\s"'<>\\\/?#\x00-\x1f]+)(?:[^\s"'<>\\\x00-\x1f]*)/giu;
+    const EMAIL_RE = /[^\s"'<>@:,;()\[\]{}\\\x00-\x1f]+@([^\s"'<>@:,;()\[\]{}\\\x00-\x1f]+\.[^\s"'<>@:,;()\[\]{}\\\x00-\x1f]+)/gu;
+
+    const inspectDecodedText = (relPath, decodedText) => {
+        for (const variant of expandNormalizedStringVariants(decodedText)) {
+            if (FORBIDDEN_MARKER_RE.test(variant) || PROXY_URI_RE.test(variant)) {
                 die('NON_SYNTHETIC_BACKUP_CONTENT_FORBIDDEN', `Storage file (${relPath}) contains sensitive credential or non-synthetic marker; refusing UAT synthetic classification/restore`);
             }
             let m;
             URL_RE.lastIndex = 0;
-            while ((m = URL_RE.exec(span)) !== null) {
+            while ((m = URL_RE.exec(variant)) !== null) {
                 const hostPort = m[1].toLowerCase();
-                const host = hostPort.replace(/:\d+$/, '');
+                const host = hostPort.startsWith('[')
+                    ? hostPort.replace(/\]:\d+$/, ']')
+                    : hostPort.replace(/:\d+$/, '');
                 if (host !== '127.0.0.1' && host !== 'localhost' && host !== '[::1]') {
                     die('NON_SYNTHETIC_BACKUP_CONTENT_FORBIDDEN', `Storage file (${relPath}) contains non-loopback URL host; refusing UAT synthetic classification/restore`);
                 }
             }
             EMAIL_RE.lastIndex = 0;
-            while ((m = EMAIL_RE.exec(span)) !== null) {
-                const dom = m[1].toLowerCase();
-                if (!/\.(test|invalid|local)$/.test(dom) && dom !== 'localhost') {
+            while ((m = EMAIL_RE.exec(variant)) !== null) {
+                const dom = m[1].toLowerCase().replace(/[^a-z0-9.\-\u00a0-\uffff]+$/giu, '');
+                if (!/\.(test|invalid|local)$/i.test(dom) && dom !== 'localhost') {
                     die('NON_SYNTHETIC_BACKUP_CONTENT_FORBIDDEN', `Storage file (${relPath}) contains non-synthetic email domain; refusing UAT synthetic classification/restore`);
                 }
             }
+        }
+    };
+
+    for (const [relPath, buf] of Object.entries(rawBuffersMap)) {
+        const raw = Buffer.isBuffer(buf) ? buf : Buffer.from(String(buf || ''), 'utf8');
+        inspectDecodedText(relPath, raw.toString('utf8'));
+        inspectDecodedText(relPath, raw.toString('latin1'));
+        if (raw.length >= 4) {
+            inspectDecodedText(relPath, raw.subarray(0, raw.length - (raw.length % 2)).toString('utf16le'));
+            if (raw.length >= 5) {
+                const sub1 = raw.subarray(1);
+                inspectDecodedText(relPath, sub1.subarray(0, sub1.length - (sub1.length % 2)).toString('utf16le'));
+            }
+        }
+        for (const decompFn of [zlib.inflateSync, zlib.inflateRawSync, zlib.gunzipSync]) {
+            try {
+                const dec = decompFn(raw);
+                if (dec && dec.length) {
+                    inspectDecodedText(relPath, dec.toString('utf8'));
+                    if (dec.length % 2 === 0) inspectDecodedText(relPath, dec.toString('utf16le'));
+                }
+            } catch (_) {}
         }
     }
     return true;
 }
 
+function loadChromeApiReadbackForUat(a, lesDir) {
+    let readbackPath = a['storage-readback'] ? path.resolve(String(a['storage-readback'])) : null;
+    if (!readbackPath) {
+        const profRoot = resolveUatProfileRootDir(a['profile-dir']);
+        const autoPath = path.join(profRoot, UAT_READBACK_FILENAME);
+        if (fs.existsSync(autoPath)) readbackPath = autoPath;
+    }
+    if (!readbackPath || !fs.existsSync(readbackPath)) {
+        die('MISSING_CHROME_API_READBACK_FOR_SYNTHETIC_BACKUP', 'Synthetic UAT backup requires --storage-readback <readback.json> captured from Chrome extension API chrome.storage.local.get(null) (raw LevelDB regex alone cannot prove synthetic provenance).');
+    }
+    let obj;
+    try { obj = JSON.parse(fs.readFileSync(readbackPath, 'utf8')); } catch (_) {
+        die('UAT_STATE_INVALID', `Invalid JSON in Chrome API storage readback: ${readbackPath}`);
+    }
+    return { readbackPath, obj };
+}
+
 function backupStorageEncrypted(a) {
-    if (!a['profile-dir'] || !a.out) die('USAGE', 'backup-storage requires --profile-dir <dir> --out <file> --passphrase-env <ENV> [--synthetic-uat-origin]');
+    if (!a['profile-dir'] || !a.out) die('USAGE', 'backup-storage requires --profile-dir <dir> --out <file> --passphrase-env <ENV> [--synthetic-uat-origin --storage-readback <readback.json>]');
     const extId = a['ext-id'] || DEFAULT_ID;
     const lesDir = resolveLesDir(a['profile-dir'], extId);
     recoverInterruptedStorageRestore(lesDir);
@@ -454,16 +623,40 @@ function backupStorageEncrypted(a) {
         files[e.path] = raw.toString('base64');
     }
     const isSyntheticOrigin = !!a['synthetic-uat-origin'];
+    const uatIdentity = readDisposableUatIdentity(a['profile-dir']);
+    let uatSessionNonce = null;
+    let chromeApiReadbackSha256 = null;
+    let attestedStorageReadback = null;
+
     if (isSyntheticOrigin) {
+        if (!uatIdentity) {
+            die('MISSING_DISPOSABLE_UAT_PROFILE_IDENTITY', 'Synthetic UAT backup requires a disposable profile initialized by the UAT harness (init-uat-profile -> .xpider-uat-disposable-profile.json).');
+        }
+        const { obj: readbackObj } = loadChromeApiReadbackForUat(a, lesDir);
+        auditUatStateObj(readbackObj, { strictAllowlist: true, expectedUatNonce: uatIdentity.uatSessionNonce });
         auditRawLevelDbBuffersForUatSafety(rawBuffers);
+        uatSessionNonce = uatIdentity.uatSessionNonce;
+        attestedStorageReadback = readbackObj;
+        chromeApiReadbackSha256 = sha256Buf(Buffer.from(JSON.stringify(readbackObj), 'utf8'));
+    } else if (uatIdentity) {
+        die('UAT_DISPOSABLE_PROFILE_IN_REAL_BACKUP_FORBIDDEN', 'Refusing to create an OFFLINE_REAL_RECOVERY_ONLY backup from a disposable UAT profile (.xpider-uat-disposable-profile.json present). Pass --synthetic-uat-origin with --storage-readback for synthetic UAT backups.');
     }
+
     const backupOrigin = isSyntheticOrigin ? 'SYNTHETIC_UAT_ONLY' : 'OFFLINE_REAL_RECOVERY_ONLY';
+    const backupScope = isSyntheticOrigin ? 'SYNTHETIC_UAT_ATTESTED' : 'OFFLINE_OWNER_RECOVERY';
     const manifestSha256 = sha256Buf(Buffer.from(JSON.stringify(manifest)));
     const payload = Buffer.from(JSON.stringify({
-        version: 1,
+        version: 2,
         extId,
         backupOrigin,
+        backupScope,
+        attestationType: isSyntheticOrigin ? 'CHROME_STORAGE_API_READBACK_AND_DISPOSABLE_NONCE_BOUND' : 'ASSERTED_OFFLINE_OWNER_RECOVERY',
+        attestationQualification: ATTESTATION_QUALIFICATION_NOTE,
         syntheticAuditPassed: isSyntheticOrigin,
+        uatSessionNonce,
+        chromeApiReadbackSha256,
+        expectedSnapshotManifestSha256: manifestSha256,
+        attestedStorageReadback,
         createdAt: new Date().toISOString(),
         manifest,
         manifestSha256,
@@ -474,24 +667,62 @@ function backupStorageEncrypted(a) {
     const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
     const ct = Buffer.concat([cipher.update(payload), cipher.final()]);
     const tag = cipher.getAuthTag();
-    const env = { format: 'XPIDER_ENCRYPTED_STORAGE_BACKUP_V1', kdf: 'scrypt-16384-8-1', cipher: 'aes-256-gcm', extId, backupOrigin, fileCount: manifest.length, manifestSha256, salt: salt.toString('base64'), iv: iv.toString('base64'), tag: tag.toString('base64'), ciphertext: ct.toString('base64') };
+    const env = {
+        format: 'XPIDER_ENCRYPTED_STORAGE_BACKUP_V1',
+        kdf: 'scrypt-16384-8-1',
+        cipher: 'aes-256-gcm',
+        extId,
+        backupOrigin,
+        backupScope,
+        attestationQualification: ATTESTATION_QUALIFICATION_NOTE,
+        fileCount: manifest.length,
+        manifestSha256,
+        salt: salt.toString('base64'),
+        iv: iv.toString('base64'),
+        tag: tag.toString('base64'),
+        ciphertext: ct.toString('base64')
+    };
     fs.mkdirSync(path.dirname(outPath), { recursive: true });
     fs.writeFileSync(outPath, JSON.stringify(env, null, 2));
-    return { result: 'BACKUP_ENCRYPTED', out: outPath, backupOrigin, fileCount: manifest.length, manifestSha256, backupSha256: sha256File(outPath) };
+    return {
+        result: 'BACKUP_ENCRYPTED',
+        out: outPath,
+        backupOrigin,
+        backupScope,
+        uatSessionNonce,
+        chromeApiReadbackSha256,
+        expectedSnapshotManifestSha256: isSyntheticOrigin ? manifestSha256 : null,
+        attestationQualification: ATTESTATION_QUALIFICATION_NOTE,
+        fileCount: manifest.length,
+        manifestSha256,
+        backupSha256: sha256File(outPath)
+    };
 }
 
 function restoreStorageEncrypted(a) {
-    if (!a['profile-dir'] || !a.in) die('USAGE', 'restore-storage requires --profile-dir <dir> --in <file> --passphrase-env <ENV> [--allow-synthetic-uat-restore]');
+    if (!a['profile-dir'] || !a.in) die('USAGE', 'restore-storage requires --profile-dir <dir> --in <file> --passphrase-env <ENV> [--allow-synthetic-uat-restore | --confirm-offline-owner-recovery]');
     const resolvedProf = path.resolve(String(a['profile-dir']));
     const baseName = path.basename(resolvedProf);
     const profFolderName = /^(default|profile\s*\d+)$/i.test(baseName)
         ? path.basename(path.dirname(resolvedProf))
         : baseName;
-    const isUatTarget = /(?:^|[._-])uat(?:$|[._-])/i.test(profFolderName);
+    const nameLooksLikeUat = /(?:^|[._-])uat(?:$|[._-])/i.test(profFolderName);
+    const destUatIdentity = readDisposableUatIdentity(a['profile-dir']);
     const allowSyntheticFlag = !!a['allow-synthetic-uat-restore'];
-    if (isUatTarget && !allowSyntheticFlag) {
-        die('REAL_BACKUP_RESTORE_INTO_UAT_FORBIDDEN', 'Refusing to restore an encrypted storage backup into a UAT profile directory without --allow-synthetic-uat-restore and verified SYNTHETIC_UAT_ONLY backup origin. Real owner backups (pre_v7.xpider-enc) are strictly offline and recovery-only.');
+    const confirmRealRecoveryFlag = !!a['confirm-offline-owner-recovery'];
+
+    // Item 3 (#6707178560): Do NOT block legitimate emergency recovery just because a real directory name contains 'uat'
+    // when --confirm-offline-owner-recovery is explicitly provided and the directory has no disposable UAT identity.
+    if (destUatIdentity && !allowSyntheticFlag) {
+        die('REAL_BACKUP_RESTORE_INTO_UAT_FORBIDDEN', 'Refusing to restore into a disposable UAT profile (.xpider-uat-disposable-profile.json present) without --allow-synthetic-uat-restore and a Chrome-API-attested SYNTHETIC_UAT_ONLY backup.');
     }
+    if (nameLooksLikeUat && !allowSyntheticFlag && !confirmRealRecoveryFlag) {
+        die('REAL_BACKUP_RESTORE_INTO_UAT_FORBIDDEN', 'Directory name contains "uat". If restoring into a disposable UAT profile, initialize it with init-uat-profile and pass --allow-synthetic-uat-restore; if performing legitimate emergency recovery of a real profile whose path contains "uat", pass --confirm-offline-owner-recovery.');
+    }
+    if (allowSyntheticFlag && !destUatIdentity) {
+        die('MISSING_DISPOSABLE_UAT_PROFILE_IDENTITY', 'Refusing UAT restore (--allow-synthetic-uat-restore): destination --profile-dir lacks a valid disposable UAT profile identity (.xpider-uat-disposable-profile.json created by init-uat-profile). Restore decisions never rely on directory name or flag alone.');
+    }
+
     const extId = a['ext-id'] || DEFAULT_ID;
     const lesDir = resolveLesDir(a['profile-dir'], extId);
     const recoveredPrior = recoverInterruptedStorageRestore(lesDir);
@@ -519,13 +750,34 @@ function restoreStorageEncrypted(a) {
     }
     if (sha256Buf(Buffer.from(JSON.stringify(plain.manifest))) !== env.manifestSha256) die('MANIFEST_HASH_MISMATCH', 'Decrypted manifest hash mismatch');
     const decryptedOrigin = plain.backupOrigin || 'OFFLINE_REAL_RECOVERY_ONLY';
-    if (isUatTarget || allowSyntheticFlag) {
-        if (decryptedOrigin !== 'SYNTHETIC_UAT_ONLY' || plain.syntheticAuditPassed !== true) {
-            die('NON_SYNTHETIC_BACKUP_ORIGIN_IN_UAT_RESTORE', `Refusing UAT restore: decrypted backup origin is "${decryptedOrigin}" (not verifiably SYNTHETIC_UAT_ONLY). Passing --allow-synthetic-uat-restore cannot override a real or unmarked backup into a UAT profile.`);
+    const decryptedScope = plain.backupScope || 'OFFLINE_OWNER_RECOVERY';
+
+    if (destUatIdentity || allowSyntheticFlag) {
+        if (
+            decryptedOrigin !== 'SYNTHETIC_UAT_ONLY' ||
+            decryptedScope !== 'SYNTHETIC_UAT_ATTESTED' ||
+            plain.syntheticAuditPassed !== true ||
+            !/^[0-9a-f]{64}$/i.test(String(plain.uatSessionNonce || '')) ||
+            !/^[0-9a-f]{64}$/i.test(String(plain.chromeApiReadbackSha256 || '')) ||
+            plain.expectedSnapshotManifestSha256 !== env.manifestSha256 ||
+            !plain.attestedStorageReadback ||
+            typeof plain.attestedStorageReadback !== 'object'
+        ) {
+            die('NON_SYNTHETIC_BACKUP_ORIGIN_IN_UAT_RESTORE', `Refusing UAT restore: decrypted backup origin="${decryptedOrigin}", scope="${decryptedScope}" lacks verified Chrome-API readback attestation and disposable session nonce binding. Passing --allow-synthetic-uat-restore cannot override a real or unattested backup into a UAT profile.`);
         }
-    } else if (decryptedOrigin === 'SYNTHETIC_UAT_ONLY') {
-        die('SYNTHETIC_BACKUP_RESTORE_INTO_REAL_PROFILE_FORBIDDEN', 'Refusing to restore a SYNTHETIC_UAT_ONLY backup into a non-UAT profile directory.');
+        const computedReadbackSha = sha256Buf(Buffer.from(JSON.stringify(plain.attestedStorageReadback), 'utf8'));
+        if (computedReadbackSha !== plain.chromeApiReadbackSha256) {
+            die('NON_SYNTHETIC_BACKUP_ORIGIN_IN_UAT_RESTORE', 'Decrypted Chrome API readback hash mismatch inside synthetic backup');
+        }
+        if (a['expected-uat-nonce'] && String(a['expected-uat-nonce']).toLowerCase() !== String(plain.uatSessionNonce).toLowerCase()) {
+            die('UAT_SESSION_NONCE_MISMATCH', 'Backup uatSessionNonce does not match --expected-uat-nonce');
+        }
+        // Re-audit the embedded Chrome API storage.local readback in memory before touching disk
+        auditUatStateObj(plain.attestedStorageReadback, { strictAllowlist: true, expectedUatNonce: plain.uatSessionNonce });
+    } else if (decryptedOrigin === 'SYNTHETIC_UAT_ONLY' || decryptedScope === 'SYNTHETIC_UAT_ATTESTED') {
+        die('SYNTHETIC_BACKUP_RESTORE_INTO_REAL_PROFILE_FORBIDDEN', 'Refusing to restore a SYNTHETIC_UAT_ONLY backup into a non-UAT real profile directory.');
     }
+
     const fileKeys = Object.keys(plain.files);
     for (const k of fileKeys) safeRel(k);
     if (fileKeys.length !== plain.manifest.length) die('MANIFEST_FILES_MISMATCH', `Manifest count ${plain.manifest.length} != files count ${fileKeys.length}`);
@@ -541,7 +793,7 @@ function restoreStorageEncrypted(a) {
         if (buf.length !== e.size || sha256Buf(buf) !== e.sha256) die('FILE_INTEGRITY_MISMATCH', `Integrity mismatch for ${e.path}`);
         decodedBuffers[rel] = buf;
     }
-    if (isUatTarget || allowSyntheticFlag) {
+    if (destUatIdentity || allowSyntheticFlag) {
         auditRawLevelDbBuffersForUatSafety(decodedBuffers);
     }
     const stage = fs.mkdtempSync(path.join(os.tmpdir(), 'xpider-les-stage-'));
@@ -564,7 +816,18 @@ function restoreStorageEncrypted(a) {
             if (fs.existsSync(bak)) { fs.rmSync(lesDir, { recursive: true, force: true }); fs.renameSync(bak, lesDir); }
             throw err;
         }
-        return { result: 'RESTORED_VERIFIED', lesDir, backupOrigin: decryptedOrigin, fileCount: plain.manifest.length, manifestSha256: env.manifestSha256, recoveredInterruptedPrior: recoveredPrior };
+        return {
+            result: 'RESTORED_VERIFIED',
+            lesDir,
+            backupOrigin: decryptedOrigin,
+            backupScope: decryptedScope,
+            uatSessionNonce: plain.uatSessionNonce || null,
+            chromeApiReadbackSha256: plain.chromeApiReadbackSha256 || null,
+            attestationQualification: ATTESTATION_QUALIFICATION_NOTE,
+            fileCount: plain.manifest.length,
+            manifestSha256: env.manifestSha256,
+            recoveredInterruptedPrior: recoveredPrior
+        };
     } finally {
         fs.rmSync(stage, { recursive: true, force: true });
     }
@@ -612,71 +875,165 @@ function verifyStorageBackupEncrypted(a) {
             if (buf.length !== e.size || sha256Buf(buf) !== e.sha256) die('FILE_INTEGRITY_MISMATCH', `Integrity mismatch for ${e.path}`);
             buf.fill(0);
         }
-        return { result: 'BACKUP_INTEGRITY_VERIFIED_IN_MEMORY', writtenToDisk: false, decryptedFilesWritten: 0, extId, backupOrigin: plain.backupOrigin || 'OFFLINE_REAL_RECOVERY_ONLY', fileCount: plain.manifest.length, manifestSha256: env.manifestSha256, backupSha256: sha256File(inPath) };
+        return {
+            result: 'BACKUP_INTEGRITY_VERIFIED_IN_MEMORY',
+            writtenToDisk: false,
+            decryptedFilesWritten: 0,
+            extId,
+            backupOrigin: plain.backupOrigin || 'OFFLINE_REAL_RECOVERY_ONLY',
+            backupScope: plain.backupScope || 'OFFLINE_OWNER_RECOVERY',
+            uatSessionNonce: plain.uatSessionNonce || null,
+            chromeApiReadbackSha256: plain.chromeApiReadbackSha256 || null,
+            attestationQualification: ATTESTATION_QUALIFICATION_NOTE,
+            fileCount: plain.manifest.length,
+            manifestSha256: env.manifestSha256,
+            backupSha256: sha256File(inPath)
+        };
     } finally {
         if (plainBuf) plainBuf.fill(0);
     }
 }
 
-function auditUatStateObj(state) {
-    if (!state || typeof state !== 'object') die('UAT_STATE_INVALID', 'UAT state must be a JSON object');
+function auditUatStateObj(state, opts = {}) {
+    if (!state || typeof state !== 'object' || Array.isArray(state)) die('UAT_STATE_INVALID', 'UAT state must be a JSON object');
     const FORBIDDEN_CRED_KEYS = /^(xpider_proxy_credentials|xpider_sentinel_token|proxyPassword|authPassword|apiKey|secretKey|privateKey|decodoPassword|smartproxyPassword)$/i;
-    const URL_RE = /\bhttps?:\/\/([^\s"'<>\\\/?#]+)(?:[^\s"'<>\\]*)/gi;
-    const EMAIL_RE = /\b[A-Za-z0-9._%+-]+@([A-Za-z0-9.-]+\.[A-Za-z]{2,})\b/g;
+    const FORBIDDEN_MARKER_RE = /(xpider_proxy_credentials|xpider_sentinel_token|proxyPassword|authPassword|apiKey|secretKey|privateKey|decodoPassword|decodo_pass|smartproxyPassword|smartproxy_pass|proxy_pass|DO_NOT_LEAK|REAL_OWNER)/i;
+    const URL_RE = /https?:\/\/([^\s"'<>\\\/?#\x00-\x1f]+)(?:[^\s"'<>\\\x00-\x1f]*)/giu;
+    const EMAIL_RE = /[^\s"'<>@:,;()\[\]{}\\\x00-\x1f]+@([^\s"'<>@:,;()\[\]{}\\\x00-\x1f]+\.[^\s"'<>@:,;()\[\]{}\\\x00-\x1f]+)/gu;
     const PROXY_URI_RE = /\b(?:https?|socks5?):\/\/[^/\s"'<>]+:[^@\s"'<>]+@/i;
 
     if (state.isActive === true || state.isLoopRunning === true || state.xpider_isRunning === true) {
         die('ACTIVE_CAMPAIGN_IN_UAT_PROFILE', 'UAT profile must not have an active/auto-resuming campaign on startup');
     }
-    let urlsChecked = 0, emailsChecked = 0;
     const safeKeyLabel = kp => String(kp || 'root').split('.')[0].replace(/[^A-Za-z0-9_\[\]]/g, '');
-    function checkString(val, topKey) {
-        if (PROXY_URI_RE.test(val)) die('SENSITIVE_CREDENTIALS_IN_UAT_PROFILE', `Proxy credential URI forbidden in UAT state (topKey=${topKey})`);
-        let m;
-        URL_RE.lastIndex = 0;
-        while ((m = URL_RE.exec(val)) !== null) {
-            urlsChecked++;
-            const hostPort = m[1].toLowerCase();
-            const host = hostPort.replace(/:\d+$/, '');
-            if (host !== '127.0.0.1' && host !== 'localhost') {
-                die('NON_LOOPBACK_TARGET_IN_UAT_PROFILE', `Non-loopback URL host forbidden in UAT state (topKey=${topKey})`);
+
+    // Enforce strict top-level key allowlist so unknown/production keys are rejected immediately
+    const enforceStrictAllowlist = opts.strictAllowlist !== false;
+    for (const topK of Object.keys(state)) {
+        const curTop = safeKeyLabel(topK);
+        if (FORBIDDEN_CRED_KEYS.test(topK) || /password|secret|token|apikey|credential|decodo|smartproxy/i.test(topK)) {
+            const v = state[topK];
+            if (v !== null && v !== undefined && v !== '' && !(typeof v === 'object' && Object.keys(v).length === 0)) {
+                die('SENSITIVE_CREDENTIALS_IN_UAT_PROFILE', `Sensitive credential key (${curTop}) forbidden in UAT state`);
             }
         }
-        EMAIL_RE.lastIndex = 0;
-        while ((m = EMAIL_RE.exec(val)) !== null) {
-            emailsChecked++;
-            const dom = m[1].toLowerCase();
-            if (!/\.(test|invalid|local)$/.test(dom) && dom !== 'localhost') {
-                die('NON_SYNTHETIC_EMAIL_IN_UAT_PROFILE', `Non-synthetic email domain forbidden in UAT state (topKey=${topKey})`);
+        if (enforceStrictAllowlist && !ALLOWLISTED_UAT_TOP_KEYS.has(topK)) {
+            die('UNRECOGNIZED_STORAGE_KEY_IN_UAT_PROFILE', `Unrecognized top-level storage key (${curTop}) forbidden in synthetic UAT state`);
+        }
+    }
+
+    if (opts.expectedUatNonce) {
+        if (String(state.xpider_uat_session_nonce || '').toLowerCase() !== String(opts.expectedUatNonce).toLowerCase()) {
+            die('UAT_SESSION_NONCE_MISMATCH', 'chrome.storage.local readback xpider_uat_session_nonce does not match disposable UAT profile identity nonce');
+        }
+    }
+
+    let urlsChecked = 0, emailsChecked = 0;
+
+    function validateStrictLocalhostUrlItem(u, topKey) {
+        if (typeof u !== 'string' || !u.trim()) {
+            die('NON_LOOPBACK_TARGET_IN_UAT_PROFILE', `Malformed or empty queued target URL in UAT state (topKey=${topKey})`);
+        }
+        let parsed;
+        try { parsed = new URL(u.trim()); } catch (_) {
+            die('NON_LOOPBACK_TARGET_IN_UAT_PROFILE', `Invalid or split queued target URL in UAT state (topKey=${topKey})`);
+        }
+        if ((parsed.protocol !== 'http:' && parsed.protocol !== 'https:') ||
+            (parsed.hostname !== '127.0.0.1' && parsed.hostname !== 'localhost' && parsed.hostname !== '[::1]')) {
+            die('NON_LOOPBACK_TARGET_IN_UAT_PROFILE', `Non-loopback queued target URL host forbidden in UAT state (topKey=${topKey})`);
+        }
+        urlsChecked++;
+    }
+
+    // Explicitly validate all queued URL arrays in savedUrlLists_v2 and xpider_paused_checkpoint
+    if (state.savedUrlLists_v2 && typeof state.savedUrlLists_v2 === 'object' && state.savedUrlLists_v2.lists) {
+        for (const listObj of Object.values(state.savedUrlLists_v2.lists)) {
+            if (listObj && Array.isArray(listObj.urls)) {
+                for (const u of listObj.urls) validateStrictLocalhostUrlItem(u, 'savedUrlLists_v2');
             }
         }
     }
-    (function walkVal(val, keyPath) {
+    if (state.xpider_paused_checkpoint && typeof state.xpider_paused_checkpoint === 'object') {
+        for (const arrKey of ['queue', 'remainingQueue', 'urls']) {
+            if (Array.isArray(state.xpider_paused_checkpoint[arrKey])) {
+                for (const u of state.xpider_paused_checkpoint[arrKey]) validateStrictLocalhostUrlItem(u, 'xpider_paused_checkpoint');
+            }
+        }
+    }
+
+    function checkString(val, topKey, depth = 0) {
+        for (const variant of expandNormalizedStringVariants(val)) {
+            if (PROXY_URI_RE.test(variant) || FORBIDDEN_MARKER_RE.test(variant)) {
+                die('SENSITIVE_CREDENTIALS_IN_UAT_PROFILE', `Proxy credential or secret sentinel forbidden in UAT state (topKey=${topKey})`);
+            }
+            let m;
+            URL_RE.lastIndex = 0;
+            while ((m = URL_RE.exec(variant)) !== null) {
+                urlsChecked++;
+                const hostPort = m[1].toLowerCase();
+                const host = hostPort.startsWith('[')
+                    ? hostPort.replace(/\]:\d+$/, ']')
+                    : hostPort.replace(/:\d+$/, '');
+                if (host !== '127.0.0.1' && host !== 'localhost' && host !== '[::1]') {
+                    die('NON_LOOPBACK_TARGET_IN_UAT_PROFILE', `Non-loopback URL host forbidden in UAT state (topKey=${topKey})`);
+                }
+            }
+            EMAIL_RE.lastIndex = 0;
+            while ((m = EMAIL_RE.exec(variant)) !== null) {
+                emailsChecked++;
+                const dom = m[1].toLowerCase().replace(/[^a-z0-9.\-\u00a0-\uffff]+$/giu, '');
+                if (!/\.(test|invalid|local)$/i.test(dom) && dom !== 'localhost') {
+                    die('NON_SYNTHETIC_EMAIL_IN_UAT_PROFILE', `Non-synthetic email domain forbidden in UAT state (topKey=${topKey})`);
+                }
+            }
+            // If variant is a serialized JSON object or array inside a string, recursively inspect it
+            const trimmed = variant.trim();
+            if (depth < 3 && ((trimmed.startsWith('{') && trimmed.endsWith('}')) || (trimmed.startsWith('[') && trimmed.endsWith(']')))) {
+                try {
+                    const inner = JSON.parse(trimmed);
+                    if (inner && typeof inner === 'object') walkVal(inner, topKey, depth + 1);
+                } catch (_) {}
+            }
+        }
+    }
+
+    function walkVal(val, keyPath, depth = 0) {
         if (val === null || val === undefined) return;
         const topKey = safeKeyLabel(keyPath);
         if (typeof val === 'string') {
-            checkString(val, topKey);
+            checkString(val, topKey, depth);
             return;
         }
         if (Array.isArray(val)) {
-            val.forEach((item, idx) => walkVal(item, `${keyPath}[${idx}]`));
+            val.forEach((item, idx) => walkVal(item, `${keyPath}[${idx}]`, depth));
             return;
         }
         if (typeof val === 'object') {
             for (const [k, v] of Object.entries(val)) {
                 const curTop = safeKeyLabel(keyPath || k);
-                checkString(k, curTop);
+                checkString(k, curTop, depth);
                 if (FORBIDDEN_CRED_KEYS.test(k) && v !== null && v !== undefined && v !== '' && !(typeof v === 'object' && Object.keys(v).length === 0)) {
                     die('SENSITIVE_CREDENTIALS_IN_UAT_PROFILE', `Sensitive credential key (${curTop}) forbidden in UAT state`);
                 }
-                if (/password|secret|token|apikey/i.test(k) && typeof v === 'string' && v.trim().length > 0) {
+                if (/password|secret|token|apikey|credential|decodo|smartproxy/i.test(k) && typeof v === 'string' && v.trim().length > 0) {
                     die('SENSITIVE_CREDENTIALS_IN_UAT_PROFILE', `Populated secret field (${curTop}) forbidden in UAT state`);
                 }
-                walkVal(v, keyPath ? `${keyPath}.${k}` : k);
+                walkVal(v, keyPath ? `${keyPath}.${k}` : k, depth);
             }
         }
-    })(state, '');
-    return { result: 'UAT_PROFILE_ISOLATION_VERIFIED', urlsChecked, emailsChecked, nonLoopbackUrls: 0, sensitiveCredentials: 0, nonSyntheticEmails: 0 };
+    }
+
+    walkVal(state, '', 0);
+    return {
+        result: 'UAT_PROFILE_ISOLATION_VERIFIED',
+        uatSessionNonce: state.xpider_uat_session_nonce || opts.expectedUatNonce || null,
+        urlsChecked,
+        emailsChecked,
+        strictAllowlistEnforced: enforceStrictAllowlist,
+        nonLoopbackUrls: 0,
+        sensitiveCredentials: 0,
+        nonSyntheticEmails: 0
+    };
 }
 
 async function verifyUatFirewall(a = {}) {
@@ -921,21 +1278,28 @@ async function main() {
             if (cmd === 'recover' && j.state === 'COMMITTED') die('NOTHING_TO_RECOVER', 'Journal is COMMITTED; use rollback to revert');
             doRollback(target, backupRoot, j);
             console.log(JSON.stringify({ result: 'ROLLED_BACK', backupRoot }, null, 2));
+        } else if (cmd === 'init-uat-profile') {
+            console.log(JSON.stringify(initDisposableUatProfile(a), null, 2));
         } else if (cmd === 'backup-storage') {
             console.log(JSON.stringify(backupStorageEncrypted(a), null, 2));
+        } else if (cmd === 'backup-uat-synthetic') {
+            console.log(JSON.stringify(backupStorageEncrypted({ ...a, 'synthetic-uat-origin': true }), null, 2));
         } else if (cmd === 'restore-storage') {
             console.log(JSON.stringify(restoreStorageEncrypted(a), null, 2));
+        } else if (cmd === 'restore-uat-synthetic') {
+            console.log(JSON.stringify(restoreStorageEncrypted({ ...a, 'allow-synthetic-uat-restore': true }), null, 2));
         } else if (cmd === 'verify-storage-backup') {
             console.log(JSON.stringify(verifyStorageBackupEncrypted(a), null, 2));
         } else if (cmd === 'audit-uat-state') {
             if (!a.in) die('USAGE', 'audit-uat-state requires --in <state.json>');
             const st = JSON.parse(fs.readFileSync(path.resolve(a.in), 'utf8'));
-            console.log(JSON.stringify(auditUatStateObj(st), null, 2));
+            const profId = a['profile-dir'] ? readDisposableUatIdentity(a['profile-dir']) : null;
+            console.log(JSON.stringify(auditUatStateObj(st, { expectedUatNonce: a['expected-uat-nonce'] || (profId && profId.uatSessionNonce) || null }), null, 2));
         } else if (cmd === 'verify-uat-firewall') {
             console.log(JSON.stringify(await verifyUatFirewall(a), null, 2));
         } else if (cmd === 'preflight-uat') {
             console.log(JSON.stringify(await preflightUat(a), null, 2));
-        } else die('USAGE', 'Subcommands: manifest | plan | apply | rollback | recover | backup-storage | restore-storage | verify-storage-backup | audit-uat-state | verify-uat-firewall | preflight-uat');
+        } else die('USAGE', 'Subcommands: manifest | plan | apply | rollback | recover | init-uat-profile | backup-storage | backup-uat-synthetic | restore-storage | restore-uat-synthetic | verify-storage-backup | audit-uat-state | verify-uat-firewall | preflight-uat');
     } catch (err) {
         console.error(JSON.stringify({ result: 'ABORTED', code: err.code || 'ERROR', message: err.message, rolledBack: !!err.rolledBack }));
         process.exit(err.code === 'USAGE' ? 2 : 3);
@@ -943,6 +1307,6 @@ async function main() {
 }
 
 if (require.main === module) main();
-module.exports = { extensionIdFromKey, buildManifest, DEFAULT_ID, auditUatStateObj, verifyStorageBackupEncrypted, verifyUatFirewall, preflightUat };
+module.exports = { extensionIdFromKey, buildManifest, DEFAULT_ID, initDisposableUatProfile, readDisposableUatIdentity, auditUatStateObj, verifyStorageBackupEncrypted, verifyUatFirewall, preflightUat };
 
 
