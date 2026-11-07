@@ -182,6 +182,29 @@ function computePlan(ctx) {
     return { report, stage, plan, planToken, tgt };
 }
 
+function realPathLoose(p) {
+    // canonical real path (resolves junctions/symlinks, 8.3, case) even if the leaf does not exist yet
+    let cur = path.resolve(p); const rest = [];
+    while (!fs.existsSync(cur)) { const parent = path.dirname(cur); if (parent === cur) break; rest.unshift(path.basename(cur)); cur = parent; }
+    return path.join(fs.realpathSync.native(cur), ...rest);
+}
+function canonKey(p) { const r = realPathLoose(p).replace(/[\\/]+$/, ''); return process.platform === 'win32' ? r.toLowerCase() : r; }
+function assertNoOverlap(target, backupRoot) {
+    const a = canonKey(target), b = canonKey(backupRoot);
+    const sep = path.sep, al = process.platform === 'win32' ? sep : sep;
+    if (a === b) die('BACKUP_OVERLAPS_TARGET', 'backup-root equals target');
+    if (b.startsWith(a + al)) die('BACKUP_OVERLAPS_TARGET', 'backup-root is inside target');
+    if (a.startsWith(b + al)) die('BACKUP_OVERLAPS_TARGET', 'target is inside backup-root');
+}
+function safeRel(p) { const s = String(p).replace(/\\/g, '/'); if (!s || s.startsWith('/') || /^[a-zA-Z]:/.test(s) || s.split('/').includes('..')) die('UNSAFE_JOURNAL_PATH', `Unsafe path in journal: ${p}`); return s; }
+function lockPath(target) { return path.join(os.tmpdir(), 'xpider-update-' + sha256Buf(Buffer.from(canonKey(target))).slice(0, 16) + '.lock'); }
+const TERMINAL = new Set(['COMMITTED', 'ROLLED_BACK']);
+function assertNoActiveLock(target) {
+    const lp = lockPath(target);
+    if (!fs.existsSync(lp)) return;
+    let info = {}; try { info = JSON.parse(fs.readFileSync(lp, 'utf8')); } catch (_) {}
+    die('UPDATE_IN_PROGRESS', `An update/rollback on this target is unfinished (backupRoot=${info.backupRoot || '?'}). Run 'recover' first. Do NOT reload the extension in the browser until it finishes.`);
+}
 function copyAtomic(src, dst) {
     fs.mkdirSync(path.dirname(dst), { recursive: true });
     const tmp = dst + '.xpider-new';
@@ -198,42 +221,58 @@ function readJournal(root) {
 
 function doRollback(target, backupRoot, journal) {
     const backupDir = path.join(backupRoot, 'backup');
+    // ---- fail-closed identity checks BEFORE any destructive action ----
+    if (!journal.target || canonKey(journal.target) !== canonKey(target)) die('ROLLBACK_TARGET_MISMATCH', `Journal belongs to a different target (${journal.target}); refusing`);
+    assertNoOverlap(target, backupRoot);
+    const bIssues = cmpTree(backupDir, journal.backupManifest);
+    if (bIssues.length) die('BACKUP_INTEGRITY_FAILED', `Backup does not match its manifest: ${bIssues.slice(0, 5).join(', ')}`);
+    for (const e of journal.backupManifest) safeRel(e.path);
+    for (const p of journal.plan.add) safeRel(p);
+    const tid = fs.existsSync(path.join(target, 'manifest.json')) ? readManifestId(target).id : null;
+    if (tid !== null && tid !== journal.plan.expectedId) die('ROLLBACK_WRONG_ID', `Target ID ${tid} != journal ${journal.plan.expectedId}`);
+    walk(target); // symlink/junction refusal
     journal.state = 'ROLLING_BACK';
     writeJournal(backupRoot, journal);
+    fs.writeFileSync(lockPath(target), JSON.stringify({ backupRoot, state: 'ROLLING_BACK' }));
     if (fault('rollback-crash')) { process.exit(77); }
-    // restore every file that existed pre-update
     for (const e of journal.backupManifest) {
         const dst = path.join(target, e.path);
         if (!fs.existsSync(dst) || sha256File(dst) !== e.sha256) copyAtomic(path.join(backupDir, e.path), dst);
     }
-    // delete files added by the update (not present in backup)
     for (const p of journal.plan.add) {
         const f = path.join(target, p);
         if (fs.existsSync(f)) fs.unlinkSync(f);
     }
-    // clean temp leftovers
     for (const rel of walk(target)) if (rel.endsWith('.xpider-new')) fs.unlinkSync(path.join(target, rel));
-    // verify: every originally backed-up file identical
-    const bad = [];
+    // ---- complete-tree identity check ----
+    // Policy: result must equal the backup manifest exactly, except files present neither in the backup nor in the
+    // candidate add-list ("unknown", e.g. created by the owner meanwhile). Those are PRESERVED (never deleted) and reported.
+    const want = new Map(journal.backupManifest.map(e => [e.path, e]));
+    const bad = [], preservedUnknown = [];
     for (const e of journal.backupManifest) {
         const f = path.join(target, e.path);
         if (!fs.existsSync(f) || sha256File(f) !== e.sha256) bad.push(e.path);
     }
+    for (const rel of walk(target)) if (!want.has(rel)) preservedUnknown.push(rel);
     if (bad.length) { journal.state = 'ROLLBACK_FAILED'; journal.rollbackBad = bad; writeJournal(backupRoot, journal); die('ROLLBACK_VERIFY_FAILED', `Rollback incomplete: ${bad.join(', ')}`); }
     journal.state = 'ROLLED_BACK';
+    journal.preservedUnknown = preservedUnknown;
     writeJournal(backupRoot, journal);
+    fs.rmSync(lockPath(target), { force: true });
 }
-
 function commit(ctx, p, backupRoot) {
     const { target, inventory } = ctx;
     const { stage, plan, tgt } = p;
     const backupDir = path.join(backupRoot, 'backup');
+    assertNoOverlap(target, backupRoot);
+    assertNoActiveLock(target);
+    fs.writeFileSync(lockPath(target), JSON.stringify({ backupRoot, state: 'COMMITTING' }));
     // backup full target tree
     fs.mkdirSync(backupDir, { recursive: true });
     for (const rel of walk(target)) copyAtomic(path.join(target, rel), path.join(backupDir, rel));
     const backupManifest = buildManifest(target);
     const bIssues = cmpTree(backupDir, backupManifest);
-    if (bIssues.length) die('BACKUP_VERIFY_FAILED', `Backup copy does not match original: ${bIssues.slice(0, 5).join(', ')}`);
+    if (bIssues.length) { fs.rmSync(lockPath(target), { force: true }); die('BACKUP_VERIFY_FAILED', `Backup copy does not match original: ${bIssues.slice(0, 5).join(', ')}`); }
 
     const journal = { state: 'COMMITTING', startedAt: new Date().toISOString(), target, plan, backupManifest, archiveSha256: plan.archiveSha256 };
     writeJournal(backupRoot, journal);
@@ -245,6 +284,13 @@ function commit(ctx, p, backupRoot) {
         for (const rel of writes) {
             n++;
             if (fault('commit-enospc') && n === 3) { const e = new Error('ENOSPC: no space left on device (injected)'); e.code = 'ENOSPC'; throw e; }
+            if (fault('ebusy-lock') && n === 3) { const e = new Error('EBUSY: resource busy or locked by AV/scanner (injected)'); e.code = 'EBUSY'; throw e; }
+            if (fault('powerloss-before-rename') && n === 3) {
+                const dst = path.join(target, rel);
+                fs.mkdirSync(path.dirname(dst), { recursive: true });
+                fs.writeFileSync(dst + '.xpider-new', 'TRUNCATED_HALF_WRITTEN_TEMP');
+                process.exit(89);
+            }
             if (fault('commit-crash') && n === 3) process.exit(88);
             copyAtomic(path.join(stage, rel), path.join(target, rel));
         }
@@ -256,6 +302,7 @@ function commit(ctx, p, backupRoot) {
         const id = readManifestId(target).id;
         if (id !== ctx.expectedId) die('POST_VERIFY_ID', `Post-commit ID ${id}`);
         journal.state = 'COMMITTED';
+        fs.rmSync(lockPath(target), { force: true });
         journal.committedAt = new Date().toISOString();
         writeJournal(backupRoot, journal);
         return { committed: true, journal };
@@ -264,6 +311,111 @@ function commit(ctx, p, backupRoot) {
         try { doRollback(target, backupRoot, journal); } catch (rbErr) { journal.error += ` | ROLLBACK ERROR: ${rbErr.message}`; throw rbErr; }
         err.rolledBack = true;
         throw err;
+    }
+}
+
+function resolveLesDir(profileDir, extId) {
+    const p = path.resolve(profileDir);
+    const direct = path.join(p, 'Local Extension Settings', extId);
+    const def = path.join(p, 'Default', 'Local Extension Settings', extId);
+    if (fs.existsSync(direct)) return direct;
+    return def;
+}
+
+function assertBrowserClosedForStorage(lesDir) {
+    if (!fs.existsSync(lesDir)) return;
+    const lf = path.join(lesDir, 'LOCK');
+    if (!fs.existsSync(lf)) return;
+    const probe = lf + '.xpider-probe';
+    try {
+        fs.renameSync(lf, probe);
+        fs.renameSync(probe, lf);
+    } catch (e) {
+        die('BROWSER_RUNNING_LOCK_HELD', `Browser still holds LevelDB LOCK (${e.code || e.message}). Close Chrome/Edge completely before backup/restore.`);
+    }
+}
+
+function getPassphrase(a) {
+    const envName = a['passphrase-env'];
+    if (!envName || typeof envName !== 'string') die('PASSPHRASE_REQUIRED', 'Specify --passphrase-env <ENV_VAR_NAME>');
+    const pp = process.env[envName];
+    if (!pp || pp.length < 8) die('PASSPHRASE_TOO_SHORT', `Passphrase in env ${envName} must be at least 8 characters`);
+    return pp;
+}
+
+function backupStorageEncrypted(a) {
+    if (!a['profile-dir'] || !a.out) die('USAGE', 'backup-storage requires --profile-dir <dir> --out <file> --passphrase-env <ENV>');
+    const extId = a['ext-id'] || DEFAULT_ID;
+    const lesDir = resolveLesDir(a['profile-dir'], extId);
+    if (!fs.existsSync(lesDir)) die('STORAGE_DIR_MISSING', `Extension storage dir not found: ${lesDir}`);
+    assertBrowserClosedForStorage(lesDir);
+    const pass = getPassphrase(a);
+    const manifest = buildManifest(lesDir);
+    if (!manifest.length) die('STORAGE_EMPTY', `Extension storage dir is empty: ${lesDir}`);
+    const files = {};
+    for (const e of manifest) files[e.path] = fs.readFileSync(path.join(lesDir, e.path)).toString('base64');
+    const manifestSha256 = sha256Buf(Buffer.from(JSON.stringify(manifest)));
+    const payload = Buffer.from(JSON.stringify({ version: 1, extId, createdAt: new Date().toISOString(), manifest, manifestSha256, files }), 'utf8');
+    const salt = crypto.randomBytes(16), iv = crypto.randomBytes(12);
+    const key = crypto.scryptSync(pass, salt, 32, { N: 16384, r: 8, p: 1 });
+    const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
+    const ct = Buffer.concat([cipher.update(payload), cipher.final()]);
+    const tag = cipher.getAuthTag();
+    const env = { format: 'XPIDER_ENCRYPTED_STORAGE_BACKUP_V1', kdf: 'scrypt-16384-8-1', cipher: 'aes-256-gcm', extId, fileCount: manifest.length, manifestSha256, salt: salt.toString('base64'), iv: iv.toString('base64'), tag: tag.toString('base64'), ciphertext: ct.toString('base64') };
+    const outPath = path.resolve(a.out);
+    fs.mkdirSync(path.dirname(outPath), { recursive: true });
+    fs.writeFileSync(outPath, JSON.stringify(env, null, 2));
+    return { result: 'BACKUP_ENCRYPTED', out: outPath, fileCount: manifest.length, manifestSha256, backupSha256: sha256File(outPath) };
+}
+
+function restoreStorageEncrypted(a) {
+    if (!a['profile-dir'] || !a.in) die('USAGE', 'restore-storage requires --profile-dir <dir> --in <file> --passphrase-env <ENV>');
+    const extId = a['ext-id'] || DEFAULT_ID;
+    const inPath = path.resolve(a.in);
+    if (!fs.existsSync(inPath)) die('BACKUP_FILE_MISSING', `Encrypted backup file not found: ${inPath}`);
+    const pass = getPassphrase(a);
+    let env;
+    try { env = JSON.parse(fs.readFileSync(inPath, 'utf8')); } catch (_) { die('BACKUP_CORRUPT', 'Backup file is not valid JSON'); }
+    if (!env || env.format !== 'XPIDER_ENCRYPTED_STORAGE_BACKUP_V1') die('BACKUP_FORMAT_INVALID', 'Unsupported backup format');
+    if (env.extId !== extId) die('BACKUP_ID_MISMATCH', `Backup extId ${env.extId} != expected ${extId}`);
+    let plain;
+    try {
+        const key = crypto.scryptSync(pass, Buffer.from(env.salt, 'base64'), 32, { N: 16384, r: 8, p: 1 });
+        const decipher = crypto.createDecipheriv('aes-256-gcm', key, Buffer.from(env.iv, 'base64'));
+        decipher.setAuthTag(Buffer.from(env.tag, 'base64'));
+        plain = JSON.parse(Buffer.concat([decipher.update(Buffer.from(env.ciphertext, 'base64')), decipher.final()]).toString('utf8'));
+    } catch (_) {
+        die('WRONG_PASSPHRASE_OR_CORRUPT_BACKUP', 'AES-256-GCM authentication failed (wrong passphrase or corrupted backup)');
+    }
+    if (sha256Buf(Buffer.from(JSON.stringify(plain.manifest))) !== env.manifestSha256) die('MANIFEST_HASH_MISMATCH', 'Decrypted manifest hash mismatch');
+    const lesDir = resolveLesDir(a['profile-dir'], extId);
+    assertBrowserClosedForStorage(lesDir);
+    const stage = fs.mkdtempSync(path.join(os.tmpdir(), 'xpider-les-stage-'));
+    try {
+        for (const e of plain.manifest) {
+            safeRel(e.path);
+            const buf = Buffer.from(plain.files[e.path] || '', 'base64');
+            if (buf.length !== e.size || sha256Buf(buf) !== e.sha256) die('FILE_INTEGRITY_MISMATCH', `Integrity mismatch for ${e.path}`);
+            const dst = path.join(stage, e.path);
+            fs.mkdirSync(path.dirname(dst), { recursive: true });
+            fs.writeFileSync(dst, buf);
+        }
+        fs.mkdirSync(path.dirname(lesDir), { recursive: true });
+        const bak = lesDir + '.pre-restore-bak';
+        if (fs.existsSync(bak)) fs.rmSync(bak, { recursive: true, force: true });
+        if (fs.existsSync(lesDir)) fs.renameSync(lesDir, bak);
+        try {
+            fs.cpSync(stage, lesDir, { recursive: true });
+            const issues = cmpTree(lesDir, plain.manifest);
+            if (issues.length) die('RESTORE_VERIFY_FAILED', `Post-restore verify failed: ${issues.join(', ')}`);
+            if (fs.existsSync(bak)) fs.rmSync(bak, { recursive: true, force: true });
+        } catch (err) {
+            if (fs.existsSync(bak)) { fs.rmSync(lesDir, { recursive: true, force: true }); fs.renameSync(bak, lesDir); }
+            throw err;
+        }
+        return { result: 'RESTORED_VERIFIED', lesDir, fileCount: plain.manifest.length, manifestSha256: env.manifestSha256 };
+    } finally {
+        fs.rmSync(stage, { recursive: true, force: true });
     }
 }
 
@@ -297,6 +449,7 @@ function main() {
             try {
                 if (a.approve !== p.planToken) die('APPROVAL_TOKEN_MISMATCH', 'Plan changed since dry-run or wrong token; re-run plan');
                 const backupRoot = path.resolve(a['backup-root'] || path.join(os.tmpdir(), `xpider-update-backup-${Date.now()}`));
+                assertNoOverlap(ctx.target, backupRoot);
                 if (fs.existsSync(backupRoot) && fs.readdirSync(backupRoot).length) die('BACKUP_ROOT_NOT_EMPTY', `Backup root must be empty: ${backupRoot}`);
                 fs.mkdirSync(backupRoot, { recursive: true });
                 const r = commit(ctx, p, backupRoot);
@@ -308,7 +461,11 @@ function main() {
             if (cmd === 'recover' && j.state === 'COMMITTED') die('NOTHING_TO_RECOVER', 'Journal is COMMITTED; use rollback to revert');
             doRollback(target, backupRoot, j);
             console.log(JSON.stringify({ result: 'ROLLED_BACK', backupRoot }, null, 2));
-        } else die('USAGE', 'Subcommands: manifest | plan | apply | rollback | recover');
+        } else if (cmd === 'backup-storage') {
+            console.log(JSON.stringify(backupStorageEncrypted(a), null, 2));
+        } else if (cmd === 'restore-storage') {
+            console.log(JSON.stringify(restoreStorageEncrypted(a), null, 2));
+        } else die('USAGE', 'Subcommands: manifest | plan | apply | rollback | recover | backup-storage | restore-storage');
     } catch (err) {
         console.error(JSON.stringify({ result: 'ABORTED', code: err.code || 'ERROR', message: err.message, rolledBack: !!err.rolledBack }));
         process.exit(err.code === 'USAGE' ? 2 : 3);
@@ -317,4 +474,5 @@ function main() {
 
 if (require.main === module) main();
 module.exports = { extensionIdFromKey, buildManifest, DEFAULT_ID };
+
 

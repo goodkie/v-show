@@ -188,6 +188,91 @@ function craftZip(out, entries) {
         const o6 = newOwner('drift'); const t6 = run(['plan', ...common(o6)]).out.PLAN_TOKEN; fs.appendFileSync(path.join(o6, 'popup.js'), '\n// owner edit after preview'); const b6 = tree(o6);
         r = run(['apply', ...common(o6), '--approve', t6, '--backup-root', path.join(work, 'bk_drift')]);
         A('TARGET_DRIFT_AFTER_PREVIEW_INVALIDATES_APPROVAL', r.out.code === 'APPROVAL_TOKEN_MISMATCH' && tree(o6) === b6, r.out);
+
+        // ================= Directive #6699964616 regression tests =================
+        const tokNew = () => run(['plan', ...common(newOwner('tmp_plan'))]).out.PLAN_TOKEN; // token depends on target content; recompute per target below
+        function applyTo(o, bk, extraEnv) { const t = run(['plan', ...common(o)]).out.PLAN_TOKEN; return run(['apply', ...common(o), '--approve', t, '--backup-root', bk], extraEnv || {}); }
+        // overlap: same / descendant / ancestor / case-alias / junction-alias
+        {
+            const o = newOwner('ov'); const b = tree(o); const t = run(['plan', ...common(o)]).out.PLAN_TOKEN;
+            const tryBk = (label, bk) => { const rr = run(['apply', ...common(o), '--approve', t, '--backup-root', bk]); A(`BACKUP_ROOT_${label}_REFUSED_AND_TARGET_UNCHANGED`, rr.out.code === 'BACKUP_OVERLAPS_TARGET' && tree(o) === b, rr.out); };
+            tryBk('SAME_AS_TARGET', o);
+            tryBk('INSIDE_TARGET', path.join(o, 'bk_inside'));
+            tryBk('ANCESTOR_OF_TARGET', path.dirname(o));
+            tryBk('CASE_ALIAS_OF_TARGET', o.toUpperCase());
+            const jn = path.join(work, 'jn_alias'); execFileSync('powershell', ['-NoProfile', '-Command', `New-Item -ItemType Junction -Path '${jn}' -Target '${o}' | Out-Null`]);
+            tryBk('JUNCTION_ALIAS_INSIDE_TARGET', path.join(jn, 'bk_via_junction'));
+            execFileSync('cmd', ['/c', 'rmdir', jn]);
+        }
+        // rollback against a different directory must fail closed
+        {
+            const oA = newOwner('rbA'), oB = newOwner('rbB'); fs.rmSync(path.join(oB, 'popup.css')); const bB = tree(oB);
+            const bk = path.join(work, 'bk_rbA'); applyTo(oA, bk);
+            const rr = run(['rollback', '--target', oB, '--backup-root', bk]);
+            A('ROLLBACK_WITH_FOREIGN_TARGET_REFUSED_ALTERNATE_UNCHANGED', rr.out.code === 'ROLLBACK_TARGET_MISMATCH' && tree(oB) === bB, rr.out);
+            const rr2 = run(['recover', '--target', oB, '--backup-root', bk]);
+            A('RECOVER_WITH_FOREIGN_TARGET_REFUSED', ['ROLLBACK_TARGET_MISMATCH', 'NOTHING_TO_RECOVER'].includes(rr2.out.code) && tree(oB) === bB, rr2.out);
+        }
+        // tampered backup refused
+        {
+            const o = newOwner('tb'); const bk = path.join(work, 'bk_tb'); applyTo(o, bk); const after = tree(o);
+            fs.appendFileSync(path.join(bk, 'backup', 'background.js'), '\n// tampered backup');
+            const rr = run(['rollback', '--target', o, '--backup-root', bk]);
+            A('TAMPERED_BACKUP_ROLLBACK_REFUSED_TARGET_UNCHANGED', rr.out.code === 'BACKUP_INTEGRITY_FAILED' && tree(o) === after, rr.out);
+        }
+        // tampered journal path traversal refused
+        {
+            const o = newOwner('tj'); const bk = path.join(work, 'bk_tj'); applyTo(o, bk); const after = tree(o);
+            const out = path.join(work, 'outside_victim.txt'); fs.writeFileSync(out, 'victim');
+            const jp = path.join(bk, 'journal.json'); const j = JSON.parse(fs.readFileSync(jp, 'utf8')); j.plan.add = ['../outside_victim.txt']; fs.writeFileSync(jp, JSON.stringify(j));
+            const rr = run(['rollback', '--target', o, '--backup-root', bk]);
+            A('TAMPERED_JOURNAL_PATH_TRAVERSAL_REFUSED_OUTSIDE_FILE_SURVIVES', rr.out.code === 'UNSAFE_JOURNAL_PATH' && fs.existsSync(out) && tree(o) === after, rr.out);
+        }
+        // stale-file policy: candidate-added file removed, owner-created file preserved and reported
+        {
+            const o = newOwner('stale'); fs.rmSync(path.join(o, 'popup.css')); const orig = tree(o); const bk = path.join(work, 'bk_stale');
+            applyTo(o, bk); fs.writeFileSync(path.join(o, 'CREATED_AFTER_UPDATE.txt'), 'owner');
+            const rr = run(['rollback', '--target', o, '--backup-root', bk]);
+            const j = JSON.parse(fs.readFileSync(path.join(bk, 'journal.json'), 'utf8'));
+            A('ROLLBACK_REMOVES_CANDIDATE_ADDED_STALE_FILE', rr.status === 0 && !fs.existsSync(path.join(o, 'popup.css')), rr.out);
+            A('ROLLBACK_PRESERVES_AND_REPORTS_UNKNOWN_OWNER_FILE', fs.existsSync(path.join(o, 'CREATED_AFTER_UPDATE.txt')) && j.preservedUnknown.includes('CREATED_AFTER_UPDATE.txt'), { preserved: j.preservedUnknown });
+            fs.rmSync(path.join(o, 'CREATED_AFTER_UPDATE.txt'));
+            A('ROLLBACK_TREE_EXACTLY_ORIGINAL_ONCE_UNKNOWN_FILE_REMOVED', tree(o) === orig);
+        }
+        // lock: unfinished update blocks a second apply until recover
+        {
+            const o = newOwner('lock'); const orig = tree(o); const bk = path.join(work, 'bk_lock');
+            const c1 = applyTo(o, bk, { XPIDER_UPDATE_FAULT: 'commit-crash' });
+            const t2 = run(['plan', ...common(o)]); // plan itself is read-only; token for apply
+            const c2 = run(['apply', ...common(o), '--approve', t2.out.PLAN_TOKEN, '--backup-root', path.join(work, 'bk_lock2')]);
+            A('UNFINISHED_UPDATE_BLOCKS_SECOND_APPLY (no reload/re-apply while COMMITTING)', c1.status === 88 && c2.out.code === 'UPDATE_IN_PROGRESS', c2.out);
+            const rc = run(['recover', '--target', o, '--backup-root', bk]);
+            const c3 = applyTo(o, path.join(work, 'bk_lock3'));
+            A('RECOVER_CLEARS_LOCK_AND_SUBSEQUENT_APPLY_WORKS', rc.status === 0 && c3.status === 0, { rc: rc.out, c3: c3.out });
+        }
+        // power loss during rename (.xpider-new left behind) -> recover cleans temp & restores exact tree
+        {
+            const o = newOwner('powerloss'); const orig = tree(o); const bk = path.join(work, 'bk_pl');
+            const c1 = applyTo(o, bk, { XPIDER_UPDATE_FAULT: 'powerloss-before-rename' });
+            const hasTempBefore = fs.readdirSync(o, { recursive: true }).some(f => String(f).endsWith('.xpider-new'));
+            const rc = run(['recover', '--target', o, '--backup-root', bk]);
+            const hasTempAfter = fs.readdirSync(o, { recursive: true }).some(f => String(f).endsWith('.xpider-new'));
+            A('POWERLOSS_DURING_RENAME_TEMP_CLEANED_AND_RESTORED_BY_RECOVER', c1.status === 89 && hasTempBefore && rc.status === 0 && !hasTempAfter && tree(o) === orig, { c1: c1.status, hasTempBefore, hasTempAfter });
+        }
+        // antivirus / scanner EBUSY lock during commit -> auto-rollback restores exact tree
+        {
+            const o = newOwner('ebusy'); const orig = tree(o); const bk = path.join(work, 'bk_eb');
+            const c1 = applyTo(o, bk, { XPIDER_UPDATE_FAULT: 'ebusy-lock' });
+            A('AV_SCANNER_EBUSY_LOCK_AUTO_ROLLBACK_RESTORES_ORIGINAL', c1.status === 3 && c1.out.code === 'EBUSY' && c1.out.rolledBack === true && tree(o) === orig, c1.out);
+        }
+        // non-empty modified legacy baseline file is preserved (never deleted if user modified it)
+        {
+            const o = newOwner('mod_legacy');
+            fs.writeFileSync(path.join(o, 'retired_legacy.js'), '// user customized this legacy file with 4KB payload\n' + 'x'.repeat(4096));
+            const p = run(['plan', ...common(o)]);
+            const c1 = run(['apply', ...common(o), '--approve', p.out.PLAN_TOKEN, '--backup-root', path.join(work, 'bk_ml')]);
+            A('MODIFIED_NONEMPTY_LEGACY_FILE_PRESERVED_AS_USER_FILE', c1.status === 0 && p.out.plan.keepUnknown.includes('retired_legacy.js') && !p.out.plan.remove.includes('retired_legacy.js') && fs.existsSync(path.join(o, 'retired_legacy.js')), { keepUnknown: p.out.plan.keepUnknown, remove: p.out.plan.remove });
+        }
     } catch (e) {
         failures++; report.error = e.stack; console.error(e);
     } finally {
@@ -200,3 +285,4 @@ function craftZip(out, entries) {
         process.exit(failures ? 1 : 0);
     }
 })();
+

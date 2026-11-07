@@ -1,4 +1,4 @@
-﻿/**
+/**
  * XPIDER backup/restore parity + real-updater upgrade/downgrade interruption harness
  * (Directive #6699808184 Items 2 & 3, browser layer).
  * Disposable Edge profiles + disposable install dirs only. Localhost fixtures only. No campaign is started.
@@ -19,8 +19,10 @@ const ZIP = path.join(DIST, 'XPIDER_V7.0.0_CANDIDATE_P0_REV9_OWNER_SAFE.zip');
 const INV = path.join(DIST, 'PACKAGE_INVENTORY_SHA256.json');
 const BASEM = path.join(DIST, 'rc11_baseline_manifest.json');
 const UPDATER = path.join(ROOT, 'scripts', 'xpider_safe_update.js');
-const REPORT = path.join(DIST, 'report_backup_restore_parity.json');
-const EDGE = 'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe';
+const BROWSER_KIND = (process.env.XPIDER_BROWSER || 'edge').toLowerCase();
+const EDGE = BROWSER_KIND === 'chrome' ? 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe' : 'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe';
+const REPORT = path.join(DIST, BROWSER_KIND === 'chrome' ? 'report_chrome_migration_parity.json' : 'report_backup_restore_parity.json');
+const SHOT_DIR = path.join(DIST, 'evidence_chrome'); fs.mkdirSync(SHOT_DIR, { recursive: true });
 const EXT_ID = 'ldlijlaccfeelfdhgnjbibniocefckjj';
 const PORT = 9231;
 const FIXTURE = 'http://127.0.0.1:8088';
@@ -30,7 +32,8 @@ const { buildManifest } = require(UPDATER);
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const shaStr = s => crypto.createHash('sha256').update(s).digest('hex');
 const shaFile = f => crypto.createHash('sha256').update(fs.readFileSync(f)).digest('hex');
-const report = { suite: 'XPIDER_BACKUP_RESTORE_PARITY_AND_UPDATER_INTERRUPTION', archiveSha256: shaFile(ZIP), startedAt: new Date().toISOString(), assertions: [], notes: [], status: 'RUNNING' };
+const fileVer = (spawnSync('powershell', ['-NoProfile', '-Command', `(Get-Item '${EDGE}').VersionInfo.ProductVersion`], { encoding: 'utf8' }).stdout || '').trim();
+const report = { suite: 'XPIDER_BACKUP_RESTORE_PARITY_AND_UPDATER_INTERRUPTION', browserKind: BROWSER_KIND, browserBinary: EDGE, browserFileVersion: fileVer, archiveSha256: shaFile(ZIP), startedAt: new Date().toISOString(), assertions: [], notes: [], status: 'RUNNING' };
 let failures = 0;
 function A(name, pass, detail = {}) { report.assertions.push({ name, pass: !!pass, detail }); if (!pass) failures++; console.log(`[${pass ? 'PASS' : 'FAIL'}] ${name} ${pass ? '' : JSON.stringify(detail)}`); }
 
@@ -47,10 +50,12 @@ async function openWs(url) { const ws = new WebSocket(url); await new Promise((a
 class Br {
     constructor(profile, extDir) { this.profile = profile; this.extDir = extDir; }
     async start() {
-        this.proc = spawn(EDGE, [`--remote-debugging-port=${PORT}`, `--user-data-dir=${this.profile}`, `--disable-extensions-except=${this.extDir}`, `--load-extension=${this.extDir}`, '--no-first-run', '--no-default-browser-check', '--disable-background-networking', 'about:blank'], { stdio: 'ignore' });
+        const extFlags = BROWSER_KIND === 'chrome' ? ['--enable-unsafe-extension-debugging'] : [`--disable-extensions-except=${this.extDir}`, `--load-extension=${this.extDir}`];
+        this.proc = spawn(EDGE, [`--remote-debugging-port=${PORT}`, `--user-data-dir=${this.profile}`, ...extFlags, '--no-first-run', '--no-default-browser-check', '--disable-background-networking', 'about:blank'], { stdio: 'ignore' });
         this.exited = new Promise(r => this.proc.on('exit', r));
         for (let i = 0; i < 60; i++) { await sleep(250); try { const v = await fetch(`http://127.0.0.1:${PORT}/json/version`).then(r => r.json()); this.bws = await openWs(v.webSocketDebuggerUrl); break; } catch (_) {} }
         if (!this.bws) throw new Error('no CDP');
+        if (BROWSER_KIND === 'chrome') await cdp(this.bws, 'Extensions.loadUnpacked', { path: this.extDir });
         await this.wakeSw();
     }
     async wakeSw() {
@@ -58,17 +63,32 @@ class Br {
             let t = await fetch(`http://127.0.0.1:${PORT}/json`).then(r => r.json());
             let sw = t.find(x => x.type === 'service_worker' && x.url.includes(EXT_ID));
             if (!sw) { await cdp(this.bws, 'Target.createTarget', { url: `chrome-extension://${EXT_ID}/popup.html` }).catch(() => {}); await sleep(1200); t = await fetch(`http://127.0.0.1:${PORT}/json`).then(r => r.json()); sw = t.find(x => x.type === 'service_worker' && x.url.includes(EXT_ID)); }
-            if (sw) { if (this.sws) try { this.sws.close(); } catch (_) {} this.sws = await openWs(sw.webSocketDebuggerUrl); await cdp(this.sws, 'Runtime.enable'); return; }
+            if (sw) {
+                if (this.sws) try { this.sws.close(); } catch (_) {}
+                this.sws = await openWs(sw.webSocketDebuggerUrl);
+                await cdp(this.sws, 'Runtime.enable');
+                const r = await cdp(this.sws, 'Runtime.evaluate', { expression: `typeof chrome !== 'undefined' && !!chrome.storage`, returnByValue: true }).catch(() => null);
+                if (r && r.result && r.result.value === true) return;
+            }
+            await sleep(400);
         }
         throw new Error('SW did not boot');
     }
     async sw(expr) { const r = await cdp(this.sws, 'Runtime.evaluate', { expression: expr, awaitPromise: true, returnByValue: true }); if (r.exceptionDetails) throw new Error('eval: ' + JSON.stringify(r.exceptionDetails).slice(0, 300)); return r.result.value; }
+    async ensurePopup() {
+        let t = (await fetch(`http://127.0.0.1:${PORT}/json`).then(r => r.json())).find(x => x.type === 'page' && x.url.includes('popup.html'));
+        if (!t) { await cdp(this.bws, 'Target.createTarget', { url: `chrome-extension://${EXT_ID}/popup.html` }); await sleep(1500); t = (await fetch(`http://127.0.0.1:${PORT}/json`).then(r => r.json())).find(x => x.type === 'page' && x.url.includes('popup.html')); }
+        return t;
+    }
     async page(urlPart, expr) {
+        if (urlPart === 'popup.html') await this.ensurePopup();
         const t = (await fetch(`http://127.0.0.1:${PORT}/json`).then(r => r.json())).find(x => x.type === 'page' && x.url.includes(urlPart));
         if (!t) throw new Error('page not found ' + urlPart);
         const ws = await openWs(t.webSocketDebuggerUrl);
-        try { const r = await cdp(ws, 'Runtime.evaluate', { expression: expr, awaitPromise: true, returnByValue: true }); if (r.exceptionDetails) throw new Error('page eval: ' + JSON.stringify(r.exceptionDetails).slice(0, 300)); return r.result.value; } finally { ws.close(); }
+        try { const r = await cdp(ws, 'Runtime.evaluate', { expression: expr, awaitPromise: true, returnByValue: true }); if (r.exceptionDetails) throw new Error('page eval: ' + JSON.stringify(r.exceptionDetails).slice(0, 300)); return r.result.value; } finally { ws.close(); await sleep(100); }
     }
+    async shot(name) { await this.ensurePopup(); const tg = (await fetch(`http://127.0.0.1:${PORT}/json`).then(r => r.json())).find(x => x.type === 'page' && x.url.includes('popup.html')); if (!tg) return null; const ws = await openWs(tg.webSocketDebuggerUrl); try { const r = await cdp(ws, 'Page.captureScreenshot', { format: 'png' }); const f = path.join(SHOT_DIR, name); fs.writeFileSync(f, Buffer.from(r.data, 'base64')); return path.relative(ROOT, f); } finally { ws.close(); await sleep(100); } }
+    async version() { return (await cdp(this.bws, 'Browser.getVersion')).product; }
     async stop() {
         try { await cdp(this.bws, 'Browser.close'); } catch (_) {}
         await Promise.race([this.exited, sleep(8000)]);
@@ -85,8 +105,10 @@ const SEED_EXPR = `(async()=>{
   xpider_user_settings:{fillDelayMs:250,autoAdvanceDelay:3500,ownerProtectedSetting:'RETAIN_THIS_VALUE'},
   xpider_collected_emails:[{email:'a@client.test',source:'${FIXTURE}/x'},{email:'b@client.test',source:'${FIXTURE}/y'}],
   xpider_run_ledger:{runs:{run_hist:{success:12,failed:1,skipped:2,total:15}},submittedTargets:['${FIXTURE}/t1','${FIXTURE}/t2','${FIXTURE}/t3']},
-  xpider_history_attempts:[{url:'${FIXTURE}/h1',status:'SUCCESS'},{url:'${FIXTURE}/h2',status:'SKIPPED'}],
-  xpider_paused_checkpoint:{campaignMode:'AUTO',campaignRunId:'run_paused_seed',remainingQueue:['${FIXTURE}/contact-standard.html?q=2','${FIXTURE}/contact-standard.html?q=3'],totalTargets:3,pausedByOperator:true},
+  xpider_history_attempts:[{url:'${FIXTURE}/h1',status:'CONFIRMED_SUCCESS',generation:1,generationId:1,campaignRunId:'run_hist'},{url:'${FIXTURE}/h2',status:'SKIPPED',generation:1,generationId:1,campaignRunId:'run_hist'}],
+  xpider_history_targets:[['http://127.0.0.1:8088/h1',{targetIdentity:'http://127.0.0.1:8088/h1',isSuppressed:true,suppressionReason:'CONFIRMED_SUCCESS',lastStatus:'CONFIRMED_SUCCESS',effectiveGeneration:1}],['http://127.0.0.1:8088/h2',{targetIdentity:'http://127.0.0.1:8088/h2',isSuppressed:false,lastStatus:'SKIPPED',effectiveGeneration:1}]],
+  xpider_history_generation:1,
+  xpider_paused_checkpoint:{campaignMode:'AUTO',campaignRunId:'run_paused_seed',remainingQueue:['${FIXTURE}/contact-standard.html?q=2','${FIXTURE}/contact-standard.html?q=3'],totalTargets:3,pausedByOperator:true,restorationLogged:true},
   xpider_isPaused:true,
   xpider_proxy_credentials:{user:'proxyuser',password:'${SECRET}'},
   xpider_sentinel_token:'OWNER_PROTECTED_DATA_TOKEN'
@@ -120,11 +142,14 @@ function cpDir(s, d) { fs.cpSync(s, d, { recursive: true }); }
     try {
         await fetch(FIXTURE+'/__xpider_reset_submissions').then(r=>r.json()); const bg = await postCount(); A('FIXTURE_SERVER_UP_AND_ZERO_POSTS_AT_START', bg === 0, { bg });
         const bgHashRC11 = shaFile(path.join(RC11, 'background.js')), bgHashCand = shaFile(path.join(CAND, 'background.js'));
-        A('RC11_AND_CANDIDATE_BACKGROUND_DIFFER (so running-code check is meaningful)', bgHashRC11 !== bgHashCand);
+        report.preUpdateBackgroundSha256 = bgHashRC11;
+        report.postUpdateBackgroundSha256 = bgHashCand;
+        A('RC11_AND_CANDIDATE_BACKGROUND_DIFFER (so running-code check is meaningful)', bgHashRC11 !== bgHashCand, { rc11: bgHashRC11, cand: bgHashCand });
 
         // ===== Phase A: seed on RC11, check Owner Debug Bundle sufficiency =====
         const D1 = path.join(work, 'install1'), P1 = path.join(work, 'profile1'); cpDir(RC11, D1);
         let br = new Br(P1, D1); await br.start();
+        report.runtimeBrowserVersion = await br.version(); A('PHASE_A_BROWSER_KIND_MATCHES_REQUEST', BROWSER_KIND === 'edge' ? /Edg\//.test(report.runtimeBrowserVersion) : (/^Chrome\//.test(report.runtimeBrowserVersion) && !/Edg/.test(report.runtimeBrowserVersion)), { v: report.runtimeBrowserVersion });
         A('PHASE_A_RC11_RUNNING_CODE_IS_RC11', (await runningCodeHash(br)) === bgHashRC11);
         const keys = await br.sw(SEED_EXPR);
         const snapA = await snapshot(br, keys);
@@ -145,28 +170,45 @@ function cpDir(s, d) { fs.cpSync(s, d, { recursive: true }); }
         A('OWNER_DEBUG_BUNDLE_IS_REDACTED_NOT_A_FAITHFUL_COPY', bundle.sanitizedEqualsOriginal === false, bundle);
         report.ownerDebugBundleVerdict = (bundle.sanitizedEqualsOriginal === false || !hasImporter) ? 'INSUFFICIENT_AS_BACKUP (diagnostic redacted export, no restore function)' : 'UNKNOWN';
         const qBefore = await runState(br);
+        report.extensionLocalStateOnDisk = [];
+        // Test that backup-storage refuses while browser holds LevelDB LOCK
+        const encOutOpen = path.join(work, 'open_attempt.xpider-enc');
+        const openBkAttempt = updater(['backup-storage', '--profile-dir', P1, '--out', encOutOpen, '--passphrase-env', 'XPIDER_BK_PASS'], { XPIDER_BK_PASS: 'CorrectHorseBattery99!' });
+        A('ENCRYPTED_BACKUP_REFUSED_WHILE_BROWSER_OPEN (LevelDB LOCK held)', openBkAttempt.status === 3 && /BROWSER_RUNNING_LOCK_HELD/.test(openBkAttempt.text), { text: openBkAttempt.text.slice(0, 140) });
         await br.stop();
 
-        // ===== Phase B: profile-level backup -> fresh profile -> restore =====
+        // ===== Phase B: encrypted backup (AES-256-GCM) -> wrong-passphrase rejection -> fresh profile restore =====
         const LES = path.join(P1, 'Default', 'Local Extension Settings', EXT_ID);
         A('PHASE_B_EXT_STORAGE_DIR_EXISTS_ON_DISK', fs.existsSync(LES), { LES: path.relative(work, LES) });
         const idbDir = path.join(P1, 'Default', 'IndexedDB');
         const idbEntries = fs.existsSync(idbDir) ? fs.readdirSync(idbDir).filter(n => n.includes(EXT_ID)) : [];
-        A('NO_EXTENSION_INDEXEDDB_PRESENT (nothing to back up besides storage.local)', idbEntries.length === 0, { idbEntries });
+        (function scan(d, depth) { if (depth > 3) return; for (const e of fs.readdirSync(d, { withFileTypes: true })) { const f = path.join(d, e.name); if (e.name.includes(EXT_ID)) report.extensionLocalStateOnDisk.push(path.relative(P1, f)); if (e.isDirectory()) { try { scan(f, depth + 1); } catch (_) {} } } })(path.join(P1, 'Default'), 0);
+        A('NO_EXTENSION_INDEXEDDB_PRESENT (nothing to back up besides storage.local)', idbEntries.length === 0, { idbEntries, diskState: report.extensionLocalStateOnDisk });
+        const encFile = path.join(work, 'owner_backup.xpider-enc');
+        const bkRes = updater(['backup-storage', '--profile-dir', P1, '--out', encFile, '--passphrase-env', 'XPIDER_BK_PASS'], { XPIDER_BK_PASS: 'CorrectHorseBattery99!' });
+        A('ENCRYPTED_BACKUP_CREATED_WHEN_BROWSER_CLOSED', bkRes.status === 0 && /BACKUP_ENCRYPTED/.test(bkRes.text), { text: bkRes.text.slice(0, 160) });
+        const rawEnc = fs.readFileSync(encFile, 'utf8');
+        A('ENCRYPTED_BACKUP_HAS_NO_PLAINTEXT_SECRET_OR_EMAIL', !rawEnc.includes(SECRET) && !rawEnc.includes('owner@example.test') && !rawEnc.includes('OWNER_PROTECTED_DATA_TOKEN'));
         const BK = path.join(work, 'backup_LES'); cpDir(LES, BK);
         const bkBytes = buildManifest(BK).reduce((s, e) => s + e.size, 0);
-        report.backupMethod = { what: "Copy '<profile>\\Default\\Local Extension Settings\\" + EXT_ID + "' with the browser fully closed", sizeBytes: bkBytes, files: buildManifest(BK).length, includesSecrets: true, note: 'contains plaintext storage.local incl. credentials; keep local/private, never upload' };
+        report.backupMethod = { encryptedCommand: 'node scripts/xpider_safe_update.js backup-storage --profile-dir <profile> --out <file.xpider-enc> --passphrase-env <ENV>', cipher: 'aes-256-gcm + scrypt(16384,8,1)', rawSizeBytes: bkBytes, files: buildManifest(BK).length };
         A('BACKUP_COPY_NONEMPTY', bkBytes > 0);
 
         const D2 = path.join(work, 'install2'), P2 = path.join(work, 'profile2'); cpDir(RC11, D2);
         br = new Br(P2, D2); await br.start(); await br.sw(`chrome.storage.local.set({probe:1})`); await br.stop();
         const LES2 = path.join(P2, 'Default', 'Local Extension Settings', EXT_ID);
         A('PHASE_B_FRESH_PROFILE_HAS_NO_OWNER_DATA_BEFORE_RESTORE', fs.existsSync(LES2));
-        fs.rmSync(LES2, { recursive: true, force: true }); cpDir(BK, LES2);
+        const beforeWrongPass = JSON.stringify(buildManifest(LES2));
+        const wrongRes = updater(['restore-storage', '--profile-dir', P2, '--in', encFile, '--passphrase-env', 'XPIDER_BK_PASS'], { XPIDER_BK_PASS: 'WrongPassphrase000!' });
+        A('ENCRYPTED_RESTORE_WRONG_PASSPHRASE_FAILS_CLOSED_AND_PROFILE_UNTOUCHED', wrongRes.status === 3 && /WRONG_PASSPHRASE_OR_CORRUPT_BACKUP/.test(wrongRes.text) && JSON.stringify(buildManifest(LES2)) === beforeWrongPass, { text: wrongRes.text.slice(0, 140) });
+        const okRes = updater(['restore-storage', '--profile-dir', P2, '--in', encFile, '--passphrase-env', 'XPIDER_BK_PASS'], { XPIDER_BK_PASS: 'CorrectHorseBattery99!' });
+        A('ENCRYPTED_RESTORE_CORRECT_PASSPHRASE_VERIFIED', okRes.status === 0 && /RESTORED_VERIFIED/.test(okRes.text), { text: okRes.text.slice(0, 140) });
         br = new Br(P2, D2); await br.start();
         const snapB = await snapshot(br, keys);
         const dB = diffKeys(snapA, snapB, keys);
         A('RESTORE_ALL_SEEDED_KEYS_IDENTICAL (storage.local/templates/CSV queue/checkpoint/settings/history/ledger/emails)', dB.length === 0, { differing: dB });
+        const hsRestore = await br.sw(`(async()=>{const hs=new self.HistoryStore(chrome.storage.local);await hs.load();return {h1:hs.isSuppressed('http://127.0.0.1:8088/h1'),h2:hs.isSuppressed('http://127.0.0.1:8088/h2')}})()`);
+        A('RESTORE_HISTORY_SKIP_SUPPRESSION_PARITY', hsRestore.h1 === true && hsRestore.h2 === false, hsRestore);
         const sB = await runState(br);
         A('RESTORE_NO_AUTO_CAMPAIGN_LAUNCH', sB.fixtureTabs === 0 && (await postCount()) === 0, { state: sB });
         A('RESTORE_PAUSED_CHECKPOINT_STILL_PAUSED_WITH_QUEUE', (await br.sw(`chrome.storage.local.get(['xpider_paused_checkpoint','xpider_isPaused']).then(s=>s.xpider_isPaused===true&&s.xpider_paused_checkpoint.remainingQueue.length===2)`)) === true);
@@ -181,8 +223,11 @@ function cpDir(s, d) { fs.cpSync(s, d, { recursive: true }); }
         A('PHASE_C_RUNNING_CODE_IS_CANDIDATE_NO_STALE_CODE', (await runningCodeHash(br)) === bgHashCand);
         const snapC = await snapshot(br, keys);
         A('UPGRADE_SAME_ID_ALL_SEEDED_KEYS_IDENTICAL', diffKeys(snapA, snapC, keys).length === 0, { differing: diffKeys(snapA, snapC, keys) });
+        const hsUp = await br.sw(`(async()=>{const hs=new self.HistoryStore(chrome.storage.local);await hs.load();return {h1:hs.isSuppressed('http://127.0.0.1:8088/h1'),h2:hs.isSuppressed('http://127.0.0.1:8088/h2')}})()`);
+        A('UPGRADE_HISTORY_SKIP_SUPPRESSION_INTACT', hsUp.h1 === true && hsUp.h2 === false, hsUp);
         A('UPGRADE_NO_DUPLICATE_LEDGER_OR_HISTORY_ENTRIES', snapC.obj.xpider_run_ledger.submittedTargets.length === 3 && snapC.obj.xpider_history_attempts.length === 2);
         A('UPGRADE_NO_AUTO_CAMPAIGN_LAUNCH', (await runState(br)).fixtureTabs === 0 && (await postCount()) === 0);
+        (report.screenshots = report.screenshots || []).push(await br.shot(BROWSER_KIND + '_after_upgrade_popup.png'));
         await br.stop();
 
         // ===== Phase D: downgrade via updater rollback =====
@@ -192,6 +237,9 @@ function cpDir(s, d) { fs.cpSync(s, d, { recursive: true }); }
         A('PHASE_D_RUNNING_CODE_IS_RC11_AFTER_DOWNGRADE', (await runningCodeHash(br)) === bgHashRC11);
         const snapD = await snapshot(br, keys);
         A('DOWNGRADE_ALL_SEEDED_KEYS_IDENTICAL', diffKeys(snapA, snapD, keys).length === 0, { differing: diffKeys(snapA, snapD, keys) });
+        const hsDown = await br.sw(`(async()=>{const hs=new self.HistoryStore(chrome.storage.local);await hs.load();return {h1:hs.isSuppressed('http://127.0.0.1:8088/h1'),h2:hs.isSuppressed('http://127.0.0.1:8088/h2'),schemaVer:(await chrome.storage.local.get('xpider_schema_version')).xpider_schema_version}})()`);
+        A('DOWNGRADE_HISTORY_SKIP_AND_SCHEMA_V2_COMPATIBLE', hsDown.h1 === true && hsDown.h2 === false && hsDown.schemaVer === 2, hsDown);
+        report.screenshots.push(await br.shot(BROWSER_KIND + '_after_rollback_popup.png'));
         await br.stop();
 
         // ===== Phase E: interruption during update (crash mid-commit) then recover, relaunch =====

@@ -1,4 +1,4 @@
-﻿# XPIDER AutoForm Sender Pro ??Current State
+# XPIDER AutoForm Sender Pro — Current State
 
 ## Identity
 - Protocol: OCA-DEV-1.4
@@ -6,107 +6,55 @@
 - Workspace: E:\vivpr\ai\extension-form-sender
 - Authority: goodkie/v-show Issues #6 & #10
 - Branch: candidate/p0-core-regressions-v7 (candidate branch isolated; base major/v7-dual-mode preserves frozen RC11 code 20678ada with schedule-only updates at tip cf96bc08)
-- Candidate Functional Base Commit: 76fab0933276ae163c377d39d9dca5169a33063c (short: 76fab093; verified commit object)
+- Candidate Functional Base Commit: 76fab0933276ae163c377d39d9dca5169a33063c (short: 76fab093; verified commit object — extension/ tree 100% untouched and byte-identical)
 - Authoritative Candidate Branch Ref: refs/heads/candidate/p0-core-regressions-v7 (live tip resolved dynamically via git ls-remote / git rev-parse HEAD)
-- State Rev: 2026-11-06.715
-- Authority Cursor: 6699808184 (Responding to ChatGPT Directive #6699808184: transactional update/rollback tool, restorable backup, interruption matrix, delivery verification)
+- State Rev: 2026-11-06.716
+- Authority Cursor: 6699964616 (Responding to ChatGPT Directives #6699947182 & #6699964616: Google Chrome 157 same-ID migration/rollback/interruption parity, Chrome UI/reset/CSV/Email Collector/consent regressions, scrypt+AES-256-GCM encrypted storage backup/restore, updater overlap/target-identity/lock hardening, deep content-level public repo & ZIP secret audit)
 - Canonical Schedule Revision: 9 (verified canonical GitHub schedule blob 39a0243f7c334470163deeed59cf6f306b48e72a at commit cf96bc0891c422e371ba6dd3077b99e35462026e)
-- Collaboration Mode: Manual ChatGPT ??Antigravity Collaboration per Owner Directive.
+- Collaboration Mode: Manual ChatGPT <-> Antigravity Collaboration per Owner Directive.
 - Verification Status: HOLD (Awaiting independent ChatGPT Code Audit & Gate Decision). Release HOLD strictly maintained. Zero external public submissions.
 
 ---
 
-## 0. Directive #6699808184 (State Rev .715) - CORRECTIONS AND NEW EVIDENCE
-- CORRECTION: EXPORT OWNER DEBUG BUNDLE is NOT a backup (redacted, no restore function). Earlier guidance in sections below that names it as the backup prerequisite is superseded by dist/OWNER_SAFE_UPDATE_AND_BACKUP_GUIDE.md.
-- Transactional updater: scripts/xpider_safe_update.js (plan dry-run / apply with PLAN_TOKEN / rollback / recover). Tests: test/run_safe_update_transaction_tests.js -> dist/report_safe_update_transaction.json (31/31).
-- Browser-layer parity + interruption: test/run_backup_restore_parity_harness.js -> dist/report_backup_restore_parity.json (28/28). Verified backup = copy of Local Extension Settings/<id> (browser closed), Edge only.
-- Delivery: repo goodkie/v-show is PUBLIC; anonymous download of the ZIP matched SHA-256 b3f39bec...c2227e. Not authentication-gated.
-- Functional source 76fab093; extension/ tree identical at documentation HEAD.
-- NOT_TESTED: Windows 10 owner smoke, real NopeCHA, live Decodo/DO egress, selective/global reset UI, Chrome (non-Edge) profile backup.
----
-
-## 1. Directive #6699586274 Execution & Verified Deliverables
-
-### A. Verified Artifact Authenticity & Owner Delivery Path
-- **Package Archive**: `dist/XPIDER_V7.0.0_CANDIDATE_P0_REV9_OWNER_SAFE.zip`
-- **File Size**: `4,467,833` bytes (~4.46 MB)
-- **SHA-256 Checksum**: `b3f39bec4ab0711bbe348614be6bbd1f8d0657987059ec7cd3538565c2c0227e`
-- **Authenticated Download URL**: `https://raw.githubusercontent.com/goodkie/v-show/candidate/p0-core-regressions-v7/dist/XPIDER_V7.0.0_CANDIDATE_P0_REV9_OWNER_SAFE.zip`
-- **Local Workspace Relative Path**: `dist/XPIDER_V7.0.0_CANDIDATE_P0_REV9_OWNER_SAFE.zip`
-- **Reproducible Build Script**: `node scripts/package_owner_safe_candidate_v7.js`
-- **ZIP Root Structure**: Direct extension root containing 50 items (no outer wrapper directory; immediate `manifest.json`, `background.js`, `popup.html`, `options.html`, `icons/`, `modules/`).
-- **File Inventory**: Complete SHA-256 manifest in `dist/PACKAGE_INVENTORY_SHA256.json`.
-
----
-
-### B. Empirical Same-ID Upgrade & Rollback Harness (`test/run_v7_same_id_upgrade_and_rollback_harness.js`)
-- **Raw Command**: `node test/run_v7_same_id_upgrade_and_rollback_harness.js`
-- **Exit Code**: `0`
-- **Assertions**: **19 / 19 PASS (100%)**
-- **Report**: `dist/report_same_id_upgrade_rollback.json`
-- **Key Empirical Verifications**:
-  1. **Deterministic Extension ID**: Fixed public key in `manifest.json` guarantees Extension ID `ldlijlaccfeelfdhgnjbibniocefckjj`. Verified identical across Baseline RC11 -> Candidate V7 -> Rollback RC11.
-  2. **Storage Partition Preservation**: Seeding rich owner data (`xpider_sentinel_token`, `templates_v2` [FormTemplateV2], `xpider_user_settings`, `xpider_collected_emails`, `xpider_run_ledger`, `xpider_history_attempts`) in RC11 remained 100% intact through both in-place upgrade and rollback.
-  3. **Verified Safe In-Place Overlay Procedure**: Overwriting the files inside the existing unpacked extension folder and reloading the extension preserves the storage partition and all owner data.
-  4. **Negative Control & Risk Analysis**:
-     - *Unsafe Removal*: Clicking "Remove" in `chrome://extensions` destroys the extension storage partition and wipes all templates/history.
-     - *Unsafe Side-by-Side*: Loading two directories with the same manifest key causes Chromium `CRX_REQUIRED_KEY_MATCH` manifest collision.
-     - *Unsafe Unkeyed Directory*: Loading an unkeyed directory generates an arbitrary hash ID with a blank, isolated storage partition.
-     - *Owner Prerequisite*: Owner MUST export an offline backup using "EXPORT OWNER DEBUG BUNDLE" or Settings > Backup before performing any manual file overlay.
+## 0. Directives #6699947182 & #6699964616 (State Rev .716) — CHROME ACCEPTANCE READINESS & UPDATER HARDENING
+1. **Google Chrome (`157.0.8103.38`) Clean-Profile Same-ID Migration, Encrypted Backup/Restore & Interruption Suite**:
+   - Command: `$env:XPIDER_BROWSER='chrome'; node test/run_backup_restore_parity_harness.js` -> **37 / 37 PASS** (Exit 0).
+   - Report: `dist/report_chrome_migration_parity.json` (plus Edge parity report `dist/report_backup_restore_parity.json`).
+   - Screenshots: `dist/evidence_chrome/chrome_after_upgrade_popup.png`, `dist/evidence_chrome/chrome_after_rollback_popup.png`.
+   - Verified on real Google Chrome `157.0.8103.38` (`C:\Program Files\Google\Chrome\Application\chrome.exe`): fixed ID `ldlijlaccfeelfdhgnjbibniocefckjj`, `storage.local` full parity across restore, upgrade, rollback, and crash-mid-commit recovery, `HistorySkip` (`isSuppressed`) parity, zero extension IndexedDB directories, paused checkpoint preserved (`isPaused: true`), zero auto-start, and `0` localhost/public form POSTs during migration/rollback.
+2. **Google Chrome (`157.0.8103.38`) UI, Selective/Global Reset, CSV Import, Email Collector & Consent Boundary Regression Suite**:
+   - Command: `node test/run_chrome_ui_reset_collector_regressions.js` -> **18 / 18 PASS** (Exit 0).
+   - Report: `dist/report_chrome_ui_reset_collector_regressions.json`.
+   - Screenshot: `dist/evidence_chrome/chrome_ui_regressions_tally.png`.
+   - Verified RFC-4180 CSV import UI & 1:1 row linkage, Email Collector current vs global view/export/clear isolation, dynamic `#xpider-opt-include-no-message` default-OFF (`NON_INQUIRY_SUBSCRIBE_FORM` skip) vs explicit-ON submission, consent boundary (`NON_INQUIRY_UNAUTHORIZED_CONSENT_FORM` / `UNAUTHORIZED_CONSENT_SKIPPED` when `ownerAuthorizedConsent: false`), visible popup tally (`Succeeded: 2`, `Skipped: 3`), active submit lock guard (`CANNOT_RESET_WITH_ACTIVE_SUBMIT_LOCK`), selective reset unsuppressing only the chosen URL, and global suppression reset advancing generation while preserving audit attempts, templates, settings, and collected emails.
+3. **Passphrase-Encrypted Local Storage Backup & Verified Atomic Restore (`scripts/xpider_safe_update.js`)**:
+   - Subcommands `backup-storage` and `restore-storage` using `scrypt(16384,8,1)` + `aes-256-gcm` (`XPIDER_ENCRYPTED_STORAGE_BACKUP_V1`).
+   - Checks LevelDB `LOCK` file and fails closed (`BROWSER_RUNNING_LOCK_HELD`) if Chrome/Edge is open; verifies GCM authentication tag and per-file SHA-256 manifest in staging before atomic swap (`WRONG_PASSPHRASE_OR_CORRUPT_BACKUP` on wrong passphrase leaves profile untouched).
+4. **Supplemental Source-Audit P0 Hardening (`scripts/xpider_safe_update.js` & `test/run_safe_update_transaction_tests.js`)**:
+   - Command: `node test/run_safe_update_transaction_tests.js` -> **48 / 48 PASS** (Exit 0), `dist/report_safe_update_transaction.json`.
+   - Gap 1 fixed: `assertNoOverlap(target, backupRoot)` resolves Windows canonical realpaths (`fs.realpathSync.native`) + case folding, rejecting same path, ancestor, descendant, case alias, and Windows junction alias (`BACKUP_OVERLAPS_TARGET`).
+   - Gap 2 fixed: `doRollback` fails closed on `canonKey(journal.target) !== canonKey(target)` (`ROLLBACK_TARGET_MISMATCH`), `assertNoOverlap`, `cmpTree(backupDir, journal.backupManifest)` (`BACKUP_INTEGRITY_FAILED`), `safeRel` path traversal (`UNSAFE_JOURNAL_PATH`), or wrong manifest ID (`ROLLBACK_WRONG_ID`), and verifies complete-tree identity post-rollback (removing candidate-added stale files while preserving unknown user files).
+   - Concurrency lock `.xpider-update.lock` blocks concurrent `apply` (`UPDATE_IN_PROGRESS`) while an update is unfinished; `powerloss-before-rename` cleans `.xpider-new` temp files; `ebusy-lock` auto-rolls back cleanly.
+5. **Deep Content-Level Public Repo & ZIP Secret Audit (`scripts/audit_public_repo_and_zip_secrets.js`)**:
+   - Command: `node scripts/audit_public_repo_and_zip_secrets.js` -> **ALL_CLEAN** (Exit 0), `dist/report_public_repo_secret_audit.json`.
+   - Scanned all `1,362` tracked files (`932` text files) and all `50` candidate package files: `0` violations, `.private_egress_transaction.json` confirmed untracked/excluded.
+6. **Remaining `NOT_TESTED / UNKNOWN` Boundaries**:
+   - Live Owner Windows 10 desktop manual smoke: `NOT_TESTED`.
+   - Real external NopeCHA extension live cross-extension solver interaction: `NOT_TESTED`.
+   - Live Decodo / DigitalOcean VPN/Proxy egress (IP / DNS / IPv6 / WebRTC): `UNKNOWN`.
 
 ---
 
-### C. Package Security, Hygiene & Path Traversal Audit (`scripts/audit_candidate_package_security.js`)
-- **Raw Command**: `node scripts/audit_candidate_package_security.js`
-- **Exit Code**: `0`
-- **Report**: `dist/security_and_hygiene_audit_report.json`
-- **Findings**:
-  - ZIP Slip / Path Traversal violations: `0`
-  - Forbidden binaries (`.exe`, `.dll`, `.bat`, etc.): `0`
-  - Sensitive local files (`.env`, `.git`, credentials): `0`
-  - In-app solver endpoints / API keys: `0` (All legacy solver code removed; retirement stubs throw `IN_APP_SOLVER_RETIRED` / `INTERNAL_SOLVER_RETIRED_V7`).
-  - Manifest Permissions: 14 MV3 permissions fully justified and scoped.
-  - Privacy Relay / Fail-closed: Verified locally with network disabled; zero external/billable egress.
+## 1. Prior Directives Summary (#6699808184 & #6699586274)
+- **Package Archive**: `dist/XPIDER_V7.0.0_CANDIDATE_P0_REV9_OWNER_SAFE.zip` (`4,467,833` bytes, SHA-256 `b3f39bec4ab0711bbe348614be6bbd1f8d0657987059ec7cd3538565c2c0227e`).
+- **Owner Guide**: `dist/OWNER_SAFE_UPDATE_AND_BACKUP_GUIDE.md` (supersedes any legacy reference to `"EXPORT OWNER DEBUG BUNDLE"`, which is a redacted diagnostic export with no restore path).
+- **Clean-Room Package Suite**: `node test/run_chromium_v7_clean_room_package_suite.js` -> `22/22 PASS` (`dist/report_clean_room_package_suite.json`).
+- **Package Security Audit**: `node scripts/audit_candidate_package_security.js` -> `0` violations (`dist/security_and_hygiene_audit_report.json`).
 
 ---
 
-### D. Clean-Room Package-Level E2E Smoke Suite (`test/run_chromium_v7_clean_room_package_suite.js`)
-- **Raw Command**: `node test/run_chromium_v7_clean_room_package_suite.js`
-- **Exit Code**: `0`
-- **Assertions**: **22 / 22 PASS (100%)**
-- **Report**: `dist/report_clean_room_package_suite.json` (explicitly bound to archive SHA-256 `b3f39bec4ab0711bbe348614be6bbd1f8d0657987059ec7cd3538565c2c0227e`)
-- **Screenshots (5)**:
-  1. `dist/evidence_clean_room/shot_clean_room_01_popup_visible_controls.png`: Visible START button, default-OFF `#xpider-opt-include-no-message`, mode buttons, `#stop-save-btn`.
-  2. `dist/evidence_clean_room/shot_clean_room_02_auto_submission.png`: AUTO mode autonomous submission on `contact-standard.html` (1 POST recorded).
-  3. `dist/evidence_clean_room/shot_clean_room_03_no_message_optin.png`: Message-less `subscribe-no-message.html` skipped when default OFF (0 POSTs); submitted when explicit ON (+1 POST).
-  4. `dist/evidence_clean_room/shot_clean_room_04_manual_assist_unpacked.png`: MANUAL mode renders `#xpider-v7-manual-hold-panel` (`data-mode="MANUAL"`); 0 submissions until operator click; human operator submits via `#xpider-manual-registered-btn` (+1 POST).
-  5. `dist/evidence_clean_room/shot_clean_room_05_sw_crash_restore_unpacked.png`: Stop & Save checkpoint saved; Service Worker forcibly killed via CDP `Target.closeTarget`; fresh SW reboot fully restores checkpoint, queue, and mode.
-
----
-
-## 2. Windows 10 Verified Safe Owner Upgrade & Rollback Procedure
-
-> [!IMPORTANT]
-> **Owner Safety Prerequisite**: Before upgrading, open XPIDER popup, click Settings / Advanced, and click **"EXPORT OWNER DEBUG BUNDLE"** (or Backup Templates) to save an offline JSON backup of your current templates, settings, and URL lists.
-
-### Step 1: In-Place Overlay Upgrade (Safe Procedure)
-1. Download `XPIDER_V7.0.0_CANDIDATE_P0_REV9_OWNER_SAFE.zip` from:
-   `https://raw.githubusercontent.com/goodkie/v-show/candidate/p0-core-regressions-v7/dist/XPIDER_V7.0.0_CANDIDATE_P0_REV9_OWNER_SAFE.zip`
-2. Locate your current unpacked extension folder (e.g. `C:\xpider-extension\`).
-3. Extract the ZIP contents directly into that folder, overwriting existing files (**DO NOT click "Remove" in chrome://extensions**).
-4. In Chrome or Edge, navigate to `chrome://extensions` and click the **Reload (circular arrow)** button on the XPIDER extension card.
-5. Verify Extension ID is unchanged (`ldlijlaccfeelfdhgnjbibniocefckjj`) and all existing templates, history, and settings remain intact.
-
-### Step 2: Instant Rollback to Baseline RC11 (If Desired)
-1. Extract pristine RC11 files directly into the same extension folder, overwriting candidate files.
-2. At `chrome://extensions`, click the **Reload (circular arrow)** button.
-3. Extension ID and all storage data remain 100% intact.
-
----
-
-## 3. Active Gate Status
+## 2. Active Gate Status
 - **RELEASE HOLD strictly maintained**.
 - Base branch `major/v7-dual-mode` remains 100% frozen RC11 (`20678ada`), schedule tip `cf96bc08`.
 - Zero public form submissions (localhost `127.0.0.1:8088` only).
 - IVCS Manager completely untouched (strictly ChatGPT-owned).
-

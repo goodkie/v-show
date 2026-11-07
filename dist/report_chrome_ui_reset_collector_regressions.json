@@ -1,0 +1,183 @@
+{
+  "suite": "XPIDER_CHROME_UI_RESET_COLLECTOR_CONSENT_REGRESSIONS",
+  "browserBinary": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+  "browserFileVersion": "157.0.8103.38",
+  "runtimeBrowserVersion": "Chrome/157.0.8103.38",
+  "extensionId": "ldlijlaccfeelfdhgnjbibniocefckjj",
+  "startedAt": "2026-11-07T01:29:10.736Z",
+  "assertions": [
+    {
+      "name": "FIXTURE_RESET_TO_ZERO_POSTS",
+      "pass": true,
+      "detail": {}
+    },
+    {
+      "name": "REAL_GOOGLE_CHROME_VERIFIED",
+      "pass": true,
+      "detail": {
+        "version": "Chrome/157.0.8103.38"
+      }
+    },
+    {
+      "name": "CSV_IMPORT_UI_FILENAME_AND_COUNT",
+      "pass": true,
+      "detail": {
+        "filenameUi": "synthetic_leads.csv",
+        "countUi": "3 URLs found"
+      }
+    },
+    {
+      "name": "CSV_IMPORT_RFC4180_HEADER_AND_QUOTED_ROWS_LINKED_1_TO_1",
+      "pass": true,
+      "detail": {
+        "totalRows": 4,
+        "invalid": 1,
+        "pending": 3
+      }
+    },
+    {
+      "name": "EMAIL_COLLECTOR_UI_COUNTS_AND_ALL_VIEW",
+      "pass": true,
+      "detail": {
+        "curCountBefore": "1",
+        "globCountBefore": "3",
+        "allTextarea": "alpha@local-test.org\nbeta@local-test.org\ngamma@other-test.org",
+        "csvHasAll3": true,
+        "txtHasCur": true,
+        "curCountAfterClear": "0",
+        "globPreservedCount": 3
+      }
+    },
+    {
+      "name": "EMAIL_COLLECTOR_CSV_AND_TXT_EXPORTS_VALID",
+      "pass": true,
+      "detail": {}
+    },
+    {
+      "name": "EMAIL_COLLECTOR_CLEAR_CURRENT_PRESERVES_GLOBAL_STORE",
+      "pass": true,
+      "detail": {
+        "curCountBefore": "1",
+        "globCountBefore": "3",
+        "allTextarea": "alpha@local-test.org\nbeta@local-test.org\ngamma@other-test.org",
+        "csvHasAll3": true,
+        "txtHasCur": true,
+        "curCountAfterClear": "0",
+        "globPreservedCount": 3
+      }
+    },
+    {
+      "name": "NO_MESSAGE_CHECKBOX_DEFAULT_OFF_IN_CHROME",
+      "pass": true,
+      "detail": {}
+    },
+    {
+      "name": "RUN1_DEFAULT_OFF_SUBMITTED_STANDARD_AND_SKIPPED_NO_MESSAGE",
+      "pass": true,
+      "detail": {
+        "postsAfterRun1": 1,
+        "r1StdStatus": "CONFIRMED_SUCCESS",
+        "r1NoMsgStatus": "SKIPPED",
+        "r1NoMsgReason": "NON_INQUIRY_SUBSCRIBE_FORM"
+      }
+    },
+    {
+      "name": "RUN2_EXPLICIT_ON_SUBMITS_NEWSLETTER_OPTIN",
+      "pass": true,
+      "detail": {
+        "postsAfterRun2": 2,
+        "r2NoMsgStatus": "CONFIRMED_SUCCESS"
+      }
+    },
+    {
+      "name": "RUN2_CONSENT_BOUNDARY_RESPECTED_UNAUTHORIZED_CONSENT_SKIPPED",
+      "pass": true,
+      "detail": {
+        "status": "SKIPPED",
+        "reasonCode": "NON_INQUIRY_UNAUTHORIZED_CONSENT_FORM",
+        "failureClass": null
+      }
+    },
+    {
+      "name": "VISIBLE_RUN_TALLY_RENDERED_IN_POPUP_PANEL",
+      "pass": true,
+      "detail": {
+        "panelText": "Scope:currentGeneration (Generation totals — not current run) Generation:1 Total Import Rows:7 Pending:1 Invalid:1 Succeeded:2 Failed:0 Timeout:0 Unknown:0 Skipped:3"
+      }
+    },
+    {
+      "name": "PRE_RESET_BOTH_SUBMITTED_TARGETS_SUPPRESSED",
+      "pass": true,
+      "detail": {
+        "std": true,
+        "sub": true,
+        "attemptsCount": 5
+      }
+    },
+    {
+      "name": "RESET_REJECTED_WHEN_ACTIVE_SUBMIT_LOCK_HELD",
+      "pass": true,
+      "detail": {
+        "success": false,
+        "error": "CANNOT_RESET_WITH_ACTIVE_SUBMIT_LOCK: Active submission in flight. Stop or pause campaign first."
+      }
+    },
+    {
+      "name": "SELECTIVE_RESET_UNSUPPRESSES_ONLY_SELECTED_URL",
+      "pass": true,
+      "detail": {
+        "stdSuppressed": false,
+        "subSuppressed": true,
+        "attemptsCount": 5,
+        "settingPreserved": "PRESERVE_THIS_SETTING",
+        "tplPreserved": true,
+        "emailsPreserved": 5
+      }
+    },
+    {
+      "name": "SELECTIVE_RESET_PRESERVES_ATTEMPTS_SETTINGS_TEMPLATES_AND_EMAILS",
+      "pass": true,
+      "detail": {
+        "stdSuppressed": false,
+        "subSuppressed": true,
+        "attemptsCount": 5,
+        "settingPreserved": "PRESERVE_THIS_SETTING",
+        "tplPreserved": true,
+        "emailsPreserved": 5
+      }
+    },
+    {
+      "name": "GLOBAL_SUPPRESSION_RESET_ADVANCES_GENERATION_AND_UNSUPPRESSES_ALL",
+      "pass": true,
+      "detail": {
+        "stdSuppressed": false,
+        "subSuppressed": false,
+        "gen": 2,
+        "attemptsCount": 5,
+        "settingPreserved": "PRESERVE_THIS_SETTING",
+        "tplPreserved": true,
+        "emailsPreserved": 5
+      }
+    },
+    {
+      "name": "GLOBAL_SUPPRESSION_RESET_PRESERVES_AUDIT_ATTEMPTS_SETTINGS_TEMPLATES_EMAILS",
+      "pass": true,
+      "detail": {
+        "stdSuppressed": false,
+        "subSuppressed": false,
+        "gen": 2,
+        "attemptsCount": 5,
+        "settingPreserved": "PRESERVE_THIS_SETTING",
+        "tplPreserved": true,
+        "emailsPreserved": 5
+      }
+    }
+  ],
+  "screenshots": [
+    "E:\\vivpr\\ai\\extension-form-sender\\dist\\evidence_chrome\\chrome_ui_regressions_tally.png"
+  ],
+  "status": "SUCCESS",
+  "endedAt": "2026-11-07T01:30:19.399Z",
+  "total": 18,
+  "failed": 0
+}

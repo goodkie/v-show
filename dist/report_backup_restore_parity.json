@@ -1,7 +1,10 @@
 {
   "suite": "XPIDER_BACKUP_RESTORE_PARITY_AND_UPDATER_INTERRUPTION",
+  "browserKind": "edge",
+  "browserBinary": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
+  "browserFileVersion": "156.0.4314.58",
   "archiveSha256": "b3f39bec4ab0711bbe348614be6bbd1f8d0657987059ec7cd3538565c2c0227e",
-  "startedAt": "2026-11-07T00:50:44.214Z",
+  "startedAt": "2026-11-07T01:30:34.793Z",
   "assertions": [
     {
       "name": "FIXTURE_SERVER_UP_AND_ZERO_POSTS_AT_START",
@@ -13,7 +16,17 @@
     {
       "name": "RC11_AND_CANDIDATE_BACKGROUND_DIFFER (so running-code check is meaningful)",
       "pass": true,
-      "detail": {}
+      "detail": {
+        "rc11": "776b734a11f8ab6b9919fde7e74f8dacc26962ab87233266d48eaf79939c7457",
+        "cand": "82e9cc4e14ffa2bc7aa391324e08bde6a8d9b3b6aa14973596db8cdc16a608a1"
+      }
+    },
+    {
+      "name": "PHASE_A_BROWSER_KIND_MATCHES_REQUEST",
+      "pass": true,
+      "detail": {
+        "v": "Edg/156.0.4314.58"
+      }
     },
     {
       "name": "PHASE_A_RC11_RUNNING_CODE_IS_RC11",
@@ -24,7 +37,7 @@
       "name": "PHASE_A_SEEDED_ALL_KEYS_READABLE",
       "pass": true,
       "detail": {
-        "n": 12
+        "n": 14
       }
     },
     {
@@ -39,12 +52,19 @@
         "fn": "function",
         "sanitizedEqualsOriginal": false,
         "secretPresentInBundle": false,
-        "keysKept": 28,
-        "keysOriginal": 28,
+        "keysKept": 21,
+        "keysOriginal": 21,
         "checkpointKept": true,
         "csvUrlsKept": true,
         "settingsKept": true,
         "emailsKept": false
+      }
+    },
+    {
+      "name": "ENCRYPTED_BACKUP_REFUSED_WHILE_BROWSER_OPEN (LevelDB LOCK held)",
+      "pass": true,
+      "detail": {
+        "text": "{\"result\":\"ABORTED\",\"code\":\"BROWSER_RUNNING_LOCK_HELD\",\"message\":\"Browser still holds LevelDB LOCK (EBUSY). Close Chrome/Edge completely bef"
       }
     },
     {
@@ -58,8 +78,23 @@
       "name": "NO_EXTENSION_INDEXEDDB_PRESENT (nothing to back up besides storage.local)",
       "pass": true,
       "detail": {
-        "idbEntries": []
+        "idbEntries": [],
+        "diskState": [
+          "Default\\Local Extension Settings\\ldlijlaccfeelfdhgnjbibniocefckjj"
+        ]
       }
+    },
+    {
+      "name": "ENCRYPTED_BACKUP_CREATED_WHEN_BROWSER_CLOSED",
+      "pass": true,
+      "detail": {
+        "text": "{\n  \"result\": \"BACKUP_ENCRYPTED\",\n  \"out\": \"C:\\\\Users\\\\oPus\\\\AppData\\\\Local\\\\Temp\\\\xpider-brp-NCMgbm\\\\owner_backup.xpider-enc\",\n  \"fileCount\": 5,\n  \"manifestSha"
+      }
+    },
+    {
+      "name": "ENCRYPTED_BACKUP_HAS_NO_PLAINTEXT_SECRET_OR_EMAIL",
+      "pass": true,
+      "detail": {}
     },
     {
       "name": "BACKUP_COPY_NONEMPTY",
@@ -72,10 +107,32 @@
       "detail": {}
     },
     {
+      "name": "ENCRYPTED_RESTORE_WRONG_PASSPHRASE_FAILS_CLOSED_AND_PROFILE_UNTOUCHED",
+      "pass": true,
+      "detail": {
+        "text": "{\"result\":\"ABORTED\",\"code\":\"WRONG_PASSPHRASE_OR_CORRUPT_BACKUP\",\"message\":\"AES-256-GCM authentication failed (wrong passphrase or corrupted "
+      }
+    },
+    {
+      "name": "ENCRYPTED_RESTORE_CORRECT_PASSPHRASE_VERIFIED",
+      "pass": true,
+      "detail": {
+        "text": "{\n  \"result\": \"RESTORED_VERIFIED\",\n  \"lesDir\": \"C:\\\\Users\\\\oPus\\\\AppData\\\\Local\\\\Temp\\\\xpider-brp-NCMgbm\\\\profile2\\\\Default\\\\Local Extension"
+      }
+    },
+    {
       "name": "RESTORE_ALL_SEEDED_KEYS_IDENTICAL (storage.local/templates/CSV queue/checkpoint/settings/history/ledger/emails)",
       "pass": true,
       "detail": {
         "differing": []
+      }
+    },
+    {
+      "name": "RESTORE_HISTORY_SKIP_SUPPRESSION_PARITY",
+      "pass": true,
+      "detail": {
+        "h1": true,
+        "h2": false
       }
     },
     {
@@ -122,7 +179,7 @@
       "name": "PHASE_C_UPDATER_APPLY_COMMITTED_ON_INSTALL_DIR",
       "pass": true,
       "detail": {
-        "text": "{\n  \"result\": \"COMMITTED\",\n  \"backupRoot\": \"C:\\\\Users\\\\oPus\\\\AppData\\\\Local\\\\Temp\\\\xpider-brp-cGizoL\\\\upd_bk1\",\n  \"state\": \"COMMITTED\"\n}"
+        "text": "{\n  \"result\": \"COMMITTED\",\n  \"backupRoot\": \"C:\\\\Users\\\\oPus\\\\AppData\\\\Local\\\\Temp\\\\xpider-brp-NCMgbm\\\\upd_bk1\",\n  \"state\": \"COMMITTED\"\n}"
       }
     },
     {
@@ -135,6 +192,14 @@
       "pass": true,
       "detail": {
         "differing": []
+      }
+    },
+    {
+      "name": "UPGRADE_HISTORY_SKIP_SUPPRESSION_INTACT",
+      "pass": true,
+      "detail": {
+        "h1": true,
+        "h2": false
       }
     },
     {
@@ -151,7 +216,7 @@
       "name": "PHASE_D_ROLLBACK_TREE_IDENTICAL_TO_RC11",
       "pass": true,
       "detail": {
-        "text": "{\n  \"result\": \"ROLLED_BACK\",\n  \"backupRoot\": \"C:\\\\Users\\\\oPus\\\\AppData\\\\Local\\\\Temp\\\\xpider-brp-cGizoL\\\\upd_bk1\"\n}"
+        "text": "{\n  \"result\": \"ROLLED_BACK\",\n  \"backupRoot\": \"C:\\\\Users\\\\oPus\\\\AppData\\\\Local\\\\Temp\\\\xpider-brp-NCMgbm\\\\upd_bk1\"\n}"
       }
     },
     {
@@ -164,6 +229,15 @@
       "pass": true,
       "detail": {
         "differing": []
+      }
+    },
+    {
+      "name": "DOWNGRADE_HISTORY_SKIP_AND_SCHEMA_V2_COMPATIBLE",
+      "pass": true,
+      "detail": {
+        "h1": true,
+        "h2": false,
+        "schemaVer": 2
       }
     },
     {
@@ -202,7 +276,7 @@
       "name": "PHASE_F_KEYLESS_TARGET_(FORK_RISK)_REFUSED",
       "pass": true,
       "detail": {
-        "text": "{\"result\":\"ABORTED\",\"code\":\"MANIFEST_KEY_MISSING\",\"message\":\"manifest.key missing in C:\\\\Users\\\\oPus\\\\AppData\\\\Local\\\\Temp\\\\xpider-brp-cGizoL\\\\install3 (ID woul"
+        "text": "{\"result\":\"ABORTED\",\"code\":\"MANIFEST_KEY_MISSING\",\"message\":\"manifest.key missing in C:\\\\Users\\\\oPus\\\\AppData\\\\Local\\\\Temp\\\\xpider-brp-NCMgbm\\\\install3 (ID woul"
       }
     }
   ],
@@ -210,12 +284,15 @@
     "Selective/global reset UI flows, real Windows 10 desktop smoke, real NopeCHA interaction, live Decodo/DO egress: NOT_TESTED in this suite."
   ],
   "status": "SUCCESS",
+  "preUpdateBackgroundSha256": "776b734a11f8ab6b9919fde7e74f8dacc26962ab87233266d48eaf79939c7457",
+  "postUpdateBackgroundSha256": "82e9cc4e14ffa2bc7aa391324e08bde6a8d9b3b6aa14973596db8cdc16a608a1",
+  "runtimeBrowserVersion": "Edg/156.0.4314.58",
   "ownerDebugBundleFindings": {
     "fn": "function",
     "sanitizedEqualsOriginal": false,
     "secretPresentInBundle": false,
-    "keysKept": 28,
-    "keysOriginal": 28,
+    "keysKept": 21,
+    "keysOriginal": 21,
     "checkpointKept": true,
     "csvUrlsKept": true,
     "settingsKept": true,
@@ -223,14 +300,20 @@
     "restoreFunctionPresentInPopup": false
   },
   "ownerDebugBundleVerdict": "INSUFFICIENT_AS_BACKUP (diagnostic redacted export, no restore function)",
+  "extensionLocalStateOnDisk": [
+    "Default\\Local Extension Settings\\ldlijlaccfeelfdhgnjbibniocefckjj"
+  ],
   "backupMethod": {
-    "what": "Copy '<profile>\\Default\\Local Extension Settings\\ldlijlaccfeelfdhgnjbibniocefckjj' with the browser fully closed",
-    "sizeBytes": 5819,
-    "files": 5,
-    "includesSecrets": true,
-    "note": "contains plaintext storage.local incl. credentials; keep local/private, never upload"
+    "encryptedCommand": "node scripts/xpider_safe_update.js backup-storage --profile-dir <profile> --out <file.xpider-enc> --passphrase-env <ENV>",
+    "cipher": "aes-256-gcm + scrypt(16384,8,1)",
+    "rawSizeBytes": 4747,
+    "files": 5
   },
-  "endedAt": "2026-11-07T00:51:11.991Z",
-  "total": 28,
+  "screenshots": [
+    "dist\\evidence_chrome\\edge_after_upgrade_popup.png",
+    "dist\\evidence_chrome\\edge_after_rollback_popup.png"
+  ],
+  "endedAt": "2026-11-07T01:31:08.576Z",
+  "total": 37,
   "failed": 0
 }
