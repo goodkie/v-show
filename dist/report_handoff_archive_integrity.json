@@ -1,0 +1,163 @@
+{
+  "checkName": "XPIDER_HANDOFF_ARCHIVE_INTEGRITY_INVARIANT",
+  "timestamp": "2026-11-07T13:37:35.560Z",
+  "archivePath": "dist/XPIDER_V7.0.0_CANDIDATE_REV16_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip",
+  "rawUrl": "https://github.com/goodkie/v-show/raw/candidate/p0-core-regressions-v7/dist/XPIDER_V7.0.0_CANDIDATE_REV16_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip",
+  "authoritativeSize": 4569570,
+  "authoritativeSha256": "0ad5ff7bada90cc870a22beb43f838b6592ab1d3aa0c9b6fa7a11536a4dabaa9",
+  "comparisons": {
+    "localDiskStatSize": 4569570,
+    "localDiskSha256": "0ad5ff7bada90cc870a22beb43f838b6592ab1d3aa0c9b6fa7a11536a4dabaa9",
+    "manifestRecordedSize": 4569570,
+    "manifestRecordedSha256": "0ad5ff7bada90cc870a22beb43f838b6592ab1d3aa0c9b6fa7a11536a4dabaa9",
+    "e2eReportRecordedSize": 4569570,
+    "e2eReportRecordedSha256": "0ad5ff7bada90cc870a22beb43f838b6592ab1d3aa0c9b6fa7a11536a4dabaa9",
+    "remoteDownloadedSize": 4569570,
+    "remoteDownloadedSha256": "0ad5ff7bada90cc870a22beb43f838b6592ab1d3aa0c9b6fa7a11536a4dabaa9",
+    "remoteMatchesLocalBuffer": true,
+    "remoteDownloadStatus": "PASS"
+  },
+  "invariants": {
+    "localMatchesManifestSize": true,
+    "localMatchesManifestSha": true,
+    "localMatchesReportSize": true,
+    "localMatchesReportSha": true,
+    "all18EntriesMatchManifestHashes": true,
+    "bundledSafeUpdateSyntheticOriginGuardsVerified": true,
+    "byteCountAndShaDeterministic": true
+  },
+  "clericalDiscrepancyResolution": {
+    "erroneousReceiptText": "4,563,892 bytes (typo in receipt #6707514638 prose, CURRENT_STATE.md, and SESSION_CAPSULE.md)",
+    "authoritativeTrueBinarySize": "4,569,570 bytes",
+    "binaryReplacedOrMutated": false,
+    "binaryIntegrityVerdict": "CONFIRMED_IMMUTABLE_IDENTICAL"
+  },
+  "entryChecks": [
+    {
+      "entryPath": "dist/OWNER_HANDOFF_MANIFEST_REV14.json",
+      "size": 8322,
+      "sha256": "2928bdb5c74cab405b29b88332901ceefa0b2923be49b304cad3feea4ce97b5e",
+      "manifestExpectedSha256": "2928bdb5c74cab405b29b88332901ceefa0b2923be49b304cad3feea4ce97b5e",
+      "manifestMatch": true
+    },
+    {
+      "entryPath": "dist/OWNER_SAFE_UPDATE_AND_BACKUP_GUIDE.md",
+      "size": 20553,
+      "sha256": "415882ac8abc2a3f94894b403830bd775f568943b1d98f31f9cb687dcfb3a51d",
+      "manifestExpectedSha256": "415882ac8abc2a3f94894b403830bd775f568943b1d98f31f9cb687dcfb3a51d",
+      "manifestMatch": true
+    },
+    {
+      "entryPath": "dist/PACKAGE_INVENTORY_SHA256.json",
+      "size": 7295,
+      "sha256": "ab43f481eb29f1f46df7a4bbde1a86cbe5d2f294fb8ca87c44601f40f5efeb4a",
+      "manifestExpectedSha256": "ab43f481eb29f1f46df7a4bbde1a86cbe5d2f294fb8ca87c44601f40f5efeb4a",
+      "manifestMatch": true
+    },
+    {
+      "entryPath": "dist/rc11_baseline_manifest.json",
+      "size": 7299,
+      "sha256": "9b066e28ac19dc30530712ec1cf328311ab1250a6c62547f7e65471241496f6a",
+      "manifestExpectedSha256": "9b066e28ac19dc30530712ec1cf328311ab1250a6c62547f7e65471241496f6a",
+      "manifestMatch": true
+    },
+    {
+      "entryPath": "dist/WINDOWS_10_OWNER_UAT_CHECKLIST.md",
+      "size": 27413,
+      "sha256": "57734a96782ac15dcd973d426036db447e6a928c07b9f90017a9c445177452e1",
+      "manifestExpectedSha256": "57734a96782ac15dcd973d426036db447e6a928c07b9f90017a9c445177452e1",
+      "manifestMatch": true
+    },
+    {
+      "entryPath": "dist/XPIDER_V7.0.0_CANDIDATE_P0_REV9_OWNER_SAFE.zip",
+      "size": 4467833,
+      "sha256": "b3f39bec4ab0711bbe348614be6bbd1f8d0657987059ec7cd3538565c2c0227e",
+      "manifestExpectedSha256": "b3f39bec4ab0711bbe348614be6bbd1f8d0657987059ec7cd3538565c2c0227e",
+      "manifestMatch": true
+    },
+    {
+      "entryPath": "owner-extension-test-site/consent-required-no-message.html",
+      "size": 1133,
+      "sha256": "b40db5ed71b20970be36da46bc60122e2fec0bc87f71baa559acfdc1f5d3064e",
+      "manifestExpectedSha256": "b40db5ed71b20970be36da46bc60122e2fec0bc87f71baa559acfdc1f5d3064e",
+      "manifestMatch": true
+    },
+    {
+      "entryPath": "owner-extension-test-site/contact-standard.html",
+      "size": 5344,
+      "sha256": "42fb0dad9860d5376f96137e91e863077bd99d2ab717369c3ed1b7d6f4063d8b",
+      "manifestExpectedSha256": "42fb0dad9860d5376f96137e91e863077bd99d2ab717369c3ed1b7d6f4063d8b",
+      "manifestMatch": true
+    },
+    {
+      "entryPath": "owner-extension-test-site/contact-success.html",
+      "size": 1468,
+      "sha256": "d4790d52154ef63e7b6282b5be4cf2dc6a8e47b9c0e25a74a50bae4871246d5f",
+      "manifestExpectedSha256": "d4790d52154ef63e7b6282b5be4cf2dc6a8e47b9c0e25a74a50bae4871246d5f",
+      "manifestMatch": true
+    },
+    {
+      "entryPath": "owner-extension-test-site/index.html",
+      "size": 5654,
+      "sha256": "6c156b03e6bb0048fe18c1a47aa8fc2496c247b1e19182e2231e87d87f6945eb",
+      "manifestExpectedSha256": "6c156b03e6bb0048fe18c1a47aa8fc2496c247b1e19182e2231e87d87f6945eb",
+      "manifestMatch": true
+    },
+    {
+      "entryPath": "owner-extension-test-site/server.js",
+      "size": 19340,
+      "sha256": "ccbc3ff61bef80d93bc33d55f6697621a52f4944b5d00aade333833b14fd3809",
+      "manifestExpectedSha256": "ccbc3ff61bef80d93bc33d55f6697621a52f4944b5d00aade333833b14fd3809",
+      "manifestMatch": true
+    },
+    {
+      "entryPath": "owner-extension-test-site/subscribe-no-message.html",
+      "size": 4592,
+      "sha256": "6267ffc89b8ab18d7dd6400811697df39772205725e769752e018b7e3ba426a8",
+      "manifestExpectedSha256": "6267ffc89b8ab18d7dd6400811697df39772205725e769752e018b7e3ba426a8",
+      "manifestMatch": true
+    },
+    {
+      "entryPath": "scripts/build_owner_complete_handoff_kit.js",
+      "size": 17260,
+      "sha256": "cf53995858d2f4d0529660e8a6428faeb624306df0ccdea57cbc331fd546f32a",
+      "manifestExpectedSha256": "cf53995858d2f4d0529660e8a6428faeb624306df0ccdea57cbc331fd546f32a",
+      "manifestMatch": true
+    },
+    {
+      "entryPath": "scripts/xpider_safe_update.js",
+      "size": 70893,
+      "sha256": "61c8f11b4c371c95d30e354ec649222267dd7174eba061b4c979cd6d29c94a03",
+      "manifestExpectedSha256": "61c8f11b4c371c95d30e354ec649222267dd7174eba061b4c979cd6d29c94a03",
+      "manifestMatch": true
+    },
+    {
+      "entryPath": "test/lib/browser_cdp.js",
+      "size": 5406,
+      "sha256": "cfd3869e427dfeb046db0d67619c28cbcfdd337bf1d1b47db5623a1cf936a09a",
+      "manifestExpectedSha256": "cfd3869e427dfeb046db0d67619c28cbcfdd337bf1d1b47db5623a1cf936a09a",
+      "manifestMatch": true
+    },
+    {
+      "entryPath": "test/run_clean_extracted_handoff_kit_e2e.js",
+      "size": 31191,
+      "sha256": "b7c0bdd22b4452f26e50888d17bb2a7abea8afa4753dc6619ad5250f95629447",
+      "manifestExpectedSha256": "b7c0bdd22b4452f26e50888d17bb2a7abea8afa4753dc6619ad5250f95629447",
+      "manifestMatch": true
+    },
+    {
+      "entryPath": "test/run_safe_update_transaction_tests.js",
+      "size": 32236,
+      "sha256": "11ecf9a977189a5810829b6c8f03a819ab8bd1e28499ac603f57d4372f98b4a1",
+      "manifestExpectedSha256": "11ecf9a977189a5810829b6c8f03a819ab8bd1e28499ac603f57d4372f98b4a1",
+      "manifestMatch": true
+    },
+    {
+      "entryPath": "test/run_uat_synthetic_profile_isolation_check.js",
+      "size": 72895,
+      "sha256": "37a3b4073041ce2d24ab54fb918ac23d3119cb2682fad785c530a9b30c21df2a",
+      "manifestExpectedSha256": "37a3b4073041ce2d24ab54fb918ac23d3119cb2682fad785c530a9b30c21df2a",
+      "manifestMatch": true
+    }
+  ]
+}

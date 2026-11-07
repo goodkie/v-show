@@ -9,10 +9,10 @@ ACTIVE_BRANCH: candidate/p0-core-regressions-v7
 CANDIDATE_FUNCTIONAL_COMMIT: 76fab0933276ae163c377d39d9dca5169a33063c
 CANDIDATE_EXTENSION_TREE_SHA: 1d1bac897f70df6fa107cde85b00de591d5dea93
 AUTHORITATIVE_REMOTE_REF: refs/heads/candidate/p0-core-regressions-v7
-STATE_REV: 2026-11-07.723
-AUTHORITY_CURSOR: 6707178560
-LAST_AUDIT: [CHATGPT][SOURCE-AUDIT CORRECTION AFTER RECEIPT #6707030666][XPIDER Issue #6][2026-11-07 UTC] Comment #6707178560
-LAST_DIRECTIVE: [CHATGPT][SOURCE-AUDIT CORRECTION AFTER RECEIPT #6707030666][XPIDER Issue #6][2026-11-07 UTC] Comment #6707178560
+STATE_REV: 2026-11-07.724
+AUTHORITY_CURSOR: CHATGPT_AUDIT_REV16_SIZE_RESOLUTION
+LAST_AUDIT: [CHATGPT][DIRECT SOURCE/REPORT AUDIT — REV16 HANDOFF SIZE CONTRADICTION][XPIDER Issue #6][2026-11-07 UTC]
+LAST_DIRECTIVE: [CHATGPT][DIRECT SOURCE/REPORT AUDIT — REV16 HANDOFF SIZE CONTRADICTION][XPIDER Issue #6][2026-11-07 UTC]
 LAST_RECEIPT: [ANTIGRAVITY -> CHATGPT / OWNER][RECEIPT — REV16 HARNESS-SEEDED DISPOSABLE UAT PROFILE, CHROME API READBACK ATTESTATION, NEGATIVE CONTROLS, FROZEN REV15 PRESERVATION & DUAL-VERIFIED REV16 COMPLETE HANDOFF KIT][XPIDER Issue #6][DIRECTIVE #6707178560] Comment #6707514638
 SCHEDULE_REVISION: 16
 BUILD_ID: V7.0.0-RC11-20261030-THREE-MODE-CONTRACTS-PASS
@@ -24,11 +24,12 @@ FROZEN_REV15_COMPLETE_HANDOFF_KIT_ZIP: dist/XPIDER_V7.0.0_CANDIDATE_REV15_OWNER_
 FROZEN_REV15_COMPLETE_HANDOFF_KIT_SIZE: 4560445
 FROZEN_REV15_COMPLETE_HANDOFF_KIT_SHA256: 43a9bcdfff9651b8f31644d31dc8eba0463e8b5ee1163f198096b0d2a99959cd
 COMPLETE_HANDOFF_KIT_ZIP: dist/XPIDER_V7.0.0_CANDIDATE_REV16_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip
-COMPLETE_HANDOFF_KIT_SIZE: 4563892
+COMPLETE_HANDOFF_KIT_SIZE: 4569570
 COMPLETE_HANDOFF_KIT_SHA256: 0ad5ff7bada90cc870a22beb43f838b6592ab1d3aa0c9b6fa7a11536a4dabaa9
 OWNER_HANDOFF_MANIFEST_REV16: dist/OWNER_HANDOFF_MANIFEST_REV16.json
 OWNER_HANDOFF_MANIFEST_REV15: dist/OWNER_HANDOFF_MANIFEST_REV15.json
 OWNER_HANDOFF_MANIFEST_REV14: dist/OWNER_HANDOFF_MANIFEST_REV14.json
+HANDOFF_ARCHIVE_INTEGRITY_REPORT: dist/report_handoff_archive_integrity.json
 CLEAN_EXTRACT_E2E_REPORT: dist/report_clean_extracted_handoff_kit_e2e.json
 CLEAN_ROOM_REPORT: dist/report_clean_room_package_suite.json
 SAME_ID_REPORT: dist/report_same_id_upgrade_rollback.json
@@ -42,7 +43,7 @@ UAT_NETWORK_ISOLATION_REPORT: dist/report_uat_network_isolation_and_egress_denia
 PUBLIC_REPO_SECRET_AUDIT_REPORT: dist/report_public_repo_secret_audit.json
 OWNER_GUIDE: dist/OWNER_SAFE_UPDATE_AND_BACKUP_GUIDE.md
 OWNER_UAT_CHECKLIST: dist/WINDOWS_10_OWNER_UAT_CHECKLIST.md
-NEXT_ACTION: Awaiting ChatGPT code audit of REV16 Harness-Seeded Disposable UAT Profile, Chrome API Readback Attestation, Negative Controls, and Dual-Verified Complete Handoff Kit receipt for Directive #6707178560 and Owner execution/approval for remaining permissioned gates (Windows 10 live smoke, real NopeCHA extension interoperability, authorized Decodo/DO exit verification, final release approval). Release HOLD maintained.
+NEXT_ACTION: Reconciled clerical receipt size typo to authoritative 4,569,570 bytes across all files; verified byte-level determinism between raw GitHub download, local disk file, manifest, and E2E report via scripts/verify_handoff_archive_integrity.js (exit code 0). Awaiting ChatGPT audit and Owner gate actions. Release HOLD maintained.
 BLOCKERS: Host OS-level Windows Defender Firewall outbound default-deny test is BLOCKED (BLOCKED_NO_SAFE_ELEVATED_TEST_VM; IsAdmin=false, netsh advfirewall rule add exits with code 1). Remaining external gates (Owner Windows 10 live smoke, real NopeCHA extension, live Decodo/DO egress) are NOT_TESTED (OWNER_ACTION_REQUIRED).
 OWNER_ACTION: Release HOLD maintained; zero public submissions.
 RELEASE_ASSET_TAG: v7.0.0-rc11
