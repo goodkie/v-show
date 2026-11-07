@@ -1143,8 +1143,14 @@ async function preflightUat(a = {}) {
     assertNoOverlap(targetDir, profileDir);
 
     const rootDir = path.resolve(__dirname, '..');
-    const archivePath = path.resolve(a.archive || path.join(rootDir, 'dist', 'XPIDER_V7.0.0_CANDIDATE_P0_REV9_OWNER_SAFE.zip'));
-    const expectedSha = String(a['expected-sha'] || 'b3f39bec4ab0711bbe348614be6bbd1f8d0657987059ec7cd3538565c2c0227e').toLowerCase();
+    const rev10Zip = path.join(rootDir, 'dist', 'XPIDER_V7.0.0_CANDIDATE_P0_REV10_OWNER_SAFE.zip');
+    const rev9Zip = path.join(rootDir, 'dist', 'XPIDER_V7.0.0_CANDIDATE_P0_REV9_OWNER_SAFE.zip');
+    const defaultZip = fs.existsSync(rev10Zip) ? rev10Zip : rev9Zip;
+    const defaultSha = fs.existsSync(rev10Zip)
+        ? 'a5ef71d2f7adf6c23554a83d2ce2e4118ec9adfeb260d2bc35fcb413d50d484b'
+        : 'b3f39bec4ab0711bbe348614be6bbd1f8d0657987059ec7cd3538565c2c0227e';
+    const archivePath = path.resolve(a.archive || defaultZip);
+    const expectedSha = String(a['expected-sha'] || defaultSha).toLowerCase();
     const inventoryPath = path.resolve(a.inventory || path.join(rootDir, 'dist', 'PACKAGE_INVENTORY_SHA256.json'));
     const baselinePath = path.resolve(a.baseline || path.join(rootDir, 'dist', 'rc11_baseline_manifest.json'));
     const expectedId = a['expected-id'] || DEFAULT_ID;

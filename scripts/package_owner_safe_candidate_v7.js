@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const zlib = require('zlib');
 const crypto = require('crypto');
 const { execSync } = require('child_process');
 
@@ -43,13 +44,97 @@ function getAllFiles(dir, base = dir) {
     return results;
 }
 
-function buildZip(sourceDir, outZipPath) {
-    // Use PowerShell Compress-Archive for standard cross-platform zip generation on Windows
-    if (fs.existsSync(outZipPath)) fs.unlinkSync(outZipPath);
-    const winSource = path.resolve(sourceDir, '*');
-    const winZip = path.resolve(outZipPath);
-    const cmd = `powershell -NoProfile -Command "Compress-Archive -Path '${winSource}' -DestinationPath '${winZip}' -Force"`;
-    execSync(cmd, { stdio: 'inherit' });
+const CRC_TABLE = (() => {
+    const t = new Uint32Array(256);
+    for (let i = 0; i < 256; i++) {
+        let c = i;
+        for (let k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+        t[i] = c >>> 0;
+    }
+    return t;
+})();
+
+function crc32(buf) {
+    let c = 0xFFFFFFFF;
+    for (let i = 0; i < buf.length; i++) {
+        c = CRC_TABLE[(c ^ buf[i]) & 0xFF] ^ (c >>> 8);
+    }
+    return (c ^ 0xFFFFFFFF) >>> 0;
+}
+
+function buildDeterministicZipFromDir(sourceDir, outZipPath) {
+    const files = getAllFiles(sourceDir);
+    const entries = files.map(f => ({
+        zipPath: f.relPath.replace(/\\/g, '/'),
+        data: fs.readFileSync(f.fullPath)
+    }));
+    const sorted = [...entries].sort((a, b) => a.zipPath.localeCompare(b.zipPath));
+    const localParts = [];
+    const centralParts = [];
+    let offset = 0;
+    const DOS_TIME = 0x0000;
+    const DOS_DATE = 0x0021; // 1980-01-01
+
+    for (const item of sorted) {
+        const nameBuf = Buffer.from(item.zipPath, 'utf8');
+        const rawBuf = item.data;
+        const crc = crc32(rawBuf);
+        const isAlreadyZip = /\.zip$/i.test(item.zipPath);
+        const compBuf = isAlreadyZip ? rawBuf : zlib.deflateRawSync(rawBuf, { level: 6 });
+        const method = isAlreadyZip ? 0 : 8;
+
+        const lfh = Buffer.alloc(30);
+        lfh.writeUInt32LE(0x04034b50, 0);
+        lfh.writeUInt16LE(20, 4);
+        lfh.writeUInt16LE(0x0800, 6);
+        lfh.writeUInt16LE(method, 8);
+        lfh.writeUInt16LE(DOS_TIME, 10);
+        lfh.writeUInt16LE(DOS_DATE, 12);
+        lfh.writeUInt32LE(crc, 14);
+        lfh.writeUInt32LE(compBuf.length, 18);
+        lfh.writeUInt32LE(rawBuf.length, 22);
+        lfh.writeUInt16LE(nameBuf.length, 26);
+        lfh.writeUInt16LE(0, 28);
+
+        localParts.push(lfh, nameBuf, compBuf);
+
+        const cdh = Buffer.alloc(46);
+        cdh.writeUInt32LE(0x02014b50, 0);
+        cdh.writeUInt16LE(20, 4);
+        cdh.writeUInt16LE(20, 6);
+        cdh.writeUInt16LE(0x0800, 8);
+        cdh.writeUInt16LE(method, 10);
+        cdh.writeUInt16LE(DOS_TIME, 12);
+        cdh.writeUInt16LE(DOS_DATE, 14);
+        cdh.writeUInt32LE(crc, 16);
+        cdh.writeUInt32LE(compBuf.length, 20);
+        cdh.writeUInt32LE(rawBuf.length, 24);
+        cdh.writeUInt16LE(nameBuf.length, 28);
+        cdh.writeUInt16LE(0, 30);
+        cdh.writeUInt16LE(0, 32);
+        cdh.writeUInt16LE(0, 34);
+        cdh.writeUInt16LE(0, 36);
+        cdh.writeUInt32LE(0, 38);
+        cdh.writeUInt32LE(offset, 42);
+
+        centralParts.push(cdh, nameBuf);
+        offset += lfh.length + nameBuf.length + compBuf.length;
+    }
+
+    const centralBuf = Buffer.concat(centralParts);
+    const eocd = Buffer.alloc(22);
+    eocd.writeUInt32LE(0x06054b50, 0);
+    eocd.writeUInt16LE(0, 4);
+    eocd.writeUInt16LE(0, 6);
+    eocd.writeUInt16LE(sorted.length, 8);
+    eocd.writeUInt16LE(sorted.length, 10);
+    eocd.writeUInt32LE(centralBuf.length, 12);
+    eocd.writeUInt32LE(offset, 16);
+    eocd.writeUInt16LE(0, 20);
+
+    const buf = Buffer.concat([...localParts, centralBuf, eocd]);
+    fs.writeFileSync(outZipPath, buf);
+    return buf;
 }
 
 function extractZip(zipPath, outDir) {
@@ -57,13 +142,13 @@ function extractZip(zipPath, outDir) {
     fs.mkdirSync(outDir, { recursive: true });
     const winZip = path.resolve(zipPath);
     const winOut = path.resolve(outDir);
-    const cmd = `powershell -NoProfile -Command "Expand-Archive -Path '${winZip}' -DestinationPath '${winOut}' -Force"`;
+    const cmd = `powershell -NoProfile -Command "Expand-Archive -LiteralPath '${winZip.replace(/'/g, "''")}' -DestinationPath '${winOut.replace(/'/g, "''")}' -Force"`;
     execSync(cmd, { stdio: 'inherit' });
 }
 
 async function main() {
     console.log('================================================================================');
-    console.log('📦 XPIDER V7 OWNER-SAFE INSTALLABLE CANDIDATE PACKAGER (DIRECTIVE #6699377538)');
+    console.log('📦 XPIDER V7 OWNER-SAFE INSTALLABLE CANDIDATE PACKAGER (REV10 HOTFIX)');
     console.log('================================================================================\n');
 
     const ROOT_DIR = process.cwd();
@@ -71,7 +156,7 @@ async function main() {
     const DIST_DIR = path.join(ROOT_DIR, 'dist');
     const STAGING_DIR = path.join(DIST_DIR, 'staging_candidate_v7');
     const UNPACKED_CLEAN_ROOM = path.join(DIST_DIR, 'clean_room_unpacked_v7');
-    const ZIP_NAME = 'XPIDER_V7.0.0_CANDIDATE_P0_REV9_OWNER_SAFE.zip';
+    const ZIP_NAME = process.env.CANDIDATE_ZIP_NAME || 'XPIDER_V7.0.0_CANDIDATE_P0_REV10_OWNER_SAFE.zip';
     const ZIP_PATH = path.join(DIST_DIR, ZIP_NAME);
     const REPORT_PATH = path.join(DIST_DIR, 'package_audit_report.json');
 
@@ -85,7 +170,6 @@ async function main() {
     console.log('2. Auditing secret hygiene and credentials...');
     const stagingFiles = getAllFiles(STAGING_DIR);
     const inventory = [];
-    // Real credential pattern: variable assignment or object property with a hardcoded high-entropy secret string
     const hardcodedSecretPattern = /(api_?key|password|secret|auth_?token|bearer)\s*[:=]\s*["'](?!(?:xpider_|chrome_|http|\/|[A-Z_]+$))[a-zA-Z0-9_\-\.]{20,}["']/i;
     const hygieneViolations = [];
 
@@ -102,7 +186,6 @@ async function main() {
             const content = fs.readFileSync(f.fullPath, 'utf8');
             const lines = content.split('\n');
             lines.forEach((l, idx) => {
-                // Ignore comments, translations, manifest key, and public keys
                 const trimmed = l.trim();
                 if (trimmed.startsWith('//') || trimmed.startsWith('*') || trimmed.includes('"key": "MIIBIj')) return;
                 if (hardcodedSecretPattern.test(l)) {
@@ -133,12 +216,12 @@ async function main() {
     console.log(`   - Host Permissions: ${manifest.host_permissions.join(', ')}`);
     console.log('   - Solver Permissions: 0 (No audio STT, No external solver API endpoints)');
 
-    // Build ZIP
-    console.log(`5. Building owner-safe ZIP archive: ${ZIP_PATH}`);
-    buildZip(STAGING_DIR, ZIP_PATH);
+    // Build Deterministic ZIP
+    console.log(`5. Building deterministic owner-safe ZIP archive: ${ZIP_PATH}`);
+    buildDeterministicZipFromDir(STAGING_DIR, ZIP_PATH);
     const zipStats = fs.statSync(ZIP_PATH);
     const zipHash = sha256File(ZIP_PATH);
-    console.log(`   ✅ ZIP build complete: ${zipStats.size} bytes | SHA-256: ${zipHash}`);
+    console.log(`   ✅ Deterministic ZIP build complete: ${zipStats.size} bytes | SHA-256: ${zipHash}`);
 
     // Clean-room extraction test
     console.log(`6. Extracting ZIP to clean-room unpacked directory: ${UNPACKED_CLEAN_ROOM}`);
@@ -162,7 +245,7 @@ async function main() {
     console.log(`   ✅ All ${byteMatchCount} extracted files confirmed 100% byte-identical to source.`);
 
     const report = {
-        buildName: 'XPIDER V7 Candidate P0 Rev 9 Owner-Safe Installable Package',
+        buildName: 'XPIDER V7 Candidate P0 Rev 10 Owner-Safe Installable Package',
         builtAtUtc: new Date().toISOString(),
         zipFile: ZIP_NAME,
         zipPath: ZIP_PATH,
@@ -181,11 +264,16 @@ async function main() {
     fs.writeFileSync(REPORT_PATH, JSON.stringify(report, null, 2), 'utf8');
     console.log(`7. Package audit report saved -> ${REPORT_PATH}`);
     console.log('\n================================================================================');
-    console.log('🎉 OWNER-SAFE INSTALLABLE CANDIDATE PACKAGE READY FOR CLEAN-ROOM TESTING');
+    console.log('🎉 OWNER-SAFE INSTALLABLE CANDIDATE PACKAGE (REV10) READY FOR CLEAN-ROOM TESTING');
     console.log('================================================================================');
+    return report;
 }
 
-main().catch(err => {
-    console.error('Fatal Packager Error:', err);
-    process.exit(1);
-});
+if (require.main === module) {
+    main().catch(err => {
+        console.error('Fatal Packager Error:', err);
+        process.exit(1);
+    });
+}
+
+module.exports = { main, buildDeterministicZipFromDir };

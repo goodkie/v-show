@@ -1,13 +1,13 @@
 {
-  "schemaVersion": "XPIDER_OWNER_HANDOFF_MANIFEST_REV16",
-  "directive": "#6707178560",
+  "schemaVersion": "XPIDER_OWNER_HANDOFF_MANIFEST_REV17",
+  "directive": "#6708288652",
   "status": "CANDIDATE_RELEASE_HOLD",
   "branch": "candidate/p0-core-regressions-v7",
   "functionalCandidateCommit": "76fab0933276ae163c377d39d9dca5169a33063c",
-  "extensionTreeSha": "1d1bac897f70df6fa107cde85b00de591d5dea93",
+  "extensionTreeSha": "1d1bac897f70df6fa107cde85b00de591d5dea93 (base) + step07-prepResult-hotfix",
   "expectedExtensionId": "ldlijlaccfeelfdhgnjbibniocefckjj",
   "extensionZipAloneIsCompleteKit": false,
-  "extensionZipScopeNote": "dist/XPIDER_V7.0.0_CANDIDATE_P0_REV9_OWNER_SAFE.zip contains ONLY the 50 Chrome MV3 runtime files from extension/. The complete owner-usable handoff archive is dist/XPIDER_V7.0.0_CANDIDATE_REV16_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip (built via node scripts/build_owner_complete_handoff_kit.js; prior REV15 archive preserved frozen).",
+  "extensionZipScopeNote": "dist/XPIDER_V7.0.0_CANDIDATE_P0_REV10_OWNER_SAFE.zip contains ONLY the 50 Chrome MV3 runtime files from extension/ (including Step 07 TDZ Hotfix). The complete owner-usable handoff archive is dist/XPIDER_V7.0.0_CANDIDATE_REV17_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip (built via node scripts/build_owner_complete_handoff_kit.js; prior REV15 and REV16 archives preserved frozen).",
   "operatorCapabilityByEnvironment": {
     "withNodeJs18Plus": {
       "supported": true,
@@ -25,7 +25,7 @@
       "supportedForFullSyntheticCampaignUat": false,
       "phaseBCampaignUatStatusWithoutNode": "BLOCKED",
       "allowedPowerShellFallbacks": [
-        "Get-FileHash .\\dist\\XPIDER_V7.0.0_CANDIDATE_P0_REV9_OWNER_SAFE.zip -Algorithm SHA256",
+        "Get-FileHash .\\dist\\XPIDER_V7.0.0_CANDIDATE_P0_REV10_OWNER_SAFE.zip -Algorithm SHA256",
         "Manual offline Copy-Item of Local Extension Settings\\ldlijlaccfeelfdhgnjbibniocefckjj while Chrome is closed",
         "Expand-Archive into a disposable copy for static UI inspection only (cannot run localhost fixtures or local sink proxy without Node.js)"
       ]
@@ -46,23 +46,23 @@
   "files": [
     {
       "role": "extension_runtime_zip_50_files_only",
-      "path": "dist/XPIDER_V7.0.0_CANDIDATE_P0_REV9_OWNER_SAFE.zip",
-      "size": 4467833,
-      "sha256": "b3f39bec4ab0711bbe348614be6bbd1f8d0657987059ec7cd3538565c2c0227e",
-      "rawUrl": "https://github.com/goodkie/v-show/raw/candidate/p0-core-regressions-v7/dist/XPIDER_V7.0.0_CANDIDATE_P0_REV9_OWNER_SAFE.zip"
+      "path": "dist/XPIDER_V7.0.0_CANDIDATE_P0_REV10_OWNER_SAFE.zip",
+      "size": 4470364,
+      "sha256": "a5ef71d2f7adf6c23554a83d2ce2e4118ec9adfeb260d2bc35fcb413d50d484b",
+      "rawUrl": "https://github.com/goodkie/v-show/raw/candidate/p0-core-regressions-v7/dist/XPIDER_V7.0.0_CANDIDATE_P0_REV10_OWNER_SAFE.zip"
     },
     {
       "role": "standalone_transactional_updater_and_uat_cli",
       "path": "scripts/xpider_safe_update.js",
-      "size": 70893,
-      "sha256": "61c8f11b4c371c95d30e354ec649222267dd7174eba061b4c979cd6d29c94a03",
+      "size": 71240,
+      "sha256": "d3f61666da585b0d9b8b6c14ecddebfb09865ebcd1ee3e5e4de87c6cdafc4d31",
       "rawUrl": "https://github.com/goodkie/v-show/raw/candidate/p0-core-regressions-v7/scripts/xpider_safe_update.js"
     },
     {
       "role": "candidate_50_file_sha256_inventory",
       "path": "dist/PACKAGE_INVENTORY_SHA256.json",
       "size": 7295,
-      "sha256": "ab43f481eb29f1f46df7a4bbde1a86cbe5d2f294fb8ca87c44601f40f5efeb4a",
+      "sha256": "450d7e992728d63b371ba66f1ff11fa3c086c1a1968ecf6ea57901dfe518b2a3",
       "rawUrl": "https://github.com/goodkie/v-show/raw/candidate/p0-core-regressions-v7/dist/PACKAGE_INVENTORY_SHA256.json"
     },
     {
@@ -75,15 +75,15 @@
     {
       "role": "synthetic_only_windows_10_uat_checklist",
       "path": "dist/WINDOWS_10_OWNER_UAT_CHECKLIST.md",
-      "size": 27413,
-      "sha256": "57734a96782ac15dcd973d426036db447e6a928c07b9f90017a9c445177452e1",
+      "size": 27681,
+      "sha256": "c9177e1f6be3c40ed7e51e17bdc5150674cc64ac4b7b4f9dbcdb48e3c2d00523",
       "rawUrl": "https://github.com/goodkie/v-show/raw/candidate/p0-core-regressions-v7/dist/WINDOWS_10_OWNER_UAT_CHECKLIST.md"
     },
     {
       "role": "owner_safe_update_backup_and_rollback_guide",
       "path": "dist/OWNER_SAFE_UPDATE_AND_BACKUP_GUIDE.md",
-      "size": 20553,
-      "sha256": "415882ac8abc2a3f94894b403830bd775f568943b1d98f31f9cb687dcfb3a51d",
+      "size": 20713,
+      "sha256": "596ea6ae0eb4b9eddb4d20d35b987f75c4a451d0302b69ac113345a83b7544b5",
       "rawUrl": "https://github.com/goodkie/v-show/raw/candidate/p0-core-regressions-v7/dist/OWNER_SAFE_UPDATE_AND_BACKUP_GUIDE.md"
     },
     {

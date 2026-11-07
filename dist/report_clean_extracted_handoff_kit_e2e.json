@@ -1,50 +1,50 @@
 {
-  "suite": "XPIDER_CLEAN_EXTRACTED_HANDOFF_KIT_E2E_REV16",
-  "directive": "#6707178560",
-  "startedAt": "2026-11-07T13:17:24.266Z",
+  "suite": "XPIDER_CLEAN_EXTRACTED_HANDOFF_KIT_E2E_REV17",
+  "directive": "#6708288652",
+  "startedAt": "2026-11-07T14:57:42.162Z",
   "nodeVersion": "v24.11.1",
   "platform": "win32",
   "completeHandoffArchive": {
-    "path": "dist/XPIDER_V7.0.0_CANDIDATE_REV16_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip",
-    "rawUrl": "https://github.com/goodkie/v-show/raw/candidate/p0-core-regressions-v7/dist/XPIDER_V7.0.0_CANDIDATE_REV16_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip",
+    "path": "dist/XPIDER_V7.0.0_CANDIDATE_REV17_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip",
+    "rawUrl": "https://github.com/goodkie/v-show/raw/candidate/p0-core-regressions-v7/dist/XPIDER_V7.0.0_CANDIDATE_REV17_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip",
     "reproducibleBuildCommand": "node scripts/build_owner_complete_handoff_kit.js",
-    "unambiguousExtractionCommandPowerShell": "Expand-Archive -Path \".\\XPIDER_V7.0.0_CANDIDATE_REV16_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip\" -DestinationPath \"D:\\xpider_handoff_rev16\" -Force; Set-Location \"D:\\xpider_handoff_rev16\"",
-    "extractionRootLayout": "Extracting into <HANDOFF_ROOT> (e.g. D:\\xpider_handoff_rev16) creates dist/, scripts/, owner-extension-test-site/, and test/ directly under <HANDOFF_ROOT> so all relative guide commands run verbatim from <HANDOFF_ROOT>.",
-    "size": 4569570,
-    "sha256": "0ad5ff7bada90cc870a22beb43f838b6592ab1d3aa0c9b6fa7a11536a4dabaa9",
+    "unambiguousExtractionCommandPowerShell": "Expand-Archive -Path \".\\XPIDER_V7.0.0_CANDIDATE_REV17_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip\" -DestinationPath \"D:\\xpider_handoff_rev17\" -Force; Set-Location \"D:\\xpider_handoff_rev17\"",
+    "extractionRootLayout": "Extracting into <HANDOFF_ROOT> (e.g. D:\\xpider_handoff_rev17) creates dist/, scripts/, owner-extension-test-site/, and test/ directly under <HANDOFF_ROOT> so all relative guide commands run verbatim from <HANDOFF_ROOT>.",
+    "size": 4581357,
+    "sha256": "9136c130a8a8e96fc4a4fe1834b656e558e4014a6defa1e03f88d5744b83dd14",
     "dualMethodIntegrityVerification": {
       "method1_nodeCryptoDeterminismCheck": {
-        "invocation1Sha256": "0ad5ff7bada90cc870a22beb43f838b6592ab1d3aa0c9b6fa7a11536a4dabaa9",
-        "invocation2Sha256": "0ad5ff7bada90cc870a22beb43f838b6592ab1d3aa0c9b6fa7a11536a4dabaa9",
+        "invocation1Sha256": "9136c130a8a8e96fc4a4fe1834b656e558e4014a6defa1e03f88d5744b83dd14",
+        "invocation2Sha256": "9136c130a8a8e96fc4a4fe1834b656e558e4014a6defa1e03f88d5744b83dd14",
         "byteIdenticalAcrossInvocations": true
       },
       "method2_powerShellGetFileHashAndDotNetZipFile": {
-        "powerShellGetFileHashSha256": "0ad5ff7bada90cc870a22beb43f838b6592ab1d3aa0c9b6fa7a11536a4dabaa9",
-        "dotNetZipFileEntryCount": 18,
+        "powerShellGetFileHashSha256": "9136c130a8a8e96fc4a4fe1834b656e558e4014a6defa1e03f88d5744b83dd14",
+        "dotNetZipFileEntryCount": 20,
         "allEntriesMatchedSourceDiskSha256": true
       }
     },
-    "bundledEntriesCount": 18,
+    "bundledEntriesCount": 20,
     "bundledEntries": [
       {
         "role": "extension_runtime_zip_50_files_only",
-        "path": "dist/XPIDER_V7.0.0_CANDIDATE_P0_REV9_OWNER_SAFE.zip",
-        "size": 4467833,
-        "sha256": "b3f39bec4ab0711bbe348614be6bbd1f8d0657987059ec7cd3538565c2c0227e",
-        "rawUrl": "https://github.com/goodkie/v-show/raw/candidate/p0-core-regressions-v7/dist/XPIDER_V7.0.0_CANDIDATE_P0_REV9_OWNER_SAFE.zip"
+        "path": "dist/XPIDER_V7.0.0_CANDIDATE_P0_REV10_OWNER_SAFE.zip",
+        "size": 4470364,
+        "sha256": "a5ef71d2f7adf6c23554a83d2ce2e4118ec9adfeb260d2bc35fcb413d50d484b",
+        "rawUrl": "https://github.com/goodkie/v-show/raw/candidate/p0-core-regressions-v7/dist/XPIDER_V7.0.0_CANDIDATE_P0_REV10_OWNER_SAFE.zip"
       },
       {
         "role": "standalone_transactional_updater_and_uat_cli",
         "path": "scripts/xpider_safe_update.js",
-        "size": 70893,
-        "sha256": "61c8f11b4c371c95d30e354ec649222267dd7174eba061b4c979cd6d29c94a03",
+        "size": 71240,
+        "sha256": "d3f61666da585b0d9b8b6c14ecddebfb09865ebcd1ee3e5e4de87c6cdafc4d31",
         "rawUrl": "https://github.com/goodkie/v-show/raw/candidate/p0-core-regressions-v7/scripts/xpider_safe_update.js"
       },
       {
         "role": "candidate_50_file_sha256_inventory",
         "path": "dist/PACKAGE_INVENTORY_SHA256.json",
         "size": 7295,
-        "sha256": "ab43f481eb29f1f46df7a4bbde1a86cbe5d2f294fb8ca87c44601f40f5efeb4a",
+        "sha256": "450d7e992728d63b371ba66f1ff11fa3c086c1a1968ecf6ea57901dfe518b2a3",
         "rawUrl": "https://github.com/goodkie/v-show/raw/candidate/p0-core-regressions-v7/dist/PACKAGE_INVENTORY_SHA256.json"
       },
       {
@@ -57,15 +57,15 @@
       {
         "role": "synthetic_only_windows_10_uat_checklist",
         "path": "dist/WINDOWS_10_OWNER_UAT_CHECKLIST.md",
-        "size": 27413,
-        "sha256": "57734a96782ac15dcd973d426036db447e6a928c07b9f90017a9c445177452e1",
+        "size": 27681,
+        "sha256": "c9177e1f6be3c40ed7e51e17bdc5150674cc64ac4b7b4f9dbcdb48e3c2d00523",
         "rawUrl": "https://github.com/goodkie/v-show/raw/candidate/p0-core-regressions-v7/dist/WINDOWS_10_OWNER_UAT_CHECKLIST.md"
       },
       {
         "role": "owner_safe_update_backup_and_rollback_guide",
         "path": "dist/OWNER_SAFE_UPDATE_AND_BACKUP_GUIDE.md",
-        "size": 20553,
-        "sha256": "415882ac8abc2a3f94894b403830bd775f568943b1d98f31f9cb687dcfb3a51d",
+        "size": 20713,
+        "sha256": "596ea6ae0eb4b9eddb4d20d35b987f75c4a451d0302b69ac113345a83b7544b5",
         "rawUrl": "https://github.com/goodkie/v-show/raw/candidate/p0-core-regressions-v7/dist/OWNER_SAFE_UPDATE_AND_BACKUP_GUIDE.md"
       },
       {
@@ -120,8 +120,8 @@
       {
         "role": "complete_handoff_kit_deterministic_builder",
         "path": "scripts/build_owner_complete_handoff_kit.js",
-        "size": 17260,
-        "sha256": "cf53995858d2f4d0529660e8a6428faeb624306df0ccdea57cbc331fd546f32a",
+        "size": 19061,
+        "sha256": "4d10b4b14c264bd2b351994546345f94d131c67ddbea795d6a29ebeebd29692e",
         "rawUrl": "https://github.com/goodkie/v-show/raw/candidate/p0-core-regressions-v7/scripts/build_owner_complete_handoff_kit.js"
       },
       {
@@ -134,22 +134,36 @@
       {
         "role": "transactional_updater_test_suite",
         "path": "test/run_safe_update_transaction_tests.js",
-        "size": 32236,
-        "sha256": "11ecf9a977189a5810829b6c8f03a819ab8bd1e28499ac603f57d4372f98b4a1",
+        "size": 32237,
+        "sha256": "1bb1a7b9db8a8774c5f0a2822de1bc75d1bda7bf454a52c19dddf55a4e76733a",
         "rawUrl": "https://github.com/goodkie/v-show/raw/candidate/p0-core-regressions-v7/test/run_safe_update_transaction_tests.js"
       },
       {
         "role": "clean_extracted_handoff_kit_e2e_test_suite",
         "path": "test/run_clean_extracted_handoff_kit_e2e.js",
-        "size": 31191,
-        "sha256": "b7c0bdd22b4452f26e50888d17bb2a7abea8afa4753dc6619ad5250f95629447",
+        "size": 32421,
+        "sha256": "515ed5e5652b511daac2d00d519c597534ef30658df543b4f15976e6ccb4240b",
         "rawUrl": "https://github.com/goodkie/v-show/raw/candidate/p0-core-regressions-v7/test/run_clean_extracted_handoff_kit_e2e.js"
+      },
+      {
+        "role": "start_step07_privacy_prep_regression_suite",
+        "path": "test/run_start_step07_privacy_prep_regression.js",
+        "size": 11978,
+        "sha256": "662a643cb41470cc48157791635cee99288e42c276256b1bd0381e55b0170eed",
+        "rawUrl": "https://github.com/goodkie/v-show/raw/candidate/p0-core-regressions-v7/test/run_start_step07_privacy_prep_regression.js"
+      },
+      {
+        "role": "owner_handoff_manifest_rev16_compat",
+        "path": "dist/OWNER_HANDOFF_MANIFEST_REV16.json",
+        "size": 17364,
+        "sha256": "99282800bb3ffd5d6744a85a97b5a0422cddcfad898457f35c4afd5c1f8b72a4",
+        "rawUrl": "https://github.com/goodkie/v-show/raw/candidate/p0-core-regressions-v7/dist/OWNER_HANDOFF_MANIFEST_REV16.json"
       },
       {
         "role": "owner_handoff_manifest_rev14_compat",
         "path": "dist/OWNER_HANDOFF_MANIFEST_REV14.json",
-        "size": 8322,
-        "sha256": "2928bdb5c74cab405b29b88332901ceefa0b2923be49b304cad3feea4ce97b5e",
+        "size": 8402,
+        "sha256": "9891dda74f8463ea06064d8d684c05c1c12058d37605669a26e640b41bf2d53d",
         "rawUrl": "https://github.com/goodkie/v-show/raw/candidate/p0-core-regressions-v7/dist/OWNER_HANDOFF_MANIFEST_REV14.json"
       }
     ]
@@ -161,17 +175,25 @@
     "sha256": "43a9bcdfff9651b8f31644d31dc8eba0463e8b5ee1163f198096b0d2a99959cd",
     "verifiedUntouched": true
   },
-  "cleanExtractionRootUsed": "C:\\Users\\oPus\\AppData\\Local\\Temp\\xpider-clean-handoff-e2e-hqYp0s\\extracted_handoff_root",
+  "preservedFrozenRev16Archive": {
+    "path": "dist/XPIDER_V7.0.0_CANDIDATE_REV16_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip",
+    "manifestPath": "dist/OWNER_HANDOFF_MANIFEST_REV16.json",
+    "size": 4569570,
+    "sha256": "0ad5ff7bada90cc870a22beb43f838b6592ab1d3aa0c9b6fa7a11536a4dabaa9",
+    "verifiedUntouched": true
+  },
+  "cleanExtractionRootUsed": "C:\\Users\\oPus\\AppData\\Local\\Temp\\xpider-clean-handoff-e2e-x0t5h2\\extracted_handoff_root",
   "assertions": [
     {
       "name": "A1_DUAL_METHOD_OUTER_HANDOFF_ZIP_INTEGRITY",
       "pass": true,
       "detail": {
-        "archivePath": "dist/XPIDER_V7.0.0_CANDIDATE_REV16_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip",
-        "size": 4569570,
-        "sha256": "0ad5ff7bada90cc870a22beb43f838b6592ab1d3aa0c9b6fa7a11536a4dabaa9",
+        "archivePath": "dist/XPIDER_V7.0.0_CANDIDATE_REV17_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip",
+        "size": 4581357,
+        "sha256": "9136c130a8a8e96fc4a4fe1834b656e558e4014a6defa1e03f88d5744b83dd14",
         "preservedRev15Sha256": "43a9bcdfff9651b8f31644d31dc8eba0463e8b5ee1163f198096b0d2a99959cd",
-        "bundledEntriesCount": 18
+        "preservedRev16Sha256": "0ad5ff7bada90cc870a22beb43f838b6592ab1d3aa0c9b6fa7a11536a4dabaa9",
+        "bundledEntriesCount": 20
       }
     },
     {
@@ -179,24 +201,24 @@
       "pass": true,
       "detail": {
         "expandStatus": 0,
-        "verifiedFileCount": 18
+        "verifiedFileCount": 20
       }
     },
     {
       "name": "A3_POWERSHELL_RUNTIME_ZIP_SHA256_COMMAND_FROM_GUIDE",
       "pass": true,
       "detail": {
-        "stdout": "B3F39BEC4AB0711BBE348614BE6BBD1F8D0657987059EC7CD3538565C2C0227E"
+        "stdout": "A5EF71D2F7ADF6C23554A83D2CE2E4118EC9ADFEB260D2BC35FCB413D50D484B"
       }
     },
     {
       "name": "A4_GUIDE_ORDER_AND_NON_DESTRUCTIVE_GUARD_AUDIT",
       "pass": true,
       "detail": {
-        "idxPhaseA": 6437,
-        "idxPhaseB": 10603,
-        "idxPhaseC": 21165,
-        "idxPhaseD": 26185,
+        "idxPhaseA": 6671,
+        "idxPhaseB": 10839,
+        "idxPhaseC": 21401,
+        "idxPhaseD": 26453,
         "allRelPathsPresentInExtract": true
       }
     },
@@ -250,7 +272,7 @@
       "name": "A10_STEP_B3_DISPOSABLE_COPY_PLAN_AND_APPLY_FROM_CLEAN_EXTRACT",
       "pass": true,
       "detail": {
-        "planToken": "6bf7a26ba4681a25",
+        "planToken": "6a8b0b43ea587e28",
         "applyResult": "COMMITTED",
         "appliedFileCount": 50,
         "all50MatchInventory": true,
@@ -262,7 +284,7 @@
       "pass": true,
       "detail": {
         "result": "UAT_PROFILE_ISOLATION_VERIFIED",
-        "uatSessionNonce": "637f72b4e1de13837aa26b579f25a396c9280f3b94b6e06e3aa965ab80fdfb97",
+        "uatSessionNonce": "7a50fca2bf9fb01f27357652fb28316b186511726a77072f058bdd03abfe5f95",
         "urlsChecked": 3,
         "emailsChecked": 1,
         "strictAllowlistEnforced": true,
@@ -293,7 +315,7 @@
       "pass": true,
       "detail": {
         "result": "RESTORED_VERIFIED",
-        "lesDir": "C:\\Users\\oPus\\AppData\\Local\\Temp\\xpider-clean-handoff-e2e-hqYp0s\\real_owner_stuart_uat_folder\\Default\\Local Extension Settings\\ldlijlaccfeelfdhgnjbibniocefckjj",
+        "lesDir": "C:\\Users\\oPus\\AppData\\Local\\Temp\\xpider-clean-handoff-e2e-x0t5h2\\real_owner_stuart_uat_folder\\Default\\Local Extension Settings\\ldlijlaccfeelfdhgnjbibniocefckjj",
         "backupOrigin": "OFFLINE_REAL_RECOVERY_ONLY",
         "backupScope": "OFFLINE_OWNER_RECOVERY",
         "uatSessionNonce": null,
@@ -321,7 +343,7 @@
     }
   ],
   "status": "SUCCESS",
-  "endedAt": "2026-11-07T13:17:39.707Z",
+  "endedAt": "2026-11-07T14:57:57.910Z",
   "total": 16,
   "failed": 0
 }

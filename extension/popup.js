@@ -8424,7 +8424,7 @@ async function launchCampaign(options = {}) {
                     resolve(res || { success: false, error: 'NO_RESPONSE_FROM_BACKGROUND' });
                 });
             });
-            const prepResult = (prepResponse && prepResponse.success && prepResponse.result) ? prepResult = prepResponse.result : null;
+            const prepResult = (prepResponse && prepResponse.success && prepResponse.result) ? prepResponse.result : null;
             if (!prepResult || !prepResult.ready) {
                 const reason = prepResult?.reason || prepResponse?.error || 'PRIVACY_START_BLOCKED';
                 const mode = prepResult?.mode || 'PRIVACY_RELAY';

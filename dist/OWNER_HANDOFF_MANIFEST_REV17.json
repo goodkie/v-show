@@ -1,0 +1,317 @@
+{
+  "schemaVersion": "XPIDER_OWNER_HANDOFF_MANIFEST_REV17",
+  "directive": "#6708288652",
+  "status": "CANDIDATE_RELEASE_HOLD",
+  "branch": "candidate/p0-core-regressions-v7",
+  "functionalCandidateCommit": "76fab0933276ae163c377d39d9dca5169a33063c",
+  "extensionTreeSha": "1d1bac897f70df6fa107cde85b00de591d5dea93 (base) + step07-prepResult-hotfix",
+  "expectedExtensionId": "ldlijlaccfeelfdhgnjbibniocefckjj",
+  "extensionZipAloneIsCompleteKit": false,
+  "extensionZipScopeNote": "dist/XPIDER_V7.0.0_CANDIDATE_P0_REV10_OWNER_SAFE.zip contains ONLY the 50 Chrome MV3 runtime files from extension/ (including Step 07 TDZ Hotfix). The complete owner-usable handoff archive is dist/XPIDER_V7.0.0_CANDIDATE_REV17_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip (built via node scripts/build_owner_complete_handoff_kit.js; prior REV15 and REV16 archives preserved frozen).",
+  "operatorCapabilityByEnvironment": {
+    "withNodeJs18Plus": {
+      "supported": true,
+      "capabilities": [
+        "preflight-uat (read-only dry-run preflight)",
+        "init-uat-profile (creates disposable UAT profile with 256-bit uatSessionNonce in .xpider-uat-disposable-profile.json)",
+        "backup-storage & backup-uat-synthetic (AES-256-GCM encrypted offline backup + Chrome API chrome.storage.local.get(null) readback attestation)",
+        "verify-storage-backup (in-memory integrity verification, writtenToDisk: false)",
+        "restore-storage & restore-uat-synthetic (scope-verified atomic restore; blocks real backups in UAT even with --allow-synthetic-uat-restore; allows real recovery on uat-named real folders via --confirm-offline-owner-recovery)",
+        "plan / apply / rollback / recover (journaled transactional code update)",
+        "owner-extension-test-site/server.js (localhost 127.0.0.1:8088 fixtures + 127.0.0.1:8090 fail-closed sink proxy)"
+      ]
+    },
+    "withoutNodeJsPowerShellOnly": {
+      "supportedForFullSyntheticCampaignUat": false,
+      "phaseBCampaignUatStatusWithoutNode": "BLOCKED",
+      "allowedPowerShellFallbacks": [
+        "Get-FileHash .\\dist\\XPIDER_V7.0.0_CANDIDATE_P0_REV10_OWNER_SAFE.zip -Algorithm SHA256",
+        "Manual offline Copy-Item of Local Extension Settings\\ldlijlaccfeelfdhgnjbibniocefckjj while Chrome is closed",
+        "Expand-Archive into a disposable copy for static UI inspection only (cannot run localhost fixtures or local sink proxy without Node.js)"
+      ]
+    }
+  },
+  "consolidatedAcceptanceMatrix": {
+    "G1_candidateRuntimeFreezeAndHandoffKitIntegrity": "SOURCE_METADATA_VERIFIED + DEV_PASS",
+    "G2_chrome157AndEdge146MigrationBackupRestoreParity": "DEV_PASS (Developer-Executed Only; Not Independently Run by ChatGPT/Owner)",
+    "G3_chrome157FunctionalUi3ModeResetCsvConsentSuite": "DEV_PASS (Developer-Executed Only; Not Independently Run by ChatGPT/Owner)",
+    "G4_transactionalUpdaterCleanExtractAndSyntheticRestoreOriginGate": "DEV_PASS (Developer-Executed Only; Not Independently Run by ChatGPT/Owner)",
+    "G5_browserSinkProxyDnrQuicAndDryRunPreflightUat": "DEV_PASS (Scoped to Browser Proxy/DNR/CDP Path ONLY; 0 Forwarded Sink Requests Is NOT Proof of Total Host Egress Default-Deny)",
+    "G6_osKernelDefaultDenyFirewallRuleOnTestChromeOrVm": "BLOCKED (BLOCKED_NO_SAFE_ELEVATED_TEST_VM)",
+    "G7_ownerWindows10LiveDesktopSmoke": "NOT_TESTED (OWNER_ACTION_REQUIRED)",
+    "G8_realExternalNopeChaExtensionInteroperability": "NOT_TESTED (OWNER_ACTION_REQUIRED)",
+    "G9_authorizedDigitalOceanDecodoRelayEgressVerification": "NOT_TESTED (OWNER_ACTION_REQUIRED)",
+    "G10_ownerFinalReleaseAndLiveUpdateApproval": "NOT_TESTED (OWNER_ACTION_REQUIRED)"
+  },
+  "files": [
+    {
+      "role": "extension_runtime_zip_50_files_only",
+      "path": "dist/XPIDER_V7.0.0_CANDIDATE_P0_REV10_OWNER_SAFE.zip",
+      "size": 4470364,
+      "sha256": "a5ef71d2f7adf6c23554a83d2ce2e4118ec9adfeb260d2bc35fcb413d50d484b",
+      "rawUrl": "https://github.com/goodkie/v-show/raw/candidate/p0-core-regressions-v7/dist/XPIDER_V7.0.0_CANDIDATE_P0_REV10_OWNER_SAFE.zip"
+    },
+    {
+      "role": "standalone_transactional_updater_and_uat_cli",
+      "path": "scripts/xpider_safe_update.js",
+      "size": 71240,
+      "sha256": "d3f61666da585b0d9b8b6c14ecddebfb09865ebcd1ee3e5e4de87c6cdafc4d31",
+      "rawUrl": "https://github.com/goodkie/v-show/raw/candidate/p0-core-regressions-v7/scripts/xpider_safe_update.js"
+    },
+    {
+      "role": "candidate_50_file_sha256_inventory",
+      "path": "dist/PACKAGE_INVENTORY_SHA256.json",
+      "size": 7295,
+      "sha256": "450d7e992728d63b371ba66f1ff11fa3c086c1a1968ecf6ea57901dfe518b2a3",
+      "rawUrl": "https://github.com/goodkie/v-show/raw/candidate/p0-core-regressions-v7/dist/PACKAGE_INVENTORY_SHA256.json"
+    },
+    {
+      "role": "frozen_rc11_baseline_manifest",
+      "path": "dist/rc11_baseline_manifest.json",
+      "size": 7299,
+      "sha256": "9b066e28ac19dc30530712ec1cf328311ab1250a6c62547f7e65471241496f6a",
+      "rawUrl": "https://github.com/goodkie/v-show/raw/candidate/p0-core-regressions-v7/dist/rc11_baseline_manifest.json"
+    },
+    {
+      "role": "synthetic_only_windows_10_uat_checklist",
+      "path": "dist/WINDOWS_10_OWNER_UAT_CHECKLIST.md",
+      "size": 27681,
+      "sha256": "c9177e1f6be3c40ed7e51e17bdc5150674cc64ac4b7b4f9dbcdb48e3c2d00523",
+      "rawUrl": "https://github.com/goodkie/v-show/raw/candidate/p0-core-regressions-v7/dist/WINDOWS_10_OWNER_UAT_CHECKLIST.md"
+    },
+    {
+      "role": "owner_safe_update_backup_and_rollback_guide",
+      "path": "dist/OWNER_SAFE_UPDATE_AND_BACKUP_GUIDE.md",
+      "size": 20713,
+      "sha256": "596ea6ae0eb4b9eddb4d20d35b987f75c4a451d0302b69ac113345a83b7544b5",
+      "rawUrl": "https://github.com/goodkie/v-show/raw/candidate/p0-core-regressions-v7/dist/OWNER_SAFE_UPDATE_AND_BACKUP_GUIDE.md"
+    },
+    {
+      "role": "localhost_fixture_and_fail_closed_sink_proxy_server",
+      "path": "owner-extension-test-site/server.js",
+      "size": 19340,
+      "sha256": "ccbc3ff61bef80d93bc33d55f6697621a52f4944b5d00aade333833b14fd3809",
+      "rawUrl": "https://github.com/goodkie/v-show/raw/candidate/p0-core-regressions-v7/owner-extension-test-site/server.js"
+    },
+    {
+      "role": "localhost_fixture_contact_standard_html",
+      "path": "owner-extension-test-site/contact-standard.html",
+      "size": 5344,
+      "sha256": "42fb0dad9860d5376f96137e91e863077bd99d2ab717369c3ed1b7d6f4063d8b",
+      "rawUrl": "https://github.com/goodkie/v-show/raw/candidate/p0-core-regressions-v7/owner-extension-test-site/contact-standard.html"
+    },
+    {
+      "role": "localhost_fixture_subscribe_no_message_html",
+      "path": "owner-extension-test-site/subscribe-no-message.html",
+      "size": 4592,
+      "sha256": "6267ffc89b8ab18d7dd6400811697df39772205725e769752e018b7e3ba426a8",
+      "rawUrl": "https://github.com/goodkie/v-show/raw/candidate/p0-core-regressions-v7/owner-extension-test-site/subscribe-no-message.html"
+    },
+    {
+      "role": "localhost_fixture_consent_required_no_message_html",
+      "path": "owner-extension-test-site/consent-required-no-message.html",
+      "size": 1133,
+      "sha256": "b40db5ed71b20970be36da46bc60122e2fec0bc87f71baa559acfdc1f5d3064e",
+      "rawUrl": "https://github.com/goodkie/v-show/raw/candidate/p0-core-regressions-v7/owner-extension-test-site/consent-required-no-message.html"
+    },
+    {
+      "role": "localhost_fixture_contact_success_html",
+      "path": "owner-extension-test-site/contact-success.html",
+      "size": 1468,
+      "sha256": "d4790d52154ef63e7b6282b5be4cf2dc6a8e47b9c0e25a74a50bae4871246d5f",
+      "rawUrl": "https://github.com/goodkie/v-show/raw/candidate/p0-core-regressions-v7/owner-extension-test-site/contact-success.html"
+    },
+    {
+      "role": "automated_uat_isolation_and_preflight_harness",
+      "path": "test/run_uat_synthetic_profile_isolation_check.js",
+      "size": 72895,
+      "sha256": "37a3b4073041ce2d24ab54fb918ac23d3119cb2682fad785c530a9b30c21df2a",
+      "rawUrl": "https://github.com/goodkie/v-show/raw/candidate/p0-core-regressions-v7/test/run_uat_synthetic_profile_isolation_check.js"
+    },
+    {
+      "role": "automated_browser_cdp_helper",
+      "path": "test/lib/browser_cdp.js",
+      "size": 5406,
+      "sha256": "cfd3869e427dfeb046db0d67619c28cbcfdd337bf1d1b47db5623a1cf936a09a",
+      "rawUrl": "https://github.com/goodkie/v-show/raw/candidate/p0-core-regressions-v7/test/lib/browser_cdp.js"
+    }
+  ],
+  "preservedFrozenRev15Archive": {
+    "path": "dist/XPIDER_V7.0.0_CANDIDATE_REV15_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip",
+    "manifestPath": "dist/OWNER_HANDOFF_MANIFEST_REV15.json",
+    "size": 4560445,
+    "sha256": "43a9bcdfff9651b8f31644d31dc8eba0463e8b5ee1163f198096b0d2a99959cd",
+    "verifiedUntouched": true
+  },
+  "preservedFrozenRev16Archive": {
+    "path": "dist/XPIDER_V7.0.0_CANDIDATE_REV16_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip",
+    "manifestPath": "dist/OWNER_HANDOFF_MANIFEST_REV16.json",
+    "size": 4569570,
+    "sha256": "0ad5ff7bada90cc870a22beb43f838b6592ab1d3aa0c9b6fa7a11536a4dabaa9",
+    "verifiedUntouched": true
+  },
+  "completeHandoffArchive": {
+    "path": "dist/XPIDER_V7.0.0_CANDIDATE_REV17_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip",
+    "rawUrl": "https://github.com/goodkie/v-show/raw/candidate/p0-core-regressions-v7/dist/XPIDER_V7.0.0_CANDIDATE_REV17_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip",
+    "reproducibleBuildCommand": "node scripts/build_owner_complete_handoff_kit.js",
+    "unambiguousExtractionCommandPowerShell": "Expand-Archive -Path \".\\XPIDER_V7.0.0_CANDIDATE_REV17_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip\" -DestinationPath \"D:\\xpider_handoff_rev17\" -Force; Set-Location \"D:\\xpider_handoff_rev17\"",
+    "extractionRootLayout": "Extracting into <HANDOFF_ROOT> (e.g. D:\\xpider_handoff_rev17) creates dist/, scripts/, owner-extension-test-site/, and test/ directly under <HANDOFF_ROOT> so all relative guide commands run verbatim from <HANDOFF_ROOT>.",
+    "size": 4581357,
+    "sha256": "9136c130a8a8e96fc4a4fe1834b656e558e4014a6defa1e03f88d5744b83dd14",
+    "dualMethodIntegrityVerification": {
+      "method1_nodeCryptoDeterminismCheck": {
+        "invocation1Sha256": "9136c130a8a8e96fc4a4fe1834b656e558e4014a6defa1e03f88d5744b83dd14",
+        "invocation2Sha256": "9136c130a8a8e96fc4a4fe1834b656e558e4014a6defa1e03f88d5744b83dd14",
+        "byteIdenticalAcrossInvocations": true
+      },
+      "method2_powerShellGetFileHashAndDotNetZipFile": {
+        "powerShellGetFileHashSha256": "9136c130a8a8e96fc4a4fe1834b656e558e4014a6defa1e03f88d5744b83dd14",
+        "dotNetZipFileEntryCount": 20,
+        "allEntriesMatchedSourceDiskSha256": true
+      }
+    },
+    "bundledEntriesCount": 20,
+    "bundledEntries": [
+      {
+        "role": "extension_runtime_zip_50_files_only",
+        "path": "dist/XPIDER_V7.0.0_CANDIDATE_P0_REV10_OWNER_SAFE.zip",
+        "size": 4470364,
+        "sha256": "a5ef71d2f7adf6c23554a83d2ce2e4118ec9adfeb260d2bc35fcb413d50d484b",
+        "rawUrl": "https://github.com/goodkie/v-show/raw/candidate/p0-core-regressions-v7/dist/XPIDER_V7.0.0_CANDIDATE_P0_REV10_OWNER_SAFE.zip"
+      },
+      {
+        "role": "standalone_transactional_updater_and_uat_cli",
+        "path": "scripts/xpider_safe_update.js",
+        "size": 71240,
+        "sha256": "d3f61666da585b0d9b8b6c14ecddebfb09865ebcd1ee3e5e4de87c6cdafc4d31",
+        "rawUrl": "https://github.com/goodkie/v-show/raw/candidate/p0-core-regressions-v7/scripts/xpider_safe_update.js"
+      },
+      {
+        "role": "candidate_50_file_sha256_inventory",
+        "path": "dist/PACKAGE_INVENTORY_SHA256.json",
+        "size": 7295,
+        "sha256": "450d7e992728d63b371ba66f1ff11fa3c086c1a1968ecf6ea57901dfe518b2a3",
+        "rawUrl": "https://github.com/goodkie/v-show/raw/candidate/p0-core-regressions-v7/dist/PACKAGE_INVENTORY_SHA256.json"
+      },
+      {
+        "role": "frozen_rc11_baseline_manifest",
+        "path": "dist/rc11_baseline_manifest.json",
+        "size": 7299,
+        "sha256": "9b066e28ac19dc30530712ec1cf328311ab1250a6c62547f7e65471241496f6a",
+        "rawUrl": "https://github.com/goodkie/v-show/raw/candidate/p0-core-regressions-v7/dist/rc11_baseline_manifest.json"
+      },
+      {
+        "role": "synthetic_only_windows_10_uat_checklist",
+        "path": "dist/WINDOWS_10_OWNER_UAT_CHECKLIST.md",
+        "size": 27681,
+        "sha256": "c9177e1f6be3c40ed7e51e17bdc5150674cc64ac4b7b4f9dbcdb48e3c2d00523",
+        "rawUrl": "https://github.com/goodkie/v-show/raw/candidate/p0-core-regressions-v7/dist/WINDOWS_10_OWNER_UAT_CHECKLIST.md"
+      },
+      {
+        "role": "owner_safe_update_backup_and_rollback_guide",
+        "path": "dist/OWNER_SAFE_UPDATE_AND_BACKUP_GUIDE.md",
+        "size": 20713,
+        "sha256": "596ea6ae0eb4b9eddb4d20d35b987f75c4a451d0302b69ac113345a83b7544b5",
+        "rawUrl": "https://github.com/goodkie/v-show/raw/candidate/p0-core-regressions-v7/dist/OWNER_SAFE_UPDATE_AND_BACKUP_GUIDE.md"
+      },
+      {
+        "role": "localhost_fixture_and_fail_closed_sink_proxy_server",
+        "path": "owner-extension-test-site/server.js",
+        "size": 19340,
+        "sha256": "ccbc3ff61bef80d93bc33d55f6697621a52f4944b5d00aade333833b14fd3809",
+        "rawUrl": "https://github.com/goodkie/v-show/raw/candidate/p0-core-regressions-v7/owner-extension-test-site/server.js"
+      },
+      {
+        "role": "localhost_fixture_contact_standard_html",
+        "path": "owner-extension-test-site/contact-standard.html",
+        "size": 5344,
+        "sha256": "42fb0dad9860d5376f96137e91e863077bd99d2ab717369c3ed1b7d6f4063d8b",
+        "rawUrl": "https://github.com/goodkie/v-show/raw/candidate/p0-core-regressions-v7/owner-extension-test-site/contact-standard.html"
+      },
+      {
+        "role": "localhost_fixture_subscribe_no_message_html",
+        "path": "owner-extension-test-site/subscribe-no-message.html",
+        "size": 4592,
+        "sha256": "6267ffc89b8ab18d7dd6400811697df39772205725e769752e018b7e3ba426a8",
+        "rawUrl": "https://github.com/goodkie/v-show/raw/candidate/p0-core-regressions-v7/owner-extension-test-site/subscribe-no-message.html"
+      },
+      {
+        "role": "localhost_fixture_consent_required_no_message_html",
+        "path": "owner-extension-test-site/consent-required-no-message.html",
+        "size": 1133,
+        "sha256": "b40db5ed71b20970be36da46bc60122e2fec0bc87f71baa559acfdc1f5d3064e",
+        "rawUrl": "https://github.com/goodkie/v-show/raw/candidate/p0-core-regressions-v7/owner-extension-test-site/consent-required-no-message.html"
+      },
+      {
+        "role": "localhost_fixture_contact_success_html",
+        "path": "owner-extension-test-site/contact-success.html",
+        "size": 1468,
+        "sha256": "d4790d52154ef63e7b6282b5be4cf2dc6a8e47b9c0e25a74a50bae4871246d5f",
+        "rawUrl": "https://github.com/goodkie/v-show/raw/candidate/p0-core-regressions-v7/owner-extension-test-site/contact-success.html"
+      },
+      {
+        "role": "automated_uat_isolation_and_preflight_harness",
+        "path": "test/run_uat_synthetic_profile_isolation_check.js",
+        "size": 72895,
+        "sha256": "37a3b4073041ce2d24ab54fb918ac23d3119cb2682fad785c530a9b30c21df2a",
+        "rawUrl": "https://github.com/goodkie/v-show/raw/candidate/p0-core-regressions-v7/test/run_uat_synthetic_profile_isolation_check.js"
+      },
+      {
+        "role": "automated_browser_cdp_helper",
+        "path": "test/lib/browser_cdp.js",
+        "size": 5406,
+        "sha256": "cfd3869e427dfeb046db0d67619c28cbcfdd337bf1d1b47db5623a1cf936a09a",
+        "rawUrl": "https://github.com/goodkie/v-show/raw/candidate/p0-core-regressions-v7/test/lib/browser_cdp.js"
+      },
+      {
+        "role": "complete_handoff_kit_deterministic_builder",
+        "path": "scripts/build_owner_complete_handoff_kit.js",
+        "size": 19061,
+        "sha256": "4d10b4b14c264bd2b351994546345f94d131c67ddbea795d6a29ebeebd29692e",
+        "rawUrl": "https://github.com/goodkie/v-show/raw/candidate/p0-core-regressions-v7/scripts/build_owner_complete_handoff_kit.js"
+      },
+      {
+        "role": "localhost_fixture_index_html",
+        "path": "owner-extension-test-site/index.html",
+        "size": 5654,
+        "sha256": "6c156b03e6bb0048fe18c1a47aa8fc2496c247b1e19182e2231e87d87f6945eb",
+        "rawUrl": "https://github.com/goodkie/v-show/raw/candidate/p0-core-regressions-v7/owner-extension-test-site/index.html"
+      },
+      {
+        "role": "transactional_updater_test_suite",
+        "path": "test/run_safe_update_transaction_tests.js",
+        "size": 32237,
+        "sha256": "1bb1a7b9db8a8774c5f0a2822de1bc75d1bda7bf454a52c19dddf55a4e76733a",
+        "rawUrl": "https://github.com/goodkie/v-show/raw/candidate/p0-core-regressions-v7/test/run_safe_update_transaction_tests.js"
+      },
+      {
+        "role": "clean_extracted_handoff_kit_e2e_test_suite",
+        "path": "test/run_clean_extracted_handoff_kit_e2e.js",
+        "size": 32421,
+        "sha256": "515ed5e5652b511daac2d00d519c597534ef30658df543b4f15976e6ccb4240b",
+        "rawUrl": "https://github.com/goodkie/v-show/raw/candidate/p0-core-regressions-v7/test/run_clean_extracted_handoff_kit_e2e.js"
+      },
+      {
+        "role": "start_step07_privacy_prep_regression_suite",
+        "path": "test/run_start_step07_privacy_prep_regression.js",
+        "size": 11978,
+        "sha256": "662a643cb41470cc48157791635cee99288e42c276256b1bd0381e55b0170eed",
+        "rawUrl": "https://github.com/goodkie/v-show/raw/candidate/p0-core-regressions-v7/test/run_start_step07_privacy_prep_regression.js"
+      },
+      {
+        "role": "owner_handoff_manifest_rev16_compat",
+        "path": "dist/OWNER_HANDOFF_MANIFEST_REV16.json",
+        "size": 17364,
+        "sha256": "99282800bb3ffd5d6744a85a97b5a0422cddcfad898457f35c4afd5c1f8b72a4",
+        "rawUrl": "https://github.com/goodkie/v-show/raw/candidate/p0-core-regressions-v7/dist/OWNER_HANDOFF_MANIFEST_REV16.json"
+      },
+      {
+        "role": "owner_handoff_manifest_rev14_compat",
+        "path": "dist/OWNER_HANDOFF_MANIFEST_REV14.json",
+        "size": 8402,
+        "sha256": "9891dda74f8463ea06064d8d684c05c1c12058d37605669a26e640b41bf2d53d",
+        "rawUrl": "https://github.com/goodkie/v-show/raw/candidate/p0-core-regressions-v7/dist/OWNER_HANDOFF_MANIFEST_REV14.json"
+      }
+    ]
+  }
+}

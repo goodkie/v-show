@@ -1,10 +1,10 @@
 {
-  "buildName": "XPIDER V7 Candidate P0 Rev 9 Owner-Safe Installable Package",
-  "builtAtUtc": "2026-11-07T00:15:36.939Z",
-  "zipFile": "XPIDER_V7.0.0_CANDIDATE_P0_REV9_OWNER_SAFE.zip",
-  "zipPath": "E:\\vivpr\\ai\\extension-form-sender\\dist\\XPIDER_V7.0.0_CANDIDATE_P0_REV9_OWNER_SAFE.zip",
-  "zipSize": 4467833,
-  "zipSha256": "b3f39bec4ab0711bbe348614be6bbd1f8d0657987059ec7cd3538565c2c0227e",
+  "buildName": "XPIDER V7 Candidate P0 Rev 10 Owner-Safe Installable Package",
+  "builtAtUtc": "2026-11-07T14:42:35.737Z",
+  "zipFile": "XPIDER_V7.0.0_CANDIDATE_P0_REV10_OWNER_SAFE.zip",
+  "zipPath": "E:\\vivpr\\ai\\extension-form-sender\\dist\\XPIDER_V7.0.0_CANDIDATE_P0_REV10_OWNER_SAFE.zip",
+  "zipSize": 4470364,
+  "zipSha256": "a5ef71d2f7adf6c23554a83d2ce2e4118ec9adfeb260d2bc35fcb413d50d484b",
   "totalFiles": 50,
   "cleanRoomUnpackedPath": "E:\\vivpr\\ai\\extension-form-sender\\dist\\clean_room_unpacked_v7",
   "byteIntegrityConfirmed": true,
@@ -217,8 +217,8 @@
     },
     {
       "path": "popup.js",
-      "size": 573752,
-      "sha256": "ddcf6f71bf01835399cc7df1540aab82ebf240efec0e8df1cc1dfccf2f75cd85"
+      "size": 573739,
+      "sha256": "a32e6e43d16c31e383aee10136d6c4104c2a24e8d03f5aa6fdeae0bdc1539783"
     },
     {
       "path": "RESTORE_POINT_SUMMARY.md",

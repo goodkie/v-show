@@ -1,0 +1,195 @@
+{
+  "suite": "XPIDER_START_STEP07_PRIVACY_PREP_REGRESSION",
+  "directive": "#6708288652",
+  "timestamp": "2026-11-07T14:58:01.777Z",
+  "candidateRuntimeZip": "dist\\XPIDER_V7.0.0_CANDIDATE_P0_REV10_OWNER_SAFE.zip",
+  "candidateRuntimeZipSha256": "a5ef71d2f7adf6c23554a83d2ce2e4118ec9adfeb260d2bc35fcb413d50d484b",
+  "sourcePopupSha256": "a32e6e43d16c31e383aee10136d6c4104c2a24e8d03f5aa6fdeae0bdc1539783",
+  "zipInternalPopupSha256": "a32e6e43d16c31e383aee10136d6c4104c2a24e8d03f5aa6fdeae0bdc1539783",
+  "assertions": [
+    {
+      "name": "A1_ZIP_INTERNAL_POPUP_MATCHES_REPO_SOURCE",
+      "pass": true,
+      "detail": {
+        "srcPopupHash": "a32e6e43d16c31e383aee10136d6c4104c2a24e8d03f5aa6fdeae0bdc1539783",
+        "zipPopupHash": "a32e6e43d16c31e383aee10136d6c4104c2a24e8d03f5aa6fdeae0bdc1539783"
+      }
+    },
+    {
+      "name": "A2_ZERO_SELF_REFERENTIAL_TDZ_ASSIGNMENTS_IN_POPUP",
+      "pass": true,
+      "detail": {
+        "tdzViolations": []
+      }
+    },
+    {
+      "name": "A3_EXACT_STEP07_EXPRESSION_VERIFIED_WITHOUT_TDZ",
+      "pass": true,
+      "detail": {
+        "hasExactStep07": true,
+        "hasBrokenStep07": false
+      }
+    },
+    {
+      "name": "A4_FAIL_CLOSED_GATE_ON_MISSING_OR_NON_READY_PREPRESULT",
+      "pass": true,
+      "detail": {
+        "prepResultReadyCheck": true
+      }
+    },
+    {
+      "name": "A5_RUNTIME_CASE1_READY_TRUE_PROCEEDS_WITHOUT_TDZ",
+      "pass": true,
+      "detail": {
+        "result": {
+          "success": true,
+          "currentStartStep": "07",
+          "mode": "ENFORCED"
+        },
+        "restoredStartButtonCalled": false,
+        "modalParams": null,
+        "alertMessage": null,
+        "logs": [
+          {
+            "msg": "[START_STEP] 07 PRIVACY_PREP_PASS mode=ENFORCED",
+            "type": "info"
+          }
+        ],
+        "prepPassMode": "ENFORCED"
+      }
+    },
+    {
+      "name": "A6_RUNTIME_CASE2_READY_FALSE_BLOCKS_FAIL_CLOSED_WITH_REASON",
+      "pass": true,
+      "detail": {
+        "result": {
+          "success": false,
+          "reason": "PRIVACY_START_BLOCKED",
+          "detail": {
+            "ready": false,
+            "reason": "PROXY_EGRESS_UNREACHABLE",
+            "userMessage": "Proxy down"
+          }
+        },
+        "restoredStartButtonCalled": true,
+        "modalParams": {
+          "reason": "PROXY_EGRESS_UNREACHABLE",
+          "userMessage": "Proxy down",
+          "mode": "PRIVACY_RELAY",
+          "failClosed": true,
+          "source": "USER_START_BUTTON",
+          "campaignMode": "AUTO"
+        },
+        "alertMessage": null,
+        "logs": [
+          {
+            "msg": "[START_STEP] 07 PRIVACY_PREP_BLOCK reason=PROXY_EGRESS_UNREACHABLE",
+            "type": "error"
+          },
+          {
+            "msg": "🛑 [PRIVACY_START_BLOCKED] reason=PROXY_EGRESS_UNREACHABLE mode=PRIVACY_RELAY failClosed=true",
+            "type": "error"
+          }
+        ],
+        "prepPassMode": null
+      }
+    },
+    {
+      "name": "A7_RUNTIME_CASE3_SUCCESS_FALSE_BLOCKS_FAIL_CLOSED_WITH_REASON",
+      "pass": true,
+      "detail": {
+        "result": {
+          "success": false,
+          "reason": "PRIVACY_START_BLOCKED",
+          "detail": null
+        },
+        "restoredStartButtonCalled": true,
+        "modalParams": {
+          "reason": "GATEWAY_INTERNAL_ERROR",
+          "userMessage": "Strict Privacy is ON, but no healthy enforced transport was verified.",
+          "mode": "PRIVACY_RELAY",
+          "failClosed": true,
+          "source": "USER_START_BUTTON",
+          "campaignMode": "AUTO"
+        },
+        "alertMessage": null,
+        "logs": [
+          {
+            "msg": "[START_STEP] 07 PRIVACY_PREP_BLOCK reason=GATEWAY_INTERNAL_ERROR",
+            "type": "error"
+          },
+          {
+            "msg": "🛑 [PRIVACY_START_BLOCKED] reason=GATEWAY_INTERNAL_ERROR mode=PRIVACY_RELAY failClosed=true",
+            "type": "error"
+          }
+        ],
+        "prepPassMode": null
+      }
+    },
+    {
+      "name": "A8_RUNTIME_CASE4_UNDEFINED_RESPONSE_BLOCKS_FAIL_CLOSED",
+      "pass": true,
+      "detail": {
+        "result": {
+          "success": false,
+          "reason": "PRIVACY_START_BLOCKED",
+          "detail": null
+        },
+        "restoredStartButtonCalled": true,
+        "modalParams": {
+          "reason": "NO_RESPONSE_FROM_BACKGROUND",
+          "userMessage": "Strict Privacy is ON, but no healthy enforced transport was verified.",
+          "mode": "PRIVACY_RELAY",
+          "failClosed": true,
+          "source": "USER_START_BUTTON",
+          "campaignMode": "AUTO"
+        },
+        "alertMessage": null,
+        "logs": [
+          {
+            "msg": "[START_STEP] 07 PRIVACY_PREP_BLOCK reason=NO_RESPONSE_FROM_BACKGROUND",
+            "type": "error"
+          },
+          {
+            "msg": "🛑 [PRIVACY_START_BLOCKED] reason=NO_RESPONSE_FROM_BACKGROUND mode=PRIVACY_RELAY failClosed=true",
+            "type": "error"
+          }
+        ],
+        "prepPassMode": null
+      }
+    },
+    {
+      "name": "A9_RUNTIME_CASE5_CHROME_RUNTIME_LAST_ERROR_BLOCKS_FAIL_CLOSED",
+      "pass": true,
+      "detail": {
+        "result": {
+          "success": false,
+          "reason": "PRIVACY_START_BLOCKED",
+          "detail": null
+        },
+        "restoredStartButtonCalled": true,
+        "modalParams": {
+          "reason": "Receiving end does not exist",
+          "userMessage": "Strict Privacy is ON, but no healthy enforced transport was verified.",
+          "mode": "PRIVACY_RELAY",
+          "failClosed": true,
+          "source": "USER_START_BUTTON",
+          "campaignMode": "AUTO"
+        },
+        "alertMessage": null,
+        "logs": [
+          {
+            "msg": "[START_STEP] 07 PRIVACY_PREP_BLOCK reason=Receiving end does not exist",
+            "type": "error"
+          },
+          {
+            "msg": "🛑 [PRIVACY_START_BLOCKED] reason=Receiving end does not exist mode=PRIVACY_RELAY failClosed=true",
+            "type": "error"
+          }
+        ],
+        "prepPassMode": null
+      }
+    }
+  ],
+  "status": "ALL_ASSERTIONS_PASSED"
+}

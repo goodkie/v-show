@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 /**
- * Clean-Room Extracted Handoff Kit End-to-End Verification Suite (REV16)
- * Directive #6707178560 Items 1, 2, 3, 4, 5.
+ * Clean-Room Extracted Handoff Kit End-to-End Verification Suite (REV17)
+ * Directive #6708288652 (Preserving REV15 frozen, REV16 frozen, verifying newly versioned REV17 with Step 07 TDZ Hotfix).
  *
- * Extracts `dist/XPIDER_V7.0.0_CANDIDATE_REV16_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip` into a brand-new
+ * Extracts `dist/XPIDER_V7.0.0_CANDIDATE_REV17_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip` into a brand-new
  * temporary directory outside the repository working tree, and executes every relative path,
  * PowerShell command, Node CLI subcommand (`preflight-uat`, `init-uat-profile`, `backup-storage`,
  * `backup-uat-synthetic`, `verify-storage-backup`, `restore-storage` / `restore-uat-synthetic`
@@ -25,20 +25,22 @@ const DIST = path.join(ROOT, 'dist');
 const RC11_BASE_DIR = path.join(DIST, 'rc11_extension_baseline', 'extension');
 const REPORT_PATH = path.join(DIST, 'report_clean_extracted_handoff_kit_e2e.json');
 const EXT_ID = 'ldlijlaccfeelfdhgnjbibniocefckjj';
-const EXPECTED_RUNTIME_ZIP_SHA = 'b3f39bec4ab0711bbe348614be6bbd1f8d0657987059ec7cd3538565c2c0227e';
+const EXPECTED_RUNTIME_ZIP_SHA = 'a5ef71d2f7adf6c23554a83d2ce2e4118ec9adfeb260d2bc35fcb413d50d484b';
 const FROZEN_REV15_ZIP_SHA = '43a9bcdfff9651b8f31644d31dc8eba0463e8b5ee1163f198096b0d2a99959cd';
+const FROZEN_REV16_ZIP_SHA = '0ad5ff7bada90cc870a22beb43f838b6592ab1d3aa0c9b6fa7a11536a4dabaa9';
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const sha256File = p => crypto.createHash('sha256').update(fs.readFileSync(p)).digest('hex');
 
 const report = {
-    suite: 'XPIDER_CLEAN_EXTRACTED_HANDOFF_KIT_E2E_REV16',
-    directive: '#6707178560',
+    suite: 'XPIDER_CLEAN_EXTRACTED_HANDOFF_KIT_E2E_REV17',
+    directive: '#6708288652',
     startedAt: new Date().toISOString(),
     nodeVersion: process.version,
     platform: process.platform,
     completeHandoffArchive: null,
     preservedFrozenRev15Archive: null,
+    preservedFrozenRev16Archive: null,
     cleanExtractionRootUsed: null,
     assertions: [],
     status: 'RUNNING'
@@ -82,37 +84,42 @@ function runPsInExtract(extractRoot, psCommand, extraEnv = {}) {
     const TEST_SINK_PORT = 18090;
 
     try {
-        // 1. Build complete REV16 handoff archive and verify dual-method byte integrity + frozen REV15 preservation (Item 4)
-        const manifest16 = buildHandoffKit();
-        report.completeHandoffArchive = manifest16.completeHandoffArchive;
-        report.preservedFrozenRev15Archive = manifest16.preservedFrozenRev15Archive;
+        // 1. Build complete REV17 handoff archive and verify dual-method byte integrity + frozen REV15 & REV16 preservation
+        const manifest17 = buildHandoffKit();
+        report.completeHandoffArchive = manifest17.completeHandoffArchive;
+        report.preservedFrozenRev15Archive = manifest17.preservedFrozenRev15Archive;
+        report.preservedFrozenRev16Archive = manifest17.preservedFrozenRev16Archive;
         report.cleanExtractionRootUsed = extractRoot;
 
-        const dv = manifest16.completeHandoffArchive.dualMethodIntegrityVerification;
+        const dv = manifest17.completeHandoffArchive.dualMethodIntegrityVerification;
         A('A1_DUAL_METHOD_OUTER_HANDOFF_ZIP_INTEGRITY',
             dv &&
             dv.method1_nodeCryptoDeterminismCheck.byteIdenticalAcrossInvocations === true &&
             dv.method1_nodeCryptoDeterminismCheck.invocation1Sha256 === dv.method2_powerShellGetFileHashAndDotNetZipFile.powerShellGetFileHashSha256 &&
             dv.method2_powerShellGetFileHashAndDotNetZipFile.allEntriesMatchedSourceDiskSha256 === true &&
-            manifest16.completeHandoffArchive.bundledEntriesCount === 18 &&
-            manifest16.preservedFrozenRev15Archive &&
-            manifest16.preservedFrozenRev15Archive.verifiedUntouched === true &&
-            manifest16.preservedFrozenRev15Archive.sha256 === FROZEN_REV15_ZIP_SHA,
+            manifest17.completeHandoffArchive.bundledEntriesCount === 20 &&
+            manifest17.preservedFrozenRev15Archive &&
+            manifest17.preservedFrozenRev15Archive.verifiedUntouched === true &&
+            manifest17.preservedFrozenRev15Archive.sha256 === FROZEN_REV15_ZIP_SHA &&
+            manifest17.preservedFrozenRev16Archive &&
+            manifest17.preservedFrozenRev16Archive.verifiedUntouched === true &&
+            manifest17.preservedFrozenRev16Archive.sha256 === FROZEN_REV16_ZIP_SHA,
             {
-                archivePath: manifest16.completeHandoffArchive.path,
-                size: manifest16.completeHandoffArchive.size,
-                sha256: manifest16.completeHandoffArchive.sha256,
-                preservedRev15Sha256: manifest16.preservedFrozenRev15Archive.sha256,
-                bundledEntriesCount: manifest16.completeHandoffArchive.bundledEntriesCount
+                archivePath: manifest17.completeHandoffArchive.path,
+                size: manifest17.completeHandoffArchive.size,
+                sha256: manifest17.completeHandoffArchive.sha256,
+                preservedRev15Sha256: manifest17.preservedFrozenRev15Archive.sha256,
+                preservedRev16Sha256: manifest17.preservedFrozenRev16Archive.sha256,
+                bundledEntriesCount: manifest17.completeHandoffArchive.bundledEntriesCount
             }
         );
 
         // 2. Copy ONLY the outer handoff ZIP to tempBase and extract into `extractRoot` via PowerShell Expand-Archive
-        const stagedOuterZip = path.join(tempBase, 'XPIDER_V7.0.0_CANDIDATE_REV16_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip');
-        fs.copyFileSync(path.join(ROOT, manifest16.completeHandoffArchive.path), stagedOuterZip);
+        const stagedOuterZip = path.join(tempBase, 'XPIDER_V7.0.0_CANDIDATE_REV17_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip');
+        fs.copyFileSync(path.join(ROOT, manifest17.completeHandoffArchive.path), stagedOuterZip);
         fs.mkdirSync(extractRoot, { recursive: true });
         const expandRes = runPsInExtract(tempBase, `Expand-Archive -LiteralPath '${stagedOuterZip.replace(/'/g, "''")}' -DestinationPath '${extractRoot.replace(/'/g, "''")}' -Force`);
-        const allBundledExistAndMatch = manifest16.completeHandoffArchive.bundledEntries.every(e => {
+        const allBundledExistAndMatch = manifest17.completeHandoffArchive.bundledEntries.every(e => {
             const p = path.join(extractRoot, e.path);
             if (!fs.existsSync(p)) return false;
             const buf = fs.readFileSync(p);
@@ -120,11 +127,11 @@ function runPsInExtract(extractRoot, psCommand, extraEnv = {}) {
         });
         A('A2_CLEAN_EXTRACTION_AND_MANIFEST_FILE_TREE_MATCH',
             expandRes.status === 0 && allBundledExistAndMatch,
-            { expandStatus: expandRes.status, verifiedFileCount: manifest16.completeHandoffArchive.bundledEntries.length }
+            { expandStatus: expandRes.status, verifiedFileCount: manifest17.completeHandoffArchive.bundledEntries.length }
         );
 
         // 3. Validate PowerShell Get-FileHash command example from the guide inside `extractRoot`
-        const psHashRes = runPsInExtract(extractRoot, `(Get-FileHash ".\\dist\\XPIDER_V7.0.0_CANDIDATE_P0_REV9_OWNER_SAFE.zip" -Algorithm SHA256).Hash`);
+        const psHashRes = runPsInExtract(extractRoot, `(Get-FileHash ".\\dist\\XPIDER_V7.0.0_CANDIDATE_P0_REV10_OWNER_SAFE.zip" -Algorithm SHA256).Hash`);
         A('A3_POWERSHELL_RUNTIME_ZIP_SHA256_COMMAND_FROM_GUIDE',
             psHashRes.status === 0 && psHashRes.stdout.toLowerCase() === EXPECTED_RUNTIME_ZIP_SHA,
             { stdout: psHashRes.stdout }
@@ -138,7 +145,7 @@ function runPsInExtract(extractRoot, psCommand, extraEnv = {}) {
         const idxPhaseC = checklistMd.indexOf('## Phase C');
         const idxPhaseD = checklistMd.indexOf('## Phase D');
         const requiredRelPaths = [
-            'dist/XPIDER_V7.0.0_CANDIDATE_P0_REV9_OWNER_SAFE.zip',
+            'dist/XPIDER_V7.0.0_CANDIDATE_P0_REV10_OWNER_SAFE.zip',
             'dist/PACKAGE_INVENTORY_SHA256.json',
             'dist/rc11_baseline_manifest.json',
             'dist/WINDOWS_10_OWNER_UAT_CHECKLIST.md',
@@ -150,7 +157,8 @@ function runPsInExtract(extractRoot, psCommand, extraEnv = {}) {
             'owner-extension-test-site/consent-required-no-message.html',
             'owner-extension-test-site/contact-success.html',
             'test/run_uat_synthetic_profile_isolation_check.js',
-            'test/lib/browser_cdp.js'
+            'test/lib/browser_cdp.js',
+            'test/run_start_step07_privacy_prep_regression.js'
         ];
         const allRelPathsPresentInExtract = requiredRelPaths.every(rp => fs.existsSync(path.join(extractRoot, rp)));
         A('A4_GUIDE_ORDER_AND_NON_DESTRUCTIVE_GUARD_AUDIT',
@@ -356,7 +364,7 @@ function runPsInExtract(extractRoot, psCommand, extraEnv = {}) {
             'scripts\\xpider_safe_update.js',
             'plan',
             '--target', uatExtDir,
-            '--archive', 'dist\\XPIDER_V7.0.0_CANDIDATE_P0_REV9_OWNER_SAFE.zip',
+            '--archive', 'dist\\XPIDER_V7.0.0_CANDIDATE_P0_REV10_OWNER_SAFE.zip',
             '--expected-sha', EXPECTED_RUNTIME_ZIP_SHA,
             '--inventory', 'dist\\PACKAGE_INVENTORY_SHA256.json',
             '--baseline', 'dist\\rc11_baseline_manifest.json'
@@ -366,7 +374,7 @@ function runPsInExtract(extractRoot, psCommand, extraEnv = {}) {
             'scripts\\xpider_safe_update.js',
             'apply',
             '--target', uatExtDir,
-            '--archive', 'dist\\XPIDER_V7.0.0_CANDIDATE_P0_REV9_OWNER_SAFE.zip',
+            '--archive', 'dist\\XPIDER_V7.0.0_CANDIDATE_P0_REV10_OWNER_SAFE.zip',
             '--expected-sha', EXPECTED_RUNTIME_ZIP_SHA,
             '--inventory', 'dist\\PACKAGE_INVENTORY_SHA256.json',
             '--baseline', 'dist\\rc11_baseline_manifest.json',
