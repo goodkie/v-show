@@ -4,17 +4,193 @@
   "browserBinary": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
   "runtimeBrowserVersion": "Chrome/157.0.8103.38",
   "extensionId": "ldlijlaccfeelfdhgnjbibniocefckjj",
-  "startedAt": "2026-11-07T07:12:25.824Z",
+  "startedAt": "2026-11-07T07:44:02.888Z",
   "networkIsolationConfig": {
     "fixtureServer": "http://127.0.0.1:8088",
     "sinkProxyServer": "http://127.0.0.1:8090",
     "chromeProxyFlags": [
       "--proxy-server=127.0.0.1:8090",
       "--proxy-bypass-list=127.0.0.1:8088;localhost:8088;[::1]:8088",
-      "--host-resolver-rules=MAP * 127.0.0.1, EXCLUDE localhost"
+      "--host-resolver-rules=MAP * 127.0.0.1, EXCLUDE localhost",
+      "--disable-quic"
     ],
     "cdpInterceptionEnabled": true,
-    "extensionDnrSessionGuardInstalled": true
+    "extensionDnrSessionGuardInstalled": true,
+    "isolationScopeQualification": "SCOPED_TO_BROWSER_CONFIGURED_PROXY_DNR_CDP_ONLY_NOT_HOST_OS_FIREWALL_CERTIFICATE"
+  },
+  "osNetworkBoundaryAudit": {
+    "directive": "#6703976478",
+    "processUser": "DESKTOP-RS4GIG0\\oPus",
+    "isAdminElevated": false,
+    "windowsFirewallRuleProbeCommand": "netsh advfirewall firewall add rule name=XPIDER_UAT_TEST_PROBE_DO_NOT_APPLY dir=out action=block program=\"C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe\" enable=no",
+    "windowsFirewallRuleProbeExitCode": 1,
+    "windowsFirewallRuleProbeOutput": "The requested operation requires elevation (Run as administrator).",
+    "firewallProfileSnapshotBeforeSha256": "8d2a3ae69ebef13b3e266d2a2aa7ae4f8313f71f50165fa98295224d928d19fd",
+    "firewallProfileSnapshotAfterSha256": "8d2a3ae69ebef13b3e266d2a2aa7ae4f8313f71f50165fa98295224d928d19fd",
+    "firewallProfileUnchangedGuaranteed": true,
+    "uatChromeProcessCount": 14,
+    "uatChromePids": [
+      27464,
+      18904,
+      4628,
+      26804,
+      23376,
+      14448,
+      26788,
+      21428,
+      1700,
+      21572,
+      11536,
+      21084,
+      24760,
+      780
+    ],
+    "observedTcpSocketsOnUatChromePids": [
+      {
+        "LocalAddress": "0.0.0.0",
+        "LocalPort": 63032,
+        "RemoteAddress": "0.0.0.0",
+        "RemotePort": 0,
+        "State": 100,
+        "OwningProcess": 26804
+      },
+      {
+        "LocalAddress": "0.0.0.0",
+        "LocalPort": 63031,
+        "RemoteAddress": "0.0.0.0",
+        "RemotePort": 0,
+        "State": 100,
+        "OwningProcess": 26804
+      },
+      {
+        "LocalAddress": "0.0.0.0",
+        "LocalPort": 63030,
+        "RemoteAddress": "0.0.0.0",
+        "RemotePort": 0,
+        "State": 100,
+        "OwningProcess": 26804
+      },
+      {
+        "LocalAddress": "0.0.0.0",
+        "LocalPort": 63029,
+        "RemoteAddress": "0.0.0.0",
+        "RemotePort": 0,
+        "State": 100,
+        "OwningProcess": 26804
+      },
+      {
+        "LocalAddress": "0.0.0.0",
+        "LocalPort": 62858,
+        "RemoteAddress": "0.0.0.0",
+        "RemotePort": 0,
+        "State": 100,
+        "OwningProcess": 26804
+      },
+      {
+        "LocalAddress": "0.0.0.0",
+        "LocalPort": 62857,
+        "RemoteAddress": "0.0.0.0",
+        "RemotePort": 0,
+        "State": 100,
+        "OwningProcess": 26804
+      },
+      {
+        "LocalAddress": "127.0.0.1",
+        "LocalPort": 63032,
+        "RemoteAddress": "127.0.0.1",
+        "RemotePort": 18989,
+        "State": 5,
+        "OwningProcess": 26804
+      },
+      {
+        "LocalAddress": "127.0.0.1",
+        "LocalPort": 63031,
+        "RemoteAddress": "127.0.0.1",
+        "RemotePort": 18989,
+        "State": 5,
+        "OwningProcess": 26804
+      },
+      {
+        "LocalAddress": "127.0.0.1",
+        "LocalPort": 63030,
+        "RemoteAddress": "127.0.0.1",
+        "RemotePort": 18989,
+        "State": 5,
+        "OwningProcess": 26804
+      },
+      {
+        "LocalAddress": "127.0.0.1",
+        "LocalPort": 63029,
+        "RemoteAddress": "127.0.0.1",
+        "RemotePort": 18989,
+        "State": 5,
+        "OwningProcess": 26804
+      },
+      {
+        "LocalAddress": "127.0.0.1",
+        "LocalPort": 62858,
+        "RemoteAddress": "127.0.0.1",
+        "RemotePort": 8088,
+        "State": 5,
+        "OwningProcess": 26804
+      },
+      {
+        "LocalAddress": "127.0.0.1",
+        "LocalPort": 62857,
+        "RemoteAddress": "127.0.0.1",
+        "RemotePort": 8088,
+        "State": 5,
+        "OwningProcess": 26804
+      },
+      {
+        "LocalAddress": "127.0.0.1",
+        "LocalPort": 9246,
+        "RemoteAddress": "127.0.0.1",
+        "RemotePort": 62984,
+        "State": 5,
+        "OwningProcess": 27464
+      },
+      {
+        "LocalAddress": "127.0.0.1",
+        "LocalPort": 9246,
+        "RemoteAddress": "0.0.0.0",
+        "RemotePort": 0,
+        "State": 2,
+        "OwningProcess": 27464
+      },
+      {
+        "LocalAddress": "127.0.0.1",
+        "LocalPort": 9246,
+        "RemoteAddress": "127.0.0.1",
+        "RemotePort": 62883,
+        "State": 5,
+        "OwningProcess": 27464
+      },
+      {
+        "LocalAddress": "127.0.0.1",
+        "LocalPort": 9246,
+        "RemoteAddress": "127.0.0.1",
+        "RemotePort": 62852,
+        "State": 5,
+        "OwningProcess": 27464
+      },
+      {
+        "LocalAddress": "127.0.0.1",
+        "LocalPort": 9246,
+        "RemoteAddress": "127.0.0.1",
+        "RemotePort": 62881,
+        "State": 5,
+        "OwningProcess": 27464
+      }
+    ],
+    "observedNonLoopbackTcpSocketsOnUatChromePids": 0,
+    "observedUdpEndpointsOnUatChromePids": {},
+    "gateStatusByBoundary": {
+      "browserConfiguredProxyDnrCdpControls": "PASS_SCOPED_TO_BROWSER_PROXY_DNR_CDP_PATH",
+      "osKernelDefaultDenyFirewallPolicy": "BLOCKED / NOT_TESTED (Requires Administrator elevation or isolated VM; non-elevated netsh advfirewall rule add exits with code 1)",
+      "proxyBypassDirectSocketOsDenial": "BLOCKED / NOT_TESTED (Host Windows Firewall outbound policy is AllowOutbound; unproxied direct socket denial requires elevated OS firewall rule)",
+      "udpQuicProtocolDenial": "MITIGATED_BY_BROWSER_FLAG_ONLY (--disable-quic passed to Chrome; OS-level UDP firewall drop rule NOT_TESTED without elevation)"
+    }
   },
   "packageNetworkingAudit": {
     "totalFilesScanned": 50,
@@ -289,10 +465,12 @@
     ]
   },
   "egressCounters": {
-    "attemptedExternalRequests": 18,
-    "blockedByBrowserDnrOrCdp": 9,
-    "blockedByLocalSinkFirewall": 9,
-    "blockedExternalRequests": 18,
+    "counterScope": "CONFIGURED_SINK_PROXY_AND_BROWSER_DNR_CDP_ONLY_NOT_OS_FIREWALL_CERTIFICATE",
+    "attemptedExternalRequests": 22,
+    "blockedByBrowserDnrOrCdp": 10,
+    "blockedByLocalSinkFirewall": 12,
+    "blockedExternalRequests": 22,
+    "transmittedViaSinkProxy": 0,
     "transmittedExternalRequests": 0,
     "allowedLoopbackRequests": 3
   },
@@ -394,7 +572,7 @@
       "description": "WebSocket (ws://198.51.100.42:8080/ws) and Page fetch (http://198.51.100.42:8080/page-fetch-leak)",
       "dnrLayerResult": {
         "blocked": true,
-        "attempts": 2,
+        "attempts": 3,
         "wsRes": {
           "blocked": true,
           "state": "ERROR_BLOCKED"
@@ -402,11 +580,15 @@
         "fetchRes": {
           "blocked": true,
           "error": "Failed to fetch"
+        },
+        "navRes": {
+          "blocked": true,
+          "bodyPreview": ""
         }
       },
       "sinkFirewallLayerResult": {
         "blocked": true,
-        "attempts": 2,
+        "attempts": 3,
         "wsRes": {
           "blocked": true,
           "state": "ERROR_BLOCKED"
@@ -414,9 +596,13 @@
         "fetchRes": {
           "blocked": true,
           "error": "Failed to fetch"
+        },
+        "navRes": {
+          "blocked": true,
+          "bodyPreview": ""
         }
       },
-      "sinkFirewallBlockedDelta": 2,
+      "sinkFirewallBlockedDelta": 3,
       "transmittedExternalRequests": 0
     },
     {
@@ -543,7 +729,8 @@
         "isolationFlags": [
           "--proxy-server=127.0.0.1:8090",
           "--proxy-bypass-list=127.0.0.1:8088;localhost:8088;[::1]:8088",
-          "--host-resolver-rules=MAP * 127.0.0.1, EXCLUDE localhost"
+          "--host-resolver-rules=MAP * 127.0.0.1, EXCLUDE localhost",
+          "--disable-quic"
         ]
       }
     },
@@ -696,7 +883,7 @@
           "description": "WebSocket (ws://198.51.100.42:8080/ws) and Page fetch (http://198.51.100.42:8080/page-fetch-leak)",
           "dnrLayerResult": {
             "blocked": true,
-            "attempts": 2,
+            "attempts": 3,
             "wsRes": {
               "blocked": true,
               "state": "ERROR_BLOCKED"
@@ -704,11 +891,15 @@
             "fetchRes": {
               "blocked": true,
               "error": "Failed to fetch"
+            },
+            "navRes": {
+              "blocked": true,
+              "bodyPreview": ""
             }
           },
           "sinkFirewallLayerResult": {
             "blocked": true,
-            "attempts": 2,
+            "attempts": 3,
             "wsRes": {
               "blocked": true,
               "state": "ERROR_BLOCKED"
@@ -716,9 +907,13 @@
             "fetchRes": {
               "blocked": true,
               "error": "Failed to fetch"
+            },
+            "navRes": {
+              "blocked": true,
+              "bodyPreview": ""
             }
           },
-          "sinkFirewallBlockedDelta": 2,
+          "sinkFirewallBlockedDelta": 3,
           "transmittedExternalRequests": 0
         },
         "swBgDnrRes": {
@@ -798,12 +993,22 @@
       "name": "ZERO_EXTERNAL_TRANSMISSIONS_ACROSS_ALL_NEGATIVE_CONTROLS",
       "pass": true,
       "detail": {
-        "attemptedExternalRequests": 18,
-        "blockedByBrowserDnrOrCdp": 9,
-        "blockedByLocalSinkFirewall": 9,
-        "blockedExternalRequests": 18,
-        "transmittedExternalRequests": 0,
-        "allowedLoopbackRequests": 3
+        "egressCounters": {
+          "counterScope": "CONFIGURED_SINK_PROXY_AND_BROWSER_DNR_CDP_ONLY_NOT_OS_FIREWALL_CERTIFICATE",
+          "attemptedExternalRequests": 22,
+          "blockedByBrowserDnrOrCdp": 10,
+          "blockedByLocalSinkFirewall": 12,
+          "blockedExternalRequests": 22,
+          "transmittedViaSinkProxy": 0,
+          "transmittedExternalRequests": 0,
+          "allowedLoopbackRequests": 3
+        },
+        "osBoundarySummary": {
+          "browserConfiguredProxyDnrCdpControls": "PASS_SCOPED_TO_BROWSER_PROXY_DNR_CDP_PATH",
+          "osKernelDefaultDenyFirewallPolicy": "BLOCKED / NOT_TESTED (Requires Administrator elevation or isolated VM; non-elevated netsh advfirewall rule add exits with code 1)",
+          "proxyBypassDirectSocketOsDenial": "BLOCKED / NOT_TESTED (Host Windows Firewall outbound policy is AllowOutbound; unproxied direct socket denial requires elevated OS firewall rule)",
+          "udpQuicProtocolDenial": "MITIGATED_BY_BROWSER_FLAG_ONLY (--disable-quic passed to Chrome; OS-level UDP firewall drop rule NOT_TESTED without elevation)"
+        }
       }
     },
     {
@@ -817,7 +1022,7 @@
           "extId": "ldlijlaccfeelfdhgnjbibniocefckjj",
           "fileCount": 2,
           "manifestSha256": "d1ffcf13d7b52b520226662376955db365d1c3abd87f6db27f9fd70e4a79a39b",
-          "backupSha256": "186cd04aed90c4b48ae971f5111974f7dc803d52423b7a04c9a6a1201f4e8d5a"
+          "backupSha256": "024728d0b09c18a55bc52941d5412cfb3ed7976838968e5b818c28e5a073c737"
         },
         "wrongPassCode": "WRONG_PASSPHRASE_OR_CORRUPT_BACKUP"
       }
@@ -853,8 +1058,8 @@
   },
   "sinkFirewallSampleBlockedLog": [
     {
-      "id": "fw_blk_1794035552281_1",
-      "timestamp": 1794035552281,
+      "id": "fw_blk_1794037450929_1",
+      "timestamp": 1794037450929,
       "kind": "HTTP",
       "method": "POST",
       "target": "http://dummy-public-target.example.com/contact",
@@ -863,8 +1068,8 @@
       "transmittedBytes": 0
     },
     {
-      "id": "fw_blk_1794035552285_2",
-      "timestamp": 1794035552285,
+      "id": "fw_blk_1794037450934_2",
+      "timestamp": 1794037450934,
       "kind": "CONNECT",
       "method": "CONNECT",
       "target": "dummy-public-target.example.com:443",
@@ -873,8 +1078,8 @@
       "transmittedBytes": 0
     },
     {
-      "id": "fw_blk_1794035552305_3",
-      "timestamp": 1794035552305,
+      "id": "fw_blk_1794037450964_3",
+      "timestamp": 1794037450964,
       "kind": "HTTP",
       "method": "GET",
       "target": "http://198.51.100.42:8080/leak-check",
@@ -883,8 +1088,8 @@
       "transmittedBytes": 0
     },
     {
-      "id": "fw_blk_1794035552308_4",
-      "timestamp": 1794035552308,
+      "id": "fw_blk_1794037450968_4",
+      "timestamp": 1794037450968,
       "kind": "HTTP",
       "method": "GET",
       "target": "http://[2001:db8::42]:8080/leak-check",
@@ -893,8 +1098,8 @@
       "transmittedBytes": 0
     },
     {
-      "id": "fw_blk_1794035552335_5",
-      "timestamp": 1794035552335,
+      "id": "fw_blk_1794037451013_5",
+      "timestamp": 1794037451013,
       "kind": "HTTP",
       "method": "GET",
       "target": "http://198.51.100.42:8080/redirected-leak",
@@ -903,8 +1108,8 @@
       "transmittedBytes": 0
     },
     {
-      "id": "fw_blk_1794035552354_6",
-      "timestamp": 1794035552354,
+      "id": "fw_blk_1794037451182_6",
+      "timestamp": 1794037451182,
       "kind": "CONNECT",
       "method": "CONNECT",
       "target": "198.51.100.42:8080",
@@ -913,8 +1118,8 @@
       "transmittedBytes": 0
     },
     {
-      "id": "fw_blk_1794035552357_7",
-      "timestamp": 1794035552357,
+      "id": "fw_blk_1794037451187_7",
+      "timestamp": 1794037451187,
       "kind": "HTTP",
       "method": "POST",
       "target": "http://198.51.100.42:8080/page-fetch-leak",
@@ -923,8 +1128,18 @@
       "transmittedBytes": 0
     },
     {
-      "id": "fw_blk_1794035552375_8",
-      "timestamp": 1794035552375,
+      "id": "fw_blk_1794037451205_8",
+      "timestamp": 1794037451205,
+      "kind": "HTTP",
+      "method": "GET",
+      "target": "http://198.51.100.42:8080/page-nav-leak",
+      "clientAddr": "127.0.0.1",
+      "reason": "EGRESS_DENIED_BY_LOCAL_SINK_FIREWALL_HTTP",
+      "transmittedBytes": 0
+    },
+    {
+      "id": "fw_blk_1794037451257_9",
+      "timestamp": 1794037451257,
       "kind": "HTTP",
       "method": "GET",
       "target": "http://198.51.100.42:8080/sw-bg-fetch-leak",
@@ -933,17 +1148,37 @@
       "transmittedBytes": 0
     },
     {
-      "id": "fw_blk_1794035552378_9",
-      "timestamp": 1794035552378,
+      "id": "fw_blk_1794037451262_10",
+      "timestamp": 1794037451262,
       "kind": "CONNECT",
       "method": "CONNECT",
       "target": "dummy-public-target.example.com:443",
       "clientAddr": "127.0.0.1",
       "reason": "EGRESS_DENIED_BY_LOCAL_SINK_FIREWALL_CONNECT",
       "transmittedBytes": 0
+    },
+    {
+      "id": "fw_blk_1794037452942_11",
+      "timestamp": 1794037452942,
+      "kind": "CONNECT",
+      "method": "CONNECT",
+      "target": "content-autofill.googleapis.com:443",
+      "clientAddr": "127.0.0.1",
+      "reason": "EGRESS_DENIED_BY_LOCAL_SINK_FIREWALL_CONNECT",
+      "transmittedBytes": 0
+    },
+    {
+      "id": "fw_blk_1794037454210_12",
+      "timestamp": 1794037454210,
+      "kind": "CONNECT",
+      "method": "CONNECT",
+      "target": "optimizationguide-pa.googleapis.com:443",
+      "clientAddr": "127.0.0.1",
+      "reason": "EGRESS_DENIED_BY_LOCAL_SINK_FIREWALL_CONNECT",
+      "transmittedBytes": 0
     }
   ],
-  "endedAt": "2026-11-07T07:12:37.542Z",
+  "endedAt": "2026-11-07T07:44:18.899Z",
   "total": 15,
   "failed": 0
 }

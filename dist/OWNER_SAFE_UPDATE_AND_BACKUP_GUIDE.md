@@ -36,14 +36,15 @@ Companion UAT Checklist: `dist/WINDOWS_10_OWNER_UAT_CHECKLIST.md`
    Get-FileHash .\dist\XPIDER_V7.0.0_CANDIDATE_P0_REV9_OWNER_SAFE.zip -Algorithm SHA256
    ```
    Must output: `B3F39BEC4AB0711BBE348614BE6BBD1F8D0657987059EC7CD3538565C2C0227E` (`4,467,833 bytes`). If it does not match, **STOP**.
-2. **Mandatory UAT Network Isolation Gate (`BLOCKED` -> `STOP` Rule)**:
+2. **Mandatory UAT Network Isolation Gate & Scope Qualification (`BLOCKED` -> `STOP` Rule)**:
    - `--host-resolver-rules` alone is **NOT** a verified network egress firewall (literal IPv4/IPv6 URLs, redirects, or proxy paths can bypass hostname mapping).
-   - Disposable UAT in `dist/WINDOWS_10_OWNER_UAT_CHECKLIST.md` (Phase B) **must** only be executed behind the verified local fail-closed sink proxy firewall (`127.0.0.1:8090`) started by `node owner-extension-test-site\server.js` and verified **before** browser start via:
+   - Disposable UAT in `dist/WINDOWS_10_OWNER_UAT_CHECKLIST.md` (Phase B) **must** only be executed behind the verified local fail-closed sink proxy (`127.0.0.1:8090`) started by `node owner-extension-test-site\server.js` and verified **before** browser start via:
      ```powershell
      node scripts\xpider_safe_update.js verify-uat-firewall --fixture-port 8088 --sink-port 8090
      ```
-   - Launch UAT Chrome with `--proxy-server="127.0.0.1:8090" --proxy-bypass-list="127.0.0.1:8088;localhost:8088;[::1]:8088" --host-resolver-rules="MAP * 127.0.0.1, EXCLUDE localhost"`, localhost-only URLs (`http://127.0.0.1:8088/*`), explicit no external proxy setting, no saved production data, and no auto-start.
-   - **If robust network isolation (`verify-uat-firewall` / local sink proxy firewall) is unavailable or fails preflight on Windows 10, the UAT step is `BLOCKED` and the Owner must `STOP` immediately rather than claiming fail-closed.**
+   - Launch UAT Chrome with `--proxy-server="127.0.0.1:8090" --proxy-bypass-list="127.0.0.1:8088;localhost:8088;[::1]:8088" --disable-quic --host-resolver-rules="MAP * 127.0.0.1, EXCLUDE localhost"`, localhost-only URLs (`http://127.0.0.1:8088/*`), explicit no external proxy setting, no saved production data, and no auto-start.
+   - **Scope Qualification (Local Sink Proxy vs Host OS Firewall)**: The local sink proxy (`127.0.0.1:8090`) + browser proxy/DNR/CDP controls verify that zero requests are forwarded through the configured browser sink path (`transmittedViaSinkProxy === 0`), but **do not by themselves guarantee host-wide `"zero external network traffic"`** against out-of-band processes, proxy-bypass direct sockets, or raw OS UDP sockets. Process/OS-level default-deny (`Windows Defender Firewall` outbound block rule on a disposable test `chrome.exe` binary or isolated VM) requires Administrator elevation and is `BLOCKED / NOT_TESTED` in unprivileged developer runs.
+   - **If required network isolation is unavailable or fails preflight on Windows 10, the UAT step is `BLOCKED` and the Owner must `STOP` immediately rather than claiming "fully isolated" or fail-closed.**
 3. **Note on Secret Audit Scope**: `scripts/audit_public_repo_and_zip_secrets.js` (`dist/report_public_repo_secret_audit.json`) reported `ALL_CLEAN` across tracked files and the 50 candidate files, but automated pattern scanning has finite coverage and is not a proof of absence of secrets. Never commit or upload raw profile folders, `.xpider-enc` backups, or passphrases.
 
 ---

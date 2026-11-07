@@ -26,6 +26,7 @@
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
+const crypto = require('crypto');
 const { spawn, spawnSync } = require('child_process');
 const { Br, cdp, openWs, sleep, BIN, EXT_ID } = require('./lib/browser_cdp');
 
@@ -112,17 +113,22 @@ const report = {
         chromeProxyFlags: [
             `--proxy-server=127.0.0.1:${SINK_PORT}`,
             `--proxy-bypass-list=127.0.0.1:${FIXTURE_PORT};localhost:${FIXTURE_PORT};[::1]:${FIXTURE_PORT}`,
-            `--host-resolver-rules=MAP * 127.0.0.1, EXCLUDE localhost`
+            `--host-resolver-rules=MAP * 127.0.0.1, EXCLUDE localhost`,
+            `--disable-quic`
         ],
         cdpInterceptionEnabled: true,
-        extensionDnrSessionGuardInstalled: true
+        extensionDnrSessionGuardInstalled: true,
+        isolationScopeQualification: 'SCOPED_TO_BROWSER_CONFIGURED_PROXY_DNR_CDP_ONLY_NOT_HOST_OS_FIREWALL_CERTIFICATE'
     },
+    osNetworkBoundaryAudit: null,
     packageNetworkingAudit: null,
     egressCounters: {
+        counterScope: 'CONFIGURED_SINK_PROXY_AND_BROWSER_DNR_CDP_ONLY_NOT_OS_FIREWALL_CERTIFICATE',
         attemptedExternalRequests: 0,
         blockedByBrowserDnrOrCdp: 0,
         blockedByLocalSinkFirewall: 0,
         blockedExternalRequests: 0,
+        transmittedViaSinkProxy: 0,
         transmittedExternalRequests: 0,
         allowedLoopbackRequests: 0
     },
@@ -146,8 +152,17 @@ function A(name, pass, detail = {}) {
 
     try {
         // =========================================================================
-        // PART 1: FAIL-CLOSED PREFLIGHT BEFORE BROWSER START (Action 1)
+        // PART 1: OS FIREWALL SNAPSHOT & FAIL-CLOSED PREFLIGHT BEFORE BROWSER START
         // =========================================================================
+        const fwSnapshotBefore = spawnSync('netsh', ['advfirewall', 'show', 'allprofiles'], { encoding: 'utf8' });
+        const fwBeforeSha256 = crypto.createHash('sha256').update(fwSnapshotBefore.stdout || '').digest('hex');
+        const fwAddRuleProbe = spawnSync('netsh', [
+            'advfirewall', 'firewall', 'add', 'rule',
+            'name=XPIDER_UAT_TEST_PROBE_DO_NOT_APPLY',
+            'dir=out', 'action=block',
+            `program=${BIN}`, 'enable=no'
+        ], { encoding: 'utf8' });
+
         // 1A. Verify preflight FAILS CLOSED before browser start when sink firewall is unavailable
         const preflightDown = runCli(['verify-uat-firewall', '--fixture-port', '18089', '--sink-port', '18090']);
         A('PREFLIGHT_FAILS_CLOSED_BEFORE_BROWSER_START_WHEN_FIREWALL_DOWN',
@@ -222,7 +237,8 @@ function A(name, pass, detail = {}) {
         const isolationFlags = [
             `--proxy-server=127.0.0.1:${SINK_PORT}`,
             `--proxy-bypass-list=127.0.0.1:${FIXTURE_PORT};localhost:${FIXTURE_PORT};[::1]:${FIXTURE_PORT}`,
-            `--host-resolver-rules=MAP * 127.0.0.1, EXCLUDE localhost`
+            `--host-resolver-rules=MAP * 127.0.0.1, EXCLUDE localhost`,
+            `--disable-quic`
         ];
         br = new Br(uatProf, CAND, CDP_PORT, isolationFlags);
         await br.start(`http://127.0.0.1:${FIXTURE_PORT}/contact-standard.html`);
@@ -480,7 +496,26 @@ function A(name, pass, detail = {}) {
                 } catch (e) {
                     fetchRes = { blocked: true, error: e.message };
                 }
-                return { blocked: wsRes.blocked && fetchRes.blocked, attempts: 2, wsRes, fetchRes };
+                const navRes = await new Promise((resolve) => {
+                    const ifr = document.createElement('iframe');
+                    ifr.style.display = 'none';
+                    const done = (val) => { try { ifr.remove(); } catch(_){} resolve(val); };
+                    const t = setTimeout(() => done({ blocked: true, state: 'TIMEOUT_OR_BLOCKED_FRAME' }), 1500);
+                    ifr.onload = () => {
+                        clearTimeout(t);
+                        try {
+                            const txt = ifr.contentDocument ? ifr.contentDocument.body.innerText : '';
+                            done({ blocked: txt.includes('UAT_EGRESS_BLOCKED_BY_LOCAL_SINK_FIREWALL') || txt === '', bodyPreview: txt.slice(0, 80) });
+                        } catch (_) {
+                            // Cross-origin error page (chrome-error://chromewebdata/) means navigation was blocked/failed
+                            done({ blocked: true, state: 'CHROME_ERROR_PAGE_BLOCKED' });
+                        }
+                    };
+                    ifr.onerror = () => { clearTimeout(t); done({ blocked: true, state: 'ONERROR_BLOCKED' }); };
+                    ifr.src = 'http://198.51.100.42:8080/page-nav-leak';
+                    document.body.appendChild(ifr);
+                });
+                return { blocked: wsRes.blocked && fetchRes.blocked && navRes.blocked, attempts: 3, wsRes, fetchRes, navRes };
             })()`
         );
 
@@ -589,22 +624,72 @@ function A(name, pass, detail = {}) {
             { proxyDetails: nc5Runtime.proxyDetails, nc5StartChecks }
         );
 
-        // Final Firewall Telemetry Tally & Zero External Transmission Invariant
+        // Final Firewall Telemetry Tally & OS Process/Firewall Boundary Audit (Directive #6703976478)
         const fwFinal = await fetch(`http://127.0.0.1:${FIXTURE_PORT}/__xpider_firewall_status`).then(x => x.json());
         report.egressCounters.blockedByLocalSinkFirewall = fwFinal.blockedExternalRequests;
         report.egressCounters.attemptedExternalRequests += fwFinal.attemptedExternalRequests;
         report.egressCounters.blockedExternalRequests = report.egressCounters.blockedByBrowserDnrOrCdp + report.egressCounters.blockedByLocalSinkFirewall;
+        report.egressCounters.transmittedViaSinkProxy = fwFinal.transmittedExternalRequests;
         report.egressCounters.transmittedExternalRequests = fwFinal.transmittedExternalRequests;
         report.sinkFirewallSampleBlockedLog = fwFinal.blockedLog.slice(0, 15);
+
+        // Sample OS kernel TCP/UDP socket table for all UAT Chrome processes & take post-test Windows Firewall snapshot
+        const psSocketCmd = [
+            `$profEsc = [Regex]::Escape('${uatProf.replace(/'/g, "''")}');`,
+            `$procs = Get-CimInstance Win32_Process -Filter "Name='chrome.exe'" | Where-Object { $_.CommandLine -match $profEsc };`,
+            `$pids = @($procs | Select-Object -ExpandProperty ProcessId);`,
+            `$tcp = if ($pids.Count -gt 0) { @(Get-NetTCPConnection -OwningProcess $pids -ErrorAction SilentlyContinue | Select-Object LocalAddress,LocalPort,RemoteAddress,RemotePort,State,OwningProcess) } else { @() };`,
+            `$udp = if ($pids.Count -gt 0) { @(Get-NetUDPEndpoint -OwningProcess $pids -ErrorAction SilentlyContinue | Select-Object LocalAddress,LocalPort,OwningProcess) } else { @() };`,
+            `$id = [Security.Principal.WindowsIdentity]::GetCurrent();`,
+            `$pr = New-Object Security.Principal.WindowsPrincipal($id);`,
+            `[PSCustomObject]@{ isAdmin = $pr.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator); user = $id.Name; uatChromePids = $pids; tcpSockets = $tcp; udpEndpoints = $udp } | ConvertTo-Json -Depth 4 -Compress`
+        ].join(' ');
+        const osSockProbe = spawnSync('powershell', ['-NoProfile', '-Command', psSocketCmd], { encoding: 'utf8' });
+        let osSockData = { isAdmin: false, uatChromePids: [], tcpSockets: [], udpEndpoints: [] };
+        try { osSockData = JSON.parse((osSockProbe.stdout || '').trim()); } catch (_) {}
+        const nonLoopbackTcpSockets = (osSockData.tcpSockets || []).filter(s =>
+            s && s.RemoteAddress &&
+            s.RemoteAddress !== '127.0.0.1' &&
+            s.RemoteAddress !== '0.0.0.0' &&
+            s.RemoteAddress !== '::' &&
+            s.RemoteAddress !== '::1'
+        );
+        const fwSnapshotAfter = spawnSync('netsh', ['advfirewall', 'show', 'allprofiles'], { encoding: 'utf8' });
+        const fwAfterSha256 = crypto.createHash('sha256').update(fwSnapshotAfter.stdout || '').digest('hex');
+
+        report.osNetworkBoundaryAudit = {
+            directive: '#6703976478',
+            processUser: osSockData.user || null,
+            isAdminElevated: Boolean(osSockData.isAdmin),
+            windowsFirewallRuleProbeCommand: `netsh advfirewall firewall add rule name=XPIDER_UAT_TEST_PROBE_DO_NOT_APPLY dir=out action=block program="${BIN}" enable=no`,
+            windowsFirewallRuleProbeExitCode: fwAddRuleProbe.status,
+            windowsFirewallRuleProbeOutput: ((fwAddRuleProbe.stdout || '') + (fwAddRuleProbe.stderr || '')).trim(),
+            firewallProfileSnapshotBeforeSha256: fwBeforeSha256,
+            firewallProfileSnapshotAfterSha256: fwAfterSha256,
+            firewallProfileUnchangedGuaranteed: fwBeforeSha256 === fwAfterSha256,
+            uatChromeProcessCount: (osSockData.uatChromePids || []).length,
+            uatChromePids: osSockData.uatChromePids || [],
+            observedTcpSocketsOnUatChromePids: osSockData.tcpSockets || [],
+            observedNonLoopbackTcpSocketsOnUatChromePids: nonLoopbackTcpSockets.length,
+            observedUdpEndpointsOnUatChromePids: osSockData.udpEndpoints || [],
+            gateStatusByBoundary: {
+                browserConfiguredProxyDnrCdpControls: 'PASS_SCOPED_TO_BROWSER_PROXY_DNR_CDP_PATH',
+                osKernelDefaultDenyFirewallPolicy: 'BLOCKED / NOT_TESTED (Requires Administrator elevation or isolated VM; non-elevated netsh advfirewall rule add exits with code 1)',
+                proxyBypassDirectSocketOsDenial: 'BLOCKED / NOT_TESTED (Host Windows Firewall outbound policy is AllowOutbound; unproxied direct socket denial requires elevated OS firewall rule)',
+                udpQuicProtocolDenial: 'MITIGATED_BY_BROWSER_FLAG_ONLY (--disable-quic passed to Chrome; OS-level UDP firewall drop rule NOT_TESTED without elevation)'
+            }
+        };
 
         A('ZERO_EXTERNAL_TRANSMISSIONS_ACROSS_ALL_NEGATIVE_CONTROLS',
             report.egressCounters.attemptedExternalRequests >= 12 &&
             report.egressCounters.blockedByLocalSinkFirewall >= 7 &&
             report.egressCounters.blockedByBrowserDnrOrCdp >= 5 &&
             report.egressCounters.blockedExternalRequests === report.egressCounters.attemptedExternalRequests &&
-            report.egressCounters.transmittedExternalRequests === 0 &&
+            report.egressCounters.transmittedViaSinkProxy === 0 &&
+            nonLoopbackTcpSockets.length === 0 &&
+            fwBeforeSha256 === fwAfterSha256 &&
             cdpObservedExternalAttempts > 0,
-            report.egressCounters
+            { egressCounters: report.egressCounters, osBoundarySummary: report.osNetworkBoundaryAudit.gateStatusByBoundary }
         );
 
         // =========================================================================
