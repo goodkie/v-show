@@ -157,3 +157,4 @@ fs.writeFileSync('scripts/receipt_directive_6699377538.md', receiptBody, 'utf8')
 console.log('Posting receipt to Issue #6...');
 const res = execSync('gh issue comment 6 --body-file scripts/receipt_directive_6699377538.md --repo goodkie/v-show', { encoding: 'utf8' });
 console.log('Posted receipt successfully:', res);
+
