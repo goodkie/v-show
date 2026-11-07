@@ -1,0 +1,469 @@
+#!/usr/bin/env node
+/**
+ * Clean-Room Extracted Handoff Kit End-to-End Verification Suite (REV15)
+ * Directive #6706731716 Items 1, 2, 3, 4, 5.
+ *
+ * Extracts `dist/XPIDER_V7.0.0_CANDIDATE_REV15_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip` into a brand-new
+ * temporary directory outside the repository working tree, and executes every relative path,
+ * PowerShell command, Node CLI subcommand (`preflight-uat`, `backup-storage`, `verify-storage-backup`,
+ * `restore-storage` negative/positive origin gates, `verify-uat-firewall`, `plan`, `apply`, `rollback`,
+ * `audit-uat-state`), and local fixture/sink server startup + shutdown strictly from the extracted folder.
+ */
+'use strict';
+const fs = require('fs');
+const path = require('path');
+const os = require('os');
+const crypto = require('crypto');
+const { spawn, spawnSync } = require('child_process');
+const { buildHandoffKit } = require('../scripts/build_owner_complete_handoff_kit');
+const { buildManifest } = require('../scripts/xpider_safe_update');
+
+const ROOT = path.resolve(__dirname, '..');
+const DIST = path.join(ROOT, 'dist');
+const RC11_BASE_DIR = path.join(DIST, 'rc11_extension_baseline', 'extension');
+const REPORT_PATH = path.join(DIST, 'report_clean_extracted_handoff_kit_e2e.json');
+const EXT_ID = 'ldlijlaccfeelfdhgnjbibniocefckjj';
+const EXPECTED_RUNTIME_ZIP_SHA = 'b3f39bec4ab0711bbe348614be6bbd1f8d0657987059ec7cd3538565c2c0227e';
+
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const sha256File = p => crypto.createHash('sha256').update(fs.readFileSync(p)).digest('hex');
+
+const report = {
+    suite: 'XPIDER_CLEAN_EXTRACTED_HANDOFF_KIT_E2E_REV15',
+    directive: '#6706731716',
+    startedAt: new Date().toISOString(),
+    nodeVersion: process.version,
+    platform: process.platform,
+    completeHandoffArchive: null,
+    cleanExtractionRootUsed: null,
+    assertions: [],
+    status: 'RUNNING'
+};
+
+let failures = 0;
+function A(name, pass, detail = {}) {
+    report.assertions.push({ name, pass: !!pass, detail });
+    if (!pass) failures++;
+    console.log(`[${pass ? 'PASS' : 'FAIL'}] ${name} ${pass ? '' : JSON.stringify(detail)}`);
+}
+
+function runNodeInExtract(extractRoot, args, extraEnv = {}) {
+    const r = spawnSync(process.execPath, args, {
+        cwd: extractRoot,
+        encoding: 'utf8',
+        env: { ...process.env, ...extraEnv }
+    });
+    const text = (r.stdout || '') + (r.stderr || '');
+    let out = null;
+    try { out = JSON.parse((r.stdout || r.stderr || '').trim()); } catch (_) { out = { raw: text.slice(0, 300) }; }
+    return { status: r.status, out, text };
+}
+
+function runPsInExtract(extractRoot, psCommand, extraEnv = {}) {
+    const r = spawnSync('powershell', ['-NoProfile', '-Command', psCommand], {
+        cwd: extractRoot,
+        encoding: 'utf8',
+        env: { ...process.env, ...extraEnv }
+    });
+    return { status: r.status, stdout: (r.stdout || '').trim(), stderr: (r.stderr || '').trim() };
+}
+
+(async () => {
+    const tempBase = fs.mkdtempSync(path.join(os.tmpdir(), 'xpider-clean-handoff-e2e-'));
+    const extractRoot = path.join(tempBase, 'extracted_handoff_root');
+    const simLiveTarget = path.join(tempBase, 'sim_live_rc11_target');
+    const simRealProfile = path.join(tempBase, 'sim_real_owner_profile');
+    let serverProc = null;
+    const TEST_FIXTURE_PORT = 18088;
+    const TEST_SINK_PORT = 18090;
+
+    try {
+        // 1. Build complete handoff archive and verify dual-method byte integrity (Item 1 & Item 4)
+        const manifest15 = buildHandoffKit();
+        report.completeHandoffArchive = manifest15.completeHandoffArchive;
+        report.cleanExtractionRootUsed = extractRoot;
+
+        const dv = manifest15.completeHandoffArchive.dualMethodIntegrityVerification;
+        A('A1_DUAL_METHOD_OUTER_HANDOFF_ZIP_INTEGRITY',
+            dv &&
+            dv.method1_nodeCryptoDeterminismCheck.byteIdenticalAcrossInvocations === true &&
+            dv.method1_nodeCryptoDeterminismCheck.invocation1Sha256 === dv.method2_powerShellGetFileHashAndDotNetZipFile.powerShellGetFileHashSha256 &&
+            dv.method2_powerShellGetFileHashAndDotNetZipFile.allEntriesMatchedSourceDiskSha256 === true &&
+            manifest15.completeHandoffArchive.bundledEntriesCount === 18,
+            {
+                archivePath: manifest15.completeHandoffArchive.path,
+                size: manifest15.completeHandoffArchive.size,
+                sha256: manifest15.completeHandoffArchive.sha256,
+                bundledEntriesCount: manifest15.completeHandoffArchive.bundledEntriesCount
+            }
+        );
+
+        // 2. Copy ONLY the outer handoff ZIP to tempBase and extract into `extractRoot` via PowerShell Expand-Archive
+        const stagedOuterZip = path.join(tempBase, 'XPIDER_V7.0.0_CANDIDATE_REV15_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip');
+        fs.copyFileSync(path.join(ROOT, manifest15.completeHandoffArchive.path), stagedOuterZip);
+        fs.mkdirSync(extractRoot, { recursive: true });
+        const expandRes = runPsInExtract(tempBase, `Expand-Archive -LiteralPath '${stagedOuterZip.replace(/'/g, "''")}' -DestinationPath '${extractRoot.replace(/'/g, "''")}' -Force`);
+        const allBundledExistAndMatch = manifest15.completeHandoffArchive.bundledEntries.every(e => {
+            const p = path.join(extractRoot, e.path);
+            if (!fs.existsSync(p)) return false;
+            const buf = fs.readFileSync(p);
+            return buf.length === e.size && sha256File(p) === e.sha256;
+        });
+        A('A2_CLEAN_EXTRACTION_AND_MANIFEST_FILE_TREE_MATCH',
+            expandRes.status === 0 && allBundledExistAndMatch,
+            { expandStatus: expandRes.status, verifiedFileCount: manifest15.completeHandoffArchive.bundledEntries.length }
+        );
+
+        // 3. Validate PowerShell Get-FileHash command example from the guide inside `extractRoot`
+        const psHashRes = runPsInExtract(extractRoot, `(Get-FileHash ".\\dist\\XPIDER_V7.0.0_CANDIDATE_P0_REV9_OWNER_SAFE.zip" -Algorithm SHA256).Hash`);
+        A('A3_POWERSHELL_RUNTIME_ZIP_SHA256_COMMAND_FROM_GUIDE',
+            psHashRes.status === 0 && psHashRes.stdout.toLowerCase() === EXPECTED_RUNTIME_ZIP_SHA,
+            { stdout: psHashRes.stdout }
+        );
+
+        // 4. Validate guide ordering & non-destructive separation in the extracted markdown files
+        const checklistMd = fs.readFileSync(path.join(extractRoot, 'dist', 'WINDOWS_10_OWNER_UAT_CHECKLIST.md'), 'utf8');
+        const guideMd = fs.readFileSync(path.join(extractRoot, 'dist', 'OWNER_SAFE_UPDATE_AND_BACKUP_GUIDE.md'), 'utf8');
+        const idxPhaseA = checklistMd.indexOf('## Phase A');
+        const idxPhaseB = checklistMd.indexOf('## Phase B');
+        const idxPhaseC = checklistMd.indexOf('## Phase C');
+        const idxPhaseD = checklistMd.indexOf('## Phase D');
+        const requiredRelPaths = [
+            'dist/XPIDER_V7.0.0_CANDIDATE_P0_REV9_OWNER_SAFE.zip',
+            'dist/PACKAGE_INVENTORY_SHA256.json',
+            'dist/rc11_baseline_manifest.json',
+            'dist/WINDOWS_10_OWNER_UAT_CHECKLIST.md',
+            'dist/OWNER_SAFE_UPDATE_AND_BACKUP_GUIDE.md',
+            'scripts/xpider_safe_update.js',
+            'owner-extension-test-site/server.js',
+            'owner-extension-test-site/contact-standard.html',
+            'owner-extension-test-site/subscribe-no-message.html',
+            'owner-extension-test-site/consent-required-no-message.html',
+            'owner-extension-test-site/contact-success.html',
+            'test/run_uat_synthetic_profile_isolation_check.js',
+            'test/lib/browser_cdp.js'
+        ];
+        const allRelPathsPresentInExtract = requiredRelPaths.every(rp => fs.existsSync(path.join(extractRoot, rp)));
+        A('A4_GUIDE_ORDER_AND_NON_DESTRUCTIVE_GUARD_AUDIT',
+            idxPhaseA > 0 && idxPhaseA < idxPhaseB && idxPhaseB < idxPhaseC && idxPhaseC < idxPhaseD &&
+            checklistMd.includes('BLOCKED_NO_SAFE_ELEVATED_TEST_VM') &&
+            checklistMd.includes('NON_SYNTHETIC_BACKUP_ORIGIN_IN_UAT_RESTORE') &&
+            guideMd.includes('(`transmittedViaSinkProxy === 0`)') &&
+            guideMd.includes('is NOT proof of total host egress default-deny') &&
+            allRelPathsPresentInExtract,
+            { idxPhaseA, idxPhaseB, idxPhaseC, idxPhaseD, allRelPathsPresentInExtract }
+        );
+
+        // 5. Prepare simulated live RC11 target and simulated real profile (outside extractRoot) and test Step A2 `preflight-uat`
+        fs.cpSync(RC11_BASE_DIR, simLiveTarget, { recursive: true });
+        const simRealLes = path.join(simRealProfile, 'Default', 'Local Extension Settings', EXT_ID);
+        fs.mkdirSync(simRealLes, { recursive: true });
+        const REAL_SENTINEL = 'DO_NOT_LEAK_OWNER_REAL_SECRET_REV15_8812';
+        fs.writeFileSync(path.join(simRealLes, '000005.ldb'), `REAL_OWNER_DATA secret=${REAL_SENTINEL} url=https://real-customer.example.com/contact email=owner@real-company.com`);
+        fs.writeFileSync(path.join(simRealLes, 'CURRENT'), 'MANIFEST-000001\n');
+
+        const targetBeforeTree = JSON.stringify(buildManifest(simLiveTarget));
+        const profBeforeTree = JSON.stringify(buildManifest(simRealLes));
+
+        const pfRes = runNodeInExtract(extractRoot, [
+            'scripts\\xpider_safe_update.js',
+            'preflight-uat',
+            '--target', simLiveTarget,
+            '--profile-dir', simRealProfile,
+            '--fixture-port', String(TEST_FIXTURE_PORT),
+            '--sink-port', String(TEST_SINK_PORT)
+        ]);
+        const targetAfterTree = JSON.stringify(buildManifest(simLiveTarget));
+        const profAfterTree = JSON.stringify(buildManifest(simRealLes));
+        A('A5_STEP_A2_READ_ONLY_PREFLIGHT_UAT_FROM_CLEAN_EXTRACT',
+            pfRes.status === 0 &&
+            pfRes.out &&
+            pfRes.out.mode === 'DRY_RUN_PREFLIGHT_UAT' &&
+            pfRes.out.modifiedTarget === false &&
+            pfRes.out.modifiedProfile === false &&
+            pfRes.out.osFirewallIsolationStatus === 'BLOCKED_NO_SAFE_ELEVATED_TEST_VM' &&
+            targetBeforeTree === targetAfterTree &&
+            profBeforeTree === profAfterTree,
+            { preflightMode: pfRes.out && pfRes.out.mode, osFirewallIsolationStatus: pfRes.out && pfRes.out.osFirewallIsolationStatus }
+        );
+
+        // 6. Step A3 & A4: Offline encrypted backup (`pre_v7.xpider-enc`) & in-memory `verify-storage-backup`
+        const PASS = 'Clean-Extract-Passphrase-2026!';
+        const realBackupEnc = path.join(tempBase, 'private_backups', 'pre_v7.xpider-enc');
+        const bkRealRes = runNodeInExtract(extractRoot, [
+            'scripts\\xpider_safe_update.js',
+            'backup-storage',
+            '--profile-dir', simRealProfile,
+            '--out', realBackupEnc,
+            '--passphrase-env', 'XPIDER_BACKUP_PASS'
+        ], { XPIDER_BACKUP_PASS: PASS });
+        const verRealRes = runNodeInExtract(extractRoot, [
+            'scripts\\xpider_safe_update.js',
+            'verify-storage-backup',
+            '--in', realBackupEnc,
+            '--passphrase-env', 'XPIDER_BACKUP_PASS'
+        ], { XPIDER_BACKUP_PASS: PASS });
+        A('A6_STEP_A3_A4_OFFLINE_REAL_BACKUP_AND_IN_MEMORY_VERIFY',
+            bkRealRes.status === 0 &&
+            bkRealRes.out &&
+            bkRealRes.out.backupOrigin === 'OFFLINE_REAL_RECOVERY_ONLY' &&
+            verRealRes.status === 0 &&
+            verRealRes.out &&
+            verRealRes.out.result === 'BACKUP_INTEGRITY_VERIFIED_IN_MEMORY' &&
+            verRealRes.out.backupOrigin === 'OFFLINE_REAL_RECOVERY_ONLY' &&
+            verRealRes.out.writtenToDisk === false &&
+            verRealRes.out.decryptedFilesWritten === 0 &&
+            !verRealRes.text.includes(REAL_SENTINEL),
+            { backupOrigin: verRealRes.out && verRealRes.out.backupOrigin, writtenToDisk: verRealRes.out && verRealRes.out.writtenToDisk }
+        );
+
+        // 7. Item 5 Negative Control A: Attempting to restore `pre_v7.xpider-enc` into a UAT profile fails closed BOTH without AND with `--allow-synthetic-uat-restore`
+        const uatTargetProf = path.join(tempBase, 'xpider_uat_synthetic_profile');
+        fs.mkdirSync(uatTargetProf, { recursive: true });
+        const rejNoFlag = runNodeInExtract(extractRoot, [
+            'scripts\\xpider_safe_update.js',
+            'restore-storage',
+            '--profile-dir', uatTargetProf,
+            '--in', realBackupEnc,
+            '--passphrase-env', 'XPIDER_BACKUP_PASS'
+        ], { XPIDER_BACKUP_PASS: PASS });
+        const rejWithOverrideFlag = runNodeInExtract(extractRoot, [
+            'scripts\\xpider_safe_update.js',
+            'restore-storage',
+            '--profile-dir', uatTargetProf,
+            '--in', realBackupEnc,
+            '--passphrase-env', 'XPIDER_BACKUP_PASS',
+            '--allow-synthetic-uat-restore'
+        ], { XPIDER_BACKUP_PASS: PASS });
+        A('A7_ITEM5_NEGATIVE_REAL_BACKUP_TO_UAT_REJECTED_WITHOUT_AND_WITH_OVERRIDE_FLAG',
+            rejNoFlag.status !== 0 &&
+            rejNoFlag.out && rejNoFlag.out.code === 'REAL_BACKUP_RESTORE_INTO_UAT_FORBIDDEN' &&
+            rejWithOverrideFlag.status !== 0 &&
+            rejWithOverrideFlag.out && rejWithOverrideFlag.out.code === 'NON_SYNTHETIC_BACKUP_ORIGIN_IN_UAT_RESTORE' &&
+            !fs.existsSync(path.join(uatTargetProf, 'Local Extension Settings', EXT_ID, '000005.ldb')),
+            { withoutFlagCode: rejNoFlag.out && rejNoFlag.out.code, withOverrideFlagCode: rejWithOverrideFlag.out && rejWithOverrideFlag.out.code }
+        );
+
+        // 8. Item 5 Negative Control B: Attempting `--synthetic-uat-origin` backup on real/polluted data OR restoring a forged `SYNTHETIC_UAT_ONLY` archive containing real URLs/emails/secrets fails closed in memory
+        const rejPollutedSynthBk = runNodeInExtract(extractRoot, [
+            'scripts\\xpider_safe_update.js',
+            'backup-storage',
+            '--profile-dir', simRealProfile,
+            '--out', path.join(tempBase, 'forged_attempt.xpider-enc'),
+            '--passphrase-env', 'XPIDER_BACKUP_PASS',
+            '--synthetic-uat-origin'
+        ], { XPIDER_BACKUP_PASS: PASS });
+
+        // Also craft an AES-256-GCM valid archive whose JSON header claims `backupOrigin: "SYNTHETIC_UAT_ONLY"` and `syntheticAuditPassed: true`, but whose LevelDB buffer holds `https://real-customer.example.com/contact`
+        const forgedEncPath = path.join(tempBase, 'forged_header_real_payload.xpider-enc');
+        {
+            const rawEnv = JSON.parse(fs.readFileSync(realBackupEnc, 'utf8'));
+            const key = crypto.scryptSync(PASS, Buffer.from(rawEnv.salt, 'base64'), 32, { N: 16384, r: 8, p: 1 });
+            const decipher = crypto.createDecipheriv('aes-256-gcm', key, Buffer.from(rawEnv.iv, 'base64'));
+            decipher.setAuthTag(Buffer.from(rawEnv.tag, 'base64'));
+            const decObj = JSON.parse(Buffer.concat([decipher.update(Buffer.from(rawEnv.ciphertext, 'base64')), decipher.final()]).toString('utf8'));
+            decObj.backupOrigin = 'SYNTHETIC_UAT_ONLY';
+            decObj.syntheticAuditPassed = true;
+            const newIv = crypto.randomBytes(12);
+            const cipher = crypto.createCipheriv('aes-256-gcm', key, newIv);
+            const ct = Buffer.concat([cipher.update(Buffer.from(JSON.stringify(decObj), 'utf8')), cipher.final()]);
+            const tag = cipher.getAuthTag();
+            fs.writeFileSync(forgedEncPath, JSON.stringify({
+                ...rawEnv,
+                backupOrigin: 'SYNTHETIC_UAT_ONLY',
+                iv: newIv.toString('base64'),
+                tag: tag.toString('base64'),
+                ciphertext: ct.toString('base64')
+            }, null, 2));
+        }
+        const rejForgedRestore = runNodeInExtract(extractRoot, [
+            'scripts\\xpider_safe_update.js',
+            'restore-storage',
+            '--profile-dir', uatTargetProf,
+            '--in', forgedEncPath,
+            '--passphrase-env', 'XPIDER_BACKUP_PASS',
+            '--allow-synthetic-uat-restore'
+        ], { XPIDER_BACKUP_PASS: PASS });
+        A('A8_ITEM5_NEGATIVE_FORGED_SYNTHETIC_ORIGIN_WITH_REAL_CONTENT_REJECTED',
+            rejPollutedSynthBk.status !== 0 &&
+            rejPollutedSynthBk.out && rejPollutedSynthBk.out.code === 'NON_SYNTHETIC_BACKUP_CONTENT_FORBIDDEN' &&
+            rejForgedRestore.status !== 0 &&
+            rejForgedRestore.out && rejForgedRestore.out.code === 'NON_SYNTHETIC_BACKUP_CONTENT_FORBIDDEN' &&
+            !fs.existsSync(path.join(uatTargetProf, 'Local Extension Settings', EXT_ID, '000005.ldb')),
+            {
+                pollutedBackupAttemptCode: rejPollutedSynthBk.out && rejPollutedSynthBk.out.code,
+                forgedHeaderRestoreAttemptCode: rejForgedRestore.out && rejForgedRestore.out.code
+            }
+        );
+
+        // 9. Step B2: Start local fixture + sink proxy server from `extractRoot` and run `verify-uat-firewall`
+        serverProc = spawn(process.execPath, ['owner-extension-test-site\\server.js'], {
+            cwd: extractRoot,
+            env: { ...process.env, PORT: String(TEST_FIXTURE_PORT), SINK_PROXY_PORT: String(TEST_SINK_PORT) },
+            stdio: 'ignore'
+        });
+        let serverReady = false;
+        for (let i = 0; i < 25; i++) {
+            await sleep(200);
+            try {
+                const st = await fetch(`http://127.0.0.1:${TEST_FIXTURE_PORT}/__xpider_firewall_status`).then(r => r.json());
+                if (st && st.ok && st.firewallActive) { serverReady = true; break; }
+            } catch (_) {}
+        }
+        const fwVerifyRes = runNodeInExtract(extractRoot, [
+            'scripts\\xpider_safe_update.js',
+            'verify-uat-firewall',
+            '--fixture-port', String(TEST_FIXTURE_PORT),
+            '--sink-port', String(TEST_SINK_PORT)
+        ]);
+        A('A9_STEP_B2_LOCAL_FIXTURE_AND_SINK_SERVER_STARTUP_AND_VERIFY_FIREWALL',
+            serverReady &&
+            fwVerifyRes.status === 0 &&
+            fwVerifyRes.out &&
+            fwVerifyRes.out.result === 'UAT_FIREWALL_VERIFIED_FAIL_CLOSED' &&
+            fwVerifyRes.out.httpProbeBlocked403 === true &&
+            fwVerifyRes.out.connectProbeBlocked403 === true &&
+            fwVerifyRes.out.transmittedExternalRequests === 0,
+            fwVerifyRes.out
+        );
+
+        // 10. Step B3: Copy `simLiveTarget` to disposable `uat_ext` via PowerShell `Copy-Item`, run `plan` and `apply` from `extractRoot`
+        const uatExtDir = path.join(tempBase, 'xpider_uat_ext');
+        const uatCodeBk = path.join(tempBase, 'xpider_uat_code_bk');
+        const copyRes = runPsInExtract(extractRoot, `Copy-Item -LiteralPath '${simLiveTarget.replace(/'/g, "''")}' -Destination '${uatExtDir.replace(/'/g, "''")}' -Recurse`);
+        const planRes = runNodeInExtract(extractRoot, [
+            'scripts\\xpider_safe_update.js',
+            'plan',
+            '--target', uatExtDir,
+            '--archive', 'dist\\XPIDER_V7.0.0_CANDIDATE_P0_REV9_OWNER_SAFE.zip',
+            '--expected-sha', EXPECTED_RUNTIME_ZIP_SHA,
+            '--inventory', 'dist\\PACKAGE_INVENTORY_SHA256.json',
+            '--baseline', 'dist\\rc11_baseline_manifest.json'
+        ]);
+        const planToken = planRes.out && planRes.out.PLAN_TOKEN;
+        const applyRes = runNodeInExtract(extractRoot, [
+            'scripts\\xpider_safe_update.js',
+            'apply',
+            '--target', uatExtDir,
+            '--archive', 'dist\\XPIDER_V7.0.0_CANDIDATE_P0_REV9_OWNER_SAFE.zip',
+            '--expected-sha', EXPECTED_RUNTIME_ZIP_SHA,
+            '--inventory', 'dist\\PACKAGE_INVENTORY_SHA256.json',
+            '--baseline', 'dist\\rc11_baseline_manifest.json',
+            '--backup-root', uatCodeBk,
+            '--approve', String(planToken || '')
+        ]);
+        const expectedInv = JSON.parse(fs.readFileSync(path.join(extractRoot, 'dist', 'PACKAGE_INVENTORY_SHA256.json'), 'utf8'));
+        const uatAppliedManifest = buildManifest(uatExtDir);
+        const all50MatchInventory = uatAppliedManifest.length === expectedInv.length &&
+            expectedInv.every(e => uatAppliedManifest.some(u => u.path === e.path && u.size === e.size && u.sha256 === e.sha256));
+        const liveStillUntouched = JSON.stringify(buildManifest(simLiveTarget)) === targetBeforeTree;
+        A('A10_STEP_B3_DISPOSABLE_COPY_PLAN_AND_APPLY_FROM_CLEAN_EXTRACT',
+            copyRes.status === 0 &&
+            planRes.status === 0 &&
+            typeof planToken === 'string' && planToken.length === 16 &&
+            applyRes.status === 0 &&
+            applyRes.out && applyRes.out.result === 'COMMITTED' &&
+            all50MatchInventory &&
+            liveStillUntouched,
+            { planToken, applyResult: applyRes.out && applyRes.out.result, appliedFileCount: uatAppliedManifest.length, all50MatchInventory, liveStillUntouched }
+        );
+
+        // 11. Synthetic-only UAT state audit (`audit-uat-state`) from `extractRoot`
+        const synthStateJson = path.join(tempBase, 'uat_synthetic_state.json');
+        fs.writeFileSync(synthStateJson, JSON.stringify({
+            xpider_schema_version: 2,
+            templates_v2: {
+                activeTemplateId: 'uat_1',
+                templates: { uat_1: { email: 'operator@uat-local.test', website: `http://127.0.0.1:${TEST_FIXTURE_PORT}`, includeFormsWithoutMessage: false } }
+            },
+            savedUrlLists_v2: {
+                lists: { l1: { urls: [`http://127.0.0.1:${TEST_FIXTURE_PORT}/contact-standard.html`] } }
+            },
+            xpider_isPaused: true
+        }, null, 2));
+        const auditRes = runNodeInExtract(extractRoot, [
+            'scripts\\xpider_safe_update.js',
+            'audit-uat-state',
+            '--in', synthStateJson
+        ]);
+        A('A11_SYNTHETIC_ONLY_PROFILE_SEED_AND_AUDIT_UAT_STATE',
+            auditRes.status === 0 &&
+            auditRes.out &&
+            auditRes.out.result === 'UAT_PROFILE_ISOLATION_VERIFIED',
+            auditRes.out
+        );
+
+        // 12. Step B10: Synthetic backup (`--synthetic-uat-origin`) and restore (`--allow-synthetic-uat-restore`) into `xpider_uat_synthetic_profile_2`
+        const uatLes1 = path.join(uatTargetProf, 'Default', 'Local Extension Settings', EXT_ID);
+        fs.mkdirSync(uatLes1, { recursive: true });
+        fs.writeFileSync(path.join(uatLes1, '000005.ldb'), `SYNTHETIC_UAT_LDB url=http://127.0.0.1:${TEST_FIXTURE_PORT}/contact-standard.html email=operator@uat-local.test`);
+        fs.writeFileSync(path.join(uatLes1, 'CURRENT'), 'MANIFEST-000001\n');
+        const synthEnc = path.join(tempBase, 'xpider_uat_synthetic.xpider-enc');
+        const bkSynthRes = runNodeInExtract(extractRoot, [
+            'scripts\\xpider_safe_update.js',
+            'backup-storage',
+            '--profile-dir', path.join(uatTargetProf, 'Default'),
+            '--out', synthEnc,
+            '--passphrase-env', 'XPIDER_BACKUP_PASS',
+            '--synthetic-uat-origin'
+        ], { XPIDER_BACKUP_PASS: PASS });
+        const uatTargetProf2 = path.join(tempBase, 'xpider_uat_synthetic_profile_2', 'Default');
+        fs.mkdirSync(uatTargetProf2, { recursive: true });
+        const restSynthRes = runNodeInExtract(extractRoot, [
+            'scripts\\xpider_safe_update.js',
+            'restore-storage',
+            '--profile-dir', uatTargetProf2,
+            '--in', synthEnc,
+            '--passphrase-env', 'XPIDER_BACKUP_PASS',
+            '--allow-synthetic-uat-restore'
+        ], { XPIDER_BACKUP_PASS: PASS });
+        A('A12_STEP_B10_SYNTHETIC_BACKUP_AND_ORIGIN_VERIFIED_RESTORE',
+            bkSynthRes.status === 0 &&
+            bkSynthRes.out && bkSynthRes.out.backupOrigin === 'SYNTHETIC_UAT_ONLY' &&
+            restSynthRes.status === 0 &&
+            restSynthRes.out && restSynthRes.out.result === 'RESTORED_VERIFIED' &&
+            restSynthRes.out.backupOrigin === 'SYNTHETIC_UAT_ONLY',
+            { bkOrigin: bkSynthRes.out && bkSynthRes.out.backupOrigin, restoreResult: restSynthRes.out && restSynthRes.out.result }
+        );
+
+        // 13. Step B10: Rollback `uat_ext` to byte-identical RC11 baseline
+        const rbRes = runNodeInExtract(extractRoot, [
+            'scripts\\xpider_safe_update.js',
+            'rollback',
+            '--target', uatExtDir,
+            '--backup-root', uatCodeBk
+        ]);
+        const uatRolledBackTree = JSON.stringify(buildManifest(uatExtDir));
+        A('A13_STEP_B10_TRANSACTIONAL_ROLLBACK_TO_BYTE_IDENTICAL_RC11',
+            rbRes.status === 0 &&
+            rbRes.out && rbRes.out.result === 'ROLLED_BACK' &&
+            uatRolledBackTree === targetBeforeTree,
+            { rollbackResult: rbRes.out && rbRes.out.result, byteIdenticalToRc11: uatRolledBackTree === targetBeforeTree }
+        );
+
+        // 14. Clean shutdown of local fixture + sink server via PowerShell `Invoke-RestMethod`
+        const shutRes = runPsInExtract(extractRoot, `Invoke-RestMethod -Method Post -Uri "http://127.0.0.1:${TEST_FIXTURE_PORT}/__xpider_shutdown" | ConvertTo-Json -Compress`);
+        await sleep(250);
+        A('A14_LOCAL_FIXTURE_AND_SINK_SERVER_CLEAN_SHUTDOWN',
+            shutRes.status === 0 && shutRes.stdout.includes('"ok":true'),
+            { shutdownOutput: shutRes.stdout }
+        );
+
+    } catch (e) {
+        failures++;
+        report.error = e.stack;
+        console.error(e);
+    } finally {
+        if (serverProc) {
+            try { serverProc.kill(); } catch (_) {}
+        }
+        try { fs.rmSync(tempBase, { recursive: true, force: true }); } catch (_) {}
+        report.status = failures === 0 ? 'SUCCESS' : 'FAILED';
+        report.endedAt = new Date().toISOString();
+        report.total = report.assertions.length;
+        report.failed = failures;
+        fs.writeFileSync(REPORT_PATH, JSON.stringify(report, null, 2) + '\n');
+        console.log(`\n${report.total - failures}/${report.total} PASS -> ${REPORT_PATH}`);
+        process.exit(failures ? 1 : 0);
+    }
+})();

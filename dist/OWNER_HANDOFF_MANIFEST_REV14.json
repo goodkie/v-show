@@ -1,20 +1,21 @@
 {
-  "schemaVersion": "XPIDER_OWNER_HANDOFF_MANIFEST_REV14",
-  "directive": "#6704335953",
+  "schemaVersion": "XPIDER_OWNER_HANDOFF_MANIFEST_REV15",
+  "directive": "#6706731716",
   "status": "CANDIDATE_RELEASE_HOLD",
   "branch": "candidate/p0-core-regressions-v7",
   "functionalCandidateCommit": "76fab0933276ae163c377d39d9dca5169a33063c",
   "extensionTreeSha": "1d1bac897f70df6fa107cde85b00de591d5dea93",
   "expectedExtensionId": "ldlijlaccfeelfdhgnjbibniocefckjj",
   "extensionZipAloneIsCompleteKit": false,
-  "extensionZipScopeNote": "dist/XPIDER_V7.0.0_CANDIDATE_P0_REV9_OWNER_SAFE.zip contains ONLY the 50 Chrome MV3 runtime files from extension/. The host-side transactional updater (scripts/xpider_safe_update.js), SHA-256 inventories, guides, and localhost fixture/sink server are separate host-side files listed in this manifest.",
+  "extensionZipScopeNote": "dist/XPIDER_V7.0.0_CANDIDATE_P0_REV9_OWNER_SAFE.zip contains ONLY the 50 Chrome MV3 runtime files from extension/. The complete owner-usable handoff archive is dist/XPIDER_V7.0.0_CANDIDATE_REV15_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip (built via node scripts/build_owner_complete_handoff_kit.js).",
   "operatorCapabilityByEnvironment": {
     "withNodeJs18Plus": {
       "supported": true,
       "capabilities": [
         "preflight-uat (read-only dry-run preflight)",
-        "backup-storage (AES-256-GCM encrypted offline backup)",
+        "backup-storage (AES-256-GCM encrypted offline backup + --synthetic-uat-origin content audit)",
         "verify-storage-backup (in-memory integrity verification, writtenToDisk: false)",
+        "restore-storage (bidirectional origin-verified atomic restore; blocks real backups in UAT even with --allow-synthetic-uat-restore)",
         "plan / apply / rollback / recover (journaled transactional code update)",
         "owner-extension-test-site/server.js (localhost 127.0.0.1:8088 fixtures + 127.0.0.1:8090 fail-closed sink proxy)"
       ]
@@ -30,16 +31,16 @@
     }
   },
   "consolidatedAcceptanceMatrix": {
-    "G1_candidateRuntimeFreezeAnd50FileIntegrity": "DEV_PASS",
-    "G2_chrome157AndEdge146MigrationBackupRestoreParity": "DEV_PASS",
-    "G3_chrome157FunctionalUi3ModeResetCsvConsentSuite": "DEV_PASS",
-    "G4_transactionalUpdaterFaultInjectionAndRollbackSuite": "DEV_PASS",
-    "G5_browserSinkProxyDnrQuicAndDryRunPreflightUat": "DEV_PASS",
+    "G1_candidateRuntimeFreezeAndHandoffKitIntegrity": "SOURCE_METADATA_VERIFIED + DEV_PASS",
+    "G2_chrome157AndEdge146MigrationBackupRestoreParity": "DEV_PASS (Developer-Executed Only; Not Independently Run by ChatGPT/Owner)",
+    "G3_chrome157FunctionalUi3ModeResetCsvConsentSuite": "DEV_PASS (Developer-Executed Only; Not Independently Run by ChatGPT/Owner)",
+    "G4_transactionalUpdaterCleanExtractAndSyntheticRestoreOriginGate": "DEV_PASS (Developer-Executed Only; Not Independently Run by ChatGPT/Owner)",
+    "G5_browserSinkProxyDnrQuicAndDryRunPreflightUat": "DEV_PASS (Scoped to Browser Proxy/DNR/CDP Path ONLY; 0 Forwarded Sink Requests Is NOT Proof of Total Host Egress Default-Deny)",
     "G6_osKernelDefaultDenyFirewallRuleOnTestChromeOrVm": "BLOCKED (BLOCKED_NO_SAFE_ELEVATED_TEST_VM)",
-    "G7_ownerWindows10LiveDesktopSmoke": "OWNER_ACTION_REQUIRED (INDEPENDENT_NOT_RUN)",
-    "G8_realExternalNopeChaExtensionInteroperability": "INDEPENDENT_NOT_RUN (OWNER_ACTION_REQUIRED)",
-    "G9_authorizedDigitalOceanDecodoRelayEgressVerification": "INDEPENDENT_NOT_RUN (OWNER_ACTION_REQUIRED)",
-    "G10_ownerFinalReleaseAndLiveUpdateApproval": "OWNER_ACTION_REQUIRED"
+    "G7_ownerWindows10LiveDesktopSmoke": "NOT_TESTED (OWNER_ACTION_REQUIRED)",
+    "G8_realExternalNopeChaExtensionInteroperability": "NOT_TESTED (OWNER_ACTION_REQUIRED)",
+    "G9_authorizedDigitalOceanDecodoRelayEgressVerification": "NOT_TESTED (OWNER_ACTION_REQUIRED)",
+    "G10_ownerFinalReleaseAndLiveUpdateApproval": "NOT_TESTED (OWNER_ACTION_REQUIRED)"
   },
   "files": [
     {
@@ -52,8 +53,8 @@
     {
       "role": "standalone_transactional_updater_and_uat_cli",
       "path": "scripts/xpider_safe_update.js",
-      "size": 48546,
-      "sha256": "18b1371d414a120d5f3f1a988fefe2bab29cabc5ef8ad6acfb3d1eed5935f4a5",
+      "size": 52496,
+      "sha256": "8e9014ec4589d83ae562f15b7e02ef575143f42003f0ddc8506c47a560ba7c1b",
       "rawUrl": "https://github.com/goodkie/v-show/raw/candidate/p0-core-regressions-v7/scripts/xpider_safe_update.js"
     },
     {
@@ -73,15 +74,15 @@
     {
       "role": "synthetic_only_windows_10_uat_checklist",
       "path": "dist/WINDOWS_10_OWNER_UAT_CHECKLIST.md",
-      "size": 23185,
-      "sha256": "cd47335f06722df76cce22e336631bb4c1e121010609ca8489e73e8adc54bcbc",
+      "size": 25727,
+      "sha256": "f12d357a43592908ba046e111f730832f03fbc8f7d35eb5afe3599bf61fa00d5",
       "rawUrl": "https://github.com/goodkie/v-show/raw/candidate/p0-core-regressions-v7/dist/WINDOWS_10_OWNER_UAT_CHECKLIST.md"
     },
     {
       "role": "owner_safe_update_backup_and_rollback_guide",
       "path": "dist/OWNER_SAFE_UPDATE_AND_BACKUP_GUIDE.md",
-      "size": 15641,
-      "sha256": "c36a4b7e8ecaaf6978833920b84461545fe2a806bd40f2a4b8f40c70efd78485",
+      "size": 18333,
+      "sha256": "1ce289be498b18f669e02a5e13d452914c0e52032ebc6147923ee746fc38cc4d",
       "rawUrl": "https://github.com/goodkie/v-show/raw/candidate/p0-core-regressions-v7/dist/OWNER_SAFE_UPDATE_AND_BACKUP_GUIDE.md"
     },
     {
@@ -122,8 +123,8 @@
     {
       "role": "automated_uat_isolation_and_preflight_harness",
       "path": "test/run_uat_synthetic_profile_isolation_check.js",
-      "size": 56597,
-      "sha256": "7a98a075058af64178e97152858615e7d2ae27a04bd63855ef08695ac06b8923",
+      "size": 61795,
+      "sha256": "ed68a747a0e6e3b2ba8a41d296f77e0207520db91b3c26f3a32eaa757ce7d5ba",
       "rawUrl": "https://github.com/goodkie/v-show/raw/candidate/p0-core-regressions-v7/test/run_uat_synthetic_profile_isolation_check.js"
     },
     {

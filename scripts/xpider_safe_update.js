@@ -400,8 +400,42 @@ function getPassphrase(a) {
     return pp;
 }
 
+function auditRawLevelDbBuffersForUatSafety(rawBuffersMap) {
+    const FORBIDDEN_MARKER_RE = /(xpider_proxy_credentials|xpider_sentinel_token|proxyPassword|authPassword|apiKey|secretKey|privateKey|decodoPassword|smartproxyPassword|DO_NOT_LEAK|REAL_OWNER)/i;
+    const PROXY_URI_RE = /\b(?:https?|socks5?):\/\/[^/\s"'<>]+:[^@\s"'<>]+@/i;
+    const URL_RE = /\bhttps?:\/\/([A-Za-z0-9.\-\[\]:]+)(?:[^\s"'<>\\]*)/gi;
+    const EMAIL_RE = /\b[A-Za-z0-9._%+-]+@([A-Za-z0-9.-]+\.[A-Za-z]{2,})\b/g;
+
+    for (const [relPath, buf] of Object.entries(rawBuffersMap)) {
+        const text = Buffer.isBuffer(buf) ? buf.toString('latin1') : String(buf || '');
+        const printableSpans = text.match(/[\x20-\x7E]{6,}/g) || [];
+        for (const span of printableSpans) {
+            if (FORBIDDEN_MARKER_RE.test(span) || PROXY_URI_RE.test(span)) {
+                die('NON_SYNTHETIC_BACKUP_CONTENT_FORBIDDEN', `Storage file (${relPath}) contains sensitive credential or non-synthetic marker; refusing UAT synthetic classification/restore`);
+            }
+            let m;
+            URL_RE.lastIndex = 0;
+            while ((m = URL_RE.exec(span)) !== null) {
+                const hostPort = m[1].toLowerCase();
+                const host = hostPort.replace(/:\d+$/, '');
+                if (host !== '127.0.0.1' && host !== 'localhost' && host !== '[::1]') {
+                    die('NON_SYNTHETIC_BACKUP_CONTENT_FORBIDDEN', `Storage file (${relPath}) contains non-loopback URL host; refusing UAT synthetic classification/restore`);
+                }
+            }
+            EMAIL_RE.lastIndex = 0;
+            while ((m = EMAIL_RE.exec(span)) !== null) {
+                const dom = m[1].toLowerCase();
+                if (!/\.(test|invalid|local)$/.test(dom) && dom !== 'localhost') {
+                    die('NON_SYNTHETIC_BACKUP_CONTENT_FORBIDDEN', `Storage file (${relPath}) contains non-synthetic email domain; refusing UAT synthetic classification/restore`);
+                }
+            }
+        }
+    }
+    return true;
+}
+
 function backupStorageEncrypted(a) {
-    if (!a['profile-dir'] || !a.out) die('USAGE', 'backup-storage requires --profile-dir <dir> --out <file> --passphrase-env <ENV>');
+    if (!a['profile-dir'] || !a.out) die('USAGE', 'backup-storage requires --profile-dir <dir> --out <file> --passphrase-env <ENV> [--synthetic-uat-origin]');
     const extId = a['ext-id'] || DEFAULT_ID;
     const lesDir = resolveLesDir(a['profile-dir'], extId);
     recoverInterruptedStorageRestore(lesDir);
@@ -413,25 +447,50 @@ function backupStorageEncrypted(a) {
     const manifest = buildManifest(lesDir);
     if (!manifest.length) die('STORAGE_EMPTY', `Extension storage dir is empty: ${lesDir}`);
     const files = {};
-    for (const e of manifest) files[e.path] = fs.readFileSync(path.join(lesDir, e.path)).toString('base64');
+    const rawBuffers = {};
+    for (const e of manifest) {
+        const raw = fs.readFileSync(path.join(lesDir, e.path));
+        rawBuffers[e.path] = raw;
+        files[e.path] = raw.toString('base64');
+    }
+    const isSyntheticOrigin = !!a['synthetic-uat-origin'];
+    if (isSyntheticOrigin) {
+        auditRawLevelDbBuffersForUatSafety(rawBuffers);
+    }
+    const backupOrigin = isSyntheticOrigin ? 'SYNTHETIC_UAT_ONLY' : 'OFFLINE_REAL_RECOVERY_ONLY';
     const manifestSha256 = sha256Buf(Buffer.from(JSON.stringify(manifest)));
-    const payload = Buffer.from(JSON.stringify({ version: 1, extId, createdAt: new Date().toISOString(), manifest, manifestSha256, files }), 'utf8');
+    const payload = Buffer.from(JSON.stringify({
+        version: 1,
+        extId,
+        backupOrigin,
+        syntheticAuditPassed: isSyntheticOrigin,
+        createdAt: new Date().toISOString(),
+        manifest,
+        manifestSha256,
+        files
+    }), 'utf8');
     const salt = crypto.randomBytes(16), iv = crypto.randomBytes(12);
     const key = crypto.scryptSync(pass, salt, 32, { N: 16384, r: 8, p: 1 });
     const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
     const ct = Buffer.concat([cipher.update(payload), cipher.final()]);
     const tag = cipher.getAuthTag();
-    const env = { format: 'XPIDER_ENCRYPTED_STORAGE_BACKUP_V1', kdf: 'scrypt-16384-8-1', cipher: 'aes-256-gcm', extId, fileCount: manifest.length, manifestSha256, salt: salt.toString('base64'), iv: iv.toString('base64'), tag: tag.toString('base64'), ciphertext: ct.toString('base64') };
+    const env = { format: 'XPIDER_ENCRYPTED_STORAGE_BACKUP_V1', kdf: 'scrypt-16384-8-1', cipher: 'aes-256-gcm', extId, backupOrigin, fileCount: manifest.length, manifestSha256, salt: salt.toString('base64'), iv: iv.toString('base64'), tag: tag.toString('base64'), ciphertext: ct.toString('base64') };
     fs.mkdirSync(path.dirname(outPath), { recursive: true });
     fs.writeFileSync(outPath, JSON.stringify(env, null, 2));
-    return { result: 'BACKUP_ENCRYPTED', out: outPath, fileCount: manifest.length, manifestSha256, backupSha256: sha256File(outPath) };
+    return { result: 'BACKUP_ENCRYPTED', out: outPath, backupOrigin, fileCount: manifest.length, manifestSha256, backupSha256: sha256File(outPath) };
 }
 
 function restoreStorageEncrypted(a) {
-    if (!a['profile-dir'] || !a.in) die('USAGE', 'restore-storage requires --profile-dir <dir> --in <file> --passphrase-env <ENV>');
+    if (!a['profile-dir'] || !a.in) die('USAGE', 'restore-storage requires --profile-dir <dir> --in <file> --passphrase-env <ENV> [--allow-synthetic-uat-restore]');
     const resolvedProf = path.resolve(String(a['profile-dir']));
-    if (/(?:^|[\\/._-])uat(?:$|[\\/._-])/i.test(resolvedProf) && !a['allow-synthetic-uat-restore']) {
-        die('REAL_BACKUP_RESTORE_INTO_UAT_FORBIDDEN', 'Refusing to restore an encrypted storage backup into a UAT profile directory without --allow-synthetic-uat-restore. Real owner backups (pre_v7.xpider-enc) are strictly offline and recovery-only.');
+    const baseName = path.basename(resolvedProf);
+    const profFolderName = /^(default|profile\s*\d+)$/i.test(baseName)
+        ? path.basename(path.dirname(resolvedProf))
+        : baseName;
+    const isUatTarget = /(?:^|[._-])uat(?:$|[._-])/i.test(profFolderName);
+    const allowSyntheticFlag = !!a['allow-synthetic-uat-restore'];
+    if (isUatTarget && !allowSyntheticFlag) {
+        die('REAL_BACKUP_RESTORE_INTO_UAT_FORBIDDEN', 'Refusing to restore an encrypted storage backup into a UAT profile directory without --allow-synthetic-uat-restore and verified SYNTHETIC_UAT_ONLY backup origin. Real owner backups (pre_v7.xpider-enc) are strictly offline and recovery-only.');
     }
     const extId = a['ext-id'] || DEFAULT_ID;
     const lesDir = resolveLesDir(a['profile-dir'], extId);
@@ -459,20 +518,35 @@ function restoreStorageEncrypted(a) {
         die('MANIFEST_FILES_MISMATCH', 'Decrypted payload missing valid manifest or files map');
     }
     if (sha256Buf(Buffer.from(JSON.stringify(plain.manifest))) !== env.manifestSha256) die('MANIFEST_HASH_MISMATCH', 'Decrypted manifest hash mismatch');
+    const decryptedOrigin = plain.backupOrigin || 'OFFLINE_REAL_RECOVERY_ONLY';
+    if (isUatTarget || allowSyntheticFlag) {
+        if (decryptedOrigin !== 'SYNTHETIC_UAT_ONLY' || plain.syntheticAuditPassed !== true) {
+            die('NON_SYNTHETIC_BACKUP_ORIGIN_IN_UAT_RESTORE', `Refusing UAT restore: decrypted backup origin is "${decryptedOrigin}" (not verifiably SYNTHETIC_UAT_ONLY). Passing --allow-synthetic-uat-restore cannot override a real or unmarked backup into a UAT profile.`);
+        }
+    } else if (decryptedOrigin === 'SYNTHETIC_UAT_ONLY') {
+        die('SYNTHETIC_BACKUP_RESTORE_INTO_REAL_PROFILE_FORBIDDEN', 'Refusing to restore a SYNTHETIC_UAT_ONLY backup into a non-UAT profile directory.');
+    }
     const fileKeys = Object.keys(plain.files);
     for (const k of fileKeys) safeRel(k);
     if (fileKeys.length !== plain.manifest.length) die('MANIFEST_FILES_MISMATCH', `Manifest count ${plain.manifest.length} != files count ${fileKeys.length}`);
     const seenLower = new Set();
+    const decodedBuffers = {};
+    for (const e of plain.manifest) {
+        const rel = safeRel(e.path);
+        const lk = rel.toLowerCase();
+        if (seenLower.has(lk)) die('DUPLICATE_MANIFEST_PATH', `Duplicate/case-colliding path in manifest: ${rel}`);
+        seenLower.add(lk);
+        if (!Object.prototype.hasOwnProperty.call(plain.files, e.path)) die('MANIFEST_FILES_MISMATCH', `Missing file payload for ${e.path}`);
+        const buf = Buffer.from(plain.files[e.path] || '', 'base64');
+        if (buf.length !== e.size || sha256Buf(buf) !== e.sha256) die('FILE_INTEGRITY_MISMATCH', `Integrity mismatch for ${e.path}`);
+        decodedBuffers[rel] = buf;
+    }
+    if (isUatTarget || allowSyntheticFlag) {
+        auditRawLevelDbBuffersForUatSafety(decodedBuffers);
+    }
     const stage = fs.mkdtempSync(path.join(os.tmpdir(), 'xpider-les-stage-'));
     try {
-        for (const e of plain.manifest) {
-            const rel = safeRel(e.path);
-            const lk = rel.toLowerCase();
-            if (seenLower.has(lk)) die('DUPLICATE_MANIFEST_PATH', `Duplicate/case-colliding path in manifest: ${rel}`);
-            seenLower.add(lk);
-            if (!Object.prototype.hasOwnProperty.call(plain.files, e.path)) die('MANIFEST_FILES_MISMATCH', `Missing file payload for ${e.path}`);
-            const buf = Buffer.from(plain.files[e.path] || '', 'base64');
-            if (buf.length !== e.size || sha256Buf(buf) !== e.sha256) die('FILE_INTEGRITY_MISMATCH', `Integrity mismatch for ${e.path}`);
+        for (const [rel, buf] of Object.entries(decodedBuffers)) {
             const dst = path.join(stage, rel);
             fs.mkdirSync(path.dirname(dst), { recursive: true });
             fs.writeFileSync(dst, buf);
@@ -490,7 +564,7 @@ function restoreStorageEncrypted(a) {
             if (fs.existsSync(bak)) { fs.rmSync(lesDir, { recursive: true, force: true }); fs.renameSync(bak, lesDir); }
             throw err;
         }
-        return { result: 'RESTORED_VERIFIED', lesDir, fileCount: plain.manifest.length, manifestSha256: env.manifestSha256, recoveredInterruptedPrior: recoveredPrior };
+        return { result: 'RESTORED_VERIFIED', lesDir, backupOrigin: decryptedOrigin, fileCount: plain.manifest.length, manifestSha256: env.manifestSha256, recoveredInterruptedPrior: recoveredPrior };
     } finally {
         fs.rmSync(stage, { recursive: true, force: true });
     }
@@ -538,7 +612,7 @@ function verifyStorageBackupEncrypted(a) {
             if (buf.length !== e.size || sha256Buf(buf) !== e.sha256) die('FILE_INTEGRITY_MISMATCH', `Integrity mismatch for ${e.path}`);
             buf.fill(0);
         }
-        return { result: 'BACKUP_INTEGRITY_VERIFIED_IN_MEMORY', writtenToDisk: false, decryptedFilesWritten: 0, extId, fileCount: plain.manifest.length, manifestSha256: env.manifestSha256, backupSha256: sha256File(inPath) };
+        return { result: 'BACKUP_INTEGRITY_VERIFIED_IN_MEMORY', writtenToDisk: false, decryptedFilesWritten: 0, extId, backupOrigin: plain.backupOrigin || 'OFFLINE_REAL_RECOVERY_ONLY', fileCount: plain.manifest.length, manifestSha256: env.manifestSha256, backupSha256: sha256File(inPath) };
     } finally {
         if (plainBuf) plainBuf.fill(0);
     }

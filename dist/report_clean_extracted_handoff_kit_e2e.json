@@ -1,0 +1,292 @@
+{
+  "suite": "XPIDER_CLEAN_EXTRACTED_HANDOFF_KIT_E2E_REV15",
+  "directive": "#6706731716",
+  "startedAt": "2026-11-07T12:31:19.311Z",
+  "nodeVersion": "v24.11.1",
+  "platform": "win32",
+  "completeHandoffArchive": {
+    "path": "dist/XPIDER_V7.0.0_CANDIDATE_REV15_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip",
+    "rawUrl": "https://github.com/goodkie/v-show/raw/candidate/p0-core-regressions-v7/dist/XPIDER_V7.0.0_CANDIDATE_REV15_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip",
+    "reproducibleBuildCommand": "node scripts/build_owner_complete_handoff_kit.js",
+    "unambiguousExtractionCommandPowerShell": "Expand-Archive -Path \".\\XPIDER_V7.0.0_CANDIDATE_REV15_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip\" -DestinationPath \"D:\\xpider_handoff_rev15\" -Force; Set-Location \"D:\\xpider_handoff_rev15\"",
+    "extractionRootLayout": "Extracting into <HANDOFF_ROOT> (e.g. D:\\xpider_handoff_rev15) creates dist/, scripts/, owner-extension-test-site/, and test/ directly under <HANDOFF_ROOT> so all relative guide commands run verbatim from <HANDOFF_ROOT>.",
+    "size": 4560445,
+    "sha256": "43a9bcdfff9651b8f31644d31dc8eba0463e8b5ee1163f198096b0d2a99959cd",
+    "dualMethodIntegrityVerification": {
+      "method1_nodeCryptoDeterminismCheck": {
+        "invocation1Sha256": "43a9bcdfff9651b8f31644d31dc8eba0463e8b5ee1163f198096b0d2a99959cd",
+        "invocation2Sha256": "43a9bcdfff9651b8f31644d31dc8eba0463e8b5ee1163f198096b0d2a99959cd",
+        "byteIdenticalAcrossInvocations": true
+      },
+      "method2_powerShellGetFileHashAndDotNetZipFile": {
+        "powerShellGetFileHashSha256": "43a9bcdfff9651b8f31644d31dc8eba0463e8b5ee1163f198096b0d2a99959cd",
+        "dotNetZipFileEntryCount": 18,
+        "allEntriesMatchedSourceDiskSha256": true
+      }
+    },
+    "bundledEntriesCount": 18,
+    "bundledEntries": [
+      {
+        "role": "extension_runtime_zip_50_files_only",
+        "path": "dist/XPIDER_V7.0.0_CANDIDATE_P0_REV9_OWNER_SAFE.zip",
+        "size": 4467833,
+        "sha256": "b3f39bec4ab0711bbe348614be6bbd1f8d0657987059ec7cd3538565c2c0227e",
+        "rawUrl": "https://github.com/goodkie/v-show/raw/candidate/p0-core-regressions-v7/dist/XPIDER_V7.0.0_CANDIDATE_P0_REV9_OWNER_SAFE.zip"
+      },
+      {
+        "role": "standalone_transactional_updater_and_uat_cli",
+        "path": "scripts/xpider_safe_update.js",
+        "size": 52496,
+        "sha256": "8e9014ec4589d83ae562f15b7e02ef575143f42003f0ddc8506c47a560ba7c1b",
+        "rawUrl": "https://github.com/goodkie/v-show/raw/candidate/p0-core-regressions-v7/scripts/xpider_safe_update.js"
+      },
+      {
+        "role": "candidate_50_file_sha256_inventory",
+        "path": "dist/PACKAGE_INVENTORY_SHA256.json",
+        "size": 7295,
+        "sha256": "ab43f481eb29f1f46df7a4bbde1a86cbe5d2f294fb8ca87c44601f40f5efeb4a",
+        "rawUrl": "https://github.com/goodkie/v-show/raw/candidate/p0-core-regressions-v7/dist/PACKAGE_INVENTORY_SHA256.json"
+      },
+      {
+        "role": "frozen_rc11_baseline_manifest",
+        "path": "dist/rc11_baseline_manifest.json",
+        "size": 7299,
+        "sha256": "9b066e28ac19dc30530712ec1cf328311ab1250a6c62547f7e65471241496f6a",
+        "rawUrl": "https://github.com/goodkie/v-show/raw/candidate/p0-core-regressions-v7/dist/rc11_baseline_manifest.json"
+      },
+      {
+        "role": "synthetic_only_windows_10_uat_checklist",
+        "path": "dist/WINDOWS_10_OWNER_UAT_CHECKLIST.md",
+        "size": 25727,
+        "sha256": "f12d357a43592908ba046e111f730832f03fbc8f7d35eb5afe3599bf61fa00d5",
+        "rawUrl": "https://github.com/goodkie/v-show/raw/candidate/p0-core-regressions-v7/dist/WINDOWS_10_OWNER_UAT_CHECKLIST.md"
+      },
+      {
+        "role": "owner_safe_update_backup_and_rollback_guide",
+        "path": "dist/OWNER_SAFE_UPDATE_AND_BACKUP_GUIDE.md",
+        "size": 18333,
+        "sha256": "1ce289be498b18f669e02a5e13d452914c0e52032ebc6147923ee746fc38cc4d",
+        "rawUrl": "https://github.com/goodkie/v-show/raw/candidate/p0-core-regressions-v7/dist/OWNER_SAFE_UPDATE_AND_BACKUP_GUIDE.md"
+      },
+      {
+        "role": "localhost_fixture_and_fail_closed_sink_proxy_server",
+        "path": "owner-extension-test-site/server.js",
+        "size": 19340,
+        "sha256": "ccbc3ff61bef80d93bc33d55f6697621a52f4944b5d00aade333833b14fd3809",
+        "rawUrl": "https://github.com/goodkie/v-show/raw/candidate/p0-core-regressions-v7/owner-extension-test-site/server.js"
+      },
+      {
+        "role": "localhost_fixture_contact_standard_html",
+        "path": "owner-extension-test-site/contact-standard.html",
+        "size": 5344,
+        "sha256": "42fb0dad9860d5376f96137e91e863077bd99d2ab717369c3ed1b7d6f4063d8b",
+        "rawUrl": "https://github.com/goodkie/v-show/raw/candidate/p0-core-regressions-v7/owner-extension-test-site/contact-standard.html"
+      },
+      {
+        "role": "localhost_fixture_subscribe_no_message_html",
+        "path": "owner-extension-test-site/subscribe-no-message.html",
+        "size": 4592,
+        "sha256": "6267ffc89b8ab18d7dd6400811697df39772205725e769752e018b7e3ba426a8",
+        "rawUrl": "https://github.com/goodkie/v-show/raw/candidate/p0-core-regressions-v7/owner-extension-test-site/subscribe-no-message.html"
+      },
+      {
+        "role": "localhost_fixture_consent_required_no_message_html",
+        "path": "owner-extension-test-site/consent-required-no-message.html",
+        "size": 1133,
+        "sha256": "b40db5ed71b20970be36da46bc60122e2fec0bc87f71baa559acfdc1f5d3064e",
+        "rawUrl": "https://github.com/goodkie/v-show/raw/candidate/p0-core-regressions-v7/owner-extension-test-site/consent-required-no-message.html"
+      },
+      {
+        "role": "localhost_fixture_contact_success_html",
+        "path": "owner-extension-test-site/contact-success.html",
+        "size": 1468,
+        "sha256": "d4790d52154ef63e7b6282b5be4cf2dc6a8e47b9c0e25a74a50bae4871246d5f",
+        "rawUrl": "https://github.com/goodkie/v-show/raw/candidate/p0-core-regressions-v7/owner-extension-test-site/contact-success.html"
+      },
+      {
+        "role": "automated_uat_isolation_and_preflight_harness",
+        "path": "test/run_uat_synthetic_profile_isolation_check.js",
+        "size": 61795,
+        "sha256": "ed68a747a0e6e3b2ba8a41d296f77e0207520db91b3c26f3a32eaa757ce7d5ba",
+        "rawUrl": "https://github.com/goodkie/v-show/raw/candidate/p0-core-regressions-v7/test/run_uat_synthetic_profile_isolation_check.js"
+      },
+      {
+        "role": "automated_browser_cdp_helper",
+        "path": "test/lib/browser_cdp.js",
+        "size": 5406,
+        "sha256": "cfd3869e427dfeb046db0d67619c28cbcfdd337bf1d1b47db5623a1cf936a09a",
+        "rawUrl": "https://github.com/goodkie/v-show/raw/candidate/p0-core-regressions-v7/test/lib/browser_cdp.js"
+      },
+      {
+        "role": "complete_handoff_kit_deterministic_builder",
+        "path": "scripts/build_owner_complete_handoff_kit.js",
+        "size": 15500,
+        "sha256": "d3830c0bed07452f7b5dd827935e7305f40a4c697565db3d33f41e9ffa9449e5",
+        "rawUrl": "https://github.com/goodkie/v-show/raw/candidate/p0-core-regressions-v7/scripts/build_owner_complete_handoff_kit.js"
+      },
+      {
+        "role": "localhost_fixture_index_html",
+        "path": "owner-extension-test-site/index.html",
+        "size": 5654,
+        "sha256": "6c156b03e6bb0048fe18c1a47aa8fc2496c247b1e19182e2231e87d87f6945eb",
+        "rawUrl": "https://github.com/goodkie/v-show/raw/candidate/p0-core-regressions-v7/owner-extension-test-site/index.html"
+      },
+      {
+        "role": "transactional_updater_test_suite",
+        "path": "test/run_safe_update_transaction_tests.js",
+        "size": 32236,
+        "sha256": "11ecf9a977189a5810829b6c8f03a819ab8bd1e28499ac603f57d4372f98b4a1",
+        "rawUrl": "https://github.com/goodkie/v-show/raw/candidate/p0-core-regressions-v7/test/run_safe_update_transaction_tests.js"
+      },
+      {
+        "role": "clean_extracted_handoff_kit_e2e_test_suite",
+        "path": "test/run_clean_extracted_handoff_kit_e2e.js",
+        "size": 25863,
+        "sha256": "26e3fc63bd352a6e65d025afc495bc84379618334a4596640e2e2cbeb5a6c8c9",
+        "rawUrl": "https://github.com/goodkie/v-show/raw/candidate/p0-core-regressions-v7/test/run_clean_extracted_handoff_kit_e2e.js"
+      },
+      {
+        "role": "owner_handoff_manifest_rev14_compat",
+        "path": "dist/OWNER_HANDOFF_MANIFEST_REV14.json",
+        "size": 8012,
+        "sha256": "39497439efcbcd486f9be1f775050e3074f52ab32e8b09eea408cefc3cb7c97d",
+        "rawUrl": "https://github.com/goodkie/v-show/raw/candidate/p0-core-regressions-v7/dist/OWNER_HANDOFF_MANIFEST_REV14.json"
+      }
+    ]
+  },
+  "cleanExtractionRootUsed": "C:\\Users\\oPus\\AppData\\Local\\Temp\\xpider-clean-handoff-e2e-regLN0\\extracted_handoff_root",
+  "assertions": [
+    {
+      "name": "A1_DUAL_METHOD_OUTER_HANDOFF_ZIP_INTEGRITY",
+      "pass": true,
+      "detail": {
+        "archivePath": "dist/XPIDER_V7.0.0_CANDIDATE_REV15_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip",
+        "size": 4560445,
+        "sha256": "43a9bcdfff9651b8f31644d31dc8eba0463e8b5ee1163f198096b0d2a99959cd",
+        "bundledEntriesCount": 18
+      }
+    },
+    {
+      "name": "A2_CLEAN_EXTRACTION_AND_MANIFEST_FILE_TREE_MATCH",
+      "pass": true,
+      "detail": {
+        "expandStatus": 0,
+        "verifiedFileCount": 18
+      }
+    },
+    {
+      "name": "A3_POWERSHELL_RUNTIME_ZIP_SHA256_COMMAND_FROM_GUIDE",
+      "pass": true,
+      "detail": {
+        "stdout": "B3F39BEC4AB0711BBE348614BE6BBD1F8D0657987059EC7CD3538565C2C0227E"
+      }
+    },
+    {
+      "name": "A4_GUIDE_ORDER_AND_NON_DESTRUCTIVE_GUARD_AUDIT",
+      "pass": true,
+      "detail": {
+        "idxPhaseA": 5918,
+        "idxPhaseB": 9915,
+        "idxPhaseC": 19846,
+        "idxPhaseD": 24799,
+        "allRelPathsPresentInExtract": true
+      }
+    },
+    {
+      "name": "A5_STEP_A2_READ_ONLY_PREFLIGHT_UAT_FROM_CLEAN_EXTRACT",
+      "pass": true,
+      "detail": {
+        "preflightMode": "DRY_RUN_PREFLIGHT_UAT",
+        "osFirewallIsolationStatus": "BLOCKED_NO_SAFE_ELEVATED_TEST_VM"
+      }
+    },
+    {
+      "name": "A6_STEP_A3_A4_OFFLINE_REAL_BACKUP_AND_IN_MEMORY_VERIFY",
+      "pass": true,
+      "detail": {
+        "backupOrigin": "OFFLINE_REAL_RECOVERY_ONLY",
+        "writtenToDisk": false
+      }
+    },
+    {
+      "name": "A7_ITEM5_NEGATIVE_REAL_BACKUP_TO_UAT_REJECTED_WITHOUT_AND_WITH_OVERRIDE_FLAG",
+      "pass": true,
+      "detail": {
+        "withoutFlagCode": "REAL_BACKUP_RESTORE_INTO_UAT_FORBIDDEN",
+        "withOverrideFlagCode": "NON_SYNTHETIC_BACKUP_ORIGIN_IN_UAT_RESTORE"
+      }
+    },
+    {
+      "name": "A8_ITEM5_NEGATIVE_FORGED_SYNTHETIC_ORIGIN_WITH_REAL_CONTENT_REJECTED",
+      "pass": true,
+      "detail": {
+        "pollutedBackupAttemptCode": "NON_SYNTHETIC_BACKUP_CONTENT_FORBIDDEN",
+        "forgedHeaderRestoreAttemptCode": "NON_SYNTHETIC_BACKUP_CONTENT_FORBIDDEN"
+      }
+    },
+    {
+      "name": "A9_STEP_B2_LOCAL_FIXTURE_AND_SINK_SERVER_STARTUP_AND_VERIFY_FIREWALL",
+      "pass": true,
+      "detail": {
+        "result": "UAT_FIREWALL_VERIFIED_FAIL_CLOSED",
+        "fixtureHost": "127.0.0.1",
+        "fixturePort": 18088,
+        "sinkProxyHost": "127.0.0.1",
+        "sinkProxyPort": 18090,
+        "httpProbeBlocked403": true,
+        "connectProbeBlocked403": true,
+        "transmittedExternalRequests": 0
+      }
+    },
+    {
+      "name": "A10_STEP_B3_DISPOSABLE_COPY_PLAN_AND_APPLY_FROM_CLEAN_EXTRACT",
+      "pass": true,
+      "detail": {
+        "planToken": "6bf7a26ba4681a25",
+        "applyResult": "COMMITTED",
+        "appliedFileCount": 50,
+        "all50MatchInventory": true,
+        "liveStillUntouched": true
+      }
+    },
+    {
+      "name": "A11_SYNTHETIC_ONLY_PROFILE_SEED_AND_AUDIT_UAT_STATE",
+      "pass": true,
+      "detail": {
+        "result": "UAT_PROFILE_ISOLATION_VERIFIED",
+        "urlsChecked": 2,
+        "emailsChecked": 1,
+        "nonLoopbackUrls": 0,
+        "sensitiveCredentials": 0,
+        "nonSyntheticEmails": 0
+      }
+    },
+    {
+      "name": "A12_STEP_B10_SYNTHETIC_BACKUP_AND_ORIGIN_VERIFIED_RESTORE",
+      "pass": true,
+      "detail": {
+        "bkOrigin": "SYNTHETIC_UAT_ONLY",
+        "restoreResult": "RESTORED_VERIFIED"
+      }
+    },
+    {
+      "name": "A13_STEP_B10_TRANSACTIONAL_ROLLBACK_TO_BYTE_IDENTICAL_RC11",
+      "pass": true,
+      "detail": {
+        "rollbackResult": "ROLLED_BACK",
+        "byteIdenticalToRc11": true
+      }
+    },
+    {
+      "name": "A14_LOCAL_FIXTURE_AND_SINK_SERVER_CLEAN_SHUTDOWN",
+      "pass": true,
+      "detail": {
+        "shutdownOutput": "{\"ok\":true,\"message\":\"SHUTTING_DOWN\"}"
+      }
+    }
+  ],
+  "status": "SUCCESS",
+  "endedAt": "2026-11-07T12:31:36.697Z",
+  "total": 14,
+  "failed": 0
+}

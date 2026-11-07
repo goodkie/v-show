@@ -211,6 +211,19 @@ function A(name, pass, detail = {}) {
         // =========================================================================
         // PART 2: CANDIDATE PACKAGE HOST-NETWORKING STATIC AUDIT (Action 4)
         // =========================================================================
+        if (!fs.existsSync(path.join(CAND, 'manifest.json'))) {
+            const zipPath = path.join(DIST, 'XPIDER_V7.0.0_CANDIDATE_P0_REV9_OWNER_SAFE.zip');
+            const zipSha = crypto.createHash('sha256').update(fs.readFileSync(zipPath)).digest('hex');
+            if (zipSha !== 'b3f39bec4ab0711bbe348614be6bbd1f8d0657987059ec7cd3538565c2c0227e') {
+                throw new Error(`ARCHIVE_SHA_MISMATCH: ${zipSha}`);
+            }
+            fs.mkdirSync(CAND, { recursive: true });
+            const ex = spawnSync('powershell', [
+                '-NoProfile', '-Command',
+                `Expand-Archive -LiteralPath '${zipPath.replace(/'/g, "''")}' -DestinationPath '${CAND.replace(/'/g, "''")}' -Force`
+            ], { encoding: 'utf8' });
+            if (ex.status !== 0) throw new Error(`Failed to extract candidate runtime zip: ${ex.stderr}`);
+        }
         const pkgAudit = scanCandidateHostNetworking(CAND);
         report.packageNetworkingAudit = pkgAudit;
         A('STATIC_PACKAGE_HOST_NETWORKING_AUDIT_50_FILES',
@@ -839,6 +852,65 @@ function A(name, pass, detail = {}) {
             restoreIntoUatBlocked.out
         );
 
+        // Item 5 (Directive #6706731716): Passing --allow-synthetic-uat-restore on a REAL/unmarked backup MUST STILL FAIL CLOSED
+        const restoreRealWithOverrideBlocked = runCli(
+            ['restore-storage', '--profile-dir', uatRestoreTarget, '--in', encFile, '--passphrase-env', 'XP_PASS', '--allow-synthetic-uat-restore'],
+            { XP_PASS: PASS }
+        );
+        A('RESTORE_REAL_BACKUP_INTO_UAT_BLOCKED_EVEN_WITH_ALLOW_SYNTHETIC_FLAG',
+            restoreRealWithOverrideBlocked.status !== 0 &&
+            restoreRealWithOverrideBlocked.out &&
+            restoreRealWithOverrideBlocked.out.result === 'ABORTED' &&
+            restoreRealWithOverrideBlocked.out.code === 'NON_SYNTHETIC_BACKUP_ORIGIN_IN_UAT_RESTORE' &&
+            !fs.existsSync(path.join(uatRestoreTarget, 'Local Extension Settings', EXT_ID, '000005.ldb')),
+            restoreRealWithOverrideBlocked.out
+        );
+
+        // Item 5 (Directive #6706731716): Synthetic backup creation rejects polluted profile, accepts clean synthetic profile, and enforces bidirectional origin restore
+        const badSynthBkAttempt = runCli(
+            ['backup-storage', '--profile-dir', simRealProf, '--out', path.join(work, 'should_fail_synth.xpider-enc'), '--passphrase-env', 'XP_PASS', '--synthetic-uat-origin'],
+            { XP_PASS: PASS }
+        );
+        const cleanSynthProf = path.join(work, 'uat_clean_synth_source_profile');
+        const cleanSynthLes = path.join(cleanSynthProf, 'Default', 'Local Extension Settings', EXT_ID);
+        fs.mkdirSync(cleanSynthLes, { recursive: true });
+        fs.writeFileSync(path.join(cleanSynthLes, '000005.ldb'), 'SYNTHETIC_UAT_STATE url=http://127.0.0.1:8088/contact-standard.html email=operator@uat-local.test');
+        fs.writeFileSync(path.join(cleanSynthLes, 'CURRENT'), 'MANIFEST-000001\n');
+        const synthEncFile = path.join(work, 'verified_synthetic_uat.xpider-enc');
+        const goodSynthBk = runCli(
+            ['backup-storage', '--profile-dir', cleanSynthProf, '--out', synthEncFile, '--passphrase-env', 'XP_PASS', '--synthetic-uat-origin'],
+            { XP_PASS: PASS }
+        );
+        const goodSynthRestore = runCli(
+            ['restore-storage', '--profile-dir', uatRestoreTarget, '--in', synthEncFile, '--passphrase-env', 'XP_PASS', '--allow-synthetic-uat-restore'],
+            { XP_PASS: PASS }
+        );
+        const synthIntoRealBlocked = runCli(
+            ['restore-storage', '--profile-dir', simRealProf, '--in', synthEncFile, '--passphrase-env', 'XP_PASS'],
+            { XP_PASS: PASS }
+        );
+        A('SYNTHETIC_UAT_BACKUP_REJECTS_POLLUTED_PROFILE_AND_ALLOWS_CLEAN_SYNTHETIC_RESTORE',
+            badSynthBkAttempt.status !== 0 &&
+            badSynthBkAttempt.out &&
+            badSynthBkAttempt.out.code === 'NON_SYNTHETIC_BACKUP_CONTENT_FORBIDDEN' &&
+            goodSynthBk.status === 0 &&
+            goodSynthBk.out &&
+            goodSynthBk.out.backupOrigin === 'SYNTHETIC_UAT_ONLY' &&
+            goodSynthRestore.status === 0 &&
+            goodSynthRestore.out &&
+            goodSynthRestore.out.result === 'RESTORED_VERIFIED' &&
+            goodSynthRestore.out.backupOrigin === 'SYNTHETIC_UAT_ONLY' &&
+            synthIntoRealBlocked.status !== 0 &&
+            synthIntoRealBlocked.out &&
+            synthIntoRealBlocked.out.code === 'SYNTHETIC_BACKUP_RESTORE_INTO_REAL_PROFILE_FORBIDDEN',
+            {
+                badSynthBkCode: badSynthBkAttempt.out && badSynthBkAttempt.out.code,
+                goodSynthBkOrigin: goodSynthBk.out && goodSynthBk.out.backupOrigin,
+                goodSynthRestoreResult: goodSynthRestore.out && goodSynthRestore.out.result,
+                synthIntoRealBlockedCode: synthIntoRealBlocked.out && synthIntoRealBlocked.out.code
+            }
+        );
+
         // Build & Verify Consolidated Owner Handoff Manifest (`dist/OWNER_HANDOFF_MANIFEST_REV14.json`)
         const HANDOFF_MANIFEST_PATH = path.join(DIST, 'OWNER_HANDOFF_MANIFEST_REV14.json');
         const RAW_BASE = 'https://github.com/goodkie/v-show/raw/candidate/p0-core-regressions-v7/';
@@ -869,22 +941,23 @@ function A(name, pass, detail = {}) {
             };
         });
         const handoffManifest = {
-            schemaVersion: 'XPIDER_OWNER_HANDOFF_MANIFEST_REV14',
-            directive: '#6704335953',
+            schemaVersion: 'XPIDER_OWNER_HANDOFF_MANIFEST_REV15',
+            directive: '#6706731716',
             status: 'CANDIDATE_RELEASE_HOLD',
             branch: 'candidate/p0-core-regressions-v7',
             functionalCandidateCommit: '76fab0933276ae163c377d39d9dca5169a33063c',
             extensionTreeSha: '1d1bac897f70df6fa107cde85b00de591d5dea93',
             expectedExtensionId: EXT_ID,
             extensionZipAloneIsCompleteKit: false,
-            extensionZipScopeNote: 'dist/XPIDER_V7.0.0_CANDIDATE_P0_REV9_OWNER_SAFE.zip contains ONLY the 50 Chrome MV3 runtime files from extension/. The host-side transactional updater (scripts/xpider_safe_update.js), SHA-256 inventories, guides, and localhost fixture/sink server are separate host-side files listed in this manifest.',
+            extensionZipScopeNote: 'dist/XPIDER_V7.0.0_CANDIDATE_P0_REV9_OWNER_SAFE.zip contains ONLY the 50 Chrome MV3 runtime files from extension/. The complete owner-usable handoff archive is dist/XPIDER_V7.0.0_CANDIDATE_REV15_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip (built via node scripts/build_owner_complete_handoff_kit.js).',
             operatorCapabilityByEnvironment: {
                 withNodeJs18Plus: {
                     supported: true,
                     capabilities: [
                         'preflight-uat (read-only dry-run preflight)',
-                        'backup-storage (AES-256-GCM encrypted offline backup)',
+                        'backup-storage (AES-256-GCM encrypted offline backup + --synthetic-uat-origin content audit)',
                         'verify-storage-backup (in-memory integrity verification, writtenToDisk: false)',
+                        'restore-storage (bidirectional origin-verified atomic restore; blocks real backups in UAT even with --allow-synthetic-uat-restore)',
                         'plan / apply / rollback / recover (journaled transactional code update)',
                         'owner-extension-test-site/server.js (localhost 127.0.0.1:8088 fixtures + 127.0.0.1:8090 fail-closed sink proxy)'
                     ]
@@ -900,16 +973,16 @@ function A(name, pass, detail = {}) {
                 }
             },
             consolidatedAcceptanceMatrix: {
-                G1_candidateRuntimeFreezeAnd50FileIntegrity: 'DEV_PASS',
-                G2_chrome157AndEdge146MigrationBackupRestoreParity: 'DEV_PASS',
-                G3_chrome157FunctionalUi3ModeResetCsvConsentSuite: 'DEV_PASS',
-                G4_transactionalUpdaterFaultInjectionAndRollbackSuite: 'DEV_PASS',
-                G5_browserSinkProxyDnrQuicAndDryRunPreflightUat: 'DEV_PASS',
+                G1_candidateRuntimeFreezeAndHandoffKitIntegrity: 'SOURCE_METADATA_VERIFIED + DEV_PASS',
+                G2_chrome157AndEdge146MigrationBackupRestoreParity: 'DEV_PASS (Developer-Executed Only; Not Independently Run by ChatGPT/Owner)',
+                G3_chrome157FunctionalUi3ModeResetCsvConsentSuite: 'DEV_PASS (Developer-Executed Only; Not Independently Run by ChatGPT/Owner)',
+                G4_transactionalUpdaterCleanExtractAndSyntheticRestoreOriginGate: 'DEV_PASS (Developer-Executed Only; Not Independently Run by ChatGPT/Owner)',
+                G5_browserSinkProxyDnrQuicAndDryRunPreflightUat: 'DEV_PASS (Scoped to Browser Proxy/DNR/CDP Path ONLY; 0 Forwarded Sink Requests Is NOT Proof of Total Host Egress Default-Deny)',
                 G6_osKernelDefaultDenyFirewallRuleOnTestChromeOrVm: 'BLOCKED (BLOCKED_NO_SAFE_ELEVATED_TEST_VM)',
-                G7_ownerWindows10LiveDesktopSmoke: 'OWNER_ACTION_REQUIRED (INDEPENDENT_NOT_RUN)',
-                G8_realExternalNopeChaExtensionInteroperability: 'INDEPENDENT_NOT_RUN (OWNER_ACTION_REQUIRED)',
-                G9_authorizedDigitalOceanDecodoRelayEgressVerification: 'INDEPENDENT_NOT_RUN (OWNER_ACTION_REQUIRED)',
-                G10_ownerFinalReleaseAndLiveUpdateApproval: 'OWNER_ACTION_REQUIRED'
+                G7_ownerWindows10LiveDesktopSmoke: 'NOT_TESTED (OWNER_ACTION_REQUIRED)',
+                G8_realExternalNopeChaExtensionInteroperability: 'NOT_TESTED (OWNER_ACTION_REQUIRED)',
+                G9_authorizedDigitalOceanDecodoRelayEgressVerification: 'NOT_TESTED (OWNER_ACTION_REQUIRED)',
+                G10_ownerFinalReleaseAndLiveUpdateApproval: 'NOT_TESTED (OWNER_ACTION_REQUIRED)'
             },
             files: handoffFiles
         };
