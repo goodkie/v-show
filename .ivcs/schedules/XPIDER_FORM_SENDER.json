@@ -1,8 +1,8 @@
 {
   "schema": "IVCS_SCHEDULE_1",
   "project": "XPIDER_FORM_SENDER",
-  "revision": 24,
-  "updated_at": "2026-11-09T15:39:56.033Z",
+  "revision": 25,
+  "updated_at": "2026-11-09T17:46:04.000Z",
   "tasks": [
     {
       "id": "SC-20261031-01",
@@ -97,8 +97,8 @@
       "verification": "NOT_TESTED",
       "weight": 4,
       "evidence_url": "https://github.com/goodkie/v-show/issues/6#issuecomment-6552335990",
-      "note": "localhost privacy fail-closed 모의 검증은 개발자 보고(#6552335990)로 존재. LIVE Decodo/DigitalOcean 최종 출구 IP, Owner Windows/relay, DNS/IPv6/WebRTC end-to-end는 NOT_TESTED. 실환경 설정 변경·공개 발송 금지, RELEASE HOLD.",
-      "updated_at": "2026-11-06T20:33:24.009Z",
+      "note": "localhost privacy fail-closed 모의 검증은 개발자 보고(#6552335990)로 존재. LIVE Decodo/DigitalOcean 최종 출구 IP, Owner Windows/relay, DNS/IPv6/WebRTC end-to-end는 NOT_TESTED. 실환경 설정 변경·공개 발송 금지, RELEASE HOLD.\n[REV25 2026-11-09 Issue #6 owner report] #6745555392 reports Decodo traffic exhausted and HTTP_407; treat as current privacy transport BLOCKED until verified alternate egress/approved replenishment and independent CONNECT/fail-closed tests. This is owner/Issue evidence, not independent egress measurement. Do not rotate proxy to bypass quota, do not direct-fallback. Existing DigitalOcean/Decodo live egress, DNS/IPv6/WebRTC and owner Windows10 remain NOT_TESTED; RELEASE HOLD.",
+      "updated_at": "2026-11-09T17:46:04.000Z",
       "previous_start_at": "2026-10-31T18:00:00Z",
       "previous_due_at": "2026-10-31T19:15:00Z"
     },
@@ -217,8 +217,8 @@
       "verification": "NOT_TESTED",
       "weight": 4,
       "evidence_url": "https://github.com/goodkie/v-show/issues/6#issuecomment-6744162890",
-      "note": "[REV24 2026-11-09 source evidence] Issue #6 최신 975개 댓글 중 #6743716947, #6743903890, #6744162890에 새 이메일 요구/24h 목표. 원격 feature 브랜치 HEAD 4bab102812714e641cc5191213c4e0a73ef24432 실제 조회. email-delivery-policy.js blob 718b6ac9ddd224557a9ed22e9eed721dee9ab4a0, local-email-privacy-relay.js blob 113ae1ef168e6852fec3ac39d54187df55e8b66c, resend-volume-preflight.js blob 8e7fc2b7ac176f5e465f4500ccea4e53c8a1fc19 및 3개 test 소스 존재 확인. 개발자/ChatGPT 댓글은 13+7+11 assertion 작성만 보고하며 실행 결과 없음; NOT_TESTED, 독립 PASS 없음. 코드에는 dryRun=true 기본, api.resend.com:443 제한, 127.0.0.1:18988 CONNECT/TLS 및 직접 fallback 없는 설계가 있으나 privacyReady는 호출자 제공 boolean이며 실제 relay READY/EGRESS 확인이 아님. 운영용 인증 워커, 안전한 비밀 저장, 실시간 도메인 인증, unsubscribe POST·suppression·webhook·durable queue·idempotency, 실제 mock CONNECT 음성 테스트와 사용자 Windows10 검증은 미구현/미확인. Resend 계정/키·도메인·승인된 수신자/소유자 설치/결제/실발송 모두 UNKNOWN/NOT_TESTED. REV22는 분리·불변, RELEASE HOLD, 자동 발송/공개 POST 금지.",
-      "updated_at": "2026-11-09T15:39:56.033Z"
+      "note": "[REV24 2026-11-09 source evidence] Issue #6 최신 975개 댓글 중 #6743716947, #6743903890, #6744162890에 새 이메일 요구/24h 목표. 원격 feature 브랜치 HEAD 4bab102812714e641cc5191213c4e0a73ef24432 실제 조회. email-delivery-policy.js blob 718b6ac9ddd224557a9ed22e9eed721dee9ab4a0, local-email-privacy-relay.js blob 113ae1ef168e6852fec3ac39d54187df55e8b66c, resend-volume-preflight.js blob 8e7fc2b7ac176f5e465f4500ccea4e53c8a1fc19 및 3개 test 소스 존재 확인. 개발자/ChatGPT 댓글은 13+7+11 assertion 작성만 보고하며 실행 결과 없음; NOT_TESTED, 독립 PASS 없음. 코드에는 dryRun=true 기본, api.resend.com:443 제한, 127.0.0.1:18988 CONNECT/TLS 및 직접 fallback 없는 설계가 있으나 privacyReady는 호출자 제공 boolean이며 실제 relay READY/EGRESS 확인이 아님. 운영용 인증 워커, 안전한 비밀 저장, 실시간 도메인 인증, unsubscribe POST·suppression·webhook·durable queue·idempotency, 실제 mock CONNECT 음성 테스트와 사용자 Windows10 검증은 미구현/미확인. Resend 계정/키·도메인·승인된 수신자/소유자 설치/결제/실발송 모두 UNKNOWN/NOT_TESTED. REV22는 분리·불변, RELEASE HOLD, 자동 발송/공개 POST 금지.\n[REV25 2026-11-09 remote source + developer receipt] Issue #6 comments #6745555392, #6745806548, #6746169178, #6746426723, #6746614945, #6746819003, #6746862734, #6746969268 reviewed. Feature branch HEAD 4c1f15f0055cf422de3ff7db21dbfa980732cc30 confirmed by compare (identical, ahead 0). Directly fetched extension/email-studio/index.html blob b8e72f1723a541062deb1ab9c63ee7d355ba4de5, popup.html blob d06bef9a70af268e3e355f0cccc89f916630cde1 (Email Studio link), studio JS blob 7405aabeeb0b72db0a3232f1884201ee5833a82b, static test blob 4151a0b2f1553510c6db99c8f81ad64e35833d04 and deliverability policy blob 2dbb73d8876e22d863b6e0c9c3fa4789e57a8ff7. MV3 packaged PREVIEW-ONLY email editor code present in isolated feature branch, not REV22; no evidence of owner installation. Developer Windows Node receipts #6746614945 and #6746862734 report 6 policy/static suites 70/70, then 7 suites 82/82 with exit 0. DEV_PASS_SOURCE_STATIC only; no independent Node/Chrome runtime PASS and commit CI statuses empty. Latest owner target 20h (earlier 24h retained) is TARGET_ONLY, not DONE. Real Chrome/Edge disposable profile CSP/export/backup, secure durable queue, verified recipient consent, provider DNS/Resend account, webhook signature, RFC8058 unsubscribe POST, API worker, local authenticated configuration, no-direct-fallback CONNECT and owner Windows10 tests NOT_TESTED/UNKNOWN. Decodo exhausted HTTP_407 is a BLOCKER. No live email, public form POST, paid provider use, release merge or owner PC install. RELEASE HOLD.",
+      "updated_at": "2026-11-09T17:46:04.000Z"
     }
   ],
   "sprint": {
