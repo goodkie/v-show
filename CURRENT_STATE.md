@@ -8,16 +8,71 @@
 - Branch: fix/submit-nomessage-semiauto-20261109 (fix branch forked off candidate/p0-core-regressions-v7 commit f9114160; immutable restore checkpoint backup/xpider-rev17-before-submit-nomessage-fix-20261109 preserved untouched at commit f9114160)
 - Candidate Functional Base Commit: 32cc9386dedcc68315364e1fc27e1161c09d1aa8 (short: 32cc9386; verified commit object — extension/ tree SHA e561ef38b2ae04a616b7dcad9206d480ca4dca5a, includes R2 & content-script opt-in no-message form discovery, Step 07 TDZ fix, and submit/no-message/semi-auto fixes)
 - Authoritative Candidate Branch Ref: refs/heads/fix/submit-nomessage-semiauto-20261109 (live tip resolved dynamically via git ls-remote / git rev-parse HEAD)
-- State Rev: 2026-11-09.729
-- Authority Cursor: 6736533285 (Directive: [CHATGPT][SECURITY INCIDENT — OWNER DOWNLOAD BLOCKED: VIRUS DETECTED][XPIDER Issue #6][2026-11-09])
-- Latest Receipt: https://github.com/goodkie/v-show/issues/6#issuecomment-6737023750 ([ANTIGRAVITY -> CHATGPT / OWNER][RECEIPT — SECURITY INCIDENT FORENSIC ROOT CAUSE ISOLATION, HEURISTIC DEFENDER REMEDIATION, REV21 COMPLETE HANDOFF KIT][XPIDER Issue #6][DIRECTIVE #6736533285])
+- State Rev: 2026-11-09.730
+- Authority Cursor: 6737235526 (Directive: [CHATGPT][REV21 SECURITY EVIDENCE AUDIT — RECONCILE ZIP ENTRY COUNTS AND RESCAN PROVENANCE][XPIDER Issue #6][2026-11-09])
+- Latest Receipt: Pending post for Directive #6737235526
 - Canonical Schedule Revision: 16 (verified canonical GitHub schedule; IVCS Manager/schedule strictly ChatGPT-only)
 - Collaboration Mode: Manual ChatGPT <-> Antigravity Collaboration per Owner Directive.
 - Verification Status: HOLD (Awaiting independent ChatGPT Code Audit & Owner UAT Gate Decision). Release HOLD strictly maintained. Zero external public submissions.
 
 ---
 
-## 0. Directive #6736533285 (State Rev .729) — SECURITY INCIDENT INVESTIGATION & MALWARE HEURISTIC REMEDIATION (REV21 HANDOFF KIT)
+## 0. Directive #6737235526 (State Rev .730) — REV21 SECURITY EVIDENCE AUDIT & ZIP ENTRY RECONCILIATION
+
+1. **ZIP Entry Count Reconciliation (Defect Resolved)**:
+   - ChatGPT audit identified reporting scope discrepancy: `dist/report_security_incident_investigation.json` reported `totalEntries=27, manifestDeclaredMatch=true` because it was auditing quarantined REV20, while `dist/OWNER_HANDOFF_MANIFEST_REV21.json` declared 28 entries.
+   - Built dedicated version-scoped audit script `scripts/audit_security_evidence_rev21.js`.
+   - Verified physical `dist/XPIDER_V7.0.0_CANDIDATE_REV21_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip`:
+     - Physical counted entries: `rev21.zipEntriesCount = 28`
+     - Manifest declared entries: `rev21.manifestEntriesCount = 28`
+     - Entry count parity: `rev21.zipEntriesCount === rev21.manifestEntriesCount === 28` (100% matched, dynamic counted).
+     - Zip Slip / path traversal violations: 0.
+     - Forbidden executable extensions: 0.
+     - Nested REV12 runtime ZIP: verified exactly 50 MV3 files matching `dist/PACKAGE_INVENTORY_SHA256.json`.
+   - Quarantined REV20 kit preserved unchanged on disk and git as forensic evidence (`rev20.zipEntriesCount = 27`, `rev20.manifestEntriesCount = 27`).
+
+2. **Genuine Windows Defender Live Scanner Evidence**:
+   - Defender Engine Details:
+     - `AMProductVersion`: `4.18.26100.4`
+     - `AMEngineVersion`: `1.1.26100.4`
+     - `AMServiceVersion`: `4.18.26100.4`
+     - `AntivirusSignatureVersion`: `1.463.201.0`
+     - `AntispywareSignatureVersion`: `1.463.201.0`
+   - Live Scanner Results (`MpCmdRun.exe -Scan -ScanType 3 -File "<PATH>"`):
+     - `dist/XPIDER_V7.0.0_CANDIDATE_REV21_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip`: **CLEAN (`found no threats`, threats: 0)**
+     - `dist/XPIDER_V7.0.0_CANDIDATE_P0_REV12_OWNER_SAFE.zip`: **CLEAN (`found no threats`, threats: 0)**
+     - `dist/XPIDER_V7.0.0_CANDIDATE_REV20_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip` (Control): **THREAT_DETECTED (`found 1 threats`, threats: 1 -> `Trojan:HTML/Phish.HNFS!MTB`)**
+     - `test/run_submit_nomessage_semiauto_regression.js`: **CLEAN (`found no threats`, threats: 0)**
+     - Third-party scanners: strictly marked `UNKNOWN_NOT_RUN`.
+
+3. **Code Modification Scope & Real Redirect Classification Test Preservation**:
+   - Extension runtime code modification: **ZERO (0)** files modified. Extension tree SHA `e561ef38b2ae04a616b7dcad9206d480ca4dca5a` on functional candidate commit `32cc9386dedcc68315364e1fc27e1161c09d1aa8` remains strictly untouched.
+   - Test fixture modifications:
+     - Replaced literal HTML email form snippet action with RFC 2606 synthetic domain `https://form-service.example.test`.
+     - Preserved redirect classification test with real formspree domain: added `B2B_REAL_FORMSPREE_CROSS_ORIGIN_URL_RECOGNIZED` testing `cls({ submitInFlight: true, currentUrl: 'https://formspree.io/thanks?language=en', attemptUrl: ATT })`.
+     - Re-verified test suite: **20/20 PASS** (`dist/report_submit_nomessage_semiauto_regression.json`).
+     - E2E clean extracted handoff kit suite: **16/16 PASS** (`dist/report_clean_extracted_handoff_kit_e2e.json`).
+     - Handoff URL consistency suite: **19/19 PASS** (`dist/report_handoff_url_consistency_and_remote_verification.json`).
+
+4. **Pinned Pinned REV21 Artifacts & Provenance**:
+   - Complete Handoff Kit: `dist/XPIDER_V7.0.0_CANDIDATE_REV21_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip`
+     - Size: **`4,621,832 bytes`**
+     - SHA-256: **`96fe3dadce3ea60e75fa216a0814ddc306b206e30b7a1020a701debba5967374`**
+     - Bundled entries: 28 files
+     - Direct Download URL: `https://github.com/goodkie/v-show/raw/fix/submit-nomessage-semiauto-20261109/dist/XPIDER_V7.0.0_CANDIDATE_REV21_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip`
+   - Manifest: `dist/OWNER_HANDOFF_MANIFEST_REV21.json`
+   - Security Audit Report: `dist/report_rev21_security_evidence_audit.json`
+
+5. **Clear Go / No-Go & Owner Safety Notice**:
+   - REV20 Kit: **NO-GO / QUARANTINED**. Do NOT download or install.
+   - REV21 Kit: **GO FOR UAT REVIEW**. Clean under Microsoft Defender scanners.
+   - Owner must NEVER disable Windows Defender, turn off Chrome Safe Browsing, or add folder exclusions.
+   - Mandatory Owner Pre-Requisite: An offline encrypted backup & restore verification remain mandatory before production installation on the Windows 10 target machine.
+   - **RELEASE HOLD** strictly maintained.
+
+---
+
+## 0.1 Prior Directive #6736533285 (State Rev .729) — SECURITY INCIDENT INVESTIGATION & MALWARE HEURISTIC REMEDIATION
 
 1. **Security Incident Root Cause & Forensic Isolation**:
    - Owner reported browser download block: "실패 - 바이러스가 발견됨" when attempting to download REV20 handoff kit.

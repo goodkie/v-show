@@ -1,6 +1,6 @@
 {
   "schemaVersion": "XPIDER_OWNER_HANDOFF_MANIFEST_REV21",
-  "directive": "#6736533285",
+  "directive": "#6737235526",
   "status": "CANDIDATE_RELEASE_HOLD",
   "branch": "fix/submit-nomessage-semiauto-20261109",
   "functionalCandidateCommit": "32cc9386dedcc68315364e1fc27e1161c09d1aa8",
@@ -185,16 +185,16 @@
     "reproducibleBuildCommand": "node scripts/build_owner_complete_handoff_kit.js",
     "unambiguousExtractionCommandPowerShell": "Expand-Archive -Path \".\\XPIDER_V7.0.0_CANDIDATE_REV21_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip\" -DestinationPath \"D:\\xpider_handoff_rev21\" -Force; Set-Location \"D:\\xpider_handoff_rev21\"",
     "extractionRootLayout": "Extracting into <HANDOFF_ROOT> (e.g. D:\\xpider_handoff_rev21) creates dist/, scripts/, owner-extension-test-site/, and test/ directly under <HANDOFF_ROOT> so all relative guide commands run verbatim from <HANDOFF_ROOT>.",
-    "size": 4621764,
-    "sha256": "31332a260b09ec3d1f0bbc9b20df51f95a6fa6d92dc648fe18f10107eb819302",
+    "size": 4621832,
+    "sha256": "96fe3dadce3ea60e75fa216a0814ddc306b206e30b7a1020a701debba5967374",
     "dualMethodIntegrityVerification": {
       "method1_nodeCryptoDeterminismCheck": {
-        "invocation1Sha256": "31332a260b09ec3d1f0bbc9b20df51f95a6fa6d92dc648fe18f10107eb819302",
-        "invocation2Sha256": "31332a260b09ec3d1f0bbc9b20df51f95a6fa6d92dc648fe18f10107eb819302",
+        "invocation1Sha256": "96fe3dadce3ea60e75fa216a0814ddc306b206e30b7a1020a701debba5967374",
+        "invocation2Sha256": "96fe3dadce3ea60e75fa216a0814ddc306b206e30b7a1020a701debba5967374",
         "byteIdenticalAcrossInvocations": true
       },
       "method2_powerShellGetFileHashAndDotNetZipFile": {
-        "powerShellGetFileHashSha256": "31332a260b09ec3d1f0bbc9b20df51f95a6fa6d92dc648fe18f10107eb819302",
+        "powerShellGetFileHashSha256": "96fe3dadce3ea60e75fa216a0814ddc306b206e30b7a1020a701debba5967374",
         "dotNetZipFileEntryCount": 28,
         "allEntriesMatchedSourceDiskSha256": true
       }
@@ -296,7 +296,7 @@
         "role": "complete_handoff_kit_deterministic_builder",
         "path": "scripts/build_owner_complete_handoff_kit.js",
         "size": 26085,
-        "sha256": "b91ad1a0f62d1206f15c60bbf961a3f438405b9886c23700a9ae27bb0e718c3b",
+        "sha256": "d9acd072326a34d812c8612854a89e67e5f8b971a2ede86d36aee008196049e8",
         "rawUrl": "https://github.com/goodkie/v-show/raw/fix/submit-nomessage-semiauto-20261109/scripts/build_owner_complete_handoff_kit.js"
       },
       {
@@ -330,8 +330,8 @@
       {
         "role": "submit_nomessage_semiauto_regression_suite",
         "path": "test/run_submit_nomessage_semiauto_regression.js",
-        "size": 6671,
-        "sha256": "ab37e549fef1477dc43bf2551b78b469ec7b7aec0128b8a37d7c9ef655bbfafa",
+        "size": 6999,
+        "sha256": "c5f89e26881fe05489c81a922813def79630a93e9d7b1727d755e18d577c10c7",
         "rawUrl": "https://github.com/goodkie/v-show/raw/fix/submit-nomessage-semiauto-20261109/test/run_submit_nomessage_semiauto_regression.js"
       },
       {
@@ -352,7 +352,7 @@
         "role": "handoff_url_consistency_and_remote_verification_suite",
         "path": "test/run_handoff_url_consistency_and_remote_verification.js",
         "size": 8560,
-        "sha256": "92773544e42881cf02e8fdabb49f9852e53181e7514f27fb72de9914ab8880de",
+        "sha256": "30e5edd5f14e1fa86f2d6ddada3547323d9ec0645132dc1594b49a606d89b1f6",
         "rawUrl": "https://github.com/goodkie/v-show/raw/fix/submit-nomessage-semiauto-20261109/test/run_handoff_url_consistency_and_remote_verification.js"
       },
       {
@@ -394,7 +394,7 @@
         "role": "owner_handoff_manifest_rev14_compat",
         "path": "dist/OWNER_HANDOFF_MANIFEST_REV14.json",
         "size": 8644,
-        "sha256": "eacc0efc2c77cae3bd9aa53d070199b548c67fda89bbf9b52b20031a95293b49",
+        "sha256": "ec4dc85b71eb6c534c3209fea5b7be36acb2e18201e480f2721f8ae24c5f1ab9",
         "rawUrl": "https://github.com/goodkie/v-show/raw/fix/submit-nomessage-semiauto-20261109/dist/OWNER_HANDOFF_MANIFEST_REV14.json"
       }
     ]

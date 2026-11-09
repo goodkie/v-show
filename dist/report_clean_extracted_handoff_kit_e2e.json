@@ -1,7 +1,7 @@
 {
   "suite": "XPIDER_CLEAN_EXTRACTED_HANDOFF_KIT_E2E_REV20",
   "directive": "#6735785250",
-  "startedAt": "2026-11-09T09:41:46.725Z",
+  "startedAt": "2026-11-09T10:08:27.102Z",
   "nodeVersion": "v24.11.1",
   "platform": "win32",
   "completeHandoffArchive": {
@@ -10,16 +10,16 @@
     "reproducibleBuildCommand": "node scripts/build_owner_complete_handoff_kit.js",
     "unambiguousExtractionCommandPowerShell": "Expand-Archive -Path \".\\XPIDER_V7.0.0_CANDIDATE_REV21_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip\" -DestinationPath \"D:\\xpider_handoff_rev21\" -Force; Set-Location \"D:\\xpider_handoff_rev21\"",
     "extractionRootLayout": "Extracting into <HANDOFF_ROOT> (e.g. D:\\xpider_handoff_rev21) creates dist/, scripts/, owner-extension-test-site/, and test/ directly under <HANDOFF_ROOT> so all relative guide commands run verbatim from <HANDOFF_ROOT>.",
-    "size": 4621764,
-    "sha256": "31332a260b09ec3d1f0bbc9b20df51f95a6fa6d92dc648fe18f10107eb819302",
+    "size": 4621832,
+    "sha256": "96fe3dadce3ea60e75fa216a0814ddc306b206e30b7a1020a701debba5967374",
     "dualMethodIntegrityVerification": {
       "method1_nodeCryptoDeterminismCheck": {
-        "invocation1Sha256": "31332a260b09ec3d1f0bbc9b20df51f95a6fa6d92dc648fe18f10107eb819302",
-        "invocation2Sha256": "31332a260b09ec3d1f0bbc9b20df51f95a6fa6d92dc648fe18f10107eb819302",
+        "invocation1Sha256": "96fe3dadce3ea60e75fa216a0814ddc306b206e30b7a1020a701debba5967374",
+        "invocation2Sha256": "96fe3dadce3ea60e75fa216a0814ddc306b206e30b7a1020a701debba5967374",
         "byteIdenticalAcrossInvocations": true
       },
       "method2_powerShellGetFileHashAndDotNetZipFile": {
-        "powerShellGetFileHashSha256": "31332a260b09ec3d1f0bbc9b20df51f95a6fa6d92dc648fe18f10107eb819302",
+        "powerShellGetFileHashSha256": "96fe3dadce3ea60e75fa216a0814ddc306b206e30b7a1020a701debba5967374",
         "dotNetZipFileEntryCount": 28,
         "allEntriesMatchedSourceDiskSha256": true
       }
@@ -121,7 +121,7 @@
         "role": "complete_handoff_kit_deterministic_builder",
         "path": "scripts/build_owner_complete_handoff_kit.js",
         "size": 26085,
-        "sha256": "b91ad1a0f62d1206f15c60bbf961a3f438405b9886c23700a9ae27bb0e718c3b",
+        "sha256": "d9acd072326a34d812c8612854a89e67e5f8b971a2ede86d36aee008196049e8",
         "rawUrl": "https://github.com/goodkie/v-show/raw/fix/submit-nomessage-semiauto-20261109/scripts/build_owner_complete_handoff_kit.js"
       },
       {
@@ -155,8 +155,8 @@
       {
         "role": "submit_nomessage_semiauto_regression_suite",
         "path": "test/run_submit_nomessage_semiauto_regression.js",
-        "size": 6671,
-        "sha256": "ab37e549fef1477dc43bf2551b78b469ec7b7aec0128b8a37d7c9ef655bbfafa",
+        "size": 6999,
+        "sha256": "c5f89e26881fe05489c81a922813def79630a93e9d7b1727d755e18d577c10c7",
         "rawUrl": "https://github.com/goodkie/v-show/raw/fix/submit-nomessage-semiauto-20261109/test/run_submit_nomessage_semiauto_regression.js"
       },
       {
@@ -177,7 +177,7 @@
         "role": "handoff_url_consistency_and_remote_verification_suite",
         "path": "test/run_handoff_url_consistency_and_remote_verification.js",
         "size": 8560,
-        "sha256": "92773544e42881cf02e8fdabb49f9852e53181e7514f27fb72de9914ab8880de",
+        "sha256": "30e5edd5f14e1fa86f2d6ddada3547323d9ec0645132dc1594b49a606d89b1f6",
         "rawUrl": "https://github.com/goodkie/v-show/raw/fix/submit-nomessage-semiauto-20261109/test/run_handoff_url_consistency_and_remote_verification.js"
       },
       {
@@ -219,7 +219,7 @@
         "role": "owner_handoff_manifest_rev14_compat",
         "path": "dist/OWNER_HANDOFF_MANIFEST_REV14.json",
         "size": 8644,
-        "sha256": "eacc0efc2c77cae3bd9aa53d070199b548c67fda89bbf9b52b20031a95293b49",
+        "sha256": "ec4dc85b71eb6c534c3209fea5b7be36acb2e18201e480f2721f8ae24c5f1ab9",
         "rawUrl": "https://github.com/goodkie/v-show/raw/fix/submit-nomessage-semiauto-20261109/dist/OWNER_HANDOFF_MANIFEST_REV14.json"
       }
     ]
@@ -259,15 +259,15 @@
     "sha256": "4a80d66b69d03029565ba36e0bc12991381aefe5074aeabe5cc88202f1cd8180",
     "verifiedUntouched": true
   },
-  "cleanExtractionRootUsed": "C:\\Users\\oPus\\AppData\\Local\\Temp\\xpider-clean-handoff-e2e-ffknmx\\extracted_handoff_root",
+  "cleanExtractionRootUsed": "C:\\Users\\oPus\\AppData\\Local\\Temp\\xpider-clean-handoff-e2e-8vyLst\\extracted_handoff_root",
   "assertions": [
     {
       "name": "A1_DUAL_METHOD_OUTER_HANDOFF_ZIP_INTEGRITY",
       "pass": true,
       "detail": {
         "archivePath": "dist/XPIDER_V7.0.0_CANDIDATE_REV21_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip",
-        "size": 4621764,
-        "sha256": "31332a260b09ec3d1f0bbc9b20df51f95a6fa6d92dc648fe18f10107eb819302",
+        "size": 4621832,
+        "sha256": "96fe3dadce3ea60e75fa216a0814ddc306b206e30b7a1020a701debba5967374",
         "preservedRev15Sha256": "43a9bcdfff9651b8f31644d31dc8eba0463e8b5ee1163f198096b0d2a99959cd",
         "preservedRev16Sha256": "0ad5ff7bada90cc870a22beb43f838b6592ab1d3aa0c9b6fa7a11536a4dabaa9",
         "preservedRev17Sha256": "9136c130a8a8e96fc4a4fe1834b656e558e4014a6defa1e03f88d5744b83dd14",
@@ -365,7 +365,7 @@
       "pass": true,
       "detail": {
         "result": "UAT_PROFILE_ISOLATION_VERIFIED",
-        "uatSessionNonce": "d9be394bdc4428aad31ba7a1ca7f01eeaf92d401d8e2ac5ed3bc09076bf14e13",
+        "uatSessionNonce": "8af13ba5895839853f5d8a1885b770597d7f1ebf7494c7f0bfc83be72892cbfa",
         "urlsChecked": 3,
         "emailsChecked": 1,
         "strictAllowlistEnforced": true,
@@ -396,7 +396,7 @@
       "pass": true,
       "detail": {
         "result": "RESTORED_VERIFIED",
-        "lesDir": "C:\\Users\\oPus\\AppData\\Local\\Temp\\xpider-clean-handoff-e2e-ffknmx\\real_owner_stuart_uat_folder\\Default\\Local Extension Settings\\ldlijlaccfeelfdhgnjbibniocefckjj",
+        "lesDir": "C:\\Users\\oPus\\AppData\\Local\\Temp\\xpider-clean-handoff-e2e-8vyLst\\real_owner_stuart_uat_folder\\Default\\Local Extension Settings\\ldlijlaccfeelfdhgnjbibniocefckjj",
         "backupOrigin": "OFFLINE_REAL_RECOVERY_ONLY",
         "backupScope": "OFFLINE_OWNER_RECOVERY",
         "uatSessionNonce": null,
@@ -432,7 +432,7 @@
     "quarantineStatus": "QUARANTINED_DO_NOT_DOWNLOAD_OR_INSTALL",
     "verifiedUntouched": true
   },
-  "endedAt": "2026-11-09T09:42:03.917Z",
+  "endedAt": "2026-11-09T10:08:43.947Z",
   "total": 16,
   "failed": 0
 }

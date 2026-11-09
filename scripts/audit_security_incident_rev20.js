@@ -149,13 +149,16 @@ async function main() {
         }
     }
 
-    report.zipIntegrityAndHygieneAudit = {
+    report.rev20ForensicZipIntegrityAndHygieneAudit = {
+        scope: 'REV20_QUARANTINED_ARCHIVE_ONLY',
         totalEntries: entries.length,
         zipSlipViolations: zipSlipCount,
         forbiddenExecutableViolations: forbiddenExtCount,
-        manifestDeclaredMatch: entries.length === 27
+        manifestDeclaredMatch: entries.length === 27,
+        note: 'REV20 had 27 bundled entries and is preserved for forensic comparison. For REV21 (28 entries), see dist/report_rev21_security_evidence_audit.json.'
     };
-    console.log(`   - Total Entries: ${entries.length} (Expected: 27)`);
+    report.zipIntegrityAndHygieneAudit = report.rev20ForensicZipIntegrityAndHygieneAudit;
+    console.log(`   - REV20 Total Entries: ${entries.length} (Expected: 27)`);
     console.log(`   - Zip Slip Violations: ${zipSlipCount}`);
     console.log(`   - Forbidden Executable Extensions: ${forbiddenExtCount}`);
 

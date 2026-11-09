@@ -9,11 +9,11 @@ ACTIVE_BRANCH: fix/submit-nomessage-semiauto-20261109
 CANDIDATE_FUNCTIONAL_COMMIT: 32cc9386dedcc68315364e1fc27e1161c09d1aa8
 CANDIDATE_EXTENSION_TREE_SHA: e561ef38b2ae04a616b7dcad9206d480ca4dca5a
 AUTHORITATIVE_REMOTE_REF: refs/heads/fix/submit-nomessage-semiauto-20261109
-STATE_REV: 2026-11-09.729
-AUTHORITY_CURSOR: 6736533285
-LAST_AUDIT: [CHATGPT][SECURITY INCIDENT — OWNER DOWNLOAD BLOCKED: VIRUS DETECTED][XPIDER Issue #6][2026-11-09]
-LAST_DIRECTIVE: [CHATGPT][SECURITY INCIDENT — OWNER DOWNLOAD BLOCKED: VIRUS DETECTED][XPIDER Issue #6][2026-11-09]
-LAST_RECEIPT: https://github.com/goodkie/v-show/issues/6#issuecomment-6737023750 [ANTIGRAVITY -> CHATGPT / OWNER][RECEIPT — SECURITY INCIDENT FORENSIC ROOT CAUSE ISOLATION, HEURISTIC DEFENDER REMEDIATION, REV21 COMPLETE HANDOFF KIT][XPIDER Issue #6][DIRECTIVE #6736533285]
+STATE_REV: 2026-11-09.730
+AUTHORITY_CURSOR: 6737235526
+LAST_AUDIT: [CHATGPT][REV21 SECURITY EVIDENCE AUDIT — RECONCILE ZIP ENTRY COUNTS AND RESCAN PROVENANCE][XPIDER Issue #6][2026-11-09]
+LAST_DIRECTIVE: [CHATGPT][REV21 SECURITY EVIDENCE AUDIT — RECONCILE ZIP ENTRY COUNTS AND RESCAN PROVENANCE][XPIDER Issue #6][2026-11-09]
+LAST_RECEIPT: Pending post for Directive #6737235526
 SCHEDULE_REVISION: 16
 BUILD_ID: V7.0.0-RC11-20261030-THREE-MODE-CONTRACTS-PASS
 PROVENANCE_COMMIT: 20678ada
@@ -39,8 +39,8 @@ FROZEN_REV20_COMPLETE_HANDOFF_KIT_ZIP: dist/XPIDER_V7.0.0_CANDIDATE_REV20_OWNER_
 FROZEN_REV20_COMPLETE_HANDOFF_KIT_SIZE: 4616443
 FROZEN_REV20_COMPLETE_HANDOFF_KIT_SHA256: ffae09ea4c818192ba87f4cb8054dba8e08a1e95e2a8c3a1ed927dfb4c8ea041
 COMPLETE_HANDOFF_KIT_ZIP: dist/XPIDER_V7.0.0_CANDIDATE_REV21_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip
-COMPLETE_HANDOFF_KIT_SIZE: 4621764
-COMPLETE_HANDOFF_KIT_SHA256: 31332a260b09ec3d1f0bbc9b20df51f95a6fa6d92dc648fe18f10107eb819302
+COMPLETE_HANDOFF_KIT_SIZE: 4621832
+COMPLETE_HANDOFF_KIT_SHA256: 96fe3dadce3ea60e75fa216a0814ddc306b206e30b7a1020a701debba5967374
 OWNER_HANDOFF_MANIFEST_REV21: dist/OWNER_HANDOFF_MANIFEST_REV21.json
 OWNER_HANDOFF_MANIFEST_REV20: dist/OWNER_HANDOFF_MANIFEST_REV20.json
 OWNER_HANDOFF_MANIFEST_REV19: dist/OWNER_HANDOFF_MANIFEST_REV19.json
@@ -50,6 +50,7 @@ OWNER_HANDOFF_MANIFEST_REV16: dist/OWNER_HANDOFF_MANIFEST_REV16.json
 OWNER_HANDOFF_MANIFEST_REV15: dist/OWNER_HANDOFF_MANIFEST_REV15.json
 OWNER_HANDOFF_MANIFEST_REV14: dist/OWNER_HANDOFF_MANIFEST_REV14.json
 SECURITY_INCIDENT_REPORT: dist/report_security_incident_investigation.json
+REV21_SECURITY_EVIDENCE_REPORT: dist/report_rev21_security_evidence_audit.json
 OWNER_HANDOFF_MANIFEST_REV15: dist/OWNER_HANDOFF_MANIFEST_REV15.json
 OWNER_HANDOFF_MANIFEST_REV14: dist/OWNER_HANDOFF_MANIFEST_REV14.json
 URL_CONSISTENCY_AND_REMOTE_VERIFY_REPORT: dist/report_handoff_url_consistency_and_remote_verification.json
@@ -71,7 +72,7 @@ UAT_NETWORK_ISOLATION_REPORT: dist/report_uat_network_isolation_and_egress_denia
 PUBLIC_REPO_SECRET_AUDIT_REPORT: dist/report_public_repo_secret_audit.json
 OWNER_GUIDE: dist/OWNER_SAFE_UPDATE_AND_BACKUP_GUIDE.md
 OWNER_UAT_CHECKLIST: dist/WINDOWS_10_OWNER_UAT_CHECKLIST.md
-NEXT_ACTION: Corrected stale handoff URLs pointing to candidate/p0-core-regressions-v7 instead of active branch fix/submit-nomessage-semiauto-20261109. Implemented automated test suite test/run_handoff_url_consistency_and_remote_verification.js (19/19 PASS). Packaged REV20 complete handoff kit (4,616,443 bytes, SHA: ffae09ea...). All regressions pass (19/19 URL suite, 16/16 clean extract, 32/32 DOM, 7/7 Chrome CDP, 19/19 submit, 57/57 safe update, 9/9 step07, 18/18 Chrome UI). Preserved frozen archives REV19, REV18, REV17, REV16, REV15, REV11, REV10, REV9, and RC11 baseline. Awaiting ChatGPT audit and Owner gate actions. Release HOLD maintained.
+NEXT_ACTION: Reconciled REV21 ZIP entry count audit (28 actual counted entries vs 28 manifest declared entries). Generated live Microsoft Defender scan evidence (Product 4.18.26100.4, Engine 1.1.26100.4, Signatures 1.463.201.0): REV21 clean (threats: 0), REV12 clean (threats: 0), REV20 control threat detected (threats: 1). Rerun test/run_submit_nomessage_semiauto_regression.js with preserved real formspree redirect recognition test (20/20 PASS). Extension runtime code unmodified (tree SHA e561ef38... matches candidate base commit 32cc9386). Clean extract E2E suite (16/16 PASS) and URL consistency suite (19/19 PASS). Posting receipt to Issue #6. Release HOLD maintained.
 BLOCKERS: Host OS-level Windows Defender Firewall outbound default-deny test is BLOCKED (BLOCKED_NO_SAFE_ELEVATED_TEST_VM; IsAdmin=false, netsh advfirewall rule add exits with code 1). Remaining external gates (Owner Windows 10 live smoke, real NopeCHA extension, live Decodo/DO egress) are NOT_TESTED (OWNER_ACTION_REQUIRED).
 OWNER_ACTION: Release HOLD maintained; zero public submissions.
 RELEASE_ASSET_TAG: v7.0.0-rc11

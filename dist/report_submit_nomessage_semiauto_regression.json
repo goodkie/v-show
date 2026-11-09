@@ -18,6 +18,16 @@
       }
     },
     {
+      "name": "B2B_REAL_FORMSPREE_CROSS_ORIGIN_URL_RECOGNIZED",
+      "pass": true,
+      "detail": {
+        "suppressInjection": true,
+        "crossOrigin": true,
+        "looksLikeThanks": true,
+        "outcomeStage": "CLIENT_REDIRECT_THANKS"
+      }
+    },
+    {
       "name": "B3_CROSS_ORIGIN_NON_THANKS_IS_UNVERIFIED_AND_SUPPRESSED",
       "pass": true,
       "detail": {
@@ -139,6 +149,6 @@
     }
   ],
   "status": "SUCCESS",
-  "total": 19,
+  "total": 20,
   "failed": 0
 }

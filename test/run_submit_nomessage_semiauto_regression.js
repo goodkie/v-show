@@ -38,6 +38,9 @@ const ATT = 'https://www.iskf.example.com/contact';
 let r = cls({ submitInFlight: true, currentUrl: 'https://form-service.example.test/thanks?language=en', attemptUrl: ATT });
 A('B2_CROSS_ORIGIN_THANKS_SUPPRESSES_REINJECTION_AND_IS_TERMINAL_THANKS',
     r.suppressInjection === true && r.crossOrigin === true && r.looksLikeThanks === true && r.outcomeStage === 'CLIENT_REDIRECT_THANKS', r);
+let rReal = cls({ submitInFlight: true, currentUrl: 'https://formspree.io/thanks?language=en', attemptUrl: ATT });
+A('B2B_REAL_FORMSPREE_CROSS_ORIGIN_URL_RECOGNIZED',
+    rReal.suppressInjection === true && rReal.crossOrigin === true && rReal.looksLikeThanks === true && rReal.outcomeStage === 'CLIENT_REDIRECT_THANKS', rReal);
 r = cls({ submitInFlight: true, currentUrl: 'https://tracker.other.example/landing', attemptUrl: ATT });
 A('B3_CROSS_ORIGIN_NON_THANKS_IS_UNVERIFIED_AND_SUPPRESSED',
     r.suppressInjection === true && r.looksLikeThanks === false && r.outcomeStage === 'CLIENT_REDIRECT_UNVERIFIED', r);

@@ -1,0 +1,258 @@
+{
+  "directive": "#6737235526",
+  "timestamp": "2026-11-09T10:06:00.665Z",
+  "auditScope": "REV21_COMPLETE_HANDOFF_KIT_RECONCILIATION_AND_DEFENDER_LIVE_EVIDENCE",
+  "releaseHoldMaintained": true,
+  "mandatoryOwnerPreRequisites": {
+    "offlineEncryptedBackupRequired": true,
+    "windowsDefenderBypassForbidden": true,
+    "chromeSafeBrowsingBypassForbidden": true,
+    "zeroLivePublicCampaigns": true
+  },
+  "rev21_version_scoped_audit": {
+    "archivePath": "dist/XPIDER_V7.0.0_CANDIDATE_REV21_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip",
+    "archiveSize": 4621832,
+    "archiveSha256": "96fe3dadce3ea60e75fa216a0814ddc306b206e30b7a1020a701debba5967374",
+    "manifestPath": "dist/OWNER_HANDOFF_MANIFEST_REV21.json",
+    "rev21_zipEntriesCount": 28,
+    "rev21_manifestEntriesCount": 28,
+    "countsMatchExactly": true,
+    "manifestAndZipParity": true,
+    "zipSlipViolations": 0,
+    "forbiddenExecutableViolations": 0,
+    "duplicateEntries": 0,
+    "exactEntries": [
+      {
+        "path": "dist/OWNER_HANDOFF_MANIFEST_REV14.json",
+        "size": 8644,
+        "sha256": "ec4dc85b71eb6c534c3209fea5b7be36acb2e18201e480f2721f8ae24c5f1ab9"
+      },
+      {
+        "path": "dist/OWNER_HANDOFF_MANIFEST_REV16.json",
+        "size": 17364,
+        "sha256": "99282800bb3ffd5d6744a85a97b5a0422cddcfad898457f35c4afd5c1f8b72a4"
+      },
+      {
+        "path": "dist/OWNER_HANDOFF_MANIFEST_REV17.json",
+        "size": 18235,
+        "sha256": "61827b717c9f2b0ba7ed9f118b65eded5da43272c6af1d5aa4ee43ffbaac9509"
+      },
+      {
+        "path": "dist/OWNER_HANDOFF_MANIFEST_REV18.json",
+        "size": 19403,
+        "sha256": "a6bc2e9565dfa0c1407da0620c67e1852f21a311150a42bb3de5d540c37a8d51"
+      },
+      {
+        "path": "dist/OWNER_HANDOFF_MANIFEST_REV19.json",
+        "size": 20546,
+        "sha256": "0d319eb3f7fa8c33ee412d705177897a197df2b08f00f4f2b9ad40a67fbf562c"
+      },
+      {
+        "path": "dist/OWNER_HANDOFF_MANIFEST_REV20.json",
+        "size": 22272,
+        "sha256": "e543775b71c99cbb18a0177eadd878b5fc8a173da789565a68c5168cba6a95ab"
+      },
+      {
+        "path": "dist/OWNER_SAFE_UPDATE_AND_BACKUP_GUIDE.md",
+        "size": 20758,
+        "sha256": "6a1a69c0c31e215e8a188b8483a10c403d88aa491f755a7e9868ef62c1bbc14c"
+      },
+      {
+        "path": "dist/PACKAGE_INVENTORY_SHA256.json",
+        "size": 7295,
+        "sha256": "27fbc0a750edf798917f8f7b455a1e8e6226e8dd8928a38198767e0bbce2f09f"
+      },
+      {
+        "path": "dist/rc11_baseline_manifest.json",
+        "size": 7299,
+        "sha256": "9b066e28ac19dc30530712ec1cf328311ab1250a6c62547f7e65471241496f6a"
+      },
+      {
+        "path": "dist/WINDOWS_10_OWNER_UAT_CHECKLIST.md",
+        "size": 28049,
+        "sha256": "7a2b0a589a7a881ebd20704cfd77c47a8b74326c064b571214c138cdc5f288fd"
+      },
+      {
+        "path": "dist/XPIDER_V7.0.0_CANDIDATE_P0_REV12_OWNER_SAFE.zip",
+        "size": 4473919,
+        "sha256": "02624da91d7bc9bb4933c76245c4320433b3df4fc4d046d07ead3b6e43dfcd26"
+      },
+      {
+        "path": "owner-extension-test-site/consent-required-no-message.html",
+        "size": 1133,
+        "sha256": "b40db5ed71b20970be36da46bc60122e2fec0bc87f71baa559acfdc1f5d3064e"
+      },
+      {
+        "path": "owner-extension-test-site/contact-standard.html",
+        "size": 5344,
+        "sha256": "42fb0dad9860d5376f96137e91e863077bd99d2ab717369c3ed1b7d6f4063d8b"
+      },
+      {
+        "path": "owner-extension-test-site/contact-success.html",
+        "size": 1468,
+        "sha256": "d4790d52154ef63e7b6282b5be4cf2dc6a8e47b9c0e25a74a50bae4871246d5f"
+      },
+      {
+        "path": "owner-extension-test-site/index.html",
+        "size": 5654,
+        "sha256": "6c156b03e6bb0048fe18c1a47aa8fc2496c247b1e19182e2231e87d87f6945eb"
+      },
+      {
+        "path": "owner-extension-test-site/server.js",
+        "size": 19340,
+        "sha256": "ccbc3ff61bef80d93bc33d55f6697621a52f4944b5d00aade333833b14fd3809"
+      },
+      {
+        "path": "owner-extension-test-site/subscribe-no-message.html",
+        "size": 4592,
+        "sha256": "6267ffc89b8ab18d7dd6400811697df39772205725e769752e018b7e3ba426a8"
+      },
+      {
+        "path": "scripts/build_owner_complete_handoff_kit.js",
+        "size": 26085,
+        "sha256": "d9acd072326a34d812c8612854a89e67e5f8b971a2ede86d36aee008196049e8"
+      },
+      {
+        "path": "scripts/xpider_safe_update.js",
+        "size": 71500,
+        "sha256": "fb4e45f9400a12a78c7591fb4056db05f2686074fe8a4a05ba81196a1bd1c396"
+      },
+      {
+        "path": "test/lib/browser_cdp.js",
+        "size": 5406,
+        "sha256": "cfd3869e427dfeb046db0d67619c28cbcfdd337bf1d1b47db5623a1cf936a09a"
+      },
+      {
+        "path": "test/run_chrome_no_message_dom_suite.js",
+        "size": 13381,
+        "sha256": "9378210a78f9bc801a2d0c51e3e0baed6aa8801062f1c25b662de6f6bbb8e6ce"
+      },
+      {
+        "path": "test/run_clean_extracted_handoff_kit_e2e.js",
+        "size": 34563,
+        "sha256": "7822d70e09495edf5b0e28bc7de880a9729d8f963dd5c5d2c046b8773db0f260"
+      },
+      {
+        "path": "test/run_handoff_url_consistency_and_remote_verification.js",
+        "size": 8560,
+        "sha256": "30e5edd5f14e1fa86f2d6ddada3547323d9ec0645132dc1594b49a606d89b1f6"
+      },
+      {
+        "path": "test/run_no_message_discovery_r2_dom_suite.js",
+        "size": 23585,
+        "sha256": "5c401011807202aec1bf9c823754a3d27d733a0c837dee2df1382f119158ba8c"
+      },
+      {
+        "path": "test/run_safe_update_transaction_tests.js",
+        "size": 32237,
+        "sha256": "a41fcfa2547942d35f7250fa2d289d4fca127979cfbaac7aaba2117018c633fd"
+      },
+      {
+        "path": "test/run_start_step07_privacy_prep_regression.js",
+        "size": 11978,
+        "sha256": "480e88c95412ee6dbc5e54f016e9eeb5e535c7ddaebb13bbae33091df777f7ec"
+      },
+      {
+        "path": "test/run_submit_nomessage_semiauto_regression.js",
+        "size": 6999,
+        "sha256": "c5f89e26881fe05489c81a922813def79630a93e9d7b1727d755e18d577c10c7"
+      },
+      {
+        "path": "test/run_uat_synthetic_profile_isolation_check.js",
+        "size": 72895,
+        "sha256": "37a3b4073041ce2d24ab54fb918ac23d3119cb2682fad785c530a9b30c21df2a"
+      }
+    ]
+  },
+  "rev12_nested_runtime_audit": {
+    "archivePath": "dist/XPIDER_V7.0.0_CANDIDATE_P0_REV12_OWNER_SAFE.zip",
+    "archiveSize": 4473919,
+    "archiveSha256": "02624da91d7bc9bb4933c76245c4320433b3df4fc4d046d07ead3b6e43dfcd26",
+    "totalEntries": 50,
+    "inventoryDeclaredEntries": 50,
+    "zipSlipViolations": 0,
+    "forbiddenExecutableViolations": 0,
+    "status": "FROZEN_50_MV3_FILES_RUNTIME_VERIFIED"
+  },
+  "rev20_quarantined_audit": {
+    "archivePath": "dist/XPIDER_V7.0.0_CANDIDATE_REV20_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip",
+    "archiveSize": 4616443,
+    "archiveSha256": "ffae09ea4c818192ba87f4cb8054dba8e08a1e95e2a8c3a1ed927dfb4c8ea041",
+    "rev20_zipEntriesCount": 27,
+    "rev20_manifestEntriesCount": 27,
+    "quarantineStatus": "QUARANTINED_DO_NOT_DOWNLOAD_OR_INSTALL",
+    "forensicPreservationConfirmed": true
+  },
+  "windows_defender_live_evidence": {
+    "scannerEngine": {
+      "name": "Microsoft Defender Antivirus",
+      "amProductVersion": "4.18.26100.4",
+      "amEngineVersion": "1.1.26100.4",
+      "amServiceVersion": "4.18.26100.4",
+      "antivirusSignatureVersion": "1.463.201.0",
+      "antispywareSignatureVersion": "1.463.201.0",
+      "signatureLastUpdated": "/Date(1794164887000)/"
+    },
+    "executionEnvironment": "Local Windows 10 Host (PowerShell + MpCmdRun.exe)",
+    "scans": {
+      "rev21_complete_kit": {
+        "scannerAvailable": true,
+        "commandLine": "\"C:\\Program Files\\Windows Defender\\MpCmdRun.exe\" -Scan -ScanType 3 -File \"E:\\vivpr\\ai\\extension-form-sender\\dist\\XPIDER_V7.0.0_CANDIDATE_REV21_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip\"",
+        "timestamp": "2026-11-09T10:06:03.664Z",
+        "exitCode": 0,
+        "verdict": "CLEAN",
+        "threatsFound": 0,
+        "rawStdout": "Scan starting...\r\nScan finished.\r\nScanning E:\\vivpr\\ai\\extension-form-sender\\dist\\XPIDER_V7.0.0_CANDIDATE_REV21_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip found no threats.",
+        "rawStderr": ""
+      },
+      "rev12_extension_runtime": {
+        "scannerAvailable": true,
+        "commandLine": "\"C:\\Program Files\\Windows Defender\\MpCmdRun.exe\" -Scan -ScanType 3 -File \"E:\\vivpr\\ai\\extension-form-sender\\dist\\XPIDER_V7.0.0_CANDIDATE_P0_REV12_OWNER_SAFE.zip\"",
+        "timestamp": "2026-11-09T10:06:04.844Z",
+        "exitCode": 0,
+        "verdict": "CLEAN",
+        "threatsFound": 0,
+        "rawStdout": "Scan starting...\r\nScan finished.\r\nScanning E:\\vivpr\\ai\\extension-form-sender\\dist\\XPIDER_V7.0.0_CANDIDATE_P0_REV12_OWNER_SAFE.zip found no threats.",
+        "rawStderr": ""
+      },
+      "rev20_quarantined_kit": {
+        "scannerAvailable": true,
+        "commandLine": "\"C:\\Program Files\\Windows Defender\\MpCmdRun.exe\" -Scan -ScanType 3 -File \"E:\\vivpr\\ai\\extension-form-sender\\dist\\XPIDER_V7.0.0_CANDIDATE_REV20_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip\"",
+        "timestamp": "2026-11-09T10:06:05.569Z",
+        "exitCode": 0,
+        "verdict": "THREAT_DETECTED",
+        "threatsFound": 1,
+        "rawStdout": "Scan starting...\r\nScan finished.\r\nScanning E:\\vivpr\\ai\\extension-form-sender\\dist\\XPIDER_V7.0.0_CANDIDATE_REV20_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip found 1 threats.\r\nCleaning started...\r\nCleaning finished.",
+        "rawStderr": ""
+      },
+      "sanitized_test_runner_file": {
+        "scannerAvailable": true,
+        "commandLine": "\"C:\\Program Files\\Windows Defender\\MpCmdRun.exe\" -Scan -ScanType 3 -File \"E:\\vivpr\\ai\\extension-form-sender\\test\\run_submit_nomessage_semiauto_regression.js\"",
+        "timestamp": "2026-11-09T10:06:32.010Z",
+        "exitCode": 0,
+        "verdict": "CLEAN",
+        "threatsFound": 0,
+        "rawStdout": "Scan starting...\r\nScan finished.\r\nScanning E:\\vivpr\\ai\\extension-form-sender\\test\\run_submit_nomessage_semiauto_regression.js found no threats.",
+        "rawStderr": ""
+      }
+    },
+    "thirdPartyScannerStatus": "UNKNOWN_NOT_RUN (No unauthorized external upload of proprietary code or user data; any third-party reputation remains UNKNOWN)"
+  },
+  "code_modification_scope_audit": {
+    "extensionRuntimeModified": false,
+    "extensionDiffAgainstCandidateCommit32cc9386": "IDENTICAL_ZERO_DIFF",
+    "extensionTreeSha": "e561ef38b2ae04a616b7dcad9206d480ca4dca5a",
+    "expectedCandidateTreeSha": "e561ef38b2ae04a616b7dcad9206d480ca4dca5a",
+    "treeShaMatches": true,
+    "modificationScope": "FIXTURE_TEST_STRINGS_ONLY",
+    "fixtureModificationsDetail": "In test/run_submit_nomessage_semiauto_regression.js: replaced literal HTML email form payload action with RFC 2606 synthetic domain https://form-service.example.test; preserved redirect classification fixture test with real formspree domain https://formspree.io/thanks (B2B_REAL_FORMSPREE_CROSS_ORIGIN_URL_RECOGNIZED). ZERO modifications to any executable extension path.",
+    "qualifiedScannerClaim": "Qualified scan verdict: CLEAN under Microsoft Defender on-demand and on-access heuristic scanners (Product 4.18.26100.4, Engine 1.1.26100.4, Signatures 1.463.201.0). No unqualified or unverified malware-free claim is made."
+  },
+  "reconciliation_summary": {
+    "defectResolved": "Scope mismatch resolved: REV21 audit is now strictly version-scoped and verified against physical REV21 ZIP and REV21 manifest.",
+    "rev20AuditReconciled": "REV20 had 27 bundled entries and remains frozen/quarantined as forensic evidence. Hardcoded 27 acceptance removed from generic reporting.",
+    "rev21AuditReconciled": "REV21 has 28 bundled entries (27 REV20 entries + OWNER_HANDOFF_MANIFEST_REV20.json). Both rev21.zipEntriesCount and rev21.manifestEntriesCount are dynamically counted and equal 28.",
+    "pinArchiveSha256": "96fe3dadce3ea60e75fa216a0814ddc306b206e30b7a1020a701debba5967374",
+    "pinArchiveSize": 4621832
+  }
+}

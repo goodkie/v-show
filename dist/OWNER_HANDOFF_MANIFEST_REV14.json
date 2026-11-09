@@ -1,6 +1,6 @@
 {
   "schemaVersion": "XPIDER_OWNER_HANDOFF_MANIFEST_REV21",
-  "directive": "#6736533285",
+  "directive": "#6737235526",
   "status": "CANDIDATE_RELEASE_HOLD",
   "branch": "fix/submit-nomessage-semiauto-20261109",
   "functionalCandidateCommit": "32cc9386dedcc68315364e1fc27e1161c09d1aa8",

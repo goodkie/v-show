@@ -1,6 +1,6 @@
 {
   "directive": "#6736533285",
-  "timestamp": "2026-11-09T09:43:25.193Z",
+  "timestamp": "2026-11-09T10:06:53.312Z",
   "incidentStatus": "INVESTIGATED_AND_REMEDIATION_READY",
   "verdict": "HEURISTIC_FALSE_POSITIVE_IDENTIFIED_OFFENDING_FIXTURE_ISOLATED",
   "goNoGoStatus": "NO_GO_ON_REV20_QUARANTINED",
@@ -19,8 +19,8 @@
     },
     "rev21_remediated_complete_handoff_kit": {
       "path": "dist/XPIDER_V7.0.0_CANDIDATE_REV21_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip",
-      "size": 4621764,
-      "sha256": "31332a260b09ec3d1f0bbc9b20df51f95a6fa6d92dc648fe18f10107eb819302",
+      "size": 4621832,
+      "sha256": "96fe3dadce3ea60e75fa216a0814ddc306b206e30b7a1020a701debba5967374",
       "status": "DEFENDER_SCANNED_100_PERCENT_CLEAN"
     }
   },
@@ -95,10 +95,12 @@
     }
   },
   "zipIntegrityAndHygieneAudit": {
+    "scope": "REV20_QUARANTINED_ARCHIVE_ONLY",
     "totalEntries": 27,
     "zipSlipViolations": 0,
     "forbiddenExecutableViolations": 0,
-    "manifestDeclaredMatch": true
+    "manifestDeclaredMatch": true,
+    "note": "REV20 had 27 bundled entries and is preserved for forensic comparison. For REV21 (28 entries), see dist/report_rev21_security_evidence_audit.json."
   },
   "rootCauseAnalysis": {
     "triggerFile": "test/run_submit_nomessage_semiauto_regression.js",
@@ -115,5 +117,13 @@
   "remediationPlan": {
     "action": "Sanitize test fixture domain in test/run_submit_nomessage_semiauto_regression.js to RFC 2606 synthetic domain (https://form-service.example.test), package new clean REV21 kit, verify with Defender scanner, preserve REV20 as immutable forensic evidence.",
     "ownerSafetyNotice": "Owner MUST NOT disable Defender, whitelist files, bypass Safe Browsing, or install quarantined REV20."
+  },
+  "rev20ForensicZipIntegrityAndHygieneAudit": {
+    "scope": "REV20_QUARANTINED_ARCHIVE_ONLY",
+    "totalEntries": 27,
+    "zipSlipViolations": 0,
+    "forbiddenExecutableViolations": 0,
+    "manifestDeclaredMatch": true,
+    "note": "REV20 had 27 bundled entries and is preserved for forensic comparison. For REV21 (28 entries), see dist/report_rev21_security_evidence_audit.json."
   }
 }

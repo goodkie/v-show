@@ -289,7 +289,7 @@ function buildHandoffKit() {
 
     const manifestRev14 = {
         schemaVersion: 'XPIDER_OWNER_HANDOFF_MANIFEST_REV21',
-        directive: '#6736533285',
+        directive: '#6737235526',
         status: 'CANDIDATE_RELEASE_HOLD',
         branch: ACTIVE_BRANCH,
         functionalCandidateCommit: '32cc9386dedcc68315364e1fc27e1161c09d1aa8',
@@ -386,7 +386,7 @@ function buildHandoffKit() {
     const manifestRev21 = {
         ...manifestRev14,
         schemaVersion: 'XPIDER_OWNER_HANDOFF_MANIFEST_REV21',
-        directive: '#6736533285',
+        directive: '#6737235526',
         preservedFrozenRev15Archive: {
             path: FROZEN_REV15_ZIP_REL,
             manifestPath: 'dist/OWNER_HANDOFF_MANIFEST_REV15.json',
