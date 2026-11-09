@@ -1,7 +1,7 @@
 {
   "suite": "XPIDER_CHROME_REAL_BROWSER_DOM_SUITE",
   "directive": "#6732442879",
-  "timestamp": "2026-11-09T08:50:11.520Z",
+  "timestamp": "2026-11-09T09:42:54.964Z",
   "browser": "Google Chrome",
   "assertions": [
     {
@@ -15,7 +15,7 @@
           "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/157.0.0.0 Safari/537.36",
           "V8-Version": "15.7.112.23",
           "WebKit-Version": "537.36 (@a733b5afbb3ba618844ff8876b89ad1a774b2f18)",
-          "webSocketDebuggerUrl": "ws://127.0.0.1:9456/devtools/browser/0982dab6-e940-4269-9c0e-d08686267b27"
+          "webSocketDebuggerUrl": "ws://127.0.0.1:9456/devtools/browser/6afed390-f6c3-4dbf-9f1c-ddb6d7380cd3"
         }
       }
     },
