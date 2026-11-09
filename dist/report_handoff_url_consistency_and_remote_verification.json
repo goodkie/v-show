@@ -6,10 +6,10 @@
   "totalCount": 19,
   "results": [
     {
-      "name": "REV20_MANIFEST_EXISTS_ON_DISK",
+      "name": "REV21_MANIFEST_EXISTS_ON_DISK",
       "pass": true,
       "details": {
-        "manifestPath": "E:\\vivpr\\ai\\extension-form-sender\\dist\\OWNER_HANDOFF_MANIFEST_REV20.json"
+        "manifestPath": "E:\\vivpr\\ai\\extension-form-sender\\dist\\OWNER_HANDOFF_MANIFEST_REV21.json"
       }
     },
     {
@@ -24,7 +24,7 @@
       "name": "COMPLETE_HANDOFF_ARCHIVE_URL_USES_ACTIVE_BRANCH",
       "pass": true,
       "details": {
-        "archiveRawUrl": "https://github.com/goodkie/v-show/raw/fix/submit-nomessage-semiauto-20261109/dist/XPIDER_V7.0.0_CANDIDATE_REV20_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip",
+        "archiveRawUrl": "https://github.com/goodkie/v-show/raw/fix/submit-nomessage-semiauto-20261109/dist/XPIDER_V7.0.0_CANDIDATE_REV21_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip",
         "activeBranch": "fix/submit-nomessage-semiauto-20261109"
       }
     },
@@ -32,7 +32,7 @@
       "name": "COMPLETE_HANDOFF_ARCHIVE_URL_NO_STALE_BRANCH",
       "pass": true,
       "details": {
-        "archiveRawUrl": "https://github.com/goodkie/v-show/raw/fix/submit-nomessage-semiauto-20261109/dist/XPIDER_V7.0.0_CANDIDATE_REV20_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip",
+        "archiveRawUrl": "https://github.com/goodkie/v-show/raw/fix/submit-nomessage-semiauto-20261109/dist/XPIDER_V7.0.0_CANDIDATE_REV21_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip",
         "staleBranch": "candidate/p0-core-regressions-v7"
       }
     },
@@ -47,7 +47,7 @@
       "name": "ALL_BUNDLED_ENTRIES_USE_ACTIVE_BRANCH",
       "pass": true,
       "details": {
-        "total": 27,
+        "total": 28,
         "invalidBranchBundledCount": 0
       }
     },

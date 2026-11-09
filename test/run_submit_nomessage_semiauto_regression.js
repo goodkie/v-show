@@ -35,15 +35,15 @@ vm.createContext(sandbox);
 vm.runInContext(m[0] + '\nthis.fn = classifyPostSubmitNavigation;', sandbox);
 const cls = sandbox.fn;
 const ATT = 'https://www.iskf.example.com/contact';
-let r = cls({ submitInFlight: true, currentUrl: 'https://formspree.io/thanks?language=en', attemptUrl: ATT });
-A('B2_FORMSPREE_THANKS_CROSS_ORIGIN_SUPPRESSES_REINJECTION_AND_IS_TERMINAL_THANKS',
+let r = cls({ submitInFlight: true, currentUrl: 'https://form-service.example.test/thanks?language=en', attemptUrl: ATT });
+A('B2_CROSS_ORIGIN_THANKS_SUPPRESSES_REINJECTION_AND_IS_TERMINAL_THANKS',
     r.suppressInjection === true && r.crossOrigin === true && r.looksLikeThanks === true && r.outcomeStage === 'CLIENT_REDIRECT_THANKS', r);
 r = cls({ submitInFlight: true, currentUrl: 'https://tracker.other.example/landing', attemptUrl: ATT });
 A('B3_CROSS_ORIGIN_NON_THANKS_IS_UNVERIFIED_AND_SUPPRESSED',
     r.suppressInjection === true && r.looksLikeThanks === false && r.outcomeStage === 'CLIENT_REDIRECT_UNVERIFIED', r);
 r = cls({ submitInFlight: true, currentUrl: 'https://www.iskf.example.com/contact/thank-you', attemptUrl: ATT });
 A('B4_SAME_ORIGIN_NOT_SUPPRESSED_EXISTING_VERIFIER_PATH_PRESERVED', r.suppressInjection === false && r.crossOrigin === false, r);
-r = cls({ submitInFlight: false, currentUrl: 'https://formspree.io/thanks', attemptUrl: ATT });
+r = cls({ submitInFlight: false, currentUrl: 'https://form-service.example.test/thanks', attemptUrl: ATT });
 A('B5_NO_SUBMIT_IN_FLIGHT_NEVER_SUPPRESSES_OR_PROMOTES', r.suppressInjection === false && r.outcomeStage === 'NONE', r);
 r = cls({ submitInFlight: true, currentUrl: 'chrome-error://chromewebdata/', attemptUrl: ATT });
 A('B6_NON_HTTP_URL_IGNORED', r.suppressInjection === false, r);
@@ -77,7 +77,7 @@ function runSnippet(html, mutate) {
     vm.runInContext(`${sn[0]}\nthis.result = { nativeValid, nativeSubmitSeen };`, ctx);
     return ctx.result;
 }
-let res = runSnippet('<form action="https://formspree.io/f/x" method="post"><input name="email" type="email" value="op@uat-local.test"><input type="submit" style="display:none"></form>');
+let res = runSnippet('<form action="https://form-service.example.test/f/x" method="post"><input name="email" type="email" value="op@uat-local.test"><input type="submit" style="display:none"></form>');
 A('R1_VALID_EMAIL_ONLY_FORM_NATIVE_SUBMIT_EVENT_VERIFIED', res.nativeValid === true && res.nativeSubmitSeen === true, res);
 res = runSnippet('<form><input name="email" type="email" required value=""></form>');
 A('R2_INVALID_REQUIRED_EMPTY_FORM_NOT_REPORTED_AS_SUBMITTED', res.nativeValid === false && res.nativeSubmitSeen === false, res);

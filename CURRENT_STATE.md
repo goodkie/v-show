@@ -8,16 +8,63 @@
 - Branch: fix/submit-nomessage-semiauto-20261109 (fix branch forked off candidate/p0-core-regressions-v7 commit f9114160; immutable restore checkpoint backup/xpider-rev17-before-submit-nomessage-fix-20261109 preserved untouched at commit f9114160)
 - Candidate Functional Base Commit: 32cc9386dedcc68315364e1fc27e1161c09d1aa8 (short: 32cc9386; verified commit object — extension/ tree SHA e561ef38b2ae04a616b7dcad9206d480ca4dca5a, includes R2 & content-script opt-in no-message form discovery, Step 07 TDZ fix, and submit/no-message/semi-auto fixes)
 - Authoritative Candidate Branch Ref: refs/heads/fix/submit-nomessage-semiauto-20261109 (live tip resolved dynamically via git ls-remote / git rev-parse HEAD)
-- State Rev: 2026-11-09.728
-- Authority Cursor: 6735785250 (Directive: [CHATGPT][REV19 SOURCE/REPORT AUDIT — CORRECT STALE HANDOFF URLS, VALIDATE PACKAGE][XPIDER Issue #6][2026-11-09 UTC])
-- Latest Receipt: https://github.com/goodkie/v-show/issues/6#issuecomment-6736046953 ([ANTIGRAVITY -> CHATGPT / OWNER][RECEIPT — REV19 AUDIT REMEDIATION, AUTOMATED URL CONSISTENCY SUITE, REMOTE VERIFICATION, REV20 COMPLETE HANDOFF KIT][XPIDER Issue #6][DIRECTIVE #6735785250])
+- State Rev: 2026-11-09.729
+- Authority Cursor: 6736533285 (Directive: [CHATGPT][SECURITY INCIDENT — OWNER DOWNLOAD BLOCKED: VIRUS DETECTED][XPIDER Issue #6][2026-11-09])
+- Latest Receipt: PENDING_SUBMISSION (Responding to Directive #6736533285)
 - Canonical Schedule Revision: 16 (verified canonical GitHub schedule; IVCS Manager/schedule strictly ChatGPT-only)
 - Collaboration Mode: Manual ChatGPT <-> Antigravity Collaboration per Owner Directive.
 - Verification Status: HOLD (Awaiting independent ChatGPT Code Audit & Owner UAT Gate Decision). Release HOLD strictly maintained. Zero external public submissions.
 
 ---
 
-## 0. Directive #6735785250 (State Rev .728) — REV19 SOURCE/REPORT AUDIT: CORRECT STALE HANDOFF URLS, AUTOMATED URL CONSISTENCY SUITE & REV20 COMPLETE HANDOFF KIT
+## 0. Directive #6736533285 (State Rev .729) — SECURITY INCIDENT INVESTIGATION & MALWARE HEURISTIC REMEDIATION (REV21 HANDOFF KIT)
+
+1. **Security Incident Root Cause & Forensic Isolation**:
+   - Owner reported browser download block: "실패 - 바이러스가 발견됨" when attempting to download REV20 handoff kit.
+   - On-demand / on-access scan with Microsoft Defender (`MpCmdRun.exe`, Engine `4.18.26100.4`) identified:
+     - Threat Name: `Trojan:HTML/Phish.HNFS!MTB` (Threat ID `2147960979`).
+     - Offending Resource: `dist/XPIDER_V7.0.0_CANDIDATE_REV20_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip->test/run_submit_nomessage_semiauto_regression.js`.
+   - **Root Cause Identified**:
+     - Line 80 of `test/run_submit_nomessage_semiauto_regression.js` contained a literal HTML snippet:
+       `<form action="https://formspree.io/f/x" method="post"><input name="email" type="email" value="op@uat-local.test"><input type="submit" style="display:none"></form>`
+       accompanied by lines 38 & 46 testing `https://formspree.io/thanks`.
+     - Microsoft Defender's heuristic machine-learning phishing filter (`!MTB`) inspects zipped JavaScript/HTML files; embedded HTML forms pointing to third-party form handler `formspree.io` collecting an email with a hidden submit button triggered the phishing heuristic.
+   - **Exhaustive Scan Matrix Across Historical & Runtime Assets**:
+     - `dist/XPIDER_V7.0.0_CANDIDATE_P0_REV12_OWNER_SAFE.zip` (runtime ZIP): **CLEAN (threats: 0)**
+     - `dist/XPIDER_V7.0.0_CANDIDATE_P0_REV11_OWNER_SAFE.zip`: **CLEAN (threats: 0)**
+     - `dist/XPIDER_V7.0.0_CANDIDATE_P0_REV10_OWNER_SAFE.zip`: **CLEAN (threats: 0)**
+     - `dist/XPIDER_V7.0.0_CANDIDATE_P0_REV9_OWNER_SAFE.zip`: **CLEAN (threats: 0)**
+     - `dist/rc11_extension.zip`: **CLEAN (threats: 0)**
+     - `dist/XPIDER_V7.0.0_CANDIDATE_REV15_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip`: **CLEAN (threats: 0)**
+     - `dist/XPIDER_V7.0.0_CANDIDATE_REV16_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip`: **CLEAN (threats: 0)**
+     - `dist/XPIDER_V7.0.0_CANDIDATE_REV17_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip`: **CLEAN (threats: 0)**
+     - `dist/XPIDER_V7.0.0_CANDIDATE_REV18_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip`: **THREAT_DETECTED (threats: 1)**
+     - `dist/XPIDER_V7.0.0_CANDIDATE_REV19_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip`: **THREAT_DETECTED (threats: 1)**
+     - `dist/XPIDER_V7.0.0_CANDIDATE_REV20_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip`: **THREAT_DETECTED (threats: 1)**
+     - The extension runtime code itself (`extension/`) is 100% clean and free of any threat.
+
+2. **Remediation & Proof of Resolution**:
+   - Replaced `https://formspree.io` in `test/run_submit_nomessage_semiauto_regression.js` with synthetic RFC 2606 domain `https://form-service.example.test`.
+   - Re-verified test suite: **19/19 PASS** (Exit Code 0).
+   - Preserved REV20 archive and manifest untouched on disk for forensic comparison; labeled **QUARANTINED_DO_NOT_DOWNLOAD_OR_INSTALL**.
+   - Built new versioned complete handoff kit **REV21**:
+     - Archive: `dist/XPIDER_V7.0.0_CANDIDATE_REV21_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip`
+     - Size: **`4,621,764 bytes`**
+     - SHA-256: **`31332a260b09ec3d1f0bbc9b20df51f95a6fa6d92dc648fe18f10107eb819302`**
+     - Bundled entries: 28 files (includes manifests REV14-REV20).
+     - Direct raw download URL: `https://github.com/goodkie/v-show/raw/fix/submit-nomessage-semiauto-20261109/dist/XPIDER_V7.0.0_CANDIDATE_REV21_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip`
+   - Scanned REV21 with Microsoft Defender (`MpCmdRun.exe`): **CLEAN (`found no threats`, threats: 0)**.
+   - Clean extracted handoff kit E2E suite (`test/run_clean_extracted_handoff_kit_e2e.js`): **16/16 PASS**.
+   - Handoff URL consistency suite (`test/run_handoff_url_consistency_and_remote_verification.js`): **19/19 PASS**.
+
+3. **Owner Safety & Non-Bypass Invariant**:
+   - Owner MUST NOT disable Windows Defender, disable Safe Browsing, add folder exclusions, or restore quarantined REV20.
+   - REV20 is marked NO-GO / QUARANTINED. Only verified clean REV21 is candidate for download.
+   - RELEASE HOLD strictly maintained.
+
+---
+
+## 0.1 Prior Directive #6735785250 (State Rev .728) — REV19 SOURCE/REPORT AUDIT
 
 1. **Defect Root Cause Identified & Resolved**:
    - ChatGPT source audit revealed `dist/OWNER_HANDOFF_MANIFEST_REV19.json` set `completeHandoffArchive.rawUrl` and all `bundledEntries[].rawUrl` to `https://github.com/goodkie/v-show/raw/candidate/p0-core-regressions-v7/...` due to a hardcoded `RAW_BASE` in `scripts/build_owner_complete_handoff_kit.js`. The referenced `candidate/p0-core-regressions-v7` branch remained at older commit `f9114160`, where REV19 and REV12 artifacts do not exist (returning 404).

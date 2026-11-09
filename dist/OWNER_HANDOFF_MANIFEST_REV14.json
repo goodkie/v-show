@@ -1,13 +1,13 @@
 {
-  "schemaVersion": "XPIDER_OWNER_HANDOFF_MANIFEST_REV20",
-  "directive": "#6735785250",
+  "schemaVersion": "XPIDER_OWNER_HANDOFF_MANIFEST_REV21",
+  "directive": "#6736533285",
   "status": "CANDIDATE_RELEASE_HOLD",
   "branch": "fix/submit-nomessage-semiauto-20261109",
   "functionalCandidateCommit": "32cc9386dedcc68315364e1fc27e1161c09d1aa8",
   "extensionTreeSha": "e561ef38b2ae04a616b7dcad9206d480ca4dca5a (step07-prepResult-hotfix + submit-nomessage-semiauto-fix + no-message-discovery-r2-fix)",
   "expectedExtensionId": "ldlijlaccfeelfdhgnjbibniocefckjj",
   "extensionZipAloneIsCompleteKit": false,
-  "extensionZipScopeNote": "dist/XPIDER_V7.0.0_CANDIDATE_P0_REV12_OWNER_SAFE.zip contains ONLY the 50 Chrome MV3 runtime files from extension/ (including Step 07 TDZ Hotfix, submit/no-message/semi-auto fixes, and FormDiscoveryEngine R2 opt-in fix). The complete owner-usable handoff archive is dist/XPIDER_V7.0.0_CANDIDATE_REV20_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip (built via node scripts/build_owner_complete_handoff_kit.js; prior REV15, REV16, REV17, REV18, and REV19 archives preserved frozen).",
+  "extensionZipScopeNote": "dist/XPIDER_V7.0.0_CANDIDATE_P0_REV12_OWNER_SAFE.zip contains ONLY the 50 Chrome MV3 runtime files from extension/ (including Step 07 TDZ Hotfix, submit/no-message/semi-auto fixes, and FormDiscoveryEngine R2 opt-in fix). The complete owner-usable handoff archive is dist/XPIDER_V7.0.0_CANDIDATE_REV21_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip (built via node scripts/build_owner_complete_handoff_kit.js; prior REV15, REV16, REV17, REV18, REV19, and REV20 archives preserved frozen).",
   "operatorCapabilityByEnvironment": {
     "withNodeJs18Plus": {
       "supported": true,
@@ -75,15 +75,15 @@
     {
       "role": "synthetic_only_windows_10_uat_checklist",
       "path": "dist/WINDOWS_10_OWNER_UAT_CHECKLIST.md",
-      "size": 28402,
-      "sha256": "ee96be24d2fcd8ac060087ab5b1a62d17cbb6b481c015a00ac576b7ec12128b8",
+      "size": 28049,
+      "sha256": "7a2b0a589a7a881ebd20704cfd77c47a8b74326c064b571214c138cdc5f288fd",
       "rawUrl": "https://github.com/goodkie/v-show/raw/fix/submit-nomessage-semiauto-20261109/dist/WINDOWS_10_OWNER_UAT_CHECKLIST.md"
     },
     {
       "role": "owner_safe_update_backup_and_rollback_guide",
       "path": "dist/OWNER_SAFE_UPDATE_AND_BACKUP_GUIDE.md",
-      "size": 21203,
-      "sha256": "4fb3a5efd63ed22e401e950e6335939427c05137a59a4cf241d6a4e88d875ab4",
+      "size": 20758,
+      "sha256": "6a1a69c0c31e215e8a188b8483a10c403d88aa491f755a7e9868ef62c1bbc14c",
       "rawUrl": "https://github.com/goodkie/v-show/raw/fix/submit-nomessage-semiauto-20261109/dist/OWNER_SAFE_UPDATE_AND_BACKUP_GUIDE.md"
     },
     {

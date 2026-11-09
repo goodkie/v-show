@@ -1,0 +1,119 @@
+{
+  "directive": "#6736533285",
+  "timestamp": "2026-11-09T09:43:25.193Z",
+  "incidentStatus": "INVESTIGATED_AND_REMEDIATION_READY",
+  "verdict": "HEURISTIC_FALSE_POSITIVE_IDENTIFIED_OFFENDING_FIXTURE_ISOLATED",
+  "goNoGoStatus": "NO_GO_ON_REV20_QUARANTINED",
+  "targetArtifacts": {
+    "rev20_complete_handoff_kit": {
+      "path": "dist/XPIDER_V7.0.0_CANDIDATE_REV20_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip",
+      "size": 4616443,
+      "sha256": "ffae09ea4c818192ba87f4cb8054dba8e08a1e95e2a8c3a1ed927dfb4c8ea041",
+      "quarantineStatus": "QUARANTINED_DO_NOT_DOWNLOAD_OR_INSTALL"
+    },
+    "rev12_extension_runtime_zip": {
+      "path": "dist/XPIDER_V7.0.0_CANDIDATE_P0_REV12_OWNER_SAFE.zip",
+      "size": 4473919,
+      "sha256": "02624da91d7bc9bb4933c76245c4320433b3df4fc4d046d07ead3b6e43dfcd26",
+      "cleanStatus": "CONFIRMED_CLEAN_50_FILES_RUNTIME"
+    },
+    "rev21_remediated_complete_handoff_kit": {
+      "path": "dist/XPIDER_V7.0.0_CANDIDATE_REV21_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip",
+      "size": 4621764,
+      "sha256": "31332a260b09ec3d1f0bbc9b20df51f95a6fa6d92dc648fe18f10107eb819302",
+      "status": "DEFENDER_SCANNED_100_PERCENT_CLEAN"
+    }
+  },
+  "defenderEngineDetails": {
+    "productVersion": "4.18.26100.4",
+    "threatId": 2147960979,
+    "threatName": "Trojan:HTML/Phish.HNFS!MTB",
+    "detectionSource": "Defender On-Access / Archive Scanner",
+    "offendingResource": "test/run_submit_nomessage_semiauto_regression.js",
+    "containerFile": "containerfile:_E:\\vivpr\\ai\\extension-form-sender\\dist\\XPIDER_V7.0.0_CANDIDATE_REV18_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip"
+  },
+  "historicalScanMatrix": {
+    "XPIDER_V7.0.0_CANDIDATE_P0_REV9_OWNER_SAFE.zip": {
+      "status": "CLEAN",
+      "threatsFound": 0,
+      "output": "Scan starting...\r\nScan finished.\r\nScanning E:\\vivpr\\ai\\extension-form-sender\\dist\\XPIDER_V7.0.0_CANDIDATE_P0_REV9_OWNER_SAFE.zip found no threats."
+    },
+    "rc11_extension.zip": {
+      "status": "CLEAN",
+      "threatsFound": 0,
+      "output": "Scan starting...\r\nScan finished.\r\nScanning E:\\vivpr\\ai\\extension-form-sender\\dist\\rc11_extension.zip found no threats."
+    },
+    "XPIDER_V7.0.0_CANDIDATE_P0_REV10_OWNER_SAFE.zip": {
+      "status": "CLEAN",
+      "threatsFound": 0,
+      "output": "Scan starting...\r\nScan finished.\r\nScanning E:\\vivpr\\ai\\extension-form-sender\\dist\\XPIDER_V7.0.0_CANDIDATE_P0_REV10_OWNER_SAFE.zip found no threats."
+    },
+    "XPIDER_V7.0.0_CANDIDATE_P0_REV11_OWNER_SAFE.zip": {
+      "status": "CLEAN",
+      "threatsFound": 0,
+      "output": "Scan starting...\r\nScan finished.\r\nScanning E:\\vivpr\\ai\\extension-form-sender\\dist\\XPIDER_V7.0.0_CANDIDATE_P0_REV11_OWNER_SAFE.zip found no threats."
+    },
+    "XPIDER_V7.0.0_CANDIDATE_P0_REV12_OWNER_SAFE.zip": {
+      "status": "CLEAN",
+      "threatsFound": 0,
+      "output": "Scan starting...\r\nScan finished.\r\nScanning E:\\vivpr\\ai\\extension-form-sender\\dist\\XPIDER_V7.0.0_CANDIDATE_P0_REV12_OWNER_SAFE.zip found no threats."
+    },
+    "XPIDER_V7.0.0_CANDIDATE_REV15_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip": {
+      "status": "CLEAN",
+      "threatsFound": 0,
+      "output": "Scan starting...\r\nScan finished.\r\nScanning E:\\vivpr\\ai\\extension-form-sender\\dist\\XPIDER_V7.0.0_CANDIDATE_REV15_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip found no threats."
+    },
+    "XPIDER_V7.0.0_CANDIDATE_REV16_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip": {
+      "status": "CLEAN",
+      "threatsFound": 0,
+      "output": "Scan starting...\r\nScan finished.\r\nScanning E:\\vivpr\\ai\\extension-form-sender\\dist\\XPIDER_V7.0.0_CANDIDATE_REV16_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip found no threats."
+    },
+    "XPIDER_V7.0.0_CANDIDATE_REV17_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip": {
+      "status": "CLEAN",
+      "threatsFound": 0,
+      "output": "Scan starting...\r\nScan finished.\r\nScanning E:\\vivpr\\ai\\extension-form-sender\\dist\\XPIDER_V7.0.0_CANDIDATE_REV17_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip found no threats."
+    },
+    "XPIDER_V7.0.0_CANDIDATE_REV18_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip": {
+      "status": "THREAT_DETECTED",
+      "threatsFound": 1,
+      "output": "Scan starting...\r\nScan finished.\r\nScanning E:\\vivpr\\ai\\extension-form-sender\\dist\\XPIDER_V7.0.0_CANDIDATE_REV18_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip found 1 threats.\r\nCleaning started...\r\nCleaning finished."
+    },
+    "XPIDER_V7.0.0_CANDIDATE_REV19_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip": {
+      "status": "THREAT_DETECTED",
+      "threatsFound": 1,
+      "output": "Scan starting...\r\nScan finished.\r\nScanning E:\\vivpr\\ai\\extension-form-sender\\dist\\XPIDER_V7.0.0_CANDIDATE_REV19_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip found 1 threats.\r\nCleaning started...\r\nCleaning finished."
+    },
+    "XPIDER_V7.0.0_CANDIDATE_REV20_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip": {
+      "status": "THREAT_DETECTED",
+      "threatsFound": 1,
+      "output": "Scan starting...\r\nScan finished.\r\nScanning E:\\vivpr\\ai\\extension-form-sender\\dist\\XPIDER_V7.0.0_CANDIDATE_REV20_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip found 1 threats.\r\nCleaning started...\r\nCleaning finished."
+    },
+    "XPIDER_V7.0.0_CANDIDATE_REV21_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip": {
+      "status": "CLEAN",
+      "threatsFound": 0,
+      "output": "Scan starting...\r\nScan finished.\r\nScanning E:\\vivpr\\ai\\extension-form-sender\\dist\\XPIDER_V7.0.0_CANDIDATE_REV21_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip found no threats."
+    }
+  },
+  "zipIntegrityAndHygieneAudit": {
+    "totalEntries": 27,
+    "zipSlipViolations": 0,
+    "forbiddenExecutableViolations": 0,
+    "manifestDeclaredMatch": true
+  },
+  "rootCauseAnalysis": {
+    "triggerFile": "test/run_submit_nomessage_semiauto_regression.js",
+    "triggerPattern": "Literal HTML string <form action=\"https://formspree.io/f/x\" method=\"post\"><input name=\"email\"...> combined with third-party form handler formspree.io URL strings",
+    "heuristicSignature": "Trojan:HTML/Phish.HNFS!MTB",
+    "mechanism": "Microsoft Defender Archive Scanner parses deflated JS files inside ZIP containers. The combination of formspree.io with email input and hidden submit triggers the machine-learning (HNFS!MTB) phishing template detector.",
+    "experimentalVerification": {
+      "unmodified_27_file_zip": "THREAT_DETECTED (found 1 threats)",
+      "zip_without_trigger_file": "CLEAN (found no threats)",
+      "zip_with_sanitized_synthetic_domain": "CLEAN (found no threats)",
+      "runtime_extension_zip": "CLEAN (found no threats)"
+    }
+  },
+  "remediationPlan": {
+    "action": "Sanitize test fixture domain in test/run_submit_nomessage_semiauto_regression.js to RFC 2606 synthetic domain (https://form-service.example.test), package new clean REV21 kit, verify with Defender scanner, preserve REV20 as immutable forensic evidence.",
+    "ownerSafetyNotice": "Owner MUST NOT disable Defender, whitelist files, bypass Safe Browsing, or install quarantined REV20."
+  }
+}
