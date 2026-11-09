@@ -18,6 +18,9 @@ on:
       - 'test/run_email_template_studio_static.js'
       - 'test/run_resend_test_mode.js'
       - 'tools/email-template-studio.html'
+      - 'extension/email-studio/**'
+      - 'extension/popup.html'
+      - 'test/run_email_studio_mv3_integration.js'
       - '.github/workflows/email-feature-ci.yml'
   workflow_dispatch:
 permissions:
@@ -40,3 +43,4 @@ jobs:
           node test/run_email_deliverability_v2_policy.js
           node test/run_email_template_studio_static.js
           node test/run_resend_test_mode.js
+          node test/run_email_studio_mv3_integration.js
