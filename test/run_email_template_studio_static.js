@@ -1,0 +1,20 @@
+'use strict';
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const path=require('node:path');
+const src=fs.readFileSync(path.resolve(__dirname,'../tools/email-template-studio.html'),'utf8');
+let count=0;
+function test(name,cb){cb();count++;console.log('PASS',name)}
+test('HTML5 standalone file',()=>assert(src.startsWith('<!doctype html>')));
+test('standalone has no remote javascript dependencies',()=>assert(!/<script[^>]+src=/i.test(src)));
+test('preview sandbox prevents scripts from executing',()=>assert(/<iframe[^>]+sandbox=""/.test(src)));
+test('separate HTML and plain text download',()=>{assert(src.includes('xpider-vivpr-template.html'));assert(src.includes('xpider-vivpr-template.txt'))});
+test('opt-out and legal mailing address fields',()=>{assert(src.includes('id="unsubscribe"'));assert(src.includes('id="address"'))});
+test('images require HTTPS for export',()=>assert(src.includes("u.protocol==='https:'")));
+test('local image preview has size and type checks',()=>{assert(src.includes('f.size>3*1024*1024'));assert(src.includes('imageFile'))});
+test('text is escaped before HTML serialization',()=>assert(src.includes('const esc=s=>String(s).replace')));
+test('preview does not trigger network mailing',()=>{assert(!/fetch\s*\(|XMLHttpRequest|navigator\.sendBeacon/.test(src));assert(!/api\.resend\.com|Authorization: Bearer/.test(src))});
+test('marketing and service type separated',()=>{assert(src.includes('value="marketing"'));assert(src.includes('value="service"'))});
+test('content inspection disclaims guaranteed delivery',()=>assert(src.includes('받은편지함 도착 보장')));
+test('has text image and CTA controls',()=>{for(const id of ['subject','body','image','alt','cta','link'])assert(src.includes('id="'+id+'"'))});
+console.log(count+'/'+count+' PASS');
