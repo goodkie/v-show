@@ -14,6 +14,8 @@ on:
       - 'test/run_resend_volume_preflight.js'
       - 'test/run_vivpr_sender_identity.js'
       - 'test/run_email_deliverability_v2_policy.js'
+      - 'test/run_email_template_studio_static.js'
+      - 'tools/email-template-studio.html'
       - '.github/workflows/email-feature-ci.yml'
   workflow_dispatch:
 permissions:
@@ -34,3 +36,4 @@ jobs:
           node test/run_resend_volume_preflight.js
           node test/run_vivpr_sender_identity.js
           node test/run_email_deliverability_v2_policy.js
+          node test/run_email_template_studio_static.js
