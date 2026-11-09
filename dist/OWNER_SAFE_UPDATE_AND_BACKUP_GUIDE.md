@@ -2,9 +2,9 @@
 
 Status: **CANDIDATE / RELEASE HOLD**. Do not apply to your live installation until the Owner explicitly approves.
 Functional source: commit `76fab0933276ae163c377d39d9dca5169a33063c` (`extension/` tree SHA `1d1bac897f70df6fa107cde85b00de591d5dea93` — 100% byte-identical at the latest documentation/tooling HEAD of branch `candidate/p0-core-regressions-v7`).
-Single Complete Owner-Usable Handoff Archive (REV17): `dist/XPIDER_V7.0.0_CANDIDATE_REV17_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip` (Direct Raw URL: `https://github.com/goodkie/v-show/raw/candidate/p0-core-regressions-v7/dist/XPIDER_V7.0.0_CANDIDATE_REV17_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip`, reproducible via `node scripts\build_owner_complete_handoff_kit.js`; prior `dist/XPIDER_V7.0.0_CANDIDATE_REV15_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip` [4,560,445 bytes, SHA `43a9bcdf...`] and `dist/XPIDER_V7.0.0_CANDIDATE_REV16_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip` [4,569,570 bytes, SHA `0ad5ff7b...`] are preserved frozen on disk)
-Single Handoff Manifest: `dist/OWNER_HANDOFF_MANIFEST_REV17.json` (with preserved frozen `dist/OWNER_HANDOFF_MANIFEST_REV16.json`, `dist/OWNER_HANDOFF_MANIFEST_REV15.json` and `dist/OWNER_HANDOFF_MANIFEST_REV14.json`)
-Candidate Extension Runtime Archive Inside `dist\` (50 extension runtime files with Step 07 TDZ Hotfix — NOT the complete handoff kit by itself): `dist/XPIDER_V7.0.0_CANDIDATE_P0_REV10_OWNER_SAFE.zip` — `4,470,364 bytes` — SHA-256 `a5ef71d2f7adf6c23554a83d2ce2e4118ec9adfeb260d2bc35fcb413d50d484b`
+Single Complete Owner-Usable Handoff Archive (REV18): `dist/XPIDER_V7.0.0_CANDIDATE_REV18_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip` (Direct Raw URL: `https://github.com/goodkie/v-show/raw/candidate/p0-core-regressions-v7/dist/XPIDER_V7.0.0_CANDIDATE_REV18_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip`, reproducible via `node scripts\build_owner_complete_handoff_kit.js`; prior `dist/XPIDER_V7.0.0_CANDIDATE_REV15_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip` [4,560,445 bytes, SHA `43a9bcdf...`] and `dist/XPIDER_V7.0.0_CANDIDATE_REV16_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip` [4,569,570 bytes, SHA `0ad5ff7b...`] are preserved frozen on disk)
+Single Handoff Manifest: `dist/OWNER_HANDOFF_MANIFEST_REV18.json` (with preserved frozen `dist/OWNER_HANDOFF_MANIFEST_REV16.json`, `dist/OWNER_HANDOFF_MANIFEST_REV15.json` and `dist/OWNER_HANDOFF_MANIFEST_REV14.json`)
+Candidate Extension Runtime Archive Inside `dist\` (50 extension runtime files with Step 07 TDZ Hotfix — NOT the complete handoff kit by itself): `dist/XPIDER_V7.0.0_CANDIDATE_P0_REV11_OWNER_SAFE.zip` — `4,472,794 bytes` — SHA-256 `5467ada381a62794b9117fe92355ae2433d235ba29e9a6af2b104707cfc1100b`
 Extension ID (pinned by manifest `key`): `ldlijlaccfeelfdhgnjbibniocefckjj`
 Companion UAT Checklist: `dist/WINDOWS_10_OWNER_UAT_CHECKLIST.md`
 
@@ -15,26 +15,26 @@ Companion UAT Checklist: `dist/WINDOWS_10_OWNER_UAT_CHECKLIST.md`
 
 ---
 
-## 1. Single Complete Owner-Usable Handoff Archive (`XPIDER_V7.0.0_CANDIDATE_REV17_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip`) vs Runtime Extension ZIP
+## 1. Single Complete Owner-Usable Handoff Archive (`XPIDER_V7.0.0_CANDIDATE_REV18_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip`) vs Runtime Extension ZIP
 
 > [!IMPORTANT]
-> **Why the Runtime Extension ZIP (`dist/XPIDER_V7.0.0_CANDIDATE_P0_REV10_OWNER_SAFE.zip`, SHA-256 `a5ef71d2...`) is NOT the complete handoff kit by itself:**
-> - `dist/XPIDER_V7.0.0_CANDIDATE_P0_REV10_OWNER_SAFE.zip` contains **only the 50 Chrome MV3 extension runtime files** (`manifest.json`, `background.js`, `popup.js`, `content-script.js`, `modules/*`, etc. from `extension/`, including the Step 07 TDZ Hotfix).
-> - To give the Owner **one single complete downloadable archive** that works cleanly from any new extraction directory outside the git repository, `dist/XPIDER_V7.0.0_CANDIDATE_REV17_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip` bundles the runtime ZIP (`dist/XPIDER_V7.0.0_CANDIDATE_P0_REV10_OWNER_SAFE.zip`) **together with** the standalone updater/backup CLI (`scripts/xpider_safe_update.js`), both SHA-256 inventories (`dist/PACKAGE_INVENTORY_SHA256.json`, `dist/rc11_baseline_manifest.json`), both guides (`dist/WINDOWS_10_OWNER_UAT_CHECKLIST.md`, `dist/OWNER_SAFE_UPDATE_AND_BACKUP_GUIDE.md`), the localhost fixture + fail-closed sink server (`owner-extension-test-site/server.js` + HTML fixtures), and the automated verification helpers (`test/run_uat_synthetic_profile_isolation_check.js`, `test/run_safe_update_transaction_tests.js`, `test/lib/browser_cdp.js`).
+> **Why the Runtime Extension ZIP (`dist/XPIDER_V7.0.0_CANDIDATE_P0_REV11_OWNER_SAFE.zip`, SHA-256 `5467ada3...`) is NOT the complete handoff kit by itself:**
+> - `dist/XPIDER_V7.0.0_CANDIDATE_P0_REV11_OWNER_SAFE.zip` contains **only the 50 Chrome MV3 extension runtime files** (`manifest.json`, `background.js`, `popup.js`, `content-script.js`, `modules/*`, etc. from `extension/`, including the Step 07 TDZ Hotfix).
+> - To give the Owner **one single complete downloadable archive** that works cleanly from any new extraction directory outside the git repository, `dist/XPIDER_V7.0.0_CANDIDATE_REV18_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip` bundles the runtime ZIP (`dist/XPIDER_V7.0.0_CANDIDATE_P0_REV11_OWNER_SAFE.zip`) **together with** the standalone updater/backup CLI (`scripts/xpider_safe_update.js`), both SHA-256 inventories (`dist/PACKAGE_INVENTORY_SHA256.json`, `dist/rc11_baseline_manifest.json`), both guides (`dist/WINDOWS_10_OWNER_UAT_CHECKLIST.md`, `dist/OWNER_SAFE_UPDATE_AND_BACKUP_GUIDE.md`), the localhost fixture + fail-closed sink server (`owner-extension-test-site/server.js` + HTML fixtures), and the automated verification helpers (`test/run_uat_synthetic_profile_isolation_check.js`, `test/run_safe_update_transaction_tests.js`, `test/lib/browser_cdp.js`).
 
-### Unambiguous Extraction Root & Exact File Tree Inside `XPIDER_V7.0.0_CANDIDATE_REV17_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip`
-Extract the complete handoff archive into a clean directory (e.g. `D:\xpider_handoff_rev17`) and `Set-Location "D:\xpider_handoff_rev17"`:
+### Unambiguous Extraction Root & Exact File Tree Inside `XPIDER_V7.0.0_CANDIDATE_REV18_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip`
+Extract the complete handoff archive into a clean directory (e.g. `D:\xpider_handoff_rev18`) and `Set-Location "D:\xpider_handoff_rev18"`:
 ```powershell
-Expand-Archive -Path ".\XPIDER_V7.0.0_CANDIDATE_REV17_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip" -DestinationPath "D:\xpider_handoff_rev17" -Force
-Set-Location "D:\xpider_handoff_rev17"
+Expand-Archive -Path ".\XPIDER_V7.0.0_CANDIDATE_REV18_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip" -DestinationPath "D:\xpider_handoff_rev18" -Force
+Set-Location "D:\xpider_handoff_rev18"
 ```
-Extracting into `D:\xpider_handoff_rev17` produces this exact relative tree:
-- `dist/XPIDER_V7.0.0_CANDIDATE_P0_REV10_OWNER_SAFE.zip` (50-file runtime extension ZIP, `4,470,364 B`, SHA-256 `a5ef71d2f7adf6c23554a83d2ce2e4118ec9adfeb260d2bc35fcb413d50d484b`)
+Extracting into `D:\xpider_handoff_rev18` produces this exact relative tree:
+- `dist/XPIDER_V7.0.0_CANDIDATE_P0_REV11_OWNER_SAFE.zip` (50-file runtime extension ZIP, `4,472,794 B`, SHA-256 `5467ada381a62794b9117fe92355ae2433d235ba29e9a6af2b104707cfc1100b`)
 - `dist/PACKAGE_INVENTORY_SHA256.json` (50-file candidate SHA-256 inventory)
 - `dist/rc11_baseline_manifest.json` (Frozen RC11 baseline manifest)
 - `dist/WINDOWS_10_OWNER_UAT_CHECKLIST.md` (Step-by-step Windows 10 UAT checklist)
 - `dist/OWNER_SAFE_UPDATE_AND_BACKUP_GUIDE.md` (This backup, update & rollback guide)
-- `dist/OWNER_HANDOFF_MANIFEST_REV17.json` & `dist/OWNER_HANDOFF_MANIFEST_REV16.json` (Complete file/size/SHA-256 manifests)
+- `dist/OWNER_HANDOFF_MANIFEST_REV18.json` & `dist/OWNER_HANDOFF_MANIFEST_REV16.json` (Complete file/size/SHA-256 manifests)
 - `scripts/xpider_safe_update.js` (Standalone transactional updater, `preflight-uat`, `init-uat-profile`, encrypted backup/restore & UAT auditor CLI)
 - `scripts/build_owner_complete_handoff_kit.js` (Deterministic local assembly script for the complete handoff kit)
 - `owner-extension-test-site/server.js` + `contact-standard.html`, `subscribe-no-message.html`, `consent-required-no-message.html`, `contact-success.html`, `index.html` (Localhost `127.0.0.1:8088` fixtures + `127.0.0.1:8090` fail-closed sink proxy)
@@ -43,16 +43,16 @@ Extracting into `D:\xpider_handoff_rev17` produces this exact relative tree:
 ### Operator Environment Capability: With Node.js (`>= 18`) vs Without Node.js
 - **With Node.js (`>= 18`)**: Full support for `preflight-uat` (read-only dry-run preflight), `backup-storage` (AES-256-GCM encrypted `.xpider-enc`), `verify-storage-backup` (in-memory verification, `writtenToDisk: false`), `plan` / `apply` / `rollback` / `recover`, and `owner-extension-test-site/server.js` (`127.0.0.1:8088` fixtures + `127.0.0.1:8090` fail-closed sink proxy).
 - **Without Node.js (PowerShell 5.1 Only)**:
-  1. You **can** extract the handoff archive (`Expand-Archive`) and verify the inner runtime ZIP SHA-256 (`Get-FileHash .\dist\XPIDER_V7.0.0_CANDIDATE_P0_REV10_OWNER_SAFE.zip -Algorithm SHA256`),
-  2. You **can** manually back up your profile's `Local Extension Settings\ldlijlaccfeelfdhgnjbibniocefckjj` folder and your unpacked extension folder via `Copy-Item` while Chrome is completely closed, and extract `dist\XPIDER_V7.0.0_CANDIDATE_P0_REV10_OWNER_SAFE.zip` into a disposable folder for static popup UI inspection (never overlay live files without backup + approval),
+  1. You **can** extract the handoff archive (`Expand-Archive`) and verify the inner runtime ZIP SHA-256 (`Get-FileHash .\dist\XPIDER_V7.0.0_CANDIDATE_P0_REV11_OWNER_SAFE.zip -Algorithm SHA256`),
+  2. You **can** manually back up your profile's `Local Extension Settings\ldlijlaccfeelfdhgnjbibniocefckjj` folder and your unpacked extension folder via `Copy-Item` while Chrome is completely closed, and extract `dist\XPIDER_V7.0.0_CANDIDATE_P0_REV11_OWNER_SAFE.zip` into a disposable folder for static popup UI inspection (never overlay live files without backup + approval),
   3. You **CANNOT** run the localhost fixture server (`127.0.0.1:8088`), the fail-closed sink proxy (`127.0.0.1:8090`), `preflight-uat`, encrypted `.xpider-enc` backups, or the journaled transactional updater — **Phase B campaign UAT is `BLOCKED` without Node.js (`>= 18`)**.
 
 ### Mandatory Preflight Steps Before Touching Anything
 1. **Verify Exact Runtime Extension ZIP SHA-256 on Windows PowerShell before doing anything else**:
    ```powershell
-   Get-FileHash ".\dist\XPIDER_V7.0.0_CANDIDATE_P0_REV10_OWNER_SAFE.zip" -Algorithm SHA256
+   Get-FileHash ".\dist\XPIDER_V7.0.0_CANDIDATE_P0_REV11_OWNER_SAFE.zip" -Algorithm SHA256
    ```
-   Must output: `A5EF71D2F7ADF6C23554A83D2CE2E4118EC9ADFEB260D2BC35FCB413D50D484B` (`4,470,364 bytes`). If it does not match, **STOP**.
+   Must output: `5467ADA381A62794B9117FE92355AE2433D235BA29E9A6AF2B104707CFC1100B` (`4,472,794 bytes`). If it does not match, **STOP**.
 2. **Run Executable Read-Only Dry-Run Preflight (`preflight-uat`)**:
    Requires explicit `--target` and `--profile-dir` (never guessed; fails closed with `MISSING_EXPLICIT_PATH` if omitted) and modifies zero files (`modifiedTarget: false`, `modifiedProfile: false`):
    ```powershell
@@ -116,12 +116,12 @@ Developer-tested on **Google Chrome `157.0.8103.38`** (`dist/report_chrome_migra
 Requires Node.js 18+ on the PC. **During UAT, run `apply` only on a disposable copy (`D:\xpider_uat_ext`), never on your live installation (`<TARGET_DIR>`) until UAT is complete and approved.**
 1. **Dry-Run Plan (Read-Only)**:
    ```powershell
-   node scripts\xpider_safe_update.js plan --target "D:\xpider_uat_ext" --archive .\dist\XPIDER_V7.0.0_CANDIDATE_P0_REV10_OWNER_SAFE.zip --expected-sha a5ef71d2f7adf6c23554a83d2ce2e4118ec9adfeb260d2bc35fcb413d50d484b --inventory dist\PACKAGE_INVENTORY_SHA256.json --baseline dist\rc11_baseline_manifest.json
+   node scripts\xpider_safe_update.js plan --target "D:\xpider_uat_ext" --archive .\dist\XPIDER_V7.0.0_CANDIDATE_P0_REV11_OWNER_SAFE.zip --expected-sha 5467ada381a62794b9117fe92355ae2433d235ba29e9a6af2b104707cfc1100b --inventory dist\PACKAGE_INVENTORY_SHA256.json --baseline dist\rc11_baseline_manifest.json
    ```
    Changes nothing on disk; prints exact files to add/replace/remove, any preserved unknown user files, and a `PLAN_TOKEN`.
 2. **Apply (On Disposable UAT Copy First; Only On Live `<TARGET_DIR>` After Offline Backup + Separate Owner Approval)**:
    ```powershell
-   node scripts\xpider_safe_update.js apply --target "D:\xpider_uat_ext" --archive .\dist\XPIDER_V7.0.0_CANDIDATE_P0_REV10_OWNER_SAFE.zip --expected-sha a5ef71d2f7adf6c23554a83d2ce2e4118ec9adfeb260d2bc35fcb413d50d484b --inventory dist\PACKAGE_INVENTORY_SHA256.json --baseline dist\rc11_baseline_manifest.json --backup-root "D:\xpider_uat_code_bk" --approve <PLAN_TOKEN>
+   node scripts\xpider_safe_update.js apply --target "D:\xpider_uat_ext" --archive .\dist\XPIDER_V7.0.0_CANDIDATE_P0_REV11_OWNER_SAFE.zip --expected-sha 5467ada381a62794b9117fe92355ae2433d235ba29e9a6af2b104707cfc1100b --inventory dist\PACKAGE_INVENTORY_SHA256.json --baseline dist\rc11_baseline_manifest.json --backup-root "D:\xpider_uat_code_bk" --approve <PLAN_TOKEN>
    ```
    **Note**: `--backup-root` must be a **separate** directory outside `--target` (the updater resolves Windows canonical realpaths/junctions and rejects any overlapping or nested `--backup-root`).
 3. **Reload in Browser**:
@@ -145,7 +145,7 @@ Requires Node.js 18+ on the PC. **During UAT, run `apply` only on a disposable c
 ## 5. Consolidated Acceptance & Verification Status Matrix (`SOURCE_METADATA_VERIFIED` vs `DEV_PASS` vs `BLOCKED` vs `NOT_TESTED`)
 See `dist/WINDOWS_10_OWNER_UAT_CHECKLIST.md` (Phase C) for the full 10-gate table:
 - **`SOURCE_METADATA_VERIFIED` (Separately Verifiable File/Hash Provenance)**:
-  - 50-file candidate runtime ZIP (`dist/XPIDER_V7.0.0_CANDIDATE_P0_REV10_OWNER_SAFE.zip`, SHA-256 `a5ef71d2...`), preserved frozen REV15 archive (`dist/XPIDER_V7.0.0_CANDIDATE_REV15_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip`, SHA-256 `43a9bcdf...`), preserved frozen REV16 archive (`dist/XPIDER_V7.0.0_CANDIDATE_REV16_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip`, SHA-256 `0ad5ff7b...`), and complete REV17 handoff archive (`dist/XPIDER_V7.0.0_CANDIDATE_REV17_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip`, indexed in `dist/OWNER_HANDOFF_MANIFEST_REV17.json`) verified by two independent hash invocations (`Node crypto` + `PowerShell Get-FileHash / .NET ZipFile`).
+  - 50-file candidate runtime ZIP (`dist/XPIDER_V7.0.0_CANDIDATE_P0_REV11_OWNER_SAFE.zip`, SHA-256 `5467ada3...`), preserved frozen REV15 archive (`dist/XPIDER_V7.0.0_CANDIDATE_REV15_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip`, SHA-256 `43a9bcdf...`), preserved frozen REV16 archive (`dist/XPIDER_V7.0.0_CANDIDATE_REV16_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip`, SHA-256 `0ad5ff7b...`), and complete REV18 handoff archive (`dist/XPIDER_V7.0.0_CANDIDATE_REV18_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip`, indexed in `dist/OWNER_HANDOFF_MANIFEST_REV18.json`) verified by two independent hash invocations (`Node crypto` + `PowerShell Get-FileHash / .NET ZipFile`).
 - **`DEV_PASS` (Developer-Executed Automated Suites Only; Not Independently Verified by ChatGPT or Owner on Windows 10)**:
   1. Clean-room extracted handoff E2E test outside repository working tree (`dist/report_clean_extracted_handoff_kit_e2e.json`, `16/16`),
   2. Chrome `157.0.8103.38` (`37/37`) + Edge `146.0.3856.59` (`37/37`) migration/backup/restore parity,

@@ -1,0 +1,144 @@
+{
+  "suite": "XPIDER_SUBMIT_NOMESSAGE_SEMIAUTO_REGRESSION",
+  "directive": "#6731090998",
+  "assertions": [
+    {
+      "name": "B1_CLASSIFIER_PRESENT_IN_BACKGROUND_SOURCE",
+      "pass": true,
+      "detail": {}
+    },
+    {
+      "name": "B2_FORMSPREE_THANKS_CROSS_ORIGIN_SUPPRESSES_REINJECTION_AND_IS_TERMINAL_THANKS",
+      "pass": true,
+      "detail": {
+        "suppressInjection": true,
+        "crossOrigin": true,
+        "looksLikeThanks": true,
+        "outcomeStage": "CLIENT_REDIRECT_THANKS"
+      }
+    },
+    {
+      "name": "B3_CROSS_ORIGIN_NON_THANKS_IS_UNVERIFIED_AND_SUPPRESSED",
+      "pass": true,
+      "detail": {
+        "suppressInjection": true,
+        "crossOrigin": true,
+        "looksLikeThanks": false,
+        "outcomeStage": "CLIENT_REDIRECT_UNVERIFIED"
+      }
+    },
+    {
+      "name": "B4_SAME_ORIGIN_NOT_SUPPRESSED_EXISTING_VERIFIER_PATH_PRESERVED",
+      "pass": true,
+      "detail": {
+        "suppressInjection": false,
+        "crossOrigin": false,
+        "looksLikeThanks": true,
+        "outcomeStage": "NONE"
+      }
+    },
+    {
+      "name": "B5_NO_SUBMIT_IN_FLIGHT_NEVER_SUPPRESSES_OR_PROMOTES",
+      "pass": true,
+      "detail": {
+        "suppressInjection": false,
+        "crossOrigin": false,
+        "looksLikeThanks": false,
+        "outcomeStage": "NONE"
+      }
+    },
+    {
+      "name": "B6_NON_HTTP_URL_IGNORED",
+      "pass": true,
+      "detail": {
+        "suppressInjection": false,
+        "crossOrigin": false,
+        "looksLikeThanks": false,
+        "outcomeStage": "NONE"
+      }
+    },
+    {
+      "name": "S1_URL_ONLY_SUCCESS_PROMOTION_REQUIRES_SUBMIT_EVIDENCE",
+      "pass": true,
+      "detail": {}
+    },
+    {
+      "name": "S2_NAVWATCHER_SUPPRESSES_REINJECTION_ON_POST_SUBMIT_CROSS_ORIGIN",
+      "pass": true,
+      "detail": {}
+    },
+    {
+      "name": "S3_NO_MESSAGE_OPTION_STAGES_POPUP_BACKGROUND_CONTENT",
+      "pass": true,
+      "detail": {}
+    },
+    {
+      "name": "S4_SEMI_AUTO_HOLD_HAS_EXPLICIT_REASON_AND_NO_AUTOSUBMIT",
+      "pass": true,
+      "detail": {}
+    },
+    {
+      "name": "S5_SUBMIT_TRIGGERED_LOG_CARRIES_STAGE_AND_DENIES_DELIVERY",
+      "pass": true,
+      "detail": {}
+    },
+    {
+      "name": "S6_REQUESTSUBMIT_NO_BUTTON_REQUIRES_VERIFIED_NATIVE_SUBMIT_EVENT_AND_VALIDITY",
+      "pass": true,
+      "detail": {}
+    },
+    {
+      "name": "R0_SNIPPET_EXTRACTED_FROM_REAL_CONTENT_SCRIPT",
+      "pass": true,
+      "detail": {}
+    },
+    {
+      "name": "R1_VALID_EMAIL_ONLY_FORM_NATIVE_SUBMIT_EVENT_VERIFIED",
+      "pass": true,
+      "detail": {
+        "nativeValid": true,
+        "nativeSubmitSeen": true
+      }
+    },
+    {
+      "name": "R2_INVALID_REQUIRED_EMPTY_FORM_NOT_REPORTED_AS_SUBMITTED",
+      "pass": true,
+      "detail": {
+        "nativeValid": false,
+        "nativeSubmitSeen": false
+      }
+    },
+    {
+      "name": "R3_VALID_REQUIRED_FILLED_FORM_VERIFIED",
+      "pass": true,
+      "detail": {
+        "nativeValid": true,
+        "nativeSubmitSeen": true
+      }
+    },
+    {
+      "name": "P_background_js_PARSES",
+      "pass": true,
+      "detail": {
+        "err": null
+      }
+    },
+    {
+      "name": "P_content_script_js_PARSES",
+      "pass": true,
+      "detail": {
+        "err": null
+      }
+    },
+    {
+      "name": "P_popup_js_PARSES",
+      "pass": true,
+      "detail": {
+        "err": null
+      }
+    }
+  ],
+  "status": "SUCCESS",
+  "total": 19,
+  "failed": 0
+}

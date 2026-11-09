@@ -5,68 +5,68 @@
  */
 
 // ── XPIDER DEV LOG BRIDGE (Content Script) ───────────────────────────────
-(function() {
-  const _EXT_NAME = 'Ext[AutoFormSender/Content]';
-  const _xDL = (lvl, msg) => {
-    try {
-      chrome.runtime.sendMessage({
-        _xpider_devlog: true, level: lvl, source: _EXT_NAME,
-        msg: String(msg).substring(0, 2048)
-      }).catch(() => {});
-    } catch(_) {}
-  };
-  ['log','warn','error','debug','info'].forEach(m => {
-    const _o = console[m].bind(console);
-    console[m] = (...a) => {
-      _o(...a);
-      const lvlMap = { log:'INFO', warn:'WARN', error:'ERROR', debug:'DEBUG', info:'INFO' };
+(function () {
+    const _EXT_NAME = 'Ext[AutoFormSender/Content]';
+    const _xDL = (lvl, msg) => {
+        try {
+            chrome.runtime.sendMessage({
+                _xpider_devlog: true, level: lvl, source: _EXT_NAME,
+                msg: String(msg).substring(0, 2048)
+            }).catch(() => { });
+        } catch (_) { }
     };
-  });
-  if (typeof window !== 'undefined' && window.addEventListener) {
-    window.addEventListener('error', (e) => _xDL('ERROR', `[Uncaught] ${e.message} at ${e.filename}:${e.lineno}`));
-  }
+    ['log', 'warn', 'error', 'debug', 'info'].forEach(m => {
+        const _o = console[m].bind(console);
+        console[m] = (...a) => {
+            _o(...a);
+            const lvlMap = { log: 'INFO', warn: 'WARN', error: 'ERROR', debug: 'DEBUG', info: 'INFO' };
+        };
+    });
+    if (typeof window !== 'undefined' && window.addEventListener) {
+        window.addEventListener('error', (e) => _xDL('ERROR', `[Uncaught] ${e.message} at ${e.filename}:${e.lineno}`));
+    }
 })();
 // ── END DEV LOG BRIDGE ───────────────────────────────────────────────────
 
-(function() {
+(function () {
     console.log("🚀 [XpiderSender] Advanced Engine Loaded: " + (typeof window !== 'undefined' && window.location ? window.location.href : '(node-test)'));
 
-    const _ContactGate = (typeof ContactGate !== 'undefined' && ContactGate) || 
-        (typeof window !== 'undefined' && window.ContactGate) || 
+    const _ContactGate = (typeof ContactGate !== 'undefined' && ContactGate) ||
+        (typeof window !== 'undefined' && window.ContactGate) ||
         (typeof require !== 'undefined' ? require('./modules/contact-gate.js') : null);
 
-    const _ChallengeGate = (typeof window !== 'undefined' && window.ChallengeGate) || 
-        (typeof globalThis !== 'undefined' && globalThis.ChallengeGate) || 
-        (typeof require !== 'undefined' ? (function(){ try { return require('./modules/challenge-gate.js'); } catch(_) { return null; } })() : null);
+    const _ChallengeGate = (typeof window !== 'undefined' && window.ChallengeGate) ||
+        (typeof globalThis !== 'undefined' && globalThis.ChallengeGate) ||
+        (typeof require !== 'undefined' ? (function () { try { return require('./modules/challenge-gate.js'); } catch (_) { return null; } })() : null);
 
-    const _SmartFieldResolver = (typeof SmartFieldResolver !== 'undefined' && SmartFieldResolver) || 
-        (typeof window !== 'undefined' && window.SmartFieldResolver) || 
+    const _SmartFieldResolver = (typeof SmartFieldResolver !== 'undefined' && SmartFieldResolver) ||
+        (typeof window !== 'undefined' && window.SmartFieldResolver) ||
         (typeof require !== 'undefined' ? require('./modules/smart-field-resolver.js') : null);
 
     const _MathCaptchaSolver = null; // [V7.0 Built-in Math Solver Retired per Owner External-Extension-Only Contract]
 
-    const _ContactDiscoveryEngine = (typeof ContactDiscoveryEngine !== 'undefined' && ContactDiscoveryEngine) || 
-        (typeof window !== 'undefined' && window.ContactDiscoveryEngine) || 
+    const _ContactDiscoveryEngine = (typeof ContactDiscoveryEngine !== 'undefined' && ContactDiscoveryEngine) ||
+        (typeof window !== 'undefined' && window.ContactDiscoveryEngine) ||
         (typeof require !== 'undefined' ? require('./modules/contact-discovery-engine.js') : null);
 
-    const _CheckboxResolverR2 = (typeof CheckboxResolverR2 !== 'undefined' && CheckboxResolverR2) || 
-        (typeof window !== 'undefined' && window.CheckboxResolverR2) || 
+    const _CheckboxResolverR2 = (typeof CheckboxResolverR2 !== 'undefined' && CheckboxResolverR2) ||
+        (typeof window !== 'undefined' && window.CheckboxResolverR2) ||
         (typeof require !== 'undefined' ? require('./modules/checkbox-resolver-r2.js') : null);
 
-    const _SelectResolverR2 = (typeof SelectResolverR2 !== 'undefined' && SelectResolverR2) || 
-        (typeof window !== 'undefined' && window.SelectResolverR2) || 
+    const _SelectResolverR2 = (typeof SelectResolverR2 !== 'undefined' && SelectResolverR2) ||
+        (typeof window !== 'undefined' && window.SelectResolverR2) ||
         (typeof require !== 'undefined' ? require('./modules/select-resolver-r2.js') : null);
 
-    const _FinalFormCompletionEngine = (typeof FinalFormCompletionEngine !== 'undefined' && FinalFormCompletionEngine) || 
-        (typeof window !== 'undefined' && window.FinalFormCompletionEngine) || 
+    const _FinalFormCompletionEngine = (typeof FinalFormCompletionEngine !== 'undefined' && FinalFormCompletionEngine) ||
+        (typeof window !== 'undefined' && window.FinalFormCompletionEngine) ||
         (typeof require !== 'undefined' ? require('./modules/final-form-completion-engine.js') : null);
 
-    const _FormDiscoveryEngineR2 = (typeof window !== 'undefined' && window.FormDiscoveryEngineR2) || 
-        (typeof global !== 'undefined' && global.FormDiscoveryEngineR2) || 
+    const _FormDiscoveryEngineR2 = (typeof window !== 'undefined' && window.FormDiscoveryEngineR2) ||
+        (typeof global !== 'undefined' && global.FormDiscoveryEngineR2) ||
         (typeof require !== 'undefined' ? require('./modules/form-discovery-engine-r2.js') : null);
 
-    const _VisionSubmitExecutor = (typeof VisionSubmitExecutor !== 'undefined' && VisionSubmitExecutor) || 
-        (typeof window !== 'undefined' && window.VisionSubmitExecutor) || 
+    const _VisionSubmitExecutor = (typeof VisionSubmitExecutor !== 'undefined' && VisionSubmitExecutor) ||
+        (typeof window !== 'undefined' && window.VisionSubmitExecutor) ||
         (typeof require !== 'undefined' ? require('./modules/vision-submit-executor.js') : null);
 
     // [Issue #6 R4 Top-Level Scope Guarantee] Downloadable extensions filter
@@ -115,11 +115,11 @@
         if (!el) return;
         try {
             if (el._valueTracker) {
-                try { el._valueTracker.setValue(''); } catch (_) {}
+                try { el._valueTracker.setValue(''); } catch (_) { }
             }
             const proto = el.tagName === 'TEXTAREA' ? HTMLTextAreaElement.prototype
-                        : el.tagName === 'SELECT' ? HTMLSelectElement.prototype
-                        : HTMLInputElement.prototype;
+                : el.tagName === 'SELECT' ? HTMLSelectElement.prototype
+                    : HTMLInputElement.prototype;
             const nativeSetter = Object.getOwnPropertyDescriptor(proto, 'value');
             if (nativeSetter && nativeSetter.set) {
                 nativeSetter.set.call(el, val);
@@ -155,10 +155,10 @@
                 console.log(`[CAPTCHA_UI_CLEAR] reason=${reason}`);
                 hud.style.opacity = '0';
                 setTimeout(() => {
-                    try { if (hud.parentNode) hud.parentNode.removeChild(hud); } catch (_) {}
+                    try { if (hud.parentNode) hud.parentNode.removeChild(hud); } catch (_) { }
                 }, 300);
             }
-        } catch (_) {}
+        } catch (_) { }
     }
 
     function updateTopSolverHUD(message, status = 'ACTIVE', options = {}) {
@@ -191,7 +191,7 @@
                     message: `[TARGET_PAGE] url=${currentSetupUrl} domGeneration=${Date.now()} (prev=${prevUrl} invalidated)`,
                     logType: 'info'
                 });
-            } catch (_) {}
+            } catch (_) { }
         }
         // Clear stale setup and running latch from previous DOM generation
         window.__xpider_initialized = false;
@@ -201,7 +201,7 @@
     }
 
     // [R6.3] Expose execution identity helpers on window for testability
-    window.__xpider_acquireProcessingLock = function(attemptId, url, domGeneration) {
+    window.__xpider_acquireProcessingLock = function (attemptId, url, domGeneration) {
         if (window.__xpider_exec_identity) {
             const id = window.__xpider_exec_identity;
             // Same execution key — suppress duplicate
@@ -215,14 +215,14 @@
         window.__xpider_running_url = url;
         return true;
     };
-    window.__xpider_releaseProcessingLock = function(forUrl) {
+    window.__xpider_releaseProcessingLock = function (forUrl) {
         if (!forUrl || (window.__xpider_exec_identity && window.__xpider_exec_identity.url === forUrl)) {
             window.__xpider_exec_identity = null;
             window.__xpider_running = false;
             window.__xpider_running_url = null;
         }
     };
-    window.__xpider_hasProcessingLock = function(url, domGeneration) {
+    window.__xpider_hasProcessingLock = function (url, domGeneration) {
         const id = window.__xpider_exec_identity;
         if (!id) return false;
         if (url && id.url !== url) return false;  // different URL -> no lock
@@ -256,7 +256,7 @@
                 const a = el.getAttribute(attr);
                 if (typeof a === 'string') return a.toLowerCase();
             }
-        } catch (_) {}
+        } catch (_) { }
         return '';
     }
 
@@ -282,7 +282,7 @@
                 logType: type
             });
             console.log(`[XpiderLog] ${msg}`);
-        } catch (e) {}
+        } catch (e) { }
     }
 
     // [XSpider Pro Pattern] High-priority contact candidates
@@ -293,9 +293,9 @@
     };
 
     const FIELD_PATTERNS = {
-        firstName: [/\bfirst.?name\b/i,/\bgiven.?name\b/i,/\bforename\b/i,/\bfname\b/i,/\bfirst\b/i,/\bgiven\b/i,/이름/i,/성함/i,/名前/i,/名/i,/given/i,/\bnombre\b/i,/\bprenom\b/i,/\bvorname\b/i],
-        lastName: [/\blast.?name\b/i,/\bfamily.?name\b/i,/\bsurname\b/i,/\blname\b/i,/\blast\b/i,/\bfamily\b/i,/성(?!명|함)/i,/苗字/i,/姓/i,/\bapellido\b/i,/\bnom\b/i,/\bnachname\b/i],
-        name: [/\bname\b/i,/\bfull.?name\b/i,/\byour.*name\b/i,/\bcontact.*name\b/i,/\bcustomer.*name\b/i,/\bsender.*name\b/i,/성함/i,/氏名/i,/姓名/i,/성명/i,/이름/i,/user/i,/fullname/i,/\bcontact.*person\b/i,/\bclient.*name\b/i],
+        firstName: [/\bfirst.?name\b/i, /\bgiven.?name\b/i, /\bforename\b/i, /\bfname\b/i, /\bfirst\b/i, /\bgiven\b/i, /이름/i, /성함/i, /名前/i, /名/i, /given/i, /\bnombre\b/i, /\bprenom\b/i, /\bvorname\b/i],
+        lastName: [/\blast.?name\b/i, /\bfamily.?name\b/i, /\bsurname\b/i, /\blname\b/i, /\blast\b/i, /\bfamily\b/i, /성(?!명|함)/i, /苗字/i, /姓/i, /\bapellido\b/i, /\bnom\b/i, /\bnachname\b/i],
+        name: [/\bname\b/i, /\bfull.?name\b/i, /\byour.*name\b/i, /\bcontact.*name\b/i, /\bcustomer.*name\b/i, /\bsender.*name\b/i, /성함/i, /氏名/i, /姓名/i, /성명/i, /이름/i, /user/i, /fullname/i, /\bcontact.*person\b/i, /\bclient.*name\b/i],
         email: [/email/i, /e-mail/i, /이메일/i, /メール/i, /邮箱/i, /correo/i, /courriel/i, /correo.*electrónico/i],
         subject: [/subject/i, /title/i, /제목/i, /件名/i, /主题/i, /topic/i, /asunto/i, /betreff/i, /objet/i],
         phone: [/\bphone(?:_number|\d)?\b/i, /\btel(?:ephone)?\b/i, /\bmobile(?:_number)?\b/i, /\bcell(?:_phone)?\b/i, /전화/i, /연락처/i, /電話/i, /手机/i, /电话/i, /\bteléfono\b/i, /\btelefon\b/i, /\btéléphone\b/i],
@@ -353,7 +353,7 @@
     }
 
     const DOMAIN_BLACKLIST = [
-        'facebook.com', 'instagram.com', 'twitter.com', 'x.com', 'linkedin.com', 'youtube.com', 
+        'facebook.com', 'instagram.com', 'twitter.com', 'x.com', 'linkedin.com', 'youtube.com',
         'tiktok.com', 'pinterest.com', 'whatsapp.com', 't.me', 'wa.me',
         'google.com', 'naver.com', 'daum.net', 'yahoo.com', 'bing.com',
         '.gov', '.go.kr', '.mil', '.edu', 'wikipedia.org',
@@ -368,9 +368,9 @@
         if (window.__xpider_start_sending_handler && typeof chrome !== 'undefined' && chrome.runtime?.onMessage) {
             try {
                 chrome.runtime.onMessage.removeListener(window.__xpider_start_sending_handler);
-            } catch (_) {}
+            } catch (_) { }
         }
-        
+
         window.__xpider_getExecutionPayload = (extra = {}) => {
             const ident = window.__xpider_execution_identity || {};
             return Object.assign({
@@ -387,9 +387,9 @@
             if (typeof chrome !== 'undefined' && chrome.runtime?.sendMessage) {
                 try {
                     const p = chrome.runtime.sendMessage(payload, cb);
-                    if (p && typeof p.catch === 'function') p.catch(() => {});
+                    if (p && typeof p.catch === 'function') p.catch(() => { });
                     return p;
-                } catch (_) {}
+                } catch (_) { }
             }
         };
 
@@ -455,6 +455,13 @@
                     resolvedIncludeNoMsg = window.__xpider_include_forms_without_message;
                 }
                 window.__xpider_include_forms_without_message = resolvedIncludeNoMsg;
+                try {
+                    const noMsgSource = (typeof request.includeFormsWithoutMessage === 'boolean') ? 'request' : ((request.template && typeof request.template.includeFormsWithoutMessage === 'boolean') ? 'template' : 'default_false');
+                    const noMsgBuildId = (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.getManifest) ? ((chrome.runtime.getManifest() || {}).version || 'unknown') : 'unknown';
+                    const noMsgLine = `[NO_MESSAGE_OPTION] stage=content_received value=${resolvedIncludeNoMsg} source=${noMsgSource} campaignRunId=${request.campaignRunId || 'n/a'} manifestVersion=${noMsgBuildId}`;
+                    console.log(noMsgLine);
+                    if (typeof logDev === 'function') logDev(noMsgLine, 'info');
+                } catch (_) { }
                 if (request.template && typeof request.template === 'object') {
                     request.template.includeFormsWithoutMessage = resolvedIncludeNoMsg;
                 }
@@ -491,7 +498,7 @@
                     detectSubmissionResult(null, request.template);
                     return;
                 }
-                
+
                 processCampaign(request.template, request.delayMs, request.triedUrl, request.fillDelayMs, request.submitDelayMs);
             }
         };
@@ -529,20 +536,20 @@
         for (const link of links) {
             const href = link.href || '';
             const text = (link.textContent || '').toLowerCase().trim();
-            
+
             if (!href.startsWith(currentOrigin)) continue; // Keep within same domain
-            
+
             // [v2.8.7] Normalize and avoid current page loop
             const normalizedHref = normalizeUrl(href);
-            if (normalizedHref === normalizedCurrent) continue; 
-            
+            if (normalizedHref === normalizedCurrent) continue;
+
             // [v2.9.1] Strict Domain Isolation for branch discovery
             try {
                 if (new URL(href).origin !== currentOrigin) continue;
-            } catch(e) { continue; }
-            
-            const isBranchLink = BRANCH_KEYWORDS.some(k => text.includes(k) || href.toLowerCase().includes(k)) && 
-                                 !CONTACT_KEYWORDS.high.some(k => text.includes(k)); // Exclude main contact
+            } catch (e) { continue; }
+
+            const isBranchLink = BRANCH_KEYWORDS.some(k => text.includes(k) || href.toLowerCase().includes(k)) &&
+                !CONTACT_KEYWORDS.high.some(k => text.includes(k)); // Exclude main contact
 
             if (isBranchLink && results.length < 5) {
                 if (!results.includes(href)) {
@@ -558,7 +565,7 @@
         const currentUrl = window.location.href;
         const currentPath = normalizeUrl(currentUrl);
         const targetPath = normalizeUrl(target);
-        
+
         // [v2.9.6] Internal log for tracing
         console.log(`[Xpider] Navigating to: ${target}`);
 
@@ -569,7 +576,7 @@
                 window.__xpider_running = false;
                 processCampaign(template);
             }, 1500);
-            return false; 
+            return false;
         } else {
             window.location.href = target;
             return true;
@@ -586,42 +593,42 @@
         let nodes = [];
         try {
             nodes = Array.from(root.querySelectorAll(selector));
-        } catch (e) {}
+        } catch (e) { }
 
         const scan = (node) => {
             try {
                 if (node.shadowRoot) {
                     try {
                         nodes = nodes.concat(Array.from(node.shadowRoot.querySelectorAll(selector)));
-                    } catch (e) {}
+                    } catch (e) { }
                     Array.from(node.shadowRoot.children).forEach(scan);
                 }
                 Array.from(node.children || []).forEach(scan);
-            } catch (e) {} // [v2.8.5] Resilience: Don't crash on protected components
+            } catch (e) { } // [v2.8.5] Resilience: Don't crash on protected components
         };
-        
+
         try {
             Array.from(root.children || []).forEach(scan);
-        } catch (e) {}
+        } catch (e) { }
         return nodes;
     }
 
     async function cleanPageEnvironment() {
         logDev("🧹 [Cleaner] Scanning for intrusive overlays/popups...", "info");
-        
+
         // [v17.7.0] Protected Elements: Never remove containers that contain actual inputs/forms
         const intrusiveSelectors = [
             '.wix-instant-popup', '.modal-overlay', '.cookie-banner', '#cookie-notice',
             '.sqs-announcement-bar', '.sp-popup-wrapper', '[class*="popup"]', '[id*="popup"]'
         ];
-        
+
         // [v18.0.0 / R6.9G.7] Protected Elements: Squarespace Modal & Lightbox Shield (safe extraction)
         const isFormProtected = (el) => {
             const id = safeGetStrAttr(el, 'id');
             const cls = safeGetStrAttr(el, 'className');
             const identifier = `${id} ${cls}`;
-            return el.querySelector('input, textarea, select, canvas, iframe, .wpcf7-form, .gform_wrapper') || 
-                   identifier.includes('sqs-modal') || identifier.includes('lightbox') || identifier.includes('yui3-');
+            return el.querySelector('input, textarea, select, canvas, iframe, .wpcf7-form, .gform_wrapper') ||
+                identifier.includes('sqs-modal') || identifier.includes('lightbox') || identifier.includes('yui3-');
         };
 
         intrusiveSelectors.forEach(sel => {
@@ -634,7 +641,7 @@
                 }
             });
         });
-        
+
         // Remove high z-index blank overlays (with form protection)
         document.querySelectorAll('div').forEach(el => {
             if (isFormProtected(el)) return;
@@ -671,15 +678,15 @@
                     ['mouseenter', 'mousedown', 'mouseup', 'click'].forEach(evt => {
                         modalTrigger.dispatchEvent(new MouseEvent(evt, { bubbles: true, cancelable: true }));
                     });
-                } catch (_) {}
+                } catch (_) { }
                 await new Promise(r => setTimeout(r, 1200));
                 return true;
             }
         }
-        
+
         // Search for buttons, links, and action-oriented spans/divs
         const possibleTriggers = queryAllDeep('button, a, div[role="button"], span.btn, .contact-btn, #contact-trigger, [class*="chat"], [id*="chat"], .support-trigger, .lightbox-handle, .sqs-block-button, .sqs-editable-button, a[href="#contact"], [data-elementor-open-lightbox], .elementor-button, [class*="modal-trigger"], [data-toggle="modal"], [data-target*="modal"], [class*="maonrails"], [attr-gym], #jjf-form-modal');
-        
+
         for (const btn of possibleTriggers) {
             // [Safety Guard] Skip elements that trigger downloads or external application protocols (e.g. Outlook/vCard/PDF)
             if (btn.hasAttribute && btn.hasAttribute('download')) continue;
@@ -693,22 +700,22 @@
             const text = (btn.textContent || btn.ariaLabel || '').toLowerCase().trim();
             const cls = (btn.className || '').toString().toLowerCase();
             const isIconTrigger = /chat|message|contact|support|mail/i.test(cls) || /chat|message|support/i.test(btn.id) || cls.includes('lightbox-handle');
-            
+
             if (triggerKeywords.some(k => text.includes(k) && text.length < 25) || isIconTrigger) {
                 logDev(`🎯 [Supreme-Scan 3.0] Activating high-probability trigger: "${text}" | Class: ${btn.className}`);
                 try {
                     btn.scrollIntoView({ behavior: 'smooth', block: 'center' });
                     // [v18.27.0] Navigation Signal: Alert background that a navigation is likely
                     chrome.runtime.sendMessage({ action: 'SENDER_LOG', message: "🚀 [Engine] Trigger clicked. Expecting navigation...", logType: "info" });
-                    
+
                     btn.click();
                     // Multi-event firing for heavy JS frameworks
                     ['mouseenter', 'mousedown', 'mouseup', 'click'].forEach(evt => {
                         btn.dispatchEvent(new MouseEvent(evt, { bubbles: true, cancelable: true }));
                     });
-                } catch(e) {}
-                
-                await new Promise(r => setTimeout(r, 1500)); 
+                } catch (e) { }
+
+                await new Promise(r => setTimeout(r, 1500));
                 return true;
             }
         }
@@ -717,10 +724,10 @@
 
     async function closeIntrusivePopups() {
         logDev("🧹 [Cleaner] Scanning for intrusive overlays/popups and cookie banners...");
-        
+
         // 1. 쿠키 및 일반 팝업 닫기/수락 버튼 전방위 탐색
         const closeSelectors = [
-            '.close', '.dismiss', '.X', '[aria-label*="close"]', '[class*="close"]', 
+            '.close', '.dismiss', '.X', '[aria-label*="close"]', '[class*="close"]',
             '[id*="close"]', '.modal-close', '.popup-close', '.et_pb_close_button',
             '.happyforms-close',
             // Cookie specific accept buttons
@@ -728,17 +735,17 @@
             '[id*="consent" i] button', '[class*="consent" i] button', '[id*="cookie" i] button', '[class*="cookie" i] button',
             '#cookie-accept', '.cookie-accept', '#cookie-agree', '.cookie-agree'
         ];
-        
+
         const buttons = queryAllDeep('button, a, span, div[role="button"]');
         let closedCount = 0;
-        
+
         // 다국어 쿠키 동의 및 닫기 키워드 매처
         const consentKeywords = [
-            'x', 'close', '닫기', '閉じる', '关闭', 'accept', 'agree', 'allow', 
+            'x', 'close', '닫기', '閉じる', '关闭', 'accept', 'agree', 'allow',
             'accept all', 'allow all', 'i agree', '수락', '동의', '허용', '동의합니다', '허용합니다',
             'ok', 'okay', 'yes', 'understood', '확인', '了解'
         ];
-        
+
         for (const btn of buttons) {
             if (btn.hasAttribute && btn.hasAttribute('download')) continue;
             if (btn.tagName === 'A' && btn.hasAttribute && btn.hasAttribute('href')) {
@@ -746,7 +753,7 @@
                 if (/^(mailto:|tel:|callto:|sms:)/i.test(href) || NON_HTML_DOWNLOADABLE_EXTENSIONS.test(href)) continue;
             }
             const isMatch = closeSelectors.some(s => {
-                try { return btn.matches(s); } catch(e) { return false; }
+                try { return btn.matches(s); } catch (e) { return false; }
             });
             const text = (btn.textContent || '').toLowerCase().trim();
             if (isMatch || consentKeywords.includes(text)) {
@@ -757,7 +764,7 @@
                 }
             }
         }
-        
+
         // 2. 강제 쿠키 스위핑 (클릭 실패나 오버레이 방어벽 제거)
         // 일반적인 쿠키 배너와 모달 오버레이 컨테이너들을 display: none 처리
         const cookieContainerSelectors = [
@@ -770,7 +777,7 @@
             // 화면 전체를 블로킹하는 배경막 overlay 제거
             '[class*="backdrop" i]', '[class*="overlay" i]:not(form):not(input)'
         ];
-        
+
         let sweptCount = 0;
         for (const selector of cookieContainerSelectors) {
             try {
@@ -786,9 +793,9 @@
                         sweptCount++;
                     }
                 }
-            } catch(e) {}
+            } catch (e) { }
         }
-        
+
         if (closedCount > 0 || sweptCount > 0) {
             logDev(`✅ [Cleaner] Suppressed ${closedCount} buttons & swept ${sweptCount} cookie/overlay containers.`);
         }
@@ -837,7 +844,7 @@
                 '페이지를 찾을 수 없습니다'
             ];
             if (strongErrorSignals.some(s => bodyText.includes(s))) return true;
-        } catch (_) {}
+        } catch (_) { }
         return false;
     }
 
@@ -883,7 +890,7 @@
 
                 cur = cur.parentElement;
             }
-        } catch (_) {}
+        } catch (_) { }
         return false;
     }
 
@@ -938,13 +945,13 @@
             // 3. Generic WAF / 403 Access Denied
             const isTitle403 = title === '403 forbidden' || title.includes('403 forbidden') || title.includes('access denied') || title.includes('403 - forbidden');
             const headings = Array.from(doc.querySelectorAll('h1, h2')).map(h => (h.textContent || '').trim().toLowerCase());
-            const isHeading403 = headings.some(h => 
-                h === '403 forbidden' || h === 'access denied' || h.includes('access denied') || 
+            const isHeading403 = headings.some(h =>
+                h === '403 forbidden' || h === 'access denied' || h.includes('access denied') ||
                 h.includes('you don\'t have permission to access') || h.includes('why have i been blocked')
             );
-            const isBody403 = bodyText.includes('you don\'t have permission to access') || 
-                              bodyText.includes('access to this resource on the server is denied') ||
-                              bodyText.includes('you are not authorized to access this page');
+            const isBody403 = bodyText.includes('you don\'t have permission to access') ||
+                bodyText.includes('access to this resource on the server is denied') ||
+                bodyText.includes('you are not authorized to access this page');
 
             const allInputs = doc.querySelectorAll('input:not([type="hidden"]), textarea, select, button');
             if ((isTitle403 || isHeading403) && (isBody403 || isHeading403) && allInputs.length <= 1) {
@@ -1036,7 +1043,7 @@
             }
             const speed = getSpeedProfile(delayMs, fillDelayMs, submitDelayMs);
             const currentUrl = window.location.href;
-            
+
             // [Target Isolation] Reset guessed paths from prior queue targets to prevent state bleeding
             const targetToken = (window.__xpider_exec_identity && window.__xpider_exec_identity.targetToken) || triedUrl || currentUrl;
             const prevTargetToken = sessionStorage.getItem('xpider_active_target_token');
@@ -1061,17 +1068,17 @@
             const lastSubmitTime = parseInt(sessionStorage.getItem('xpider_last_submit_time') || '0');
             const now = Date.now();
             const submitCount = parseInt(sessionStorage.getItem('xpider_submit_count') || '0');
-            
+
             // If we are on a path that was just submitted (within 20s)
             if (submitCount === 0 && lastSubmittedPath && currentUrl.includes(lastSubmittedPath) && (now - lastSubmitTime) < 20000) {
                 logDev("🔄 [LoopGuard] Self-refresh detected. Waiting for actual success indicator...", "info");
-                setTimeout(() => detectSubmissionResult(null, template), 500); 
+                setTimeout(() => detectSubmissionResult(null, template), 500);
                 return;
             }
 
             logDev("🚀 [Engine] Ultra-Mode process started", "start");
             startHeartbeat();
-            
+
             await closeIntrusivePopups();
             if (await checkAndRecoverPage()) return;
 
@@ -1079,15 +1086,15 @@
 
             logDev(`[TARGET_PAGE] url=${currentUrl} recursion=${recursionDebt}`);
             logDev(`🔍 [Discovery] URL: ${currentUrl} | Recursion: ${recursionDebt}`);
-            
+
             // 1. [v1.3.7] Ultra Polling Form Discovery
             await cleanPageEnvironment();
 
             // [Email Collector Integration] Auxiliary non-blocking email scan
             try {
                 extractAndSendPageEmails();
-            } catch (_) {}
-            
+            } catch (_) { }
+
             // [R6.3 B] FORM_SCAN log
             let currentForm = null;
             let formScanBodyCandidates = 0;
@@ -1104,10 +1111,10 @@
                     formScanForms = allForms.length;
                     formScanBodyCandidates = allTextareas.length;
                     formScanLogical = document.querySelectorAll('[role="form"], form, [data-form]').length;
-                } catch (_) {}
-                
+                } catch (_) { }
+
                 if (currentForm) break;
-                
+
                 // [Ultra-Mode] Try scrolling to reveal lazy-loaded forms
                 if (i === 1) {
                     logDev("🚀 [Engine] Ultra-Mode: Scrolling to reveal lazy-loaded content...");
@@ -1116,8 +1123,8 @@
                     window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
                     await triggerContactInteraction();
                 }
-                
-                await new Promise(r => setTimeout(r, 1500)); 
+
+                await new Promise(r => setTimeout(r, 1500));
             }
 
             // [RC3.42] Promote inner field wrappers (UL/OL/TABLE/etc.) to their enclosing <form> before validation.
@@ -1228,7 +1235,7 @@
                         }
                     }
                 }
-            } catch (_) {}
+            } catch (_) { }
 
             logDev(`[FORM_SCAN] forms=${formScanForms} logicalContainers=${formScanLogical} crossOriginFrames=${crossOriginFramesCount} externalFormCandidates=${externalFormCandidatesCount}`, "info");
             logDev(`[PAGE_CLASS] ${pageClass}`, "info");
@@ -1357,10 +1364,10 @@
                         stage: 'CONTACT_PAGE_FOUND',
                         url: window.location.href
                     });
-                } catch (_) {}
+                } catch (_) { }
                 sessionStorage.removeItem('xpider_recursion_debt');
                 sessionStorage.removeItem('xpider_guessed_paths');
-                
+
                 // [v2.5.0] Multi-Branch Search: Scan for other regional branches on this domain
                 const branches = await discoverBranchLinks();
                 if (branches.length > 0) {
@@ -1374,8 +1381,8 @@
                     (Date.now().toString(36) + '_' + Math.random().toString(36).substring(2, 7));
                 const autofillKey = `${autofillAttemptId}:${currentUrl}:${currentForm ? (currentForm.id || currentForm.className || 'form') : 'none'}`;
                 logDev(`[AUTOFILL_LOCK] acquired=true key=${autofillKey}`, "info");
-                const bridgeFn = (_FormDiscoveryEngineR2 && _FormDiscoveryEngineR2.startAutofillForEligibleForm) || 
-                                 (typeof window !== 'undefined' && window.__xpiderStartAutofillForEligibleForm);
+                const bridgeFn = (_FormDiscoveryEngineR2 && _FormDiscoveryEngineR2.startAutofillForEligibleForm) ||
+                    (typeof window !== 'undefined' && window.__xpiderStartAutofillForEligibleForm);
                 if (typeof bridgeFn === 'function') {
                     bridgeFn(autofillAttemptId, { form: currentForm, template, speed });
                 }
@@ -1386,7 +1393,7 @@
                     logDev("✅ [Engine] Campaign step successfully executed.", "success");
                     return; // EXIT: Step complete
                 } else {
-                    if (currentTargetLifecycleState === TargetLifecycleState.SETTLED || 
+                    if (currentTargetLifecycleState === TargetLifecycleState.SETTLED ||
                         currentTargetLifecycleState === TargetLifecycleState.SETTLING ||
                         currentTargetLifecycleState === TargetLifecycleState.SUBMIT_RECOVERY) {
                         logDev("[LIFECYCLE] Target in submit/settling recovery. Aborting fallback discovery.", "info");
@@ -1492,7 +1499,7 @@
                     const u = new URL(l.href);
                     // [v2.9.0] Strict Domain Isolation: ONLY visit links of the same origin
                     return u.origin === currentOrigin && !DOMAIN_BLACKLIST.some(d => l.href.includes(d));
-                } catch(e) { return false; }
+                } catch (e) { return false; }
             })
             .map(l => {
                 if (CONTACT_KEYWORDS.mid.some(k => l.text.includes(k) || l.href.toLowerCase().includes(k))) l.score = 50;
@@ -1523,7 +1530,7 @@
                     } else if (__emailCollectorGeneration === null) {
                         __emailCollectorGeneration = 1;
                     }
-                    const modLoaded = (typeof extractEmailsFromDocument === 'function') || 
+                    const modLoaded = (typeof extractEmailsFromDocument === 'function') ||
                         (typeof self !== 'undefined' && typeof self.extractEmailsFromDocument === 'function') ||
                         (typeof window !== 'undefined' && typeof window.extractEmailsFromDocument === 'function');
                     console.log(`[EMAIL_COLLECTOR_INIT] generation=${__emailCollectorGeneration} moduleLoaded=${modLoaded}`);
@@ -1558,11 +1565,11 @@
                         const currentOnPage = extractEmailsFromCurrentDom();
                         __emailCollectorBaseline = new Set(currentOnPage);
                         __emailCollectorLastFingerprint = ''; // clear fingerprint so dynamic additions after clear can be detected
-                    } catch (_) {}
+                    } catch (_) { }
                     console.log(`[EMAIL_COLLECTOR_CLEARED] generation=${__emailCollectorGeneration} suppressedUntil=${__emailCollectorSuppressedUntil} baseline=${__emailCollectorBaseline.size}`);
                 }
             });
-        } catch (_) {}
+        } catch (_) { }
     }
 
     function extractEmailsFromCurrentDom() {
@@ -1603,7 +1610,7 @@
                     const p = raw.split('@')[0];
                     if (!IGNORE_PREFIXES.includes(p) && p.length >= 2) emails.add(raw);
                 }
-            } catch (_) {}
+            } catch (_) { }
         });
         return Array.from(emails).sort();
     }
@@ -1691,7 +1698,7 @@
                 });
                 __emailCollectorObserver.observe(document.body, { childList: true, subtree: true });
             }
-        } catch (_) {}
+        } catch (_) { }
     }
 
     if (typeof window !== 'undefined' && window.addEventListener) {
@@ -1733,7 +1740,7 @@
                 arr.push(dedupeKey);
                 sessionStorage.setItem('xpider_manual_assist_shown_keys', JSON.stringify(arr));
             }
-        } catch (_) {}
+        } catch (_) { }
     }
 
     // [R6.9G.8 & Directive B, C & V7-RC5] Manual Form Assist: Sticky Owner-Gated Hold with Actionable Panel
@@ -1863,7 +1870,7 @@
             await new Promise(r => setTimeout(r, 600));
             window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
             await triggerContactInteraction();
-        } catch (_) {}
+        } catch (_) { }
 
         // 3. Re-run form discovery for current attempt
         let currentForm = await findOptimalForm();
@@ -1893,7 +1900,7 @@
                     break;
                 }
             }
-        } catch (_) {}
+        } catch (_) { }
 
         // 5. If no native form and no external form, try next discovered contact candidate or alias
         const bestLink = typeof findBestContactLink === 'function' ? findBestContactLink() : null;
@@ -1986,7 +1993,7 @@
                         formIdentity: liveFormIdentity,
                         submitState: 'NOT_SUBMITTED'
                     });
-                } catch (_) {}
+                } catch (_) { }
             }
 
             // [RC3.21 Remediation] Autofill and field resolution must occur BEFORE CAPTCHA handling.
@@ -2052,14 +2059,14 @@
             }
             // Reaching here means autofill succeeded (no unresolved message_body), so this is truthful.
             logDev("[FILL] messageBodyFilled=true", "success");
-            
+
             // [RC3.25 Directive A] Non-sensitive visual confirmation after autofill resolves
             try {
                 let showVisualConfirm = true;
                 try {
                     const st = await new Promise(r => chrome.storage.local.get(['xpider_show_autofill_visual_confirm'], r));
                     if (st && st.xpider_show_autofill_visual_confirm === false) showVisualConfirm = false;
-                } catch (_) {}
+                } catch (_) { }
 
                 if (showVisualConfirm) {
                     const resolvedCats = new Set();
@@ -2091,13 +2098,13 @@
                                 try {
                                     el.style.outline = prevOutline;
                                     el.style.boxShadow = prevBoxShadow;
-                                } catch (_) {}
+                                } catch (_) { }
                             }, 2500);
                         });
                         if (typeof form.scrollIntoView === 'function') {
                             form.scrollIntoView({ behavior: 'smooth', block: 'center' });
                         }
-                    } catch (_) {}
+                    } catch (_) { }
 
                     const formVisible = !!(form.offsetWidth || form.offsetHeight || (typeof form.getClientRects === 'function' && form.getClientRects().length > 0));
                     logDev(`[AUTOFILL_VISUAL_CONFIRM] resolved=name,email,message formVisible=${formVisible}`, 'info');
@@ -2105,15 +2112,15 @@
             } catch (eVis) {
                 logDev(`[AUTOFILL_VISUAL_CONFIRM] Non-fatal error: ${eVis.message}`, 'warning');
             }
-            
+
             // [v7.0] In-app Math Captcha solving retired per Owner External-Extension-Only Contract
 
             logDev(`✅ [FORM_PREP] COMPLETE`, "info");
-            
+
             // [v18.7.5] Visual Hold: Pause so user can confirm mapped fields
             logDev(`⏳ [Engine] Holding for visual confirmation (${speed.hold}ms)...`, "info");
             await new Promise(r => setTimeout(r, speed.hold));
-            
+
             // [R6.1 AI FINAL FILL PASS]
             let auditResult = { pass: true };
             if (_FinalFormCompletionEngine) {
@@ -2130,7 +2137,7 @@
                     });
                     const pageCtx = { url: (typeof window !== 'undefined' && window.location) ? window.location.href : '' };
                     auditResult = await engine.run(form, template, pageCtx);
-                    
+
                     // [R6.1 FINAL REQUIRED AUDIT - HARD GATE]
                     if (!auditResult.pass) {
                         logDev(`❌ [FinalAudit] Submission blocked by Hard Gate: ${auditResult.reason}`, "error");
@@ -2169,7 +2176,7 @@
             // [Issue #6 R6.9G.10.3.7.1.4.5 Section B.6] Pre-Submit Semantic Integrity Hard Gate
             const textareas = Array.from(form.querySelectorAll('textarea, [contenteditable="true"], [aria-multiline="true"]'));
             const phoneInputs = Array.from(form.querySelectorAll('input[type="tel"], input[name*="tel" i], input[name*="phone" i], input[id*="phone" i]'));
-            
+
             const textareaSample = textareas.map(t => (t.value || t.textContent || '')).join(' ');
             const phoneSample = phoneInputs.map(p => (p.value || '')).join(' ');
 
@@ -2205,9 +2212,10 @@
             const curMode = (typeof window !== 'undefined' && window.__xpider_campaign_mode) || (template && template.campaignMode) || 'AUTO';
             if (curMode === 'SEMI_AUTO') {
                 if (initialChallengeInfo.detected && !initialChallengeInfo.verified) {
-                    logDev(`🖐️ [SEMI_AUTO_CAPTCHA_HOLD] CAPTCHA detected (${initialChallengeInfo.type}) in SEMI_AUTO mode. Holding queue for operator assistance.`, "info");
+                    logDev(`🖐️ [SEMI_AUTO_CAPTCHA_HOLD] SEMI_AUTO: CAPTCHA ACTION REQUIRED reasonCode=SEMI_AUTO_CAPTCHA_ACTION_REQUIRED type=${initialChallengeInfo.type} autoSubmit=false resume=only_after_external_extension_or_operator_verified_challenge_success`, "info");
                     const semiOutcome = await handleV7ManualModeHold(form, template, frozenSnapshot, initialChallengeInfo, {
                         mode: 'SEMI_AUTO',
+                        holdReasonCode: 'SEMI_AUTO_CAPTCHA_ACTION_REQUIRED',
                         validationFailed: false,
                         validationReason: `CAPTCHA_CHALLENGE_PENDING (${initialChallengeInfo.type})`
                     });
@@ -2291,7 +2299,7 @@
                     logDev(`[SUBMIT_DUPLICATE_BLOCK] attemptId=${curAttemptId} result=REJECT`, "warning");
                     return false;
                 }
-            } catch (_) {}
+            } catch (_) { }
 
             if (!window.__xpider_submitBoundaryReached) window.__xpider_submitBoundaryReached = {};
             window.__xpider_submitBoundaryReached[curAttemptId] = true;
@@ -2331,7 +2339,7 @@
                 return false;
             }
             if (!stageProgRes || stageProgRes.success !== true) {
-                try { delete window.__xpider_submitBoundaryReached[curAttemptId]; } catch (_) {}
+                try { delete window.__xpider_submitBoundaryReached[curAttemptId]; } catch (_) { }
                 logDev(`[SUBMIT_ACK_REQUIRED] stage=SUBMIT_ATTEMPT_STARTED ack=REJECTED reason=${(stageProgRes && (stageProgRes.reason || stageProgRes.error)) || 'no_response'} — activation withheld`, "error");
                 return false;
             }
@@ -2361,7 +2369,7 @@
             if (!privCheck || privCheck.ready !== true) {
                 const blkReason = (privCheck && (privCheck.reason || privCheck.error)) || 'PRIVACY_GATE_NOT_READY';
                 logDev(`[PRIVACY_SUBMIT_BLOCK] attemptId=${curAttemptId} reason=${blkReason} — submit activation withheld`, "error");
-                try { delete window.__xpider_submitBoundaryReached[curAttemptId]; } catch (_) {}
+                try { delete window.__xpider_submitBoundaryReached[curAttemptId]; } catch (_) { }
                 currentTargetLifecycleState = TargetLifecycleState.SETTLING;
                 finishCampaign(false, "PRIVACY_GATEWAY_BLOCKED_BEFORE_SUBMIT", "PRIVACY_GATEWAY_BLOCKED_BEFORE_SUBMIT");
                 return false;
@@ -2438,6 +2446,7 @@
 
             // [Issue #6 R6.5 Bug B] Only emit SUBMIT_TRIGGERED after successful activation/submit event
             logDev("[SUBMIT] triggered=true", "info");
+            logDev(`[SUBMIT_OUTCOME_STAGE] stage=${submitOutcome.outcomeStage || 'SUBMIT_ATTEMPT_STARTED'} strategy=${submitOutcome.strategy || 'unknown'} deliveryConfirmed=false (triggered is NOT delivery; VERIFIED_SUCCESS requires outcome verification)`, "info");
             logDev("[STAGE] stage=SUBMIT_TRIGGERED", "info");
             try {
                 window.__xpider_current_submit_state = 'TRIGGERED';
@@ -2450,9 +2459,9 @@
                     filledFields: window.__xpider_current_filled_fields || [],
                     submitState: 'TRIGGERED'
                 });
-            } catch (_) {}
+            } catch (_) { }
 
-            try { sessionStorage.setItem('xpider_pending_verify', 'true'); } catch(_) {}
+            try { sessionStorage.setItem('xpider_pending_verify', 'true'); } catch (_) { }
 
             // [V7.0.0-RC2 Audit Item 1] If an invisible/enterprise challenge opened an interactive prompt
             // asynchronously upon submit click, transition into CAPTCHA_PENDING_EXTERNAL_USER instead of falsely settling.
@@ -2490,7 +2499,7 @@
                             safeMessage: safeMessage,
                             attemptId: window.__xpider_execution_identity?.attemptId || null
                         });
-                    } catch (_) {}
+                    } catch (_) { }
                 }
                 finishCampaign(false, `${reasonCode}: ${errorClass}: ${safeMessage}`, reasonCode, {
                     errorClass: errorClass,
@@ -2516,7 +2525,7 @@
     function isContactPage() {
         const url = window.location.href.toLowerCase();
         const title = document.title.toLowerCase();
-        
+
         // Direct match in URL or Title
         const isMatch = (arr) => arr.some(k => url.includes(k) || title.includes(k));
         if (isMatch(CONTACT_KEYWORDS.high)) return true;
@@ -2539,7 +2548,7 @@
             const title = (link.title || '').toLowerCase();
             const aria = (link.getAttribute('aria-label') || '').toLowerCase();
             const cls = (link.className || '').toString().toLowerCase();
-            
+
             if (href.startsWith('mailto:') || href.startsWith('tel:') || href.includes('javascript:')) continue;
             if (DOMAIN_BLACKLIST.some(d => href.includes(d))) continue;
             if (href.length < window.location.origin.length + 2) continue; // Skip home links
@@ -2558,10 +2567,10 @@
             } catch (_) {
                 continue;
             }
-            
+
             let score = 0;
             const combined = `${text} ${href} ${title} ${aria} ${cls}`;
-            
+
             const matchScore = (keywords, weight) => {
                 if (keywords.some(k => combined.includes(k))) score += weight;
             };
@@ -2603,7 +2612,7 @@
         constructor(options = {}) {
             this.options = options;
             const EngineR2Class = (_FormDiscoveryEngineR2 && _FormDiscoveryEngineR2.FormDiscoveryEngineR2) ||
-                                  (typeof window !== 'undefined' && window.FormDiscoveryEngineR2);
+                (typeof window !== 'undefined' && window.FormDiscoveryEngineR2);
             if (EngineR2Class && EngineR2Class !== FormDiscoveryEngine) {
                 this._engineR2 = new EngineR2Class(options);
             }
@@ -2742,7 +2751,7 @@
                             await new Promise(r => setTimeout(r, 400));
                             return true;
                         }
-                    } catch (_) {}
+                    } catch (_) { }
                 }
             }
             return false;
@@ -2770,7 +2779,7 @@
                         }
                     }
                 }
-            } catch (_) {}
+            } catch (_) { }
 
             // 3. Same-origin iframe traversal
             try {
@@ -2784,9 +2793,9 @@
                                 return ifrContainers[0].container;
                             }
                         }
-                    } catch (_) {}
+                    } catch (_) { }
                 }
-            } catch (_) {}
+            } catch (_) { }
 
             // 4. Lazy scroll & dynamic reveal if needed
             if (typeof window !== 'undefined' && typeof window.scrollBy === 'function') {
@@ -2818,19 +2827,19 @@
                         const cs = getComputedStyle(e);
                         if (cs.opacity === '0' || cs.visibility === 'hidden') return true;
                     }
-                } catch (_) {}
+                } catch (_) { }
                 return false;
             };
             const hidden = Array.from(document.querySelectorAll('textarea, input[type="email"]')).filter(el => {
                 if (el.type === 'hidden' || el.disabled) return false;
-                try { if (getComputedStyle(el).display === 'none') return false; } catch (_) {}
+                try { if (getComputedStyle(el).display === 'none') return false; } catch (_) { }
                 return isHiddenByReveal(el) && el.offsetWidth > 0;
             });
             if (!hidden.length) return false;
             logDev(`🫥 [Reveal] ${hidden.length} form field(s) hidden by scroll-reveal. Scrolling into view...`, 'info');
             const startX = window.scrollX, startY = window.scrollY;
             for (const el of hidden.slice(0, 3)) {
-                try { el.scrollIntoView({ block: 'center', behavior: 'instant' }); } catch (_) { try { el.scrollIntoView(); } catch (__) {} }
+                try { el.scrollIntoView({ block: 'center', behavior: 'instant' }); } catch (_) { try { el.scrollIntoView(); } catch (__) { } }
                 const t0 = Date.now();
                 while (Date.now() - t0 < 2500 && isHiddenByReveal(el)) {
                     await new Promise(r => setTimeout(r, 150));
@@ -2851,15 +2860,15 @@
             const engine = new FormDiscoveryEngine();
             const discovered = await engine.discoverForm(document);
             if (discovered) return discovered;
-        } catch (_) {}
+        } catch (_) { }
         // [v2.9.3] Micro-Scoping Engine: High sensitivity mapping
         let bestTarget = null;
-        let maxScore = -999; 
-        
+        let maxScore = -999;
+
         // Define broad candidate types including content areas
         const candidates = queryAllDeep('form, fieldset, .form-wrapper, .sqs-block-form, #contact-form, [id*="contact-form"], [class*="contact-form"], main, section, article')
             .filter(c => !isExcludedOverlayElement(c));
-        
+
         // If few candidates, add potential clusters as candidates
         const allPotentialInputs = queryAllInputs();
         if (candidates.length < 5 && allPotentialInputs.length > 2) {
@@ -2887,7 +2896,7 @@
                     const dist = Math.sqrt(dt * dt + dl * dl);
                     if (dist < minDist) { minDist = dist; nearestLabelText = lblObj.text; }
                 }
-            } catch (_) {}
+            } catch (_) { }
             nearestLabelCache.set(inp, nearestLabelText);
             return nearestLabelText;
         };
@@ -2927,14 +2936,14 @@
                 if (phones.length > 0) score += 40;
                 if (names.length > 0) score += 25;
                 if (allInputs.length >= 2 && allInputs.length <= 45) score += 30;
-                
+
                 // [v17.4.0] Strict Exclusion: Penalize Body/HTML or Zero-Input containers
                 if (['BODY', 'HTML'].includes(el.tagName)) score -= 500;
                 if (allInputs.length < 1) score = -999;
-                
+
                 // [v17.4.0] Priority Boost for real Forms
                 if (el.tagName === 'FORM') score += 200;
-                
+
                 const id = (el.id || '').toLowerCase();
                 const cls = (el.className || '').toString().toLowerCase();
                 const identifier = `${id} ${cls}`;
@@ -2947,25 +2956,25 @@
                     wp: identifier.includes('wpcf7') || identifier.includes('gform') || identifier.includes('nf-') || identifier.includes('ninja') || identifier.includes('wpforms') || identifier.includes('gravity')
                 };
 
-                if (builderBoosts.wix) score += 250; 
+                if (builderBoosts.wix) score += 250;
                 if (builderBoosts.shopify) score += 150;
-                if (builderBoosts.squarespace) score += 300; 
+                if (builderBoosts.squarespace) score += 300;
                 if (builderBoosts.wp) score += 350; // Boosted for CF7 (v17.0)
-                
+
                 // [v17.2.0] Direct CF7/WPForms Fingerprint on IDENTIFIER
                 if (identifier.includes('wpcf7-form') || identifier.includes('wpcf7-init') || identifier.includes('wpforms-form')) score += 500;
-                
+
                 if (['contact', 'message', 'inquiry', 'form', 'contact-form'].some(k => identifier.includes(k))) score += 100;
-                
+
                 // [v17.7.0] Higher Penalty for generic wrapping IDs/Classes
                 if (['root', 'container', 'wrapper', 'main', 'sticky', 'header', 'footer'].some(k => identifier.includes(k)) && el.tagName !== 'FORM') score -= 250;
 
                 // [v18.0.0] Modal & Lightbox Focus: Catastrophic boost for active overlays
                 if (identifier.includes('sqs-modal-item') || identifier.includes('lightbox-content') || identifier.includes('active-modal')) score += 450;
-                
+
                 // [v17.6.0] Search Shield: Catastrophic penalty for search forms
                 if (identifier.includes('search')) score -= 850;
-                
+
                 // 3. Button / Submit presence...
                 const submitBtn = el.querySelector('input[type="submit"], button[type="submit"], button:not([type="button"]), [role="button"], .form-submit-button, .sqs-button-element, .wixui-button, [class*="submit"], [id*="submit"]');
                 if (submitBtn) {
@@ -2985,7 +2994,7 @@
                     if (nearestLabelText.length > 2) score += 5; // Bonus for paired inputs
                     return (inp.placeholder || '') + ' ' + (inp.name || '') + ' ' + nearestLabelText;
                 }).join(' ').toLowerCase();
-                
+
                 if (['@', 'email', 'mail'].some(k => contextText.includes(k))) score += 10;
                 if (['message', 'subject', '제목', '내용'].some(k => contextText.includes(k))) score += 10;
 
@@ -3017,11 +3026,11 @@
                     Array.from(node.shadowRoot.children || []).forEach(collectRoots);
                 }
                 Array.from(node.children || []).forEach(collectRoots);
-            } catch(e) {} // [v2.8.5] Resilience: Don't crash on cross-origin iframe boundaries
+            } catch (e) { } // [v2.8.5] Resilience: Don't crash on cross-origin iframe boundaries
         };
         try {
             Array.from(document.children || []).forEach(collectRoots);
-        } catch(e) {}
+        } catch (e) { }
 
         // [v2.8.5] Optimized: Pre-scan all potential labels once to cache their geometry
         logDev("🕵️ [Supreme-Scan 5.0] Pre-scanning labels and context...", "info");
@@ -3043,7 +3052,7 @@
                 if (frame.contentDocument) {
                     totalElementsScanned += evaluateElement(frame.contentDocument, 'Iframe', pageLabels);
                 }
-            } catch (e) {}
+            } catch (e) { }
         }
 
         logDev(`🔍 [Scan] Scanned ${totalElementsScanned} elements. Highest score: ${maxScore}`, "info");
@@ -3071,11 +3080,11 @@
         function setNativeValue(el, val) {
             try {
                 if (el && el._valueTracker) {
-                    try { el._valueTracker.setValue(''); } catch (_) {}
+                    try { el._valueTracker.setValue(''); } catch (_) { }
                 }
                 const proto = el.tagName === 'TEXTAREA' ? HTMLTextAreaElement.prototype
-                            : el.tagName === 'SELECT' ? HTMLSelectElement.prototype
-                            : HTMLInputElement.prototype;
+                    : el.tagName === 'SELECT' ? HTMLSelectElement.prototype
+                        : HTMLInputElement.prototype;
                 const nativeSetter = Object.getOwnPropertyDescriptor(proto, 'value');
                 if (nativeSetter && nativeSetter.set) {
                     nativeSetter.set.call(el, val);
@@ -3119,10 +3128,10 @@
                 const cp2x = startX + (targetX - startX) * 0.75 + (Math.random() * 50 - 25);
                 const cp2y = startY + (targetY - startY) * 0.75 + (Math.random() * 50 - 25);
 
-                for(let i = 1; i <= steps; i++) {
+                for (let i = 1; i <= steps; i++) {
                     const t = i / steps;
-                    const x = Math.round((1-t)**3 * startX + 3*(1-t)**2*t * cp1x + 3*(1-t)*t**2 * cp2x + t**3 * targetX);
-                    const y = Math.round((1-t)**3 * startY + 3*(1-t)**2*t * cp1y + 3*(1-t)*t**2 * cp2y + t**3 * targetY);
+                    const x = Math.round((1 - t) ** 3 * startX + 3 * (1 - t) ** 2 * t * cp1x + 3 * (1 - t) * t ** 2 * cp2x + t ** 3 * targetX);
+                    const y = Math.round((1 - t) ** 3 * startY + 3 * (1 - t) ** 2 * t * cp1y + 3 * (1 - t) * t ** 2 * cp2y + t ** 3 * targetY);
 
                     try {
                         el.dispatchEvent(new MouseEvent('mousemove', {
@@ -3133,8 +3142,8 @@
                             bubbles: true, cancelable: true, pointerId: 1, pointerType: 'mouse',
                             clientX: x, clientY: y, screenX: x, screenY: y
                         }));
-                    } catch(e) {}
-                    await new Promise(r => setTimeout(r, 10 + Math.random()*15)); // 자연스러운 이동 딜레이
+                    } catch (e) { }
+                    await new Promise(r => setTimeout(r, 10 + Math.random() * 15)); // 자연스러운 이동 딜레이
                 }
 
                 window.__xpider_last_mouse_x = targetX;
@@ -3144,7 +3153,7 @@
             for (const evtName of eventNames) {
                 try {
                     if (evtName.startsWith('pointer')) {
-                        el.dispatchEvent(new PointerEvent(evtName, { 
+                        el.dispatchEvent(new PointerEvent(evtName, {
                             bubbles: true, cancelable: true, pointerId: 1, pointerType: 'mouse',
                             clientX: targetX, clientY: targetY
                         }));
@@ -3160,7 +3169,7 @@
                     } else {
                         el.dispatchEvent(new Event(evtName, { bubbles: true, cancelable: true }));
                     }
-                } catch(e) {}
+                } catch (e) { }
                 // 이벤트간 미세 딜레이
                 await new Promise(r => setTimeout(r, 10 + Math.random() * 20));
             }
@@ -3259,7 +3268,7 @@
                     return true;
                 }
             }
-            
+
             const CUSTOM_SELECTORS = [
                 // React Select
                 '[class*="react-select"]', '[class*="css-"][class*="control"]',
@@ -3283,7 +3292,7 @@
                             customSelects.push(el);
                         }
                     });
-                } catch(e) {}
+                } catch (e) { }
             });
 
             let handled = 0;
@@ -3317,7 +3326,7 @@
                         try {
                             const found = csEl.querySelectorAll(sel);
                             found.forEach(o => { if (elementIsVisible(o) && !options.includes(o)) options.push(o); });
-                        } catch(e) {}
+                        } catch (e) { }
                     });
 
                     // 포탈 렌더링 대응: body 직하의 최근 열린 메뉴 탐색
@@ -3331,7 +3340,7 @@
                                 try {
                                     const found = menu.querySelectorAll(sel);
                                     found.forEach(o => { if (elementIsVisible(o) && !options.includes(o)) options.push(o); });
-                                } catch(e) {}
+                                } catch (e) { }
                             });
                         }
                     }
@@ -3523,7 +3532,7 @@
                             if (isRadio) break;
                         }
                     }
-                } catch(e) {}
+                } catch (e) { }
             }
             return handled;
         }
@@ -3533,30 +3542,30 @@
         // ============================================================
         async function typeHumanlike(el, val) {
             if (!el || !val) return;
-            
+
             // 1. 엘리먼트 가시성 확보 및 부드러운 스크롤 & 초점 잡기
             try {
                 el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                await new Promise(r => setTimeout(r, 450 + Math.random()*150)); // 시선 이동 딜레이
-            } catch(e) {}
-            
+                await new Promise(r => setTimeout(r, 450 + Math.random() * 150)); // 시선 이동 딜레이
+            } catch (e) { }
+
             // 2. 포커스 및 마우스 클릭 이벤트 디스패치 (Bezier 마우스 궤적 자동 기동)
             el.focus();
             await dispatchHumanEvents(el, ['pointerover', 'pointerenter', 'mouseover', 'mouseenter', 'pointerdown', 'mousedown', 'focusin', 'pointerup', 'mouseup', 'click']);
-            await new Promise(r => setTimeout(r, 100 + Math.random()*100));
-            
+            await new Promise(r => setTimeout(r, 100 + Math.random() * 100));
+
             // 3. 한 글자씩 순차적 타이핑 (오타 및 백스페이스 인간미 포함)
             let accumulatedValue = '';
             for (let i = 0; i < val.length; i++) {
                 const char = val[i];
                 const key = char;
                 const keyCode = char.charCodeAt(0);
-                
+
                 // 3a. 간헐적 오타 발생 및 지우기 시뮬레이션 (1.2% 확률)
                 if (Math.random() < 0.012 && i > 0 && i < val.length - 1) {
                     const alphabet = 'abcdefghijklmnopqrstuvwxyz';
                     const typo = alphabet.charAt(Math.floor(Math.random() * alphabet.length));
-                    
+
                     // 오타 삽입
                     accumulatedValue += typo;
                     if (el.contentEditable === 'true') {
@@ -3565,8 +3574,8 @@
                         setNativeValue(el, accumulatedValue);
                     }
                     el.dispatchEvent(new Event('input', { bubbles: true, cancelable: true }));
-                    await new Promise(r => setTimeout(r, 100 + Math.random()*120));
-                    
+                    await new Promise(r => setTimeout(r, 100 + Math.random() * 120));
+
                     // 지우기 (Backspace)
                     accumulatedValue = accumulatedValue.slice(0, -1);
                     if (el.contentEditable === 'true') {
@@ -3575,7 +3584,7 @@
                         setNativeValue(el, accumulatedValue);
                     }
                     el.dispatchEvent(new Event('input', { bubbles: true, inputType: 'deleteContentBackward' }));
-                    await new Promise(r => setTimeout(r, 120 + Math.random()*80));
+                    await new Promise(r => setTimeout(r, 120 + Math.random() * 80));
                 }
 
                 // 3b. keydown 이벤트 발생 (인간미 있는 keydown 설정)
@@ -3587,7 +3596,7 @@
                     bubbles: true,
                     cancelable: true
                 }));
-                
+
                 // 3c. keypress 이벤트 발생
                 el.dispatchEvent(new KeyboardEvent('keypress', {
                     key: key,
@@ -3596,7 +3605,7 @@
                     bubbles: true,
                     cancelable: true
                 }));
-                
+
                 // 3d. 엘리먼트 속성에 따라 실제 값을 순차 대입
                 if (el.contentEditable === 'true') {
                     accumulatedValue += char;
@@ -3605,10 +3614,10 @@
                     accumulatedValue += char;
                     setNativeValue(el, accumulatedValue);
                 }
-                
+
                 // 3e. input 이벤트 발생
                 el.dispatchEvent(new Event('input', { bubbles: true, cancelable: true }));
-                
+
                 // 3f. keyup 이벤트 발생
                 el.dispatchEvent(new KeyboardEvent('keyup', {
                     key: key,
@@ -3617,7 +3626,7 @@
                     bubbles: true,
                     cancelable: true
                 }));
-                
+
                 // 3g. 글자 간 불규칙한 인간 타이핑 딜레이 모사 (문장 부호는 느리게, 장문은 스마트 가속)
                 const isPunctuation = /[.,!?;:]/.test(char);
                 const isLongText = val.length > 40;
@@ -3626,7 +3635,7 @@
                     : (isPunctuation ? (140 + Math.random() * 160) : (35 + Math.random() * 45));
                 await new Promise(r => setTimeout(r, randomDelay));
             }
-            
+
             // 4. 최종 값 2중 안전 장치 (Dual-Layer Sync Safeguard)
             if (el.contentEditable === 'true') {
                 el.textContent = val;
@@ -3637,7 +3646,7 @@
                 el.dispatchEvent(new Event('input', { bubbles: true }));
                 el.dispatchEvent(new Event('change', { bubbles: true }));
             }
-            
+
             // 5. 블러 처리 및 포커스 아웃
             el.blur();
             await dispatchHumanEvents(el, ['blur', 'focusout']);
@@ -3652,7 +3661,7 @@
             } else {
                 if (el.value !== val) {
                     if (el._valueTracker) {
-                        try { el._valueTracker.setValue(''); } catch (_) {}
+                        try { el._valueTracker.setValue(''); } catch (_) { }
                     }
                     setNativeValue(el, val);
                     el.dispatchEvent(new Event('input', { bubbles: true }));
@@ -3711,7 +3720,7 @@
                     if (!window.__xpider_current_filled_fields.includes(fieldKey)) {
                         window.__xpider_current_filled_fields.push(fieldKey);
                     }
-                } catch (_) {}
+                } catch (_) { }
                 return;
             }
 
@@ -3744,7 +3753,7 @@
             }
             fieldsNewlyFilled++;
             filledFields++;
-            try { window.__xpider_field_fill_attempts.set(el, (window.__xpider_field_fill_attempts.get(el) || 0) + 1); } catch (_) {}
+            try { window.__xpider_field_fill_attempts.set(el, (window.__xpider_field_fill_attempts.get(el) || 0) + 1); } catch (_) { }
 
             try {
                 const fieldKey = el.id || el.name || el.getAttribute('name') || el.getAttribute('id') || `field_${filledFields}`;
@@ -3760,7 +3769,7 @@
                 if (!window.__xpider_current_filled_fields.includes(fieldKey)) {
                     window.__xpider_current_filled_fields.push(fieldKey);
                 }
-            } catch (_) {}
+            } catch (_) { }
         };
 
         // 패턴 매칭 함수
@@ -3830,14 +3839,14 @@
             if (/ssn|social.*security|ein|tax.*id|taxpayer|revenue|headcount|employee.*count|passport|license|puzzle|captcha/i.test(c)) {
                 return '';
             }
-            
+
             const type = (el.type || 'text').toLowerCase();
-            
+
             // 1. 숫자 전용 필드 판정
-            const isNumeric = type === 'number' || type === 'range' || 
-                              el.getAttribute('inputmode') === 'numeric' ||
-                              /zip|postal|phone|tel|fax|mobile|number|qty|quantity|code|digit/i.test(c);
-            
+            const isNumeric = type === 'number' || type === 'range' ||
+                el.getAttribute('inputmode') === 'numeric' ||
+                /zip|postal|phone|tel|fax|mobile|number|qty|quantity|code|digit/i.test(c);
+
             if (isNumeric) {
                 if (/phone|tel|mobile|fax|전화|연락처|휴대폰/i.test(c)) {
                     if (tpl.phone && tpl.phone.trim() !== '') return tpl.phone;
@@ -3866,7 +3875,7 @@
                 const rand2 = Math.floor(1 + Math.random() * 98);
                 return String(rand2);
             }
-            
+
             // 2. 이메일 필드 판정
             const isEmail = type === 'email' || /email|mail/i.test(c);
             if (isEmail) {
@@ -3895,7 +3904,7 @@
                 if (el.max && timeVal > el.max) timeVal = el.max;
                 return timeVal;
             }
-            
+
             // 3. 텍스트 / 일반 글자 필드
             if (/company|회사|org/i.test(c)) {
                 return (tpl.name || getRandomTemplateVal()) + ' Inc.';
@@ -3909,7 +3918,7 @@
             if (el.tagName === 'TEXTAREA' || /message|content|body|내용/i.test(c)) {
                 return tpl.message || '';
             }
-            
+
             // 성/이름 필드 스마트 스플리터 적용
             if (/last.?name|family.?name|surname|성(?!명)/i.test(c)) {
                 const s = splitName(tpl.name);
@@ -3922,7 +3931,7 @@
             if (/name|이름|성함|성명/i.test(c)) {
                 return tpl.name || '';
             }
-            
+
             return getRandomTemplateVal();
         }
 
@@ -3962,7 +3971,7 @@
                 if (el.closest && el.closest('.form-field-honeypot, [class*="honeypot"], [id*="honeypot"], [class*="antispam"]')) {
                     return true;
                 }
-            } catch (_) {}
+            } catch (_) { }
 
             // 3. 시각적 / 물리적 은닉 여부 검사 (display:none, visibility:hidden, opacity:0, tabindex=-1 with autocomplete=off)
             const style = window.getComputedStyle(el);
@@ -4290,11 +4299,11 @@
             for (const el of finalInputs) {
                 // 타입 검사: 비입력용 타입들은 무조건 스킵
                 if (el.type === 'hidden' || el.type === 'submit' || el.type === 'button' || el.type === 'image' || el.type === 'file' || el.type === 'reset') continue;
-                
+
                 // 이미 체크되었거나 값이 적힌 것들은 스킵
                 if (el.type === 'checkbox' && el.checked) continue;
                 if (el.type === 'radio' && el.checked) continue;
-                
+
                 // 텍스트/셀렉트 박스 값 검사
                 const currentVal = el.contentEditable === 'true' ? (el.textContent || '') : (el.value || '');
                 if (currentVal.trim() !== '') continue;
@@ -4496,7 +4505,7 @@
                 filledFields: window.__xpider_current_filled_fields || [],
                 submitState: window.__xpider_current_submit_state || 'NOT_SUBMITTED'
             });
-        } catch (_) {}
+        } catch (_) { }
 
         const interactiveInputs = finalAllInputs.filter(el => !['hidden', 'submit', 'button', 'image', 'reset'].includes(el.type) && !isCaptchaChallengeField(el));
         const totalInputsCount = interactiveInputs.length;
@@ -4531,7 +4540,7 @@
                 const safeId = (typeof CSS !== 'undefined' && CSS.escape) ? CSS.escape(el.id) : el.id.replace(/["\\]/g, '\\$&');
                 const label = document.querySelector(`label[for="${safeId}"]`);
                 if (label) return label.textContent || '';
-            } catch (_) {}
+            } catch (_) { }
         }
 
         // Check Squarespace/Build style labels (title class or preceding span)
@@ -4540,15 +4549,15 @@
             try {
                 const labelChild = parent.querySelector('label, .title, .caption, .label');
                 if (labelChild && labelChild !== el) return labelChild.textContent || '';
-            } catch (_) {}
-            
+            } catch (_) { }
+
             // Look at parent's preceding sibling (Squarespace Pattern)
             const prevSibling = parent.previousElementSibling;
             if (prevSibling && (prevSibling.tagName === 'LABEL' || (prevSibling.classList && prevSibling.classList.contains('title')))) {
                 return prevSibling.textContent || '';
             }
         }
-        
+
         // Search the immediate ancestors until we find a label or meaningful text
         let runner = el;
         for (let i = 0; i < 3; i++) {
@@ -4557,7 +4566,7 @@
             try {
                 const labelSub = runner.querySelector('label');
                 if (labelSub) return labelSub.textContent || '';
-            } catch (_) {}
+            } catch (_) { }
         }
 
         return el.getAttribute('aria-label') || el.title || '';
@@ -4576,12 +4585,12 @@
                 return rect.width > 2 && rect.height > 2; // [v18.6.0] Threshold for visibility
             }
             return true;
-        } catch(e) { return true; }
+        } catch (e) { return true; }
     }
 
     function isHoneypot(el) {
         if (!elementIsVisible(el)) return true;
-        
+
         // Common Honeypot identifiers
         const honeypotKeywords = ['honeypot', 'website_url', 'trap', 'bottom_field'];
         // [R6.9G-K] Normalize potentially non-string DOM properties before string ops to prevent TypeError
@@ -4635,7 +4644,7 @@
                 const searchParams = new URLSearchParams(window.location.search);
                 const k = searchParams.get('k') || searchParams.get('sitekey');
                 if (k && k !== 'explicit') return { type: 'recaptcha', sitekey: k };
-            } catch (_) {}
+            } catch (_) { }
         }
 
         const turnstileFrame = document.querySelector('iframe[src*="turnstile"]');
@@ -4653,7 +4662,7 @@
             const gDiv = document.querySelector('.g-recaptcha, [data-sitekey]');
             if (gDiv && gDiv.dataset.sitekey) return { type: 'recaptcha', sitekey: gDiv.dataset.sitekey };
         }
-        
+
         const hcaptchaFrame = document.querySelector('iframe[src*="hcaptcha"]');
         if (hcaptchaFrame) {
             const match = hcaptchaFrame.src.match(/sitekey=([^&]+)/);
@@ -4694,7 +4703,7 @@
                 const m = text.match(/['"]sitekey['"]\s*:\s*['"]([a-zA-Z0-9_\-]+)['"]/i);
                 if (m && m[1]) return { type: 'recaptcha', sitekey: m[1] };
             }
-        } catch (_) {}
+        } catch (_) { }
 
         // Image captcha detection
         const imgCaptcha = document.querySelector('img[src*="captcha" i], img[id*="captcha" i]');
@@ -4715,7 +4724,7 @@
     }
 
     function restoreFrozenSnapshot(form, frozenSnapshot) {
-        if (!form || !frozenSnapshot || !( frozenSnapshot instanceof Map || typeof frozenSnapshot === 'object')) return 0;
+        if (!form || !frozenSnapshot || !(frozenSnapshot instanceof Map || typeof frozenSnapshot === 'object')) return 0;
         let restored = 0;
         try {
             if (frozenSnapshot instanceof Map) {
@@ -4733,14 +4742,14 @@
                             el.checked = Boolean(expectedVal);
                         } else {
                             if (el._valueTracker) {
-                                try { el._valueTracker.setValue(''); } catch (_) {}
+                                try { el._valueTracker.setValue(''); } catch (_) { }
                             }
                             setNativeValue(el, expectedVal);
                             el.value = expectedVal;
                             try {
                                 el.dispatchEvent(new Event('input', { bubbles: true }));
                                 el.dispatchEvent(new Event('change', { bubbles: true }));
-                            } catch (_) {}
+                            } catch (_) { }
                         }
                         restored++;
                     }
@@ -4755,12 +4764,12 @@
                         try {
                             el.dispatchEvent(new Event('input', { bubbles: true }));
                             el.dispatchEvent(new Event('change', { bubbles: true }));
-                        } catch (_) {}
+                        } catch (_) { }
                         restored++;
                     }
                 }
             }
-        } catch (_) {}
+        } catch (_) { }
         return restored;
     }
 
@@ -4783,8 +4792,8 @@
                     action: 'CAPTCHA_PENDING_EXTERNAL_USER',
                     challengeType: challengeInfo?.type || 'unknown',
                     url: (typeof window !== 'undefined' && window.location) ? window.location.href : ''
-                }, () => {});
-            } catch (_) {}
+                }, () => { });
+            } catch (_) { }
         }
 
         logDev(`⏳ [CAPTCHA_PENDING_EXTERNAL_USER] Waiting for external extension or user challenge completion (type=${challengeInfo?.type || 'unknown'}). Tab retained.`, "info");
@@ -4816,8 +4825,8 @@
                         sendFn({
                             action: 'CAPTCHA_EXTERNAL_VERIFIED_RESUME',
                             verificationMethod: outcome.method || 'dom_verified'
-                        }, () => {});
-                    } catch (_) {}
+                        }, () => { });
+                    } catch (_) { }
                 }
                 resolve(outcome);
             };
@@ -4850,7 +4859,7 @@
                 } else if (actionType === 'STOP_AND_SAVE') {
                     logDev("[CAPTCHA_PENDING_EXTERNAL_USER] Operator chose STOP_AND_SAVE", "info");
                     if (sendFn) {
-                        try { sendFn({ action: 'STOP_AND_SAVE_CAMPAIGN' }, () => {}); } catch (_) {}
+                        try { sendFn({ action: 'STOP_AND_SAVE_CAMPAIGN' }, () => { }); } catch (_) { }
                     }
                     finishWait({ resolved: false, stopped: true });
                 }
@@ -4884,7 +4893,7 @@
                 (typeof window !== 'undefined' && window.__xpider_external_captcha_timeout_ms) ||
                 45000;
 
-            const isElVisible = (el) => Boolean(el && el.offsetParent !== null && !el.hidden && 
+            const isElVisible = (el) => Boolean(el && el.offsetParent !== null && !el.hidden &&
                 (typeof getComputedStyle === 'function' ? (getComputedStyle(el).display !== 'none' && getComputedStyle(el).visibility !== 'hidden') : true));
 
             // Non-invasive DOM polling for independent page-level challenge completion
@@ -5010,6 +5019,9 @@
         const validationReasonStr = (holdOptions && holdOptions.validationReason) || '';
         const unresolvedFieldsArr = Array.isArray(holdOptions && holdOptions.unresolvedFields) ? holdOptions.unresolvedFields : [];
 
+        const holdModeLabel = (holdOptions && holdOptions.mode === 'SEMI_AUTO') ? 'SEMI_AUTO' : 'MANUAL';
+        const holdReasonCode = (holdOptions && holdOptions.holdReasonCode) || (holdModeLabel === 'MANUAL' ? 'MANUAL_MODE_OPERATOR_SUBMIT' : (validationReasonStr || 'SEMI_AUTO_HOLD'));
+
         if (sendFn && !(holdOptions && holdOptions.suppressInitialHoldSignal)) {
             try {
                 sendFn({
@@ -5018,12 +5030,14 @@
                     challengeStatus: challengeStatusStr,
                     validationFailed: isValidationHold,
                     validationReason: validationReasonStr,
-                    unresolvedFields: unresolvedFieldsArr
-                }, () => {});
-            } catch (_) {}
+                    unresolvedFields: unresolvedFieldsArr,
+                    holdMode: holdModeLabel,
+                    holdReasonCode
+                }, () => { });
+            } catch (_) { }
         }
 
-        logDev(`🖐️ [MANUAL_MODE_HOLD] Form prepared and frozen. Holding queue for operator registration (challenge=${challengeStatusStr}, validationFailed=${isValidationHold}, reason=${validationReasonStr || 'NONE'}).`, "info");
+        logDev(`🖐️ [${holdModeLabel === 'SEMI_AUTO' ? 'SEMI_AUTO_HOLD' : 'MANUAL_MODE_HOLD'}] mode=${holdModeLabel} reasonCode=${holdReasonCode} Form prepared and frozen. Holding queue for operator registration (challenge=${challengeStatusStr}, validationFailed=${isValidationHold}, reason=${validationReasonStr || 'NONE'}).`, "info");
 
         return new Promise((resolve) => {
             let settled = false;
@@ -5043,7 +5057,7 @@
 
             const cleanup = () => {
                 if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.onMessage) {
-                    try { chrome.runtime.onMessage.removeListener(holdMsgListener); } catch (_) {}
+                    try { chrome.runtime.onMessage.removeListener(holdMsgListener); } catch (_) { }
                 }
                 if (typeof document !== 'undefined') {
                     const panel = document.getElementById('xpider-v7-manual-hold-panel');
@@ -5177,7 +5191,7 @@
                     disableHoldActionButtons();
                     logDev("[MANUAL_MODE_DECISION] action=STOP_AND_SAVE", "info");
                     if (sendFn) {
-                        try { sendFn({ action: 'STOP_AND_SAVE_CAMPAIGN' }, () => {}); } catch (_) {}
+                        try { sendFn({ action: 'STOP_AND_SAVE_CAMPAIGN' }, () => { }); } catch (_) { }
                     }
                     return settleManual({ success: false, status: 'PAUSED', reasonCode: 'STOP_AND_SAVE_CAMPAIGN' });
                 }
@@ -5488,7 +5502,7 @@
                 execIdentity = st.xpider_exec_identity || execIdentity;
                 if (st && st.xpider_owner_function_test_mode) execIdentity.ownerFunctionTestMode = true;
             }
-        } catch (_) {}
+        } catch (_) { }
 
         const isControlledLab = /^https?:\/\/(127\.0\.0\.1|localhost)(:\d+)?\/captcha-[a-z0-9-]+\.html/i.test(window.location.href);
         if (isControlledLab || execIdentity.ownerFunctionTestMode) {
@@ -5511,7 +5525,7 @@
                     const ctx = canvas.getContext('2d');
                     ctx.drawImage(captchaData.element, 0, 0);
                     imageData = canvas.toDataURL('image/png').replace(/^data:image\/(png|jpeg);base64,/, '');
-                } catch (_) {}
+                } catch (_) { }
             }
 
             // Step 1: Send OWNER_CAPTCHA_REQUEST with full canonical identity (Zero provider calls before Owner Auto)
@@ -5625,7 +5639,7 @@
                                     targetParent.appendChild(ta);
                                     fields.push(ta);
                                     applied = true;
-                                } catch (_) {}
+                                } catch (_) { }
                             }
                             for (const f of fields) {
                                 try {
@@ -5642,7 +5656,7 @@
                                 if (gWidget && gWidget.dataset.callback && typeof window[gWidget.dataset.callback] === 'function') {
                                     window[gWidget.dataset.callback](solution);
                                 }
-                            } catch (_) {}
+                            } catch (_) { }
                         } else if (captchaData.type === 'hcaptcha') {
                             const input = document.querySelector('[name="h-captcha-response"]');
                             if (input) { input.value = solution; applied = true; }
@@ -5877,13 +5891,13 @@
                             if (window.grecaptcha && typeof window.grecaptcha.getResponse === 'function') {
                                 grecaptchaToken = window.grecaptcha.getResponse() || '';
                             }
-                        } catch (_) {}
+                        } catch (_) { }
 
                         const isDone = _isCaptchaSolved ||
-                                       (gResp && gResp.value && gResp.value.length > 10) ||
-                                       (hResp && hResp.value && hResp.value.length > 10) ||
-                                       (tResp && tResp.value && tResp.value.length > 10) ||
-                                       (grecaptchaToken && grecaptchaToken.length > 10);
+                            (gResp && gResp.value && gResp.value.length > 10) ||
+                            (hResp && hResp.value && hResp.value.length > 10) ||
+                            (tResp && tResp.value && tResp.value.length > 10) ||
+                            (grecaptchaToken && grecaptchaToken.length > 10);
                         if (isDone) {
                             triggerManualSolved();
                         }
@@ -5955,10 +5969,10 @@
                         }
                         f.dispatchEvent(new Event('input', { bubbles: true }));
                         f.dispatchEvent(new Event('change', { bubbles: true }));
-                    } catch (_) {}
+                    } catch (_) { }
                 }
                 if (typeof window.validateRecaptcha === 'function') {
-                    try { window.validateRecaptcha(solution); } catch (_) {}
+                    try { window.validateRecaptcha(solution); } catch (_) { }
                 }
             }
         });
@@ -6061,7 +6075,7 @@
                                 captchaEpoch: execId.captchaEpoch
                             });
                             if (cb) chrome.runtime.sendMessage(enriched, cb);
-                            else chrome.runtime.sendMessage(enriched).catch(() => {});
+                            else chrome.runtime.sendMessage(enriched).catch(() => { });
                         };
                     }
                     const form = document.querySelector('form, #contact_form, .contact-form, [action*="contact"]');
@@ -6131,7 +6145,7 @@
                 }
             });
             window.tryAutoSolveCaptcha = tryAutoSolveCaptcha;
-        } catch (_) {}
+        } catch (_) { }
     }
 
     async function waitForCaptchaSolved() {
@@ -6160,17 +6174,17 @@
             }
 
             const stillHasCaptcha = await checkForCaptcha();
-            
+
             // Search all frames and forms for captcha token fields (tracking injection state only)
             const gResponse = document.querySelector('[name="g-recaptcha-response"]') || document.querySelector('#g-recaptcha-response');
             const hResponse = document.querySelector('[name="h-captcha-response"]') || document.querySelector('#h-captcha-response');
             const tResponse = document.querySelector('[name="cf-turnstile-response"]') || document.querySelector('#cf-turnstile-response') || document.querySelector('[name="cf_challenge_response"]') || document.querySelector('input[name*="turnstile"]');
             const imgInput = document.querySelector('input[name*="captcha" i], input[id*="captcha" i], input[placeholder*="captcha" i]');
-            
-            const hasToken = (gResponse && gResponse.value && gResponse.value.trim() !== '') || 
-                             (hResponse && hResponse.value && hResponse.value.trim() !== '') || 
-                             (tResponse && tResponse.value && tResponse.value.trim() !== '') ||
-                             (imgInput && imgInput.value && imgInput.value.trim() !== '');
+
+            const hasToken = (gResponse && gResponse.value && gResponse.value.trim() !== '') ||
+                (hResponse && hResponse.value && hResponse.value.trim() !== '') ||
+                (tResponse && tResponse.value && tResponse.value.trim() !== '') ||
+                (imgInput && imgInput.value && imgInput.value.trim() !== '');
             if (hasToken) {
                 _captchaTokenInjected = true;
             }
@@ -6276,16 +6290,16 @@
             for (const el of candidates) {
                 // 특수 버튼/파일 타입은 에러 판정에서 제외
                 if (el.type === 'hidden' || el.type === 'submit' || el.type === 'button' || el.type === 'image' || el.type === 'file' || el.type === 'reset') continue;
-                
+
                 let isError = false;
-                
+
                 // 1. HTML5 native :invalid 체크 및 aria-invalid 체크
                 try {
                     if (el.matches(':invalid') || el.getAttribute('aria-invalid') === 'true' || el.getAttribute('data-state') === 'invalid') {
                         isError = true;
                     }
-                } catch(e) {}
-                
+                } catch (e) { }
+
                 // 2. 조상 래퍼 클래스 트래버스 (최대 5레벨 위 조상까지 검사하여 invalid 클래스 마킹 확인 - Wix .tkHMZu 등 감지)
                 if (!isError) {
                     let ancestor = el.parentElement;
@@ -6296,7 +6310,7 @@
                         const ancestorClass = (ancestor.className || '').toString().toLowerCase();
                         const ancestorId = (ancestor.id || '').toString().toLowerCase();
                         const combinedAttr = `${ancestorClass} ${ancestorId}`;
-                        
+
                         if (errorKeywords.some(k => combinedAttr.includes(k))) {
                             isError = true;
                             break;
@@ -6304,7 +6318,7 @@
                         ancestor = ancestor.parentElement;
                     }
                 }
-                
+
                 // 3. 동적 에러 텍스트 연계 및 형제 노드 (.Z0mg9X) 검사
                 if (!isError) {
                     // Wix 에러 텍스트 컴포넌트가 인풋 주변에 가시적으로 렌더링되어 있는지 검사
@@ -6328,7 +6342,7 @@
 
                     const keywordsToTest = ['email', 'phone', 'tel', 'name', 'message', 'subject', '이메일', '전화', '이름', '메시지', '제목', 'mail'];
                     const matchedKeyword = keywordsToTest.find(k => hint.includes(k));
-                    
+
                     if (matchedKeyword) {
                         // 페이지 전반의 가시적 에러 메시지 중 해당 필드 명칭을 담은 에러 텍스트가 1개라도 존재하는 경우
                         if (visibleErrorTexts.some(errText => errText.includes(matchedKeyword) || errText.includes('필수') || errText.includes('required') || errText.includes('invalid'))) {
@@ -6336,12 +6350,12 @@
                         }
                     }
                 }
-                
+
                 // 5. 시각적 빨간색 border/box-shadow/background 변색 검사
                 if (!isError) {
                     const style = window.getComputedStyle(el);
                     const parentStyle = el.parentElement ? window.getComputedStyle(el.parentElement) : null;
-                    
+
                     const isRedColor = (colorStr) => {
                         if (!colorStr) return false;
                         const match = colorStr.match(/rgba?\((\d+)\s*,\s*(\d+)\s*,\s*(\d+)/);
@@ -6353,7 +6367,7 @@
                         }
                         return colorStr.includes('#ff0000') || colorStr.includes('red') || colorStr.includes('rgb(255, 64, 64)');
                     };
-                    
+
                     if (isRedColor(style.borderColor) || isRedColor(style.boxShadow) || isRedColor(style.outlineColor) ||
                         (parentStyle && (isRedColor(parentStyle.borderColor) || isRedColor(parentStyle.boxShadow)))) {
                         isError = true;
@@ -6367,7 +6381,7 @@
 
             if (errorFields.length > 0) {
                 logDev(`⚠️ [Healer] 정밀 에러 자가 복구 가동! 대상 필드 ${errorFields.length}개 발견.`, 'warning');
-                
+
                 for (const el of errorFields) {
                     // 1. 완벽한 값 초기화 (React/Vue 가상 DOM 내부까지 값 세터를 리셋)
                     if (el.contentEditable === 'true') {
@@ -6443,7 +6457,7 @@
             this.maxAttemptsPerElement = opts.maxElementAttempts || opts.maxAttemptsPerElement || 2;
             this.cooldownMs = opts.cooldownMs || 500;
             this.requiredStableCycles = opts.requiredStableCycles || 2;
-            
+
             this.tracker = new WeakMap();
             this.startTime = Date.now();
             this.timer = null;
@@ -6451,7 +6465,7 @@
             this.isStopped = false;
             this.customFillFn = null;
             this._onStop = null;
-            
+
             this.stats = {
                 fieldsSeen: 0,
                 mapped: 0,
@@ -6484,14 +6498,14 @@
             return new Promise((resolve) => {
                 this._onStop = resolve;
                 this.timer = setInterval(() => {
-                    this.stabilizePass().catch(() => {});
+                    this.stabilizePass().catch(() => { });
                 }, this.checkIntervalMs);
 
                 this.safetyTimer = setTimeout(() => {
                     this.stop("MAX_LIFETIME_EXCEEDED");
                 }, this.maxLifetimeMs);
 
-                this.stabilizePass().catch(() => {});
+                this.stabilizePass().catch(() => { });
             });
         }
 
@@ -6510,7 +6524,7 @@
 
             for (const el of candidates) {
                 if (el.type === 'hidden' || el.type === 'submit' || el.type === 'button' || el.type === 'image' || el.type === 'file' || el.type === 'reset') continue;
-                
+
                 const t = this._getTrack(el);
 
                 // A. Radios
@@ -6528,7 +6542,7 @@
                         try {
                             const cbHelper = new _CheckboxResolverR2();
                             groupMembers = cbHelper.getGroupMembers(el, this.form);
-                        } catch (_) {}
+                        } catch (_) { }
                     }
                     // If part of a choice group (>= 2 checkboxes) and at least 1 valid option is already checked, the group is satisfied
                     if (groupMembers.length >= 2 && groupMembers.some(m => m && m.checked === true)) {
@@ -6539,7 +6553,7 @@
                     const isRequired = el.required || el.getAttribute('aria-required') === 'true';
                     const directLabelText = (el.closest('label')?.textContent || (el.id && typeof document !== 'undefined' ? document.querySelector(`label[for="${el.id}"]`)?.textContent : '') || '').toLowerCase();
                     const hasAsterisk = directLabelText.includes('*') || directLabelText.includes('필수') || directLabelText.includes('agree');
-                    
+
                     if (isRequired || hasAsterisk) {
                         if (el.checked) {
                             t.stableCycles++;
@@ -6726,7 +6740,7 @@
                 const el = root.querySelector(selector);
                 if (el) return el;
             }
-        } catch(e) {}
+        } catch (e) { }
         try {
             if (root.querySelectorAll) {
                 const all = root.querySelectorAll('*');
@@ -6737,7 +6751,7 @@
                     }
                 }
             }
-        } catch(e) {}
+        } catch (e) { }
         let child = root.firstChild;
         while (child) {
             const found = querySelectorIncludingShadowDOM(child, selector);
@@ -6755,7 +6769,7 @@
                     if (!results.includes(el)) results.push(el);
                 });
             }
-        } catch(e) {}
+        } catch (e) { }
         try {
             if (root.querySelectorAll) {
                 const all = root.querySelectorAll('*');
@@ -6765,7 +6779,7 @@
                     }
                 }
             }
-        } catch(e) {}
+        } catch (e) { }
         let child = root.firstChild;
         while (child) {
             querySelectorAllIncludingShadowDOM(child, selector, results);
@@ -6777,7 +6791,7 @@
     // ============================================================
     // [Section B] Field Integrity Before Submit (Freeze & Verify)
     // ============================================================
-    
+
     function isCaptchaChallengeField(el) {
         if (!el) return false;
         const tag = (el.tagName || '').toUpperCase();
@@ -6900,7 +6914,7 @@
                         currentEl.dispatchEvent(new Event('input', { bubbles: true }));
                     } else {
                         if (currentEl._valueTracker) {
-                            try { currentEl._valueTracker.setValue(''); } catch (_) {}
+                            try { currentEl._valueTracker.setValue(''); } catch (_) { }
                         }
                         setNativeValue(currentEl, authorVal);
                         currentEl.value = authorVal;
@@ -6914,7 +6928,7 @@
                         currentEl.dispatchEvent(new Event('input', { bubbles: true }));
                         currentEl.dispatchEvent(new Event('change', { bubbles: true }));
                         currentEl.dispatchEvent(new FocusEvent('blur', { bubbles: true }));
-                    } catch (_) {}
+                    } catch (_) { }
 
                     repairedCount++;
 
@@ -7026,7 +7040,7 @@
 
         async _observeActivationCommit(snap, primary, form, submitFired, windowMs) {
             const deadline = Date.now() + windowMs;
-            for (;;) {
+            for (; ;) {
                 const signals = this._collectCommitSignals(snap, primary, form, submitFired);
                 const validationError = !snap.hadValidationError && this._hasValidationError(form);
                 if (validationError) return { committed: false, validationError: true, signals };
@@ -7040,14 +7054,14 @@
             const snap = this._captureActivationSnapshot(primary, form);
             const tag = (primary.tagName || 'el').toLowerCase();
             logDev(`[CUSTOM_ACTIVATION] phase=SNAPSHOT tag=${tag} formVisible=${snap.formVisible} statusNodes=${snap.statusNodes} netCount=${snap.netCount}`, "info");
-            try { if (typeof primary.scrollIntoView === 'function') primary.scrollIntoView({ block: 'center' }); } catch (_) {}
+            try { if (typeof primary.scrollIntoView === 'function') primary.scrollIntoView({ block: 'center' }); } catch (_) { }
             try { primary.click(); } catch (e) { logDev(`⚠️ [CUSTOM_ACTIVATION] click threw: ${e.message}`, "warning"); }
             logDev("[CUSTOM_ACTIVATION] phase=CLICK count=1", "info");
             let obs = await this._observeActivationCommit(snap, primary, form, submitFired, 1800);
             if (!obs.committed && !obs.validationError) {
                 // Zero observable effect from the DOM click: exactly one pointer-sequence fallback (handlers bound to pointer/mouse events).
                 logDev("[CUSTOM_ACTIVATION] phase=ZERO_EFFECT_FALLBACK pointer_sequence count=1", "info");
-                try { _dispatchSingleClickSequence(primary); } catch (_) {}
+                try { _dispatchSingleClickSequence(primary); } catch (_) { }
                 obs = await this._observeActivationCommit(snap, primary, form, submitFired, 1200);
             }
             if (obs.committed) {
@@ -7114,7 +7128,7 @@
                     for (const eb of externals) {
                         if (!nativeButtons.includes(eb) && !externalButtons.includes(eb)) externalButtons.push(eb);
                     }
-                } catch (_) {}
+                } catch (_) { }
             }
 
             // 3. Custom semantic controls inside form (<a>, clickable <div>, <span>, custom CTA components)
@@ -7300,7 +7314,7 @@
                                 if (typeof inp.blur === 'function') inp.blur();
                             }
                         }
-                    } catch (_) {}
+                    } catch (_) { }
                 }
             }
 
@@ -7394,7 +7408,7 @@
                     await new Promise(r => setTimeout(r, 150));
                     return true;
                 }
-            } catch (_) {}
+            } catch (_) { }
             return false;
         }
 
@@ -7413,7 +7427,7 @@
                         return { ok: false, reason: 'SUBMIT_CLICK_BLOCKED_BY_OVERLAY' };
                     }
                 }
-            } catch (_) {}
+            } catch (_) { }
             return { ok: true };
         }
 
@@ -7468,12 +7482,12 @@
             // Stop stabilizers & sweepers
             stopActiveEmptyFieldSweeper();
             if (tpl && typeof tpl.stop === 'function') {
-                try { tpl.stop(); } catch(_) {}
+                try { tpl.stop(); } catch (_) { }
             }
 
             // Blur active input
             if (typeof document !== 'undefined' && document.activeElement && typeof document.activeElement.blur === 'function') {
-                try { document.activeElement.blur(); } catch(_) {}
+                try { document.activeElement.blur(); } catch (_) { }
             }
 
             // Pre-submit readiness check
@@ -7491,7 +7505,7 @@
                 if (existingRcptEl) {
                     preSubmitReceiptSnapshot = existingRcptEl.getAttribute('data-receipt-id') || existingRcptEl.getAttribute('content') || (existingRcptEl.textContent ? existingRcptEl.textContent.trim() : null);
                 }
-            } catch (_) {}
+            } catch (_) { }
             this.preSubmitReceiptSnapshot = preSubmitReceiptSnapshot;
 
             // [R6.9G.10.3.5.1 Section 3] SubmitExecutorR5 Defense-in-Depth Privacy Barrier
@@ -7549,7 +7563,7 @@
                             primary.style.pointerEvents = 'auto';
                             if (primary.style.opacity === '0') primary.style.opacity = '1';
                         }
-                    } catch (_) {}
+                    } catch (_) { }
                 }
 
                 // [Issue #6 R6 SUBMIT-R2-1] If still disabled after repair, handle per observeDisabledMs option
@@ -7593,7 +7607,7 @@
                         if (submitEventFired) {
                             return { success: true, reasonCode: 'SUBMIT_TRIGGERED', strategy: 'wix_adapter_click', submitEventFired: true };
                         }
-                    } catch (_) {}
+                    } catch (_) { }
                 }
 
                 // [Issue #6 R6.5 Section 5: SUBMIT FAILURE RECOVERY ORDER]
@@ -7617,7 +7631,7 @@
                         if (submitEventFired) {
                             return { success: true, reasonCode: 'SUBMIT_TRIGGERED', strategy: 'button_click', submitEventFired: true };
                         }
-                    } catch (_) {}
+                    } catch (_) { }
                 }
 
                 // 3. if zero effect -> check pointer hit-test & fresh candidate re-query
@@ -7631,13 +7645,13 @@
                     // 6. retry ONE activation
                     if (freshPrimary && !this.isDisabled(freshPrimary)) {
                         if (form && form.tagName === 'FORM' && typeof form.requestSubmit === 'function') {
-                            try { form.requestSubmit(freshPrimary); } catch (_) {}
+                            try { form.requestSubmit(freshPrimary); } catch (_) { }
                         }
                         if (!submitEventFired && typeof freshPrimary.click === 'function') {
-                            try { freshPrimary.click(); } catch (_) {}
+                            try { freshPrimary.click(); } catch (_) { }
                         }
                         if (!submitEventFired) {
-                            try { _dispatchSingleClickSequence(freshPrimary); } catch (_) {}
+                            try { _dispatchSingleClickSequence(freshPrimary); } catch (_) { }
                         }
                         if (submitEventFired) {
                             return { success: true, reasonCode: 'SUBMIT_TRIGGERED', strategy: 'retry_after_overlay_dismiss', submitEventFired: true };
@@ -7650,7 +7664,7 @@
                         if (submitEventFired) {
                             return { success: true, reasonCode: 'SUBMIT_TRIGGERED', strategy: 'pointer_events', submitEventFired: true };
                         }
-                    } catch (_) {}
+                    } catch (_) { }
 
                     // Keyboard Enter fallback
                     try {
@@ -7660,7 +7674,7 @@
                         if (submitEventFired) {
                             return { success: true, reasonCode: 'SUBMIT_TRIGGERED', strategy: 'keyboard_enter', submitEventFired: true };
                         }
-                    } catch (_) {}
+                    } catch (_) { }
                 }
 
                 // 7. try one alternate valid submitter
@@ -7671,7 +7685,7 @@
                         if (submitEventFired) {
                             return { success: true, reasonCode: 'SUBMIT_TRIGGERED', strategy: 'alternate_candidate_click', submitEventFired: true };
                         }
-                    } catch (_) {}
+                    } catch (_) { }
                 }
 
                 // [R6.7 VisionSubmitExecutor - Bounded Last Resort]
@@ -7709,10 +7723,24 @@
                 }
             } else {
                 if (form && form.tagName === 'FORM' && typeof form.requestSubmit === 'function') {
+                    // [Directive #6731090998 Item 1(iv) & 4] 0 SUBMIT_CANDIDATES must NOT be reported as triggered=true
+                    // unless a native 'submit' event was VERIFIED to fire from requestSubmit() on a constraint-valid form.
+                    let nativeSubmitSeen = false;
+                    let nativeValid = true;
+                    const onNativeSubmit = () => { nativeSubmitSeen = true; };
                     try {
-                        form.requestSubmit();
-                        return { success: true, reasonCode: 'SUBMIT_TRIGGERED', strategy: 'requestSubmit_no_button', submitEventFired: true };
-                    } catch (_) {}
+                        try { nativeValid = (typeof form.checkValidity === 'function') ? form.checkValidity() : true; } catch (_) { nativeValid = true; }
+                        form.addEventListener('submit', onNativeSubmit, true);
+                        if (nativeValid) form.requestSubmit();
+                    } catch (_) {
+                    } finally {
+                        try { form.removeEventListener('submit', onNativeSubmit, true); } catch (_) { }
+                    }
+                    if (nativeValid && nativeSubmitSeen) {
+                        logDev('[SUBMIT_OUTCOME_STAGE] stage=NATIVE_REQUEST_SUBMITTED strategy=requestSubmit_no_button candidates=0 submitEventVerified=true', 'info');
+                        return { success: true, reasonCode: 'SUBMIT_TRIGGERED', strategy: 'requestSubmit_no_button', submitEventFired: true, nativeRequestSubmitted: true, outcomeStage: 'NATIVE_REQUEST_SUBMITTED' };
+                    }
+                    logDev(`[SUBMIT_OUTCOME_STAGE] stage=SUBMIT_NOT_PERFORMED reason=${nativeValid ? 'NATIVE_SUBMIT_EVENT_NOT_OBSERVED' : 'NATIVE_FORM_VALIDATION_BLOCKED'} candidates=0`, 'warning');
                 }
             }
 
@@ -7741,7 +7769,7 @@
                 try {
                     form.submit();
                     return { success: true, reasonCode: 'SUBMIT_TRIGGERED', strategy: 'FORCED_FORM_SUBMIT_LAST_RESORT', submitEventFired: true };
-                } catch (_) {}
+                } catch (_) { }
             }
 
             if (!submitEventFired) {
@@ -7787,7 +7815,7 @@
             el.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, cancelable: true }));
             el.click();
         } catch (_) {
-            try { el.click(); } catch (_) {}
+            try { el.click(); } catch (_) { }
         }
     }
 
@@ -7882,7 +7910,7 @@
                         }
                     });
                     this.observer.observe(document.body, { childList: true, subtree: true, characterData: true, attributes: true });
-                } catch (_) {}
+                } catch (_) { }
             }
         }
 
@@ -7892,7 +7920,7 @@
                 this._moEvalTimeout = null;
             }
             if (this.observer) {
-                try { this.observer.disconnect(); } catch (_) {}
+                try { this.observer.disconnect(); } catch (_) { }
                 this.observer = null;
             }
             if (this.form && typeof this.form.removeEventListener === 'function') {
@@ -7914,7 +7942,7 @@
                     for (const el of errEls) {
                         if (typeof elementIsVisible === 'function' ? elementIsVisible(el) : true) visibleErrorsCount++;
                     }
-                } catch (_) {}
+                } catch (_) { }
             }
 
             const successContainers = (typeof document !== 'undefined' && document.querySelectorAll) ?
@@ -7967,7 +7995,7 @@
                             });
                         }
                     }
-                } catch (_) {}
+                } catch (_) { }
             }
 
             const visibleValidationSignatures = new Set();
@@ -7996,7 +8024,7 @@
                             signature: sig
                         });
                     }
-                } catch (_) {}
+                } catch (_) { }
             }
 
             const preExistingWidgetErrors = new Set();
@@ -8012,7 +8040,7 @@
                             preExistingWidgetErrors.add(sig);
                         }
                     }
-                } catch (_) {}
+                } catch (_) { }
             }
 
             const negativeSignals = {
@@ -8087,19 +8115,19 @@
                         if (parsed && typeof parsed === 'object') {
                             // Check for error properties or HTTP error status codes in JSON payload
                             const hasErrorCode = (typeof parsed.statusCode === 'number' && parsed.statusCode >= 400) ||
-                                                 (typeof parsed.status === 'number' && parsed.status >= 400) ||
-                                                 (typeof parsed.code === 'number' && parsed.code >= 400);
-                            const hasErrorProp = !!(parsed.error || parsed.err || 
-                                                 (Array.isArray(parsed.errors) && parsed.errors.length > 0) || 
-                                                 (parsed.errors && typeof parsed.errors === 'object' && Object.keys(parsed.errors).length > 0) ||
-                                                 (Array.isArray(parsed.validation_errors) && parsed.validation_errors.length > 0) ||
-                                                 (parsed.validation_errors && typeof parsed.validation_errors === 'object' && Object.keys(parsed.validation_errors).length > 0));
-                            const hasNegativeStatus = parsed.success === false || 
-                                                      parsed.status === 'error' || 
-                                                      parsed.status === 'fail' || 
-                                                      parsed.status === 'failed' || 
-                                                      parsed.result === 'error' || 
-                                                      parsed.result === 'failed';
+                                (typeof parsed.status === 'number' && parsed.status >= 400) ||
+                                (typeof parsed.code === 'number' && parsed.code >= 400);
+                            const hasErrorProp = !!(parsed.error || parsed.err ||
+                                (Array.isArray(parsed.errors) && parsed.errors.length > 0) ||
+                                (parsed.errors && typeof parsed.errors === 'object' && Object.keys(parsed.errors).length > 0) ||
+                                (Array.isArray(parsed.validation_errors) && parsed.validation_errors.length > 0) ||
+                                (parsed.validation_errors && typeof parsed.validation_errors === 'object' && Object.keys(parsed.validation_errors).length > 0));
+                            const hasNegativeStatus = parsed.success === false ||
+                                parsed.status === 'error' ||
+                                parsed.status === 'fail' ||
+                                parsed.status === 'failed' ||
+                                parsed.result === 'error' ||
+                                parsed.result === 'failed';
 
                             // Check document title for HTTP errors (e.g. 400, 401, 403, 404, 422, 500, 502, 503)
                             const docTitle = (typeof document.title === 'string' ? document.title.toLowerCase() : '');
@@ -8128,13 +8156,13 @@
                                 }
                             }
                         }
-                    } catch (_) {}
+                    } catch (_) { }
                 }
             }
 
             // 2b. DOM Server Error Transition (Only if no actual transport failure already asserted)
             if (!actualTransportFailure && typeof document !== 'undefined') {
-                const preServerErrorPhrases = (this.preSnapshot && this.preSnapshot.negativeSignals && this.preSnapshot.negativeSignals.serverErrorPhrases) || 
+                const preServerErrorPhrases = (this.preSnapshot && this.preSnapshot.negativeSignals && this.preSnapshot.negativeSignals.serverErrorPhrases) ||
                     (this.preSnapshot && this.preSnapshot.bodyText ? new Set(SERVER_ERROR_PATTERNS.filter(p => this.preSnapshot.bodyText.includes(p))) : new Set());
                 const preServerErrorNodes = (this.preSnapshot && this.preSnapshot.negativeSignals && this.preSnapshot.negativeSignals.serverErrorNodes) || [];
 
@@ -8377,7 +8405,7 @@
                     if (!txt) continue;
                     if (this.preSnapshot && this.preSnapshot.existingSuccessTexts && this.preSnapshot.existingSuccessTexts.includes(txt)) continue;
 
-                    if (commonSuccessKeywords.some(k => txt.includes(k)) || 
+                    if (commonSuccessKeywords.some(k => txt.includes(k)) ||
                         node.classList.contains('gform_confirmation_message') ||
                         node.classList.contains('wpcf7-mail-sent-ok') ||
                         node.classList.contains('wpforms-confirmation-container') ||
@@ -8504,7 +8532,7 @@
                     if (!siteverifyData) {
                         const preEl = document.getElementById('siteverify-result');
                         if (preEl && preEl.textContent && preEl.textContent.trim().startsWith('{')) {
-                            try { siteverifyData = JSON.parse(preEl.textContent); } catch (_) {}
+                            try { siteverifyData = JSON.parse(preEl.textContent); } catch (_) { }
                         }
                     }
 
@@ -8656,7 +8684,7 @@
                     const hasStructuralSuccess = !!(finalSignals && (finalSignals.formReset || finalSignals.formHidden || finalSignals.formReplaced || finalSignals.successTextTransition));
                     const hasAnyPositive = !!(finalSignals && (finalSignals.newSuccessNodes > 0 || finalSignals.successVisibilityTransition || finalSignals.ariaLiveSuccessTransition || finalSignals.buttonSuccessState));
                     if ((hasStructuralSuccess || hasAnyPositive) && !(finalSignals && finalSignals.serverErrorFound)) {
-                        logDev(`[SUBMIT_VERIFY] Promoting DELIVERY_UNKNOWN -> CONFIRMED_SUCCESS_COMPOSITE via structural evidence (formReset=${!!(finalSignals&&finalSignals.formReset)} textTransition=${!!(finalSignals&&finalSignals.successTextTransition)} positiveNode=${hasAnyPositive})`, 'success');
+                        logDev(`[SUBMIT_VERIFY] Promoting DELIVERY_UNKNOWN -> CONFIRMED_SUCCESS_COMPOSITE via structural evidence (formReset=${!!(finalSignals && finalSignals.formReset)} textTransition=${!!(finalSignals && finalSignals.successTextTransition)} positiveNode=${hasAnyPositive})`, 'success');
                         finalDecision = 'CONFIRMED_SUCCESS_COMPOSITE';
                     } else {
                         finalDecision = 'DELIVERY_UNKNOWN';
@@ -8729,7 +8757,7 @@
                         stage: 'CONFIRMED_SUCCESS',
                         url: window.location.href
                     });
-                } catch (_) {}
+                } catch (_) { }
 
                 // [R6.9E Post-Registration Completion Grace] Maintain page so registration finishes completely
                 const defaultGrace = (this.options && this.options.extendedWaitMs && this.options.extendedWaitMs <= 1000) ? 0 : 3000;
@@ -8752,7 +8780,7 @@
                         try {
                             const params = new URLSearchParams(window.location.search);
                             found = params.get('receipt_id') || params.get('rcpt') || null;
-                        } catch (_) {}
+                        } catch (_) { }
                     }
                     if (!found) return null;
                     found = String(found).trim();
@@ -8788,7 +8816,7 @@
                     }
                 }
                 if (extractedReceiptId) {
-                    try { sessionStorage.setItem('xpider_last_settled_receipt_id', extractedReceiptId); } catch (_) {}
+                    try { sessionStorage.setItem('xpider_last_settled_receipt_id', extractedReceiptId); } catch (_) { }
                     outcomeEvidence.receiptId = extractedReceiptId;
                     logDev(`[RECEIPT_DISCOVERED] receiptId=${extractedReceiptId}`, "info");
                 }
@@ -8878,7 +8906,7 @@
         window.__xpider_aborted = true;
         window.__xpider_running = false;
         if (window.__xpider_releaseProcessingLock) {
-            try { window.__xpider_releaseProcessingLock(typeof window !== 'undefined' && window.location ? window.location.href : null); } catch (_) {}
+            try { window.__xpider_releaseProcessingLock(typeof window !== 'undefined' && window.location ? window.location.href : null); } catch (_) { }
         }
         window.__xpider_active_single_flight = null; // [RC3.60 P0] Allow next START_SENDING on same URL
         // [RC3.33 P0-B] Attempt-scoped reset upon terminal settlement
@@ -8888,7 +8916,7 @@
             window.__xpider_resetCaptchaRuntimeState('finishCampaign');
         }
         sessionStorage.removeItem('xpider_pending_verify'); // [v17.6.0] Clear recovery flag
-        try { removeTopSolverHUD(success ? 'SUCCESS' : 'SETTLED'); } catch (_) {}
+        try { removeTopSolverHUD(success ? 'SUCCESS' : 'SETTLED'); } catch (_) { }
         const sendFn = window.__xpider_sendExecutionMessage || chrome.runtime.sendMessage;
         sendFn({
             action: 'SENDER_FINISHED',

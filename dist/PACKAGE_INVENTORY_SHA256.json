@@ -185,11 +185,6 @@
     "sha256": "0931dcac7ab7b67c41c44c8dbdadc89ad0fcc209a51b1fc53c9665937063fab1"
   },
   {
-    "path": "popup.js",
-    "size": 573739,
-    "sha256": "a32e6e43d16c31e383aee10136d6c4104c2a24e8d03f5aa6fdeae0bdc1539783"
-  },
-  {
     "path": "RESTORE_POINT_SUMMARY.md",
     "size": 1645,
     "sha256": "450f58ae3d566bb98e15a2f0caa0e5239a37dce1c89a256a5fb505be6bbce56c"
@@ -241,12 +236,17 @@
   },
   {
     "path": "background.js",
-    "size": 511404,
-    "sha256": "82e9cc4e14ffa2bc7aa391324e08bde6a8d9b3b6aa14973596db8cdc16a608a1"
+    "size": 515151,
+    "sha256": "625a951af0d380ada0bb451ff1328dc592c86e309846b4af67f5cfe1415165b9"
   },
   {
     "path": "content-script.js",
-    "size": 533550,
-    "sha256": "c53a3c232a4b6079610f5f3398033f685b8c48bc2eef7c539cf984e91d50bde2"
+    "size": 536668,
+    "sha256": "e000e64d291bb67950314ed2797c0856a071be147fd9657a07bfb82524184f82"
+  },
+  {
+    "path": "popup.js",
+    "size": 584938,
+    "sha256": "be3d5567b1221b1a87e4b46c9ad1e7feb54736d3f7f721dd0971f834d9bf7ec2"
   }
 ]

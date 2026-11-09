@@ -4,47 +4,47 @@
  */
 
 // ── XPIDER DEV LOG BRIDGE (Popup) ────────────────────────────────────────
-(function() {
-  const _EXT_NAME = 'Ext[AutoFormSender/Popup]';
-  const _xDL = (lvl, msg) => {
-    try {
-      chrome.runtime.sendMessage({
-        _xpider_devlog: true, level: lvl, source: _EXT_NAME,
-        msg: String(msg).substring(0, 2048)
-      }).catch(() => {});
-    } catch(_) {}
-  };
-  ['log','warn','error','debug','info'].forEach(m => {
-    const _o = console[m].bind(console);
-    console[m] = (...a) => {
-      _o(...a);
-      const lvlMap = { log:'INFO', warn:'WARN', error:'ERROR', debug:'DEBUG', info:'INFO' };
-      _xDL(lvlMap[m] || 'INFO', a.map(x => typeof x === 'object' ? JSON.stringify(x) : String(x)).join(' '));
+(function () {
+    const _EXT_NAME = 'Ext[AutoFormSender/Popup]';
+    const _xDL = (lvl, msg) => {
+        try {
+            chrome.runtime.sendMessage({
+                _xpider_devlog: true, level: lvl, source: _EXT_NAME,
+                msg: String(msg).substring(0, 2048)
+            }).catch(() => { });
+        } catch (_) { }
     };
-  });
+    ['log', 'warn', 'error', 'debug', 'info'].forEach(m => {
+        const _o = console[m].bind(console);
+        console[m] = (...a) => {
+            _o(...a);
+            const lvlMap = { log: 'INFO', warn: 'WARN', error: 'ERROR', debug: 'DEBUG', info: 'INFO' };
+            _xDL(lvlMap[m] || 'INFO', a.map(x => typeof x === 'object' ? JSON.stringify(x) : String(x)).join(' '));
+        };
+    });
 })();
 
 // ── 🕵️ 개발자 전용 시크릿 키 트리거 ──────────────────────────────────────
 // Ctrl+Shift+D 를 2초 이내 2회 입력 시 DevConsole 오픈 (UI에 표시되지 않음)
-(function() {
-  let _devKeyCount = 0;
-  let _devKeyTimer = null;
-  if (typeof document !== 'undefined' && document.addEventListener) {
-    document.addEventListener('keydown', (e) => {
-      if (e.ctrlKey && e.shiftKey && e.key === 'D') {
-        e.preventDefault();
-        _devKeyCount++;
-        if (_devKeyTimer) clearTimeout(_devKeyTimer);
-        if (_devKeyCount >= 2) {
-          _devKeyCount = 0;
-          // In Chrome extension runtime, direct operator to Chrome DevTools without dead IPC
-          console.log('[DEV] DevConsole: To view extension console and network logs, open Chrome DevTools (right-click popup -> Inspect, or chrome://extensions -> Inspect service worker).');
-        } else {
-          _devKeyTimer = setTimeout(() => { _devKeyCount = 0; }, 2000);
-        }
-      }
-    }, true);
-  }
+(function () {
+    let _devKeyCount = 0;
+    let _devKeyTimer = null;
+    if (typeof document !== 'undefined' && document.addEventListener) {
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.shiftKey && e.key === 'D') {
+                e.preventDefault();
+                _devKeyCount++;
+                if (_devKeyTimer) clearTimeout(_devKeyTimer);
+                if (_devKeyCount >= 2) {
+                    _devKeyCount = 0;
+                    // In Chrome extension runtime, direct operator to Chrome DevTools without dead IPC
+                    console.log('[DEV] DevConsole: To view extension console and network logs, open Chrome DevTools (right-click popup -> Inspect, or chrome://extensions -> Inspect service worker).');
+                } else {
+                    _devKeyTimer = setTimeout(() => { _devKeyCount = 0; }, 2000);
+                }
+            }
+        }, true);
+    }
 })();
 // ── END DEV LOG BRIDGE ───────────────────────────────────────────────────
 
@@ -139,7 +139,7 @@ async function loadPersistentDiagnostics() {
                 if (diag.truncated) diagnosticLogTruncated = true;
             }
         }
-    } catch (_) {}
+    } catch (_) { }
 }
 
 /**
@@ -290,7 +290,7 @@ async function clearDiagnosticLog() {
     if (logContainer) logContainer.innerHTML = '';
 
     if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
-        chrome.runtime.sendMessage({ action: 'CLEAR_DIAGNOSTIC_LOGS' }, () => {});
+        chrome.runtime.sendMessage({ action: 'CLEAR_DIAGNOSTIC_LOGS' }, () => { });
     }
     if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
         await chrome.storage.local.remove(LIST_DATA_KEYS.diagnostics);
@@ -311,13 +311,13 @@ function getDiagnosticReport(fresh = false) {
         return _lastDiagnosticReportSnapshot;
     }
 
-    const extVer = (typeof chrome !== 'undefined' && chrome.runtime?.getManifest) 
-        ? chrome.runtime.getManifest()?.version 
+    const extVer = (typeof chrome !== 'undefined' && chrome.runtime?.getManifest)
+        ? chrome.runtime.getManifest()?.version
         : '1.2.0';
     const runtimeId = (typeof chrome !== 'undefined' && chrome.runtime?.id) ? chrome.runtime.id : 'N/A';
     const docVis = (typeof document !== 'undefined' && document.visibilityState) ? document.visibilityState : 'unknown';
-    const originPath = (typeof window !== 'undefined' && window.location) 
-        ? `${window.location.origin}${window.location.pathname}` 
+    const originPath = (typeof window !== 'undefined' && window.location)
+        ? `${window.location.origin}${window.location.pathname}`
         : 'unknown';
 
     const buildInfo = (typeof BuildProvenance !== 'undefined' && BuildProvenance.BUILD_INFO) ? BuildProvenance.BUILD_INFO : {};
@@ -631,7 +631,7 @@ async function exportOwnerDebugBundle() {
             if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
                 storageAll = await chrome.storage.local.get(null);
             }
-        } catch (_) {}
+        } catch (_) { }
 
         // Redact settings
         const sanitizedSettings = deepSanitizeDiagnosticObject(storageAll);
@@ -665,7 +665,7 @@ async function exportOwnerDebugBundle() {
             } else if (storageAll.xpider_history_store && Array.isArray(storageAll.xpider_history_store.records)) {
                 historyRecords = storageAll.xpider_history_store.records;
             }
-        } catch (_) {}
+        } catch (_) { }
         const sanitizedHistory = deepSanitizeDiagnosticObject(historyRecords);
 
         // 5. Consolidated Master Debug JSON
@@ -909,7 +909,7 @@ function xpiderInvoke(channel, args, options = {}) {
 }
 
 // [v1.1.1] Global error handler for debugging & diagnostic collection
-window.onerror = function(msg, url, line, col, error) {
+window.onerror = function (msg, url, line, col, error) {
     const sanitizedMsg = redactSensitiveText(msg);
     addDiagnosticLog(`[GLOBAL_ERROR] ${sanitizedMsg} at ${url}:${line}:${col || 0} stack=${error?.stack ? redactSensitiveText(error.stack) : 'N/A'}`, "ERROR");
     console.error(`[Popup Error] ${msg} at ${url}:${line}`);
@@ -924,7 +924,7 @@ window.onerror = function(msg, url, line, col, error) {
 };
 
 if (typeof window !== 'undefined' && window.addEventListener) {
-    window.addEventListener('unhandledrejection', function(event) {
+    window.addEventListener('unhandledrejection', function (event) {
         const reason = event.reason ? (event.reason.message || event.reason.stack || String(event.reason)) : 'unknown';
         addDiagnosticLog(`[UNHANDLED_REJECTION] ${redactSensitiveText(reason)}`, "ERROR");
     });
@@ -956,7 +956,7 @@ function displayControlPlaneError(code, detail) {
         if (errBanner) {
             errBanner.textContent = `🚨 CONTROL_PLANE_ERROR: ${code} (${detail})`;
         }
-    } catch (_) {}
+    } catch (_) { }
 }
 
 // [Y3] Modal Overlay State Helpers (Pointer-events and visibility fail-safe)
@@ -1056,8 +1056,8 @@ function checkClickInterceptionDiagnostic() {
                 // Check if top element is inside an open overlay/modal
                 const openOverlay = topEl.closest('#settings-overlay:not(.hidden), #private-egress-modal-overlay:not(.hidden), #captcha-modal-overlay:not(.hidden), #privacy-block-modal-overlay:not(.hidden), #stt-setup-modal-overlay:not(.hidden), #reset-all-modal-overlay:not(.hidden), #reset-all-lists-modal-overlay:not(.hidden), #xpider-manual-assist-modal, #xpider-captcha-decision-modal, #xpider-click-interception-banner');
                 if (!openOverlay) {
-                    const tagInfo = topEl.tagName.toLowerCase() + 
-                        (topEl.id ? '#' + topEl.id : '') + 
+                    const tagInfo = topEl.tagName.toLowerCase() +
+                        (topEl.id ? '#' + topEl.id : '') +
                         (topEl.className && typeof topEl.className === 'string' ? '.' + topEl.className.trim().split(/\s+/).join('.') : '');
                     const zIndex = window.getComputedStyle ? window.getComputedStyle(topEl).zIndex : 'unknown';
                     intercepted = {
@@ -1095,7 +1095,7 @@ function displayClickInterceptionBanner(interception) {
             document.body.prepend(banner);
         }
         banner.textContent = `🚨 CLICK_INTERCEPTION_DETECTED: [${interception.coveringElement}] covers [${interception.target}].`;
-    } catch (_) {}
+    } catch (_) { }
 }
 
 function bindCriticalControls() {
@@ -1170,7 +1170,7 @@ function bindCriticalControls() {
 
     try {
         bindSidePanelAssistanceControls();
-    } catch (_) {}
+    } catch (_) { }
 
     return { startBound, saveBound };
 }
@@ -1370,12 +1370,12 @@ async function rehydrateTemplateUI(source = 'boot', overrideStore = null) {
             const stored = await chrome.storage.local.get(['templates_v2', 'xpider_tpl']);
             v2Store = stored.templates_v2;
             legacyTpl = stored.xpider_tpl;
-        } catch (_) {}
+        } catch (_) { }
     } else {
         try {
             const stored = await chrome.storage.local.get(['xpider_tpl']);
             legacyTpl = stored.xpider_tpl;
-        } catch (_) {}
+        } catch (_) { }
     }
 
     let defaultId = v2Store?.defaultId || null;
@@ -1400,7 +1400,7 @@ async function rehydrateTemplateUI(source = 'boot', overrideStore = null) {
     if (typeof updateTemplateDropdown === 'function') {
         try {
             await updateTemplateDropdown(defaultId);
-        } catch (_) {}
+        } catch (_) { }
     }
 
     const msgEl = document.getElementById('tpl-message');
@@ -1457,7 +1457,7 @@ async function ensureTemplateReadyForStart() {
     let stored = null;
     try {
         stored = await chrome.storage.local.get(['templates_v2', 'xpider_tpl']);
-    } catch (_) {}
+    } catch (_) { }
 
     const v2Store = stored?.templates_v2;
     const defaultId = v2Store?.defaultId || 'unknown';
@@ -1764,7 +1764,7 @@ async function hydrateSettings(overrideV2Store = null) {
                     bootSt.xpider_isActive &&
                     EXPLICIT_TEST_SOURCES.includes(bootSt.xpider_active_test_source)
                 );
-                
+
                 let isOwnerTestMode = false;
                 if (bootSt.xpider_owner_function_test_mode && !isExplicitRunning) {
                     await chrome.storage.local.set({ xpider_owner_function_test_mode: false });
@@ -1778,7 +1778,7 @@ async function hydrateSettings(overrideV2Store = null) {
                         if (gRes && gRes.success) {
                             console.log('[OWNER_TEST_GUARD] removed=true');
                         }
-                    } catch (_) {}
+                    } catch (_) { }
                     console.log('[BOOT_RECONCILE] channel=OWNER_BETA staleTestMode=true action=AUTO_CLEAR');
                     addLog('🧹 [BOOT_RECONCILE] Stale test mode auto-cleared on boot. Normal mode active.', 'info');
                     isOwnerTestMode = false;
@@ -1819,10 +1819,10 @@ async function hydrateSettings(overrideV2Store = null) {
                     });
                 }
             }
-        } catch (_) {}
+        } catch (_) { }
 
         // [P0 Actionable Privacy Block Decision Modal & Handlers]
-        window.showPrivacyBlockDecisionModal = function(data = {}) {
+        window.showPrivacyBlockDecisionModal = function (data = {}) {
             const { reason, userMessage, actionSection, source, campaignMode } = data;
             const privacyBlockModal = document.getElementById('privacy-block-modal-overlay');
             if (!privacyBlockModal) {
@@ -1862,7 +1862,7 @@ async function hydrateSettings(overrideV2Store = null) {
                     addLog('⚡ [PRIVACY_OWNER_OVERRIDE] scope=currentRun mode=DIRECT acknowledged=true', 'warn');
                     try {
                         await chrome.storage.local.set({ xpider_run_scoped_direct_privacy: true });
-                    } catch (_) {}
+                    } catch (_) { }
                     const ind = document.getElementById('privacy-override-indicator');
                     if (ind) {
                         ind.style.display = 'flex';
@@ -1919,7 +1919,7 @@ async function hydrateSettings(overrideV2Store = null) {
             privacyBlockModal.style.display = 'flex';
         };
 
-        window.checkAndRefreshPrivacyReadinessHUD = async function() {
+        window.checkAndRefreshPrivacyReadinessHUD = async function () {
             try {
                 const campPill = document.getElementById('campaign-ready-pill');
                 const privPill = document.getElementById('privacy-ready-pill');
@@ -1951,7 +1951,7 @@ async function hydrateSettings(overrideV2Store = null) {
                     const st = await chrome.storage.local.get(['xpider_privacy_config', 'xpider_strict_privacy']);
                     const privCfg = st.xpider_privacy_config || {};
                     const isStrict = st.xpider_strict_privacy !== undefined ? st.xpider_strict_privacy : (privCfg.failClosed !== false);
-                    
+
                     if (!isStrict || privCfg.enabled === false) {
                         privPill.textContent = 'PRIVACY: DIRECT (NORMAL)';
                         privPill.style.color = '#38bdf8';
@@ -1981,13 +1981,13 @@ async function hydrateSettings(overrideV2Store = null) {
 
                     }
                 }
-            } catch (_) {}
+            } catch (_) { }
         };
         setTimeout(window.checkAndRefreshPrivacyReadinessHUD, 300);
 
         // [RC3.60 .88 Directive #6497395270] Live Egress IP Monitor Controller
         let lastEgressData = null;
-        window.updateEgressIpMonitorUI = function(data) {
+        window.updateEgressIpMonitorUI = function (data) {
             if (!data) return;
             lastEgressData = data;
             const showExact = localStorage.getItem('xpider_show_exact_ip') === 'true';
@@ -2194,8 +2194,8 @@ async function hydrateSettings(overrideV2Store = null) {
                     chrome.runtime.sendMessage({
                         action: 'SET_PRIVACY_CONFIG',
                         config: curCfg
-                    }).catch(() => {});
-                } catch (_) {}
+                    }).catch(() => { });
+                } catch (_) { }
             });
             updateTransportVisibility();
         }
@@ -2830,7 +2830,7 @@ async function hydrateSettings(overrideV2Store = null) {
                     const color = i === 0 ? '#38bdf8' : '#64748b';
                     return `<div style="display: flex; justify-content: space-between; color: ${color};">
                         <span>${stg}</span>
-                        <span id="stg-badge-${i+1}">${statusText}</span>
+                        <span id="stg-badge-${i + 1}">${statusText}</span>
                     </div>`;
                 }).join('');
             };
@@ -3539,7 +3539,7 @@ async function hydrateSettings(overrideV2Store = null) {
 
                         // [RC3.13 Teardown Proxy Clearing] Clear proxy before recovery cleanup to prevent proxy interception
                         if (typeof chrome !== 'undefined' && chrome.proxy && chrome.proxy.settings) {
-                            try { chrome.proxy.settings.clear({ scope: 'regular' }); } catch (_) {}
+                            try { chrome.proxy.settings.clear({ scope: 'regular' }); } catch (_) { }
                         }
 
                         chrome.runtime.sendMessage({
@@ -3597,7 +3597,7 @@ async function hydrateSettings(overrideV2Store = null) {
 
                     // [RC3.13 Teardown Proxy Clearing] Clear proxy before teardown to prevent proxy interception
                     if (typeof chrome !== 'undefined' && chrome.proxy && chrome.proxy.settings) {
-                        try { chrome.proxy.settings.clear({ scope: 'regular' }); } catch (_) {}
+                        try { chrome.proxy.settings.clear({ scope: 'regular' }); } catch (_) { }
                     }
 
                     chrome.runtime.sendMessage({
@@ -3818,7 +3818,7 @@ async function hydrateSettings(overrideV2Store = null) {
                     if (typeof window.checkAndRefreshPrivacyReadinessHUD === 'function') {
                         window.checkAndRefreshPrivacyReadinessHUD();
                     }
-                } catch (_) {}
+                } catch (_) { }
                 finally {
                     preflightBtn.disabled = false;
                     preflightBtn.textContent = '🔍 Run Privacy Preflight';
@@ -3855,7 +3855,7 @@ async function hydrateSettings(overrideV2Store = null) {
                     if (res && res.result && res.result.status) {
                         _updatePhysicalGateUI(res.result.status);
                     }
-                } catch (_) {}
+                } catch (_) { }
                 finally {
                     physVerifyBtn.disabled = false;
                     physVerifyBtn.textContent = '✓ Re-Verify Gate';
@@ -4029,7 +4029,7 @@ async function hydrateSettings(overrideV2Store = null) {
                 reconcilePrivacyReadiness({ reason: 'POPUP_INIT' });
             }
         });
-    } catch (_) {}
+    } catch (_) { }
 
     return true;
 }
@@ -4276,7 +4276,7 @@ async function reconcilePrivacyReadiness(options = {}) {
                 _updatePrivacyCardUI(preflightRes.preflight);
             } else {
                 const failReason = (preflightRes && preflightRes.preflight && preflightRes.preflight.failureReason) ||
-                                   (preflightRes && preflightRes.error) || 'RELAY_NOT_READY';
+                    (preflightRes && preflightRes.error) || 'RELAY_NOT_READY';
                 console.warn(`[PRIVACY_RECONCILE] preflight failed/blocked: reason=${failReason}`);
                 if (preflightRes && preflightRes.preflight) {
                     _updatePrivacyCardUI(preflightRes.preflight);
@@ -4327,7 +4327,7 @@ async function hydrateCampaignState() {
                         const countDisplay = document.getElementById('url-count-display');
                         if (countDisplay) countDisplay.textContent = `${campaignQueue.length} (remaining) / ${totalTargets} URLs`;
                     }
-                } catch (_) {}
+                } catch (_) { }
                 return resolve(false);
             }
 
@@ -4355,7 +4355,7 @@ async function hydrateCampaignState() {
                     const st = await chrome.storage.local.get(['xpider_queue', 'xpider_total', 'xpider_success', 'xpider_paused_checkpoint', 'xpider_isPaused', 'xpider_campaign_mode']);
                     const cp = (response && response.hasPausedCheckpoint) ? (response.checkpoint || st.xpider_paused_checkpoint) : st.xpider_paused_checkpoint;
                     const isPausedState = Boolean(response.isPaused || st.xpider_isPaused || (cp && Array.isArray(cp.remainingQueue) && cp.remainingQueue.length > 0 && !response.isActive));
-                    
+
                     const resolvedMode = (response && (response.pausedCampaignMode || response.campaignMode)) || st.xpider_campaign_mode || (cp && cp.campaignMode) || currentCampaignMode || 'AUTO';
                     currentCampaignMode = (resolvedMode === 'MANUAL' || resolvedMode === 'SEMI_AUTO') ? resolvedMode : 'AUTO';
                     window.__xpider_last_paused_mode = currentCampaignMode;
@@ -4381,7 +4381,7 @@ async function hydrateCampaignState() {
                             countDisplay.textContent = `${campaignQueue.length} (remaining) / ${totalTargets} URLs`;
                         }
                     }
-                } catch (_) {}
+                } catch (_) { }
 
                 const langSelect = document.getElementById('language-select');
                 const lang = langSelect ? langSelect.value : 'en';
@@ -4397,14 +4397,14 @@ async function hydrateCampaignState() {
                 if (response.isActive) {
                     campaignActive = true;
                     campaignPaused = false;
-                    
+
                     if (statusBox) statusBox.classList.remove('hidden');
                     if (multiActions) multiActions.classList.remove('hidden');
                     if (startRow) startRow.classList.add('hidden');
                     if (startBtn) startBtn.classList.add('hidden');
                     if (startSemiAutoBtn) startSemiAutoBtn.classList.add('hidden');
                     if (startManualBtn) startManualBtn.classList.add('hidden');
-                    
+
                     if (pauseBtn) {
                         pauseBtn.textContent = dict.btn_pause || "⏸️ Pause";
                         pauseBtn.style.backgroundColor = "#f59e0b";
@@ -4451,11 +4451,11 @@ async function hydrateCampaignState() {
 }
 
 async function renderAuxiliaryUI() {
-    try { await initLocalizer(); } catch(e) { console.warn('[Popup] initLocalizer non-fatal:', e); }
-    try { await loadBlackBoxLogs(); } catch(e) {}
-    try { await loadPersistentDiagnostics(); } catch(e) {}
-    try { await updateSavedListsUI(); } catch(e) {}
-    try { await updateTemplateDropdown(); } catch(e) {}
+    try { await initLocalizer(); } catch (e) { console.warn('[Popup] initLocalizer non-fatal:', e); }
+    try { await loadBlackBoxLogs(); } catch (e) { }
+    try { await loadPersistentDiagnostics(); } catch (e) { }
+    try { await updateSavedListsUI(); } catch (e) { }
+    try { await updateTemplateDropdown(); } catch (e) { }
 
     // Speed slider listeners
     try {
@@ -4466,10 +4466,10 @@ async function renderAuxiliaryUI() {
 
         document.querySelectorAll('input[name="fill-mode"]').forEach(el => {
             el.addEventListener('change', (e) => {
-                chrome.storage.local.set({ xpider_fill_mode: e.target.value }).catch(() => {});
+                chrome.storage.local.set({ xpider_fill_mode: e.target.value }).catch(() => { });
             });
         });
-    } catch(e) {}
+    } catch (e) { }
 
     // Hard reset button
     try {
@@ -4481,7 +4481,7 @@ async function renderAuxiliaryUI() {
                 }
             });
         }
-    } catch(e) {}
+    } catch (e) { }
 
     // Engine status indicator
     try {
@@ -4493,17 +4493,17 @@ async function renderAuxiliaryUI() {
             span.textContent = "Checking...";
             footer.appendChild(span);
         }
-    } catch(e) {}
+    } catch (e) { }
 
     // Pulse check
-    try { startPulseCheck(); } catch(e) {}
+    try { startPulseCheck(); } catch (e) { }
 
     // Passive keep-alive
     try {
         setInterval(() => {
-            chrome.runtime.sendMessage({ action: 'UI_HEARTBEAT' }).catch(() => {});
+            chrome.runtime.sendMessage({ action: 'UI_HEARTBEAT' }).catch(() => { });
         }, 30000);
-    } catch(e) {}
+    } catch (e) { }
     // Counters restore & live sync
     try {
         if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
@@ -4547,7 +4547,7 @@ async function renderAuxiliaryUI() {
                 }
             });
         }
-    } catch (_) {}
+    } catch (_) { }
 
     // [WitKey] Audio STT API Key (Wit.ai) load directly from chrome.storage.local
     try {
@@ -4576,7 +4576,7 @@ async function renderAuxiliaryUI() {
                 }
             });
         }
-    } catch (_) {}
+    } catch (_) { }
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -4617,7 +4617,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const _typeLabel = _captchaType === 'hcaptcha' ? 'hCaptcha' : (_captchaType === 'turnstile' ? 'Cloudflare Turnstile' : 'reCAPTCHA');
         let _shortUrl = '?';
-        try { _shortUrl = _targetUrl ? new URL(_targetUrl).hostname : '?'; } catch(_) {}
+        try { _shortUrl = _targetUrl ? new URL(_targetUrl).hostname : '?'; } catch (_) { }
 
         _modal.innerHTML = [
             '<div style="background:#1a1d2e;border:1.5px solid #7c3aed;border-radius:14px;padding:28px 32px;max-width:400px;width:92%;box-shadow:0 8px 48px #0008;">',
@@ -4656,7 +4656,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 tabId: _tabId,
                 captchaType: _captchaType,
                 sitekey: _sitekey
-            }, function(resp) {
+            }, function (resp) {
                 const _s = document.getElementById('xpider-captcha-status');
                 if (_s) {
                     if (decision === 'auto') {
@@ -4667,7 +4667,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         _s.innerHTML = '<span style="color:#38bdf8;">✋ Manual solve active. Timer paused until resolution or Skip.</span>';
                     } else if (decision === 'skip') {
                         _s.innerHTML = '<span style="color:#94a3b8;">⏭️ Target skipped.</span>';
-                        setTimeout(function() {
+                        setTimeout(function () {
                             const _m = document.getElementById('xpider-captcha-decision-modal');
                             if (_m) _m.remove();
                         }, 800);
@@ -4676,9 +4676,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
         }
 
-        document.getElementById('xpider-captcha-auto-btn')?.addEventListener('click', function() { _sendCaptchaDecision('auto'); });
-        document.getElementById('xpider-captcha-manual-btn')?.addEventListener('click', function() { _sendCaptchaDecision('manual'); });
-        document.getElementById('xpider-captcha-skip-btn')?.addEventListener('click', function() { _sendCaptchaDecision('skip'); });
+        document.getElementById('xpider-captcha-auto-btn')?.addEventListener('click', function () { _sendCaptchaDecision('auto'); });
+        document.getElementById('xpider-captcha-manual-btn')?.addEventListener('click', function () { _sendCaptchaDecision('manual'); });
+        document.getElementById('xpider-captcha-skip-btn')?.addEventListener('click', function () { _sendCaptchaDecision('skip'); });
     }
 
     try {
@@ -4727,7 +4727,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         ind.style.display = 'none';
                         ind.classList.add('hidden');
                     }
-                    try { onCampaignFinishedOwnerTestCheck(request.counters); } catch (_) {}
+                    try { onCampaignFinishedOwnerTestCheck(request.counters); } catch (_) { }
                     if (typeof window.checkAndRefreshPrivacyReadinessHUD === 'function') {
                         window.checkAndRefreshPrivacyReadinessHUD();
                     }
@@ -4779,7 +4779,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         chrome.runtime.sendMessage({ action: 'GET_PRIVACY_CONFIG' }, (res) => {
                             if (res && res.lastPreflight) _updatePrivacyCardUI(res.lastPreflight);
                         });
-                    } catch (_) {}
+                    } catch (_) { }
 
                 } else if (request.action === 'SHOW_CAPTCHA_DECISION_MODAL') {
                     // [RC3.21 Remediation] Defer CAPTCHA modal if manual assist modal is active
@@ -4806,13 +4806,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                                 '</div>'
                             ].join('');
 
-                            document.getElementById('xpider-provider-retry-btn')?.addEventListener('click', function() {
+                            document.getElementById('xpider-provider-retry-btn')?.addEventListener('click', function () {
                                 document.getElementById('xpider-captcha-auto-btn')?.click();
                             });
-                            document.getElementById('xpider-provider-manual-btn')?.addEventListener('click', function() {
+                            document.getElementById('xpider-provider-manual-btn')?.addEventListener('click', function () {
                                 document.getElementById('xpider-captcha-manual-btn')?.click();
                             });
-                            document.getElementById('xpider-provider-skip-btn')?.addEventListener('click', function() {
+                            document.getElementById('xpider-provider-skip-btn')?.addEventListener('click', function () {
                                 document.getElementById('xpider-captcha-skip-btn')?.click();
                             });
                         }
@@ -4980,7 +4980,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     document.getElementById('xpider-manual-assist-modal')?.remove();
                 }
             });
-        } catch(e) { console.error('[POPUP_BOOT] onMessage registration failed:', e); }
+        } catch (e) { console.error('[POPUP_BOOT] onMessage registration failed:', e); }
 
         try {
             window.addEventListener('message', (event) => {
@@ -4994,7 +4994,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     }
                 }
             });
-        } catch(e) { console.error('[POPUP_BOOT] postMessage listener failed:', e); }
+        } catch (e) { console.error('[POPUP_BOOT] postMessage listener failed:', e); }
 
         // 1. Critical Controls Binding (Isolated synchronous error boundary)
         try {
@@ -5012,7 +5012,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         // 3. Runtime connection
-        try { chrome.runtime.connect({ name: 'xpider_popup' }); } catch(e) {}
+        try { chrome.runtime.connect({ name: 'xpider_popup' }); } catch (e) { }
 
         // 3.5. Schema Migration / Repair Synchronization (Single Writer Handshake)
         let migrationResult = null;
@@ -5070,10 +5070,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 if (typeof window !== 'undefined') {
     window.addEventListener('focus', () => {
-        try { checkClickInterceptionDiagnostic(); } catch (_) {}
+        try { checkClickInterceptionDiagnostic(); } catch (_) { }
     });
     window.addEventListener('resize', () => {
-        try { checkClickInterceptionDiagnostic(); } catch (_) {}
+        try { checkClickInterceptionDiagnostic(); } catch (_) { }
     });
 }
 
@@ -5085,7 +5085,7 @@ async function initLocalizer() {
         await new Promise(r => setTimeout(r, 100));
         i18nData = window.I18N_DATA;
     }
-    
+
     if (!i18nData) {
         console.error("Fatal: I18N_DATA could not be loaded.");
         return;
@@ -5103,17 +5103,17 @@ function applyTranslations(lang) {
     document.querySelectorAll('[data-i18n]').forEach(el => {
         const key = el.getAttribute('data-i18n');
         let text = dict[key] || (i18nData['en'] ? i18nData['en'][key] : null) || key;
-        
+
         if (key === 'status_finished') {
             const parts = text.split('{count}');
             const prefixText = parts[0] ? parts[0].trim() : 'Campaign Status:';
             const suffixText = parts[1] ? parts[1].trim() : 'sent';
-            
+
             el.textContent = prefixText;
-            
+
             const suffixLabel = document.querySelector('.status-suffix');
             if (suffixLabel) suffixLabel.textContent = suffixText;
-            
+
             updateRealTimeStatus({ successCount });
         } else {
             el.textContent = text;
@@ -5317,7 +5317,7 @@ function refreshStatusDetailUI() {
     const lang = document.getElementById('language-select')?.value || 'en';
     const dict = i18nData ? (i18nData[lang] || i18nData['en'] || {}) : {};
     const suffix = dict.remaining_suffix || 'remaining.';
-    
+
     // [v2.8.9] Simplified UI: Only show remaining count, remove log noise
     let statusText = `${remainingTargets} ${suffix}`;
     if (window.isNetworkRecovery) {
@@ -5328,13 +5328,13 @@ function refreshStatusDetailUI() {
     statusDetail.textContent = statusText;
     statusDetail.style.fontWeight = '700';
     statusDetail.style.fontSize = '0.85rem'; // Smaller font as requested
-    statusDetail.style.color = window.isNetworkRecovery ? '#38bdf8' : (campaignPaused ? '#ff3366' : '#facc15'); 
+    statusDetail.style.color = window.isNetworkRecovery ? '#38bdf8' : (campaignPaused ? '#ff3366' : '#facc15');
 }
 
 function updateSpeedLabels() {
     const lang = document.getElementById('language-select')?.value || 'en';
     const dict = i18nData ? (i18nData[lang] || i18nData['en'] || {}) : {};
-    
+
     // 1. 수집 속도 매핑 라벨
     const collectSlider = document.getElementById('delay-input-collect');
     const collectDisplay = document.getElementById('speed-collect-display');
@@ -5345,7 +5345,7 @@ function updateSpeedLabels() {
         let label = `${dict.speed_level || 'Level'} ${level} <small>(${sec}s)</small>`;
         if (level === '6') label += ` <small>${dict.speed_normal || '(Normal)'}</small>`;
         collectDisplay.innerHTML = label;
-        
+
         // 레거시 연동용으로 hidden delay-input의 value도 대변 업데이트
         const legacyInput = document.getElementById('delay-input');
         if (legacyInput) legacyInput.value = level;
@@ -5396,7 +5396,7 @@ function bindEvents() {
                     btn.classList.add('active');
                     const target = document.getElementById(`${btn.dataset.tab}-tab`);
                     if (target) target.classList.add('active');
-                    
+
                     // [v2.3.0] Hide status/log areas when in Template, History, or Email Collector Tab
                     if (btn.dataset.tab === 'template' || btn.dataset.tab === 'history' || btn.dataset.tab === 'email-collector') {
                         document.body.classList.add('template-active');
@@ -5429,7 +5429,7 @@ function bindEvents() {
             });
             settingsBound = true;
         }
-        
+
         const settingsClose = document.getElementById('settings-close');
         if (settingsClose && !settingsClose.dataset.bound) {
             settingsClose.dataset.bound = 'true';
@@ -5437,7 +5437,7 @@ function bindEvents() {
                 closeModalOverlay(settingsOverlay);
             });
         }
-        
+
         const saveSettingsBtn = document.getElementById('save-settings-btn');
         if (saveSettingsBtn && !saveSettingsBtn.dataset.bound) {
             saveSettingsBtn.dataset.bound = 'true';
@@ -5479,13 +5479,13 @@ function bindEvents() {
                 });
             });
         }
-        
+
         const pauseBtn = document.getElementById('pause-btn');
         if (pauseBtn && !pauseBtn.dataset.bound) {
             pauseBtn.dataset.bound = 'true';
             pauseBtn.addEventListener('click', togglePause);
         }
-        
+
         const stopBtn = document.getElementById('stop-btn');
         if (stopBtn && !stopBtn.dataset.bound) {
             stopBtn.dataset.bound = 'true';
@@ -5630,10 +5630,10 @@ function bindEvents() {
                     alert("Please enter a valid Wit.ai Key.");
                     return;
                 }
-                
-                await chrome.storage.local.set({ 
-                    xpider_stt_api_key: key, 
-                    audioSttKey: key, 
+
+                await chrome.storage.local.set({
+                    xpider_stt_api_key: key,
+                    audioSttKey: key,
                     witKey: key,
                     xpider_captcha_method: 'audio'
                 });
@@ -5641,14 +5641,14 @@ function bindEvents() {
                 if (settingsInput) settingsInput.value = key;
                 const methodSelect = document.getElementById('captcha-method-select');
                 if (methodSelect) methodSelect.value = 'audio';
-                
+
                 if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
-                    chrome.runtime.sendMessage({ action: 'UPDATE_WIT_KEY', key }).catch(() => {});
+                    chrome.runtime.sendMessage({ action: 'UPDATE_WIT_KEY', key }).catch(() => { });
                 }
-                
+
                 const setupModal = document.getElementById('stt-setup-modal-overlay');
                 if (setupModal) closeModalOverlay(setupModal);
-                
+
                 const langSelect = document.getElementById('language-select');
                 const lang = langSelect ? langSelect.value : 'en';
                 const dict = i18nData ? (i18nData[lang] || i18nData['en'] || {}) : {};
@@ -5690,8 +5690,8 @@ function bindEvents() {
                 if (!url || url === '#') return;
                 try {
                     window.postMessage({ type: 'XPIDER_SEND', channel: 'auth-open-external', data: url }, '*');
-                } catch (err) {}
-                try { window.open(url, '_blank'); } catch (err) {}
+                } catch (err) { }
+                try { window.open(url, '_blank'); } catch (err) { }
             });
         });
     } catch (e) {
@@ -5765,7 +5765,7 @@ function bindEvents() {
             addUrlBtn.classList.add('plus-btn-circle');
             addUrlBtn.addEventListener('click', addSingleUrl);
         }
-        
+
         const manualUrlInput = document.getElementById('manual-url-input');
         if (manualUrlInput && !manualUrlInput.dataset.bound) {
             manualUrlInput.dataset.bound = 'true';
@@ -6128,8 +6128,8 @@ function bindEvents() {
     }
 
     // 12. Auxiliary initializers
-    try { bindEmailCollectorEvents(); } catch (_) {}
-    try { initBuildProvenanceBadge(); } catch (_) {}
+    try { bindEmailCollectorEvents(); } catch (_) { }
+    try { initBuildProvenanceBadge(); } catch (_) { }
     try { initOwnerAutoSetup(); } catch (err) { console.warn('[INIT_OWNER_AUTO_SETUP_ERR]', err); }
 }
 
@@ -6138,7 +6138,7 @@ var currentStartGateState = 'READY';
 
 function setStartGateState(state, reason = '') {
     currentStartGateState = state;
-    try { (typeof window !== 'undefined' ? window : globalThis).currentStartGateState = state; } catch (_) {}
+    try { (typeof window !== 'undefined' ? window : globalThis).currentStartGateState = state; } catch (_) { }
     if (typeof document === 'undefined') return;
     const mismatchBanner = document.getElementById('build-mismatch-banner');
     const startBtn = document.getElementById('start-btn');
@@ -6332,8 +6332,8 @@ function updateAutoSetupUI(state) {
 
     const cfPillContainer = document.getElementById('cf-live-status-pill-container');
     const setButtonsDisplay = (disp, disabled = false) => {
-        if (runBtn) { 
-            runBtn.style.display = disp; 
+        if (runBtn) {
+            runBtn.style.display = disp;
             runBtn.disabled = disabled;
             if (disabled) runBtn.disabled = true;
         }
@@ -6422,7 +6422,7 @@ async function refreshCloudflareLiveStatusPill() {
             pill.style.color = '#fbbf24';
             pill.style.border = '1px solid #eab308';
         }
-    } catch (_) {}
+    } catch (_) { }
 }
 
 function initCloudflareLiveSettings() {
@@ -6442,7 +6442,7 @@ function initCloudflareLiveSettings() {
             if (verifyInput && cfg.verifyEndpoint) verifyInput.value = cfg.verifyEndpoint;
         }
         refreshCloudflareLiveStatusPill();
-    }).catch(() => {});
+    }).catch(() => { });
 
     if (saveBtn && !saveBtn.dataset.bound) {
         saveBtn.dataset.bound = 'true';
@@ -6566,7 +6566,7 @@ async function probeAndEnsureOwnerTestServer() {
         showAutoSetupFeedback('🔄 Upgrading local test fixture runtime to 8-fixture suite...', 'info');
         try {
             await fetch('http://127.0.0.1:8088/__xpider_shutdown', { method: 'POST' });
-        } catch (_) {}
+        } catch (_) { }
         // Poll for port 8088 to free
         for (let i = 0; i < 15; i++) {
             await new Promise(r => setTimeout(r, 100));
@@ -6610,7 +6610,7 @@ async function probeAndEnsureOwnerTestServer() {
             if (bgResp && bgResp.success) {
                 nativeResp = bgResp;
             }
-        } catch (_) {}
+        } catch (_) { }
     }
 
     if (!nativeResp || !nativeResp.success) {
@@ -6618,10 +6618,10 @@ async function probeAndEnsureOwnerTestServer() {
         const isStaleHost = nativeResp && nativeResp.fixtureSet && nativeResp.fixtureSet !== 'OWNER_8_V1';
         const msg = isStaleHost
             ? '⚠️ OLD TEST RUNTIME DETECTED (Registered Native Host returned older 7-fixture suite)\n' +
-              'Please run XPIDER_AUTO_SETUP.bat once in the current extension directory to update registration.'
+            'Please run XPIDER_AUTO_SETUP.bat once in the current extension directory to update registration.'
             : '⚠️ ONE-TIME TEST RUNTIME INSTALL REQUIRED\n' +
-              'Local test server could not be started automatically because the native host is not installed.\n' +
-              'Please run XPIDER_AUTO_SETUP.bat once in the extension directory to register the native host.';
+            'Local test server could not be started automatically because the native host is not installed.\n' +
+            'Please run XPIDER_AUTO_SETUP.bat once in the extension directory to register the native host.';
         showAutoSetupFeedback(msg, 'error');
         return { success: false, error: isStaleHost ? 'STALE_NATIVE_HOST_REGISTRATION' : 'ONE_TIME_INSTALL_REQUIRED', details: nativeResp };
     }
@@ -6668,7 +6668,7 @@ async function probeAndEnsureOwnerTestServer() {
             showAutoSetupFeedback('🛑 LOCAL TEST SERVER INCOMPLETE\nFixture /ai-required-fields.html returned ' + aiCheck.status + '\nRun XPIDER_AUTO_SETUP.bat to refresh test server.', 'error');
             return { success: false, error: 'AI_FIXTURE_NOT_FOUND' };
         }
-    } catch (_) {}
+    } catch (_) { }
 
     return { success: true, health: health.health };
 }
@@ -6870,7 +6870,7 @@ function onCampaignFinishedOwnerTestCheck(counters) {
                 );
             }
         }
-    }).catch(() => {});
+    }).catch(() => { });
 }
 
 function initOwnerAutoSetup() {
@@ -6896,7 +6896,7 @@ function initOwnerAutoSetup() {
                 const restoreB = document.getElementById('restore-user-settings-btn');
                 if (restoreB) restoreB.style.display = 'inline-flex';
             }
-        }).catch(() => {});
+        }).catch(() => { });
     }
 
     const LOCALHOST_FIXTURES = [
@@ -7345,7 +7345,7 @@ async function restoreUserSettings() {
                 action: 'CLEANUP_OWNER_FUNCTIONAL_TEST_RUN',
                 previousRunId: snapshot?.settings?.xpider_active_campaign_run_id
             });
-        } catch (_) {}
+        } catch (_) { }
 
         // 6. Write back restored settings to storage (Preserve xpider_owner_original_profile)
         await chrome.storage.local.set(restoredSettings);
@@ -7481,16 +7481,16 @@ function toggleCaptchaApiVisibility() {
 
     const enabled = captchaToggle.checked;
     const method = methodSelect.value;
-    
+
     const isApi = (method === 'api' || method === 'nopecha');
     const isAudio = (method === 'audio' || method === 'native');
-    
+
     const apiGroup = document.getElementById('captcha-api-group');
     if (apiGroup) apiGroup.style.display = (enabled && isApi) ? 'block' : 'none';
 
     const timingGroup = document.getElementById('captcha-timing-group');
     if (timingGroup) timingGroup.style.display = (enabled && isApi) ? 'block' : 'none';
-    
+
     const sttGroup = document.getElementById('audio-stt-group');
     if (sttGroup) sttGroup.style.display = (enabled && isAudio) ? 'block' : 'none';
 }
@@ -7524,7 +7524,7 @@ async function handleFileUpload(e) {
 
     const nameDisplay = document.getElementById('filename-display');
     if (nameDisplay) nameDisplay.textContent = file.name;
-    
+
     const text = await file.text();
     const importId = `import_${Date.now()}`;
     const isCsv = file.name.toLowerCase().endsWith('.csv');
@@ -7548,7 +7548,7 @@ async function handleFileUpload(e) {
             u = u.trim().replace(/[.,;)]+$/, '');
             if (u && !u.startsWith('http')) u = 'https://' + u;
             return u;
-        }).filter(u => { try { new URL(u); return true; } catch(err) { return false; } });
+        }).filter(u => { try { new URL(u); return true; } catch (err) { return false; } });
 
         // Exactly one primary execution target per source row (guarantees 1:1 row-to-target traceability)
         const primaryTarget = matches.length > 0 ? matches[0] : null;
@@ -7591,10 +7591,10 @@ async function handleFileUpload(e) {
     totalTargets = campaignQueue.length;
     const countDisplay = document.getElementById('url-count-display');
     if (countDisplay) countDisplay.textContent = `${totalTargets} URLs found`;
-    
+
     const fileInfo = document.getElementById('file-info');
     if (fileInfo) fileInfo.classList.remove('hidden');
-    
+
     await saveListToStorage(file.name, campaignQueue);
     renderUrlsPreview(campaignQueue);
     chrome.storage.local.set({ xpider_queue: campaignQueue, xpider_total: totalTargets, xpider_success: 0 });
@@ -7646,7 +7646,7 @@ if (typeof module !== 'undefined' && module.exports) {
 async function saveListToStorage(name, urls) {
     const data = await chrome.storage.local.get(['xpider_saved_lists']);
     let lists = data.xpider_saved_lists || [];
-    
+
     // Check for duplicates and update or append
     const existingIdx = lists.findIndex(l => l.name === name);
     if (existingIdx > -1) {
@@ -7654,7 +7654,7 @@ async function saveListToStorage(name, urls) {
     } else {
         lists.push({ name, urls, date: new Date().toISOString() });
     }
-    
+
     await chrome.storage.local.set({ xpider_saved_lists: lists });
     await updateSavedListsUI();
 }
@@ -7667,7 +7667,7 @@ async function updateSavedListsUI() {
     const savedLists = data.xpider_saved_lists || [];
 
     listContainer.innerHTML = '';
-    
+
     if (savedLists.length === 0) {
         listContainer.innerHTML = '<div class="empty-list-note">No lists saved.</div>';
         return;
@@ -7686,10 +7686,10 @@ async function updateSavedListsUI() {
             campaignQueue = [...list.urls];
             totalTargets = campaignQueue.length;
             successCount = 0;
-            
+
             document.querySelectorAll('.list-item-unified').forEach(el => el.classList.remove('selected'));
             div.classList.add('selected');
-            
+
             const countDisplay = document.getElementById('url-count-display');
             if (countDisplay) countDisplay.textContent = `${campaignQueue.length} URLs found`;
             document.getElementById('file-info').classList.remove('hidden');
@@ -7697,7 +7697,7 @@ async function updateSavedListsUI() {
 
             // Show URLs Preview in UI
             renderUrlsPreview(campaignQueue);
-            
+
             addLog(`Loaded saved list: ${list.name} (${list.urls.length} URLs)`, 'info');
             await chrome.storage.local.set({ xpider_queue: campaignQueue, xpider_success: 0, xpider_total: totalTargets });
         };
@@ -7723,12 +7723,12 @@ async function updateSavedListsUI() {
 async function saveTemplateChanges() {
     const tpl = {
         firstName: document.getElementById('tpl-first-name').value.trim(),
-        lastName:  document.getElementById('tpl-last-name').value.trim(),
-        name:      document.getElementById('tpl-name').value.trim(),
-        email:     document.getElementById('tpl-email').value.trim(),
-        phone:     document.getElementById('tpl-phone').value.trim(),
-        subject:   document.getElementById('tpl-subject').value.trim(),
-        message:   document.getElementById('tpl-message').value.trim()
+        lastName: document.getElementById('tpl-last-name').value.trim(),
+        name: document.getElementById('tpl-name').value.trim(),
+        email: document.getElementById('tpl-email').value.trim(),
+        phone: document.getElementById('tpl-phone').value.trim(),
+        subject: document.getElementById('tpl-subject').value.trim(),
+        message: document.getElementById('tpl-message').value.trim()
     };
 
     if (!tpl.message && !tpl.subject) return alert('Please enter at least a Subject or Message.');
@@ -7749,7 +7749,7 @@ async function saveTemplateChanges() {
                     filename: defaultName,
                     saveAs: true
                 }, (downloadId) => {
-                    try { URL.revokeObjectURL(url); } catch (_) {}
+                    try { URL.revokeObjectURL(url); } catch (_) { }
                     if (chrome.runtime.lastError) {
                         const errMsg = chrome.runtime.lastError.message || '';
                         if (errMsg.toLowerCase().includes('cancel') || errMsg.toLowerCase().includes('user')) {
@@ -7837,13 +7837,13 @@ Saved: ${new Date().toLocaleString()}
 async function addSingleUrl() {
     const input = document.getElementById('manual-url-input');
     if (!input || !input.value.trim()) return;
-    
+
     let url = input.value.trim();
     if (!url.startsWith('http')) url = 'https://' + url;
-    
+
     try {
         new URL(url); // Validation
-        
+
         // [v1.3.5] Apply Blacklist to manual entries as well
         const lowerUrl = url.toLowerCase();
         const blacklist = window.XPIDER_BLACKLIST || [];
@@ -7852,7 +7852,7 @@ async function addSingleUrl() {
             input.value = '';
             return;
         }
-        
+
         // Add to ACTIVE queue
         if (!campaignQueue.includes(url)) {
             campaignQueue.push(url);
@@ -7869,39 +7869,39 @@ async function addSingleUrl() {
 
             // Show URLs Preview in UI for manually added items as well
             renderUrlsPreview(campaignQueue);
-            
+
             // Sync active queue to storage so background can access if needed
-            chrome.storage.local.set({ 
+            chrome.storage.local.set({
                 xpider_queue: campaignQueue,
                 xpider_total: totalTargets
             });
         }
-        
+
         // [v1.2.1] NEW: Save to Permanent "Manual Entries" List
         const lang = document.getElementById('language-select')?.value || 'en';
         const dict = (i18nData && i18nData[lang]) ? i18nData[lang] : (i18nData ? i18nData['en'] : {});
         const manualListName = dict.list_manual_entries || 'Manual Entries';
-        
+
         const storageData = await chrome.storage.local.get(['xpider_saved_lists']);
         let lists = Array.isArray(storageData.xpider_saved_lists) ? storageData.xpider_saved_lists : [];
-        
+
         let manualList = lists.find(l => l.name === manualListName);
         if (!manualList) {
             manualList = { name: manualListName, urls: [], date: new Date().toISOString() };
             lists.unshift(manualList); // Put at top
         }
-        
+
         // Avoid duplicate in the manual list
         if (!manualList.urls.includes(url)) {
             manualList.urls.push(url);
             manualList.date = new Date().toISOString();
         }
-        
+
         await chrome.storage.local.set({ xpider_saved_lists: lists });
         if (typeof updateSavedListsUI === 'function') {
             await updateSavedListsUI();
         }
-        
+
         addLog(`Manual URL saved: ${url}`, 'info');
         input.value = '';
     } catch (e) {
@@ -7948,9 +7948,9 @@ async function launchCampaign(options = {}) {
     if (source === 'OWNER_CAPTCHA_LAB') {
         const labPanel = document.getElementById('captcha-lab-panel');
         if (labPanel) labPanel.style.display = 'block';
-        try { chrome.storage.local.set({ xpider_active_test_source: 'OWNER_CAPTCHA_LAB' }); } catch (_) {}
+        try { chrome.storage.local.set({ xpider_active_test_source: 'OWNER_CAPTCHA_LAB' }); } catch (_) { }
     } else if (isOwnerTest) {
-        try { chrome.storage.local.set({ xpider_active_test_source: source }); } catch (_) {}
+        try { chrome.storage.local.set({ xpider_active_test_source: source }); } catch (_) { }
     }
     const startBtn = document.getElementById('start-btn');
     const btnId = isOwnerTest
@@ -8020,7 +8020,7 @@ async function launchCampaign(options = {}) {
                     campaignQueue = [...qSt.xpider_queue];
                     if (!totalTargets) totalTargets = qSt.xpider_total || campaignQueue.length;
                 }
-            } catch (_) {}
+            } catch (_) { }
         }
 
         const isLoopbackCheck = (u) => /^https?:\/\/(?:127\.0\.0\.1|localhost)(?::\d+)?(?:\/|$)/i.test(typeof u === 'string' ? u : (u?.url || ''));
@@ -8067,7 +8067,7 @@ async function launchCampaign(options = {}) {
                     if (gRes && gRes.success) {
                         console.log('[OWNER_TEST_GUARD] removed=true');
                     }
-                } catch (_) {}
+                } catch (_) { }
 
                 const oftToggle = document.getElementById('owner-function-test-toggle');
                 if (oftToggle) oftToggle.checked = false;
@@ -8086,7 +8086,7 @@ async function launchCampaign(options = {}) {
             // [Directive E] Rebase current-run counters & generate fresh normal campaignRunId
             const oldRunId = curSt.xpider_active_campaign_run_id || 'none';
             assignedNormalRunId = `normal_run_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
-            
+
             await chrome.storage.local.set({
                 xpider_active_campaign_run_id: assignedNormalRunId,
                 xpider_active_test_source: null
@@ -8310,7 +8310,7 @@ async function launchCampaign(options = {}) {
             bindCampaignTemplateMetadata(currentTpl);
             currentTpl.id = currentTpl.templateId;
             currentTpl.version = currentTpl.templateVersion;
-        } catch (_) {}
+        } catch (_) { }
 
         console.log('[START_STEP] 05 TEMPLATE_VALID');
         addLog('[START_STEP] 05 TEMPLATE_VALID', 'info');
@@ -8365,6 +8365,11 @@ async function launchCampaign(options = {}) {
             ? options.includeFormsWithoutMessage
             : Boolean(optNoMsgBox?.checked);
         console.log(`[START_OPTIONS] campaignRunId=${resolvedRunId} includeFormsWithoutMessage=${includeFormsWithoutMessage}`);
+        try {
+            const noMsgPopupLine = `[NO_MESSAGE_OPTION] stage=popup_sent checkboxPresent=${Boolean(optNoMsgBox)} checked=${Boolean(optNoMsgBox?.checked)} explicitOption=${typeof options.includeFormsWithoutMessage === 'boolean'} sent=${includeFormsWithoutMessage} campaignRunId=${resolvedRunId} manifestVersion=${(chrome.runtime.getManifest && chrome.runtime.getManifest().version) || 'unknown'}`;
+            console.log(noMsgPopupLine);
+            if (typeof addLog === 'function') addLog(noMsgPopupLine, 'info');
+        } catch (_) { }
 
         const startPayload = {
             queue: campaignQueue,
@@ -8386,7 +8391,7 @@ async function launchCampaign(options = {}) {
         };
         try {
             bindCampaignTemplateMetadata(startPayload, currentTpl);
-        } catch (_) {}
+        } catch (_) { }
 
         // [START_STEP 06] PRIVACY_PREP_BEGIN
         currentStartStep = '06';
@@ -8397,7 +8402,7 @@ async function launchCampaign(options = {}) {
                 if (s && s.xpider_run_scoped_direct_privacy) {
                     runScopedDirect = true;
                 }
-            } catch (_) {}
+            } catch (_) { }
         }
         console.log(`[START_STEP] 06 PRIVACY_PREP_BEGIN runScopedDirect=${runScopedDirect} testMode=${isTestModeActive}`);
         addLog(`[START_STEP] 06 PRIVACY_PREP_BEGIN runScopedDirect=${runScopedDirect} testMode=${isTestModeActive}`, 'info');
@@ -8738,7 +8743,7 @@ function updatePersistentModeHud(mode, status, currentTarget, remainingCount) {
     if (!hudContainer || !badgeEl || !statusEl) return;
 
     const resolvedMode = (mode === 'SEMI_AUTO' || mode === 'MANUAL') ? mode : 'AUTO';
-    
+
     // Telemetry: verify coherence with local state and auto-reconcile
     if (currentCampaignMode && currentCampaignMode !== resolvedMode) {
         console.warn(`[MODE_DESYNC_DETECTED] local currentCampaignMode=${currentCampaignMode} desynced from background canonical mode=${resolvedMode}. Auto-synchronizing.`);
@@ -9060,7 +9065,7 @@ function checkResumableCheckpoint() {
             banner.classList.remove('hidden');
             banner.style.display = 'block';
             if (countEl) countEl.textContent = stateResp.pausedRemainingCount || 0;
-            
+
             const multiActions = document.getElementById('multi-actions');
             if (multiActions) multiActions.classList.remove('hidden');
             const startRow = document.getElementById('start-buttons-row');
@@ -9071,7 +9076,7 @@ function checkResumableCheckpoint() {
             if (startSemiAutoBtn) startSemiAutoBtn.classList.add('hidden');
             const startManualBtn = document.getElementById('start-manual-btn');
             if (startManualBtn) startManualBtn.classList.add('hidden');
-            
+
             // Wire resume button directly to guarantee clickability
             if (resumeBtn) {
                 resumeBtn.onclick = (e) => {
@@ -9128,17 +9133,17 @@ function finishCampaign() {
     addLog("Campaign finished!", "complete");
     const startBtn = document.getElementById('start-btn');
     if (startBtn) startBtn.classList.remove('hidden');
-    
+
     const multiActions = document.getElementById('multi-actions');
     if (multiActions) multiActions.classList.add('hidden');
-    
+
     chrome.storage.local.remove(['xpider_queue', 'xpider_success', 'xpider_total']);
 }
 
 function updateProgress(percent) {
     const bar = document.getElementById('progress-bar');
     if (bar) bar.style.width = `${percent}%`;
-    
+
     const text = document.getElementById('progress-text');
     if (text) {
         text.textContent = `${percent}%`;
@@ -9184,7 +9189,7 @@ function addLog(msg, type = 'info', forcedTime = null) {
     // [v2.5.5] Update real-time status summary
     const techKeywords = ['Precision targeting', 'Pre-scan', 'Sniper Mode', 'Target lost', 'Processing:', 'Opening target'];
     const isTechLog = techKeywords.some(k => msg.includes(k)) && !msg.includes('Skipping') && !msg.includes('error');
-    
+
     if (!isTechLog) {
         lastLogMessage = msg.replace(/[\u{1F300}-\u{1F9FF}]/gu, '').trim();
         refreshStatusDetailUI();
@@ -9192,9 +9197,9 @@ function addLog(msg, type = 'info', forcedTime = null) {
 
     const logEntry = document.createElement('div');
     logEntry.className = `log-entry ${type}`;
-    
+
     const time = forcedTime || new Date().toLocaleTimeString('ko-KR', { hour12: false });
-    
+
     // [v1.3.8] Premium Color Set for High Visibility
     let color = '#ccc';
     if (type === 'success') color = '#22c55e'; // Bright Green
@@ -9210,7 +9215,7 @@ function addLog(msg, type = 'info', forcedTime = null) {
     logEntry.style.marginBottom = '2px';
     logEntry.style.fontSize = type === 'debug' ? '0.75rem' : '0.85rem';
     logEntry.innerHTML = `<span class="log-time" style="color: #666; font-size: 0.7rem;">[${time}]</span> ${msg}`;
-    
+
     container.appendChild(logEntry);
     container.scrollTop = container.scrollHeight;
 
@@ -9227,12 +9232,12 @@ function addLog(msg, type = 'info', forcedTime = null) {
 async function saveTemplate() {
     const tpl = {
         firstName: document.getElementById('tpl-first-name')?.value || '',
-        lastName:  document.getElementById('tpl-last-name')?.value || '',
-        name:      document.getElementById('tpl-name')?.value || '',
-        email:     document.getElementById('tpl-email')?.value || '',
-        phone:     document.getElementById('tpl-phone')?.value || '',
-        subject:   document.getElementById('tpl-subject')?.value || '',
-        message:   document.getElementById('tpl-message')?.value || ''
+        lastName: document.getElementById('tpl-last-name')?.value || '',
+        name: document.getElementById('tpl-name')?.value || '',
+        email: document.getElementById('tpl-email')?.value || '',
+        phone: document.getElementById('tpl-phone')?.value || '',
+        subject: document.getElementById('tpl-subject')?.value || '',
+        message: document.getElementById('tpl-message')?.value || ''
     };
     // [F9 Unified Schema] Canonical FormTemplateV2 record with both flat and nested properties
     const fullName = tpl.name || `${tpl.firstName} ${tpl.lastName}`.trim();
@@ -9298,17 +9303,17 @@ async function _syncTemplateToV2(tpl) {
 async function loadBlackBoxLogs() {
     const data = await chrome.storage.local.get(['xpider_blackbox_logs']);
     const logs = data.xpider_blackbox_logs || [];
-    
+
     const container = document.getElementById('log-container');
     if (!container || logs.length === 0) return;
 
     // Clear and re-populate to avoid duplicate confusion on refresh
     container.innerHTML = '';
-    
+
     logs.forEach(log => {
         addLog(log.message, log.type, log.timestamp || "Past");
     });
-    
+
     addLog("--- Persistent Session Restored ---", "info");
 }
 
@@ -9485,20 +9490,20 @@ async function handleSetDefaultTemplate(templateId = null) {
 function populateFormFromTemplate(tpl) {
     if (!tpl) return null;
     const firstName = tpl.firstName || (tpl.sender && tpl.sender.firstName) || '';
-    const lastName  = tpl.lastName  || (tpl.sender && tpl.sender.lastName)  || '';
-    const name      = tpl.name      || tpl.fullName || (tpl.sender && (tpl.sender.fullName || tpl.sender.name)) || '';
-    const email     = tpl.email     || (tpl.sender && tpl.sender.email)     || '';
-    const phone     = tpl.phone     || (tpl.sender && tpl.sender.phone)     || '';
-    const subject   = tpl.subject   || (tpl.content && tpl.content.subject) || '';
-    const message   = tpl.message   || (tpl.content && tpl.content.message) || '';
+    const lastName = tpl.lastName || (tpl.sender && tpl.sender.lastName) || '';
+    const name = tpl.name || tpl.fullName || (tpl.sender && (tpl.sender.fullName || tpl.sender.name)) || '';
+    const email = tpl.email || (tpl.sender && tpl.sender.email) || '';
+    const phone = tpl.phone || (tpl.sender && tpl.sender.phone) || '';
+    const subject = tpl.subject || (tpl.content && tpl.content.subject) || '';
+    const message = tpl.message || (tpl.content && tpl.content.message) || '';
 
     const elFn = document.getElementById('tpl-first-name'); if (elFn) elFn.value = firstName;
-    const elLn = document.getElementById('tpl-last-name');  if (elLn) elLn.value = lastName;
-    const elNm = document.getElementById('tpl-name');       if (elNm) elNm.value = name;
-    const elEm = document.getElementById('tpl-email');      if (elEm) elEm.value = email;
-    const elPh = document.getElementById('tpl-phone');      if (elPh) elPh.value = phone;
-    const elSb = document.getElementById('tpl-subject');    if (elSb) elSb.value = subject;
-    const elMs = document.getElementById('tpl-message');    if (elMs) elMs.value = message;
+    const elLn = document.getElementById('tpl-last-name'); if (elLn) elLn.value = lastName;
+    const elNm = document.getElementById('tpl-name'); if (elNm) elNm.value = name;
+    const elEm = document.getElementById('tpl-email'); if (elEm) elEm.value = email;
+    const elPh = document.getElementById('tpl-phone'); if (elPh) elPh.value = phone;
+    const elSb = document.getElementById('tpl-subject'); if (elSb) elSb.value = subject;
+    const elMs = document.getElementById('tpl-message'); if (elMs) elMs.value = message;
 
     return { firstName, lastName, name, email, phone, subject, message };
 }
@@ -9643,7 +9648,7 @@ async function renderLedgerUI() {
         pageData.records.forEach(rec => {
             const card = document.createElement('div');
             card.className = `ledger-item-card ${ledgerState.selectedTargets.has(rec.targetIdentity) ? 'is-selected' : ''}`;
-            
+
             let badgeClass = 'status-ready';
             let badgeLabel = rec.status;
             if (rec.status === 'CONFIRMED_SUCCESS') {
@@ -9706,7 +9711,7 @@ async function renderLedgerUI() {
             const externalDisplay = externalFormUrl ? formatShortUrl(externalFormUrl) : null;
             const resultDisplay = (resultUrl && resultUrl !== sourceUrl && resultUrl !== contactUrl) ? formatShortUrl(resultUrl) : null;
 
-            const contactElement = contactUrl 
+            const contactElement = contactUrl
                 ? `<a href="${contactUrl}" target="_blank" rel="noopener noreferrer" class="ledger-contact-link" style="color: #38bdf8; text-decoration: underline;" title="${contactUrl}">📍 Contact: ${contactDisplay}</a>`
                 : `<span style="color: #64748b;">📍 Contact: None</span>`;
 
@@ -9735,19 +9740,19 @@ async function renderLedgerUI() {
 
             const autoPill = autofillStatus === 'SUCCESS' ? badgePill('AUTOFILL: SUCCESS', '#065f46', '#6ee7b7')
                 : (autofillStatus === 'PARTIAL' ? badgePill('AUTOFILL: PARTIAL', '#78350f', '#fde68a')
-                : (autofillStatus === 'MANUAL_REQUIRED' ? badgePill('AUTOFILL: MANUAL_REQ', '#581c87', '#d8b4fe')
-                : (autofillStatus === 'FAILED' ? badgePill('AUTOFILL: FAILED', '#7f1d1d', '#fca5a5') : badgePill('AUTOFILL: N/A', '#334155', '#94a3b8'))));
+                    : (autofillStatus === 'MANUAL_REQUIRED' ? badgePill('AUTOFILL: MANUAL_REQ', '#581c87', '#d8b4fe')
+                        : (autofillStatus === 'FAILED' ? badgePill('AUTOFILL: FAILED', '#7f1d1d', '#fca5a5') : badgePill('AUTOFILL: N/A', '#334155', '#94a3b8'))));
 
             const subPill = submissionStatus === 'CONFIRMED_SUCCESS' ? badgePill('SUB: CONFIRMED_SUCCESS', '#065f46', '#6ee7b7')
                 : (submissionStatus === 'OWNER_MANUAL_CONFIRMED' ? badgePill('SUB: OWNER_CONFIRMED', '#047857', '#a7f3d0')
-                : (submissionStatus === 'DELIVERY_UNKNOWN' ? badgePill('SUB: UNKNOWN', '#78350f', '#fde68a')
-                : (submissionStatus.includes('TIMEOUT') ? badgePill('SUB: TIMEOUT', '#713f12', '#fef08a')
-                : (submissionStatus === 'FAILURE' ? badgePill('SUB: FAILED', '#7f1d1d', '#fca5a5') : badgePill(`SUB: ${submissionStatus}`, '#334155', '#94a3b8')))));
+                    : (submissionStatus === 'DELIVERY_UNKNOWN' ? badgePill('SUB: UNKNOWN', '#78350f', '#fde68a')
+                        : (submissionStatus.includes('TIMEOUT') ? badgePill('SUB: TIMEOUT', '#713f12', '#fef08a')
+                            : (submissionStatus === 'FAILURE' ? badgePill('SUB: FAILED', '#7f1d1d', '#fca5a5') : badgePill(`SUB: ${submissionStatus}`, '#334155', '#94a3b8')))));
 
             const capPill = captchaStatus === 'VERIFIED' ? badgePill('CAPTCHA: VERIFIED', '#065f46', '#6ee7b7')
                 : (captchaStatus === 'PENDING_OWNER' ? badgePill('CAPTCHA: PENDING', '#78350f', '#fde68a')
-                : (captchaStatus === 'MANUAL_WAIT' ? badgePill('CAPTCHA: MANUAL_WAIT', '#0c4a6e', '#7dd3fc')
-                : (captchaStatus === 'AUTO_FAILED' ? badgePill('CAPTCHA: AUTO_FAIL', '#7f1d1d', '#fca5a5') : badgePill('CAPTCHA: NONE', '#1e293b', '#64748b'))));
+                    : (captchaStatus === 'MANUAL_WAIT' ? badgePill('CAPTCHA: MANUAL_WAIT', '#0c4a6e', '#7dd3fc')
+                        : (captchaStatus === 'AUTO_FAILED' ? badgePill('CAPTCHA: AUTO_FAIL', '#7f1d1d', '#fca5a5') : badgePill('CAPTCHA: NONE', '#1e293b', '#64748b'))));
 
             const isUnknown = (rec.status === 'DELIVERY_UNKNOWN' || rec.status === 'UNKNOWN' || rec.status === 'PAUSED_UNKNOWN');
             const reconcileHtml = isUnknown && rec.attemptId ? `
@@ -9870,7 +9875,7 @@ async function checkActiveSubmitLock() {
                 return true;
             }
         }
-    } catch (_) {}
+    } catch (_) { }
 
     try {
         if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
@@ -9883,7 +9888,7 @@ async function checkActiveSubmitLock() {
                 return true;
             }
         }
-    } catch (_) {}
+    } catch (_) { }
 
     return false;
 }
@@ -10082,12 +10087,12 @@ async function dispatchResetAllListData() {
     updateRealTimeStatus({ successCount: 0, failedCount: 0, completedCount: 0, remainingCount: 0, totalTargets: 0, skippedCount: 0, timeoutCount: 0, deliveryUnknownCount: 0 });
     updateProgress(0);
     ['stat-success-count', 'stat-failed-count', 'stat-completed-count', 'stat-remaining-count',
-     'success-count-display', 'failed-count-display', 'completed-count-display', 'remaining-count-display',
-     'skipped-count-display', 'timeout-count-display', 'unknown-count-display',
-     'captcha-solved-display', 'captcha-failed-display'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.textContent = '0';
-    });
+        'success-count-display', 'failed-count-display', 'completed-count-display', 'remaining-count-display',
+        'skipped-count-display', 'timeout-count-display', 'unknown-count-display',
+        'captcha-solved-display', 'captcha-failed-display'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = '0';
+        });
 
     addLog("Diagnostic log cleared.", "info");
     return { success: true };
@@ -10320,44 +10325,44 @@ async function saveSettings() {
     const delaySubmitInput = document.getElementById('delay-input-submit');
     const randomToggle = document.getElementById('random-delay-toggle');
 
-        // [R6.9G.9.1] Privacy Gateway Inputs & System VPN Confirmation
-        const privToggle = document.getElementById('privacy-gateway-toggle');
-        const privModeSelect = document.getElementById('privacy-transport-mode-select');
-        const privFailClosedToggle = document.getElementById('privacy-fail-closed-toggle');
-        const privKeepRelayToggle = document.getElementById('privacy-keep-relay-enforced-toggle');
-        const privHostEl = document.getElementById('privacy-proxy-host');
-        const privPortEl = document.getElementById('privacy-proxy-port');
-        const privUserEl = document.getElementById('privacy-proxy-user');
-        const privPassEl = document.getElementById('privacy-proxy-pass');
-        const privRememberEl = document.getElementById('privacy-proxy-remember-pass');
-        const privVpnCheckbox = document.getElementById('privacy-vpn-confirm-checkbox');
-        const privVpnBadge = document.getElementById('privacy-vpn-status-badge');
-        const privRelayModeEl = document.getElementById('privacy-relay-mode-select');
-        const privPhysGateToggle = document.getElementById('physical-gate-toggle');
-        const isVpnConfirmed = (privVpnBadge && privVpnBadge.textContent && privVpnBadge.textContent.includes('CONFIRMED')) || (privVpnCheckbox && privVpnCheckbox.checked);
+    // [R6.9G.9.1] Privacy Gateway Inputs & System VPN Confirmation
+    const privToggle = document.getElementById('privacy-gateway-toggle');
+    const privModeSelect = document.getElementById('privacy-transport-mode-select');
+    const privFailClosedToggle = document.getElementById('privacy-fail-closed-toggle');
+    const privKeepRelayToggle = document.getElementById('privacy-keep-relay-enforced-toggle');
+    const privHostEl = document.getElementById('privacy-proxy-host');
+    const privPortEl = document.getElementById('privacy-proxy-port');
+    const privUserEl = document.getElementById('privacy-proxy-user');
+    const privPassEl = document.getElementById('privacy-proxy-pass');
+    const privRememberEl = document.getElementById('privacy-proxy-remember-pass');
+    const privVpnCheckbox = document.getElementById('privacy-vpn-confirm-checkbox');
+    const privVpnBadge = document.getElementById('privacy-vpn-status-badge');
+    const privRelayModeEl = document.getElementById('privacy-relay-mode-select');
+    const privPhysGateToggle = document.getElementById('physical-gate-toggle');
+    const isVpnConfirmed = (privVpnBadge && privVpnBadge.textContent && privVpnBadge.textContent.includes('CONFIRMED')) || (privVpnCheckbox && privVpnCheckbox.checked);
 
-        const privacyConfig = {
-            enabled: privToggle ? privToggle.checked : true,
-            transportMode: privModeSelect ? privModeSelect.value : 'SYSTEM_VPN',
-            failClosed: privFailClosedToggle ? privFailClosedToggle.checked : true,
-            keepPrivacyRelayEnforcedBetweenCampaigns: privKeepRelayToggle ? privKeepRelayToggle.checked : true,
-            systemVpnConfirmed: (privModeSelect && (privModeSelect.value === 'SYSTEM_VPN' || privModeSelect.value === 'EXTERNAL_VPN_MONITOR')) ? !!isVpnConfirmed : false,
-            proxyHost: privHostEl ? privHostEl.value.trim() : '',
-            proxyPort: privPortEl ? (parseInt(privPortEl.value, 10) || 1080) : 1080,
-            proxyUsername: privUserEl ? privUserEl.value.trim() : '',
-            proxyPassword: (privRememberEl && privRememberEl.checked && privPassEl) ? privPassEl.value : (privPassEl ? privPassEl.value : ''),
-            rememberPassword: privRememberEl ? privRememberEl.checked : false,
-            relayHost: '127.0.0.1',
-            relayProxyPort: 18988,
-            relayControlPort: 18989,
-            relayRotationMode: privRelayModeEl ? privRelayModeEl.value : 'FIXED',
-            physicalGateEnabled: privPhysGateToggle ? privPhysGateToggle.checked : false
-        };
+    const privacyConfig = {
+        enabled: privToggle ? privToggle.checked : true,
+        transportMode: privModeSelect ? privModeSelect.value : 'SYSTEM_VPN',
+        failClosed: privFailClosedToggle ? privFailClosedToggle.checked : true,
+        keepPrivacyRelayEnforcedBetweenCampaigns: privKeepRelayToggle ? privKeepRelayToggle.checked : true,
+        systemVpnConfirmed: (privModeSelect && (privModeSelect.value === 'SYSTEM_VPN' || privModeSelect.value === 'EXTERNAL_VPN_MONITOR')) ? !!isVpnConfirmed : false,
+        proxyHost: privHostEl ? privHostEl.value.trim() : '',
+        proxyPort: privPortEl ? (parseInt(privPortEl.value, 10) || 1080) : 1080,
+        proxyUsername: privUserEl ? privUserEl.value.trim() : '',
+        proxyPassword: (privRememberEl && privRememberEl.checked && privPassEl) ? privPassEl.value : (privPassEl ? privPassEl.value : ''),
+        rememberPassword: privRememberEl ? privRememberEl.checked : false,
+        relayHost: '127.0.0.1',
+        relayProxyPort: 18988,
+        relayControlPort: 18989,
+        relayRotationMode: privRelayModeEl ? privRelayModeEl.value : 'FIXED',
+        physicalGateEnabled: privPhysGateToggle ? privPhysGateToggle.checked : false
+    };
 
-        const ownerTestToggle = document.getElementById('owner-function-test-toggle');
-        if (ownerTestToggle) {
-            await chrome.storage.local.set({ xpider_owner_function_test_mode: ownerTestToggle.checked });
-        }
+    const ownerTestToggle = document.getElementById('owner-function-test-toggle');
+    if (ownerTestToggle) {
+        await chrome.storage.local.set({ xpider_owner_function_test_mode: ownerTestToggle.checked });
+    }
 
     let settings;
     try {
@@ -10473,16 +10478,16 @@ async function saveSettings() {
         console.log('[SETTINGS_READBACK] ok=false');
         console.log('[SETTINGS_SAVE] verified=false');
     }
-    
+
     // [WitKey] Sync to background engine via UPDATE_WIT_KEY without dead native IPC
     if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
-        chrome.runtime.sendMessage({ action: 'UPDATE_WIT_KEY', key: settings.xpider_stt_api_key }).catch(() => {});
+        chrome.runtime.sendMessage({ action: 'UPDATE_WIT_KEY', key: settings.xpider_stt_api_key }).catch(() => { });
         // [Auto CAPTCHA Solver] Sync 2Captcha key to background solver engine
-        chrome.runtime.sendMessage({ 
-            action: 'UPDATE_CAPTCHA_KEY', 
-            method: settings.xpider_captcha_method, 
-            key: settings.xpider_captcha_api_key 
-        }).catch(() => {});
+        chrome.runtime.sendMessage({
+            action: 'UPDATE_CAPTCHA_KEY',
+            method: settings.xpider_captcha_method,
+            key: settings.xpider_captcha_api_key
+        }).catch(() => { });
         // [R6.9G.9] Sync Privacy Gateway config to background and update status card
         chrome.runtime.sendMessage({
             action: 'SET_PRIVACY_CONFIG',
@@ -10496,17 +10501,17 @@ async function saveSettings() {
                     window.checkAndRefreshPrivacyReadinessHUD();
                 }
             });
-        }).catch(() => {});
+        }).catch(() => { });
 
     }
-    
+
     const saveBtn = document.getElementById('save-settings-btn');
     if (saveBtn) {
         const originalText = saveBtn.textContent;
         saveBtn.textContent = verified ? "✅ Saved & Verified!" : "⚠️ Saved (Unverified)";
         setTimeout(() => saveBtn.textContent = originalText, 2000);
     }
-    
+
     if (typeof applyTranslations === 'function' && settings.xpider_lang) {
         applyTranslations(settings.xpider_lang);
     }
@@ -10543,21 +10548,21 @@ async function clearCampaignQueue() {
     totalTargets = 0;
     successCount = 0;
     remainingTargets = 0;
-    
+
     // 3. Hide file info and preview lists
     const fileInfo = document.getElementById('file-info');
     if (fileInfo) fileInfo.classList.add('hidden');
-    
+
     const previewList = document.getElementById('file-urls-preview');
     if (previewList) previewList.classList.add('hidden');
-    
+
     const previewContainer = document.getElementById('preview-list');
     if (previewContainer) previewContainer.innerHTML = '';
-    
+
     // 4. Clear file input
     const fileInput = document.getElementById('file-input');
     if (fileInput) fileInput.value = '';
-    
+
     const nameDisplay = document.getElementById('filename-display');
     if (nameDisplay) nameDisplay.textContent = 'No file selected';
 
@@ -10566,16 +10571,16 @@ async function clearCampaignQueue() {
 
     const resumableBanner = document.getElementById('resumable-campaign-banner');
     if (resumableBanner) resumableBanner.style.display = 'none';
-    
+
     // 5. Update UI counts and progress
     updateRealTimeStatus({ successCount: 0, remainingCount: 0, totalTargets: 0 });
     updateProgress(0);
-    
+
     // 6. Authoritatively remove all autoform keys from storage
     if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
         await chrome.storage.local.remove(LIST_DATA_KEYS.autoform);
     }
-    
+
     // 7. Log success
     addLog("Business URLs list cleared.", "stop");
 }
@@ -10590,18 +10595,18 @@ chrome.storage.onChanged.addListener((changes) => {
     } else if (changes.witKey && changes.witKey.newValue !== undefined) {
         newKey = changes.witKey.newValue;
     }
-    
+
     if (newKey !== null) {
         console.log(`[WitKey-Sync] Sender Popup Storage changed → Syncing UI: keyConfigured=${!!newKey}`);
-        
+
         // 1) 설정창의 STT API Key 입력창 갱신
         const sttKeyInput = document.getElementById('audio-stt-key');
         if (sttKeyInput) sttKeyInput.value = newKey;
-        
+
         // 2) 최초 STT 설정 모달 입력 필드 갱신
         const setupInput = document.getElementById('setup-stt-key-input');
         if (setupInput) setupInput.value = newKey;
-        
+
         // 3) 최초 STT 설정 모달 가시성 제어 및 상태 바 갱신
         const setupModal = document.getElementById('stt-setup-modal-overlay');
         const witStatusText = document.getElementById('wit-status-text');
@@ -10724,9 +10729,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const unknown = stats ? stats.unknown : attempts.filter(a => a.status === 'DELIVERY_UNKNOWN' || a.status === 'PAUSED_UNKNOWN').length;
             const skipped = stats ? stats.skipped : attempts.filter(a => a.status === 'SKIPPED').length;
 
-            const scopeLabel = scopePref === 'currentRun' 
-                ? (activeRunId 
-                    ? `<b style="color:#00ffcc">currentRun</b> <span style="font-size:10px;opacity:0.8;">(${activeRunId})</span>` 
+            const scopeLabel = scopePref === 'currentRun'
+                ? (activeRunId
+                    ? `<b style="color:#00ffcc">currentRun</b> <span style="font-size:10px;opacity:0.8;">(${activeRunId})</span>`
                     : '<b style="color:#94a3b8">currentRun</b> <span style="font-size:10px;color:#cbd5e1;">(No active run)</span>')
                 : '<b style="color:#f59e0b">currentGeneration</b> <span style="font-size:10px;color:#fca5a5;">(Generation totals — not current run)</span>';
 
@@ -10781,12 +10786,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 _renderHistoryPanel();
             }
         });
-    } catch (_) {}
+    } catch (_) { }
 
     // Initial render on popup open
     _renderHistoryPanel();
     checkResumableCheckpoint();
-    try { renderEmailCollectorUI(); } catch (_) {}
+    try { renderEmailCollectorUI(); } catch (_) { }
 });
 
 // ── [ISSUE #6 EMAIL COLLECTOR CONTROLLER] ─────────────────────────────────
@@ -10966,7 +10971,7 @@ function bindEmailCollectorEvents() {
             const store = getEmailCollectorStore();
             if (emailActiveView === 'current') {
                 if (store) await store.clearCurrentSite();
-                chrome.runtime.sendMessage({ action: 'CLEAR_COLLECTED_EMAILS', mode: 'current' }, () => {});
+                chrome.runtime.sendMessage({ action: 'CLEAR_COLLECTED_EMAILS', mode: 'current' }, () => { });
                 addLog("🧹 Cleared current site emails.", 'info');
                 const curStat = document.getElementById('stat-email-current-count');
                 const curChip = document.getElementById('email-chip-current-num');

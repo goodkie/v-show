@@ -1,18 +1,18 @@
 {
   "suite": "XPIDER_START_STEP07_PRIVACY_PREP_REGRESSION",
   "directive": "#6708288652",
-  "timestamp": "2026-11-07T14:58:01.777Z",
-  "candidateRuntimeZip": "dist\\XPIDER_V7.0.0_CANDIDATE_P0_REV10_OWNER_SAFE.zip",
-  "candidateRuntimeZipSha256": "a5ef71d2f7adf6c23554a83d2ce2e4118ec9adfeb260d2bc35fcb413d50d484b",
-  "sourcePopupSha256": "a32e6e43d16c31e383aee10136d6c4104c2a24e8d03f5aa6fdeae0bdc1539783",
-  "zipInternalPopupSha256": "a32e6e43d16c31e383aee10136d6c4104c2a24e8d03f5aa6fdeae0bdc1539783",
+  "timestamp": "2026-11-09T04:34:35.763Z",
+  "candidateRuntimeZip": "dist\\XPIDER_V7.0.0_CANDIDATE_P0_REV11_OWNER_SAFE.zip",
+  "candidateRuntimeZipSha256": "5467ada381a62794b9117fe92355ae2433d235ba29e9a6af2b104707cfc1100b",
+  "sourcePopupSha256": "be3d5567b1221b1a87e4b46c9ad1e7feb54736d3f7f721dd0971f834d9bf7ec2",
+  "zipInternalPopupSha256": "be3d5567b1221b1a87e4b46c9ad1e7feb54736d3f7f721dd0971f834d9bf7ec2",
   "assertions": [
     {
       "name": "A1_ZIP_INTERNAL_POPUP_MATCHES_REPO_SOURCE",
       "pass": true,
       "detail": {
-        "srcPopupHash": "a32e6e43d16c31e383aee10136d6c4104c2a24e8d03f5aa6fdeae0bdc1539783",
-        "zipPopupHash": "a32e6e43d16c31e383aee10136d6c4104c2a24e8d03f5aa6fdeae0bdc1539783"
+        "srcPopupHash": "be3d5567b1221b1a87e4b46c9ad1e7feb54736d3f7f721dd0971f834d9bf7ec2",
+        "zipPopupHash": "be3d5567b1221b1a87e4b46c9ad1e7feb54736d3f7f721dd0971f834d9bf7ec2"
       }
     },
     {

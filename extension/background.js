@@ -2237,6 +2237,28 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
     return _handleMainMessageInner(request, sender, sendResponse);
 };
 
+// [Directive #6731090998 Items 1(v) & 4] Post-submit navigation classifier.
+// While a submit is in flight, a navigation to a DIFFERENT ORIGIN (e.g. formspree.io/thanks) is a terminal provider
+// redirect: the extension must NOT re-inject content scripts / run fresh contact discovery on it, and a URL alone
+// is never promoted to VERIFIED_SUCCESS unless a submit was actually triggered.
+function classifyPostSubmitNavigation(input) {
+    const o = input || {};
+    const out = { suppressInjection: false, crossOrigin: false, looksLikeThanks: false, outcomeStage: 'NONE' };
+    if (!o.submitInFlight || !o.currentUrl || !o.attemptUrl) return out;
+    let cur = null;
+    let att = null;
+    try { cur = new URL(o.currentUrl); att = new URL(o.attemptUrl); } catch (_) { return out; }
+    if (!/^https?:$/.test(cur.protocol)) return out;
+    out.crossOrigin = cur.origin !== att.origin;
+    out.looksLikeThanks = /(?:^|[/?#&_.-])(thank[-_]?you|thanks|success|submitted|confirmation|confirmed|complete|completed)(?:$|[/?#&_.-])/i.test(cur.pathname + cur.search + cur.hash);
+    if (out.crossOrigin) {
+        out.suppressInjection = true;
+        out.outcomeStage = out.looksLikeThanks ? 'CLIENT_REDIRECT_THANKS' : 'CLIENT_REDIRECT_UNVERIFIED';
+    }
+    return out;
+}
+if (typeof globalThis !== 'undefined') globalThis.__xpiderClassifyPostSubmitNavigation = classifyPostSubmitNavigation;
+
 const _handleMainMessageInner = (request, sender, sendResponse) => {
     switch (request.action) {
         case 'SEND_MESSAGE':
@@ -2883,6 +2905,9 @@ const _handleMainMessageInner = (request, sender, sendResponse) => {
                     const resolvedMode = (rawMode === 'MANUAL' || rawMode === 'SEMI_AUTO') ? rawMode : 'AUTO';
                     campaignState.campaignMode = resolvedMode;
                     try { await chrome.storage.local.set({ xpider_campaign_mode: resolvedMode }); } catch (_) {}
+                    try {
+                        logBg(null, `[NO_MESSAGE_OPTION] stage=background_received value=${(typeof request.includeFormsWithoutMessage === 'boolean') ? request.includeFormsWithoutMessage : Boolean(request.options?.includeFormsWithoutMessage)} source=${(typeof request.includeFormsWithoutMessage === 'boolean') ? 'request' : 'options_or_default_false'} campaignRunId=${assignedRunId} manifestVersion=${(chrome.runtime.getManifest && chrome.runtime.getManifest().version) || 'unknown'}`, "info");
+                    } catch (_) {}
                     await startCampaignOrchestrator(request.queue, request.template, request.delayMs, request.fillDelayMs, request.submitDelayMs, {
                         skipPreviouslyAttempted: request.skipPreviouslyAttempted,
                         overrideSkipAttempted: request.overrideSkipAttempted,
@@ -8137,7 +8162,8 @@ async function orchestrateSending(urlInput, template, abortSignal = null) {
         if (!actualResultUrl && res?.metadata?.resultUrl) {
             actualResultUrl = res.metadata.resultUrl;
         }
-        if (!isConfirmedProof && !res?.metadata?.manualMode && res?.reasonCode !== REASON_CODES.DELIVERY_UNKNOWN && res?.reasonCode !== 'MANUAL_OPERATOR_SKIP' && actualResultUrl && (actualResultUrl.includes('success') || actualResultUrl.includes('thank'))) {
+        const submitEvidenceForUrlPromotion = Boolean(campaignState.currentSubmitState === 'TRIGGERED' || campaignState.currentSubmitState === 'SUBMIT_TRIGGERED' || campaignState.currentTargetStage?.includes('SUBMIT') || campaignState.currentTargetStage === 'VERIFYING' || res?.metadata?.outcomeStage);
+        if (!isConfirmedProof && submitEvidenceForUrlPromotion && !res?.metadata?.manualMode && res?.reasonCode !== REASON_CODES.DELIVERY_UNKNOWN && res?.reasonCode !== 'MANUAL_OPERATOR_SKIP' && actualResultUrl && (actualResultUrl.includes('success') || actualResultUrl.includes('thank'))) {
             isConfirmedProof = true;
             if (!res) res = { success: true, metadata: { resultUrl: actualResultUrl } };
             else { res.success = true; if (!res.metadata) res.metadata = {}; res.metadata.resultUrl = actualResultUrl; }
@@ -8552,6 +8578,24 @@ async function orchestrateSending(urlInput, template, abortSignal = null) {
             if (chrome.alarms) chrome.alarms.create(`xpider_watchdog_${tabId}_${currentSession}`, { delayInMinutes: 1 });
             
             const norm = normalizeUrl(statusInfo.url || '');
+
+            // [Directive #6731090998 Item 1(v)/4] Submit in flight + cross-origin navigation => terminal redirect; never re-inject/discover on it.
+            const postSubmitNav = classifyPostSubmitNavigation({
+                submitInFlight: Boolean(campaignState.currentSubmitState === 'TRIGGERED' || campaignState.currentSubmitState === 'SUBMIT_TRIGGERED' || campaignState.currentTargetStage?.includes('SUBMIT') || campaignState.currentTargetStage === 'VERIFYING'),
+                currentUrl: statusInfo.url || '',
+                attemptUrl: currentAttemptUrl
+            });
+            if (postSubmitNav.suppressInjection) {
+                if (statusInfo.status === 'complete') {
+                    logBg(tabId, `[POST_SUBMIT_REDIRECT] outcomeStage=${postSubmitNav.outcomeStage} url=${norm} reinjection=SUPPRESSED discovery=SKIPPED`, "info");
+                    if (postSubmitNav.looksLikeThanks) {
+                        finish({ success: true, metadata: { resultUrl: norm, outcomeStage: postSubmitNav.outcomeStage, evidence: 'SUBMIT_TRIGGERED_PLUS_PROVIDER_THANKS_URL' } });
+                    } else {
+                        finish({ success: false, reasonCode: REASON_CODES.DELIVERY_UNKNOWN, metadata: { resultUrl: norm, outcomeStage: postSubmitNav.outcomeStage, evidence: 'CROSS_ORIGIN_REDIRECT_WITHOUT_SUCCESS_SIGNAL' } });
+                    }
+                }
+                return;
+            }
             
             if (statusInfo.url && norm !== lastInjectedUrl) {
                 if (isFocusSecured) {
