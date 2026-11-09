@@ -9,6 +9,7 @@ const http = require('node:http');
 const tls = require('node:tls');
 const crypto = require('node:crypto');
 const { URL } = require('node:url');
+const { validateSenderIdentity } = require('./vivpr-sender-identity');
 const { planCampaign, normalizedAddress } = require('../extension/modules/email-delivery-policy');
 
 const RELAY_HOST = '127.0.0.1';
@@ -44,7 +45,7 @@ function payloadForRecipient(c,r) {
   return {from:c.from,to:[to],subject:c.subject,text:c.content+'\n\nUnsubscribe: '+unsubscribe.href,
     headers:{'List-Unsubscribe':'<'+unsubscribe.href+'>','List-Unsubscribe-Post':'List-Unsubscribe=One-Click'}};
 }
-async function sendOne({campaign,settings,from,recipient,apiKey,dryRun=true,privacyReady=false,approvedLive=false,idempotencyKey}){
+async function sendOne({campaign,settings,from,recipient,apiKey,dryRun=true,privacyReady=false,approvedLive=false,idempotencyKey,senderVerification={}}){
   // Revalidate on trusted Node.js side even if a browser popup already previewed.
   const p=planCampaign({...campaign,settings:{...settings,operatorApproved:approvedLive && settings.operatorApproved}});
   if(!p.approved || p.eligibleCount!==1) return {status:'BLOCKED',reasons:p.blockingReasons,excluded:p.excluded};
@@ -52,6 +53,8 @@ async function sendOne({campaign,settings,from,recipient,apiKey,dryRun=true,priv
   if(!address || !p.recipientPreview.some(e=>e.email===address)) return {status:'BLOCKED',reasons:['RECIPIENT_NOT_APPROVED']};
   if(!idempotencyKey || !/^[a-zA-Z0-9_-]{16,100}$/.test(idempotencyKey))return {status:'BLOCKED',reasons:['IDEMPOTENCY_KEY_REQUIRED']};
   const body=payloadForRecipient({...campaign,from},recipient);
+  const senderGate=validateSenderIdentity({...senderVerification,from});
+  if(!dryRun && !senderGate.valid) return {status:'BLOCKED',reasons:senderGate.errors};
   if(dryRun) return {status:'PREVIEW_ONLY',recipientCount:1,provider:'resend',relay:'127.0.0.1:18988',headersPresent:true};
   // Local CLI's consent/approval is insufficient as a secure high-volume gateway;
   // credentials remain in the local process, never in Chrome.
