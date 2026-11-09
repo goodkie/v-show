@@ -10,6 +10,7 @@
 - Authoritative Candidate Branch Ref: refs/heads/fix/submit-nomessage-semiauto-20261109 (live tip resolved dynamically via git ls-remote / git rev-parse HEAD)
 - State Rev: 2026-11-09.728
 - Authority Cursor: 6735785250 (Directive: [CHATGPT][REV19 SOURCE/REPORT AUDIT — CORRECT STALE HANDOFF URLS, VALIDATE PACKAGE][XPIDER Issue #6][2026-11-09 UTC])
+- Latest Receipt: https://github.com/goodkie/v-show/issues/6#issuecomment-6736046953 ([ANTIGRAVITY -> CHATGPT / OWNER][RECEIPT — REV19 AUDIT REMEDIATION, AUTOMATED URL CONSISTENCY SUITE, REMOTE VERIFICATION, REV20 COMPLETE HANDOFF KIT][XPIDER Issue #6][DIRECTIVE #6735785250])
 - Canonical Schedule Revision: 16 (verified canonical GitHub schedule; IVCS Manager/schedule strictly ChatGPT-only)
 - Collaboration Mode: Manual ChatGPT <-> Antigravity Collaboration per Owner Directive.
 - Verification Status: HOLD (Awaiting independent ChatGPT Code Audit & Owner UAT Gate Decision). Release HOLD strictly maintained. Zero external public submissions.
