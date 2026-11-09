@@ -6,7 +6,7 @@
 - Workspace: E:\vivpr\ai\extension-form-sender
 - Authority: goodkie/v-show Issues #6 & #10
 - Branch: fix/submit-nomessage-semiauto-20261109 (fix branch forked off candidate/p0-core-regressions-v7 commit f9114160; immutable restore checkpoint backup/xpider-rev17-before-submit-nomessage-fix-20261109 preserved untouched at commit f9114160)
-- Candidate Functional Base Commit: 76fab0933276ae163c377d39d9dca5169a33063c (short: 76fab093; verified commit object — extension/ tree SHA 1d1bac897f70df6fa107cde85b00de591d5dea93 100% untouched and byte-identical, plus Step 07 TDZ fix and submit/no-message/semi-auto fixes)
+- Candidate Functional Base Commit: 32cc9386dedcc68315364e1fc27e1161c09d1aa8 (short: 32cc9386; verified commit object — extension/ tree SHA e561ef38b2ae04a616b7dcad9206d480ca4dca5a, includes R2 & content-script opt-in no-message form discovery, Step 07 TDZ fix, and submit/no-message/semi-auto fixes)
 - Authoritative Candidate Branch Ref: refs/heads/fix/submit-nomessage-semiauto-20261109 (live tip resolved dynamically via git ls-remote / git rev-parse HEAD)
 - State Rev: 2026-11-09.727
 - Authority Cursor: 6732442879 (Directive: [CHATGPT][REV18 DIRECT SOURCE AUDIT — P0 NO-MESSAGE DISCOVERY STILL BROKEN][XPIDER Issue #6][2026-11-09 UTC])
