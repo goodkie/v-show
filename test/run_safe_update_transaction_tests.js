@@ -11,7 +11,7 @@ const { spawnSync, execFileSync } = require('child_process');
 
 const ROOT = path.resolve(__dirname, '..');
 const UPDATER = path.join(ROOT, 'scripts', 'xpider_safe_update.js');
-const ZIP = path.join(ROOT, 'dist', 'XPIDER_V7.0.0_CANDIDATE_P0_REV11_OWNER_SAFE.zip');
+const ZIP = path.join(ROOT, 'dist', 'XPIDER_V7.0.0_CANDIDATE_P0_REV12_OWNER_SAFE.zip');
 const INVENTORY = path.join(ROOT, 'dist', 'PACKAGE_INVENTORY_SHA256.json');
 const BASE_DIR = path.join(ROOT, 'dist', 'rc11_extension_baseline', 'extension');
 const CAND_DIR = path.join(ROOT, 'dist', 'clean_room_unpacked_v7');
@@ -69,7 +69,7 @@ function craftZip(out, entries) {
 
 (function main() {
     try {
-        A('ARCHIVE_SHA_IS_EXPECTED', ZIP_SHA === '5467ada381a62794b9117fe92355ae2433d235ba29e9a6af2b104707cfc1100b', { ZIP_SHA });
+        A('ARCHIVE_SHA_IS_EXPECTED', ZIP_SHA === '02624da91d7bc9bb4933c76245c4320433b3df4fc4d046d07ead3b6e43dfcd26', { ZIP_SHA });
         run(['manifest', BASE_DIR, baseManifestPath]);
         // add synthetic retired file to baseline manifest copy
         const bm = JSON.parse(fs.readFileSync(baseManifestPath, 'utf8'));

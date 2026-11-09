@@ -1,10 +1,10 @@
 {
-  "buildName": "XPIDER V7 Candidate P0 Rev 10 Owner-Safe Installable Package",
-  "builtAtUtc": "2026-11-09T04:33:51.462Z",
-  "zipFile": "XPIDER_V7.0.0_CANDIDATE_P0_REV11_OWNER_SAFE.zip",
-  "zipPath": "E:\\vivpr\\ai\\extension-form-sender\\dist\\XPIDER_V7.0.0_CANDIDATE_P0_REV11_OWNER_SAFE.zip",
-  "zipSize": 4472794,
-  "zipSha256": "5467ada381a62794b9117fe92355ae2433d235ba29e9a6af2b104707cfc1100b",
+  "buildName": "XPIDER V7 Candidate P0 Rev 12 Owner-Safe Installable Package",
+  "builtAtUtc": "2026-11-09T05:19:06.304Z",
+  "zipFile": "XPIDER_V7.0.0_CANDIDATE_P0_REV12_OWNER_SAFE.zip",
+  "zipPath": "E:\\vivpr\\ai\\extension-form-sender\\dist\\XPIDER_V7.0.0_CANDIDATE_P0_REV12_OWNER_SAFE.zip",
+  "zipSize": 4473919,
+  "zipSha256": "02624da91d7bc9bb4933c76245c4320433b3df4fc4d046d07ead3b6e43dfcd26",
   "totalFiles": 50,
   "cleanRoomUnpackedPath": "E:\\vivpr\\ai\\extension-form-sender\\dist\\clean_room_unpacked_v7",
   "byteIntegrityConfirmed": true,
@@ -107,8 +107,8 @@
     },
     {
       "path": "modules/form-discovery-engine-r2.js",
-      "size": 41372,
-      "sha256": "484083e2cf5c0e2c48b7a49cfcd8a2e50c587cc5809ba5ff8a179b35ac0a46c6"
+      "size": 48004,
+      "sha256": "24d0bd1c2fddec8f8fa5a766595de1ddcbb5d175969b7a7d2b916019f2361eca"
     },
     {
       "path": "modules/history-store.js",
@@ -272,8 +272,8 @@
     },
     {
       "path": "content-script.js",
-      "size": 536668,
-      "sha256": "e000e64d291bb67950314ed2797c0856a071be147fd9657a07bfb82524184f82"
+      "size": 538405,
+      "sha256": "a913fc040390f60f0de94d2ab1b01a127fcd5f72699f8a8d2459f16e8e027bd1"
     },
     {
       "path": "popup.js",

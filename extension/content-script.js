@@ -2673,11 +2673,21 @@
             return null;
         }
 
-        // D2. Group fields by logical container and score container coherence (R6 Section 6.1 & 6.2)
+        // D2. Group fields by logical container and score container coherence (R6 Section 6.1 & 6.2, P0 Directive 6732442879)
         groupAndScoreContainers(root = document) {
-            const bodyControls = this.findInquiryBodyControls(root);
-            if (bodyControls.length === 0) return [];
+            let includeNoMessage = false;
+            if (typeof this.options?.includeFormsWithoutMessage === 'boolean') {
+                includeNoMessage = this.options.includeFormsWithoutMessage;
+            } else if (typeof window !== 'undefined' && typeof window.__xpider_include_forms_without_message === 'boolean') {
+                includeNoMessage = window.__xpider_include_forms_without_message;
+            }
 
+            if (this._engineR2 && typeof this._engineR2.groupAndScoreContainers === 'function') {
+                const res = this._engineR2.groupAndScoreContainers(root);
+                return res && Array.isArray(res.candidates) ? res.candidates : [];
+            }
+
+            const bodyControls = this.findInquiryBodyControls(root);
             const scoredContainers = [];
             const evaluatedContainers = new Set();
 
@@ -2692,7 +2702,7 @@
 
                 // Hard eligibility gate check: Must be eligible contact inquiry
                 if (_ContactGate && typeof _ContactGate.classifyFormIntent === 'function') {
-                    const c = _ContactGate.classifyFormIntent(container, { includeFormsWithoutMessage: Boolean(window.__xpider_include_forms_without_message) });
+                    const c = _ContactGate.classifyFormIntent(container, { includeFormsWithoutMessage: includeNoMessage });
                     if (!c.eligible) continue;
                 }
 
@@ -2730,8 +2740,45 @@
                     score,
                     bodyControl: bc,
                     adapter,
-                    inputCount: allInputs.length
+                    inputCount: allInputs.length,
+                    eligible: true,
+                    reason: 'ELIGIBLE_INQUIRY_FORM'
                 });
+            }
+
+            // Secondary ladder: Check accessible form containers without inquiry body when includeNoMessage is active
+            if (includeNoMessage && root.querySelectorAll) {
+                const extraForms = Array.from(root.querySelectorAll('form, fieldset, [role="form"], .form-wrapper'));
+                for (const container of extraForms) {
+                    if (!container || evaluatedContainers.has(container)) continue;
+                    evaluatedContainers.add(container);
+
+                    if (_ContactGate && typeof _ContactGate.classifyFormIntent === 'function') {
+                        const c = _ContactGate.classifyFormIntent(container, { includeFormsWithoutMessage: true });
+                        if (c.eligible && c.reason === 'ELIGIBLE_NO_MESSAGE_FORM') {
+                            const allInputs = queryAllInputs(container);
+                            const emails = container.querySelectorAll ? container.querySelectorAll('input[type="email"], input[name*="email" i], input[id*="email" i]') : [];
+                            const names = container.querySelectorAll ? container.querySelectorAll('input[name*="name" i], input[id*="name" i]') : [];
+                            const submits = container.querySelectorAll ? container.querySelectorAll('button[type="submit"], input[type="submit"], button, [role="button"]') : [];
+
+                            let score = 30;
+                            if (container.tagName === 'FORM') score += 30;
+                            if (emails.length > 0) score += 25;
+                            if (names.length > 0) score += 15;
+                            if (submits.length > 0) score += 15;
+
+                            scoredContainers.push({
+                                container,
+                                score,
+                                bodyControl: null,
+                                adapter: this.detectFrameworkAdapter(container),
+                                inputCount: allInputs.length,
+                                eligible: true,
+                                reason: 'ELIGIBLE_NO_MESSAGE_FORM'
+                            });
+                        }
+                    }
+                }
             }
 
             return scoredContainers.sort((a, b) => b.score - a.score);
@@ -2855,9 +2902,9 @@
 
     async function findOptimalForm() {
         await revealLazyForms();
-        // [Issue #6 R5] Multi-Root FormDiscoveryEngine priority
+        // [Issue #6 R5 / P0 Directive 6732442879] Multi-Root FormDiscoveryEngine priority with opt-in support
         try {
-            const engine = new FormDiscoveryEngine();
+            const engine = new FormDiscoveryEngine({ includeFormsWithoutMessage: Boolean(window.__xpider_include_forms_without_message) });
             const discovered = await engine.discoverForm(document);
             if (discovered) return discovered;
         } catch (_) { }

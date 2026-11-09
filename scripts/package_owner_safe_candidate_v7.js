@@ -148,7 +148,7 @@ function extractZip(zipPath, outDir) {
 
 async function main() {
     console.log('================================================================================');
-    console.log('📦 XPIDER V7 OWNER-SAFE INSTALLABLE CANDIDATE PACKAGER (REV11 HOTFIX)');
+    console.log('📦 XPIDER V7 OWNER-SAFE INSTALLABLE CANDIDATE PACKAGER (REV12 HOTFIX)');
     console.log('================================================================================\n');
 
     const ROOT_DIR = process.cwd();
@@ -156,7 +156,7 @@ async function main() {
     const DIST_DIR = path.join(ROOT_DIR, 'dist');
     const STAGING_DIR = path.join(DIST_DIR, 'staging_candidate_v7');
     const UNPACKED_CLEAN_ROOM = path.join(DIST_DIR, 'clean_room_unpacked_v7');
-    const ZIP_NAME = process.env.CANDIDATE_ZIP_NAME || 'XPIDER_V7.0.0_CANDIDATE_P0_REV11_OWNER_SAFE.zip';
+    const ZIP_NAME = process.env.CANDIDATE_ZIP_NAME || 'XPIDER_V7.0.0_CANDIDATE_P0_REV12_OWNER_SAFE.zip';
     const ZIP_PATH = path.join(DIST_DIR, ZIP_NAME);
     const REPORT_PATH = path.join(DIST_DIR, 'package_audit_report.json');
 
@@ -245,7 +245,7 @@ async function main() {
     console.log(`   ✅ All ${byteMatchCount} extracted files confirmed 100% byte-identical to source.`);
 
     const report = {
-        buildName: 'XPIDER V7 Candidate P0 Rev 10 Owner-Safe Installable Package',
+        buildName: 'XPIDER V7 Candidate P0 Rev 12 Owner-Safe Installable Package',
         builtAtUtc: new Date().toISOString(),
         zipFile: ZIP_NAME,
         zipPath: ZIP_PATH,
@@ -264,7 +264,7 @@ async function main() {
     fs.writeFileSync(REPORT_PATH, JSON.stringify(report, null, 2), 'utf8');
     console.log(`7. Package audit report saved -> ${REPORT_PATH}`);
     console.log('\n================================================================================');
-    console.log('🎉 OWNER-SAFE INSTALLABLE CANDIDATE PACKAGE (REV11) READY FOR CLEAN-ROOM TESTING');
+    console.log('🎉 OWNER-SAFE INSTALLABLE CANDIDATE PACKAGE (REV12) READY FOR CLEAN-ROOM TESTING');
     console.log('================================================================================');
     return report;
 }

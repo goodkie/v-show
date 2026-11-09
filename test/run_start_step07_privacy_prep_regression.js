@@ -28,7 +28,7 @@ const { spawnSync } = require('child_process');
 const ROOT = path.resolve(__dirname, '..');
 const DIST = path.join(ROOT, 'dist');
 const POPUP_SRC = path.join(ROOT, 'extension', 'popup.js');
-const CANDIDATE_ZIP = path.join(DIST, 'XPIDER_V7.0.0_CANDIDATE_P0_REV11_OWNER_SAFE.zip');
+const CANDIDATE_ZIP = path.join(DIST, 'XPIDER_V7.0.0_CANDIDATE_P0_REV12_OWNER_SAFE.zip');
 const REPORT_PATH = path.join(DIST, 'report_start_step07_privacy_prep_regression.json');
 
 function sha256File(p) {

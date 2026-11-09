@@ -76,8 +76,8 @@
   },
   {
     "path": "modules/form-discovery-engine-r2.js",
-    "size": 41372,
-    "sha256": "484083e2cf5c0e2c48b7a49cfcd8a2e50c587cc5809ba5ff8a179b35ac0a46c6"
+    "size": 48004,
+    "sha256": "24d0bd1c2fddec8f8fa5a766595de1ddcbb5d175969b7a7d2b916019f2361eca"
   },
   {
     "path": "modules/history-store.js",
@@ -241,8 +241,8 @@
   },
   {
     "path": "content-script.js",
-    "size": 536668,
-    "sha256": "e000e64d291bb67950314ed2797c0856a071be147fd9657a07bfb82524184f82"
+    "size": 538405,
+    "sha256": "a913fc040390f60f0de94d2ab1b01a127fcd5f72699f8a8d2459f16e8e027bd1"
   },
   {
     "path": "popup.js",

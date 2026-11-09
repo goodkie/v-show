@@ -4,7 +4,7 @@
   "browserFileVersion": "157.0.8103.38",
   "runtimeBrowserVersion": "Chrome/157.0.8103.38",
   "extensionId": "ldlijlaccfeelfdhgnjbibniocefckjj",
-  "startedAt": "2026-11-07T01:29:10.736Z",
+  "startedAt": "2026-11-09T05:17:09.507Z",
   "assertions": [
     {
       "name": "FIXTURE_RESET_TO_ZERO_POSTS",
@@ -177,7 +177,7 @@
     "E:\\vivpr\\ai\\extension-form-sender\\dist\\evidence_chrome\\chrome_ui_regressions_tally.png"
   ],
   "status": "SUCCESS",
-  "endedAt": "2026-11-07T01:30:19.399Z",
+  "endedAt": "2026-11-09T05:18:16.895Z",
   "total": 18,
   "failed": 0
 }

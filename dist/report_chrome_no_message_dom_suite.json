@@ -1,0 +1,84 @@
+{
+  "suite": "XPIDER_CHROME_REAL_BROWSER_DOM_SUITE",
+  "directive": "#6732442879",
+  "timestamp": "2026-11-09T05:13:43.715Z",
+  "browser": "Google Chrome",
+  "assertions": [
+    {
+      "name": "CHROME_HEADLESS_SPAWNED_AND_CDP_CONNECTED",
+      "pass": true,
+      "detail": {
+        "versionInfo": {
+          "Browser": "Chrome/157.0.8103.38",
+          "File-Path-Style": "windows",
+          "Protocol-Version": "1.3",
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/157.0.0.0 Safari/537.36",
+          "V8-Version": "15.7.112.23",
+          "WebKit-Version": "537.36 (@a733b5afbb3ba618844ff8876b89ad1a774b2f18)",
+          "webSocketDebuggerUrl": "ws://127.0.0.1:9456/devtools/browser/2dd7a91d-8568-474c-93e5-3d582c745bab"
+        }
+      }
+    },
+    {
+      "name": "CHROME_REAL_DOM_SUBSCRIBE_OFF_SKIPS",
+      "pass": true,
+      "detail": {
+        "formFound": false,
+        "eligibleCount": 0,
+        "reason": "NO_BODY_FIELD_FOUND"
+      }
+    },
+    {
+      "name": "CHROME_REAL_DOM_SUBSCRIBE_ON_DISCOVERS",
+      "pass": true,
+      "detail": {
+        "formFound": true,
+        "formId": "subscribe-form",
+        "eligibleReason": "ELIGIBLE_NO_MESSAGE_FORM",
+        "autofilled": "owner.test@chrome-headless.org"
+      }
+    },
+    {
+      "name": "CHROME_REAL_DOM_SUBSCRIBE_ON_FILLS_EMAIL",
+      "pass": true,
+      "detail": {
+        "formFound": true,
+        "formId": "subscribe-form",
+        "eligibleReason": "ELIGIBLE_NO_MESSAGE_FORM",
+        "autofilled": "owner.test@chrome-headless.org"
+      }
+    },
+    {
+      "name": "CHROME_REAL_DOM_UNAUTHORIZED_CONSENT_BLOCKED",
+      "pass": true,
+      "detail": {
+        "formFound": false,
+        "candidateEligible": false,
+        "candidateReason": "NON_INQUIRY_UNAUTHORIZED_CONSENT_FORM"
+      }
+    },
+    {
+      "name": "CHROME_REAL_DOM_NEGATIVE_CONTROLS_REJECTED",
+      "pass": true,
+      "detail": {
+        "formFound": false,
+        "eligibleCount": 0
+      }
+    },
+    {
+      "name": "CHROME_REAL_DOM_INQUIRY_PRIORITIZED_OVER_NEWSLETTER",
+      "pass": true,
+      "detail": {
+        "formFound": true,
+        "discoveredTag": "FORM",
+        "discoveredId": "primary-contact-form",
+        "topScore": 205,
+        "topReason": "ELIGIBLE_CONTACT_INQUIRY"
+      }
+    }
+  ],
+  "status": "SUCCESS",
+  "total": 7,
+  "failed": 0,
+  "passed": 7
+}

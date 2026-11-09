@@ -1,0 +1,358 @@
+{
+  "suite": "XPIDER_NO_MESSAGE_DISCOVERY_R2_DOM_SUITE",
+  "directive": "#6732442879",
+  "timestamp": "2026-11-09T05:13:39.763Z",
+  "assertions": [
+    {
+      "name": "CASE_A_OFF_DISCOVERY_RETURNS_NULL",
+      "pass": true,
+      "detail": {
+        "discovered": false
+      }
+    },
+    {
+      "name": "CASE_A_OFF_ELIGIBLE_CANDIDATES_EMPTY",
+      "pass": true,
+      "detail": {
+        "eligibleCount": 0,
+        "candidates": [
+          {
+            "sig": "form#newsletter-form.[email]",
+            "eligible": false,
+            "reason": "NON_INQUIRY_SUBSCRIBE_FORM"
+          }
+        ]
+      }
+    },
+    {
+      "name": "CASE_A_OFF_LAST_RESULT_REJECTED",
+      "pass": true,
+      "detail": {
+        "lastResult": {
+          "success": false,
+          "container": null,
+          "reason": "NO_BODY_FIELD_FOUND",
+          "reasonCode": "NO_BODY_FIELD_FOUND",
+          "bodyCandidatesSeen": 0,
+          "logicalContainersSeen": 1,
+          "crossOriginSignals": [],
+          "externalFormUrl": null
+        }
+      }
+    },
+    {
+      "name": "CASE_A_ON_DISCOVERS_FORM",
+      "pass": true,
+      "detail": {
+        "discoveredId": "newsletter-form"
+      }
+    },
+    {
+      "name": "CASE_A_ON_REASON_IS_ELIGIBLE_NO_MESSAGE_FORM",
+      "pass": true,
+      "detail": {
+        "candidate": {
+          "eligible": true,
+          "reason": "ELIGIBLE_NO_MESSAGE_FORM"
+        }
+      }
+    },
+    {
+      "name": "CASE_A_ON_AUTOFILL_DISPATCHED",
+      "pass": true,
+      "detail": {
+        "dispatched": true,
+        "formSignature": "form#newsletter-form.[email]",
+        "reason": "OK"
+      }
+    },
+    {
+      "name": "CASE_A_ON_AUTOFILL_VALUE_SET",
+      "pass": true,
+      "detail": {
+        "autofilledEmail": "client@newsletter-test.org"
+      }
+    },
+    {
+      "name": "CASE_B_ON_DISCOVERS_NAME_EMAIL_FORM",
+      "pass": true,
+      "detail": {
+        "discoveredId": "subscribe-name-email"
+      }
+    },
+    {
+      "name": "CASE_B_ON_REASON_IS_ELIGIBLE_NO_MESSAGE_FORM",
+      "pass": true,
+      "detail": {
+        "eligible": {
+          "container": {
+            "0": {},
+            "1": {},
+            "2": {}
+          },
+          "signature": "form#subscribe-name-email.[name,email]",
+          "score": 115,
+          "eligible": true,
+          "reason": "ELIGIBLE_NO_MESSAGE_FORM",
+          "bodyControl": null,
+          "adapter": null,
+          "controls": {
+            "names": [
+              {}
+            ],
+            "emails": [
+              {}
+            ],
+            "phones": [],
+            "subjects": [],
+            "selects": [],
+            "checkboxes": [],
+            "radios": [],
+            "submits": [
+              {}
+            ],
+            "allInputs": [
+              {},
+              {}
+            ]
+          },
+          "root": {
+            "location": {
+              "href": "http://127.0.0.1:8088/test-fixture.html",
+              "origin": "http://127.0.0.1:8088",
+              "protocol": "http:",
+              "host": "127.0.0.1:8088",
+              "hostname": "127.0.0.1",
+              "port": "8088",
+              "pathname": "/test-fixture.html",
+              "search": "",
+              "hash": ""
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "CASE_B_ON_AUTOFILL_DISPATCHED",
+      "pass": true,
+      "detail": {
+        "dispatched": true,
+        "formSignature": "form#subscribe-name-email.[name,email]",
+        "reason": "OK"
+      }
+    },
+    {
+      "name": "CASE_B_ON_NAME_AND_EMAIL_FILLED",
+      "pass": true,
+      "detail": {
+        "filledName": "Alice Walker",
+        "filledEmail": "alice@subscriber.test"
+      }
+    },
+    {
+      "name": "CASE_C_STRAY_WORD_RETURNS_NULL",
+      "pass": true,
+      "detail": {
+        "discovered": null
+      }
+    },
+    {
+      "name": "CASE_C_STRAY_WORD_NO_ELIGIBLE_CANDIDATE",
+      "pass": true,
+      "detail": {
+        "eligibleCount": 0,
+        "candidates": []
+      }
+    },
+    {
+      "name": "CASE_C_TERMINAL_REASON_NO_BODY_FIELD",
+      "pass": true,
+      "detail": {
+        "lastResult": {
+          "success": false,
+          "container": null,
+          "reason": "NO_BODY_FIELD_FOUND",
+          "reasonCode": "NO_BODY_FIELD_FOUND",
+          "bodyCandidatesSeen": 0,
+          "logicalContainersSeen": 0,
+          "crossOriginSignals": [],
+          "externalFormUrl": null
+        }
+      }
+    },
+    {
+      "name": "CASE_D_UNAUTHORIZED_CONSENT_RETURNS_NULL",
+      "pass": true,
+      "detail": {
+        "discovered": null
+      }
+    },
+    {
+      "name": "CASE_D_UNAUTHORIZED_CONSENT_REJECTED",
+      "pass": true,
+      "detail": {
+        "candidate": {
+          "eligible": false,
+          "reason": "NON_INQUIRY_UNAUTHORIZED_CONSENT_FORM"
+        }
+      }
+    },
+    {
+      "name": "CASE_E_NEGATIVE_CONTROLS_RETURNS_NULL",
+      "pass": true,
+      "detail": {
+        "discovered": null
+      }
+    },
+    {
+      "name": "CASE_E_NO_NEGATIVE_FORM_ELIGIBLE",
+      "pass": true,
+      "detail": {
+        "eligibleList": []
+      }
+    },
+    {
+      "name": "CASE_E_LOGIN_FORM_REJECTED",
+      "pass": true,
+      "detail": {
+        "reason": "NON_INQUIRY_LOGIN_FORM"
+      }
+    },
+    {
+      "name": "CASE_E_SEARCH_FORM_REJECTED",
+      "pass": true,
+      "detail": {
+        "reason": "NON_INQUIRY_SEARCH_FORM"
+      }
+    },
+    {
+      "name": "CASE_E_PAYMENT_FORM_REJECTED",
+      "pass": true,
+      "detail": {
+        "reason": "NON_INQUIRY_PAYMENT_FORM"
+      }
+    },
+    {
+      "name": "CASE_E_BOOKING_FORM_REJECTED",
+      "pass": true,
+      "detail": {
+        "reason": "NON_INQUIRY_APPOINTMENT_FORM"
+      }
+    },
+    {
+      "name": "CASE_E_COMMENT_FORM_REJECTED",
+      "pass": true,
+      "detail": {
+        "reason": "NON_INQUIRY_COMMENT_FORM"
+      }
+    },
+    {
+      "name": "CASE_F_CROSS_ORIGIN_IFRAME_RETURNS_NULL",
+      "pass": true,
+      "detail": {
+        "discovered": null
+      }
+    },
+    {
+      "name": "CASE_F_CROSS_ORIGIN_NO_ELIGIBLE_CONTAINER",
+      "pass": true,
+      "detail": {
+        "eligible": []
+      }
+    },
+    {
+      "name": "CASE_F_CROSS_ORIGIN_SIGNAL_RECORDED",
+      "pass": true,
+      "detail": {
+        "signals": [
+          {
+            "src": "https://external-auth.example.com/widget",
+            "title": "",
+            "reason": "CROSS_ORIGIN_CONTACT_FORM_DETECTED"
+          }
+        ]
+      }
+    },
+    {
+      "name": "CASE_F_TERMINAL_REASON_CROSS_ORIGIN_UNAVAILABLE",
+      "pass": true,
+      "detail": {
+        "lastResult": {
+          "success": false,
+          "container": null,
+          "reason": "CROSS_ORIGIN_FORM_UNAVAILABLE",
+          "reasonCode": "CROSS_ORIGIN_FORM_UNAVAILABLE",
+          "bodyCandidatesSeen": 0,
+          "logicalContainersSeen": 0,
+          "crossOriginSignals": [
+            {
+              "src": "https://external-auth.example.com/widget",
+              "title": "",
+              "reason": "CROSS_ORIGIN_CONTACT_FORM_DETECTED"
+            },
+            {
+              "src": "https://external-auth.example.com/widget",
+              "title": "",
+              "reason": "CROSS_ORIGIN_CONTACT_FORM_DETECTED"
+            },
+            {
+              "src": "https://external-auth.example.com/widget",
+              "title": "",
+              "reason": "CROSS_ORIGIN_CONTACT_FORM_DETECTED"
+            }
+          ],
+          "externalFormUrl": "https://external-auth.example.com/widget"
+        }
+      }
+    },
+    {
+      "name": "CASE_G_FORMLESS_PAGE_RETURNS_NULL",
+      "pass": true,
+      "detail": {
+        "discovered": null
+      }
+    },
+    {
+      "name": "CASE_G_FORMLESS_PAGE_ZERO_CANDIDATES",
+      "pass": true,
+      "detail": {
+        "count": 0
+      }
+    },
+    {
+      "name": "CASE_G_FORMLESS_PAGE_TERMINAL_NO_BODY",
+      "pass": true,
+      "detail": {
+        "lastResult": {
+          "success": false,
+          "container": null,
+          "reason": "NO_BODY_FIELD_FOUND",
+          "reasonCode": "NO_BODY_FIELD_FOUND",
+          "bodyCandidatesSeen": 0,
+          "logicalContainersSeen": 0,
+          "crossOriginSignals": [],
+          "externalFormUrl": null
+        }
+      }
+    },
+    {
+      "name": "CASE_H_GENUINE_INQUIRY_CHOSEN_OVER_NEWSLETTER",
+      "pass": true,
+      "detail": {
+        "discoveredId": "main-contact-form"
+      }
+    },
+    {
+      "name": "CASE_H_GENUINE_INQUIRY_HAS_HIGHER_SCORE",
+      "pass": true,
+      "detail": {
+        "topCandidateId": "main-contact-form",
+        "score": 205
+      }
+    }
+  ],
+  "status": "SUCCESS",
+  "total": 32,
+  "failed": 0,
+  "passed": 32
+}

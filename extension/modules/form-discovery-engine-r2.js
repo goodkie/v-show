@@ -58,6 +58,16 @@
         'pay', 'checkout', 'delete', 'cancel', 'remove', 'reset', 'clear'
     ];
 
+    function resolveContactGate() {
+        return (typeof window !== 'undefined' && window.ContactGate) ||
+            (typeof global !== 'undefined' && global.ContactGate) ||
+            (typeof require !== 'undefined' ? (function () {
+                try { return require('./contact-gate.js'); } catch (_) {
+                    try { return require('./modules/contact-gate.js'); } catch (__) { return null; }
+                }
+            })() : null);
+    }
+
     function isVisible(el) {
         if (!el) return false;
         try {
@@ -558,16 +568,26 @@
             return null;
         }
 
-        // Group & Score Candidates (Requirement 2 & 3)
+        // Group & Score Candidates (Requirement 2 & 3, P0 Directive 6732442879)
         groupAndScoreContainers(root = document) {
             const { roots, crossOriginSignals, shadowCount, iframeCount } = collectAccessibleRoots(root);
             const bodyControls = findInquiryBodyControls(roots);
 
+            // [P0 Directive 6732442879] Authoritative tri-state precedence for no-message opt-in
+            let includeNoMessage = false;
+            if (typeof this.options.includeFormsWithoutMessage === 'boolean') {
+                includeNoMessage = this.options.includeFormsWithoutMessage;
+            } else if (typeof window !== 'undefined' && typeof window.__xpider_include_forms_without_message === 'boolean') {
+                includeNoMessage = window.__xpider_include_forms_without_message;
+            }
+
+            const cg = resolveContactGate();
             const scoredContainers = [];
             const evaluatedContainers = new Set();
             let nativeFormCount = 0;
             let logicalContainerCount = 0;
 
+            // 1. Primary ladder: genuine inquiry body controls (textarea, contenteditable, aria-multiline)
             for (const bc of bodyControls) {
                 const el = bc.element;
                 const container = inferLogicalContainer(el);
@@ -582,10 +602,16 @@
                 const contactCount = controls.names.length + controls.emails.length + controls.phones.length;
                 const submitCount = controls.submits.length;
 
-                // [R6.2 ELIGIBILITY GATE] (Requirement 3: Must NOT Over-filter)
-                // Eligible if:
-                // 1. Valid visible inquiry body exists (bc.element is present & visible)
-                // 2. AND (is a native <form> OR has contact/identity fields OR has submitters OR container/body context is inquiry)
+                // ContactGate strict classification
+                let cgRes = null;
+                if (cg && typeof cg.classifyFormIntent === 'function') {
+                    cgRes = cg.classifyFormIntent(container, {
+                        includeFormsWithoutMessage: includeNoMessage,
+                        ownerAuthorizedConsent: this.options.ownerAuthorizedConsent,
+                        allowAutoConsent: this.options.allowAutoConsent
+                    });
+                }
+
                 const isOverlay = isExcludedOverlayElement(container);
                 const hasValidBody = isVisible(bc.element) && !isExcludedOverlayElement(bc.element);
                 const containerContext = `${safeElemAttr(container, 'id')} ${safeElemAttr(container, 'class')}`.toLowerCase();
@@ -593,25 +619,34 @@
                     INQUIRY_BODY_TOKENS.some(k => bc.context.includes(k)) ||
                     containerContext.includes('contact') || containerContext.includes('form') || containerContext.includes('inquiry'));
 
-                // Negative check: Reject newsletter-only forms
+                // Negative check: Reject newsletter-only forms unless opt-in is active
                 const isNewsletterOnly = NEWSLETTER_NEGATIVE_TOKENS.some(tok => containerContext.includes(tok)) &&
                     !INQUIRY_BODY_TOKENS.some(tok => containerContext.includes(tok)) &&
                     controls.allInputs.length <= 2 &&
                     controls.names.length === 0 &&
                     controls.phones.length === 0;
 
-                const eligible = !isOverlay && hasValidBody && hasInquiryContext && !isNewsletterOnly;
-                const reason = isOverlay ? 'REJECTED_OVERLAY_CONTAINER'
-                    : !hasValidBody ? 'NO_VISIBLE_BODY_FIELD'
-                        : !hasInquiryContext ? 'NO_CONTACT_OR_SUBMIT_ASSOCIATED'
-                            : isNewsletterOnly ? 'REJECTED_NEWSLETTER_ONLY'
-                                : 'ELIGIBLE_INQUIRY_FORM';
+                let eligible = false;
+                let reason = 'NO_BODY_FIELD_FOUND';
+
+                if (cgRes) {
+                    eligible = Boolean(cgRes.eligible);
+                    reason = cgRes.reason;
+                } else {
+                    eligible = !isOverlay && hasValidBody && hasInquiryContext && (!isNewsletterOnly || includeNoMessage);
+                    reason = isOverlay ? 'REJECTED_OVERLAY_CONTAINER'
+                        : !hasValidBody ? 'NO_VISIBLE_BODY_FIELD'
+                            : !hasInquiryContext ? 'NO_CONTACT_OR_SUBMIT_ASSOCIATED'
+                                : (isNewsletterOnly && !includeNoMessage) ? 'REJECTED_NEWSLETTER_ONLY'
+                                    : (isNewsletterOnly && includeNoMessage) ? 'ELIGIBLE_NO_MESSAGE_FORM'
+                                        : 'ELIGIBLE_INQUIRY_FORM';
+                }
 
                 // Logging Requirement 1: [FORM_GATE]
                 const candidateSig = computeFormSignature(container);
                 console.log(`[FORM_GATE] candidate=${candidateSig} bodyField=${hasValidBody} contactFields=${contactCount} submitters=${submitCount} eligible=${eligible} reason=${reason}`);
 
-                // Scoring is for RANKING only
+                // Scoring is for RANKING only: inquiry forms with textarea prioritized (180+)
                 let score = 50;
                 if (isNativeForm) score += 50;
                 if (bc.type === 'textarea') score += 40;
@@ -637,6 +672,82 @@
                     controls,
                     root: bc.root
                 });
+            }
+
+            // 2. [P0 Directive 6732442879] Secondary ladder: Candidate form containers without inquiry body (e.g. newsletter/subscribe opt-in)
+            // Evaluates accessible form containers across roots; ContactGate strict rules govern eligibility.
+            for (const r of roots) {
+                if (!r || !r.querySelectorAll) continue;
+                const formContainers = Array.from(r.querySelectorAll('form, [role="form"], .form-wrapper, fieldset'));
+                for (const container of formContainers) {
+                    if (!container || evaluatedContainers.has(container) || isExcludedOverlayElement(container)) continue;
+                    evaluatedContainers.add(container);
+
+                    const isNativeForm = container.tagName === 'FORM';
+                    if (isNativeForm) nativeFormCount++;
+                    else logicalContainerCount++;
+
+                    const controls = inspectContainerControls(container);
+                    const contactCount = controls.names.length + controls.emails.length + controls.phones.length;
+                    const submitCount = controls.submits.length;
+
+                    let cgRes = null;
+                    if (cg && typeof cg.classifyFormIntent === 'function') {
+                        cgRes = cg.classifyFormIntent(container, {
+                            includeFormsWithoutMessage: includeNoMessage,
+                            ownerAuthorizedConsent: this.options.ownerAuthorizedConsent,
+                            allowAutoConsent: this.options.allowAutoConsent
+                        });
+                    }
+
+                    let eligible = false;
+                    let reason = 'NO_BODY_FIELD_FOUND';
+
+                    if (cgRes) {
+                        eligible = Boolean(cgRes.eligible);
+                        reason = cgRes.reason;
+                    } else {
+                        // Strict fallback when ContactGate is not present
+                        const containerContext = `${safeElemAttr(container, 'id')} ${safeElemAttr(container, 'class')}`.toLowerCase();
+                        const isNewsletter = NEWSLETTER_NEGATIVE_TOKENS.some(tok => containerContext.includes(tok));
+                        const hasVisibleEmail = controls.emails.some(isVisible);
+                        if (includeNoMessage && isNewsletter && hasVisibleEmail) {
+                            eligible = true;
+                            reason = 'ELIGIBLE_NO_MESSAGE_FORM';
+                        } else if (isNewsletter) {
+                            eligible = false;
+                            reason = 'NON_INQUIRY_NEWSLETTER_FORM';
+                        } else {
+                            eligible = false;
+                            reason = 'NO_BODY_FIELD_FOUND';
+                        }
+                    }
+
+                    const candidateSig = computeFormSignature(container);
+                    console.log(`[FORM_GATE] candidate=${candidateSig} bodyField=false contactFields=${contactCount} submitters=${submitCount} eligible=${eligible} reason=${reason}`);
+
+                    // Ranking score: strictly lower than genuine inquiry forms (score <= 120 vs inquiry 180+)
+                    let score = 30;
+                    if (isNativeForm) score += 30;
+                    if (controls.emails.length > 0) score += 25;
+                    if (controls.names.length > 0) score += 15;
+                    if (controls.submits.length > 0) score += 15;
+
+                    const adapter = this.detectFrameworkAdapter(container);
+                    if (adapter) score += 25;
+
+                    scoredContainers.push({
+                        container,
+                        signature: candidateSig,
+                        score,
+                        eligible,
+                        reason,
+                        bodyControl: null,
+                        adapter,
+                        controls,
+                        root: r
+                    });
+                }
             }
 
             return {
@@ -688,8 +799,15 @@
             const doc = (root && root.nodeType === 9) ? root : (root && root.ownerDocument) ? root.ownerDocument : (typeof document !== 'undefined' ? document : null);
             if (doc && isPageErrorOr404(doc)) {
                 console.warn(`[FORM_SCAN] Aborting discovery: 404/Error page detected url=${url}`);
-                this.lastDiscoveryResult = { success: false, reason: 'ERROR_404_PAGE', url };
+                this.lastDiscoveryResult = { success: false, reason: 'ERROR_404_PAGE', reasonCode: 'ERROR_404_PAGE', url };
                 return null;
+            }
+
+            let includeNoMessage = false;
+            if (typeof this.options.includeFormsWithoutMessage === 'boolean') {
+                includeNoMessage = this.options.includeFormsWithoutMessage;
+            } else if (typeof window !== 'undefined' && typeof window.__xpider_include_forms_without_message === 'boolean') {
+                includeNoMessage = window.__xpider_include_forms_without_message;
             }
 
             let totalBodySeen = 0;
@@ -718,7 +836,7 @@
             let pass1 = executePass(1);
             if (pass1.eligibleList.length > 0) {
                 const best = pass1.eligibleList[0];
-                this.lastDiscoveryResult = { success: true, container: best.container, signature: best.signature, pass: 1 };
+                this.lastDiscoveryResult = { success: true, container: best.container, signature: best.signature, pass: 1, reason: best.reason, reasonCode: best.reason };
                 return best.container;
             }
 
@@ -730,7 +848,7 @@
             let pass2 = executePass(2);
             if (pass2.eligibleList.length > 0) {
                 const best = pass2.eligibleList[0];
-                this.lastDiscoveryResult = { success: true, container: best.container, signature: best.signature, pass: 2 };
+                this.lastDiscoveryResult = { success: true, container: best.container, signature: best.signature, pass: 2, reason: best.reason, reasonCode: best.reason };
                 return best.container;
             }
 
@@ -749,7 +867,7 @@
             let pass3 = executePass(3);
             if (pass3.eligibleList.length > 0) {
                 const best = pass3.eligibleList[0];
-                this.lastDiscoveryResult = { success: true, container: best.container, signature: best.signature, pass: 3 };
+                this.lastDiscoveryResult = { success: true, container: best.container, signature: best.signature, pass: 3, reason: best.reason, reasonCode: best.reason };
                 return best.container;
             }
 
@@ -757,7 +875,9 @@
             let terminalReason = 'NO_BODY_FIELD_FOUND';
             if (allCrossOriginSignals.length > 0) {
                 terminalReason = 'CROSS_ORIGIN_FORM_UNAVAILABLE';
-            } else if (totalBodySeen === 0) {
+            } else if (totalContainersSeen === 0 && totalBodySeen === 0) {
+                terminalReason = 'NO_BODY_FIELD_FOUND';
+            } else if (totalBodySeen === 0 && !includeNoMessage) {
                 terminalReason = 'NO_BODY_FIELD_FOUND';
             } else if (totalContainersSeen === 0) {
                 terminalReason = 'BODY_FIELD_FOUND_CONTAINER_INCOHERENT';
@@ -775,6 +895,7 @@
             this.lastDiscoveryResult = {
                 success: false,
                 container: null,
+                reason: terminalReason,
                 reasonCode: terminalReason,
                 bodyCandidatesSeen: totalBodySeen,
                 logicalContainersSeen: totalContainersSeen,
