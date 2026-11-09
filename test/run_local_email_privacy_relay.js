@@ -32,7 +32,8 @@ const id='test-local-example-20261109-001';
     await assert.rejects(httpConnect({host:'example.com'}),/DESTINATION_DENIED/)
   });
   await check('no live transmit if relay not ready',async()=>{
-    await assert.rejects(sendOne({campaign,settings:s,from:'team@example.test',
+    const senderVerification={domainOwnershipVerified:true,providerDomainVerified:true,spfVerified:true,dkimVerified:true,dmarcVerified:true,relayConnectVerified:true};
+    await assert.rejects(sendOne({campaign,settings:s,from:'notice@vivpr.pro',senderVerification,
       recipient:r,approvedLive:true,idempotencyKey:id,apiKey:'re_test_dummykey',privacyReady:false,dryRun:false}),/PRIVACY_RELAY_NOT_READY/)
   });
   await check('no direct fallback if relay unavailable',async()=>{
