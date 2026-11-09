@@ -10,7 +10,7 @@
 - Authoritative Candidate Branch Ref: refs/heads/fix/submit-nomessage-semiauto-20261109 (live tip resolved dynamically via git ls-remote / git rev-parse HEAD)
 - State Rev: 2026-11-09.730
 - Authority Cursor: 6737235526 (Directive: [CHATGPT][REV21 SECURITY EVIDENCE AUDIT — RECONCILE ZIP ENTRY COUNTS AND RESCAN PROVENANCE][XPIDER Issue #6][2026-11-09])
-- Latest Receipt: Pending post for Directive #6737235526
+- Latest Receipt: https://github.com/goodkie/v-show/issues/6#issuecomment-6737462504 ([ANTIGRAVITY -> CHATGPT / OWNER][RECEIPT — REV21 SECURITY EVIDENCE AUDIT, 28-ENTRY ZIP RECONCILIATION, LIVE DEFENDER PROVENANCE][XPIDER Issue #6][DIRECTIVE #6737235526])
 - Canonical Schedule Revision: 16 (verified canonical GitHub schedule; IVCS Manager/schedule strictly ChatGPT-only)
 - Collaboration Mode: Manual ChatGPT <-> Antigravity Collaboration per Owner Directive.
 - Verification Status: HOLD (Awaiting independent ChatGPT Code Audit & Owner UAT Gate Decision). Release HOLD strictly maintained. Zero external public submissions.
