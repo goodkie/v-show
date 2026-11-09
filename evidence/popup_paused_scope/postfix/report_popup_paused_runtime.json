@@ -1,0 +1,118 @@
+{
+  "browser": "Edg/157.0.4341.42",
+  "extDir": "C:\\Users\\oPus\\AppData\\Local\\Temp\\email_tip\\extension",
+  "results": [
+    {
+      "name": "BROWSER_STARTED",
+      "pass": true,
+      "detail": "Edg/157.0.4341.42"
+    },
+    {
+      "name": "EXTENSION_LOADED",
+      "pass": true,
+      "detail": "ldlijlaccfeelfdhgnjbibniocefckjj"
+    },
+    {
+      "name": "NO_isPausedState_REFERENCEERROR_IDLE",
+      "pass": true,
+      "detail": "ui={\"startRowHidden\":false,\"multiHidden\":true,\"resumeBtn\":true,\"pausedFlag\":false,\"url\":\"chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/popup.ht\"} errors=[]"
+    },
+    {
+      "name": "NO_isPausedState_REFERENCEERROR_PAUSED_BY_RESPONSE",
+      "pass": true,
+      "detail": "ui={\"startRowHidden\":true,\"multiHidden\":false,\"resumeBtn\":true,\"pausedFlag\":true,\"url\":\"chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/popup.ht\"} errors=[]"
+    },
+    {
+      "name": "NO_isPausedState_REFERENCEERROR_ACTIVE",
+      "pass": true,
+      "detail": "ui={\"startRowHidden\":true,\"multiHidden\":false,\"resumeBtn\":true,\"pausedFlag\":false,\"url\":\"chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/popup.ht\"} errors=[]"
+    },
+    {
+      "name": "NO_isPausedState_REFERENCEERROR_STORAGE_FETCH_THROWS_PAUSED_RESPONSE",
+      "pass": true,
+      "detail": "ui={\"startRowHidden\":true,\"multiHidden\":false,\"resumeBtn\":true,\"pausedFlag\":true,\"url\":\"chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/popup.ht\"} errors=[]"
+    },
+    {
+      "name": "NO_isPausedState_REFERENCEERROR_STORAGE_FETCH_THROWS_IDLE_RESPONSE",
+      "pass": true,
+      "detail": "ui={\"startRowHidden\":false,\"multiHidden\":true,\"resumeBtn\":true,\"pausedFlag\":false,\"url\":\"chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/popup.ht\"} errors=[]"
+    },
+    {
+      "name": "IDLE_SHOWS_START_ROW",
+      "pass": true,
+      "detail": "{\"startRowHidden\":false,\"multiHidden\":true,\"resumeBtn\":true,\"pausedFlag\":false,\"url\":\"chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/popup.ht\"}"
+    },
+    {
+      "name": "PAUSED_HIDES_START_ROW_AND_SHOWS_MULTI",
+      "pass": true,
+      "detail": "{\"startRowHidden\":true,\"multiHidden\":false,\"resumeBtn\":true,\"pausedFlag\":true,\"url\":\"chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/popup.ht\"}"
+    },
+    {
+      "name": "ACTIVE_HIDES_START_ROW_AND_SHOWS_MULTI",
+      "pass": true,
+      "detail": "{\"startRowHidden\":true,\"multiHidden\":false,\"resumeBtn\":true,\"pausedFlag\":false,\"url\":\"chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/popup.ht\"}"
+    },
+    {
+      "name": "STORAGE_THROW_PAUSED_FALLS_BACK_TO_RESPONSE_ISPAUSED",
+      "pass": true,
+      "detail": "{\"startRowHidden\":true,\"multiHidden\":false,\"resumeBtn\":true,\"pausedFlag\":true,\"url\":\"chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/popup.ht\"}"
+    },
+    {
+      "name": "STORAGE_THROW_IDLE_SHOWS_START_ROW",
+      "pass": true,
+      "detail": "{\"startRowHidden\":false,\"multiHidden\":true,\"resumeBtn\":true,\"pausedFlag\":false,\"url\":\"chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/popup.ht\"}"
+    }
+  ],
+  "summary": {
+    "IDLE": {
+      "ui": {
+        "startRowHidden": false,
+        "multiHidden": true,
+        "resumeBtn": true,
+        "pausedFlag": false,
+        "url": "chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/popup.ht"
+      },
+      "errors": []
+    },
+    "PAUSED_BY_RESPONSE": {
+      "ui": {
+        "startRowHidden": true,
+        "multiHidden": false,
+        "resumeBtn": true,
+        "pausedFlag": true,
+        "url": "chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/popup.ht"
+      },
+      "errors": []
+    },
+    "ACTIVE": {
+      "ui": {
+        "startRowHidden": true,
+        "multiHidden": false,
+        "resumeBtn": true,
+        "pausedFlag": false,
+        "url": "chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/popup.ht"
+      },
+      "errors": []
+    },
+    "STORAGE_FETCH_THROWS_PAUSED_RESPONSE": {
+      "ui": {
+        "startRowHidden": true,
+        "multiHidden": false,
+        "resumeBtn": true,
+        "pausedFlag": true,
+        "url": "chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/popup.ht"
+      },
+      "errors": []
+    },
+    "STORAGE_FETCH_THROWS_IDLE_RESPONSE": {
+      "ui": {
+        "startRowHidden": false,
+        "multiHidden": true,
+        "resumeBtn": true,
+        "pausedFlag": false,
+        "url": "chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/popup.ht"
+      },
+      "errors": []
+    }
+  }
+}

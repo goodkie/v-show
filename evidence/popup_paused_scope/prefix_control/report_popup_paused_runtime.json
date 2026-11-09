@@ -1,0 +1,130 @@
+{
+  "browser": "Edg/157.0.4341.42",
+  "extDir": "C:\\Users\\oPus\\AppData\\Local\\Temp\\email_tip_prefix",
+  "results": [
+    {
+      "name": "BROWSER_STARTED",
+      "pass": true,
+      "detail": "Edg/157.0.4341.42"
+    },
+    {
+      "name": "EXTENSION_LOADED",
+      "pass": true,
+      "detail": "ldlijlaccfeelfdhgnjbibniocefckjj"
+    },
+    {
+      "name": "NO_isPausedState_REFERENCEERROR_IDLE",
+      "pass": false,
+      "detail": "ui={\"startRowHidden\":false,\"multiHidden\":true,\"resumeBtn\":true,\"pausedFlag\":false,\"url\":\"chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/popup.ht\"} errors=[\"[XPIDER_DIAG] [UNHANDLED_REJECTION] isPausedState is not defined\",\"ReferenceError: isPausedState is not defined\\n    at chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/popup.js:4414:24\"]"
+    },
+    {
+      "name": "NO_isPausedState_REFERENCEERROR_PAUSED_BY_RESPONSE",
+      "pass": false,
+      "detail": "ui={\"startRowHidden\":false,\"multiHidden\":true,\"resumeBtn\":true,\"pausedFlag\":false,\"url\":\"chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/popup.ht\"} errors=[\"[XPIDER_DIAG] [UNHANDLED_REJECTION] isPausedState is not defined\",\"ReferenceError: isPausedState is not defined\\n    at chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/popup.js:4414:24\"]"
+    },
+    {
+      "name": "NO_isPausedState_REFERENCEERROR_ACTIVE",
+      "pass": true,
+      "detail": "ui={\"startRowHidden\":true,\"multiHidden\":false,\"resumeBtn\":true,\"pausedFlag\":false,\"url\":\"chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/popup.ht\"} errors=[]"
+    },
+    {
+      "name": "NO_isPausedState_REFERENCEERROR_STORAGE_FETCH_THROWS_PAUSED_RESPONSE",
+      "pass": false,
+      "detail": "ui={\"startRowHidden\":false,\"multiHidden\":true,\"resumeBtn\":true,\"pausedFlag\":false,\"url\":\"chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/popup.ht\"} errors=[\"[XPIDER_DIAG] [UNHANDLED_REJECTION] isPausedState is not defined\",\"ReferenceError: isPausedState is not defined\\n    at chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/popup.js:4414:24\"]"
+    },
+    {
+      "name": "NO_isPausedState_REFERENCEERROR_STORAGE_FETCH_THROWS_IDLE_RESPONSE",
+      "pass": false,
+      "detail": "ui={\"startRowHidden\":false,\"multiHidden\":true,\"resumeBtn\":true,\"pausedFlag\":false,\"url\":\"chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/popup.ht\"} errors=[\"[XPIDER_DIAG] [UNHANDLED_REJECTION] isPausedState is not defined\",\"ReferenceError: isPausedState is not defined\\n    at chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/popup.js:4414:24\"]"
+    },
+    {
+      "name": "IDLE_SHOWS_START_ROW",
+      "pass": true,
+      "detail": "{\"startRowHidden\":false,\"multiHidden\":true,\"resumeBtn\":true,\"pausedFlag\":false,\"url\":\"chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/popup.ht\"}"
+    },
+    {
+      "name": "PAUSED_HIDES_START_ROW_AND_SHOWS_MULTI",
+      "pass": false,
+      "detail": "{\"startRowHidden\":false,\"multiHidden\":true,\"resumeBtn\":true,\"pausedFlag\":false,\"url\":\"chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/popup.ht\"}"
+    },
+    {
+      "name": "ACTIVE_HIDES_START_ROW_AND_SHOWS_MULTI",
+      "pass": true,
+      "detail": "{\"startRowHidden\":true,\"multiHidden\":false,\"resumeBtn\":true,\"pausedFlag\":false,\"url\":\"chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/popup.ht\"}"
+    },
+    {
+      "name": "STORAGE_THROW_PAUSED_FALLS_BACK_TO_RESPONSE_ISPAUSED",
+      "pass": false,
+      "detail": "{\"startRowHidden\":false,\"multiHidden\":true,\"resumeBtn\":true,\"pausedFlag\":false,\"url\":\"chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/popup.ht\"}"
+    },
+    {
+      "name": "STORAGE_THROW_IDLE_SHOWS_START_ROW",
+      "pass": true,
+      "detail": "{\"startRowHidden\":false,\"multiHidden\":true,\"resumeBtn\":true,\"pausedFlag\":false,\"url\":\"chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/popup.ht\"}"
+    }
+  ],
+  "summary": {
+    "IDLE": {
+      "ui": {
+        "startRowHidden": false,
+        "multiHidden": true,
+        "resumeBtn": true,
+        "pausedFlag": false,
+        "url": "chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/popup.ht"
+      },
+      "errors": [
+        "[XPIDER_DIAG] [UNHANDLED_REJECTION] isPausedState is not defined",
+        "ReferenceError: isPausedState is not defined\n    at chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/popup.js:4414:24"
+      ]
+    },
+    "PAUSED_BY_RESPONSE": {
+      "ui": {
+        "startRowHidden": false,
+        "multiHidden": true,
+        "resumeBtn": true,
+        "pausedFlag": false,
+        "url": "chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/popup.ht"
+      },
+      "errors": [
+        "[XPIDER_DIAG] [UNHANDLED_REJECTION] isPausedState is not defined",
+        "ReferenceError: isPausedState is not defined\n    at chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/popup.js:4414:24"
+      ]
+    },
+    "ACTIVE": {
+      "ui": {
+        "startRowHidden": true,
+        "multiHidden": false,
+        "resumeBtn": true,
+        "pausedFlag": false,
+        "url": "chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/popup.ht"
+      },
+      "errors": []
+    },
+    "STORAGE_FETCH_THROWS_PAUSED_RESPONSE": {
+      "ui": {
+        "startRowHidden": false,
+        "multiHidden": true,
+        "resumeBtn": true,
+        "pausedFlag": false,
+        "url": "chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/popup.ht"
+      },
+      "errors": [
+        "[XPIDER_DIAG] [UNHANDLED_REJECTION] isPausedState is not defined",
+        "ReferenceError: isPausedState is not defined\n    at chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/popup.js:4414:24"
+      ]
+    },
+    "STORAGE_FETCH_THROWS_IDLE_RESPONSE": {
+      "ui": {
+        "startRowHidden": false,
+        "multiHidden": true,
+        "resumeBtn": true,
+        "pausedFlag": false,
+        "url": "chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/popup.ht"
+      },
+      "errors": [
+        "[XPIDER_DIAG] [UNHANDLED_REJECTION] isPausedState is not defined",
+        "ReferenceError: isPausedState is not defined\n    at chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/popup.js:4414:24"
+      ]
+    }
+  }
+}
