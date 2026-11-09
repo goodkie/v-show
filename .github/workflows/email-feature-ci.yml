@@ -7,6 +7,7 @@ on:
       - 'companion/local-email-privacy-relay.js'
       - 'companion/vivpr-sender-identity.js'
       - 'companion/email-deliverability-v2-policy.js'
+      - 'companion/resend-test-mode.js'
       - 'companion/resend-volume-preflight.js'
       - 'extension/modules/email-delivery-policy.js'
       - 'test/run_email_delivery_policy.js'
@@ -15,6 +16,7 @@ on:
       - 'test/run_vivpr_sender_identity.js'
       - 'test/run_email_deliverability_v2_policy.js'
       - 'test/run_email_template_studio_static.js'
+      - 'test/run_resend_test_mode.js'
       - 'tools/email-template-studio.html'
       - '.github/workflows/email-feature-ci.yml'
   workflow_dispatch:
@@ -37,3 +39,4 @@ jobs:
           node test/run_vivpr_sender_identity.js
           node test/run_email_deliverability_v2_policy.js
           node test/run_email_template_studio_static.js
+          node test/run_resend_test_mode.js
