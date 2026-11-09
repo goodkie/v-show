@@ -4351,10 +4351,11 @@ async function hydrateCampaignState() {
                     });
                 }
 
+                let isPausedState = Boolean(response.isPaused);
                 try {
                     const st = await chrome.storage.local.get(['xpider_queue', 'xpider_total', 'xpider_success', 'xpider_paused_checkpoint', 'xpider_isPaused', 'xpider_campaign_mode']);
                     const cp = (response && response.hasPausedCheckpoint) ? (response.checkpoint || st.xpider_paused_checkpoint) : st.xpider_paused_checkpoint;
-                    const isPausedState = Boolean(response.isPaused || st.xpider_isPaused || (cp && Array.isArray(cp.remainingQueue) && cp.remainingQueue.length > 0 && !response.isActive));
+                    isPausedState = Boolean(response.isPaused || st.xpider_isPaused || (cp && Array.isArray(cp.remainingQueue) && cp.remainingQueue.length > 0 && !response.isActive));
 
                     const resolvedMode = (response && (response.pausedCampaignMode || response.campaignMode)) || st.xpider_campaign_mode || (cp && cp.campaignMode) || currentCampaignMode || 'AUTO';
                     currentCampaignMode = (resolvedMode === 'MANUAL' || resolvedMode === 'SEMI_AUTO') ? resolvedMode : 'AUTO';
