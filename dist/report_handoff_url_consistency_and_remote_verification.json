@@ -1,0 +1,154 @@
+{
+  "directive": "#6735785250",
+  "activeBranch": "fix/submit-nomessage-semiauto-20261109",
+  "staleBranch": "candidate/p0-core-regressions-v7",
+  "passedCount": 19,
+  "totalCount": 19,
+  "results": [
+    {
+      "name": "REV20_MANIFEST_EXISTS_ON_DISK",
+      "pass": true,
+      "details": {
+        "manifestPath": "E:\\vivpr\\ai\\extension-form-sender\\dist\\OWNER_HANDOFF_MANIFEST_REV20.json"
+      }
+    },
+    {
+      "name": "MANIFEST_DECLARED_BRANCH_MATCHES_ACTIVE",
+      "pass": true,
+      "details": {
+        "declared": "fix/submit-nomessage-semiauto-20261109",
+        "expected": "fix/submit-nomessage-semiauto-20261109"
+      }
+    },
+    {
+      "name": "COMPLETE_HANDOFF_ARCHIVE_URL_USES_ACTIVE_BRANCH",
+      "pass": true,
+      "details": {
+        "archiveRawUrl": "https://github.com/goodkie/v-show/raw/fix/submit-nomessage-semiauto-20261109/dist/XPIDER_V7.0.0_CANDIDATE_REV20_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip",
+        "activeBranch": "fix/submit-nomessage-semiauto-20261109"
+      }
+    },
+    {
+      "name": "COMPLETE_HANDOFF_ARCHIVE_URL_NO_STALE_BRANCH",
+      "pass": true,
+      "details": {
+        "archiveRawUrl": "https://github.com/goodkie/v-show/raw/fix/submit-nomessage-semiauto-20261109/dist/XPIDER_V7.0.0_CANDIDATE_REV20_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip",
+        "staleBranch": "candidate/p0-core-regressions-v7"
+      }
+    },
+    {
+      "name": "ZERO_BUNDLED_ENTRIES_CONTAIN_STALE_BRANCH",
+      "pass": true,
+      "details": {
+        "staleBundledCount": 0
+      }
+    },
+    {
+      "name": "ALL_BUNDLED_ENTRIES_USE_ACTIVE_BRANCH",
+      "pass": true,
+      "details": {
+        "total": 27,
+        "invalidBranchBundledCount": 0
+      }
+    },
+    {
+      "name": "GUIDE_NO_ACTIVE_STALE_CANDIDATE_URL",
+      "pass": true,
+      "details": {
+        "guidePath": "E:\\vivpr\\ai\\extension-form-sender\\dist\\OWNER_SAFE_UPDATE_AND_BACKUP_GUIDE.md"
+      }
+    },
+    {
+      "name": "GUIDE_HAS_ACTIVE_BRANCH_URL",
+      "pass": true,
+      "details": {
+        "guidePath": "E:\\vivpr\\ai\\extension-form-sender\\dist\\OWNER_SAFE_UPDATE_AND_BACKUP_GUIDE.md"
+      }
+    },
+    {
+      "name": "CHECKLIST_NO_ACTIVE_STALE_CANDIDATE_URL",
+      "pass": true,
+      "details": {
+        "checklistPath": "E:\\vivpr\\ai\\extension-form-sender\\dist\\WINDOWS_10_OWNER_UAT_CHECKLIST.md"
+      }
+    },
+    {
+      "name": "CHECKLIST_HAS_ACTIVE_BRANCH_URL",
+      "pass": true,
+      "details": {
+        "checklistPath": "E:\\vivpr\\ai\\extension-form-sender\\dist\\WINDOWS_10_OWNER_UAT_CHECKLIST.md"
+      }
+    },
+    {
+      "name": "REMOTE_REV12_STATUS_200",
+      "pass": true,
+      "details": {
+        "statusCode": 200
+      }
+    },
+    {
+      "name": "REMOTE_REV12_SIZE_MATCHES",
+      "pass": true,
+      "details": {
+        "size": 4473919,
+        "expected": 4473919
+      }
+    },
+    {
+      "name": "REMOTE_REV12_SHA256_MATCHES",
+      "pass": true,
+      "details": {
+        "sha256": "02624da91d7bc9bb4933c76245c4320433b3df4fc4d046d07ead3b6e43dfcd26"
+      }
+    },
+    {
+      "name": "REMOTE_REV19_STATUS_200",
+      "pass": true,
+      "details": {
+        "statusCode": 200
+      }
+    },
+    {
+      "name": "REMOTE_REV19_SIZE_MATCHES",
+      "pass": true,
+      "details": {
+        "size": 4603827,
+        "expected": 4603827
+      }
+    },
+    {
+      "name": "REMOTE_REV19_SHA256_MATCHES",
+      "pass": true,
+      "details": {
+        "sha256": "4a80d66b69d03029565ba36e0bc12991381aefe5074aeabe5cc88202f1cd8180"
+      }
+    },
+    {
+      "name": "NEGATIVE_STALE_BRANCH_URL_RETURNS_404",
+      "pass": true,
+      "details": {
+        "statusCode": 404
+      }
+    },
+    {
+      "name": "REMOTE_FILE_MATCH_scripts_xpider_safe_update_js",
+      "pass": true,
+      "details": {
+        "statusCode": 200,
+        "shaMatches": true,
+        "remoteSha": "12a9aba8a93ef76b9de1d923793bdac6a60c6164b370b0334827594a16274060",
+        "gitSha": "12a9aba8a93ef76b9de1d923793bdac6a60c6164b370b0334827594a16274060"
+      }
+    },
+    {
+      "name": "REMOTE_FILE_MATCH_dist_PACKAGE_INVENTORY_SHA256_json",
+      "pass": true,
+      "details": {
+        "statusCode": 200,
+        "shaMatches": true,
+        "remoteSha": "27fbc0a750edf798917f8f7b455a1e8e6226e8dd8928a38198767e0bbce2f09f",
+        "gitSha": "27fbc0a750edf798917f8f7b455a1e8e6226e8dd8928a38198767e0bbce2f09f"
+      }
+    }
+  ]
+}

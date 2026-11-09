@@ -8,65 +8,55 @@
 - Branch: fix/submit-nomessage-semiauto-20261109 (fix branch forked off candidate/p0-core-regressions-v7 commit f9114160; immutable restore checkpoint backup/xpider-rev17-before-submit-nomessage-fix-20261109 preserved untouched at commit f9114160)
 - Candidate Functional Base Commit: 32cc9386dedcc68315364e1fc27e1161c09d1aa8 (short: 32cc9386; verified commit object — extension/ tree SHA e561ef38b2ae04a616b7dcad9206d480ca4dca5a, includes R2 & content-script opt-in no-message form discovery, Step 07 TDZ fix, and submit/no-message/semi-auto fixes)
 - Authoritative Candidate Branch Ref: refs/heads/fix/submit-nomessage-semiauto-20261109 (live tip resolved dynamically via git ls-remote / git rev-parse HEAD)
-- State Rev: 2026-11-09.727
-- Authority Cursor: 6732442879 (Directive: [CHATGPT][REV18 DIRECT SOURCE AUDIT — P0 NO-MESSAGE DISCOVERY STILL BROKEN][XPIDER Issue #6][2026-11-09 UTC])
+- State Rev: 2026-11-09.728
+- Authority Cursor: 6735785250 (Directive: [CHATGPT][REV19 SOURCE/REPORT AUDIT — CORRECT STALE HANDOFF URLS, VALIDATE PACKAGE][XPIDER Issue #6][2026-11-09 UTC])
 - Canonical Schedule Revision: 16 (verified canonical GitHub schedule; IVCS Manager/schedule strictly ChatGPT-only)
 - Collaboration Mode: Manual ChatGPT <-> Antigravity Collaboration per Owner Directive.
 - Verification Status: HOLD (Awaiting independent ChatGPT Code Audit & Owner UAT Gate Decision). Release HOLD strictly maintained. Zero external public submissions.
 
 ---
 
-## 0. Directive #6732442879 (State Rev .727) — REV18 DIRECT SOURCE AUDIT: OPT-IN NO-MESSAGE FORM DISCOVERY IN R2 & CONTENT FALLBACK, REAL CHROME HEADLESS DOM TEST, REV12 RUNTIME ZIP & REV19 COMPLETE HANDOFF KIT
+## 0. Directive #6735785250 (State Rev .728) — REV19 SOURCE/REPORT AUDIT: CORRECT STALE HANDOFF URLS, AUTOMATED URL CONSISTENCY SUITE & REV20 COMPLETE HANDOFF KIT
 
 1. **Defect Root Cause Identified & Resolved**:
-   - ChatGPT source audit revealed `extension/modules/form-discovery-engine-r2.js` had zero references to `includeFormsWithoutMessage` and no `ELIGIBLE_NO_MESSAGE_FORM` branch. `groupAndScoreContainers()` evaluated only `findInquiryBodyControls(roots)` which required a valid long-text body field (`textarea` or `contenteditable`). Forms without multiline body fields (e.g. newsletter subscribe forms) were completely starved before `ContactGate` could ever be consulted.
-   - Fallback `groupAndScoreContainers()` in `extension/content-script.js` similarly returned empty candidates when `bodyControls.length === 0`.
-   - **Remediation in R2 & Content-Script**:
-     - Resolved `includeNoMessage` tri-state precedence (`this.options.includeFormsWithoutMessage` -> `window.__xpider_include_forms_without_message` -> `false`).
-     - Added secondary discovery loop iterating accessible form containers (`form, [role="form"], .form-wrapper, fieldset`) in accessible roots to discover eligible no-message forms when `includeNoMessage` is active.
-     - Routed every candidate container through `ContactGate.classifyFormIntent(container, ...)`.
-     - Preserved strict rejection of negative controls (login, search, payment, booking, comments) and unauthorized required marketing/legal consent.
-     - Inaccessible cross-origin iframes and formless pages with stray keywords remain strictly ineligible.
-     - Preserved genuine inquiry form priority: base score 30 for no-message (max total <=120) vs base score 50 + 40 textarea bonus for inquiry forms (total 185+). If both forms appear on a page, genuine inquiry is guaranteed to win.
-     - Updated terminal reason logic in `discoverForm()` so `includeNoMessage` forms aren't prematurely failed with `NO_BODY_FIELD_FOUND`.
+   - ChatGPT source audit revealed `dist/OWNER_HANDOFF_MANIFEST_REV19.json` set `completeHandoffArchive.rawUrl` and all `bundledEntries[].rawUrl` to `https://github.com/goodkie/v-show/raw/candidate/p0-core-regressions-v7/...` due to a hardcoded `RAW_BASE` in `scripts/build_owner_complete_handoff_kit.js`. The referenced `candidate/p0-core-regressions-v7` branch remained at older commit `f9114160`, where REV19 and REV12 artifacts do not exist (returning 404).
+   - **Remediation in Builder & Guides**:
+     - Added dynamic branch resolution (`resolveActiveGitBranch()`) in `scripts/build_owner_complete_handoff_kit.js` resolving to active branch `fix/submit-nomessage-semiauto-20261109`.
+     - Updated all raw URLs across machine-readable manifest (`dist/OWNER_HANDOFF_MANIFEST_REV20.json`, `dist/OWNER_HANDOFF_MANIFEST_REV14.json`), `dist/OWNER_SAFE_UPDATE_AND_BACKUP_GUIDE.md`, and `dist/WINDOWS_10_OWNER_UAT_CHECKLIST.md` to `https://github.com/goodkie/v-show/raw/fix/submit-nomessage-semiauto-20261109/...`.
+     - Preserved `dist/XPIDER_V7.0.0_CANDIDATE_REV19_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip` (`4,603,827 bytes`, SHA `4a80d66b69d03029565ba36e0bc12991381aefe5074aeabe5cc88202f1cd8180`) and `dist/OWNER_HANDOFF_MANIFEST_REV19.json` completely frozen on disk.
 
-2. **Failing Executable Chrome DOM Test Created First**:
-   - `test/run_no_message_discovery_r2_dom_suite.js`: 32 DOM unit test assertions covering cases (a)-(h). Executed before fix (15 failures observed) and after fix (**32/32 PASS**).
-   - `test/run_chrome_no_message_dom_suite.js`: Real Google Chrome Headless CDP runner (`C:\Program Files\Google\Chrome\Application\chrome.exe`) exercising packaged scripts on real Chrome DOM (**7/7 PASS**).
+2. **Automated URL Consistency & Remote Network Verification Suite**:
+   - `test/run_handoff_url_consistency_and_remote_verification.js`: **19/19 PASS** (Exit Code 0).
+   - Saved report: `dist/report_handoff_url_consistency_and_remote_verification.json`.
+   - Verified that all manifest URLs and guide links use `fix/submit-nomessage-semiauto-20261109` with zero occurrences of stale candidate branch.
+   - Remote network verification:
+     - Remote published REV12 runtime ZIP: status 200, length `4,473,919 bytes`, SHA-256 `02624da91d7bc9bb4933c76245c4320433b3df4fc4d046d07ead3b6e43dfcd26` (matches local byte-for-byte).
+     - Remote published REV19 kit ZIP (frozen): status 200, length `4,603,827 bytes`, SHA-256 `4a80d66b69d03029565ba36e0bc12991381aefe5074aeabe5cc88202f1cd8180` (matches local byte-for-byte).
+     - Negative control: stale URL `https://github.com/goodkie/v-show/raw/candidate/p0-core-regressions-v7/dist/XPIDER_V7.0.0_CANDIDATE_REV19_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip` returns 404.
+     - Remote key files (`scripts/xpider_safe_update.js`, `dist/PACKAGE_INVENTORY_SHA256.json`) match repository git blobs.
 
-3. **REV18 Semantics Retained**:
-   - `SEMI_AUTO` unresolved captcha hold with explicit reason code `SEMI_AUTO_CAPTCHA_ACTION_REQUIRED` and `autoSubmit=false`.
-   - Verified native submit event and constraint validation required for zero-button `requestSubmit`.
-   - Post-submit cross-origin redirect classifier (`formspree.io/thanks`) suppresses re-injection and requires verified submit evidence for URL promotion.
+3. **Scope Clarification & Safeguards Invariant**:
+   - Real Chrome CDP 7/7 verified form discovery and autofill on localhost fixture, NOT a full live end-to-end submission or live owner Windows 10 campaign.
+   - Negative consent, login, search, payment, booking, comments, and cross-origin iframe exclusions remain strictly enforced.
+   - Zero live public form submissions; zero external paid proxy spend.
 
-4. **Deterministic REV12 Runtime ZIP & Dual-Verified REV19 Complete Handoff Kit**:
-   - Packaged **`dist/XPIDER_V7.0.0_CANDIDATE_P0_REV12_OWNER_SAFE.zip`**:
-     - File size: **`4,473,919 bytes`**
-     - SHA-256: **`02624da91d7bc9bb4933c76245c4320433b3df4fc4d046d07ead3b6e43dfcd26`**
-     - Contains ONLY the 50 Chrome MV3 runtime files from `extension/` (clean-room unpacked byte-identical to source).
-   - Preserved frozen archives:
-     - REV18 kit: `dist/XPIDER_V7.0.0_CANDIDATE_REV18_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip` (`4,591,822 bytes`, SHA `e15b520854bdbefc550411af7b5b21b7709f6d52ebbea7dc3ade917d94f8799d`) — FROZEN
-     - REV17 kit: `dist/XPIDER_V7.0.0_CANDIDATE_REV17_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip` (`4,581,357 bytes`, SHA `9136c130a8a8e96fc4a4fe1834b656e558e4014a6defa1e03f88d5744b83dd14`) — FROZEN
-     - REV16 kit: `dist/XPIDER_V7.0.0_CANDIDATE_REV16_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip` (`4,569,570 bytes`, SHA `0ad5ff7bada90cc870a22beb43f838b6592ab1d3aa0c9b6fa7a11536a4dabaa9`) — FROZEN
-     - REV15 kit: `dist/XPIDER_V7.0.0_CANDIDATE_REV15_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip` (`4,560,445 bytes`, SHA `43a9bcdfff9651b8f31644d31dc8eba0463e8b5ee1163f198096b0d2a99959cd`) — FROZEN
-     - REV11 runtime ZIP: `dist/XPIDER_V7.0.0_CANDIDATE_P0_REV11_OWNER_SAFE.zip` (`4,472,794 bytes`, SHA `5467ada3...`) — FROZEN
-     - REV10 runtime ZIP: `dist/XPIDER_V7.0.0_CANDIDATE_P0_REV10_OWNER_SAFE.zip` (`4,470,364 bytes`, SHA `a5ef71d2...`) — FROZEN
-     - REV9 runtime ZIP: `dist/XPIDER_V7.0.0_CANDIDATE_P0_REV9_OWNER_SAFE.zip` (`4,467,833 bytes`, SHA `b3f39bec...`) — FROZEN
-     - RC11 baseline release assets remain frozen.
-     - Restore branch `backup/xpider-rev17-before-submit-nomessage-fix-20261109` untouched at `f9114160`.
-   - Assembled **`dist/XPIDER_V7.0.0_CANDIDATE_REV19_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip`**:
-     - File size: **`4,603,827 bytes`**
-     - SHA-256: **`4a80d66b69d03029565ba36e0bc12991381aefe5074aeabe5cc88202f1cd8180`**
-     - Bundled entries: 24 files (including `test/run_no_message_discovery_r2_dom_suite.js`, `test/run_chrome_no_message_dom_suite.js`, `test/run_submit_nomessage_semiauto_regression.js`, `dist/OWNER_HANDOFF_MANIFEST_REV19.json`, `dist/OWNER_HANDOFF_MANIFEST_REV18.json`, `dist/OWNER_HANDOFF_MANIFEST_REV17.json`, `dist/OWNER_HANDOFF_MANIFEST_REV16.json`).
+4. **Deterministic REV20 Complete Handoff Kit Built & Dual-Verified**:
+   - Packaged **`dist/XPIDER_V7.0.0_CANDIDATE_REV20_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip`**:
+     - File size: **`4,616,443 bytes`**
+     - SHA-256: **`ffae09ea4c818192ba87f4cb8054dba8e08a1e95e2a8c3a1ed927dfb4c8ea041`**
+     - Bundled entries: 27 files (including all tests, manifests REV14-REV19, guides, fixture site, and updater CLI).
      - Dual-verified across Node.js determinism check and PowerShell `Get-FileHash` + `.NET ZipFile` entry hash checks.
+   - Clean extracted handoff kit E2E test suite (`test/run_clean_extracted_handoff_kit_e2e.js`): **16/16 PASS**.
+   - Preserved frozen archives verified untouched: REV19 (`4a80d66b...`), REV18 (`e15b5208...`), REV17 (`9136c130...`), REV16 (`0ad5ff7b...`), REV15 (`43a9bcdf...`), REV11 runtime, REV10, REV9, RC11 baseline, and restore branch `backup/xpider-rev17-before-submit-nomessage-fix-20261109` at `f9114160`.
 
 ---
 
 ## 1. Verified Suites Summary (Developer-Executed)
+- **Handoff URL Consistency & Remote Verification Suite**: `dist/report_handoff_url_consistency_and_remote_verification.json` (**19/19 PASS**, Exit Code 0).
+- **Clean-Extracted Handoff Kit E2E Suite (REV20)**: `dist/report_clean_extracted_handoff_kit_e2e.json` (**16/16 PASS**, Exit Code 0).
 - **DOM No-Message Discovery & Eligibility Suite**: `dist/report_no_message_discovery_r2_dom_suite.json` (**32/32 PASS**, Exit Code 0).
 - **Chrome Real DOM Headless CDP Suite**: `dist/report_chrome_no_message_dom_suite.json` (**7/7 PASS**, Exit Code 0).
 - **Submit / No-Message / Semi-Auto Regression Suite**: `dist/report_submit_nomessage_semiauto_regression.json` (**19/19 PASS**, Exit Code 0).
-- **Clean-Extracted Handoff Kit E2E Suite (REV19)**: `dist/report_clean_extracted_handoff_kit_e2e.json` (**16/16 PASS**, Exit Code 0).
 - **Safe Update + Encrypted Storage Backup/Restore Suite**: `dist/report_safe_update_transaction.json` (**57/57 PASS**, Exit Code 0).
 - **Step 07 TDZ Hotfix AST Guard & Runtime Suite**: `dist/report_start_step07_privacy_prep_regression.json` (**9/9 PASS**, Exit Code 0).
 - **Chrome UI Reset & Email Collector Regressions**: `dist/report_chrome_ui_reset_collector_regressions.json` (**18/18 PASS**, Exit Code 0).

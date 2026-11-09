@@ -1,7 +1,7 @@
 {
   "suite": "XPIDER_START_STEP07_PRIVACY_PREP_REGRESSION",
   "directive": "#6708288652",
-  "timestamp": "2026-11-09T05:17:06.629Z",
+  "timestamp": "2026-11-09T08:50:20.796Z",
   "candidateRuntimeZip": "dist\\XPIDER_V7.0.0_CANDIDATE_P0_REV12_OWNER_SAFE.zip",
   "candidateRuntimeZipSha256": "02624da91d7bc9bb4933c76245c4320433b3df4fc4d046d07ead3b6e43dfcd26",
   "sourcePopupSha256": "be3d5567b1221b1a87e4b46c9ad1e7feb54736d3f7f721dd0971f834d9bf7ec2",

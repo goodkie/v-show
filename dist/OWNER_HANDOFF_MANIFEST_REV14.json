@@ -1,13 +1,13 @@
 {
-  "schemaVersion": "XPIDER_OWNER_HANDOFF_MANIFEST_REV19",
-  "directive": "#6732442879",
+  "schemaVersion": "XPIDER_OWNER_HANDOFF_MANIFEST_REV20",
+  "directive": "#6735785250",
   "status": "CANDIDATE_RELEASE_HOLD",
   "branch": "fix/submit-nomessage-semiauto-20261109",
-  "functionalCandidateCommit": "76fab0933276ae163c377d39d9dca5169a33063c",
-  "extensionTreeSha": "1d1bac897f70df6fa107cde85b00de591d5dea93 (base) + step07-prepResult-hotfix + submit-nomessage-semiauto-fix + no-message-discovery-r2-fix",
+  "functionalCandidateCommit": "32cc9386dedcc68315364e1fc27e1161c09d1aa8",
+  "extensionTreeSha": "e561ef38b2ae04a616b7dcad9206d480ca4dca5a (step07-prepResult-hotfix + submit-nomessage-semiauto-fix + no-message-discovery-r2-fix)",
   "expectedExtensionId": "ldlijlaccfeelfdhgnjbibniocefckjj",
   "extensionZipAloneIsCompleteKit": false,
-  "extensionZipScopeNote": "dist/XPIDER_V7.0.0_CANDIDATE_P0_REV12_OWNER_SAFE.zip contains ONLY the 50 Chrome MV3 runtime files from extension/ (including Step 07 TDZ Hotfix, submit/no-message/semi-auto fixes, and FormDiscoveryEngine R2 opt-in fix). The complete owner-usable handoff archive is dist/XPIDER_V7.0.0_CANDIDATE_REV19_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip (built via node scripts/build_owner_complete_handoff_kit.js; prior REV15, REV16, REV17, and REV18 archives preserved frozen).",
+  "extensionZipScopeNote": "dist/XPIDER_V7.0.0_CANDIDATE_P0_REV12_OWNER_SAFE.zip contains ONLY the 50 Chrome MV3 runtime files from extension/ (including Step 07 TDZ Hotfix, submit/no-message/semi-auto fixes, and FormDiscoveryEngine R2 opt-in fix). The complete owner-usable handoff archive is dist/XPIDER_V7.0.0_CANDIDATE_REV20_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip (built via node scripts/build_owner_complete_handoff_kit.js; prior REV15, REV16, REV17, REV18, and REV19 archives preserved frozen).",
   "operatorCapabilityByEnvironment": {
     "withNodeJs18Plus": {
       "supported": true,
@@ -49,91 +49,91 @@
       "path": "dist/XPIDER_V7.0.0_CANDIDATE_P0_REV12_OWNER_SAFE.zip",
       "size": 4473919,
       "sha256": "02624da91d7bc9bb4933c76245c4320433b3df4fc4d046d07ead3b6e43dfcd26",
-      "rawUrl": "https://github.com/goodkie/v-show/raw/candidate/p0-core-regressions-v7/dist/XPIDER_V7.0.0_CANDIDATE_P0_REV12_OWNER_SAFE.zip"
+      "rawUrl": "https://github.com/goodkie/v-show/raw/fix/submit-nomessage-semiauto-20261109/dist/XPIDER_V7.0.0_CANDIDATE_P0_REV12_OWNER_SAFE.zip"
     },
     {
       "role": "standalone_transactional_updater_and_uat_cli",
       "path": "scripts/xpider_safe_update.js",
       "size": 71500,
       "sha256": "fb4e45f9400a12a78c7591fb4056db05f2686074fe8a4a05ba81196a1bd1c396",
-      "rawUrl": "https://github.com/goodkie/v-show/raw/candidate/p0-core-regressions-v7/scripts/xpider_safe_update.js"
+      "rawUrl": "https://github.com/goodkie/v-show/raw/fix/submit-nomessage-semiauto-20261109/scripts/xpider_safe_update.js"
     },
     {
       "role": "candidate_50_file_sha256_inventory",
       "path": "dist/PACKAGE_INVENTORY_SHA256.json",
       "size": 7295,
       "sha256": "27fbc0a750edf798917f8f7b455a1e8e6226e8dd8928a38198767e0bbce2f09f",
-      "rawUrl": "https://github.com/goodkie/v-show/raw/candidate/p0-core-regressions-v7/dist/PACKAGE_INVENTORY_SHA256.json"
+      "rawUrl": "https://github.com/goodkie/v-show/raw/fix/submit-nomessage-semiauto-20261109/dist/PACKAGE_INVENTORY_SHA256.json"
     },
     {
       "role": "frozen_rc11_baseline_manifest",
       "path": "dist/rc11_baseline_manifest.json",
       "size": 7299,
       "sha256": "9b066e28ac19dc30530712ec1cf328311ab1250a6c62547f7e65471241496f6a",
-      "rawUrl": "https://github.com/goodkie/v-show/raw/candidate/p0-core-regressions-v7/dist/rc11_baseline_manifest.json"
+      "rawUrl": "https://github.com/goodkie/v-show/raw/fix/submit-nomessage-semiauto-20261109/dist/rc11_baseline_manifest.json"
     },
     {
       "role": "synthetic_only_windows_10_uat_checklist",
       "path": "dist/WINDOWS_10_OWNER_UAT_CHECKLIST.md",
-      "size": 27693,
-      "sha256": "b16f272230f783d5819b760bf1d794ff4da8e4cf14baec9107b569036cb6c5b7",
-      "rawUrl": "https://github.com/goodkie/v-show/raw/candidate/p0-core-regressions-v7/dist/WINDOWS_10_OWNER_UAT_CHECKLIST.md"
+      "size": 28402,
+      "sha256": "ee96be24d2fcd8ac060087ab5b1a62d17cbb6b481c015a00ac576b7ec12128b8",
+      "rawUrl": "https://github.com/goodkie/v-show/raw/fix/submit-nomessage-semiauto-20261109/dist/WINDOWS_10_OWNER_UAT_CHECKLIST.md"
     },
     {
       "role": "owner_safe_update_backup_and_rollback_guide",
       "path": "dist/OWNER_SAFE_UPDATE_AND_BACKUP_GUIDE.md",
-      "size": 21061,
-      "sha256": "9cefa251cd79feae57e5dc2b0311ef15999c86df9b4e30cc22cde0143d151ef4",
-      "rawUrl": "https://github.com/goodkie/v-show/raw/candidate/p0-core-regressions-v7/dist/OWNER_SAFE_UPDATE_AND_BACKUP_GUIDE.md"
+      "size": 21203,
+      "sha256": "4fb3a5efd63ed22e401e950e6335939427c05137a59a4cf241d6a4e88d875ab4",
+      "rawUrl": "https://github.com/goodkie/v-show/raw/fix/submit-nomessage-semiauto-20261109/dist/OWNER_SAFE_UPDATE_AND_BACKUP_GUIDE.md"
     },
     {
       "role": "localhost_fixture_and_fail_closed_sink_proxy_server",
       "path": "owner-extension-test-site/server.js",
       "size": 19340,
       "sha256": "ccbc3ff61bef80d93bc33d55f6697621a52f4944b5d00aade333833b14fd3809",
-      "rawUrl": "https://github.com/goodkie/v-show/raw/candidate/p0-core-regressions-v7/owner-extension-test-site/server.js"
+      "rawUrl": "https://github.com/goodkie/v-show/raw/fix/submit-nomessage-semiauto-20261109/owner-extension-test-site/server.js"
     },
     {
       "role": "localhost_fixture_contact_standard_html",
       "path": "owner-extension-test-site/contact-standard.html",
       "size": 5344,
       "sha256": "42fb0dad9860d5376f96137e91e863077bd99d2ab717369c3ed1b7d6f4063d8b",
-      "rawUrl": "https://github.com/goodkie/v-show/raw/candidate/p0-core-regressions-v7/owner-extension-test-site/contact-standard.html"
+      "rawUrl": "https://github.com/goodkie/v-show/raw/fix/submit-nomessage-semiauto-20261109/owner-extension-test-site/contact-standard.html"
     },
     {
       "role": "localhost_fixture_subscribe_no_message_html",
       "path": "owner-extension-test-site/subscribe-no-message.html",
       "size": 4592,
       "sha256": "6267ffc89b8ab18d7dd6400811697df39772205725e769752e018b7e3ba426a8",
-      "rawUrl": "https://github.com/goodkie/v-show/raw/candidate/p0-core-regressions-v7/owner-extension-test-site/subscribe-no-message.html"
+      "rawUrl": "https://github.com/goodkie/v-show/raw/fix/submit-nomessage-semiauto-20261109/owner-extension-test-site/subscribe-no-message.html"
     },
     {
       "role": "localhost_fixture_consent_required_no_message_html",
       "path": "owner-extension-test-site/consent-required-no-message.html",
       "size": 1133,
       "sha256": "b40db5ed71b20970be36da46bc60122e2fec0bc87f71baa559acfdc1f5d3064e",
-      "rawUrl": "https://github.com/goodkie/v-show/raw/candidate/p0-core-regressions-v7/owner-extension-test-site/consent-required-no-message.html"
+      "rawUrl": "https://github.com/goodkie/v-show/raw/fix/submit-nomessage-semiauto-20261109/owner-extension-test-site/consent-required-no-message.html"
     },
     {
       "role": "localhost_fixture_contact_success_html",
       "path": "owner-extension-test-site/contact-success.html",
       "size": 1468,
       "sha256": "d4790d52154ef63e7b6282b5be4cf2dc6a8e47b9c0e25a74a50bae4871246d5f",
-      "rawUrl": "https://github.com/goodkie/v-show/raw/candidate/p0-core-regressions-v7/owner-extension-test-site/contact-success.html"
+      "rawUrl": "https://github.com/goodkie/v-show/raw/fix/submit-nomessage-semiauto-20261109/owner-extension-test-site/contact-success.html"
     },
     {
       "role": "automated_uat_isolation_and_preflight_harness",
       "path": "test/run_uat_synthetic_profile_isolation_check.js",
       "size": 72895,
       "sha256": "37a3b4073041ce2d24ab54fb918ac23d3119cb2682fad785c530a9b30c21df2a",
-      "rawUrl": "https://github.com/goodkie/v-show/raw/candidate/p0-core-regressions-v7/test/run_uat_synthetic_profile_isolation_check.js"
+      "rawUrl": "https://github.com/goodkie/v-show/raw/fix/submit-nomessage-semiauto-20261109/test/run_uat_synthetic_profile_isolation_check.js"
     },
     {
       "role": "automated_browser_cdp_helper",
       "path": "test/lib/browser_cdp.js",
       "size": 5406,
       "sha256": "cfd3869e427dfeb046db0d67619c28cbcfdd337bf1d1b47db5623a1cf936a09a",
-      "rawUrl": "https://github.com/goodkie/v-show/raw/candidate/p0-core-regressions-v7/test/lib/browser_cdp.js"
+      "rawUrl": "https://github.com/goodkie/v-show/raw/fix/submit-nomessage-semiauto-20261109/test/lib/browser_cdp.js"
     }
   ]
 }

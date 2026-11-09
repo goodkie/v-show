@@ -1,7 +1,9 @@
 #!/usr/bin/env node
 /**
- * Deterministic Builder & Dual-Method Verifier for the Single Owner-Usable Complete UAT Handoff Kit (REV18)
- * Directive #6708288652 Item 3 (preserving REV15 frozen at 43a9bcdf..., REV16 frozen at 0ad5ff7b..., and building newly versioned REV18 with Step 07 TDZ Hotfix).
+ * Deterministic Builder & Dual-Method Verifier for the Single Owner-Usable Complete UAT Handoff Kit (REV20)
+ * Directive #6735785250 (Correcting stale candidate branch raw URLs to active branch fix/submit-nomessage-semiauto-20261109,
+ * preserving REV15 frozen at 43a9bcdf..., REV16 frozen at 0ad5ff7b..., REV17 frozen at 9136c130..., REV18 frozen at e15b5208...,
+ * and REV19 frozen at 4a80d66b..., building newly versioned REV20).
  *
  * Usage:
  *   node scripts/build_owner_complete_handoff_kit.js
@@ -16,7 +18,18 @@ const { spawnSync } = require('child_process');
 const ROOT = path.resolve(__dirname, '..');
 const DIST = path.join(ROOT, 'dist');
 const EXT_ID = 'ldlijlaccfeelfdhgnjbibniocefckjj';
-const RAW_BASE = 'https://github.com/goodkie/v-show/raw/candidate/p0-core-regressions-v7/';
+
+function resolveActiveGitBranch() {
+    try {
+        const out = spawnSync('git', ['rev-parse', '--abbrev-ref', 'HEAD'], { encoding: 'utf8' });
+        const b = (out.stdout || '').trim();
+        if (b && b !== 'HEAD') return b;
+    } catch (_) {}
+    return 'fix/submit-nomessage-semiauto-20261109';
+}
+
+const ACTIVE_BRANCH = resolveActiveGitBranch();
+const RAW_BASE = `https://github.com/goodkie/v-show/raw/${ACTIVE_BRANCH}/`;
 
 const FROZEN_REV15_ZIP_REL = 'dist/XPIDER_V7.0.0_CANDIDATE_REV15_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip';
 const FROZEN_REV15_ZIP_ABS = path.join(ROOT, FROZEN_REV15_ZIP_REL);
@@ -38,7 +51,12 @@ const FROZEN_REV18_ZIP_ABS = path.join(ROOT, FROZEN_REV18_ZIP_REL);
 const FROZEN_REV18_ZIP_SHA = 'e15b520854bdbefc550411af7b5b21b7709f6d52ebbea7dc3ade917d94f8799d';
 const FROZEN_REV18_ZIP_SIZE = 4591822;
 
-const COMPLETE_ZIP_REL = 'dist/XPIDER_V7.0.0_CANDIDATE_REV19_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip';
+const FROZEN_REV19_ZIP_REL = 'dist/XPIDER_V7.0.0_CANDIDATE_REV19_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip';
+const FROZEN_REV19_ZIP_ABS = path.join(ROOT, FROZEN_REV19_ZIP_REL);
+const FROZEN_REV19_ZIP_SHA = '4a80d66b69d03029565ba36e0bc12991381aefe5074aeabe5cc88202f1cd8180';
+const FROZEN_REV19_ZIP_SIZE = 4603827;
+
+const COMPLETE_ZIP_REL = 'dist/XPIDER_V7.0.0_CANDIDATE_REV20_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip';
 const COMPLETE_ZIP_ABS = path.join(ROOT, COMPLETE_ZIP_REL);
 
 const MANIFEST_REV14_ABS = path.join(DIST, 'OWNER_HANDOFF_MANIFEST_REV14.json');
@@ -47,6 +65,7 @@ const MANIFEST_REV16_ABS = path.join(DIST, 'OWNER_HANDOFF_MANIFEST_REV16.json');
 const MANIFEST_REV17_ABS = path.join(DIST, 'OWNER_HANDOFF_MANIFEST_REV17.json');
 const MANIFEST_REV18_ABS = path.join(DIST, 'OWNER_HANDOFF_MANIFEST_REV18.json');
 const MANIFEST_REV19_ABS = path.join(DIST, 'OWNER_HANDOFF_MANIFEST_REV19.json');
+const MANIFEST_REV20_ABS = path.join(DIST, 'OWNER_HANDOFF_MANIFEST_REV20.json');
 
 // CRC-32 lookup table for deterministic ZIP creation
 const CRC_TABLE = (() => {
@@ -180,6 +199,16 @@ function buildHandoffKit() {
         throw new Error(`FROZEN_REV18_MUTATED: size=${rev18Buf.length} sha=${rev18Sha}`);
     }
 
+    // 5. Verify that prior REV19 archive and manifest remain frozen and untouched on disk
+    if (!fs.existsSync(FROZEN_REV19_ZIP_ABS) || !fs.existsSync(MANIFEST_REV19_ABS)) {
+        throw new Error('FROZEN_REV19_ARCHIVE_MISSING: Prior REV19 archive or manifest is missing');
+    }
+    const rev19Buf = fs.readFileSync(FROZEN_REV19_ZIP_ABS);
+    const rev19Sha = crypto.createHash('sha256').update(rev19Buf).digest('hex');
+    if (rev19Buf.length !== FROZEN_REV19_ZIP_SIZE || rev19Sha !== FROZEN_REV19_ZIP_SHA) {
+        throw new Error(`FROZEN_REV19_MUTATED: size=${rev19Buf.length} sha=${rev19Sha}`);
+    }
+
     const coreSpec = [
         { role: 'extension_runtime_zip_50_files_only', relPath: 'dist/XPIDER_V7.0.0_CANDIDATE_P0_REV12_OWNER_SAFE.zip' },
         { role: 'standalone_transactional_updater_and_uat_cli', relPath: 'scripts/xpider_safe_update.js' },
@@ -204,9 +233,12 @@ function buildHandoffKit() {
         { role: 'start_step07_privacy_prep_regression_suite', relPath: 'test/run_start_step07_privacy_prep_regression.js' },
         { role: 'submit_nomessage_semiauto_regression_suite', relPath: 'test/run_submit_nomessage_semiauto_regression.js' },
         { role: 'no_message_discovery_r2_dom_suite', relPath: 'test/run_no_message_discovery_r2_dom_suite.js' },
+        { role: 'chrome_no_message_dom_suite', relPath: 'test/run_chrome_no_message_dom_suite.js' },
+        { role: 'handoff_url_consistency_and_remote_verification_suite', relPath: 'test/run_handoff_url_consistency_and_remote_verification.js' },
         { role: 'owner_handoff_manifest_rev16_compat', relPath: 'dist/OWNER_HANDOFF_MANIFEST_REV16.json' },
         { role: 'owner_handoff_manifest_rev17_compat', relPath: 'dist/OWNER_HANDOFF_MANIFEST_REV17.json' },
-        { role: 'owner_handoff_manifest_rev18_compat', relPath: 'dist/OWNER_HANDOFF_MANIFEST_REV18.json' }
+        { role: 'owner_handoff_manifest_rev18_compat', relPath: 'dist/OWNER_HANDOFF_MANIFEST_REV18.json' },
+        { role: 'owner_handoff_manifest_rev19_compat', relPath: 'dist/OWNER_HANDOFF_MANIFEST_REV19.json' }
     ];
 
     const mapSpec = (spec) => spec.map(item => {
@@ -239,15 +271,15 @@ function buildHandoffKit() {
     };
 
     const manifestRev14 = {
-        schemaVersion: 'XPIDER_OWNER_HANDOFF_MANIFEST_REV19',
-        directive: '#6732442879',
+        schemaVersion: 'XPIDER_OWNER_HANDOFF_MANIFEST_REV20',
+        directive: '#6735785250',
         status: 'CANDIDATE_RELEASE_HOLD',
-        branch: 'fix/submit-nomessage-semiauto-20261109',
-        functionalCandidateCommit: '76fab0933276ae163c377d39d9dca5169a33063c',
-        extensionTreeSha: '1d1bac897f70df6fa107cde85b00de591d5dea93 (base) + step07-prepResult-hotfix + submit-nomessage-semiauto-fix + no-message-discovery-r2-fix',
+        branch: ACTIVE_BRANCH,
+        functionalCandidateCommit: '32cc9386dedcc68315364e1fc27e1161c09d1aa8',
+        extensionTreeSha: 'e561ef38b2ae04a616b7dcad9206d480ca4dca5a (step07-prepResult-hotfix + submit-nomessage-semiauto-fix + no-message-discovery-r2-fix)',
         expectedExtensionId: EXT_ID,
         extensionZipAloneIsCompleteKit: false,
-        extensionZipScopeNote: 'dist/XPIDER_V7.0.0_CANDIDATE_P0_REV12_OWNER_SAFE.zip contains ONLY the 50 Chrome MV3 runtime files from extension/ (including Step 07 TDZ Hotfix, submit/no-message/semi-auto fixes, and FormDiscoveryEngine R2 opt-in fix). The complete owner-usable handoff archive is dist/XPIDER_V7.0.0_CANDIDATE_REV19_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip (built via node scripts/build_owner_complete_handoff_kit.js; prior REV15, REV16, REV17, and REV18 archives preserved frozen).',
+        extensionZipScopeNote: 'dist/XPIDER_V7.0.0_CANDIDATE_P0_REV12_OWNER_SAFE.zip contains ONLY the 50 Chrome MV3 runtime files from extension/ (including Step 07 TDZ Hotfix, submit/no-message/semi-auto fixes, and FormDiscoveryEngine R2 opt-in fix). The complete owner-usable handoff archive is dist/XPIDER_V7.0.0_CANDIDATE_REV20_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip (built via node scripts/build_owner_complete_handoff_kit.js; prior REV15, REV16, REV17, REV18, and REV19 archives preserved frozen).',
         operatorCapabilityByEnvironment: {
             withNodeJs18Plus: {
                 supported: true,
@@ -334,10 +366,10 @@ function buildHandoffKit() {
         }
     }
 
-    const manifestRev17 = {
+    const manifestRev20 = {
         ...manifestRev14,
-        schemaVersion: 'XPIDER_OWNER_HANDOFF_MANIFEST_REV19',
-        directive: '#6732442879',
+        schemaVersion: 'XPIDER_OWNER_HANDOFF_MANIFEST_REV20',
+        directive: '#6735785250',
         preservedFrozenRev15Archive: {
             path: FROZEN_REV15_ZIP_REL,
             manifestPath: 'dist/OWNER_HANDOFF_MANIFEST_REV15.json',
@@ -366,12 +398,19 @@ function buildHandoffKit() {
             sha256: FROZEN_REV18_ZIP_SHA,
             verifiedUntouched: true
         },
+        preservedFrozenRev19Archive: {
+            path: FROZEN_REV19_ZIP_REL,
+            manifestPath: 'dist/OWNER_HANDOFF_MANIFEST_REV19.json',
+            size: FROZEN_REV19_ZIP_SIZE,
+            sha256: FROZEN_REV19_ZIP_SHA,
+            verifiedUntouched: true
+        },
         completeHandoffArchive: {
             path: COMPLETE_ZIP_REL,
             rawUrl: RAW_BASE + COMPLETE_ZIP_REL,
             reproducibleBuildCommand: 'node scripts/build_owner_complete_handoff_kit.js',
-            unambiguousExtractionCommandPowerShell: 'Expand-Archive -Path ".\\XPIDER_V7.0.0_CANDIDATE_REV19_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip" -DestinationPath "D:\\xpider_handoff_rev19" -Force; Set-Location "D:\\xpider_handoff_rev19"',
-            extractionRootLayout: 'Extracting into <HANDOFF_ROOT> (e.g. D:\\xpider_handoff_rev19) creates dist/, scripts/, owner-extension-test-site/, and test/ directly under <HANDOFF_ROOT> so all relative guide commands run verbatim from <HANDOFF_ROOT>.',
+            unambiguousExtractionCommandPowerShell: 'Expand-Archive -Path ".\\XPIDER_V7.0.0_CANDIDATE_REV20_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip" -DestinationPath "D:\\xpider_handoff_rev20" -Force; Set-Location "D:\\xpider_handoff_rev20"',
+            extractionRootLayout: 'Extracting into <HANDOFF_ROOT> (e.g. D:\\xpider_handoff_rev20) creates dist/, scripts/, owner-extension-test-site/, and test/ directly under <HANDOFF_ROOT> so all relative guide commands run verbatim from <HANDOFF_ROOT>.',
             size: zipBuf1.length,
             sha256: shaMethod1Invocation1,
             dualMethodIntegrityVerification: {
@@ -390,14 +429,14 @@ function buildHandoffKit() {
             bundledEntries: zipTreeManifest
         }
     };
-    fs.writeFileSync(MANIFEST_REV19_ABS, JSON.stringify(manifestRev17, null, 2) + '\n');
-    return manifestRev17;
+    fs.writeFileSync(MANIFEST_REV20_ABS, JSON.stringify(manifestRev20, null, 2) + '\n');
+    return manifestRev20;
 }
 
 if (require.main === module) {
     const m = buildHandoffKit();
     console.log(JSON.stringify({
-        result: 'COMPLETE_HANDOFF_KIT_REV19_BUILT_AND_DUAL_VERIFIED',
+        result: 'COMPLETE_HANDOFF_KIT_REV20_BUILT_AND_DUAL_VERIFIED',
         archivePath: m.completeHandoffArchive.path,
         size: m.completeHandoffArchive.size,
         sha256: m.completeHandoffArchive.sha256,
@@ -405,6 +444,7 @@ if (require.main === module) {
         preservedRev16Sha256: m.preservedFrozenRev16Archive.sha256,
         preservedRev17Sha256: m.preservedFrozenRev17Archive.sha256,
         preservedRev18Sha256: m.preservedFrozenRev18Archive.sha256,
+        preservedRev19Sha256: m.preservedFrozenRev19Archive.sha256,
         bundledEntriesCount: m.completeHandoffArchive.bundledEntriesCount,
         dualVerification: m.completeHandoffArchive.dualMethodIntegrityVerification
     }, null, 2));
