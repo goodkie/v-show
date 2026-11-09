@@ -1,0 +1,33 @@
+name: XPIDER email feature unit tests
+on:
+  push:
+    branches:
+      - feature/consent-based-email-delivery-20261109
+    paths:
+      - 'companion/local-email-privacy-relay.js'
+      - 'companion/vivpr-sender-identity.js'
+      - 'companion/resend-volume-preflight.js'
+      - 'extension/modules/email-delivery-policy.js'
+      - 'test/run_email_delivery_policy.js'
+      - 'test/run_local_email_privacy_relay.js'
+      - 'test/run_resend_volume_preflight.js'
+      - 'test/run_vivpr_sender_identity.js'
+      - '.github/workflows/email-feature-ci.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  dry-run-only:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate policies and relay-only dry run
+        run: |
+          node test/run_email_delivery_policy.js
+          node test/run_local_email_privacy_relay.js
+          node test/run_resend_volume_preflight.js
+          node test/run_vivpr_sender_identity.js
