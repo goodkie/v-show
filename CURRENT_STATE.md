@@ -8,16 +8,59 @@
 - Branch: fix/submit-nomessage-semiauto-20261109 (fix branch forked off candidate/p0-core-regressions-v7 commit f9114160; immutable restore checkpoint backup/xpider-rev17-before-submit-nomessage-fix-20261109 preserved untouched at commit f9114160)
 - Candidate Functional Base Commit: 32cc9386dedcc68315364e1fc27e1161c09d1aa8 (short: 32cc9386; verified commit object — extension/ tree SHA e561ef38b2ae04a616b7dcad9206d480ca4dca5a, includes R2 & content-script opt-in no-message form discovery, Step 07 TDZ fix, and submit/no-message/semi-auto fixes)
 - Authoritative Candidate Branch Ref: refs/heads/fix/submit-nomessage-semiauto-20261109 (live tip resolved dynamically via git ls-remote / git rev-parse HEAD)
-- State Rev: 2026-11-09.730
-- Authority Cursor: 6737235526 (Directive: [CHATGPT][REV21 SECURITY EVIDENCE AUDIT — RECONCILE ZIP ENTRY COUNTS AND RESCAN PROVENANCE][XPIDER Issue #6][2026-11-09])
-- Latest Receipt: https://github.com/goodkie/v-show/issues/6#issuecomment-6737462504 ([ANTIGRAVITY -> CHATGPT / OWNER][RECEIPT — REV21 SECURITY EVIDENCE AUDIT, 28-ENTRY ZIP RECONCILIATION, LIVE DEFENDER PROVENANCE][XPIDER Issue #6][DIRECTIVE #6737235526])
+- State Rev: 2026-11-09.731
+- Authority Cursor: 6737511425 (Directive: [CHATGPT][REV21 CRITICAL ARTIFACT IMMUTABILITY DEFECT — NEW REV22 REQUIRED][XPIDER Issue #6][2026-11-09])
+- Latest Receipt: https://github.com/goodkie/v-show/issues/6#issuecomment-6737511425-receipt ([ANTIGRAVITY -> CHATGPT / OWNER][RECEIPT — IMMUTABLE REV22 COMPLETE HANDOFF KIT, REV21 WITHDRAWAL & FORENSIC LOG, BUILDER IMMUTABILITY GUARD, LIVE DEFENDER PROVENANCE][XPIDER Issue #6][DIRECTIVE #6737511425])
 - Canonical Schedule Revision: 16 (verified canonical GitHub schedule; IVCS Manager/schedule strictly ChatGPT-only)
 - Collaboration Mode: Manual ChatGPT <-> Antigravity Collaboration per Owner Directive.
 - Verification Status: HOLD (Awaiting independent ChatGPT Code Audit & Owner UAT Gate Decision). Release HOLD strictly maintained. Zero external public submissions.
 
 ---
 
-## 0. Directive #6737235526 (State Rev .730) — REV21 SECURITY EVIDENCE AUDIT & ZIP ENTRY RECONCILIATION
+## 0. Directive #6737511425 (State Rev .731) — IMMUTABLE REV22 COMPLETE HANDOFF KIT, REV21 WITHDRAWAL & FORENSIC LOG, BUILDER IMMUTABILITY GUARD, LIVE DEFENDER PROVENANCE
+
+1. **Admitted Immutability Breach & Forensic Log of Mutated REV21 Blobs**:
+   - Antigravity fully admits the immutability defect: `dist/XPIDER_V7.0.0_CANDIDATE_REV21_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip` was silently overwritten after test runner modification (+68 bytes) without a revision increment.
+   - Both blobs are permanently preserved in Git history; REV21 path is marked **WITHDRAWN / NOT RECOMMENDED**:
+     - Blob 1 (Commit `acb09688`, receipt #6737023750): `4,621,764 bytes`, SHA-256 `31332a260b09ec3d1f0bbc9b20df51f95a6fa6d92dc648fe18f10107eb819302`.
+     - Blob 2 (Commit `0018a1e6`, receipt #6737462504): `4,621,832 bytes`, SHA-256 `96fe3dadce3ea60e75fa216a0814ddc306b206e30b7a1020a701debba5967374`.
+
+2. **Brand-New Immutable REV22 Complete Handoff Kit & Automated Builder Guard**:
+   - New Archive: `dist/XPIDER_V7.0.0_CANDIDATE_REV22_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip`
+     - Size: **`4,628,245 bytes`**
+     - SHA-256: **`7c91f9903bb74b552d390655b087a5a6fef4e3e4bbb1d2b4b0b0831093738cfe`**
+     - Bundled entries: **29 files** (28 REV21 entries + `OWNER_HANDOFF_MANIFEST_REV21.json`).
+     - Dual-method verification (Node CRC-32 + PowerShell ZipFile): **PASS (0 ZipSlip, 0 forbidden executables, 0 duplicate entries)**.
+   - Authoritative Manifest: `dist/OWNER_HANDOFF_MANIFEST_REV22.json` (`24,115 bytes`, SHA-256 `683ebdf2...`).
+   - Builder Guard: `scripts/build_owner_complete_handoff_kit.js` enforces a fail-closed immutability check throwing `IMMUTABILITY_GUARD_VIOLATION` if target archive exists on disk or Git with differing hash.
+
+3. **Genuine Windows Defender Live Scanner Evidence (REV22 Scoped)**:
+   - Defender Engine Details: Product `4.18.26100.4`, Engine `1.1.26100.4`, Signatures `1.463.201.0`.
+   - Results:
+     - `XPIDER_V7.0.0_CANDIDATE_REV22_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip`: **CLEAN (`found no threats`, threats: 0)**
+     - `XPIDER_V7.0.0_CANDIDATE_P0_REV12_OWNER_SAFE.zip`: **CLEAN (`found no threats`, threats: 0)**
+     - `XPIDER_V7.0.0_CANDIDATE_REV20_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip` (Control): **THREAT_DETECTED (`found 1 threats`, threats: 1 -> `Trojan:HTML/Phish.HNFS!MTB`)**
+     - `test/run_submit_nomessage_semiauto_regression.js`: **CLEAN (`found no threats`, threats: 0)**
+   - Third-party scanners: marked `UNKNOWN_NOT_RUN`.
+   - Qualified claim only: CLEAN under host Microsoft Defender on-demand scanner. Full audit report: `dist/report_rev22_security_evidence_audit.json`.
+
+4. **Nested Runtime Audit & Regression Suites**:
+   - Nested REV12 runtime ZIP verified: exactly 50 MV3 files matching `dist/PACKAGE_INVENTORY_SHA256.json`.
+   - Zero files modified in `extension/` (tree SHA `e561ef38...` strictly preserved on candidate base commit `32cc9386`).
+   - `test/run_submit_nomessage_semiauto_regression.js`: **20/20 PASS** (`dist/report_submit_nomessage_semiauto_regression.json`).
+   - `test/run_clean_extracted_handoff_kit_e2e.js`: **16/16 PASS** (`dist/report_clean_extracted_handoff_kit_e2e.json`).
+   - `test/run_handoff_url_consistency_and_remote_verification.js`: **19/19 PASS** (`dist/report_handoff_url_consistency_and_remote_verification.json`).
+
+5. **Pinned REV22 Artifacts & Provenance**:
+   - Complete Handoff Kit: `dist/XPIDER_V7.0.0_CANDIDATE_REV22_OWNER_COMPLETE_UAT_HANDOFF_KIT.zip` (`4,628,245 bytes`, SHA-256 `7c91f9903bb74b552d390655b087a5a6fef4e3e4bbb1d2b4b0b0831093738cfe`).
+   - Manifest: `dist/OWNER_HANDOFF_MANIFEST_REV22.json` (`24,115 bytes`, SHA-256 `683ebdf2ecb5c46e01a88b8e05cb1b7642636bc5b7365022eeb83aaae050f22f`).
+   - Security Audit Report: `dist/report_rev22_security_evidence_audit.json`.
+   - Clean Extract Report: `dist/report_clean_extracted_handoff_kit_e2e.json`.
+   - Handoff URL Report: `dist/report_handoff_url_consistency_and_remote_verification.json`.
+
+---
+
+## 1. Directive #6737235526 (State Rev .730) — REV21 SECURITY EVIDENCE AUDIT & ZIP ENTRY RECONCILIATION
 
 1. **ZIP Entry Count Reconciliation (Defect Resolved)**:
    - ChatGPT audit identified reporting scope discrepancy: `dist/report_security_incident_investigation.json` reported `totalEntries=27, manifestDeclaredMatch=true` because it was auditing quarantined REV20, while `dist/OWNER_HANDOFF_MANIFEST_REV21.json` declared 28 entries.

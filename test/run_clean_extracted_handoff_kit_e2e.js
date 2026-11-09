@@ -32,13 +32,14 @@ const FROZEN_REV17_ZIP_SHA = '9136c130a8a8e96fc4a4fe1834b656e558e4014a6defa1e03f
 const FROZEN_REV18_ZIP_SHA = 'e15b520854bdbefc550411af7b5b21b7709f6d52ebbea7dc3ade917d94f8799d';
 const FROZEN_REV19_ZIP_SHA = '4a80d66b69d03029565ba36e0bc12991381aefe5074aeabe5cc88202f1cd8180';
 const FROZEN_REV20_ZIP_SHA = 'ffae09ea4c818192ba87f4cb8054dba8e08a1e95e2a8c3a1ed927dfb4c8ea041';
+const FROZEN_REV21_ZIP_SHA = '96fe3dadce3ea60e75fa216a0814ddc306b206e30b7a1020a701debba5967374';
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const sha256File = p => crypto.createHash('sha256').update(fs.readFileSync(p)).digest('hex');
 
 const report = {
-    suite: 'XPIDER_CLEAN_EXTRACTED_HANDOFF_KIT_E2E_REV20',
-    directive: '#6735785250',
+    suite: 'XPIDER_CLEAN_EXTRACTED_HANDOFF_KIT_E2E_REV22',
+    directive: '#6737511425',
     startedAt: new Date().toISOString(),
     nodeVersion: process.version,
     platform: process.platform,
@@ -48,6 +49,8 @@ const report = {
     preservedFrozenRev17Archive: null,
     preservedFrozenRev18Archive: null,
     preservedFrozenRev19Archive: null,
+    preservedFrozenRev20Archive: null,
+    preservedFrozenRev21Archive: null,
     cleanExtractionRootUsed: null,
     assertions: [],
     status: 'RUNNING'
@@ -100,6 +103,7 @@ function runPsInExtract(extractRoot, psCommand, extraEnv = {}) {
         report.preservedFrozenRev18Archive = manifest17.preservedFrozenRev18Archive;
         report.preservedFrozenRev19Archive = manifest17.preservedFrozenRev19Archive;
         report.preservedFrozenRev20Archive = manifest17.preservedFrozenRev20Archive;
+        report.preservedFrozenRev21Archive = manifest17.preservedFrozenRev21Archive;
         report.cleanExtractionRootUsed = extractRoot;
 
         const dv = manifest17.completeHandoffArchive.dualMethodIntegrityVerification;
@@ -108,7 +112,7 @@ function runPsInExtract(extractRoot, psCommand, extraEnv = {}) {
             dv.method1_nodeCryptoDeterminismCheck.byteIdenticalAcrossInvocations === true &&
             dv.method1_nodeCryptoDeterminismCheck.invocation1Sha256 === dv.method2_powerShellGetFileHashAndDotNetZipFile.powerShellGetFileHashSha256 &&
             dv.method2_powerShellGetFileHashAndDotNetZipFile.allEntriesMatchedSourceDiskSha256 === true &&
-            manifest17.completeHandoffArchive.bundledEntriesCount >= 24 &&
+            manifest17.completeHandoffArchive.bundledEntriesCount >= 28 &&
             manifest17.preservedFrozenRev15Archive &&
             manifest17.preservedFrozenRev15Archive.verifiedUntouched === true &&
             manifest17.preservedFrozenRev15Archive.sha256 === FROZEN_REV15_ZIP_SHA &&
@@ -126,7 +130,10 @@ function runPsInExtract(extractRoot, psCommand, extraEnv = {}) {
             manifest17.preservedFrozenRev19Archive.sha256 === FROZEN_REV19_ZIP_SHA &&
             manifest17.preservedFrozenRev20Archive &&
             manifest17.preservedFrozenRev20Archive.verifiedUntouched === true &&
-            manifest17.preservedFrozenRev20Archive.sha256 === FROZEN_REV20_ZIP_SHA,
+            manifest17.preservedFrozenRev20Archive.sha256 === FROZEN_REV20_ZIP_SHA &&
+            manifest17.preservedFrozenRev21Archive &&
+            manifest17.preservedFrozenRev21Archive.verifiedUntouched === true &&
+            manifest17.preservedFrozenRev21Archive.sha256 === FROZEN_REV21_ZIP_SHA,
             {
                 archivePath: manifest17.completeHandoffArchive.path,
                 size: manifest17.completeHandoffArchive.size,
@@ -137,6 +144,7 @@ function runPsInExtract(extractRoot, psCommand, extraEnv = {}) {
                 preservedRev18Sha256: manifest17.preservedFrozenRev18Archive.sha256,
                 preservedRev19Sha256: manifest17.preservedFrozenRev19Archive.sha256,
                 preservedRev20Sha256: manifest17.preservedFrozenRev20Archive.sha256,
+                preservedRev21Sha256: manifest17.preservedFrozenRev21Archive.sha256,
                 bundledEntriesCount: manifest17.completeHandoffArchive.bundledEntriesCount
             }
         );

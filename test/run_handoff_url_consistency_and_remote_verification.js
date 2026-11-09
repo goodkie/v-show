@@ -62,8 +62,8 @@ function fetchStreamAndHash(url, maxRedirects = 5) {
   console.log('================================================================================\n');
 
   // --- Group 1: Manifest Consistency Checks ---
-  const manifestPath = path.join(ROOT, 'dist', 'OWNER_HANDOFF_MANIFEST_REV21.json');
-  record('REV21_MANIFEST_EXISTS_ON_DISK', fs.existsSync(manifestPath), { manifestPath });
+  const manifestPath = path.join(ROOT, 'dist', 'OWNER_HANDOFF_MANIFEST_REV22.json');
+  record('REV22_MANIFEST_EXISTS_ON_DISK', fs.existsSync(manifestPath), { manifestPath });
   const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
 
   record('MANIFEST_DECLARED_BRANCH_MATCHES_ACTIVE', manifest.branch === ACTIVE_BRANCH, {
