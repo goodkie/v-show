@@ -20,6 +20,8 @@ on:
       - 'tools/email-template-studio.html'
       - 'extension/email-studio/**'
       - 'extension/popup.html'
+      - 'extension/popup.js'
+      - 'test/run_popup_paused_scope_regression.js'
       - 'test/run_email_studio_mv3_integration.js'
       - '.github/workflows/email-feature-ci.yml'
   workflow_dispatch:
@@ -44,3 +46,4 @@ jobs:
           node test/run_email_template_studio_static.js
           node test/run_resend_test_mode.js
           node test/run_email_studio_mv3_integration.js
+          node test/run_popup_paused_scope_regression.js
