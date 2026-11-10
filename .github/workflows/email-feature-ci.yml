@@ -9,6 +9,8 @@ on:
       - 'companion/email-deliverability-v2-policy.js'
       - 'companion/resend-test-mode.js'
       - 'companion/email-draft-outbox.js'
+      - 'companion/email-unsubscribe-server.js'
+      - 'companion/resend-webhook-intake.js'
       - 'companion/resend-volume-preflight.js'
       - 'extension/modules/email-delivery-policy.js'
       - 'test/run_email_delivery_policy.js'
@@ -25,6 +27,8 @@ on:
       - 'test/run_popup_paused_scope_regression.js'
       - 'test/run_email_studio_remote_image_privacy.js'
       - 'test/run_email_draft_outbox.js'
+      - 'test/run_email_unsubscribe_post.js'
+      - 'test/run_resend_webhook_intake.js'
       - 'test/run_email_studio_mv3_integration.js'
       - '.github/workflows/email-feature-ci.yml'
   workflow_dispatch:
@@ -52,3 +56,5 @@ jobs:
           node test/run_popup_paused_scope_regression.js
           node test/run_email_studio_remote_image_privacy.js
           node test/run_email_draft_outbox.js
+          node test/run_email_unsubscribe_post.js
+          node test/run_resend_webhook_intake.js
