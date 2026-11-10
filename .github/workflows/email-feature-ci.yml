@@ -27,6 +27,8 @@ on:
       - 'extension/background.js'
       - 'test/run_email_studio_browser_runtime_cdp.js'
       - 'test/run_popup_paused_runtime_cdp.js'
+      - 'test/run_email_browser_gate.js'
+      - 'test/run_email_feature_uat_readiness_preflight.js'
       - 'test/run_popup_paused_scope_regression.js'
       - 'test/run_email_studio_remote_image_privacy.js'
       - 'test/run_email_draft_outbox.js'
@@ -69,3 +71,24 @@ jobs:
           node test/run_email_draft_outbox.js
           node test/run_email_unsubscribe_post.js
           node test/run_resend_webhook_intake.js
+  browser-runtime-edge:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run isolated Edge MV3 browser gate and synthetic UAT readiness
+        run: |
+          node test/run_email_feature_uat_readiness_preflight.js
+          node test/run_email_browser_gate.js --ext extension --browser edge --out evidence/browser_gate_ci
+      - name: Upload gate logs and screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: xpider-email-browser-gate-artifacts
+          path: |
+            evidence/browser_gate_ci/**
+            evidence/uat_readiness/**
+          if-no-files-found: error
