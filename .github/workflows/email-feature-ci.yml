@@ -24,12 +24,23 @@ on:
       - 'extension/email-studio/**'
       - 'extension/popup.html'
       - 'extension/popup.js'
+      - 'extension/background.js'
+      - 'test/run_email_studio_browser_runtime_cdp.js'
+      - 'test/run_popup_paused_runtime_cdp.js'
       - 'test/run_popup_paused_scope_regression.js'
       - 'test/run_email_studio_remote_image_privacy.js'
       - 'test/run_email_draft_outbox.js'
       - 'test/run_email_unsubscribe_post.js'
       - 'test/run_resend_webhook_intake.js'
       - 'test/run_email_studio_mv3_integration.js'
+      - '.github/workflows/email-feature-ci.yml'
+  pull_request:
+    branches:
+      - feature/consent-based-email-delivery-20261109
+    paths:
+      - 'companion/**'
+      - 'extension/**'
+      - 'test/**'
       - '.github/workflows/email-feature-ci.yml'
   workflow_dispatch:
 permissions:
