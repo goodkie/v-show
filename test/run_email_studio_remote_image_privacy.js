@@ -1,0 +1,20 @@
+'use strict';
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const path=require('node:path');
+const root=path.resolve(__dirname,'..');
+const html=fs.readFileSync(path.join(root,'extension/email-studio/index.html'),'utf8');
+const js=fs.readFileSync(path.join(root,'extension/email-studio/email-template-studio.js'),'utf8');
+const css=fs.readFileSync(path.join(root,'extension/email-studio/email-template-studio.css'),'utf8');
+let n=0;
+function check(name,fn){fn();n++;console.log('PASS',name)}
+check('remote preview is opt-in',()=>assert(/<input id="loadRemoteImages" type="checkbox">/.test(html)));
+check('no default checked marker',()=>assert(!/<input id="loadRemoteImages"[^>]*checked/.test(html)));
+check('no inline style on checkbox',()=>assert(!/<label for="loadRemoteImages"[^>]*style=/.test(html)));
+check('opt-in uses local CSS',()=>assert(css.includes('.remote-image-toggle')));
+check('remote image gated behind checkbox',()=>assert(js.includes("el('loadRemoteImages').checked ? url(v.image) : ''")));
+check('local image remains previewable',()=>assert(js.includes("previewFileUrl || (el('loadRemoteImages')")));
+check('HTML export keeps HTTPS URL',()=>assert(js.includes(": url(v.image);")));
+check('changing preference updates preview',()=>assert(js.includes("el('loadRemoteImages').addEventListener('change',render)")));
+check('no direct sending',()=>assert(!/fetch\s*\(|XMLHttpRequest|api\.resend\.com/.test(js)));
+console.log(n+'/'+n+' PASS');
