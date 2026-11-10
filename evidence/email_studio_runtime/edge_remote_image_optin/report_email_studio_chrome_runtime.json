@@ -1,0 +1,277 @@
+{
+  "browser": "Edg/157.0.4341.42",
+  "extId": "ldlijlaccfeelfdhgnjbibniocefckjj",
+  "extDir": "C:\\Users\\oPus\\AppData\\Local\\Temp\\email_tip3\\extension",
+  "results": [
+    {
+      "name": "BROWSER_STARTED",
+      "pass": true,
+      "detail": "Edg/157.0.4341.42 | profile=C:\\Users\\oPus\\AppData\\Local\\Temp\\xpider_email_studio_ST0kGy"
+    },
+    {
+      "name": "EXTENSION_LOADED_UNPACKED",
+      "pass": true,
+      "detail": "id=ldlijlaccfeelfdhgnjbibniocefckjj via CDP Extensions.loadUnpacked (ignored pre-existing id jdiccldimpdaibmpdkjnbmckianbfold)"
+    },
+    {
+      "name": "POPUP_HAS_EMAIL_STUDIO_LINK",
+      "pass": true,
+      "detail": "{\"href\":\"email-studio/index.html\",\"target\":\"_blank\",\"rel\":\"noopener noreferrer\",\"text\":\"✉️ Email Studio\"}"
+    },
+    {
+      "name": "POPUP_EXISTING_NAV_ITEMS_PRESENT",
+      "pass": true,
+      "detail": "[\"email-template-studio-link\",\"reset-all-lists-btn\",\"settings-toggle\",\"campaign\",\"template\",\"history\",\"email-collector\"]"
+    },
+    {
+      "name": "POPUP_CONSOLE_ERRORS_RECORDED",
+      "pass": true,
+      "detail": "1 error/exception entries (info only: [{\"page\":\"chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/popup.html\",\"type\":\"log:error\",\"text\":\"Unchecked runtime.lastError: Could not establish connection. Receiving end does not exist. chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/popup.html\"}])"
+    },
+    {
+      "name": "STUDIO_RENDERS_UNDER_MV3_CSP",
+      "pass": true,
+      "detail": "{\"title\":\"XPIDER Email Template Studio\",\"checks\":11,\"sandbox\":\"\",\"srcdoc\":1354,\"inlineScripts\":0,\"inlineStyleTags\":0}"
+    },
+    {
+      "name": "PREVIEW_IFRAME_SANDBOX_EMPTY",
+      "pass": true,
+      "detail": "\"\""
+    },
+    {
+      "name": "BODY_AND_HEADING_HTML_ESCAPED",
+      "pass": true,
+      "detail": "no raw <script>/<img> in srcdoc"
+    },
+    {
+      "name": "NO_SCRIPT_EXECUTION_IN_STUDIO",
+      "pass": true,
+      "detail": "window.__pwn undefined"
+    },
+    {
+      "name": "HTTP_IMAGE_FLAGGED_NOT_GOOD",
+      "pass": true,
+      "detail": "[\"warn|! 발송용 이미지는 접근 가능한 HTTPS URL 사용\",\"good|✓ 버튼 목적지는 정상 HTTPS URL\"]"
+    },
+    {
+      "name": "MISSING_ALT_FLAGGED",
+      "pass": true,
+      "detail": "[\"warn|! 이미지 대체 텍스트(alt) 제공\"]"
+    },
+    {
+      "name": "REMOTE_IMAGE_DEFAULT_OFF",
+      "pass": true,
+      "detail": "remote image is NOT included in preview before explicit opt-in"
+    },
+    {
+      "name": "REMOTE_IMAGE_NO_REQUEST_BEFORE_OPTIN",
+      "pass": true,
+      "detail": "remote image requests before opt-in: 0"
+    },
+    {
+      "name": "HTTPS_IMAGE_REFERENCED_AFTER_OPTIN",
+      "pass": true,
+      "detail": "external image now shown after explicit opt-in"
+    },
+    {
+      "name": "HOSTED_IMAGE_PRIVACY_NETWORK_OBSERVATION",
+      "pass": true,
+      "detail": "requests to hosted image host observed after opt-in: 0 (test domain; not deliverability evidence)"
+    },
+    {
+      "name": "LOCAL_IMAGE_PREVIEW_BLOB_ONLY",
+      "pass": true,
+      "detail": "preview uses blob: URL"
+    },
+    {
+      "name": "EXPORT_HTML_WARNS_LOCAL_IMAGE_NOT_INCLUDED",
+      "pass": true,
+      "detail": "[\"로컬 이미지는 이메일에 포함되지 않습니다. 공개 HTTPS 이미지 URL을 먼저 입력하세요.\"]"
+    },
+    {
+      "name": "EXPORT_HTML_HAS_NO_BLOB_URL",
+      "pass": true,
+      "detail": "html bytes=1369"
+    },
+    {
+      "name": "MOBILE_DESKTOP_TOGGLE",
+      "pass": true,
+      "detail": "mobile=min(360px, 100%) desktop=100%"
+    },
+    {
+      "name": "EXPORTS_HTML_TXT_JSON",
+      "pass": true,
+      "detail": "[\"xpider-vivpr-template.html\",\"xpider-vivpr-template.json\",\"xpider-vivpr-template.txt\"]"
+    },
+    {
+      "name": "JSON_EXPORT_HAS_NO_SECRETS",
+      "pass": true,
+      "detail": "keys=kind,subject,preheader,brand,heading,body,image,alt,cta,link,reply,company,address,unsubscribe"
+    },
+    {
+      "name": "TXT_EXPORT_HAS_UNSUB_AND_ADDRESS",
+      "pass": true,
+      "detail": "bytes=195"
+    },
+    {
+      "name": "NO_NON_GET_OR_UNEXPECTED_NETWORK_FROM_STUDIO",
+      "pass": true,
+      "detail": "[]"
+    },
+    {
+      "name": "NO_CSP_OR_JS_ERRORS_IN_STUDIO_CONSOLE",
+      "pass": true,
+      "detail": "[]"
+    }
+  ],
+  "consoleLog": [
+    {
+      "page": "chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/popup.html",
+      "type": "log",
+      "text": "[XPIDER] Blacklist loaded with 3333 items."
+    },
+    {
+      "page": "chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/popup.html",
+      "type": "log",
+      "text": "[POPUP_BOOT] started"
+    },
+    {
+      "page": "chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/popup.html",
+      "type": "log",
+      "text": "[POPUP_BOOT] startHandlerBound=true"
+    },
+    {
+      "page": "chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/popup.html",
+      "type": "log",
+      "text": "[POPUP_BOOT] saveHandlerBound=true"
+    },
+    {
+      "page": "chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/popup.html",
+      "type": "log",
+      "text": "[POPUP_BOOT] tabsBound=true settingsBound=true"
+    },
+    {
+      "page": "chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/popup.html",
+      "type": "log",
+      "text": "[POPUP_BOOT] ensureSchemaReady starting..."
+    },
+    {
+      "page": "chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/popup.html",
+      "type": "log",
+      "text": "[BUILD_HANDSHAKE] localHead=20678ada6491bf842ec7e996a88108152c76007f backgroundHead=20678ada6491bf842ec7e996a88108152c76007f result=PASS"
+    },
+    {
+      "page": "chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/popup.html",
+      "type": "log:error",
+      "text": "Unchecked runtime.lastError: Could not establish connection. Receiving end does not exist. chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/popup.html"
+    },
+    {
+      "page": "chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/popup.html",
+      "type": "log",
+      "text": "[LEDGER_STATS] scope=currentGeneration success=0 failed=0 timeout=0 unknown=0"
+    },
+    {
+      "page": "chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/popup.html",
+      "type": "log",
+      "text": "[XPIDER_DIAG] [System] 📦 [Migration] Safely migrated to v2 (Backup: xpider_backup_v1_[REDACTED_PHONE])"
+    },
+    {
+      "page": "chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/popup.html",
+      "type": "log",
+      "text": "[TEMPLATE_MIGRATION] status=MIGRATED sourceCounts=0"
+    },
+    {
+      "page": "chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/popup.html",
+      "type": "log",
+      "text": "[XPIDER_DIAG] [TEMPLATE_MIGRATION] status=MIGRATED sourceCounts=0"
+    },
+    {
+      "page": "chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/popup.html",
+      "type": "log",
+      "text": "[POPUP_BOOT] schemaReady=true migrated=true repaired=false"
+    },
+    {
+      "page": "chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/popup.html",
+      "type": "log",
+      "text": "[TEMPLATE_HYDRATE] templateId=none source=templates_v2 messagePresent=false"
+    },
+    {
+      "page": "chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/popup.html",
+      "type": "log",
+      "text": "[XPIDER_DIAG] [TEMPLATE_HYDRATE] templateId=none source=templates_v2 messagePresent=false"
+    },
+    {
+      "page": "chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/popup.html",
+      "type": "log",
+      "text": "[POPUP_BOOT] settingsHydrated=true"
+    },
+    {
+      "page": "chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/popup.html",
+      "type": "log",
+      "text": "[PRIVACY_RECONCILE] starting bounded preflight (reason=POPUP_INIT, force=false)"
+    },
+    {
+      "page": "chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/popup.html",
+      "type": "log",
+      "text": "[XPIDER_DIAG] [Engine] Initial handshake synced: active=false, mode=AUTO, completed=0, success=0, failed=0"
+    },
+    {
+      "page": "chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/popup.html",
+      "type": "log",
+      "text": "[POPUP_BOOT] getStateAck=true"
+    },
+    {
+      "page": "chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/popup.html",
+      "type": "log",
+      "text": "[LEDGER_STATS] scope=currentGeneration success=0 failed=0 timeout=0 unknown=0"
+    },
+    {
+      "page": "chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/popup.html",
+      "type": "log",
+      "text": "[XPIDER_DIAG] [OWNER_TEST_GUARD] declarativeNetRequest session rules removed cleanly"
+    },
+    {
+      "page": "chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/popup.html",
+      "type": "log",
+      "text": "[XPIDER_DIAG] [OWNER_TEST_GUARD] declarativeNetRequest session rules removed cleanly"
+    },
+    {
+      "page": "chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/popup.html",
+      "type": "log",
+      "text": "[XPIDER_DIAG] --- Persistent Session Restored ---"
+    },
+    {
+      "page": "chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/popup.html",
+      "type": "log",
+      "text": "[PRIVACY_RECONCILE] preflight success: ready=false"
+    },
+    {
+      "page": "chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/popup.html",
+      "type": "log",
+      "text": "[POPUP_BOOT] ready=true"
+    },
+    {
+      "page": "chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/popup.html",
+      "type": "log",
+      "text": "[LEDGER_STATS] scope=currentGeneration success=0 failed=0 timeout=0 unknown=0"
+    }
+  ],
+  "requests": [
+    {
+      "url": "blob:chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/de510f18-a493-48a3-b5d5-90fe66941b52",
+      "method": "GET"
+    },
+    {
+      "url": "blob:chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/d6ab0693-997c-447d-b3bb-c32983693509",
+      "method": "GET"
+    },
+    {
+      "url": "blob:chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/3b4ce979-5d15-48a6-ba71-362da8fd98b6",
+      "method": "GET"
+    },
+    {
+      "url": "blob:chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/83861b26-ce25-472f-a872-f238368fb725",
+      "method": "GET"
+    }
+  ]
+}
