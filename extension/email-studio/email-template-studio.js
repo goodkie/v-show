@@ -9,7 +9,7 @@ let previewFileUrl='';
 const paragraphs=s=>s.split(/\n\s*\n/).filter(x=>x.trim()).map(x=>'<p style="margin:0 0 18px;line-height:1.65">'+esc(x.trim()).replace(/\n/g,'<br>')+'</p>').join('');
 function values(){return Object.fromEntries(ids.map(i=>[i,val(i)]))}
 function htmlFor(v,preview=false){
- const pic=url(v.image)||(preview?previewFileUrl:'');
+ const pic=preview ? (previewFileUrl || (el('loadRemoteImages').checked ? url(v.image) : '')) : url(v.image);
  const previewText=esc(v.preheader);
  const h='<h1 style="font-size:25px;margin:0 0 20px;line-height:1.3">'+esc(v.heading)+'</h1>';
  const img=pic?'<img src="'+esc(pic)+'" alt="'+esc(v.alt)+'" width="560" style="display:block;max-width:100%;width:100%;height:auto;border-radius:8px;margin:0 0 24px">':'';
@@ -54,6 +54,7 @@ el('imageFile').addEventListener('change',()=>{
  previewFileUrl=URL.createObjectURL(f);render();
 });
 for(const id of ids)el(id).addEventListener('input',render);
+el('loadRemoteImages').addEventListener('change',render);
 el('exportHtml').onclick=()=>{const v=values();if(previewFileUrl&&!url(v.image))alert('로컬 이미지는 이메일에 포함되지 않습니다. 공개 HTTPS 이미지 URL을 먼저 입력하세요.');download('xpider-vivpr-template.html','text/html;charset=utf-8',htmlFor(v))};
 el('exportText').onclick=()=>download('xpider-vivpr-template.txt','text/plain;charset=utf-8',textFor(values()));
 el('exportJson').onclick=()=>download('xpider-vivpr-template.json','application/json',JSON.stringify({version:1,template:values(),note:'No secrets, recipient list or API keys'},null,2));
