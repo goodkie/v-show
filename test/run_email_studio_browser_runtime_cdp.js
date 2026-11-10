@@ -102,12 +102,12 @@ function cdp(wsUrl) {
   lis = await ev(st, `[...document.querySelectorAll('#checkList li')].map(l=>l.className+'|'+l.textContent)`);
   rec('MISSING_ALT_FLAGGED', lis.some(t => t.startsWith('warn') && /alt/i.test(t)), JSON.stringify(lis.filter(t => /alt/i.test(t))));
   const doc2 = await ev(st, `document.getElementById('preview').srcdoc`);
-  rec('REMOTE_IMAGE_DEFAULT_OFF', !/https:\/\/images\.example\.test\\/a\.png/.test(doc2), 'remote image is NOT included in preview before explicit opt-in');
+  rec('REMOTE_IMAGE_DEFAULT_OFF', !/https:\/\/images\.example\.test\/a\.png/.test(doc2), 'remote image is NOT included in preview before explicit opt-in');
   const previewRequestsBefore = requests.filter(r => /images\.example\.test/.test(r.url));
   rec('REMOTE_IMAGE_NO_REQUEST_BEFORE_OPTIN', previewRequestsBefore.length === 0, 'remote image requests before opt-in: ' + previewRequestsBefore.length);
   await ev(st, `document.getElementById('loadRemoteImages').click()`);
   const doc2OptIn = await ev(st, `document.getElementById('preview').srcdoc`);
-  rec('HTTPS_IMAGE_REFERENCED_AFTER_OPTIN', /https:\/\/images\.example\.test\\/a\.png/.test(doc2OptIn), 'external image now shown after explicit opt-in');
+  rec('HTTPS_IMAGE_REFERENCED_AFTER_OPTIN', /https:\/\/images\.example\.test\/a\.png/.test(doc2OptIn), 'external image now shown after explicit opt-in');
   await setVal('alt', 'alt text');
   const imgReq = requests.filter(r => /images\.example\.test/.test(r.url));
   rec('HOSTED_IMAGE_PRIVACY_NETWORK_OBSERVATION', true, `requests to hosted image host observed after opt-in: ${imgReq.length} (test domain; not deliverability evidence)`);
