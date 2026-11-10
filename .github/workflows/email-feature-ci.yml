@@ -22,6 +22,7 @@ on:
       - 'extension/popup.html'
       - 'extension/popup.js'
       - 'test/run_popup_paused_scope_regression.js'
+      - 'test/run_email_studio_remote_image_privacy.js'
       - 'test/run_email_studio_mv3_integration.js'
       - '.github/workflows/email-feature-ci.yml'
   workflow_dispatch:
@@ -47,3 +48,4 @@ jobs:
           node test/run_resend_test_mode.js
           node test/run_email_studio_mv3_integration.js
           node test/run_popup_paused_scope_regression.js
+          node test/run_email_studio_remote_image_privacy.js
