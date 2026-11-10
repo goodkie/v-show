@@ -1,0 +1,430 @@
+{
+  "suite": "XPIDER_WINDOWS_10_EMAIL_FEATURE_UAT_READINESS_PREFLIGHT",
+  "generatedAt": "2026-11-10T11:34:53.393Z",
+  "gitHeadSha": "93f740f75ff33b53b6b410bddcf71bd176e0dcac",
+  "extensionTreeSha": "431e97d4cd2d9504a50be58138024d6eeb0f0a94",
+  "nodeVersion": "v24.11.1",
+  "releaseGate": "STRICT_RELEASE_HOLD",
+  "liveEmailsSent": 0,
+  "ownerPcTouched": false,
+  "passed": 12,
+  "failed": 0,
+  "total": 12,
+  "extensionDiffVsFrozenRev22": {
+    "baselineTotalFiles": 50,
+    "currentTotalFiles": 54,
+    "unchangedCount": 48,
+    "modifiedFiles": [
+      {
+        "path": "popup.html",
+        "baselineSha256": "0931dcac7ab7b67c41c44c8dbdadc89ad0fcc209a51b1fc53c9665937063fab1",
+        "currentSha256": "1bed5bafc951fe070f59c3a453a8a41dfc3aa4246b505f76e8d0591989d73b5e"
+      },
+      {
+        "path": "popup.js",
+        "baselineSha256": "be3d5567b1221b1a87e4b46c9ad1e7feb54736d3f7f721dd0971f834d9bf7ec2",
+        "currentSha256": "89ee9ab37e64835cc80958fc293ae8459d7c2b5ce06ff0fb798200a386360b8b"
+      }
+    ],
+    "addedFiles": [
+      {
+        "path": "email-studio/email-template-studio.css",
+        "size": 2210,
+        "sha256": "460d950ba499afb9d14919d77a05d6414b58410eb9bdec57b18b637b47dd4eef"
+      },
+      {
+        "path": "email-studio/email-template-studio.js",
+        "size": 6555,
+        "sha256": "f8ca50d0cc72d674ffb14a183e10b5bb03e458540730ecad36aa64358ca1f07f"
+      },
+      {
+        "path": "email-studio/index.html",
+        "size": 4473,
+        "sha256": "921eae2bf9d524eb40379cd86dae20dc47dc9778c10374222005cf83ce073f4c"
+      },
+      {
+        "path": "modules/email-delivery-policy.js",
+        "size": 4115,
+        "sha256": "06ad4231610eb30cc5bd9f35693b7686146232e3dc992c291dc2c01ce08ad656"
+      }
+    ],
+    "removedFiles": [],
+    "criticalCoreFilesUnchanged": {
+      "background.js": "625a951af0d380ada0bb451ff1328dc592c86e309846b4af67f5cfe1415165b9",
+      "content-script.js": "a913fc040390f60f0de94d2ab1b01a127fcd5f72699f8a8d2459f16e8e027bd1",
+      "manifest.json": "c0f28044c2f37398887e1405d2615e9b7f74d8a176c0d3fbf3b9d42d7b82c530"
+    }
+  },
+  "unresolvedProductionBlockers": [
+    {
+      "id": "B1",
+      "item": "Host Chrome 157 chrome-extension:// navigation",
+      "status": "UNKNOWN_HOST_ENV_BLOCKED",
+      "detail": "ERR_BLOCKED_BY_CLIENT on host Chrome 157; verified on disposable Edge 157 (25/25 & 14/14 PASS)"
+    },
+    {
+      "id": "B2",
+      "item": "Public HTTPS /unsubscribe/:token and /webhooks/resend endpoints",
+      "status": "UNKNOWN_UNDEPLOYED",
+      "detail": "Verified on local loopback HTTP only (13/13 & 12/12 PASS)"
+    },
+    {
+      "id": "B3",
+      "item": "vivpr.pro DNS (SPF/DKIM/DMARC) & Resend domain/account approval",
+      "status": "UNKNOWN",
+      "detail": "Live production DNS and Resend verification unproven"
+    },
+    {
+      "id": "B4",
+      "item": "Decodo residential proxy quota",
+      "status": "BLOCKED_HTTP_407",
+      "detail": "HTTP 407 traffic_exhausted; local relay verified fail-closed with 0 direct fallback"
+    },
+    {
+      "id": "B5",
+      "item": "Cryptographic production consent source proof",
+      "status": "HOLD",
+      "detail": "Caller boolean consent tagged UNVERIFIED_CALLER_ASSERTION (sendEligible: false)"
+    },
+    {
+      "id": "B6",
+      "item": "Production send & Owner Windows 10 live UAT authorization",
+      "status": "STRICT_HOLD",
+      "detail": "0 live emails authorized; no Owner PC operations until explicit Owner approval"
+    }
+  ],
+  "results": [
+    {
+      "name": "EXTENSION_HASH_INVENTORY_COMPLETE",
+      "pass": true,
+      "detail": "files=54, treeSha=431e97d4cd2d9504a50be58138024d6eeb0f0a94"
+    },
+    {
+      "name": "EXTENSION_DIFF_AGAINST_FROZEN_REV22_BASELINE_EXACT",
+      "pass": true,
+      "detail": "unchanged=48/50, modified=[popup.html,popup.js], added=4"
+    },
+    {
+      "name": "READ_ONLY_PREFLIGHT_ZERO_MUTATION",
+      "pass": true,
+      "detail": "inspected=54 files, mutations=0"
+    },
+    {
+      "name": "ENCRYPTED_FULL_BACKUP_AES256_GCM_NO_PLAINTEXT_LEAK",
+      "pass": true,
+      "detail": "bundleBytes=11745678, plaintextLeaks=0"
+    },
+    {
+      "name": "ENCRYPTED_BACKUP_TAMPER_AND_WRONG_PASSPHRASE_FAIL_CLOSED",
+      "pass": true,
+      "detail": "wrong passphrase and 1-byte ciphertext tamper both rejected fail-closed"
+    },
+    {
+      "name": "SYNTHETIC_RESTORE_BIT_EXACT_PARITY",
+      "pass": true,
+      "detail": "restoredFiles=54/54, stateParity=100%"
+    },
+    {
+      "name": "ATOMIC_ROLLBACK_ON_INTERRUPTED_UPDATE",
+      "pass": true,
+      "detail": "rolledBack=true, parity=54/54 files"
+    },
+    {
+      "name": "CAMPAIGN_PAUSE_RESUME_STOP_SAVE_CONTRACTS",
+      "pass": true,
+      "detail": "PAUSE_CAMPAIGN, RESUME_CAMPAIGN, STOP_CAMPAIGN, xpider_paused_checkpoint & popup scope verified"
+    },
+    {
+      "name": "MESSAGELESS_SUBSCRIBE_DEFAULT_OFF_EXPLICIT_ON_AND_CONSENT_GATE",
+      "pass": true,
+      "detail": "includeNoMessage default OFF, explicit ON required, excluded form classes enforced"
+    },
+    {
+      "name": "EMAIL_STUDIO_LOCAL_IMAGE_BLOB_ONLY_AND_REMOTE_OPTIN_DEFAULT_OFF",
+      "pass": true,
+      "detail": "#loadRemoteImages default unchecked, iframe sandbox=\"\", local image blob-only"
+    },
+    {
+      "name": "EMAIL_STUDIO_AND_COMPANION_STRICT_NO_SEND_MODE",
+      "pass": true,
+      "detail": "Email Studio 0 network APIs; DraftOutbox status=DRAFT, sendEligible=false"
+    },
+    {
+      "name": "UNRESOLVED_PRODUCTION_BLOCKERS_EXPLICITLY_DOCUMENTED",
+      "pass": true,
+      "detail": "All 6 unresolved production blockers explicitly documented"
+    }
+  ],
+  "extensionFileInventory": [
+    {
+      "path": "캡처.JPG",
+      "size": 2514,
+      "sha256": "d3085ae05f9e6ef41d34545ddf3cd9f9d9a43ebd91887f41a6f91e83bc6b800b"
+    },
+    {
+      "path": "캡처2.JPG",
+      "size": 7771,
+      "sha256": "244fbcd08d635c2d0942b5ab2db28c394750efd3e6e5f7dc9cd93bfb47c52620"
+    },
+    {
+      "path": "AUDIT_MANIFEST.json",
+      "size": 9596,
+      "sha256": "4fe282d707fb38a7a9b311b0dabeb70aa0a613a38850e4f6aef62cca564a353b"
+    },
+    {
+      "path": "background.js",
+      "size": 515151,
+      "sha256": "625a951af0d380ada0bb451ff1328dc592c86e309846b4af67f5cfe1415165b9"
+    },
+    {
+      "path": "banner.jpg",
+      "size": 45555,
+      "sha256": "83878d70df6dddf45c36ad6807e3de7897b58b719abb047d643a16a018114037"
+    },
+    {
+      "path": "blacklist_data.js",
+      "size": 7278,
+      "sha256": "be70fec3a3c69787d0008b9091e6cd42eaff12629bf19bb07646df09755de0f6"
+    },
+    {
+      "path": "COMMIT_PROVENANCE.txt",
+      "size": 4041,
+      "sha256": "d3dbe93814d90b735ec50209de816ff670badbf4e4c31bde602724177be33e4d"
+    },
+    {
+      "path": "content-script.js",
+      "size": 538405,
+      "sha256": "a913fc040390f60f0de94d2ab1b01a127fcd5f72699f8a8d2459f16e8e027bd1"
+    },
+    {
+      "path": "email-studio/email-template-studio.css",
+      "size": 2210,
+      "sha256": "460d950ba499afb9d14919d77a05d6414b58410eb9bdec57b18b637b47dd4eef"
+    },
+    {
+      "path": "email-studio/email-template-studio.js",
+      "size": 6555,
+      "sha256": "f8ca50d0cc72d674ffb14a183e10b5bb03e458540730ecad36aa64358ca1f07f"
+    },
+    {
+      "path": "email-studio/index.html",
+      "size": 4473,
+      "sha256": "921eae2bf9d524eb40379cd86dae20dc47dc9778c10374222005cf83ce073f4c"
+    },
+    {
+      "path": "FILE_HASHES.txt",
+      "size": 1496,
+      "sha256": "c9339c52ffebc10740836492531bf5dd9180d0a28f0de4d5c6f023d2c14d9a8a"
+    },
+    {
+      "path": "icons/app-logo.png",
+      "size": 524650,
+      "sha256": "8dc5c14f18784dcae13d13c990e9059ee158bea7b507f7619bdc89c2e7dfca5c"
+    },
+    {
+      "path": "icons/banner.png",
+      "size": 86770,
+      "sha256": "d1932153fca475d92cc5095c81edff6528189046b1f1aa8c43e3b08969522cff"
+    },
+    {
+      "path": "icons/folder.png",
+      "size": 9904,
+      "sha256": "9b0fcf6e499fd174a1547544decc7541ca39a7018cc4c76d2686f733ce8f6c1b"
+    },
+    {
+      "path": "icons/gear.png",
+      "size": 684887,
+      "sha256": "6f17ba22f38a40c00c6bc1a572f6219826074afe490dd919dfb051c0dde27249"
+    },
+    {
+      "path": "icons/icon128.png",
+      "size": 722086,
+      "sha256": "67663f4d21daedfcbd1a9c9c17589879bc76ceb5633c9d9eeb89509829c2be3e"
+    },
+    {
+      "path": "icons/icon16.png",
+      "size": 722086,
+      "sha256": "67663f4d21daedfcbd1a9c9c17589879bc76ceb5633c9d9eeb89509829c2be3e"
+    },
+    {
+      "path": "icons/icon48.png",
+      "size": 722086,
+      "sha256": "67663f4d21daedfcbd1a9c9c17589879bc76ceb5633c9d9eeb89509829c2be3e"
+    },
+    {
+      "path": "imgi_1_spider-man-logo-png_seeklogo-385417.png",
+      "size": 85484,
+      "sha256": "29cdfc5fa1a890c2df8f7c5b3e86152794f0814f1b00aee47192923b37f1800e"
+    },
+    {
+      "path": "LOCAL_GIT_PROVENANCE.txt",
+      "size": 10099,
+      "sha256": "59e976afff578b2bb76efb18da4b0b0b14c9574707880f809b13c585cadaa189"
+    },
+    {
+      "path": "manifest.json",
+      "size": 1553,
+      "sha256": "c0f28044c2f37398887e1405d2615e9b7f74d8a176c0d3fbf3b9d42d7b82c530"
+    },
+    {
+      "path": "modules/build-provenance.js",
+      "size": 2633,
+      "sha256": "8d703315390242427c2c7f6edbb575c09b1b79f73621c16defc14adb7cf48155"
+    },
+    {
+      "path": "modules/challenge-gate.js",
+      "size": 10625,
+      "sha256": "c8767cd699fd4fb0f6b3684443dbe1aa6980f12f11e98a056efc7eb25c706855"
+    },
+    {
+      "path": "modules/checkbox-resolver-r2.js",
+      "size": 33955,
+      "sha256": "0ffb549d0b76d582da5a797a1106d9427012ee21e4a2126f553414a23c22b75d"
+    },
+    {
+      "path": "modules/contact-discovery-engine.js",
+      "size": 67443,
+      "sha256": "8e8a8c8f02d7f112420418151145a9d274a05896a0dd5bed3408c95317a10234"
+    },
+    {
+      "path": "modules/contact-gate.js",
+      "size": 38100,
+      "sha256": "8c18caf7c6a994dcb10e4fb2de248116628677ff4832e8cc57e1e204e5a5ef3c"
+    },
+    {
+      "path": "modules/email-collector.js",
+      "size": 23776,
+      "sha256": "01bc11a3653f38a344cfcf162bcf0a7bdb79fd6f1e1b884e53ca8e1d8cefe8b3"
+    },
+    {
+      "path": "modules/email-delivery-policy.js",
+      "size": 4115,
+      "sha256": "06ad4231610eb30cc5bd9f35693b7686146232e3dc992c291dc2c01ce08ad656"
+    },
+    {
+      "path": "modules/final-form-completion-engine.js",
+      "size": 72098,
+      "sha256": "9f9432edcf103059434bae65d36368ef9d7921f9eb7b48fd680faaff20397732"
+    },
+    {
+      "path": "modules/form-discovery-engine-r2.js",
+      "size": 48983,
+      "sha256": "7816bbb4c05325d856934898caa162a87661bd796279a7e2beb658cd18976575"
+    },
+    {
+      "path": "modules/history-store.js",
+      "size": 88384,
+      "sha256": "a689c9913898cb697e37063677cf7cb83ec3b211c9b373d20a5597a4fce1dd13"
+    },
+    {
+      "path": "modules/math-captcha-solver.js",
+      "size": 820,
+      "sha256": "ec604de18c25bdee32ff38db57f72d417fbb4eb440bc3ef7b4af3b28181ddd09"
+    },
+    {
+      "path": "modules/mock-captcha-provider-adapter.js",
+      "size": 4948,
+      "sha256": "ba25dfd1085025fb531635e2665a1f4fd6d2bf3762661e0c86c3a2aa4257b160"
+    },
+    {
+      "path": "modules/operation-queue.js",
+      "size": 1513,
+      "sha256": "10d9d9a5e96fbb11719f01d3ddd917ddf910c89d52ef6c122cfcb92bea8b0aa5"
+    },
+    {
+      "path": "modules/privacy-gateway.js",
+      "size": 168352,
+      "sha256": "8588bbf477d435380695e167294aa436b2c08ae26476f4e71a1c33b183df127e"
+    },
+    {
+      "path": "modules/select-resolver-r2.js",
+      "size": 19245,
+      "sha256": "310588391dd139bfa659d300a83127593eea554a8eebcfeb44727c1086f6068c"
+    },
+    {
+      "path": "modules/smart-field-resolver.js",
+      "size": 37331,
+      "sha256": "aaa92ed5c1723da57afdd8b16d5855aba6753cc53217a0dcb8fe08dd73259cc1"
+    },
+    {
+      "path": "modules/template-store.js",
+      "size": 36321,
+      "sha256": "5cd78030d12c2a70a6fa621a369af230d64c13daad946f8890b0eb7aeb40a12f"
+    },
+    {
+      "path": "modules/vision-submit-executor.js",
+      "size": 12463,
+      "sha256": "4665028f7897fb869e7819df7e32aa55d695aea0fa2fe58549d625c156081435"
+    },
+    {
+      "path": "PACKAGE_INVENTORY_SHA256.txt",
+      "size": 4533,
+      "sha256": "84c47d0d5d1dba5aa05c78591673d7646a18f3807d5d1afa8ad1b0d7e3f9488d"
+    },
+    {
+      "path": "PNG.PNG",
+      "size": 199367,
+      "sha256": "d47c771ad5de68760560c4d747c1a8993126d32a4201903b81d9abc998176c55"
+    },
+    {
+      "path": "popup.css",
+      "size": 42903,
+      "sha256": "45d0a9d3044d9d09d3730651633aa239014eca5c4a0fbc4f54a8f3acf5136df3"
+    },
+    {
+      "path": "popup.html",
+      "size": 138797,
+      "sha256": "183dbb7e5e4e03476a3aff150f7d72fd9c9fac9b9faf9033962a59fecc0189ac"
+    },
+    {
+      "path": "popup.js",
+      "size": 584997,
+      "sha256": "a287a7334060a10e5427ba6906f5e27b90d2e6f12dd22315996858dda265dc99"
+    },
+    {
+      "path": "RESTORE_POINT_SUMMARY.md",
+      "size": 1645,
+      "sha256": "450f58ae3d566bb98e15a2f0caa0e5239a37dce1c89a256a5fb505be6bbce56c"
+    },
+    {
+      "path": "solver-content.js",
+      "size": 511,
+      "sha256": "244788a1cf69987eef1df56845caba98eaccd6bc9ea7b95507faa3a58239db30"
+    },
+    {
+      "path": "solver-core.js",
+      "size": 1580,
+      "sha256": "33834079432918a27a3b6eabdf76ce6753c7a00e42a03881f0f0d39f6d095f9e"
+    },
+    {
+      "path": "translations.js",
+      "size": 18038,
+      "sha256": "9c72d2f1b5f2a129747060440a9a654fbc4f80fa01b2fc6e4cd0929f63c12f65"
+    },
+    {
+      "path": "upload-folder.png",
+      "size": 17952,
+      "sha256": "78de98a55d36b888abdf31d06c7e0a3602911e6170830a75eacba9ebf661784c"
+    },
+    {
+      "path": "upload-folder2.png",
+      "size": 9904,
+      "sha256": "9b0fcf6e499fd174a1547544decc7541ca39a7018cc4c76d2686f733ce8f6c1b"
+    },
+    {
+      "path": "x-sender pro.png",
+      "size": 65464,
+      "sha256": "9aad99df3c3ff9a19b8475c32a638c8c93d354394e361fc2d0e8ef5f42aba05b"
+    },
+    {
+      "path": "x-sender.png",
+      "size": 69243,
+      "sha256": "1dd905718c0b0163ce72f2348d416ba3c065d7a4f4d487a8936157f86a8c5491"
+    },
+    {
+      "path": "xpider logo-banner2.png",
+      "size": 59915,
+      "sha256": "e2a93e5180331e4e1121f79b1716822745390c9d24ac3d741ec7a103996f4795"
+    }
+  ]
+}

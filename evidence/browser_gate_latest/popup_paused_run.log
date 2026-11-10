@@ -1,0 +1,16 @@
+PASS BROWSER_STARTED :: Edg/157.0.4341.42
+PASS EXTENSION_LOADED :: ldlijlaccfeelfdhgnjbibniocefckjj
+PASS LIVE_BACKGROUND_SERVICE_WORKER_ATTACHED :: chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/background.js
+PASS NO_isPausedState_REFERENCEERROR_LIVE_BG_IDLE :: bg={"isActive":false,"isPaused":false,"hasPausedCheckpoint":false} ui={"startRowHidden":false,"multiHidden":true,"resumeBtn":true,"pausedFlag":false,"url":"chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/popup.ht"} errors=[]
+PASS NO_isPausedState_REFERENCEERROR_LIVE_BG_PAUSED_CHECKPOINT :: bg={"isActive":false,"isPaused":true,"hasPausedCheckpoint":true} ui={"startRowHidden":true,"multiHidden":false,"resumeBtn":true,"pausedFlag":true,"url":"chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/popup.ht"} errors=[]
+PASS NO_isPausedState_REFERENCEERROR_LIVE_BG_ACTIVE :: bg={"isActive":true,"isPaused":false,"hasPausedCheckpoint":true} ui={"startRowHidden":true,"multiHidden":false,"resumeBtn":true,"pausedFlag":false,"url":"chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/popup.ht"} errors=[]
+PASS NO_isPausedState_REFERENCEERROR_LIVE_BG_PAUSED_WITH_POPUP_STORAGE_THROW :: bg={"isActive":false,"isPaused":true,"hasPausedCheckpoint":true} ui={"startRowHidden":true,"multiHidden":false,"resumeBtn":true,"pausedFlag":true,"url":"chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/popup.ht"} errors=[]
+PASS NO_isPausedState_REFERENCEERROR_LIVE_BG_IDLE_WITH_POPUP_STORAGE_THROW :: bg={"isActive":false,"isPaused":false,"hasPausedCheckpoint":false} ui={"startRowHidden":false,"multiHidden":true,"resumeBtn":true,"pausedFlag":false,"url":"chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/popup.ht"} errors=[]
+PASS LIVE_BG_IDLE_SHOWS_START_ROW :: {"startRowHidden":false,"multiHidden":true,"resumeBtn":true,"pausedFlag":false,"url":"chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/popup.ht"}
+PASS LIVE_BG_PAUSED_HIDES_START_ROW_AND_SHOWS_MULTI :: {"startRowHidden":true,"multiHidden":false,"resumeBtn":true,"pausedFlag":true,"url":"chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/popup.ht"}
+PASS LIVE_BG_ACTIVE_HIDES_START_ROW_AND_SHOWS_MULTI :: {"startRowHidden":true,"multiHidden":false,"resumeBtn":true,"pausedFlag":false,"url":"chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/popup.ht"}
+PASS LIVE_BG_STORAGE_THROW_PAUSED_FALLS_BACK_TO_RESPONSE_ISPAUSED :: {"startRowHidden":true,"multiHidden":false,"resumeBtn":true,"pausedFlag":true,"url":"chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/popup.ht"}
+PASS LIVE_BG_STORAGE_THROW_IDLE_SHOWS_START_ROW :: {"startRowHidden":false,"multiHidden":true,"resumeBtn":true,"pausedFlag":false,"url":"chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/popup.ht"}
+PASS LIVE_BG_PAUSE_CAMPAIGN_HANDLER_OPERATIONAL :: {"success":true,"remainingCount":0}
+
+14/14 PASS

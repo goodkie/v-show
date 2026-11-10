@@ -5,12 +5,46 @@ const fs = require('node:fs');
 const path = require('node:path');
 const os = require('node:os');
 const http = require('node:http');
-const { spawn } = require('node:child_process');
+const { spawn, execSync } = require('node:child_process');
 
-const [extDir, exe, outDir] = process.argv.slice(2).map(p => path.resolve(p));
+function resolveCliArgs(argv) {
+  const repoRoot = path.resolve(__dirname, '..');
+  let extArg = null, exeArg = null, outArg = null;
+  const pos = [];
+  for (let i = 0; i < argv.length; i++) {
+    const a = argv[i];
+    if (a === '--ext' && argv[i + 1]) { extArg = argv[++i]; }
+    else if ((a === '--browser' || a === '--browser-exe') && argv[i + 1]) { exeArg = argv[++i]; }
+    else if (a === '--out' && argv[i + 1]) { outArg = argv[++i]; }
+    else if (!a.startsWith('--')) { pos.push(a); }
+  }
+  const resolvedExt = path.resolve(extArg || pos[0] || path.join(repoRoot, 'extension'));
+  let rawExe = exeArg || pos[1] || process.env.BROWSER_EXE || 'edge';
+  if (/^(edge|msedge)$/i.test(rawExe)) {
+    const candidates = [
+      'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe',
+      'C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe',
+      '/usr/bin/microsoft-edge-stable',
+      '/usr/bin/microsoft-edge',
+      '/usr/bin/chromium-browser',
+      '/usr/bin/chromium',
+      '/usr/bin/google-chrome-stable',
+      '/usr/bin/google-chrome'
+    ];
+    rawExe = candidates.find(c => fs.existsSync(c)) || rawExe;
+  }
+  const resolvedExe = fs.existsSync(rawExe) ? path.resolve(rawExe) : rawExe;
+  const resolvedOut = path.resolve(outArg || pos[2] || path.join(os.tmpdir(), 'xpider_popup_scope_out'));
+  return [resolvedExt, resolvedExe, resolvedOut];
+}
+
+const [extDir, exe, outDir] = resolveCliArgs(process.argv.slice(2));
 fs.mkdirSync(outDir, { recursive: true });
 const PORT = 9700 + Math.floor(Math.random() * 200);
 const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'xpider_popup_scope_'));
+if (/Google[\\/]Chrome[\\/]User Data|Microsoft[\\/]Edge[\\/]User Data/i.test(profile)) {
+  throw new Error('FATAL_PROFILE_SAFETY_VIOLATION: refusing to use non-disposable browser profile: ' + profile);
+}
 const results = [];
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const rec = (n, p, d) => {
@@ -267,7 +301,32 @@ let br;
   const pauseAck = await swEval(`new Promise(r => _handleMainMessageInner({ action: 'PAUSE_CAMPAIGN' }, {}, r))`);
   rec('LIVE_BG_PAUSE_CAMPAIGN_HANDLER_OPERATIONAL', pauseAck && pauseAck.success === true, JSON.stringify(pauseAck));
 
-  fs.writeFileSync(path.join(outDir, 'report_popup_paused_runtime.json'), JSON.stringify({ browser: ver.Browser, extDir, results, summary }, null, 2));
+  const pass = results.filter(r => r.pass).length;
+  let gitHeadSha = 'UNKNOWN', extensionTreeSha = 'UNKNOWN';
+  try {
+    gitHeadSha = execSync('git rev-parse HEAD', { cwd: path.resolve(__dirname, '..'), encoding: 'utf8' }).trim();
+    extensionTreeSha = execSync('git rev-parse HEAD:extension', { cwd: path.resolve(__dirname, '..'), encoding: 'utf8' }).trim();
+  } catch {}
+  fs.writeFileSync(
+    path.join(outDir, 'report_popup_paused_runtime.json'),
+    JSON.stringify(
+      {
+        gitHeadSha,
+        extensionTreeSha,
+        nodeVersion: process.version,
+        browser: ver.Browser,
+        extDir,
+        disposableProfileVerified: true,
+        passed: pass,
+        failed: results.length - pass,
+        total: results.length,
+        results,
+        summary
+      },
+      null,
+      2
+    )
+  );
 })()
   .catch(e => {
     console.error('FATAL', e.message);
