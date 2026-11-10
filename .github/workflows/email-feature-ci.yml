@@ -8,6 +8,7 @@ on:
       - 'companion/vivpr-sender-identity.js'
       - 'companion/email-deliverability-v2-policy.js'
       - 'companion/resend-test-mode.js'
+      - 'companion/email-draft-outbox.js'
       - 'companion/resend-volume-preflight.js'
       - 'extension/modules/email-delivery-policy.js'
       - 'test/run_email_delivery_policy.js'
@@ -23,6 +24,7 @@ on:
       - 'extension/popup.js'
       - 'test/run_popup_paused_scope_regression.js'
       - 'test/run_email_studio_remote_image_privacy.js'
+      - 'test/run_email_draft_outbox.js'
       - 'test/run_email_studio_mv3_integration.js'
       - '.github/workflows/email-feature-ci.yml'
   workflow_dispatch:
@@ -49,3 +51,4 @@ jobs:
           node test/run_email_studio_mv3_integration.js
           node test/run_popup_paused_scope_regression.js
           node test/run_email_studio_remote_image_privacy.js
+          node test/run_email_draft_outbox.js
