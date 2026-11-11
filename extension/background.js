@@ -6250,6 +6250,12 @@ async function startCampaignOrchestrator(queue, template, delayMs, fillDelayMs =
 }
 
 async function pauseCampaignOrchestrator(saveCheckpoint = true) {
+    // [P0 Race Guard] Idempotent protection: if campaign is already paused and completely quiescent, do not re-run unshifts or pause logic
+    if (campaignState.isPaused && !campaignState.isActive && !campaignState.activeTargetInFlight) {
+        logBg(null, "⏸️ [Engine] Campaign is already paused / quiescent. Acknowledging idempotent PAUSE.", "info");
+        return { success: true, status: 'ALREADY_PAUSED', remainingCount: campaignState.queue ? campaignState.queue.length : 0 };
+    }
+
     // [R6.9G.7 P0-8 Quiescent Pause Barrier]
     // 1. Snapshot in-flight state BEFORE any aborts or resets
     const inFlightAtt = campaignState.currentAttempt ? { ...campaignState.currentAttempt } : null;
@@ -6328,22 +6334,15 @@ async function pauseCampaignOrchestrator(saveCheckpoint = true) {
     }
 
     // 3. WAIT FOR ACTIVE ORCHESTRATION TO QUIESCE BEFORE WRITING CHECKPOINT SNAPSHOT
-    if (wasInV7Hold || !hadTargetResolve) {
-        if (hadTargetResolve && campaignState.activeTargetInFlight) {
-            const holdQuiesceStart = Date.now();
-            while (campaignState.activeTargetInFlight && (Date.now() - holdQuiesceStart < 200)) {
-                await new Promise(r => setTimeout(r, 25));
-            }
-        }
-        campaignState.activeTargetInFlight = false;
-        campaignState.activeTargetCount = 0;
+    // [P0 Race Guard] Wait for in-flight orchestration slot to legitimately release.
+    // Post-submit holds and retry sleeps now observe campaignState.isPaused and break out within 50ms.
+    const pauseQuiesceStart = Date.now();
+    while (campaignState.activeTargetInFlight && (Date.now() - pauseQuiesceStart < 5000)) {
+        await new Promise(r => setTimeout(r, 50));
+    }
+    if (wasInV7Hold) {
         campaignState.manualHoldActive = false;
         campaignState.externalCaptchaWaitActive = false;
-    } else {
-        const pauseQuiesceStart = Date.now();
-        while (campaignState.activeTargetInFlight && (Date.now() - pauseQuiesceStart < 5000)) {
-            await new Promise(r => setTimeout(r, 50));
-        }
     }
 
     if (campaignState.activeTargetInFlight) {
@@ -7081,10 +7080,22 @@ async function processNextCampaignTarget(loopSessionId, loopGeneration) {
             campaignState.targetDeadlineController = deadlineController;
             const timeoutPromise = deadlineController.start(targetTimeoutMs);
 
+            // [P0 Race Guard] Immutable target execution context bound to this specific target invocation
+            const targetExecutionContext = {
+                runId: campaignState.campaignRunId,
+                sessionId: currentSession,
+                targetUrl: targetUrl,
+                targetHost: targetHost,
+                targetIndex: targetIdx,
+                attemptId: null,
+                targetToken: null,
+                tabId: null
+            };
+
             orchestrationSettled = false;
             const orchestrationPromise = (async () => {
                 try {
-                    return await orchestrateSending(targetUrl, campaignState.template, targetAbortController.signal);
+                    return await orchestrateSending(targetUrl, campaignState.template, targetAbortController.signal, targetExecutionContext);
                 } finally {
                     orchestrationSettled = true;
                 }
@@ -7150,13 +7161,13 @@ async function processNextCampaignTarget(loopSessionId, loopGeneration) {
                 }
                 try {
                     const hs = await getHistoryStoreInstance();
-                    let attemptId = campaignState.currentAttempt?.attemptId;
-                    let targetToken = campaignState.currentAttempt?.targetToken;
+                    let attemptId = targetExecutionContext.attemptId || (campaignState.currentAttempt?.url === targetUrl ? campaignState.currentAttempt?.attemptId : null);
+                    let targetToken = targetExecutionContext.targetToken || (campaignState.currentAttempt?.url === targetUrl ? campaignState.currentAttempt?.targetToken : null);
 
                     if (!attemptId && hs && typeof hs.recordAttempt === 'function') {
                         targetToken = targetToken || ('tok_' + Date.now() + '_' + Math.random().toString(36).substring(2, 8));
                         const attemptResult = await hs.recordAttempt(targetUrl, {
-                            campaignRunId: campaignState.campaignRunId,
+                            campaignRunId: targetExecutionContext.runId || campaignState.campaignRunId,
                             status: 'PREPARING',
                             reason: 'PREPARING',
                             templateId: campaignState.templateId || null,
@@ -7164,11 +7175,13 @@ async function processNextCampaignTarget(loopSessionId, loopGeneration) {
                             targetToken: targetToken
                         });
                         attemptId = attemptResult?.attemptId;
+                        targetExecutionContext.attemptId = attemptId;
+                        targetExecutionContext.targetToken = targetToken;
                     }
 
                     if (attemptId && hs && typeof hs.settleCanonicalAttempt === 'function') {
                         await hs.settleCanonicalAttempt(attemptId, timeoutStatus, timeoutReason, {}, {
-                            campaignRunId: campaignState.campaignRunId,
+                            campaignRunId: targetExecutionContext.runId || campaignState.campaignRunId,
                             resultUrl: targetUrl,
                             targetToken: targetToken
                         });
@@ -7196,7 +7209,10 @@ async function processNextCampaignTarget(loopSessionId, loopGeneration) {
                     await new Promise(r => setTimeout(r, 50));
                 }
 
-                if (campaignState.currentTabId) {
+                if (targetExecutionContext.tabId && campaignState.currentTabId === targetExecutionContext.tabId) {
+                    campaignState.currentTabId = null;
+                    await closeOwnedTabVerified(targetExecutionContext.tabId, 'TARGET_FINALLY_CLEANUP');
+                } else if (campaignState.currentTabId && !targetExecutionContext.tabId) {
                     const orphanId = campaignState.currentTabId;
                     campaignState.currentTabId = null;
                     await closeOwnedTabVerified(orphanId, 'TARGET_FINALLY_CLEANUP');
@@ -7204,14 +7220,16 @@ async function processNextCampaignTarget(loopSessionId, loopGeneration) {
 
                 try {
                     const hs = await getHistoryStoreInstance();
-                    if (!campaignState.isPaused && hs && campaignState.currentAttempt && campaignState.currentAttempt.attemptId) {
-                        const att = hs.attempts.find(a => a.attemptId === campaignState.currentAttempt.attemptId);
+                    // [P0 Attempt-Identity Scope Fix] ONLY settle the attempt that belonged to THIS specific execution context!
+                    const boundAttId = targetExecutionContext.attemptId;
+                    if (!campaignState.isPaused && hs && boundAttId) {
+                        const att = hs.attempts.find(a => a.attemptId === boundAttId);
                         if (att && att.status === 'PREPARING') {
                             const isSubmitDone = campaignState.submitLock || campaignState.currentSubmitState === 'TRIGGERED';
                             const terminalSt = isSubmitDone ? 'DELIVERY_UNKNOWN' : 'SKIPPED';
                             const termReason = isSubmitDone ? REASON_CODES.DELIVERY_UNKNOWN : 'PRE_SUBMIT_TERMINATED';
                             await hs.settleCanonicalAttempt(att.attemptId, terminalSt, termReason, {}, {
-                                campaignRunId: campaignState.campaignRunId
+                                campaignRunId: targetExecutionContext.runId || campaignState.campaignRunId
                             });
                             await hs.persist();
                             await syncCampaignCountersFromLedger(hs);
@@ -7219,14 +7237,28 @@ async function processNextCampaignTarget(loopSessionId, loopGeneration) {
                     }
                 } catch (_) {}
 
-                campaignState.currentTargetAbortController = null;
-                campaignState.currentTargetStage = null;
-                campaignState.currentTargetToken = null;
-                campaignState.currentAttempt = null;
-                campaignState.submitLock = false;
+                // [P0 Attempt-Identity Scope Fix] Guarded cleanup of global pointers: ONLY clear if STILL matching THIS execution!
+                if (campaignState.currentTargetAbortController === targetAbortController) {
+                    campaignState.currentTargetAbortController = null;
+                }
+                if (targetExecutionContext.targetToken && campaignState.currentTargetToken === targetExecutionContext.targetToken) {
+                    campaignState.currentTargetToken = null;
+                }
+                if (targetExecutionContext.attemptId && campaignState.currentAttempt && campaignState.currentAttempt.attemptId === targetExecutionContext.attemptId) {
+                    campaignState.currentAttempt = null;
+                    campaignState.currentTargetStage = null;
+                    campaignState.submitLock = false;
+                }
+                if (targetExecutionContext.tabId && campaignState.currentTabId === targetExecutionContext.tabId) {
+                    campaignState.currentTabId = null;
+                }
                 campaignState.timeoutWatchdogGen = (campaignState.timeoutWatchdogGen || 0) + 1;
                 if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
-                    chrome.storage.local.set({ xpider_exec_identity: null }).catch(() => {});
+                    chrome.storage.local.get(['xpider_exec_identity'], (data) => {
+                        if (data && data.xpider_exec_identity && data.xpider_exec_identity.attemptId === targetExecutionContext.attemptId) {
+                            chrome.storage.local.set({ xpider_exec_identity: null }).catch(() => {});
+                        }
+                    });
                 }
 
                 if (!orchestrationSettled) {
@@ -7837,7 +7869,7 @@ async function scanContactPaths(baseUrl, tabId, discoveryCtx = null) {
     return validPaths;
 }
 
-async function orchestrateSending(urlInput, template, abortSignal = null) {
+async function orchestrateSending(urlInput, template, abortSignal = null, executionContext = {}) {
     if (!abortSignal) {
         if (!campaignState.currentTargetAbortController) {
             campaignState.currentTargetAbortController = new AbortController();
@@ -7890,6 +7922,11 @@ async function orchestrateSending(urlInput, template, abortSignal = null) {
         _attemptId = attemptResult && attemptResult.attemptId ? attemptResult.attemptId : null;
         if (!_attemptId) throw new Error('recordAttempt returned no attemptId');
         await hs.persist();
+        if (executionContext) {
+            executionContext.attemptId = _attemptId;
+            executionContext.targetToken = targetToken;
+            executionContext.targetUrl = targetUrl;
+        }
         // [F8-A] Canonical attemptId — begins in PREPARING (not SUBMIT_PENDING until submit is imminent)
         campaignState.currentAttempt = {
             url: targetUrl,
@@ -8033,6 +8070,9 @@ async function orchestrateSending(urlInput, template, abortSignal = null) {
         campaignOwnedTabIds.add(tabId);
     }
     campaignState.currentTabId = tabId;
+    if (executionContext) {
+        executionContext.tabId = tabId;
+    }
 
     // [R6.9G.10.3.5 A.1] Update canonical execution identity with canonical tabId
     if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
@@ -8409,10 +8449,16 @@ async function orchestrateSending(urlInput, template, abortSignal = null) {
         if (res && res.success) {
             const holdMs = res?.metadata?.manualMode ? 20 : Math.max(3500, campaignState.submitDelayMs ? parseInt(campaignState.submitDelayMs) : 3500);
             logBg(tabId, `✨ [Engine] Submission confirmed. Maintaining tab for completion (${holdMs}ms)...`, "success");
-            await new Promise(r => setTimeout(r, holdMs));
+            const holdStart = Date.now();
+            while (Date.now() - holdStart < holdMs && !campaignState.isPaused && !(abortSignal && abortSignal.aborted)) {
+                await new Promise(r => setTimeout(r, 50));
+            }
         } else if (res?.error !== 'ABORTED' && res?.reasonCode !== 'ABORTED' && !campaignState.isPaused) {
             const failWaitMs = res?.metadata?.manualMode ? 20 : 1000;
-            await new Promise(r => setTimeout(r, failWaitMs));
+            const failStart = Date.now();
+            while (Date.now() - failStart < failWaitMs && !campaignState.isPaused && !(abortSignal && abortSignal.aborted)) {
+                await new Promise(r => setTimeout(r, 50));
+            }
         }
 
         if (discoveryCtx) {

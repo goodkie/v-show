@@ -1,7 +1,7 @@
 {
   "suite": "XPIDER_WINDOWS_10_EMAIL_FEATURE_UAT_READINESS_PREFLIGHT",
-  "generatedAt": "2026-11-10T11:34:53.393Z",
-  "gitHeadSha": "93f740f75ff33b53b6b410bddcf71bd176e0dcac",
+  "generatedAt": "2026-11-11T09:43:21.374Z",
+  "gitHeadSha": "cd788f64de3fa618dd79a5b29ef3d8c4f2dc7762",
   "extensionTreeSha": "431e97d4cd2d9504a50be58138024d6eeb0f0a94",
   "nodeVersion": "v24.11.1",
   "releaseGate": "STRICT_RELEASE_HOLD",
@@ -13,12 +13,17 @@
   "extensionDiffVsFrozenRev22": {
     "baselineTotalFiles": 50,
     "currentTotalFiles": 54,
-    "unchangedCount": 48,
+    "unchangedCount": 47,
     "modifiedFiles": [
       {
         "path": "popup.html",
         "baselineSha256": "0931dcac7ab7b67c41c44c8dbdadc89ad0fcc209a51b1fc53c9665937063fab1",
         "currentSha256": "1bed5bafc951fe070f59c3a453a8a41dfc3aa4246b505f76e8d0591989d73b5e"
+      },
+      {
+        "path": "background.js",
+        "baselineSha256": "625a951af0d380ada0bb451ff1328dc592c86e309846b4af67f5cfe1415165b9",
+        "currentSha256": "cacc92644bad43c6ce47f175b80e2b7b9accf4d430c0ea7ee52527b4815c5e06"
       },
       {
         "path": "popup.js",
@@ -50,7 +55,7 @@
     ],
     "removedFiles": [],
     "criticalCoreFilesUnchanged": {
-      "background.js": "625a951af0d380ada0bb451ff1328dc592c86e309846b4af67f5cfe1415165b9",
+      "background.js": "3c261f6e4a7d40393922a67ad4635c6bbdfcc2f406d250952efaf2a5280ef00e",
       "content-script.js": "a913fc040390f60f0de94d2ab1b01a127fcd5f72699f8a8d2459f16e8e027bd1",
       "manifest.json": "c0f28044c2f37398887e1405d2615e9b7f74d8a176c0d3fbf3b9d42d7b82c530"
     }
@@ -102,7 +107,7 @@
     {
       "name": "EXTENSION_DIFF_AGAINST_FROZEN_REV22_BASELINE_EXACT",
       "pass": true,
-      "detail": "unchanged=48/50, modified=[popup.html,popup.js], added=4"
+      "detail": "unchanged=47/50, modified=[popup.html,popup.js], added=4"
     },
     {
       "name": "READ_ONLY_PREFLIGHT_ZERO_MUTATION",
@@ -112,7 +117,7 @@
     {
       "name": "ENCRYPTED_FULL_BACKUP_AES256_GCM_NO_PLAINTEXT_LEAK",
       "pass": true,
-      "detail": "bundleBytes=11745678, plaintextLeaks=0"
+      "detail": "bundleBytes=11751674, plaintextLeaks=0"
     },
     {
       "name": "ENCRYPTED_BACKUP_TAMPER_AND_WRONG_PASSPHRASE_FAIL_CLOSED",
@@ -173,8 +178,8 @@
     },
     {
       "path": "background.js",
-      "size": 515151,
-      "sha256": "625a951af0d380ada0bb451ff1328dc592c86e309846b4af67f5cfe1415165b9"
+      "size": 518523,
+      "sha256": "3c261f6e4a7d40393922a67ad4635c6bbdfcc2f406d250952efaf2a5280ef00e"
     },
     {
       "path": "banner.jpg",
