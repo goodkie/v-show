@@ -4278,7 +4278,12 @@ const _handleMainMessageInner = (request, sender, sendResponse) => {
                 if (request.formIdentity) campaignState.currentFormIdentity = request.formIdentity;
                 if (request.fieldMapping) campaignState.currentFieldMapping = request.fieldMapping;
                 if (request.filledFields) campaignState.currentFilledFields = request.filledFields;
-                if (request.submitState) campaignState.currentSubmitState = request.submitState;
+                if (request.submitState) {
+                    campaignState.currentSubmitState = request.submitState;
+                    if (campaignState.activeExecutionContext) {
+                        campaignState.activeExecutionContext.currentSubmitState = request.submitState;
+                    }
+                }
 
                 if (request.stage) {
                     campaignState.stageStallCount = 0;
@@ -4339,6 +4344,10 @@ const _handleMainMessageInner = (request, sender, sendResponse) => {
                         if (campaignState.currentAttempt) {
                             campaignState.currentAttempt.status = 'SUBMIT_PENDING';
                             campaignState.submitLock = true;
+                            if (campaignState.activeExecutionContext) {
+                                campaignState.activeExecutionContext.submitLock = true;
+                                campaignState.activeExecutionContext.currentSubmitState = 'TRIGGERED';
+                            }
                             try {
                                 await recordSubmissionIntent(campaignState.currentAttempt.url, 'SUBMIT_PENDING', campaignState.currentAttempt.attemptId);
                                 await chrome.storage.local.set({ xpider_currentAttempt: campaignState.currentAttempt });
@@ -6809,6 +6818,71 @@ async function waitForTargetSlot(sessionId, leaseToken) {
     return acquireTargetSlot(sessionId, campaignState.schedulerGeneration);
 }
 
+// [Directive #6795450757 Residual Race Guard] Serialized Exec Identity Ownership Fence
+let execIdentityMutationChain = Promise.resolve();
+function mutateExecIdentity(fn) {
+    execIdentityMutationChain = execIdentityMutationChain.then(async () => {
+        try {
+            await fn();
+        } catch (e) {
+            console.error('[MUTATE_EXEC_IDENTITY_ERROR]', e);
+        }
+    });
+    return execIdentityMutationChain;
+}
+
+function setExecIdentityOwned(execIdentity) {
+    if (execIdentity && execIdentity.attemptId) {
+        campaignState.activeExecIdentityAttemptId = execIdentity.attemptId;
+    }
+    return mutateExecIdentity(async () => {
+        if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+            await new Promise((resolve) => {
+                chrome.storage.local.set({
+                    xpider_exec_identity: execIdentity,
+                    xpider_currentAttempt: campaignState.currentAttempt
+                }, () => resolve());
+            });
+        }
+    });
+}
+
+function updateExecIdentityTabIdOwned(tabId, attemptId) {
+    return mutateExecIdentity(async () => {
+        if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+            const data = await new Promise(r => chrome.storage.local.get(['xpider_exec_identity'], r));
+            const curIdent = data && data.xpider_exec_identity ? data.xpider_exec_identity : {};
+            if (!attemptId || curIdent.attemptId === attemptId) {
+                await new Promise(r => chrome.storage.local.set({
+                    xpider_exec_identity: {
+                        ...curIdent,
+                        tabId: tabId
+                    }
+                }, r));
+            }
+        }
+    });
+}
+
+function clearExecIdentityIfOwned(attemptId) {
+    if (!attemptId) return Promise.resolve();
+    return mutateExecIdentity(async () => {
+        // Ownership fence: if another attempt already took ownership, do not clear
+        if (campaignState.activeExecIdentityAttemptId && campaignState.activeExecIdentityAttemptId !== attemptId) {
+            return;
+        }
+        if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+            const data = await new Promise(r => chrome.storage.local.get(['xpider_exec_identity'], r));
+            if (data && data.xpider_exec_identity && data.xpider_exec_identity.attemptId === attemptId) {
+                if (!campaignState.activeExecIdentityAttemptId || campaignState.activeExecIdentityAttemptId === attemptId) {
+                    campaignState.activeExecIdentityAttemptId = null;
+                    await new Promise(r => chrome.storage.local.set({ xpider_exec_identity: null }, r));
+                }
+            }
+        }
+    });
+}
+
 async function processNextCampaignTarget(loopSessionId, loopGeneration) {
     // [R6.9G.7 P0-1] Generation Guard: stale wakeups no-op
     if (loopGeneration !== undefined && loopGeneration !== campaignState.schedulerGeneration) {
@@ -7089,8 +7163,11 @@ async function processNextCampaignTarget(loopSessionId, loopGeneration) {
                 targetIndex: targetIdx,
                 attemptId: null,
                 targetToken: null,
-                tabId: null
+                tabId: null,
+                submitLock: false,
+                currentSubmitState: 'NOT_SUBMITTED'
             };
+            campaignState.activeExecutionContext = targetExecutionContext;
 
             orchestrationSettled = false;
             const orchestrationPromise = (async () => {
@@ -7209,13 +7286,14 @@ async function processNextCampaignTarget(loopSessionId, loopGeneration) {
                     await new Promise(r => setTimeout(r, 50));
                 }
 
-                if (targetExecutionContext.tabId && campaignState.currentTabId === targetExecutionContext.tabId) {
-                    campaignState.currentTabId = null;
+                // [Directive #6795450757 Risk 1 Resolution] Ownership-identity-based tab close ONLY.
+                // If targetExecutionContext did not register a tabId, NEVER close campaignState.currentTabId,
+                // as it may belong to a newly resumed invocation.
+                if (targetExecutionContext.tabId) {
+                    if (campaignState.currentTabId === targetExecutionContext.tabId) {
+                        campaignState.currentTabId = null;
+                    }
                     await closeOwnedTabVerified(targetExecutionContext.tabId, 'TARGET_FINALLY_CLEANUP');
-                } else if (campaignState.currentTabId && !targetExecutionContext.tabId) {
-                    const orphanId = campaignState.currentTabId;
-                    campaignState.currentTabId = null;
-                    await closeOwnedTabVerified(orphanId, 'TARGET_FINALLY_CLEANUP');
                 }
 
                 try {
@@ -7225,7 +7303,8 @@ async function processNextCampaignTarget(loopSessionId, loopGeneration) {
                     if (!campaignState.isPaused && hs && boundAttId) {
                         const att = hs.attempts.find(a => a.attemptId === boundAttId);
                         if (att && att.status === 'PREPARING') {
-                            const isSubmitDone = campaignState.submitLock || campaignState.currentSubmitState === 'TRIGGERED';
+                            // [Directive #6795450757 Risk 4 Resolution] Scoped submit check: strictly inspect targetExecutionContext
+                            const isSubmitDone = Boolean(targetExecutionContext.submitLock || targetExecutionContext.currentSubmitState === 'TRIGGERED' || targetExecutionContext.currentSubmitState === 'SUBMIT_TRIGGERED');
                             const terminalSt = isSubmitDone ? 'DELIVERY_UNKNOWN' : 'SKIPPED';
                             const termReason = isSubmitDone ? REASON_CODES.DELIVERY_UNKNOWN : 'PRE_SUBMIT_TERMINATED';
                             await hs.settleCanonicalAttempt(att.attemptId, terminalSt, termReason, {}, {
@@ -7252,13 +7331,14 @@ async function processNextCampaignTarget(loopSessionId, loopGeneration) {
                 if (targetExecutionContext.tabId && campaignState.currentTabId === targetExecutionContext.tabId) {
                     campaignState.currentTabId = null;
                 }
-                campaignState.timeoutWatchdogGen = (campaignState.timeoutWatchdogGen || 0) + 1;
-                if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
-                    chrome.storage.local.get(['xpider_exec_identity'], (data) => {
-                        if (data && data.xpider_exec_identity && data.xpider_exec_identity.attemptId === targetExecutionContext.attemptId) {
-                            chrome.storage.local.set({ xpider_exec_identity: null }).catch(() => {});
-                        }
-                    });
+                // [Directive #6795450757 Risk 2 Resolution] Scope watchdog generation invalidation to this execution.
+                // Only increment if this execution is still the active attempt.
+                if (targetExecutionContext.attemptId && campaignState.currentAttempt && campaignState.currentAttempt.attemptId === targetExecutionContext.attemptId) {
+                    campaignState.timeoutWatchdogGen = (campaignState.timeoutWatchdogGen || 0) + 1;
+                }
+                // [Directive #6795450757 Risk 3 Resolution] Serialized ownership fence for exec_identity clear
+                if (targetExecutionContext.attemptId) {
+                    clearExecIdentityIfOwned(targetExecutionContext.attemptId).catch(() => {});
                 }
 
                 if (!orchestrationSettled) {
@@ -7969,15 +8049,7 @@ async function orchestrateSending(urlInput, template, abortSignal = null, execut
             ts: Date.now()
         };
         if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
-            await new Promise((resolve, reject) => {
-                chrome.storage.local.set({
-                    xpider_exec_identity: execIdentity,
-                    xpider_currentAttempt: campaignState.currentAttempt
-                }, () => {
-                    if (chrome.runtime && chrome.runtime.lastError) return reject(chrome.runtime.lastError);
-                    resolve();
-                });
-            });
+            await setExecIdentityOwned(execIdentity);
         }
         logBg(null, `[EXEC_IDENTITY_PRE_NAV] attemptId=${_attemptId} token=${targetToken} epoch=${execIdentity.captchaEpoch}`, 'info');
     } catch (hsErr) {
@@ -8076,15 +8148,7 @@ async function orchestrateSending(urlInput, template, abortSignal = null, execut
 
     // [R6.9G.10.3.5 A.1] Update canonical execution identity with canonical tabId
     if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
-        chrome.storage.local.get(['xpider_exec_identity'], res => {
-            const curIdent = res && res.xpider_exec_identity ? res.xpider_exec_identity : {};
-            chrome.storage.local.set({
-                xpider_exec_identity: {
-                    ...curIdent,
-                    tabId: tabId
-                }
-            }).catch(() => {});
-        });
+        updateExecIdentityTabIdOwned(tabId, _attemptId).catch(() => {});
     }
 
     // [Issue #6 R6.9B Section 3] POST-CREATE CONFIRM KILL

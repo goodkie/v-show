@@ -1,8 +1,8 @@
 {
   "gateName": "XPIDER_EMAIL_BROWSER_RUNTIME_GATE",
-  "generatedAt": "2026-11-11T09:45:05.349Z",
-  "gitHeadSha": "cd788f64de3fa618dd79a5b29ef3d8c4f2dc7762",
-  "extensionTreeSha": "431e97d4cd2d9504a50be58138024d6eeb0f0a94",
+  "generatedAt": "2026-11-11T14:18:11.931Z",
+  "gitHeadSha": "1e7572e0e296570a7db70a920e744ae7de304242",
+  "extensionTreeSha": "6f77321c6f87abf0ccfd5f9a4b971a977d1fc517",
   "nodeVersion": "v24.11.1",
   "browserExe": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
   "browserVersion": "Edg/157.0.4341.42",
@@ -51,7 +51,7 @@
     {
       "name": "DISPOSABLE_PROFILE_ENFORCED_NO_OWNER_PROFILE",
       "pass": true,
-      "detail": "Edg/157.0.4341.42 | profile=C:\\Users\\oPus\\AppData\\Local\\Temp\\xpider_email_studio_LCNysD"
+      "detail": "Edg/157.0.4341.42 | profile=C:\\Users\\oPus\\AppData\\Local\\Temp\\xpider_email_studio_RAb6BO"
     },
     {
       "name": "STUDIO_REMOTE_IMAGE_HITS_BEFORE_OPTIN_ZERO",
@@ -118,7 +118,7 @@
     {
       "relativePath": "email_studio_run.log",
       "sizeBytes": 3783,
-      "sha256": "08803c874f3935a569567570047ec5e4a070e97a05c127fec6d17869778049c4"
+      "sha256": "10668c77713eeab1e031236d2375375e6c08ef5deead475aaa518d840087a6d0"
     },
     {
       "relativePath": "email_studio/popup_with_email_studio_link.png",
@@ -128,7 +128,7 @@
     {
       "relativePath": "email_studio/report_email_studio_chrome_runtime.json",
       "sizeBytes": 11050,
-      "sha256": "c1d461db6f587769a31069cda721e1eeeb8d83832b4ec0535e2629e3e7732450"
+      "sha256": "85d9e34fd646f5e2c38928fb59b13cf012cf44a886824ad92548e333819be12f"
     },
     {
       "relativePath": "email_studio/studio_initial.png",
@@ -188,7 +188,7 @@
     {
       "relativePath": "popup_paused/report_popup_paused_runtime.json",
       "sizeBytes": 6281,
-      "sha256": "ef11ccd145a6166e4cadcabe63e7b99d3343c206f73bfe824ccbc9279f0742d1"
+      "sha256": "2186bb10a166a8b350ae8547e6f914051432a178d5318d47c11169f3fa49c7a2"
     }
   ]
 }

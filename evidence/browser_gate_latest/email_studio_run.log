@@ -1,4 +1,4 @@
-PASS BROWSER_STARTED :: Edg/157.0.4341.42 | profile=C:\Users\oPus\AppData\Local\Temp\xpider_email_studio_LCNysD
+PASS BROWSER_STARTED :: Edg/157.0.4341.42 | profile=C:\Users\oPus\AppData\Local\Temp\xpider_email_studio_RAb6BO
 PASS EXTENSION_LOADED_UNPACKED :: id=ldlijlaccfeelfdhgnjbibniocefckjj via CDP Extensions.loadUnpacked (ignored pre-existing id jdiccldimpdaibmpdkjnbmckianbfold)
 DIAG popup {"u":"chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/popup.html","t":"XPIDER AutoForm Sender Pro","b":141096,"rs":"complete","txt":"● PRIVATE OWNER BETA — DEBUG TELEMETRY ENABLED\n✉️ Email Studio\n⚠️ Reset Lists\n⚙️\nSettings\nXPIDER AutoForm Sender Pro\nSENDER PRO\nV1.2.0\nOWNER BETA V7.0.0-RC11 [2"}
 PASS POPUP_HAS_EMAIL_STUDIO_LINK :: {"href":"email-studio/index.html","target":"_blank","rel":"noopener noreferrer","text":"✉️ Email Studio"}
