@@ -1,8 +1,8 @@
 {
   "suite": "XPIDER_WINDOWS_10_EMAIL_FEATURE_UAT_READINESS_PREFLIGHT",
-  "generatedAt": "2026-11-11T14:16:44.597Z",
-  "gitHeadSha": "1e7572e0e296570a7db70a920e744ae7de304242",
-  "extensionTreeSha": "6f77321c6f87abf0ccfd5f9a4b971a977d1fc517",
+  "generatedAt": "2026-11-12T03:44:17.617Z",
+  "gitHeadSha": "3655ccee7e99d3cf3a6995ee8c900fb526db99e6",
+  "extensionTreeSha": "35b76b3de10bd38334f40ef7a5de162f00e32871",
   "nodeVersion": "v24.11.1",
   "releaseGate": "STRICT_RELEASE_HOLD",
   "liveEmailsSent": 0,
@@ -23,7 +23,7 @@
       {
         "path": "background.js",
         "baselineSha256": "625a951af0d380ada0bb451ff1328dc592c86e309846b4af67f5cfe1415165b9",
-        "currentSha256": "0d3a4d6e6e4072267902fb8435e05ae2c049a33c5a7a14cb9b852bf158b5acad"
+        "currentSha256": "02f804b90778efe8849af239cd3bcee1ee5e1fd025a05511e9b1c687dda2078a"
       },
       {
         "path": "popup.js",
@@ -55,7 +55,7 @@
     ],
     "removedFiles": [],
     "criticalCoreFilesUnchanged": {
-      "background.js": "1170e5a68edca0e6258fde64530ed73c7883b1699aec1af60d20e03313732605",
+      "background.js": "369a734e67fc565e53e457c0e793f3339c42a6d3f294d0a393beb1a5838754d7",
       "content-script.js": "a913fc040390f60f0de94d2ab1b01a127fcd5f72699f8a8d2459f16e8e027bd1",
       "manifest.json": "c0f28044c2f37398887e1405d2615e9b7f74d8a176c0d3fbf3b9d42d7b82c530"
     }
@@ -102,7 +102,7 @@
     {
       "name": "EXTENSION_HASH_INVENTORY_COMPLETE",
       "pass": true,
-      "detail": "files=54, treeSha=6f77321c6f87abf0ccfd5f9a4b971a977d1fc517"
+      "detail": "files=54, treeSha=35b76b3de10bd38334f40ef7a5de162f00e32871"
     },
     {
       "name": "EXTENSION_DIFF_AGAINST_FROZEN_REV22_BASELINE_EXACT",
@@ -117,7 +117,7 @@
     {
       "name": "ENCRYPTED_FULL_BACKUP_AES256_GCM_NO_PLAINTEXT_LEAK",
       "pass": true,
-      "detail": "bundleBytes=11757530, plaintextLeaks=0"
+      "detail": "bundleBytes=11760754, plaintextLeaks=0"
     },
     {
       "name": "ENCRYPTED_BACKUP_TAMPER_AND_WRONG_PASSPHRASE_FAIL_CLOSED",
@@ -178,8 +178,8 @@
     },
     {
       "path": "background.js",
-      "size": 521817,
-      "sha256": "1170e5a68edca0e6258fde64530ed73c7883b1699aec1af60d20e03313732605"
+      "size": 523630,
+      "sha256": "369a734e67fc565e53e457c0e793f3339c42a6d3f294d0a393beb1a5838754d7"
     },
     {
       "path": "banner.jpg",

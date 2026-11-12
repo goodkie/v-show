@@ -1,6 +1,6 @@
-PASS BROWSER_STARTED :: Edg/157.0.4341.42 | profile=C:\Users\oPus\AppData\Local\Temp\xpider_email_studio_RAb6BO
+PASS BROWSER_STARTED :: Edg/157.0.4341.46 | profile=C:\Users\oPus\AppData\Local\Temp\xpider_email_studio_M1vdBE
 PASS EXTENSION_LOADED_UNPACKED :: id=ldlijlaccfeelfdhgnjbibniocefckjj via CDP Extensions.loadUnpacked (ignored pre-existing id jdiccldimpdaibmpdkjnbmckianbfold)
-DIAG popup {"u":"chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/popup.html","t":"XPIDER AutoForm Sender Pro","b":141096,"rs":"complete","txt":"● PRIVATE OWNER BETA — DEBUG TELEMETRY ENABLED\n✉️ Email Studio\n⚠️ Reset Lists\n⚙️\nSettings\nXPIDER AutoForm Sender Pro\nSENDER PRO\nV1.2.0\nOWNER BETA V7.0.0-RC11 [2"}
+DIAG popup {"u":"chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/popup.html","t":"XPIDER AutoForm Sender Pro","b":141101,"rs":"complete","txt":"● PRIVATE OWNER BETA — DEBUG TELEMETRY ENABLED\n✉️ Email Studio\n⚠️ Reset Lists\n⚙️\nSettings\nXPIDER AutoForm Sender Pro\nSENDER PRO\nV1.2.0\nOWNER BETA V7.0.0-RC11 [2"}
 PASS POPUP_HAS_EMAIL_STUDIO_LINK :: {"href":"email-studio/index.html","target":"_blank","rel":"noopener noreferrer","text":"✉️ Email Studio"}
 PASS POPUP_EXISTING_NAV_ITEMS_PRESENT :: ["email-template-studio-link","reset-all-lists-btn","settings-toggle","campaign","template","history","email-collector"]
 PASS POPUP_CONSOLE_ERRORS_RECORDED :: 1 error/exception entries (info only: [{"page":"chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/popup.html","type":"log:error","text":"Unchecked runtime.lastError: Could not establish connection. Receiving end does not exist. chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/popup.html"}])

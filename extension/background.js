@@ -6818,17 +6818,14 @@ async function waitForTargetSlot(sessionId, leaseToken) {
     return acquireTargetSlot(sessionId, campaignState.schedulerGeneration);
 }
 
-// [Directive #6795450757 Residual Race Guard] Serialized Exec Identity Ownership Fence
+// [Directive #6795450757 & #6813627627 Residual Race Guard] Serialized Exec Identity Ownership Fence with Fail-Closed Errors
 let execIdentityMutationChain = Promise.resolve();
 function mutateExecIdentity(fn) {
-    execIdentityMutationChain = execIdentityMutationChain.then(async () => {
-        try {
-            await fn();
-        } catch (e) {
-            console.error('[MUTATE_EXEC_IDENTITY_ERROR]', e);
-        }
+    const nextPromise = execIdentityMutationChain.then(fn);
+    execIdentityMutationChain = nextPromise.catch((err) => {
+        console.error('[MUTATE_EXEC_IDENTITY_ERROR]', err?.message || err);
     });
-    return execIdentityMutationChain;
+    return nextPromise;
 }
 
 function setExecIdentityOwned(execIdentity) {
@@ -6837,11 +6834,16 @@ function setExecIdentityOwned(execIdentity) {
     }
     return mutateExecIdentity(async () => {
         if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
-            await new Promise((resolve) => {
+            await new Promise((resolve, reject) => {
                 chrome.storage.local.set({
                     xpider_exec_identity: execIdentity,
                     xpider_currentAttempt: campaignState.currentAttempt
-                }, () => resolve());
+                }, () => {
+                    if (chrome.runtime && chrome.runtime.lastError) {
+                        return reject(new Error(chrome.runtime.lastError.message || 'chrome.storage.local.set failed'));
+                    }
+                    resolve();
+                });
             });
         }
     });
@@ -6849,16 +6851,26 @@ function setExecIdentityOwned(execIdentity) {
 
 function updateExecIdentityTabIdOwned(tabId, attemptId) {
     return mutateExecIdentity(async () => {
+        if (campaignState.activeExecIdentityAttemptId && attemptId && campaignState.activeExecIdentityAttemptId !== attemptId) {
+            return;
+        }
         if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
             const data = await new Promise(r => chrome.storage.local.get(['xpider_exec_identity'], r));
             const curIdent = data && data.xpider_exec_identity ? data.xpider_exec_identity : {};
             if (!attemptId || curIdent.attemptId === attemptId) {
-                await new Promise(r => chrome.storage.local.set({
-                    xpider_exec_identity: {
-                        ...curIdent,
-                        tabId: tabId
-                    }
-                }, r));
+                await new Promise((resolve, reject) => {
+                    chrome.storage.local.set({
+                        xpider_exec_identity: {
+                            ...curIdent,
+                            tabId: tabId
+                        }
+                    }, () => {
+                        if (chrome.runtime && chrome.runtime.lastError) {
+                            return reject(new Error(chrome.runtime.lastError.message || 'chrome.storage.local.set tabId failed'));
+                        }
+                        resolve();
+                    });
+                });
             }
         }
     });
@@ -6876,7 +6888,14 @@ function clearExecIdentityIfOwned(attemptId) {
             if (data && data.xpider_exec_identity && data.xpider_exec_identity.attemptId === attemptId) {
                 if (!campaignState.activeExecIdentityAttemptId || campaignState.activeExecIdentityAttemptId === attemptId) {
                     campaignState.activeExecIdentityAttemptId = null;
-                    await new Promise(r => chrome.storage.local.set({ xpider_exec_identity: null }, r));
+                    await new Promise((resolve, reject) => {
+                        chrome.storage.local.set({ xpider_exec_identity: null }, () => {
+                            if (chrome.runtime && chrome.runtime.lastError) {
+                                return reject(new Error(chrome.runtime.lastError.message || 'chrome.storage.local.set clear failed'));
+                            }
+                            resolve();
+                        });
+                    });
                 }
             }
         }
@@ -7323,7 +7342,14 @@ async function processNextCampaignTarget(loopSessionId, loopGeneration) {
                 if (targetExecutionContext.targetToken && campaignState.currentTargetToken === targetExecutionContext.targetToken) {
                     campaignState.currentTargetToken = null;
                 }
-                if (targetExecutionContext.attemptId && campaignState.currentAttempt && campaignState.currentAttempt.attemptId === targetExecutionContext.attemptId) {
+                // [Directive #6813627627 Item 1 Fix] Latch active attempt ownership BEFORE nulling currentAttempt
+                const wasOwnedActiveAttempt = Boolean(
+                    targetExecutionContext.attemptId &&
+                    campaignState.currentAttempt &&
+                    campaignState.currentAttempt.attemptId === targetExecutionContext.attemptId
+                );
+
+                if (wasOwnedActiveAttempt) {
                     campaignState.currentAttempt = null;
                     campaignState.currentTargetStage = null;
                     campaignState.submitLock = false;
@@ -7331,12 +7357,13 @@ async function processNextCampaignTarget(loopSessionId, loopGeneration) {
                 if (targetExecutionContext.tabId && campaignState.currentTabId === targetExecutionContext.tabId) {
                     campaignState.currentTabId = null;
                 }
-                // [Directive #6795450757 Risk 2 Resolution] Scope watchdog generation invalidation to this execution.
-                // Only increment if this execution is still the active attempt.
-                if (targetExecutionContext.attemptId && campaignState.currentAttempt && campaignState.currentAttempt.attemptId === targetExecutionContext.attemptId) {
+                // Watchdog generation invalidation fenced on wasOwnedActiveAttempt:
+                // Only invalidates watchdog if this execution was the owned active attempt.
+                // A stale finalize will never invalidate a newer attempt's watchdog.
+                if (wasOwnedActiveAttempt) {
                     campaignState.timeoutWatchdogGen = (campaignState.timeoutWatchdogGen || 0) + 1;
                 }
-                // [Directive #6795450757 Risk 3 Resolution] Serialized ownership fence for exec_identity clear
+                // [Directive #6795450757 & #6813627627 Item 2/3 Fix] Serialized ownership fence for exec_identity clear
                 if (targetExecutionContext.attemptId) {
                     clearExecIdentityIfOwned(targetExecutionContext.attemptId).catch(() => {});
                 }
@@ -9091,9 +9118,13 @@ async function restoreCampaignState() {
                 'xpider_paused_checkpoint', 'xpider_isPaused', 'xpider_active_campaign_run_id',
                 'xpider_owner_function_test_mode', 'xpider_owner_function_test_mode_active',
                 'xpider_v7_active_hold_state', 'xpider_campaign_mode', 'xpider_run_scoped_direct_privacy',
-                'xpider_include_forms_without_message'
+                'xpider_include_forms_without_message', 'xpider_exec_identity'
             ], async (data) => {
                 try {
+                    // [Directive #6813627627 Item 2/3 Fix] Rehydrate durable execution identity ownership across SW restart
+                    if (data && data.xpider_exec_identity && data.xpider_exec_identity.attemptId) {
+                        campaignState.activeExecIdentityAttemptId = data.xpider_exec_identity.attemptId;
+                    }
                     if (campaignState.isActive) {
                         logBg(null, "[Boot] Campaign active in runtime; bypassing storage state clobber.", "info");
                         markBoot("restore_complete");
