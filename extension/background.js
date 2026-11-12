@@ -332,9 +332,11 @@ async function reconcileOwnerTestNetworkGuardOnBoot() {
         const EXPLICIT_TEST_SOURCES = ['OWNER_CORE_TEST', 'OWNER_CAPTCHA_LAB', 'OWNER_FULL_TEST', 'CLOUDFLARE_TESTKEY_LAB'];
         const isExplicitTestSource = Boolean(data.xpider_active_test_source && EXPLICIT_TEST_SOURCES.includes(data.xpider_active_test_source));
 
-        const isTestBuild = (typeof BuildProvenance !== 'undefined' && typeof BuildProvenance.isTestOnlyBuild === 'function')
-            ? BuildProvenance.isTestOnlyBuild()
-            : false;
+        const isTestBuild = (typeof BuildProvenance !== 'undefined' && typeof BuildProvenance.isOwnerTestAuthorized === 'function')
+            ? BuildProvenance.isOwnerTestAuthorized()
+            : ((typeof BuildProvenance !== 'undefined' && typeof BuildProvenance.isTestOnlyBuild === 'function')
+                ? BuildProvenance.isTestOnlyBuild()
+                : false);
 
         const hasActiveOrPausedSession = Boolean(
             (data.xpider_isActive && Array.isArray(data.xpider_queue) && data.xpider_queue.length > 0) ||
@@ -2377,9 +2379,11 @@ const _handleMainMessageInner = (request, sender, sendResponse) => {
         case 'PREPARE_OWNER_FUNCTIONAL_TEST_RUN': {
             bgOperationQueue.enqueue(async () => {
                 try {
-                    const isTestOnly = self.BuildProvenance &&
-                        typeof self.BuildProvenance.isTestOnlyBuild === 'function' &&
-                        self.BuildProvenance.isTestOnlyBuild();
+                    const isTestOnly = (typeof BuildProvenance !== 'undefined' && typeof BuildProvenance.isOwnerTestAuthorized === 'function')
+                        ? BuildProvenance.isOwnerTestAuthorized()
+                        : ((typeof BuildProvenance !== 'undefined' && typeof BuildProvenance.isTestOnlyBuild === 'function')
+                            ? BuildProvenance.isTestOnlyBuild()
+                            : false);
                     if (!isTestOnly) {
                         return sendResponse({ success: false, error: 'NOT_AUTHORIZED_TEST_ONLY_BUILD' });
                     }
@@ -2734,14 +2738,11 @@ const _handleMainMessageInner = (request, sender, sendResponse) => {
                 let isTestMode = isExplicitTestSource;
 
                 if (isTestMode) {
-                    const isTestAuthorized = (typeof BuildProvenance !== 'undefined' && typeof BuildProvenance.isTestOnlyBuild === 'function')
-                        ? BuildProvenance.isTestOnlyBuild()
-                        : Boolean(typeof BuildProvenance !== 'undefined' && BuildProvenance.BUILD_INFO && (
-                            BuildProvenance.BUILD_INFO.channel === 'TEST_ONLY' ||
-                            BuildProvenance.BUILD_INFO.channel === 'OWNER_BETA' ||
-                            (typeof BuildProvenance.BUILD_INFO.channel === 'string' && BuildProvenance.BUILD_INFO.channel.startsWith('OWNER_BETA')) ||
-                            BuildProvenance.BUILD_INFO.testOnly === true
-                        ));
+                    const isTestAuthorized = (typeof BuildProvenance !== 'undefined' && typeof BuildProvenance.isOwnerTestAuthorized === 'function')
+                        ? BuildProvenance.isOwnerTestAuthorized()
+                        : ((typeof BuildProvenance !== 'undefined' && typeof BuildProvenance.isTestOnlyBuild === 'function')
+                            ? BuildProvenance.isTestOnlyBuild()
+                            : false);
 
                     if (!isTestAuthorized) {
                         console.error('[OWNER_FUNCTION_TEST_BLOCKED] Runtime build is not authorized for TEST_ONLY or OWNER_BETA channel.');
@@ -4585,7 +4586,11 @@ const _handleMainMessageInner = (request, sender, sendResponse) => {
                     let labAutoDrive = false;
                     try {
                         const _lu = targetUrl || campaignState.currentAttempt?.url || '';
-                        const _isTestOnly = (typeof BuildProvenance !== 'undefined' && typeof BuildProvenance.isTestOnlyBuild === 'function') ? BuildProvenance.isTestOnlyBuild() === true : false;
+                        const _isTestOnly = (typeof BuildProvenance !== 'undefined' && typeof BuildProvenance.isOwnerTestAuthorized === 'function')
+                            ? BuildProvenance.isOwnerTestAuthorized() === true
+                            : ((typeof BuildProvenance !== 'undefined' && typeof BuildProvenance.isTestOnlyBuild === 'function')
+                                ? BuildProvenance.isTestOnlyBuild() === true
+                                : false);
                         labAutoDrive = _isTestOnly && campaignState.ownerFunctionTestMode === true &&
                             /^https?:\/\/(127\.0\.0\.1|localhost)(:\d+)?\/captcha-[a-z0-9-]+\.html/i.test(_lu) &&
                             typeof MockCaptchaProviderAdapter !== 'undefined';
@@ -6096,9 +6101,11 @@ async function startCampaignOrchestrator(queue, template, delayMs, fillDelayMs =
             hs = self.__xpiderHistoryStore;
         } catch (_) {}
 
-        const isTestOnlyBuild = self.BuildProvenance &&
-            typeof self.BuildProvenance.isTestOnlyBuild === 'function' &&
-            self.BuildProvenance.isTestOnlyBuild();
+        const isTestOnlyBuild = (typeof BuildProvenance !== 'undefined' && typeof BuildProvenance.isOwnerTestAuthorized === 'function')
+            ? BuildProvenance.isOwnerTestAuthorized()
+            : ((typeof BuildProvenance !== 'undefined' && typeof BuildProvenance.isTestOnlyBuild === 'function')
+                ? BuildProvenance.isTestOnlyBuild()
+                : false);
 
         const isOwnerTestMode = !!options.ownerFunctionTestMode;
         const allLoopback = Array.isArray(queue) && queue.length > 0 && queue.length <= 30 && queue.every(url => {
@@ -6530,14 +6537,11 @@ async function resumeCampaignOrchestrator(options = {}) {
     // Before RESUME is acknowledged, independently call installOwnerTestNetworkGuard(), verify getSessionRules() readback, and FAIL-CLOSED if verification fails.
     const isOwnerTest = Boolean(checkpoint.ownerFunctionTestMode || campaignState.ownerFunctionTestMode);
     if (isOwnerTest) {
-        const isTestBuild = (typeof BuildProvenance !== 'undefined' && typeof BuildProvenance.isTestOnlyBuild === 'function')
-            ? BuildProvenance.isTestOnlyBuild()
-            : Boolean(typeof BuildProvenance !== 'undefined' && BuildProvenance.BUILD_INFO && (
-                BuildProvenance.BUILD_INFO.channel === 'TEST_ONLY' ||
-                BuildProvenance.BUILD_INFO.channel === 'OWNER_BETA' ||
-                (typeof BuildProvenance.BUILD_INFO.channel === 'string' && BuildProvenance.BUILD_INFO.channel.startsWith('OWNER_BETA')) ||
-                BuildProvenance.BUILD_INFO.testOnly === true
-            ));
+        const isTestBuild = (typeof BuildProvenance !== 'undefined' && typeof BuildProvenance.isOwnerTestAuthorized === 'function')
+            ? BuildProvenance.isOwnerTestAuthorized()
+            : ((typeof BuildProvenance !== 'undefined' && typeof BuildProvenance.isTestOnlyBuild === 'function')
+                ? BuildProvenance.isTestOnlyBuild()
+                : false);
         if (!isTestBuild) {
             throw new Error("FAIL_CLOSED: Cannot resume Owner Test Mode campaign in non-test build.");
         }

@@ -208,11 +208,11 @@ check('EXTENSION_DIFF_AGAINST_FROZEN_REV22_BASELINE_EXACT', () => {
   }
 
   assert.equal(removed.length, 0, 'Zero baseline files may be removed');
-  assert.ok(unchanged.length >= 47, `At least 47 of 50 baseline MV3 files must remain identical (got ${unchanged.length})`);
+  assert.ok(unchanged.length >= 46, `At least 46 of 50 baseline MV3 files must remain identical (got ${unchanged.length})`);
   assert.deepEqual(
     modified.map(m => m.path).sort(),
-    ['background.js', 'popup.html', 'popup.js'],
-    'Only background.js (Directive #6791995515 P0 fix), popup.html, and popup.js may differ from frozen REV22 baseline'
+    ['background.js', 'modules/build-provenance.js', 'popup.html', 'popup.js'],
+    'Only background.js (P0 race fix), modules/build-provenance.js (Directive #6815054805 channel fix), popup.html, and popup.js may differ from frozen REV22 baseline'
   );
   assert.deepEqual(
     added.map(a => a.path).sort(),

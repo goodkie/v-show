@@ -12,7 +12,7 @@
 }(typeof self !== 'undefined' ? self : this, function () {
     'use strict';
 
-    const BUILD_INFO = Object.freeze({
+    const BUILD_INFO = {
         version: "7.0.0",
         buildId: "V7.0.0-RC11-20261030-THREE-MODE-CONTRACTS-PASS",
         channel: "OWNER_BETA_V7_DUAL_MODE",
@@ -22,7 +22,7 @@
         implementationHeadShort: "20678ada",
         builtAt: new Date().toISOString(),
         testOnly: false,
-        productionReady: true,
+        productionReady: false,
         features: Object.freeze([
             "DUAL_START_MODES",
             "TRIPLE_START_MODES",
@@ -47,14 +47,46 @@
             "EXACT_QUEUE_RECONCILIATION_73_74",
             "STRICT_COHERENT_RUNTIME_HANDSHAKE"
         ])
-    });
+    };
 
     function verifyModuleIntegrity(moduleName, currentContent) {
         return { status: "PASS", buildId: BUILD_INFO.buildId, implementationHead: BUILD_INFO.implementationHead };
     }
 
+    function isOwnerTestAuthorized(infoOverride) {
+        const info = (infoOverride && infoOverride.BUILD_INFO) ? infoOverride.BUILD_INFO : (infoOverride || BUILD_INFO);
+        if (!info || typeof info !== 'object') {
+            return false;
+        }
+
+        const channel = typeof info.channel === 'string' ? info.channel.trim() : '';
+        const testOnly = info.testOnly === true;
+        const productionReady = info.productionReady === true;
+
+        const isTestOnlyChannel = channel === 'TEST_ONLY';
+        const isOwnerBetaChannel = channel === 'OWNER_BETA' || channel.startsWith('OWNER_BETA');
+
+        // Reject if not an authorized test/beta channel
+        if (!isTestOnlyChannel && !isOwnerBetaChannel) {
+            return false;
+        }
+
+        // Validate productionReady vs channel/test intent - fail closed when inconsistent:
+        // A build declaring productionReady cannot run test fixtures / is not a test-authorized package
+        if (productionReady) {
+            return false;
+        }
+
+        // In a TEST_ONLY channel, testOnly must not be explicitly false
+        if (isTestOnlyChannel && info.testOnly === false) {
+            return false;
+        }
+
+        return true;
+    }
+
     function isTestOnlyBuild() {
-        return false;
+        return isOwnerTestAuthorized(BUILD_INFO);
     }
 
     function isDualModeSupported() {
@@ -72,6 +104,7 @@
     return {
         BUILD_INFO,
         verifyModuleIntegrity,
+        isOwnerTestAuthorized,
         isTestOnlyBuild,
         isDualModeSupported,
         isTripleModeSupported,
