@@ -1,8 +1,8 @@
 {
   "suite": "XPIDER_WINDOWS_10_EMAIL_FEATURE_UAT_READINESS_PREFLIGHT",
-  "generatedAt": "2026-11-10T11:34:53.393Z",
-  "gitHeadSha": "93f740f75ff33b53b6b410bddcf71bd176e0dcac",
-  "extensionTreeSha": "431e97d4cd2d9504a50be58138024d6eeb0f0a94",
+  "generatedAt": "2026-11-12T10:32:19.101Z",
+  "gitHeadSha": "d3e2211c41d9f29eb3ad582d95d30d064d28d0f6",
+  "extensionTreeSha": "dad2184d50d882cd6fd78a02a5d6bab62a4f5341",
   "nodeVersion": "v24.11.1",
   "releaseGate": "STRICT_RELEASE_HOLD",
   "liveEmailsSent": 0,
@@ -13,17 +13,27 @@
   "extensionDiffVsFrozenRev22": {
     "baselineTotalFiles": 50,
     "currentTotalFiles": 54,
-    "unchangedCount": 48,
+    "unchangedCount": 46,
     "modifiedFiles": [
+      {
+        "path": "modules/build-provenance.js",
+        "baselineSha256": "7f58b04b1a5bc60c29eb47d6c2defdd8e7289d767a0be018cb7dfc4d8f9fc3ad",
+        "currentSha256": "762748cfe55529805094affb8ab2fcf2d7117be76c35c48a9bc582c0c1692fad"
+      },
       {
         "path": "popup.html",
         "baselineSha256": "0931dcac7ab7b67c41c44c8dbdadc89ad0fcc209a51b1fc53c9665937063fab1",
         "currentSha256": "1bed5bafc951fe070f59c3a453a8a41dfc3aa4246b505f76e8d0591989d73b5e"
       },
       {
+        "path": "background.js",
+        "baselineSha256": "625a951af0d380ada0bb451ff1328dc592c86e309846b4af67f5cfe1415165b9",
+        "currentSha256": "c396ad4dd0067529a2951860508ddd5c68ec9d0a1833a3b218fdca26d69b18a7"
+      },
+      {
         "path": "popup.js",
         "baselineSha256": "be3d5567b1221b1a87e4b46c9ad1e7feb54736d3f7f721dd0971f834d9bf7ec2",
-        "currentSha256": "89ee9ab37e64835cc80958fc293ae8459d7c2b5ce06ff0fb798200a386360b8b"
+        "currentSha256": "b6d71e1f8390e36871665cc56fcfab4904429c0b54e1826b8ffddb5883a5bb85"
       }
     ],
     "addedFiles": [
@@ -50,7 +60,7 @@
     ],
     "removedFiles": [],
     "criticalCoreFilesUnchanged": {
-      "background.js": "625a951af0d380ada0bb451ff1328dc592c86e309846b4af67f5cfe1415165b9",
+      "background.js": "a382d98118fbae08ab673d0322c90cd6ef42b4a733ac5a99191d420d09b16daf",
       "content-script.js": "a913fc040390f60f0de94d2ab1b01a127fcd5f72699f8a8d2459f16e8e027bd1",
       "manifest.json": "c0f28044c2f37398887e1405d2615e9b7f74d8a176c0d3fbf3b9d42d7b82c530"
     }
@@ -97,12 +107,12 @@
     {
       "name": "EXTENSION_HASH_INVENTORY_COMPLETE",
       "pass": true,
-      "detail": "files=54, treeSha=431e97d4cd2d9504a50be58138024d6eeb0f0a94"
+      "detail": "files=54, treeSha=dad2184d50d882cd6fd78a02a5d6bab62a4f5341"
     },
     {
       "name": "EXTENSION_DIFF_AGAINST_FROZEN_REV22_BASELINE_EXACT",
       "pass": true,
-      "detail": "unchanged=48/50, modified=[popup.html,popup.js], added=4"
+      "detail": "unchanged=46/50, modified=[popup.html,popup.js], added=4"
     },
     {
       "name": "READ_ONLY_PREFLIGHT_ZERO_MUTATION",
@@ -112,7 +122,7 @@
     {
       "name": "ENCRYPTED_FULL_BACKUP_AES256_GCM_NO_PLAINTEXT_LEAK",
       "pass": true,
-      "detail": "bundleBytes=11745678, plaintextLeaks=0"
+      "detail": "bundleBytes=11762786, plaintextLeaks=0"
     },
     {
       "name": "ENCRYPTED_BACKUP_TAMPER_AND_WRONG_PASSPHRASE_FAIL_CLOSED",
@@ -173,8 +183,8 @@
     },
     {
       "path": "background.js",
-      "size": 515151,
-      "sha256": "625a951af0d380ada0bb451ff1328dc592c86e309846b4af67f5cfe1415165b9"
+      "size": 523981,
+      "sha256": "a382d98118fbae08ab673d0322c90cd6ef42b4a733ac5a99191d420d09b16daf"
     },
     {
       "path": "banner.jpg",
@@ -268,8 +278,8 @@
     },
     {
       "path": "modules/build-provenance.js",
-      "size": 2633,
-      "sha256": "8d703315390242427c2c7f6edbb575c09b1b79f73621c16defc14adb7cf48155"
+      "size": 3938,
+      "sha256": "8e9975f5a3578aa0fa8642a6f289cda3e675d4e15768f72de2e1d32034c244ba"
     },
     {
       "path": "modules/challenge-gate.js",
@@ -378,8 +388,8 @@
     },
     {
       "path": "popup.js",
-      "size": 584997,
-      "sha256": "a287a7334060a10e5427ba6906f5e27b90d2e6f12dd22315996858dda265dc99"
+      "size": 584483,
+      "sha256": "a891031e852c4dc53b740867214a84e1ebb7bff8df3c770d8a1314547ad953bd"
     },
     {
       "path": "RESTORE_POINT_SUMMARY.md",

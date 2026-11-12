@@ -1,18 +1,18 @@
 {
   "gateName": "XPIDER_EMAIL_BROWSER_RUNTIME_GATE",
-  "generatedAt": "2026-11-10T11:30:44.524Z",
-  "gitHeadSha": "93f740f75ff33b53b6b410bddcf71bd176e0dcac",
-  "extensionTreeSha": "431e97d4cd2d9504a50be58138024d6eeb0f0a94",
+  "generatedAt": "2026-11-12T03:45:33.908Z",
+  "gitHeadSha": "3655ccee7e99d3cf3a6995ee8c900fb526db99e6",
+  "extensionTreeSha": "35b76b3de10bd38334f40ef7a5de162f00e32871",
   "nodeVersion": "v24.11.1",
   "browserExe": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
-  "browserVersion": "Edg/157.0.4341.42",
+  "browserVersion": "Edg/157.0.4341.46",
   "disposableProfileOnly": true,
   "ownerProfileTouched": false,
   "externalEmailSends": 0,
   "hostedGithubActionsBrowserCiStatus": "UNKNOWN_NOT_RUN_ON_GITHUB_HOSTED_RUNNER",
   "suites": {
     "emailStudioRuntimeCdp": {
-      "command": "node test/run_email_studio_browser_runtime_cdp.js \"E:\\vivpr\\ai\\extension-form-sender\\_wt_email_next\\extension\" \"C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe\" \"E:\\vivpr\\ai\\extension-form-sender\\_wt_email_next\\evidence\\browser_gate_latest\\email_studio\"",
+      "command": "node test/run_email_studio_browser_runtime_cdp.js \"C:\\Users\\oPus\\.gemini\\antigravity\\brain\\39737f43-3ee8-47a1-a4fb-53e319ab562e\\scratch\\repo_fix_p0\\extension\" \"C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe\" \"C:\\Users\\oPus\\.gemini\\antigravity\\brain\\39737f43-3ee8-47a1-a4fb-53e319ab562e\\scratch\\repo_fix_p0\\evidence\\browser_gate_latest\\email_studio\"",
       "exitCode": 0,
       "passed": 25,
       "total": 25,
@@ -22,7 +22,7 @@
       "logPath": "evidence/browser_gate_latest/email_studio_run.log"
     },
     "popupPausedRuntimeCdp": {
-      "command": "node test/run_popup_paused_runtime_cdp.js \"E:\\vivpr\\ai\\extension-form-sender\\_wt_email_next\\extension\" \"C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe\" \"E:\\vivpr\\ai\\extension-form-sender\\_wt_email_next\\evidence\\browser_gate_latest\\popup_paused\"",
+      "command": "node test/run_popup_paused_runtime_cdp.js \"C:\\Users\\oPus\\.gemini\\antigravity\\brain\\39737f43-3ee8-47a1-a4fb-53e319ab562e\\scratch\\repo_fix_p0\\extension\" \"C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe\" \"C:\\Users\\oPus\\.gemini\\antigravity\\brain\\39737f43-3ee8-47a1-a4fb-53e319ab562e\\scratch\\repo_fix_p0\\evidence\\browser_gate_latest\\popup_paused\"",
       "exitCode": 0,
       "passed": 14,
       "total": 14,
@@ -51,7 +51,7 @@
     {
       "name": "DISPOSABLE_PROFILE_ENFORCED_NO_OWNER_PROFILE",
       "pass": true,
-      "detail": "Edg/157.0.4341.42 | profile=C:\\Users\\oPus\\AppData\\Local\\Temp\\xpider_email_studio_UeEFpP"
+      "detail": "Edg/157.0.4341.46 | profile=C:\\Users\\oPus\\AppData\\Local\\Temp\\xpider_email_studio_M1vdBE"
     },
     {
       "name": "STUDIO_REMOTE_IMAGE_HITS_BEFORE_OPTIN_ZERO",
@@ -117,18 +117,18 @@
   "artifactInventory": [
     {
       "relativePath": "email_studio_run.log",
-      "sizeBytes": 3735,
-      "sha256": "2b574d63e774d9e89cb66b51a69181c3ff4c382a705cff3eb7c22ed984fb8bc9"
+      "sizeBytes": 3783,
+      "sha256": "7313d621cd832d78911dd387b27205cac53ecca60da60bb8e3ff39b6e85046a5"
     },
     {
       "relativePath": "email_studio/popup_with_email_studio_link.png",
-      "sizeBytes": 103912,
-      "sha256": "9302f56e9635513d5d661e5d374c3e607517ce1d80b867d89b9f14096759b9e7"
+      "sizeBytes": 95669,
+      "sha256": "ca115aaae681a13e308919c100351051209c68f1fab638f82fb8291df4cec34c"
     },
     {
       "relativePath": "email_studio/report_email_studio_chrome_runtime.json",
-      "sizeBytes": 10998,
-      "sha256": "9b1862140dffae6e2d1e2169119fd3fdb41d0b10422cb471a78a0e8e2a17a2d8"
+      "sizeBytes": 11050,
+      "sha256": "6da5c2b3fc7f6f213833de38d9f0b62b1bb50bfcea8990ddc7c95c6ea2032a2f"
     },
     {
       "relativePath": "email_studio/studio_initial.png",
@@ -158,12 +158,12 @@
     {
       "relativePath": "popup_paused_run.log",
       "sizeBytes": 2792,
-      "sha256": "e8b3c774270dd6aaadc22de86d0714eec2b6fa0f71b06e51c462c8e8d0330b22"
+      "sha256": "5b90ac2b0b488b465fcb576b60ff09e9c1fb6d330304dcb83b80a0118989446e"
     },
     {
       "relativePath": "popup_paused/popup_LIVE_BG_ACTIVE.png",
-      "sizeBytes": 95374,
-      "sha256": "f1250521459afdc94399baa38be8045b5a73bb36356c0c0b006556a87e24b99c"
+      "sizeBytes": 95628,
+      "sha256": "adf228a86b178be3662154821aea3b8d4e7d0faf9ca8fa4d98bdb0e11ba0abfe"
     },
     {
       "relativePath": "popup_paused/popup_LIVE_BG_IDLE_WITH_POPUP_STORAGE_THROW.png",
@@ -172,8 +172,8 @@
     },
     {
       "relativePath": "popup_paused/popup_LIVE_BG_IDLE.png",
-      "sizeBytes": 103912,
-      "sha256": "9302f56e9635513d5d661e5d374c3e607517ce1d80b867d89b9f14096759b9e7"
+      "sizeBytes": 103906,
+      "sha256": "4a777d0f330f929ae87eaab0aac259814ad3cb9ad8bb62152f194e2a6e060492"
     },
     {
       "relativePath": "popup_paused/popup_LIVE_BG_PAUSED_CHECKPOINT.png",
@@ -187,8 +187,8 @@
     },
     {
       "relativePath": "popup_paused/report_popup_paused_runtime.json",
-      "sizeBytes": 6229,
-      "sha256": "1289a6f87e10545c0cdb2404fabd51cea0fda4b57e4b93f1fdcb7c59a30400eb"
+      "sizeBytes": 6281,
+      "sha256": "9ea2f34978114b6a4148d2ef205af5bd7be048df90a11934089b67a16ae546d4"
     }
   ]
 }

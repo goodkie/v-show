@@ -1,9 +1,9 @@
 {
-  "gitHeadSha": "93f740f75ff33b53b6b410bddcf71bd176e0dcac",
-  "extensionTreeSha": "431e97d4cd2d9504a50be58138024d6eeb0f0a94",
+  "gitHeadSha": "3655ccee7e99d3cf3a6995ee8c900fb526db99e6",
+  "extensionTreeSha": "35b76b3de10bd38334f40ef7a5de162f00e32871",
   "nodeVersion": "v24.11.1",
-  "browser": "Edg/157.0.4341.42",
-  "extDir": "E:\\vivpr\\ai\\extension-form-sender\\_wt_email_next\\extension",
+  "browser": "Edg/157.0.4341.46",
+  "extDir": "C:\\Users\\oPus\\.gemini\\antigravity\\brain\\39737f43-3ee8-47a1-a4fb-53e319ab562e\\scratch\\repo_fix_p0\\extension",
   "disposableProfileVerified": true,
   "passed": 14,
   "failed": 0,
@@ -12,7 +12,7 @@
     {
       "name": "BROWSER_STARTED",
       "pass": true,
-      "detail": "Edg/157.0.4341.42"
+      "detail": "Edg/157.0.4341.46"
     },
     {
       "name": "EXTENSION_LOADED",
