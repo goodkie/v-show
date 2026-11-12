@@ -1,6 +1,6 @@
 {
-  "gitHeadSha": "3655ccee7e99d3cf3a6995ee8c900fb526db99e6",
-  "extensionTreeSha": "35b76b3de10bd38334f40ef7a5de162f00e32871",
+  "gitHeadSha": "8c1b390d3ab07b8202ba977dcc0534caa7a98cbd",
+  "extensionTreeSha": "f6bdceed0e5575eec3ab5220d0d07bae93ef91e2",
   "nodeVersion": "v24.11.1",
   "browser": "Edg/157.0.4341.46",
   "extId": "ldlijlaccfeelfdhgnjbibniocefckjj",
@@ -14,7 +14,7 @@
     {
       "method": "GET",
       "url": "/fixture-remote-banner.png",
-      "ts": 1794455096334,
+      "ts": 1794501291541,
       "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/157.0.0.0 Safari/537.36 Edg/157.0.0.0"
     }
   ],
@@ -22,7 +22,7 @@
     {
       "name": "BROWSER_STARTED",
       "pass": true,
-      "detail": "Edg/157.0.4341.46 | profile=C:\\Users\\oPus\\AppData\\Local\\Temp\\xpider_email_studio_M1vdBE"
+      "detail": "Edg/157.0.4341.46 | profile=C:\\Users\\oPus\\AppData\\Local\\Temp\\xpider_email_studio_RPt2BU"
     },
     {
       "name": "EXTENSION_LOADED_UNPACKED",
@@ -279,23 +279,23 @@
   ],
   "requests": [
     {
-      "url": "blob:chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/747490db-2fd7-495a-a7df-e4d4f0323ab5",
+      "url": "blob:chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/93dd4402-5adc-4363-8cdb-ae49f1967a5a",
       "method": "GET"
     },
     {
-      "url": "blob:chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/9c51006e-9865-4d7a-8103-5a620abdfa6d",
+      "url": "blob:chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/3035ef89-7b36-4757-8029-9fa35746cd01",
       "method": "GET"
     },
     {
-      "url": "blob:chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/a1ab7ac2-37e1-4973-8471-8980817b172d",
+      "url": "blob:chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/9454e112-0898-4e11-8c00-348e91e09f67",
       "method": "GET"
     },
     {
-      "url": "blob:chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/68e644aa-0315-4290-b947-06ab4da7b4ba",
+      "url": "blob:chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/5c52e074-7b4f-4123-a925-048356b1f923",
       "method": "GET"
     },
     {
-      "url": "blob:chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/a15c87a0-367e-4482-9f6b-ffd98dc6d6b8",
+      "url": "blob:chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/7da531f2-a265-4b38-a8fb-75364723fb45",
       "method": "GET"
     }
   ]

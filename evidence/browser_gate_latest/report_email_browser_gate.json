@@ -1,8 +1,8 @@
 {
   "gateName": "XPIDER_EMAIL_BROWSER_RUNTIME_GATE",
-  "generatedAt": "2026-11-12T03:45:33.908Z",
-  "gitHeadSha": "3655ccee7e99d3cf3a6995ee8c900fb526db99e6",
-  "extensionTreeSha": "35b76b3de10bd38334f40ef7a5de162f00e32871",
+  "generatedAt": "2026-11-12T16:35:28.384Z",
+  "gitHeadSha": "8c1b390d3ab07b8202ba977dcc0534caa7a98cbd",
+  "extensionTreeSha": "f6bdceed0e5575eec3ab5220d0d07bae93ef91e2",
   "nodeVersion": "v24.11.1",
   "browserExe": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
   "browserVersion": "Edg/157.0.4341.46",
@@ -51,7 +51,7 @@
     {
       "name": "DISPOSABLE_PROFILE_ENFORCED_NO_OWNER_PROFILE",
       "pass": true,
-      "detail": "Edg/157.0.4341.46 | profile=C:\\Users\\oPus\\AppData\\Local\\Temp\\xpider_email_studio_M1vdBE"
+      "detail": "Edg/157.0.4341.46 | profile=C:\\Users\\oPus\\AppData\\Local\\Temp\\xpider_email_studio_RPt2BU"
     },
     {
       "name": "STUDIO_REMOTE_IMAGE_HITS_BEFORE_OPTIN_ZERO",
@@ -117,38 +117,38 @@
   "artifactInventory": [
     {
       "relativePath": "email_studio_run.log",
-      "sizeBytes": 3783,
-      "sha256": "7313d621cd832d78911dd387b27205cac53ecca60da60bb8e3ff39b6e85046a5"
+      "sizeBytes": 3756,
+      "sha256": "005512316eecf44ba717df8abb6cd1a8072bb3dfb718e76d6d77746ace6771c5"
     },
     {
       "relativePath": "email_studio/popup_with_email_studio_link.png",
-      "sizeBytes": 95669,
-      "sha256": "ca115aaae681a13e308919c100351051209c68f1fab638f82fb8291df4cec34c"
+      "sizeBytes": 103912,
+      "sha256": "9302f56e9635513d5d661e5d374c3e607517ce1d80b867d89b9f14096759b9e7"
     },
     {
       "relativePath": "email_studio/report_email_studio_chrome_runtime.json",
       "sizeBytes": 11050,
-      "sha256": "6da5c2b3fc7f6f213833de38d9f0b62b1bb50bfcea8990ddc7c95c6ea2032a2f"
+      "sha256": "b4887bb210b9bb304a52d6488b76272c37bb721d710e74e0a2cf4f42970c953f"
     },
     {
       "relativePath": "email_studio/studio_initial.png",
-      "sizeBytes": 20016,
-      "sha256": "27f629f31ea78c707c9eaf04d9289afe5093b2a1d8b061863316cd4232aba46e"
+      "sizeBytes": 22908,
+      "sha256": "4bc63d24a7f48ae7813c473b6a939b83d8cc6cf19e4ecac58836e5832a451f52"
     },
     {
       "relativePath": "email_studio/studio_local_image_preview.png",
-      "sizeBytes": 20562,
-      "sha256": "edc3d58da20161686c62cc2b0408c9a6e1c557d3edbd401501fe250109d6d3bf"
+      "sizeBytes": 23455,
+      "sha256": "ef7f27a598b15ce761886953328fc95a8630471a318a23cb670479c32ac9a03a"
     },
     {
       "relativePath": "email_studio/studio_marketing_checks.png",
-      "sizeBytes": 21115,
-      "sha256": "396dbf82f8c29493a01f9ac570bf979f2e4078663925624d19987eb96635f993"
+      "sizeBytes": 24017,
+      "sha256": "3a006095bace1acbfbc8e9e2714d99d1f9b04a043f77d7c3b53887eb3097d0fd"
     },
     {
       "relativePath": "email_studio/studio_mobile_preview.png",
-      "sizeBytes": 20562,
-      "sha256": "edc3d58da20161686c62cc2b0408c9a6e1c557d3edbd401501fe250109d6d3bf"
+      "sizeBytes": 23455,
+      "sha256": "ef7f27a598b15ce761886953328fc95a8630471a318a23cb670479c32ac9a03a"
     },
     {
       "relativePath": "email_studio/synthetic_1x1.png",
@@ -172,8 +172,8 @@
     },
     {
       "relativePath": "popup_paused/popup_LIVE_BG_IDLE.png",
-      "sizeBytes": 103906,
-      "sha256": "4a777d0f330f929ae87eaab0aac259814ad3cb9ad8bb62152f194e2a6e060492"
+      "sizeBytes": 103912,
+      "sha256": "9302f56e9635513d5d661e5d374c3e607517ce1d80b867d89b9f14096759b9e7"
     },
     {
       "relativePath": "popup_paused/popup_LIVE_BG_PAUSED_CHECKPOINT.png",
@@ -188,7 +188,7 @@
     {
       "relativePath": "popup_paused/report_popup_paused_runtime.json",
       "sizeBytes": 6281,
-      "sha256": "9ea2f34978114b6a4148d2ef205af5bd7be048df90a11934089b67a16ae546d4"
+      "sha256": "5456f09c196577d4b5ceeb1e4fd305385453a0d6dec6dfe6a6092caa8b6f02b1"
     }
   ]
 }

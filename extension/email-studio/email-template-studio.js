@@ -61,3 +61,110 @@ el('exportJson').onclick=()=>download('xpider-vivpr-template.json','application/
 el('desktop').onclick=()=>el('preview').style.width='100%';
 el('mobile').onclick=()=>el('preview').style.width='min(360px,100%)';
 render();
+
+function callBg(msg) {
+  return new Promise(res => {
+    try {
+      if (typeof chrome !== 'undefined' && chrome.runtime && typeof chrome.runtime.sendMessage === 'function') {
+        chrome.runtime.sendMessage(msg, r => {
+          if (chrome.runtime.lastError) {
+            res({ ok: false, error: chrome.runtime.lastError.message });
+          } else {
+            res(r || { ok: false, error: 'NO_RESPONSE' });
+          }
+        });
+      } else {
+        res({ ok: false, error: 'CHROME_RUNTIME_NOT_AVAILABLE' });
+      }
+    } catch (err) {
+      res({ ok: false, error: err.message });
+    }
+  });
+}
+
+async function checkCompanionStatus() {
+  const box = el('testSendStatus');
+  if (!box) return;
+  box.className = 'status-box status-loading';
+  box.textContent = '⏳ 컴패니언 (127.0.0.1:18989) 연결 상태 확인 중...';
+  const resp = await callBg({ action: 'GET_EMAIL_TEST_STATUS' });
+  if (resp && resp.ok && resp.data) {
+    const d = resp.data;
+    if (d.resendApiKeyConfigured) {
+      box.className = 'status-box status-success';
+      box.textContent = '✅ 컴패니언 연결 성공 (127.0.0.1:18989)\n• Resend API Key 설정됨 (서버사이드 안전 보관)\n• 시뮬레이터 수신자 대상 테스트 발송 준비 완료';
+    } else {
+      box.className = 'status-box status-blocked';
+      box.textContent = '⚠️ 컴패니언 연결 성공 (127.0.0.1:18989)\n• Resend API Key 미설정 (RESEND_API_KEY 환경변수 필요)\n• 시뮬레이터 발송 요청 시 차단 안내(RESEND_API_KEY_NOT_CONFIGURED)가 반환됩니다.';
+    }
+  } else {
+    box.className = 'status-box status-error';
+    box.textContent = '❌ 컴패니언 연결 실패 (127.0.0.1:18989)\n• 상태: 오프라인 또는 포트 미응답\n• 컴패니언 서비스 실행 시 자동 연결됩니다.';
+  }
+}
+
+let testSendCoolingDown = false;
+async function triggerTestSend() {
+  if (testSendCoolingDown) return;
+  const box = el('testSendStatus');
+  const btn = el('btnTestSend');
+  const recipient = el('testRecipient') ? el('testRecipient').value.trim() : '';
+  const allowed = ['delivered@resend.dev', 'bounced@resend.dev', 'complained@resend.dev'];
+  if (!allowed.includes(recipient)) {
+    box.className = 'status-box status-error';
+    box.textContent = '❌ 허용되지 않은 수신자입니다. Resend 공식 시뮬레이터 수신자만 선택 가능합니다.';
+    return;
+  }
+
+  const v = values();
+  const subject = v.subject || 'XPIDER Test Send';
+  const html = htmlFor(v);
+  const text = textFor(v);
+  const idempotencyKey = 'xpider_sim_' + Date.now() + '_' + Math.random().toString(36).slice(2, 12);
+
+  testSendCoolingDown = true;
+  btn.disabled = true;
+  box.className = 'status-box status-loading';
+  box.textContent = `⏳ 시뮬레이터 테스트 발송 요청 중...\n• 수신자: ${recipient}\n• 발신자: onboarding@resend.dev\n• Idempotency-Key: ${idempotencyKey}\n• 백엔드(127.0.0.1:18989) 경유 전송 중...`;
+
+  const resp = await callBg({
+    action: 'EMAIL_TEST_SEND',
+    to: recipient,
+    subject,
+    html,
+    text,
+    idempotencyKey
+  });
+
+  if (resp && resp.status === 'SUCCESS') {
+    box.className = 'status-box status-success';
+    box.textContent = `✅ [발송 접수 성공] Resend 이벤트 시뮬레이터가 정상 접수하였습니다.\n• Provider Message ID: ${resp.providerMessageId || 'OK'}\n• 수신자: ${resp.to}\n• 발신자: ${resp.from}\n• 접수시각: ${resp.timestamp || new Date().toISOString()}`;
+  } else if (resp && resp.status === 'BLOCKED') {
+    box.className = 'status-box status-blocked';
+    box.textContent = `⛔ [발송 차단 (FAIL-CLOSED)]\n• 사유: ${resp.reason || (Array.isArray(resp.reasons) ? resp.reasons.join(', ') : 'POLICY_BLOCKED')}\n• 상세: ${resp.message || '인증 또는 자격 요건 미충족'}\n• 수신자: ${resp.recipient || recipient}`;
+  } else if (resp && resp.status === 'PROVIDER_ERROR') {
+    box.className = 'status-box status-error';
+    box.textContent = `❌ [Resend 공급자 오류]\n• HTTP 상태: ${resp.httpStatus}\n• 오류: ${resp.error}\n• 상세: ${resp.message}`;
+  } else {
+    box.className = 'status-box status-error';
+    box.textContent = `❌ [전송 실패]\n• 오류: ${resp?.message || resp?.error || '알 수 없는 전송 실패'}`;
+  }
+
+  let remainingSec = 5;
+  btn.textContent = `⏳ 쿨다운 대기 (${remainingSec}s)`;
+  const timer = setInterval(() => {
+    remainingSec--;
+    if (remainingSec <= 0) {
+      clearInterval(timer);
+      testSendCoolingDown = false;
+      btn.disabled = false;
+      btn.textContent = '▶ 시뮬레이터 테스트 발송 (Test Send)';
+    } else {
+      btn.textContent = `⏳ 쿨다운 대기 (${remainingSec}s)`;
+    }
+  }, 1000);
+}
+
+if (el('btnTestSend')) el('btnTestSend').onclick = triggerTestSend;
+if (el('btnCheckCompanion')) el('btnCheckCompanion').onclick = checkCompanionStatus;
+setTimeout(checkCompanionStatus, 300);

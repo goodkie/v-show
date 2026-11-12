@@ -2,7 +2,7 @@
 <html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>XPIDER Email Template Studio</title>
 <link rel="stylesheet" href="email-template-studio.css"></head><body>
-<header class="header"><div><h1>XPIDER · Email Template Studio</h1><div class="sub">vivpr.pro · 이미지 + HTML + 일반 텍스트 · 발송 전 품질 검토</div></div><div class="tag">PREVIEW ONLY · 전송 없음</div></header>
+<header class="header"><div><h1>XPIDER · Email Template Studio</h1><div class="sub">vivpr.pro · 이미지 + HTML + 일반 텍스트 · 발송 전 품질 검토</div></div><div class="tag" id="modeTag"><span class="badge-test">🧪 TEST SEND 활성화 (Resend Simulator)</span> · <span class="badge-locked">🔒 상용 발송 잠금</span></div></header>
 <main class="wrap">
 <section class="panel" aria-label="템플릿 편집">
 <h2>이메일 작성</h2>
@@ -34,5 +34,22 @@
 <div class="preview-head"><h2>실시간 미리보기</h2><div class="inline"><button id="desktop">데스크톱</button><button id="mobile">모바일</button></div></div>
 <iframe id="preview" title="이메일 내용 미리보기" sandbox=""></iframe>
 <div class="note" id="summary">이 템플릿은 미리보기용입니다. 실제 메일 발송은 진행하지 않습니다.</div>
+
+<div class="send-control-card" aria-label="이메일 발송 제어">
+<div class="send-header"><h3>🚀 이메일 발송 제어 (Email Delivery)</h3><span class="badge-test">🧪 TEST SIMULATOR ONLY</span></div>
+<div class="test-send-box">
+<h4>🧪 Resend 공식 이벤트 시뮬레이터 테스트 발송</h4>
+<p class="desc">실제 고객에게는 절대 발송되지 않으며, Resend 공식 이벤트 시뮬레이터로만 발송됩니다 (Companion 127.0.0.1:18989 경유).</p>
+<div class="form-row"><label for="testSender">발신 주소 (고정)</label><input id="testSender" value="onboarding@resend.dev" readonly class="readonly-input"><small class="muted">Resend 테스트 전용 공용 발신자 (별도 DNS 인증 불필요)</small></div>
+<div class="form-row"><label for="testRecipient">시뮬레이터 수신자 (1개 필수)</label><select id="testRecipient"><option value="delivered@resend.dev">delivered@resend.dev (정상 수신 시뮬레이션)</option><option value="bounced@resend.dev">bounced@resend.dev (반송 / Bounce 시뮬레이션)</option><option value="complained@resend.dev">complained@resend.dev (스팸신고 / Complaint 시뮬레이션)</option></select></div>
+<div class="actions"><button class="primary" id="btnTestSend">▶ 시뮬레이터 테스트 발송 (Test Send)</button><button id="btnCheckCompanion">컴패니언 상태 확인</button></div>
+<div id="testSendStatus" class="status-box status-idle" aria-live="polite">대기 중: 시뮬레이터 수신자를 선택하고 테스트 발송 버튼을 누르세요.</div>
+</div>
+<div class="prod-send-box locked">
+<div class="prod-header"><h4>🔒 상용(운영) 발송 (Production Send)</h4><span class="badge-locked">STRICT HOLD · 잠금</span></div>
+<p class="desc warning-text">⚠️ <b>상용 발송 엄격 통제 중:</b> vivpr.pro 도메인의 SPF/DKIM/DMARC DNS 인증, 수신 동의 원장(Consent Ledger), RFC 8058 One-Click 원클릭 수신 거부 엔드포인트 및 Webhook 독립 검증 전까지 운영 발송은 엄격히 차단됩니다.</p>
+<div class="actions"><button disabled class="btn-disabled" id="btnProdSend" title="운영 도메인 및 수신동의 검증 필요">운영 이메일 대량 발송 (비활성화됨)</button></div>
+</div>
+</div>
 </section></main>
 <script src="email-template-studio.js"></script></body></html>

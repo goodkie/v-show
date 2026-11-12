@@ -1,8 +1,8 @@
 {
   "suite": "XPIDER_WINDOWS_10_EMAIL_FEATURE_UAT_READINESS_PREFLIGHT",
-  "generatedAt": "2026-11-12T10:32:19.101Z",
-  "gitHeadSha": "d3e2211c41d9f29eb3ad582d95d30d064d28d0f6",
-  "extensionTreeSha": "dad2184d50d882cd6fd78a02a5d6bab62a4f5341",
+  "generatedAt": "2026-11-12T16:30:28.038Z",
+  "gitHeadSha": "8c1b390d3ab07b8202ba977dcc0534caa7a98cbd",
+  "extensionTreeSha": "f6bdceed0e5575eec3ab5220d0d07bae93ef91e2",
   "nodeVersion": "v24.11.1",
   "releaseGate": "STRICT_RELEASE_HOLD",
   "liveEmailsSent": 0,
@@ -28,7 +28,7 @@
       {
         "path": "background.js",
         "baselineSha256": "625a951af0d380ada0bb451ff1328dc592c86e309846b4af67f5cfe1415165b9",
-        "currentSha256": "c396ad4dd0067529a2951860508ddd5c68ec9d0a1833a3b218fdca26d69b18a7"
+        "currentSha256": "3c52d1a1ba197bb09d1e026ae96bdfec3da30a89cf4141cf0d1cdeb094f0ddd5"
       },
       {
         "path": "popup.js",
@@ -39,18 +39,18 @@
     "addedFiles": [
       {
         "path": "email-studio/email-template-studio.css",
-        "size": 2210,
-        "sha256": "460d950ba499afb9d14919d77a05d6414b58410eb9bdec57b18b637b47dd4eef"
+        "size": 3978,
+        "sha256": "b58a2d2685915fa864f2a5510cea0339719f1f695498b17ecd366ed796ee3591"
       },
       {
         "path": "email-studio/email-template-studio.js",
-        "size": 6555,
-        "sha256": "f8ca50d0cc72d674ffb14a183e10b5bb03e458540730ecad36aa64358ca1f07f"
+        "size": 11628,
+        "sha256": "cc88ecf9be2f50b3700026bd864f63aa38193228bd6aefc2ae9a354ab454ba87"
       },
       {
         "path": "email-studio/index.html",
-        "size": 4473,
-        "sha256": "921eae2bf9d524eb40379cd86dae20dc47dc9778c10374222005cf83ce073f4c"
+        "size": 6820,
+        "sha256": "b02d4010f7bbc5e4169fdb77ded01327b7706552a6cac7fe23d39ab6983e04e8"
       },
       {
         "path": "modules/email-delivery-policy.js",
@@ -60,7 +60,7 @@
     ],
     "removedFiles": [],
     "criticalCoreFilesUnchanged": {
-      "background.js": "a382d98118fbae08ab673d0322c90cd6ef42b4a733ac5a99191d420d09b16daf",
+      "background.js": "26a911c8225eaff3983927db28394cebd681c8484cd103dbeed6f25ab9d97f4f",
       "content-script.js": "a913fc040390f60f0de94d2ab1b01a127fcd5f72699f8a8d2459f16e8e027bd1",
       "manifest.json": "c0f28044c2f37398887e1405d2615e9b7f74d8a176c0d3fbf3b9d42d7b82c530"
     }
@@ -107,7 +107,7 @@
     {
       "name": "EXTENSION_HASH_INVENTORY_COMPLETE",
       "pass": true,
-      "detail": "files=54, treeSha=dad2184d50d882cd6fd78a02a5d6bab62a4f5341"
+      "detail": "files=54, treeSha=f6bdceed0e5575eec3ab5220d0d07bae93ef91e2"
     },
     {
       "name": "EXTENSION_DIFF_AGAINST_FROZEN_REV22_BASELINE_EXACT",
@@ -122,7 +122,7 @@
     {
       "name": "ENCRYPTED_FULL_BACKUP_AES256_GCM_NO_PLAINTEXT_LEAK",
       "pass": true,
-      "detail": "bundleBytes=11762786, plaintextLeaks=0"
+      "detail": "bundleBytes=11785114, plaintextLeaks=0"
     },
     {
       "name": "ENCRYPTED_BACKUP_TAMPER_AND_WRONG_PASSPHRASE_FAIL_CLOSED",
@@ -183,8 +183,8 @@
     },
     {
       "path": "background.js",
-      "size": 523981,
-      "sha256": "a382d98118fbae08ab673d0322c90cd6ef42b4a733ac5a99191d420d09b16daf"
+      "size": 527351,
+      "sha256": "26a911c8225eaff3983927db28394cebd681c8484cd103dbeed6f25ab9d97f4f"
     },
     {
       "path": "banner.jpg",
@@ -208,18 +208,18 @@
     },
     {
       "path": "email-studio/email-template-studio.css",
-      "size": 2210,
-      "sha256": "460d950ba499afb9d14919d77a05d6414b58410eb9bdec57b18b637b47dd4eef"
+      "size": 3978,
+      "sha256": "b58a2d2685915fa864f2a5510cea0339719f1f695498b17ecd366ed796ee3591"
     },
     {
       "path": "email-studio/email-template-studio.js",
-      "size": 6555,
-      "sha256": "f8ca50d0cc72d674ffb14a183e10b5bb03e458540730ecad36aa64358ca1f07f"
+      "size": 11628,
+      "sha256": "cc88ecf9be2f50b3700026bd864f63aa38193228bd6aefc2ae9a354ab454ba87"
     },
     {
       "path": "email-studio/index.html",
-      "size": 4473,
-      "sha256": "921eae2bf9d524eb40379cd86dae20dc47dc9778c10374222005cf83ce073f4c"
+      "size": 6820,
+      "sha256": "b02d4010f7bbc5e4169fdb77ded01327b7706552a6cac7fe23d39ab6983e04e8"
     },
     {
       "path": "FILE_HASHES.txt",

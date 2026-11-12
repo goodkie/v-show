@@ -3983,6 +3983,70 @@ const _handleMainMessageInner = (request, sender, sendResponse) => {
             return true;
         }
 
+        case 'GET_EMAIL_TEST_STATUS': {
+            (async () => {
+                try {
+                    const pg = (typeof PrivacyGateway !== 'undefined' && PrivacyGateway.getInstance) ? PrivacyGateway.getInstance() : null;
+                    if (pg && !pg.ephemeralRelayToken && typeof pg.fetchRelayControlToken === 'function') {
+                        try { await pg.fetchRelayControlToken(); } catch (_) {}
+                    }
+                    const token = pg ? pg.ephemeralRelayToken : null;
+                    const ctrlPort = (pg && pg.config && pg.config.relayControlPort) || 18989;
+                    const resp = await fetch(`http://127.0.0.1:${ctrlPort}/email/test-send/status`, {
+                        method: 'GET',
+                        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+                    });
+                    if (!resp.ok) {
+                        sendResponse({ ok: false, companionOnline: true, status: resp.status, error: `HTTP_${resp.status}` });
+                        return;
+                    }
+                    const data = await resp.json();
+                    sendResponse({ ok: true, companionOnline: true, data });
+                } catch (err) {
+                    sendResponse({ ok: false, companionOnline: false, error: err.message });
+                }
+            })();
+            return true;
+        }
+
+        case 'EMAIL_TEST_SEND': {
+            (async () => {
+                try {
+                    const pg = (typeof PrivacyGateway !== 'undefined' && PrivacyGateway.getInstance) ? PrivacyGateway.getInstance() : null;
+                    if (pg && !pg.ephemeralRelayToken && typeof pg.fetchRelayControlToken === 'function') {
+                        try { await pg.fetchRelayControlToken(); } catch (_) {}
+                    }
+                    const token = pg ? pg.ephemeralRelayToken : null;
+                    const ctrlPort = (pg && pg.config && pg.config.relayControlPort) || 18989;
+                    const resp = await fetch(`http://127.0.0.1:${ctrlPort}/email/test-send`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                        },
+                        body: JSON.stringify({
+                            to: request.to,
+                            subject: request.subject,
+                            html: request.html,
+                            text: request.text,
+                            idempotencyKey: request.idempotencyKey
+                        })
+                    });
+                    const data = await resp.json();
+                    sendResponse({ ok: resp.ok, httpStatus: resp.status, ...data });
+                } catch (err) {
+                    sendResponse({
+                        ok: false,
+                        status: 'BLOCKED',
+                        reason: 'COMPANION_OFFLINE_OR_NETWORK_ERROR',
+                        error: err.message,
+                        message: `Companion service at 127.0.0.1:18989 is offline or unreachable: ${err.message}`
+                    });
+                }
+            })();
+            return true;
+        }
+
         case 'XPIDER_LOG':
             logBg(null, `[Solver] ${request.message}`, request.status === 'FAIL' ? 'error' : 'info');
             sendResponse({ success: true });
