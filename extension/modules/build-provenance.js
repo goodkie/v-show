@@ -14,12 +14,12 @@
 
     const BUILD_INFO = {
         version: "7.0.0",
-        buildId: "V7.0.0-OWNER-BETA-TEST-SEND-20261113",
+        buildId: "V7.0.0-OWNER-BETA-TEST-SEND-SIDECAR-20261113",
         channel: "OWNER_BETA_V7_TEST_SEND",
-        tag: "v7.0.0-owner-beta-test-send",
+        tag: "v7.0.0-owner-beta-test-send-sidecar",
         manifestVersion: 3,
-        implementationHead: "email-test-send-20261113",
-        implementationHeadShort: "testsend",
+        implementationHead: "email-test-sidecar-20261113",
+        implementationHeadShort: "sidecar",
         builtAt: new Date().toISOString(),
         testOnly: false,
         productionReady: false,

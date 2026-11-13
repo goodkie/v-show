@@ -3986,8 +3986,9 @@ const _handleMainMessageInner = (request, sender, sendResponse) => {
         case 'GET_EMAIL_TEST_STATUS': {
             (async () => {
                 const pg = (typeof PrivacyGateway !== 'undefined' && PrivacyGateway.getInstance) ? PrivacyGateway.getInstance() : null;
-                const ctrlPort = (pg && pg.config && pg.config.relayControlPort) || 18989;
-                const extBuildId = (typeof BuildProvenance !== 'undefined' && BuildProvenance.BUILD_INFO && BuildProvenance.BUILD_INFO.buildId) || 'V7.0.0-OWNER-BETA-TEST-SEND-20261113';
+                const reqPort = Number(request.sidecarPort);
+                const ctrlPort = (Number.isInteger(reqPort) && reqPort >= 1024 && reqPort <= 65535) ? reqPort : 18990;
+                const extBuildId = (typeof BuildProvenance !== 'undefined' && BuildProvenance.BUILD_INFO && BuildProvenance.BUILD_INFO.buildId) || 'V7.0.0-OWNER-BETA-TEST-SEND-SIDECAR-20261113';
                 try {
                     const hcCtrl = new AbortController();
                     const hcTimer = setTimeout(() => hcCtrl.abort(), 4000);
@@ -4000,7 +4001,7 @@ const _handleMainMessageInner = (request, sender, sendResponse) => {
                             httpStatus: healthResp.status,
                             reason: 'COMPANION_HEALTH_ERROR',
                             error: `HTTP_${healthResp.status}`,
-                            message: `컴패니언 /health 응답 오류 (HTTP ${healthResp.status}).`
+                            message: `Sidecar /health 응답 오류 (HTTP ${healthResp.status}).`
                         });
                         return;
                     }
@@ -4019,44 +4020,49 @@ const _handleMainMessageInner = (request, sender, sendResponse) => {
                             companionImplementationHead: health.companionImplementationHead || null,
                             extensionBuildId: extBuildId,
                             apiCapabilities: caps,
-                            message: `포트 ${ctrlPort}에서 구버전 컴패니언(${compBuildId || 'unknown'})이 실행 중이며 email-test-send 기능이 없습니다. 기존 컴패니언을 안전하게 종료한 뒤 새 패키지의 START_COMPANION_FOR_TEST_SEND.bat를 실행하세요.`
+                            message: `포트 ${ctrlPort}의 서비스(${compBuildId || 'unknown'})가 email-test-send 기능을 지원하지 않습니다. 포트 18990에서 START_EMAIL_TEST_SIDECAR.bat를 실행하세요.`
                         });
                         return;
                     }
 
-                    if (pg && !pg.ephemeralRelayToken && typeof pg.fetchRelayControlToken === 'function') {
-                        try { await pg.fetchRelayControlToken(); } catch (_) {}
+                    let token = (typeof request.sidecarToken === 'string' && request.sidecarToken.trim()) ? request.sidecarToken.trim() : null;
+                    if (!token && ctrlPort === 18989 && pg) {
+                        if (!pg.ephemeralRelayToken && typeof pg.fetchRelayControlToken === 'function') {
+                            try { await pg.fetchRelayControlToken(); } catch (_) {}
+                        }
+                        token = pg.ephemeralRelayToken || null;
                     }
-                    let token = pg ? pg.ephemeralRelayToken : null;
                     const stCtrl = new AbortController();
                     const stTimer = setTimeout(() => stCtrl.abort(), 5000);
-                    let resp = await fetch(`http://127.0.0.1:${ctrlPort}/email/test-send/status`, {
+                    const resp = await fetch(`http://127.0.0.1:${ctrlPort}/email/test-send/status`, {
                         method: 'GET',
                         headers: token ? { 'Authorization': `Bearer ${token}` } : {},
                         signal: stCtrl.signal
                     }).finally(() => clearTimeout(stTimer));
-                    if (resp.status === 401 && pg && typeof pg.fetchRelayControlToken === 'function') {
-                        try { token = await pg.fetchRelayControlToken(); } catch (_) {}
-                        if (token) {
-                            const retryCtrl = new AbortController();
-                            const retryTimer = setTimeout(() => retryCtrl.abort(), 5000);
-                            resp = await fetch(`http://127.0.0.1:${ctrlPort}/email/test-send/status`, {
-                                method: 'GET',
-                                headers: { 'Authorization': `Bearer ${token}` },
-                                signal: retryCtrl.signal
-                            }).finally(() => clearTimeout(retryTimer));
-                        }
-                    }
                     if (resp.status === 401) {
                         sendResponse({
                             ok: false,
                             companionOnline: true,
                             status: 'BLOCKED',
                             httpStatus: 401,
-                            reason: 'UNAUTHORIZED',
+                            reason: token ? 'UNAUTHORIZED' : 'SIDECAR_TOKEN_REQUIRED',
                             error: 'UNAUTHORIZED',
                             companionBuildId: compBuildId,
-                            message: '컴패니언 Bearer 제어 토큰 인증에 실패했습니다 (HTTP 401). Native Messaging 호스트 또는 제어 토큰을 확인하세요.'
+                            message: token
+                                ? 'Sidecar Bearer 제어 토큰이 일치하지 않습니다 (HTTP 401).'
+                                : 'START_EMAIL_TEST_SIDECAR.bat 콘솔에 표시된 Sidecar 제어 토큰을 Email Studio에 입력해 주세요 (HTTP 401).'
+                        });
+                        return;
+                    }
+                    if (resp.status === 403) {
+                        sendResponse({
+                            ok: false,
+                            companionOnline: true,
+                            status: 'BLOCKED',
+                            httpStatus: 403,
+                            reason: 'FORBIDDEN_ORIGIN',
+                            error: 'FORBIDDEN_ORIGIN',
+                            message: '허용되지 않은 Origin 요청이 Sidecar에 의해 차단되었습니다 (HTTP 403).'
                         });
                         return;
                     }
@@ -4069,7 +4075,7 @@ const _handleMainMessageInner = (request, sender, sendResponse) => {
                             reason: 'ENDPOINT_NOT_FOUND',
                             error: 'ENDPOINT_NOT_FOUND',
                             companionBuildId: compBuildId,
-                            message: '컴패니언에서 /email/test-send/status 엔드포인트를 찾을 수 없습니다 (HTTP 404).'
+                            message: 'Sidecar에서 /email/test-send/status 엔드포인트를 찾을 수 없습니다 (HTTP 404).'
                         });
                         return;
                     }
@@ -4101,8 +4107,9 @@ const _handleMainMessageInner = (request, sender, sendResponse) => {
         case 'EMAIL_TEST_SEND': {
             (async () => {
                 const pg = (typeof PrivacyGateway !== 'undefined' && PrivacyGateway.getInstance) ? PrivacyGateway.getInstance() : null;
-                const ctrlPort = (pg && pg.config && pg.config.relayControlPort) || 18989;
-                const extBuildId = (typeof BuildProvenance !== 'undefined' && BuildProvenance.BUILD_INFO && BuildProvenance.BUILD_INFO.buildId) || 'V7.0.0-OWNER-BETA-TEST-SEND-20261113';
+                const reqPort = Number(request.sidecarPort);
+                const ctrlPort = (Number.isInteger(reqPort) && reqPort >= 1024 && reqPort <= 65535) ? reqPort : 18990;
+                const extBuildId = (typeof BuildProvenance !== 'undefined' && BuildProvenance.BUILD_INFO && BuildProvenance.BUILD_INFO.buildId) || 'V7.0.0-OWNER-BETA-TEST-SEND-SIDECAR-20261113';
                 try {
                     const hcCtrl = new AbortController();
                     const hcTimer = setTimeout(() => hcCtrl.abort(), 4000);
@@ -4114,7 +4121,7 @@ const _handleMainMessageInner = (request, sender, sendResponse) => {
                             httpStatus: healthResp.status,
                             reason: 'COMPANION_HEALTH_ERROR',
                             error: `HTTP_${healthResp.status}`,
-                            message: `컴패니언 /health 응답 오류 (HTTP ${healthResp.status}).`
+                            message: `Sidecar /health 응답 오류 (HTTP ${healthResp.status}).`
                         });
                         return;
                     }
@@ -4131,15 +4138,18 @@ const _handleMainMessageInner = (request, sender, sendResponse) => {
                             error: 'COMPANION_VERSION_MISMATCH',
                             companionBuildId: compBuildId,
                             extensionBuildId: extBuildId,
-                            message: `포트 ${ctrlPort}의 컴패니언(${compBuildId || 'unknown'})이 email-test-send 기능을 지원하지 않습니다. 기존 컴패니언을 안전하게 종료한 후 새 패키지의 START_COMPANION_FOR_TEST_SEND.bat를 실행하세요.`
+                            message: `포트 ${ctrlPort}의 서비스(${compBuildId || 'unknown'})가 email-test-send 기능을 지원하지 않습니다. 포트 18990에서 START_EMAIL_TEST_SIDECAR.bat를 실행하세요.`
                         });
                         return;
                     }
 
-                    if (pg && !pg.ephemeralRelayToken && typeof pg.fetchRelayControlToken === 'function') {
-                        try { await pg.fetchRelayControlToken(); } catch (_) {}
+                    let token = (typeof request.sidecarToken === 'string' && request.sidecarToken.trim()) ? request.sidecarToken.trim() : null;
+                    if (!token && ctrlPort === 18989 && pg) {
+                        if (!pg.ephemeralRelayToken && typeof pg.fetchRelayControlToken === 'function') {
+                            try { await pg.fetchRelayControlToken(); } catch (_) {}
+                        }
+                        token = pg.ephemeralRelayToken || null;
                     }
-                    const token = pg ? pg.ephemeralRelayToken : null;
                     const postCtrl = new AbortController();
                     const postTimer = setTimeout(() => postCtrl.abort(), 15000);
                     const resp = await fetch(`http://127.0.0.1:${ctrlPort}/email/test-send`, {
@@ -4159,15 +4169,39 @@ const _handleMainMessageInner = (request, sender, sendResponse) => {
                     }).finally(() => clearTimeout(postTimer));
 
                     let data = {};
-                    try { data = await resp.json(); } catch (_) {}
+                    try {
+                        data = await resp.json();
+                    } catch (_) {
+                        sendResponse({
+                            ok: false,
+                            httpStatus: resp.status,
+                            status: 'PROVIDER_ERROR',
+                            error: 'INVALID_JSON_RESPONSE',
+                            message: `Sidecar/Provider returned invalid JSON (HTTP ${resp.status}).`
+                        });
+                        return;
+                    }
                     if (resp.status === 401) {
                         sendResponse({
                             ok: false,
                             httpStatus: 401,
                             status: 'BLOCKED',
-                            reason: 'UNAUTHORIZED',
+                            reason: token ? 'UNAUTHORIZED' : 'SIDECAR_TOKEN_REQUIRED',
                             error: data.error || 'UNAUTHORIZED',
-                            message: data.message || '컴패니언 Bearer 인증 토큰이 없거나 일치하지 않습니다 (HTTP 401).'
+                            message: token
+                                ? (data.message || 'Sidecar Bearer 인증 토큰이 일치하지 않습니다 (HTTP 401).')
+                                : 'START_EMAIL_TEST_SIDECAR.bat 콘솔에 표시된 Sidecar 제어 토큰을 Email Studio에 입력해 주세요 (HTTP 401).'
+                        });
+                        return;
+                    }
+                    if (resp.status === 403) {
+                        sendResponse({
+                            ok: false,
+                            httpStatus: 403,
+                            status: 'BLOCKED',
+                            reason: 'FORBIDDEN_ORIGIN',
+                            error: data.error || 'FORBIDDEN_ORIGIN',
+                            message: data.message || '허용되지 않은 Origin 요청입니다 (HTTP 403).'
                         });
                         return;
                     }
@@ -4178,7 +4212,7 @@ const _handleMainMessageInner = (request, sender, sendResponse) => {
                             status: 'BLOCKED',
                             reason: 'ENDPOINT_NOT_FOUND',
                             error: data.error || 'ENDPOINT_NOT_FOUND',
-                            message: '컴패니언에서 /email/test-send 엔드포인트를 찾을 수 없습니다 (버전 불일치 가능성).'
+                            message: 'Sidecar에서 /email/test-send 엔드포인트를 찾을 수 없습니다 (버전 불일치 가능성).'
                         });
                         return;
                     }
@@ -4191,8 +4225,8 @@ const _handleMainMessageInner = (request, sender, sendResponse) => {
                         reason: isTimeout ? 'REQUEST_TIMEOUT' : 'COMPANION_OFFLINE_OR_NETWORK_ERROR',
                         error: isTimeout ? 'REQUEST_TIMEOUT' : err.message,
                         message: isTimeout
-                            ? '컴패니언 테스트 발송 응답 시간이 초과되었습니다 (15s timeout).'
-                            : `Companion service at 127.0.0.1:${ctrlPort} is offline or unreachable: ${err.message}`
+                            ? 'Sidecar 테스트 발송 응답 시간이 초과되었습니다 (15s timeout).'
+                            : `Email Test Sidecar at 127.0.0.1:${ctrlPort} is offline or unreachable: ${err.message}`
                     });
                 }
             })();

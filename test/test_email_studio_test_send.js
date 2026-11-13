@@ -415,7 +415,7 @@ async function runAll() {
   // 12. Build Provenance & Handshake Code Integrity
   test('BUILD_PROVENANCE_AND_HANDSHAKE_CONTRACTS', () => {
     const bp = require('../extension/modules/build-provenance');
-    assert.equal(bp.BUILD_INFO.buildId, 'V7.0.0-OWNER-BETA-TEST-SEND-20261113');
+    assert.equal(bp.BUILD_INFO.buildId, 'V7.0.0-OWNER-BETA-TEST-SEND-SIDECAR-20261113');
     assert.equal(bp.isOwnerTestAuthorized(), true);
     assert.equal(bp.BUILD_INFO.productionReady, false);
 

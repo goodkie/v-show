@@ -82,34 +82,45 @@ function callBg(msg) {
   });
 }
 
+function getSidecarConfig() {
+  const rawPort = el('sidecarPort') ? Number(el('sidecarPort').value) : 18990;
+  const sidecarPort = (Number.isInteger(rawPort) && rawPort >= 1024 && rawPort <= 65535) ? rawPort : 18990;
+  const sidecarToken = el('sidecarToken') ? el('sidecarToken').value.trim() : '';
+  return { sidecarPort, sidecarToken };
+}
+
 async function checkCompanionStatus() {
   const box = el('testSendStatus');
   if (!box) return;
+  const { sidecarPort, sidecarToken } = getSidecarConfig();
   box.className = 'status-box status-loading';
-  box.textContent = '⏳ 컴패니언 (127.0.0.1:18989) 핸드셰이크 및 연결 상태 확인 중...';
-  const resp = await callBg({ action: 'GET_EMAIL_TEST_STATUS' });
+  box.textContent = `⏳ Sidecar (127.0.0.1:${sidecarPort}) 핸드셰이크 및 연결 상태 확인 중...`;
+  const resp = await callBg({ action: 'GET_EMAIL_TEST_STATUS', sidecarPort, sidecarToken });
   if (resp && resp.ok && resp.data) {
     const d = resp.data;
     const compBuild = (resp.handshake && resp.handshake.companionBuildId) || 'verified';
     if (d.resendApiKeyConfigured) {
       box.className = 'status-box status-success';
-      box.textContent = `✅ 컴패니언 연결 및 버전 핸드셰이크 성공 (127.0.0.1:18989)\n• Companion Build: ${compBuild}\n• Resend API Key 설정됨 (서버사이드 안전 보관)\n• 시뮬레이터 수신자 대상 테스트 발송 준비 완료`;
+      box.textContent = `✅ Email Test Sidecar 연결 및 핸드셰이크 성공 (127.0.0.1:${sidecarPort})\n• Sidecar Build: ${compBuild}\n• Resend API Key 설정됨 (서버사이드 안전 보관)\n• 시뮬레이터 수신자 대상 테스트 발송 준비 완료`;
     } else {
       box.className = 'status-box status-blocked';
-      box.textContent = `⚠️ 컴패니언 연결 및 버전 핸드셰이크 성공 (127.0.0.1:18989)\n• Companion Build: ${compBuild}\n• Resend API Key 미설정 (RESEND_API_KEY 환경변수 필요)\n• 시뮬레이터 발송 요청 시 차단 안내(RESEND_API_KEY_NOT_CONFIGURED)가 반환됩니다.`;
+      box.textContent = `⚠️ Email Test Sidecar 연결 성공 (127.0.0.1:${sidecarPort})\n• Sidecar Build: ${compBuild}\n• KEY_MISSING: RESEND_API_KEY 미설정 (서버사이드 환경변수 필요)\n• 시뮬레이터 발송 요청 시 차단 안내(RESEND_API_KEY_NOT_CONFIGURED)가 반환됩니다.`;
     }
   } else if (resp && resp.reason === 'COMPANION_VERSION_MISMATCH') {
     box.className = 'status-box status-blocked';
-    box.textContent = `⛔ [버전 불일치: COMPANION_VERSION_MISMATCH]\n• 감지된 컴패니언: ${resp.companionBuildId || 'unknown'}\n• 필요한 기능: email-test-send\n• 조치 방법: 포트 18989의 기존 구버전 컴패니언을 안전하게 종료한 뒤, 새 패키지의 START_COMPANION_FOR_TEST_SEND.bat를 실행하세요.`;
-  } else if (resp && (resp.reason === 'UNAUTHORIZED' || resp.httpStatus === 401)) {
+    box.textContent = `⛔ [WRONG_COMPANION: COMPANION_VERSION_MISMATCH (포트 ${sidecarPort})]\n• 감지된 서비스: ${resp.companionBuildId || 'unknown'}\n• 필요한 기능: email-test-send\n• 조치 방법: 포트 ${sidecarPort}에는 구버전 서비스가 실행 중입니다. 포트 18990에서 START_EMAIL_TEST_SIDECAR.bat를 실행하세요.`;
+  } else if (resp && (resp.reason === 'UNAUTHORIZED' || resp.reason === 'SIDECAR_TOKEN_REQUIRED' || resp.httpStatus === 401)) {
     box.className = 'status-box status-error';
-    box.textContent = `❌ [인증 오류: UNAUTHORIZED (HTTP 401)]\n• ${resp.message || '컴패니언 Bearer 제어 토큰 인증에 실패했습니다.'}`;
+    box.textContent = `❌ [인증 필요: UNAUTHORIZED (HTTP 401)]\n• ${resp.message || 'START_EMAIL_TEST_SIDECAR.bat 콘솔에 표시된 Sidecar 제어 토큰을 위 입력란에 붙여넣어 주세요.'}`;
+  } else if (resp && (resp.reason === 'FORBIDDEN_ORIGIN' || resp.httpStatus === 403)) {
+    box.className = 'status-box status-error';
+    box.textContent = `❌ [Origin 거부: FORBIDDEN_ORIGIN (HTTP 403)]\n• ${resp.message || '허용되지 않은 Origin 요청입니다.'}`;
   } else if (resp && (resp.reason === 'ENDPOINT_NOT_FOUND' || resp.httpStatus === 404)) {
     box.className = 'status-box status-error';
-    box.textContent = `❌ [엔드포인트 없음: ENDPOINT_NOT_FOUND (HTTP 404)]\n• ${resp.message || '컴패니언 버전이 일치하지 않습니다.'}`;
+    box.textContent = `❌ [엔드포인트 없음: ENDPOINT_NOT_FOUND (HTTP 404)]\n• ${resp.message || 'Sidecar 버전이 일치하지 않습니다.'}`;
   } else {
     box.className = 'status-box status-error';
-    box.textContent = `❌ 컴패니언 연결 실패 (127.0.0.1:18989)\n• 상태: 오프라인 또는 포트 미응답 (${resp?.error || 'OFFLINE'})\n• 새 패키지의 START_COMPANION_FOR_TEST_SEND.bat를 실행하면 연결됩니다.`;
+    box.textContent = `❌ [MISSING_COMPANION] Sidecar 미실행 또는 연결 실패 (127.0.0.1:${sidecarPort})\n• 상세: ${resp?.error || 'OFFLINE'}\n• 새 패키지의 START_EMAIL_TEST_SIDECAR.bat를 실행한 뒤 다시 확인하세요.`;
   }
 }
 
@@ -118,6 +129,7 @@ async function triggerTestSend() {
   if (testSendCoolingDown) return;
   const box = el('testSendStatus');
   const btn = el('btnTestSend');
+  const { sidecarPort, sidecarToken } = getSidecarConfig();
   const recipient = el('testRecipient') ? el('testRecipient').value.trim() : '';
   const allowed = ['delivered@resend.dev', 'bounced@resend.dev', 'complained@resend.dev'];
   if (!allowed.includes(recipient)) {
@@ -135,10 +147,12 @@ async function triggerTestSend() {
   testSendCoolingDown = true;
   btn.disabled = true;
   box.className = 'status-box status-loading';
-  box.textContent = `⏳ 시뮬레이터 테스트 발송 요청 중...\n• 수신자: ${recipient}\n• 발신자: onboarding@resend.dev\n• Idempotency-Key: ${idempotencyKey}\n• 백엔드(127.0.0.1:18989) 경유 전송 중...`;
+  box.textContent = `⏳ 시뮬레이터 테스트 발송 요청 중...\n• Sidecar: http://127.0.0.1:${sidecarPort}\n• 수신자: ${recipient}\n• 발신자: onboarding@resend.dev\n• Idempotency-Key: ${idempotencyKey}`;
 
   const resp = await callBg({
     action: 'EMAIL_TEST_SEND',
+    sidecarPort,
+    sidecarToken,
     to: recipient,
     subject,
     html,
