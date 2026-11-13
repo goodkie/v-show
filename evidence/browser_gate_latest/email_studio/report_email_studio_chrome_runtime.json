@@ -1,10 +1,10 @@
 {
-  "gitHeadSha": "93f740f75ff33b53b6b410bddcf71bd176e0dcac",
-  "extensionTreeSha": "431e97d4cd2d9504a50be58138024d6eeb0f0a94",
+  "gitHeadSha": "8c1b390d3ab07b8202ba977dcc0534caa7a98cbd",
+  "extensionTreeSha": "f6bdceed0e5575eec3ab5220d0d07bae93ef91e2",
   "nodeVersion": "v24.11.1",
-  "browser": "Edg/157.0.4341.42",
+  "browser": "Edg/157.0.4341.46",
   "extId": "ldlijlaccfeelfdhgnjbibniocefckjj",
-  "extDir": "E:\\vivpr\\ai\\extension-form-sender\\_wt_email_next\\extension",
+  "extDir": "C:\\Users\\oPus\\.gemini\\antigravity\\brain\\39737f43-3ee8-47a1-a4fb-53e319ab562e\\scratch\\repo_fix_p0\\extension",
   "disposableProfileVerified": true,
   "passed": 25,
   "failed": 0,
@@ -14,7 +14,7 @@
     {
       "method": "GET",
       "url": "/fixture-remote-banner.png",
-      "ts": 1794310207770,
+      "ts": 1794501291541,
       "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/157.0.0.0 Safari/537.36 Edg/157.0.0.0"
     }
   ],
@@ -22,7 +22,7 @@
     {
       "name": "BROWSER_STARTED",
       "pass": true,
-      "detail": "Edg/157.0.4341.42 | profile=C:\\Users\\oPus\\AppData\\Local\\Temp\\xpider_email_studio_UeEFpP"
+      "detail": "Edg/157.0.4341.46 | profile=C:\\Users\\oPus\\AppData\\Local\\Temp\\xpider_email_studio_RPt2BU"
     },
     {
       "name": "EXTENSION_LOADED_UNPACKED",
@@ -279,23 +279,23 @@
   ],
   "requests": [
     {
-      "url": "blob:chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/c54d515f-67dc-4224-b8a2-0d4ca92f3b78",
+      "url": "blob:chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/93dd4402-5adc-4363-8cdb-ae49f1967a5a",
       "method": "GET"
     },
     {
-      "url": "blob:chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/7d1d2520-406a-47c8-9e1f-05941a59aa8f",
+      "url": "blob:chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/3035ef89-7b36-4757-8029-9fa35746cd01",
       "method": "GET"
     },
     {
-      "url": "blob:chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/882dbc71-422b-4579-a310-93e35a1eb941",
+      "url": "blob:chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/9454e112-0898-4e11-8c00-348e91e09f67",
       "method": "GET"
     },
     {
-      "url": "blob:chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/e02a7abb-654f-44a2-9f86-37996e40906a",
+      "url": "blob:chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/5c52e074-7b4f-4123-a925-048356b1f923",
       "method": "GET"
     },
     {
-      "url": "blob:chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/4bf7325e-5838-4d21-a5c2-5b9b482fc991",
+      "url": "blob:chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/7da531f2-a265-4b38-a8fb-75364723fb45",
       "method": "GET"
     }
   ]

@@ -332,9 +332,11 @@ async function reconcileOwnerTestNetworkGuardOnBoot() {
         const EXPLICIT_TEST_SOURCES = ['OWNER_CORE_TEST', 'OWNER_CAPTCHA_LAB', 'OWNER_FULL_TEST', 'CLOUDFLARE_TESTKEY_LAB'];
         const isExplicitTestSource = Boolean(data.xpider_active_test_source && EXPLICIT_TEST_SOURCES.includes(data.xpider_active_test_source));
 
-        const isTestBuild = (typeof BuildProvenance !== 'undefined' && typeof BuildProvenance.isTestOnlyBuild === 'function')
-            ? BuildProvenance.isTestOnlyBuild()
-            : false;
+        const isTestBuild = (typeof BuildProvenance !== 'undefined' && typeof BuildProvenance.isOwnerTestAuthorized === 'function')
+            ? BuildProvenance.isOwnerTestAuthorized()
+            : ((typeof BuildProvenance !== 'undefined' && typeof BuildProvenance.isTestOnlyBuild === 'function')
+                ? BuildProvenance.isTestOnlyBuild()
+                : false);
 
         const hasActiveOrPausedSession = Boolean(
             (data.xpider_isActive && Array.isArray(data.xpider_queue) && data.xpider_queue.length > 0) ||
@@ -2377,9 +2379,11 @@ const _handleMainMessageInner = (request, sender, sendResponse) => {
         case 'PREPARE_OWNER_FUNCTIONAL_TEST_RUN': {
             bgOperationQueue.enqueue(async () => {
                 try {
-                    const isTestOnly = self.BuildProvenance &&
-                        typeof self.BuildProvenance.isTestOnlyBuild === 'function' &&
-                        self.BuildProvenance.isTestOnlyBuild();
+                    const isTestOnly = (typeof BuildProvenance !== 'undefined' && typeof BuildProvenance.isOwnerTestAuthorized === 'function')
+                        ? BuildProvenance.isOwnerTestAuthorized()
+                        : ((typeof BuildProvenance !== 'undefined' && typeof BuildProvenance.isTestOnlyBuild === 'function')
+                            ? BuildProvenance.isTestOnlyBuild()
+                            : false);
                     if (!isTestOnly) {
                         return sendResponse({ success: false, error: 'NOT_AUTHORIZED_TEST_ONLY_BUILD' });
                     }
@@ -2734,14 +2738,11 @@ const _handleMainMessageInner = (request, sender, sendResponse) => {
                 let isTestMode = isExplicitTestSource;
 
                 if (isTestMode) {
-                    const isTestAuthorized = (typeof BuildProvenance !== 'undefined' && typeof BuildProvenance.isTestOnlyBuild === 'function')
-                        ? BuildProvenance.isTestOnlyBuild()
-                        : Boolean(typeof BuildProvenance !== 'undefined' && BuildProvenance.BUILD_INFO && (
-                            BuildProvenance.BUILD_INFO.channel === 'TEST_ONLY' ||
-                            BuildProvenance.BUILD_INFO.channel === 'OWNER_BETA' ||
-                            (typeof BuildProvenance.BUILD_INFO.channel === 'string' && BuildProvenance.BUILD_INFO.channel.startsWith('OWNER_BETA')) ||
-                            BuildProvenance.BUILD_INFO.testOnly === true
-                        ));
+                    const isTestAuthorized = (typeof BuildProvenance !== 'undefined' && typeof BuildProvenance.isOwnerTestAuthorized === 'function')
+                        ? BuildProvenance.isOwnerTestAuthorized()
+                        : ((typeof BuildProvenance !== 'undefined' && typeof BuildProvenance.isTestOnlyBuild === 'function')
+                            ? BuildProvenance.isTestOnlyBuild()
+                            : false);
 
                     if (!isTestAuthorized) {
                         console.error('[OWNER_FUNCTION_TEST_BLOCKED] Runtime build is not authorized for TEST_ONLY or OWNER_BETA channel.');
@@ -3982,6 +3983,256 @@ const _handleMainMessageInner = (request, sender, sendResponse) => {
             return true;
         }
 
+        case 'GET_EMAIL_TEST_STATUS': {
+            (async () => {
+                const pg = (typeof PrivacyGateway !== 'undefined' && PrivacyGateway.getInstance) ? PrivacyGateway.getInstance() : null;
+                const reqPort = Number(request.sidecarPort);
+                const ctrlPort = (Number.isInteger(reqPort) && reqPort >= 1024 && reqPort <= 65535) ? reqPort : 18990;
+                const extBuildId = (typeof BuildProvenance !== 'undefined' && BuildProvenance.BUILD_INFO && BuildProvenance.BUILD_INFO.buildId) || 'V7.0.0-OWNER-BETA-TEST-SEND-SIDECAR-20261113';
+                try {
+                    const hcCtrl = new AbortController();
+                    const hcTimer = setTimeout(() => hcCtrl.abort(), 4000);
+                    const healthResp = await fetch(`http://127.0.0.1:${ctrlPort}/health`, { method: 'GET', signal: hcCtrl.signal }).finally(() => clearTimeout(hcTimer));
+                    if (!healthResp.ok) {
+                        sendResponse({
+                            ok: false,
+                            companionOnline: true,
+                            status: 'BLOCKED',
+                            httpStatus: healthResp.status,
+                            reason: 'COMPANION_HEALTH_ERROR',
+                            error: `HTTP_${healthResp.status}`,
+                            message: `Sidecar /health 응답 오류 (HTTP ${healthResp.status}).`
+                        });
+                        return;
+                    }
+                    const health = await healthResp.json();
+                    const caps = Array.isArray(health.apiCapabilities) ? health.apiCapabilities : [];
+                    const compBuildId = health.companionBuildId || null;
+                    const majorMatch = typeof compBuildId === 'string' && compBuildId.split('-')[0] === extBuildId.split('-')[0];
+                    if (!caps.includes('email-test-send') || !majorMatch) {
+                        sendResponse({
+                            ok: false,
+                            companionOnline: true,
+                            status: 'BLOCKED',
+                            reason: 'COMPANION_VERSION_MISMATCH',
+                            error: 'COMPANION_VERSION_MISMATCH',
+                            companionBuildId: compBuildId,
+                            companionImplementationHead: health.companionImplementationHead || null,
+                            extensionBuildId: extBuildId,
+                            apiCapabilities: caps,
+                            message: `포트 ${ctrlPort}의 서비스(${compBuildId || 'unknown'})가 email-test-send 기능을 지원하지 않습니다. 포트 18990에서 START_EMAIL_TEST_SIDECAR.bat를 실행하세요.`
+                        });
+                        return;
+                    }
+
+                    let token = (typeof request.sidecarToken === 'string' && request.sidecarToken.trim()) ? request.sidecarToken.trim() : null;
+                    if (!token && ctrlPort === 18989 && pg) {
+                        if (!pg.ephemeralRelayToken && typeof pg.fetchRelayControlToken === 'function') {
+                            try { await pg.fetchRelayControlToken(); } catch (_) {}
+                        }
+                        token = pg.ephemeralRelayToken || null;
+                    }
+                    const stCtrl = new AbortController();
+                    const stTimer = setTimeout(() => stCtrl.abort(), 5000);
+                    const resp = await fetch(`http://127.0.0.1:${ctrlPort}/email/test-send/status`, {
+                        method: 'GET',
+                        headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+                        signal: stCtrl.signal
+                    }).finally(() => clearTimeout(stTimer));
+                    if (resp.status === 401) {
+                        sendResponse({
+                            ok: false,
+                            companionOnline: true,
+                            status: 'BLOCKED',
+                            httpStatus: 401,
+                            reason: token ? 'UNAUTHORIZED' : 'SIDECAR_TOKEN_REQUIRED',
+                            error: 'UNAUTHORIZED',
+                            companionBuildId: compBuildId,
+                            message: token
+                                ? 'Sidecar Bearer 제어 토큰이 일치하지 않습니다 (HTTP 401).'
+                                : 'START_EMAIL_TEST_SIDECAR.bat 콘솔에 표시된 Sidecar 제어 토큰을 Email Studio에 입력해 주세요 (HTTP 401).'
+                        });
+                        return;
+                    }
+                    if (resp.status === 403) {
+                        sendResponse({
+                            ok: false,
+                            companionOnline: true,
+                            status: 'BLOCKED',
+                            httpStatus: 403,
+                            reason: 'FORBIDDEN_ORIGIN',
+                            error: 'FORBIDDEN_ORIGIN',
+                            message: '허용되지 않은 Origin 요청이 Sidecar에 의해 차단되었습니다 (HTTP 403).'
+                        });
+                        return;
+                    }
+                    if (resp.status === 404) {
+                        sendResponse({
+                            ok: false,
+                            companionOnline: true,
+                            status: 'BLOCKED',
+                            httpStatus: 404,
+                            reason: 'ENDPOINT_NOT_FOUND',
+                            error: 'ENDPOINT_NOT_FOUND',
+                            companionBuildId: compBuildId,
+                            message: 'Sidecar에서 /email/test-send/status 엔드포인트를 찾을 수 없습니다 (HTTP 404).'
+                        });
+                        return;
+                    }
+                    if (!resp.ok) {
+                        sendResponse({ ok: false, companionOnline: true, status: 'BLOCKED', httpStatus: resp.status, error: `HTTP_${resp.status}` });
+                        return;
+                    }
+                    const data = await resp.json();
+                    sendResponse({
+                        ok: true,
+                        companionOnline: true,
+                        handshake: { companionBuildId: compBuildId, extensionBuildId: extBuildId, capabilityVerified: true },
+                        data
+                    });
+                } catch (err) {
+                    const isTimeout = err && err.name === 'AbortError';
+                    sendResponse({
+                        ok: false,
+                        companionOnline: false,
+                        status: 'BLOCKED',
+                        reason: isTimeout ? 'REQUEST_TIMEOUT' : 'COMPANION_OFFLINE_OR_NETWORK_ERROR',
+                        error: isTimeout ? 'REQUEST_TIMEOUT' : err.message
+                    });
+                }
+            })();
+            return true;
+        }
+
+        case 'EMAIL_TEST_SEND': {
+            (async () => {
+                const pg = (typeof PrivacyGateway !== 'undefined' && PrivacyGateway.getInstance) ? PrivacyGateway.getInstance() : null;
+                const reqPort = Number(request.sidecarPort);
+                const ctrlPort = (Number.isInteger(reqPort) && reqPort >= 1024 && reqPort <= 65535) ? reqPort : 18990;
+                const extBuildId = (typeof BuildProvenance !== 'undefined' && BuildProvenance.BUILD_INFO && BuildProvenance.BUILD_INFO.buildId) || 'V7.0.0-OWNER-BETA-TEST-SEND-SIDECAR-20261113';
+                try {
+                    const hcCtrl = new AbortController();
+                    const hcTimer = setTimeout(() => hcCtrl.abort(), 4000);
+                    const healthResp = await fetch(`http://127.0.0.1:${ctrlPort}/health`, { method: 'GET', signal: hcCtrl.signal }).finally(() => clearTimeout(hcTimer));
+                    if (!healthResp.ok) {
+                        sendResponse({
+                            ok: false,
+                            status: 'BLOCKED',
+                            httpStatus: healthResp.status,
+                            reason: 'COMPANION_HEALTH_ERROR',
+                            error: `HTTP_${healthResp.status}`,
+                            message: `Sidecar /health 응답 오류 (HTTP ${healthResp.status}).`
+                        });
+                        return;
+                    }
+                    const health = await healthResp.json();
+                    const caps = Array.isArray(health.apiCapabilities) ? health.apiCapabilities : [];
+                    const compBuildId = health.companionBuildId || null;
+                    const majorMatch = typeof compBuildId === 'string' && compBuildId.split('-')[0] === extBuildId.split('-')[0];
+                    if (!caps.includes('email-test-send') || !majorMatch) {
+                        sendResponse({
+                            ok: false,
+                            companionOnline: true,
+                            status: 'BLOCKED',
+                            reason: 'COMPANION_VERSION_MISMATCH',
+                            error: 'COMPANION_VERSION_MISMATCH',
+                            companionBuildId: compBuildId,
+                            extensionBuildId: extBuildId,
+                            message: `포트 ${ctrlPort}의 서비스(${compBuildId || 'unknown'})가 email-test-send 기능을 지원하지 않습니다. 포트 18990에서 START_EMAIL_TEST_SIDECAR.bat를 실행하세요.`
+                        });
+                        return;
+                    }
+
+                    let token = (typeof request.sidecarToken === 'string' && request.sidecarToken.trim()) ? request.sidecarToken.trim() : null;
+                    if (!token && ctrlPort === 18989 && pg) {
+                        if (!pg.ephemeralRelayToken && typeof pg.fetchRelayControlToken === 'function') {
+                            try { await pg.fetchRelayControlToken(); } catch (_) {}
+                        }
+                        token = pg.ephemeralRelayToken || null;
+                    }
+                    const postCtrl = new AbortController();
+                    const postTimer = setTimeout(() => postCtrl.abort(), 15000);
+                    const resp = await fetch(`http://127.0.0.1:${ctrlPort}/email/test-send`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                        },
+                        body: JSON.stringify({
+                            to: request.to,
+                            subject: request.subject,
+                            html: request.html,
+                            text: request.text,
+                            idempotencyKey: request.idempotencyKey
+                        }),
+                        signal: postCtrl.signal
+                    }).finally(() => clearTimeout(postTimer));
+
+                    let data = {};
+                    try {
+                        data = await resp.json();
+                    } catch (_) {
+                        sendResponse({
+                            ok: false,
+                            httpStatus: resp.status,
+                            status: 'PROVIDER_ERROR',
+                            error: 'INVALID_JSON_RESPONSE',
+                            message: `Sidecar/Provider returned invalid JSON (HTTP ${resp.status}).`
+                        });
+                        return;
+                    }
+                    if (resp.status === 401) {
+                        sendResponse({
+                            ok: false,
+                            httpStatus: 401,
+                            status: 'BLOCKED',
+                            reason: token ? 'UNAUTHORIZED' : 'SIDECAR_TOKEN_REQUIRED',
+                            error: data.error || 'UNAUTHORIZED',
+                            message: token
+                                ? (data.message || 'Sidecar Bearer 인증 토큰이 일치하지 않습니다 (HTTP 401).')
+                                : 'START_EMAIL_TEST_SIDECAR.bat 콘솔에 표시된 Sidecar 제어 토큰을 Email Studio에 입력해 주세요 (HTTP 401).'
+                        });
+                        return;
+                    }
+                    if (resp.status === 403) {
+                        sendResponse({
+                            ok: false,
+                            httpStatus: 403,
+                            status: 'BLOCKED',
+                            reason: 'FORBIDDEN_ORIGIN',
+                            error: data.error || 'FORBIDDEN_ORIGIN',
+                            message: data.message || '허용되지 않은 Origin 요청입니다 (HTTP 403).'
+                        });
+                        return;
+                    }
+                    if (resp.status === 404) {
+                        sendResponse({
+                            ok: false,
+                            httpStatus: 404,
+                            status: 'BLOCKED',
+                            reason: 'ENDPOINT_NOT_FOUND',
+                            error: data.error || 'ENDPOINT_NOT_FOUND',
+                            message: 'Sidecar에서 /email/test-send 엔드포인트를 찾을 수 없습니다 (버전 불일치 가능성).'
+                        });
+                        return;
+                    }
+                    sendResponse({ ok: resp.ok, httpStatus: resp.status, ...data });
+                } catch (err) {
+                    const isTimeout = err && err.name === 'AbortError';
+                    sendResponse({
+                        ok: false,
+                        status: 'BLOCKED',
+                        reason: isTimeout ? 'REQUEST_TIMEOUT' : 'COMPANION_OFFLINE_OR_NETWORK_ERROR',
+                        error: isTimeout ? 'REQUEST_TIMEOUT' : err.message,
+                        message: isTimeout
+                            ? 'Sidecar 테스트 발송 응답 시간이 초과되었습니다 (15s timeout).'
+                            : `Email Test Sidecar at 127.0.0.1:${ctrlPort} is offline or unreachable: ${err.message}`
+                    });
+                }
+            })();
+            return true;
+        }
+
         case 'XPIDER_LOG':
             logBg(null, `[Solver] ${request.message}`, request.status === 'FAIL' ? 'error' : 'info');
             sendResponse({ success: true });
@@ -4278,7 +4529,12 @@ const _handleMainMessageInner = (request, sender, sendResponse) => {
                 if (request.formIdentity) campaignState.currentFormIdentity = request.formIdentity;
                 if (request.fieldMapping) campaignState.currentFieldMapping = request.fieldMapping;
                 if (request.filledFields) campaignState.currentFilledFields = request.filledFields;
-                if (request.submitState) campaignState.currentSubmitState = request.submitState;
+                if (request.submitState) {
+                    campaignState.currentSubmitState = request.submitState;
+                    if (campaignState.activeExecutionContext) {
+                        campaignState.activeExecutionContext.currentSubmitState = request.submitState;
+                    }
+                }
 
                 if (request.stage) {
                     campaignState.stageStallCount = 0;
@@ -4339,6 +4595,10 @@ const _handleMainMessageInner = (request, sender, sendResponse) => {
                         if (campaignState.currentAttempt) {
                             campaignState.currentAttempt.status = 'SUBMIT_PENDING';
                             campaignState.submitLock = true;
+                            if (campaignState.activeExecutionContext) {
+                                campaignState.activeExecutionContext.submitLock = true;
+                                campaignState.activeExecutionContext.currentSubmitState = 'TRIGGERED';
+                            }
                             try {
                                 await recordSubmissionIntent(campaignState.currentAttempt.url, 'SUBMIT_PENDING', campaignState.currentAttempt.attemptId);
                                 await chrome.storage.local.set({ xpider_currentAttempt: campaignState.currentAttempt });
@@ -4576,7 +4836,11 @@ const _handleMainMessageInner = (request, sender, sendResponse) => {
                     let labAutoDrive = false;
                     try {
                         const _lu = targetUrl || campaignState.currentAttempt?.url || '';
-                        const _isTestOnly = (typeof BuildProvenance !== 'undefined' && typeof BuildProvenance.isTestOnlyBuild === 'function') ? BuildProvenance.isTestOnlyBuild() === true : false;
+                        const _isTestOnly = (typeof BuildProvenance !== 'undefined' && typeof BuildProvenance.isOwnerTestAuthorized === 'function')
+                            ? BuildProvenance.isOwnerTestAuthorized() === true
+                            : ((typeof BuildProvenance !== 'undefined' && typeof BuildProvenance.isTestOnlyBuild === 'function')
+                                ? BuildProvenance.isTestOnlyBuild() === true
+                                : false);
                         labAutoDrive = _isTestOnly && campaignState.ownerFunctionTestMode === true &&
                             /^https?:\/\/(127\.0\.0\.1|localhost)(:\d+)?\/captcha-[a-z0-9-]+\.html/i.test(_lu) &&
                             typeof MockCaptchaProviderAdapter !== 'undefined';
@@ -6087,9 +6351,11 @@ async function startCampaignOrchestrator(queue, template, delayMs, fillDelayMs =
             hs = self.__xpiderHistoryStore;
         } catch (_) {}
 
-        const isTestOnlyBuild = self.BuildProvenance &&
-            typeof self.BuildProvenance.isTestOnlyBuild === 'function' &&
-            self.BuildProvenance.isTestOnlyBuild();
+        const isTestOnlyBuild = (typeof BuildProvenance !== 'undefined' && typeof BuildProvenance.isOwnerTestAuthorized === 'function')
+            ? BuildProvenance.isOwnerTestAuthorized()
+            : ((typeof BuildProvenance !== 'undefined' && typeof BuildProvenance.isTestOnlyBuild === 'function')
+                ? BuildProvenance.isTestOnlyBuild()
+                : false);
 
         const isOwnerTestMode = !!options.ownerFunctionTestMode;
         const allLoopback = Array.isArray(queue) && queue.length > 0 && queue.length <= 30 && queue.every(url => {
@@ -6250,6 +6516,12 @@ async function startCampaignOrchestrator(queue, template, delayMs, fillDelayMs =
 }
 
 async function pauseCampaignOrchestrator(saveCheckpoint = true) {
+    // [P0 Race Guard] Idempotent protection: if campaign is already paused and completely quiescent, do not re-run unshifts or pause logic
+    if (campaignState.isPaused && !campaignState.isActive && !campaignState.activeTargetInFlight) {
+        logBg(null, "⏸️ [Engine] Campaign is already paused / quiescent. Acknowledging idempotent PAUSE.", "info");
+        return { success: true, status: 'ALREADY_PAUSED', remainingCount: campaignState.queue ? campaignState.queue.length : 0 };
+    }
+
     // [R6.9G.7 P0-8 Quiescent Pause Barrier]
     // 1. Snapshot in-flight state BEFORE any aborts or resets
     const inFlightAtt = campaignState.currentAttempt ? { ...campaignState.currentAttempt } : null;
@@ -6328,22 +6600,15 @@ async function pauseCampaignOrchestrator(saveCheckpoint = true) {
     }
 
     // 3. WAIT FOR ACTIVE ORCHESTRATION TO QUIESCE BEFORE WRITING CHECKPOINT SNAPSHOT
-    if (wasInV7Hold || !hadTargetResolve) {
-        if (hadTargetResolve && campaignState.activeTargetInFlight) {
-            const holdQuiesceStart = Date.now();
-            while (campaignState.activeTargetInFlight && (Date.now() - holdQuiesceStart < 200)) {
-                await new Promise(r => setTimeout(r, 25));
-            }
-        }
-        campaignState.activeTargetInFlight = false;
-        campaignState.activeTargetCount = 0;
+    // [P0 Race Guard] Wait for in-flight orchestration slot to legitimately release.
+    // Post-submit holds and retry sleeps now observe campaignState.isPaused and break out within 50ms.
+    const pauseQuiesceStart = Date.now();
+    while (campaignState.activeTargetInFlight && (Date.now() - pauseQuiesceStart < 5000)) {
+        await new Promise(r => setTimeout(r, 50));
+    }
+    if (wasInV7Hold) {
         campaignState.manualHoldActive = false;
         campaignState.externalCaptchaWaitActive = false;
-    } else {
-        const pauseQuiesceStart = Date.now();
-        while (campaignState.activeTargetInFlight && (Date.now() - pauseQuiesceStart < 5000)) {
-            await new Promise(r => setTimeout(r, 50));
-        }
     }
 
     if (campaignState.activeTargetInFlight) {
@@ -6522,14 +6787,11 @@ async function resumeCampaignOrchestrator(options = {}) {
     // Before RESUME is acknowledged, independently call installOwnerTestNetworkGuard(), verify getSessionRules() readback, and FAIL-CLOSED if verification fails.
     const isOwnerTest = Boolean(checkpoint.ownerFunctionTestMode || campaignState.ownerFunctionTestMode);
     if (isOwnerTest) {
-        const isTestBuild = (typeof BuildProvenance !== 'undefined' && typeof BuildProvenance.isTestOnlyBuild === 'function')
-            ? BuildProvenance.isTestOnlyBuild()
-            : Boolean(typeof BuildProvenance !== 'undefined' && BuildProvenance.BUILD_INFO && (
-                BuildProvenance.BUILD_INFO.channel === 'TEST_ONLY' ||
-                BuildProvenance.BUILD_INFO.channel === 'OWNER_BETA' ||
-                (typeof BuildProvenance.BUILD_INFO.channel === 'string' && BuildProvenance.BUILD_INFO.channel.startsWith('OWNER_BETA')) ||
-                BuildProvenance.BUILD_INFO.testOnly === true
-            ));
+        const isTestBuild = (typeof BuildProvenance !== 'undefined' && typeof BuildProvenance.isOwnerTestAuthorized === 'function')
+            ? BuildProvenance.isOwnerTestAuthorized()
+            : ((typeof BuildProvenance !== 'undefined' && typeof BuildProvenance.isTestOnlyBuild === 'function')
+                ? BuildProvenance.isTestOnlyBuild()
+                : false);
         if (!isTestBuild) {
             throw new Error("FAIL_CLOSED: Cannot resume Owner Test Mode campaign in non-test build.");
         }
@@ -6810,6 +7072,90 @@ async function waitForTargetSlot(sessionId, leaseToken) {
     return acquireTargetSlot(sessionId, campaignState.schedulerGeneration);
 }
 
+// [Directive #6795450757 & #6813627627 Residual Race Guard] Serialized Exec Identity Ownership Fence with Fail-Closed Errors
+let execIdentityMutationChain = Promise.resolve();
+function mutateExecIdentity(fn) {
+    const nextPromise = execIdentityMutationChain.then(fn);
+    execIdentityMutationChain = nextPromise.catch((err) => {
+        console.error('[MUTATE_EXEC_IDENTITY_ERROR]', err?.message || err);
+    });
+    return nextPromise;
+}
+
+function setExecIdentityOwned(execIdentity) {
+    if (execIdentity && execIdentity.attemptId) {
+        campaignState.activeExecIdentityAttemptId = execIdentity.attemptId;
+    }
+    return mutateExecIdentity(async () => {
+        if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+            await new Promise((resolve, reject) => {
+                chrome.storage.local.set({
+                    xpider_exec_identity: execIdentity,
+                    xpider_currentAttempt: campaignState.currentAttempt
+                }, () => {
+                    if (chrome.runtime && chrome.runtime.lastError) {
+                        return reject(new Error(chrome.runtime.lastError.message || 'chrome.storage.local.set failed'));
+                    }
+                    resolve();
+                });
+            });
+        }
+    });
+}
+
+function updateExecIdentityTabIdOwned(tabId, attemptId) {
+    return mutateExecIdentity(async () => {
+        if (campaignState.activeExecIdentityAttemptId && attemptId && campaignState.activeExecIdentityAttemptId !== attemptId) {
+            return;
+        }
+        if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+            const data = await new Promise(r => chrome.storage.local.get(['xpider_exec_identity'], r));
+            const curIdent = data && data.xpider_exec_identity ? data.xpider_exec_identity : {};
+            if (!attemptId || curIdent.attemptId === attemptId) {
+                await new Promise((resolve, reject) => {
+                    chrome.storage.local.set({
+                        xpider_exec_identity: {
+                            ...curIdent,
+                            tabId: tabId
+                        }
+                    }, () => {
+                        if (chrome.runtime && chrome.runtime.lastError) {
+                            return reject(new Error(chrome.runtime.lastError.message || 'chrome.storage.local.set tabId failed'));
+                        }
+                        resolve();
+                    });
+                });
+            }
+        }
+    });
+}
+
+function clearExecIdentityIfOwned(attemptId) {
+    if (!attemptId) return Promise.resolve();
+    return mutateExecIdentity(async () => {
+        // Ownership fence: if another attempt already took ownership, do not clear
+        if (campaignState.activeExecIdentityAttemptId && campaignState.activeExecIdentityAttemptId !== attemptId) {
+            return;
+        }
+        if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+            const data = await new Promise(r => chrome.storage.local.get(['xpider_exec_identity'], r));
+            if (data && data.xpider_exec_identity && data.xpider_exec_identity.attemptId === attemptId) {
+                if (!campaignState.activeExecIdentityAttemptId || campaignState.activeExecIdentityAttemptId === attemptId) {
+                    campaignState.activeExecIdentityAttemptId = null;
+                    await new Promise((resolve, reject) => {
+                        chrome.storage.local.set({ xpider_exec_identity: null }, () => {
+                            if (chrome.runtime && chrome.runtime.lastError) {
+                                return reject(new Error(chrome.runtime.lastError.message || 'chrome.storage.local.set clear failed'));
+                            }
+                            resolve();
+                        });
+                    });
+                }
+            }
+        }
+    });
+}
+
 async function processNextCampaignTarget(loopSessionId, loopGeneration) {
     // [R6.9G.7 P0-1] Generation Guard: stale wakeups no-op
     if (loopGeneration !== undefined && loopGeneration !== campaignState.schedulerGeneration) {
@@ -7081,10 +7427,25 @@ async function processNextCampaignTarget(loopSessionId, loopGeneration) {
             campaignState.targetDeadlineController = deadlineController;
             const timeoutPromise = deadlineController.start(targetTimeoutMs);
 
+            // [P0 Race Guard] Immutable target execution context bound to this specific target invocation
+            const targetExecutionContext = {
+                runId: campaignState.campaignRunId,
+                sessionId: currentSession,
+                targetUrl: targetUrl,
+                targetHost: targetHost,
+                targetIndex: targetIdx,
+                attemptId: null,
+                targetToken: null,
+                tabId: null,
+                submitLock: false,
+                currentSubmitState: 'NOT_SUBMITTED'
+            };
+            campaignState.activeExecutionContext = targetExecutionContext;
+
             orchestrationSettled = false;
             const orchestrationPromise = (async () => {
                 try {
-                    return await orchestrateSending(targetUrl, campaignState.template, targetAbortController.signal);
+                    return await orchestrateSending(targetUrl, campaignState.template, targetAbortController.signal, targetExecutionContext);
                 } finally {
                     orchestrationSettled = true;
                 }
@@ -7150,13 +7511,13 @@ async function processNextCampaignTarget(loopSessionId, loopGeneration) {
                 }
                 try {
                     const hs = await getHistoryStoreInstance();
-                    let attemptId = campaignState.currentAttempt?.attemptId;
-                    let targetToken = campaignState.currentAttempt?.targetToken;
+                    let attemptId = targetExecutionContext.attemptId || (campaignState.currentAttempt?.url === targetUrl ? campaignState.currentAttempt?.attemptId : null);
+                    let targetToken = targetExecutionContext.targetToken || (campaignState.currentAttempt?.url === targetUrl ? campaignState.currentAttempt?.targetToken : null);
 
                     if (!attemptId && hs && typeof hs.recordAttempt === 'function') {
                         targetToken = targetToken || ('tok_' + Date.now() + '_' + Math.random().toString(36).substring(2, 8));
                         const attemptResult = await hs.recordAttempt(targetUrl, {
-                            campaignRunId: campaignState.campaignRunId,
+                            campaignRunId: targetExecutionContext.runId || campaignState.campaignRunId,
                             status: 'PREPARING',
                             reason: 'PREPARING',
                             templateId: campaignState.templateId || null,
@@ -7164,11 +7525,13 @@ async function processNextCampaignTarget(loopSessionId, loopGeneration) {
                             targetToken: targetToken
                         });
                         attemptId = attemptResult?.attemptId;
+                        targetExecutionContext.attemptId = attemptId;
+                        targetExecutionContext.targetToken = targetToken;
                     }
 
                     if (attemptId && hs && typeof hs.settleCanonicalAttempt === 'function') {
                         await hs.settleCanonicalAttempt(attemptId, timeoutStatus, timeoutReason, {}, {
-                            campaignRunId: campaignState.campaignRunId,
+                            campaignRunId: targetExecutionContext.runId || campaignState.campaignRunId,
                             resultUrl: targetUrl,
                             targetToken: targetToken
                         });
@@ -7196,22 +7559,29 @@ async function processNextCampaignTarget(loopSessionId, loopGeneration) {
                     await new Promise(r => setTimeout(r, 50));
                 }
 
-                if (campaignState.currentTabId) {
-                    const orphanId = campaignState.currentTabId;
-                    campaignState.currentTabId = null;
-                    await closeOwnedTabVerified(orphanId, 'TARGET_FINALLY_CLEANUP');
+                // [Directive #6795450757 Risk 1 Resolution] Ownership-identity-based tab close ONLY.
+                // If targetExecutionContext did not register a tabId, NEVER close campaignState.currentTabId,
+                // as it may belong to a newly resumed invocation.
+                if (targetExecutionContext.tabId) {
+                    if (campaignState.currentTabId === targetExecutionContext.tabId) {
+                        campaignState.currentTabId = null;
+                    }
+                    await closeOwnedTabVerified(targetExecutionContext.tabId, 'TARGET_FINALLY_CLEANUP');
                 }
 
                 try {
                     const hs = await getHistoryStoreInstance();
-                    if (!campaignState.isPaused && hs && campaignState.currentAttempt && campaignState.currentAttempt.attemptId) {
-                        const att = hs.attempts.find(a => a.attemptId === campaignState.currentAttempt.attemptId);
+                    // [P0 Attempt-Identity Scope Fix] ONLY settle the attempt that belonged to THIS specific execution context!
+                    const boundAttId = targetExecutionContext.attemptId;
+                    if (!campaignState.isPaused && hs && boundAttId) {
+                        const att = hs.attempts.find(a => a.attemptId === boundAttId);
                         if (att && att.status === 'PREPARING') {
-                            const isSubmitDone = campaignState.submitLock || campaignState.currentSubmitState === 'TRIGGERED';
+                            // [Directive #6795450757 Risk 4 Resolution] Scoped submit check: strictly inspect targetExecutionContext
+                            const isSubmitDone = Boolean(targetExecutionContext.submitLock || targetExecutionContext.currentSubmitState === 'TRIGGERED' || targetExecutionContext.currentSubmitState === 'SUBMIT_TRIGGERED');
                             const terminalSt = isSubmitDone ? 'DELIVERY_UNKNOWN' : 'SKIPPED';
                             const termReason = isSubmitDone ? REASON_CODES.DELIVERY_UNKNOWN : 'PRE_SUBMIT_TERMINATED';
                             await hs.settleCanonicalAttempt(att.attemptId, terminalSt, termReason, {}, {
-                                campaignRunId: campaignState.campaignRunId
+                                campaignRunId: targetExecutionContext.runId || campaignState.campaignRunId
                             });
                             await hs.persist();
                             await syncCampaignCountersFromLedger(hs);
@@ -7219,14 +7589,37 @@ async function processNextCampaignTarget(loopSessionId, loopGeneration) {
                     }
                 } catch (_) {}
 
-                campaignState.currentTargetAbortController = null;
-                campaignState.currentTargetStage = null;
-                campaignState.currentTargetToken = null;
-                campaignState.currentAttempt = null;
-                campaignState.submitLock = false;
-                campaignState.timeoutWatchdogGen = (campaignState.timeoutWatchdogGen || 0) + 1;
-                if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
-                    chrome.storage.local.set({ xpider_exec_identity: null }).catch(() => {});
+                // [P0 Attempt-Identity Scope Fix] Guarded cleanup of global pointers: ONLY clear if STILL matching THIS execution!
+                if (campaignState.currentTargetAbortController === targetAbortController) {
+                    campaignState.currentTargetAbortController = null;
+                }
+                if (targetExecutionContext.targetToken && campaignState.currentTargetToken === targetExecutionContext.targetToken) {
+                    campaignState.currentTargetToken = null;
+                }
+                // [Directive #6813627627 Item 1 Fix] Latch active attempt ownership BEFORE nulling currentAttempt
+                const wasOwnedActiveAttempt = Boolean(
+                    targetExecutionContext.attemptId &&
+                    campaignState.currentAttempt &&
+                    campaignState.currentAttempt.attemptId === targetExecutionContext.attemptId
+                );
+
+                if (wasOwnedActiveAttempt) {
+                    campaignState.currentAttempt = null;
+                    campaignState.currentTargetStage = null;
+                    campaignState.submitLock = false;
+                }
+                if (targetExecutionContext.tabId && campaignState.currentTabId === targetExecutionContext.tabId) {
+                    campaignState.currentTabId = null;
+                }
+                // Watchdog generation invalidation fenced on wasOwnedActiveAttempt:
+                // Only invalidates watchdog if this execution was the owned active attempt.
+                // A stale finalize will never invalidate a newer attempt's watchdog.
+                if (wasOwnedActiveAttempt) {
+                    campaignState.timeoutWatchdogGen = (campaignState.timeoutWatchdogGen || 0) + 1;
+                }
+                // [Directive #6795450757 & #6813627627 Item 2/3 Fix] Serialized ownership fence for exec_identity clear
+                if (targetExecutionContext.attemptId) {
+                    clearExecIdentityIfOwned(targetExecutionContext.attemptId).catch(() => {});
                 }
 
                 if (!orchestrationSettled) {
@@ -7837,7 +8230,7 @@ async function scanContactPaths(baseUrl, tabId, discoveryCtx = null) {
     return validPaths;
 }
 
-async function orchestrateSending(urlInput, template, abortSignal = null) {
+async function orchestrateSending(urlInput, template, abortSignal = null, executionContext = {}) {
     if (!abortSignal) {
         if (!campaignState.currentTargetAbortController) {
             campaignState.currentTargetAbortController = new AbortController();
@@ -7890,6 +8283,11 @@ async function orchestrateSending(urlInput, template, abortSignal = null) {
         _attemptId = attemptResult && attemptResult.attemptId ? attemptResult.attemptId : null;
         if (!_attemptId) throw new Error('recordAttempt returned no attemptId');
         await hs.persist();
+        if (executionContext) {
+            executionContext.attemptId = _attemptId;
+            executionContext.targetToken = targetToken;
+            executionContext.targetUrl = targetUrl;
+        }
         // [F8-A] Canonical attemptId — begins in PREPARING (not SUBMIT_PENDING until submit is imminent)
         campaignState.currentAttempt = {
             url: targetUrl,
@@ -7932,15 +8330,7 @@ async function orchestrateSending(urlInput, template, abortSignal = null) {
             ts: Date.now()
         };
         if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
-            await new Promise((resolve, reject) => {
-                chrome.storage.local.set({
-                    xpider_exec_identity: execIdentity,
-                    xpider_currentAttempt: campaignState.currentAttempt
-                }, () => {
-                    if (chrome.runtime && chrome.runtime.lastError) return reject(chrome.runtime.lastError);
-                    resolve();
-                });
-            });
+            await setExecIdentityOwned(execIdentity);
         }
         logBg(null, `[EXEC_IDENTITY_PRE_NAV] attemptId=${_attemptId} token=${targetToken} epoch=${execIdentity.captchaEpoch}`, 'info');
     } catch (hsErr) {
@@ -8033,18 +8423,13 @@ async function orchestrateSending(urlInput, template, abortSignal = null) {
         campaignOwnedTabIds.add(tabId);
     }
     campaignState.currentTabId = tabId;
+    if (executionContext) {
+        executionContext.tabId = tabId;
+    }
 
     // [R6.9G.10.3.5 A.1] Update canonical execution identity with canonical tabId
     if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
-        chrome.storage.local.get(['xpider_exec_identity'], res => {
-            const curIdent = res && res.xpider_exec_identity ? res.xpider_exec_identity : {};
-            chrome.storage.local.set({
-                xpider_exec_identity: {
-                    ...curIdent,
-                    tabId: tabId
-                }
-            }).catch(() => {});
-        });
+        updateExecIdentityTabIdOwned(tabId, _attemptId).catch(() => {});
     }
 
     // [Issue #6 R6.9B Section 3] POST-CREATE CONFIRM KILL
@@ -8409,10 +8794,16 @@ async function orchestrateSending(urlInput, template, abortSignal = null) {
         if (res && res.success) {
             const holdMs = res?.metadata?.manualMode ? 20 : Math.max(3500, campaignState.submitDelayMs ? parseInt(campaignState.submitDelayMs) : 3500);
             logBg(tabId, `✨ [Engine] Submission confirmed. Maintaining tab for completion (${holdMs}ms)...`, "success");
-            await new Promise(r => setTimeout(r, holdMs));
+            const holdStart = Date.now();
+            while (Date.now() - holdStart < holdMs && !campaignState.isPaused && !(abortSignal && abortSignal.aborted)) {
+                await new Promise(r => setTimeout(r, 50));
+            }
         } else if (res?.error !== 'ABORTED' && res?.reasonCode !== 'ABORTED' && !campaignState.isPaused) {
             const failWaitMs = res?.metadata?.manualMode ? 20 : 1000;
-            await new Promise(r => setTimeout(r, failWaitMs));
+            const failStart = Date.now();
+            while (Date.now() - failStart < failWaitMs && !campaignState.isPaused && !(abortSignal && abortSignal.aborted)) {
+                await new Promise(r => setTimeout(r, 50));
+            }
         }
 
         if (discoveryCtx) {
@@ -8981,9 +9372,13 @@ async function restoreCampaignState() {
                 'xpider_paused_checkpoint', 'xpider_isPaused', 'xpider_active_campaign_run_id',
                 'xpider_owner_function_test_mode', 'xpider_owner_function_test_mode_active',
                 'xpider_v7_active_hold_state', 'xpider_campaign_mode', 'xpider_run_scoped_direct_privacy',
-                'xpider_include_forms_without_message'
+                'xpider_include_forms_without_message', 'xpider_exec_identity'
             ], async (data) => {
                 try {
+                    // [Directive #6813627627 Item 2/3 Fix] Rehydrate durable execution identity ownership across SW restart
+                    if (data && data.xpider_exec_identity && data.xpider_exec_identity.attemptId) {
+                        campaignState.activeExecIdentityAttemptId = data.xpider_exec_identity.attemptId;
+                    }
                     if (campaignState.isActive) {
                         logBg(null, "[Boot] Campaign active in runtime; bypassing storage state clobber.", "info");
                         markBoot("restore_complete");

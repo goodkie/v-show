@@ -1,0 +1,60 @@
+{
+  "timestamp": "2026-11-12T16:34:32.921Z",
+  "browser": "Edg/157.0.4341.46",
+  "extensionId": "ldlijlaccfeelfdhgnjbibniocefckjj",
+  "total": 10,
+  "passed": 10,
+  "failed": 0,
+  "results": [
+    {
+      "name": "BROWSER_STARTED",
+      "pass": true,
+      "detail": "Edg/157.0.4341.46"
+    },
+    {
+      "name": "EXTENSION_LOADED",
+      "pass": true,
+      "detail": "ldlijlaccfeelfdhgnjbibniocefckjj"
+    },
+    {
+      "name": "HEADER_TAG_SHOWS_TEST_SEND_AND_PROD_LOCK",
+      "pass": true,
+      "detail": "🧪 TEST SEND 활성화 (Resend Simulator) · 🔒 상용 발송 잠금"
+    },
+    {
+      "name": "RECIPIENT_OPTIONS_STRICT_SIMULATOR",
+      "pass": true,
+      "detail": "[\"delivered@resend.dev\",\"bounced@resend.dev\",\"complained@resend.dev\"]"
+    },
+    {
+      "name": "TEST_SENDER_FIXED_RESEND_DEV",
+      "pass": true,
+      "detail": "sender=onboarding@resend.dev, readonly=true"
+    },
+    {
+      "name": "BTN_TEST_SEND_ENABLED",
+      "pass": true,
+      "detail": "{\"text\":\"▶ 시뮬레이터 테스트 발송 (Test Send)\",\"disabled\":false}"
+    },
+    {
+      "name": "BTN_PROD_SEND_LOCKED",
+      "pass": true,
+      "detail": "{\"text\":\"운영 이메일 대량 발송 (비활성화됨)\",\"disabled\":true,\"title\":\"운영 도메인 및 수신동의 검증 필요\"}"
+    },
+    {
+      "name": "CHECK_COMPANION_INTERACTION_RESPONSIVE",
+      "pass": true,
+      "detail": "❌ 컴패니언 연결 실패 (127.0.0.1:18989)\n• 상태: 오프라인 또는 포트 미응답\n• 컴패니언 서비스 실행 시 자동 연결됩니다."
+    },
+    {
+      "name": "TEST_SEND_FAILS_CLOSED_GRACEFULLY",
+      "pass": true,
+      "detail": "❌ [전송 실패]\n• 오류: ENDPOINT_NOT_FOUND"
+    },
+    {
+      "name": "SCREENSHOT_CAPTURED",
+      "pass": true,
+      "detail": "C:\\Users\\oPus\\.gemini\\antigravity\\brain\\39737f43-3ee8-47a1-a4fb-53e319ab562e\\scratch\\repo_fix_p0\\evidence\\email_studio_test_send\\studio_test_send_verified.png"
+    }
+  ]
+}

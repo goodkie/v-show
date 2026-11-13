@@ -1,10 +1,10 @@
-PASS BROWSER_STARTED :: Edg/157.0.4341.42 | profile=C:\Users\oPus\AppData\Local\Temp\xpider_email_studio_UeEFpP
+PASS BROWSER_STARTED :: Edg/157.0.4341.46 | profile=C:\Users\oPus\AppData\Local\Temp\xpider_email_studio_RPt2BU
 PASS EXTENSION_LOADED_UNPACKED :: id=ldlijlaccfeelfdhgnjbibniocefckjj via CDP Extensions.loadUnpacked (ignored pre-existing id jdiccldimpdaibmpdkjnbmckianbfold)
-DIAG popup {"u":"chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/popup.html","t":"XPIDER AutoForm Sender Pro","b":142417,"rs":"complete","txt":"● PRIVATE OWNER BETA — DEBUG TELEMETRY ENABLED\n✉️ Email Studio\n⚠️ Reset Lists\n⚙️\nSettings\nXPIDER AutoForm Sender Pro\nSENDER PRO\nV1.2.0\nOWNER BETA V7.0.0-RC11 [2"}
+DIAG popup {"u":"chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/popup.html","t":"XPIDER AutoForm Sender Pro","b":142412,"rs":"complete","txt":"● PRIVATE OWNER BETA — DEBUG TELEMETRY ENABLED\n✉️ Email Studio\n⚠️ Reset Lists\n⚙️\nSettings\nXPIDER AutoForm Sender Pro\nSENDER PRO\nV1.2.0\nOWNER BETA V7.0.0-RC11 [2"}
 PASS POPUP_HAS_EMAIL_STUDIO_LINK :: {"href":"email-studio/index.html","target":"_blank","rel":"noopener noreferrer","text":"✉️ Email Studio"}
 PASS POPUP_EXISTING_NAV_ITEMS_PRESENT :: ["email-template-studio-link","reset-all-lists-btn","settings-toggle","campaign","template","history","email-collector"]
 PASS POPUP_CONSOLE_ERRORS_RECORDED :: 1 error/exception entries (info only: [{"page":"chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/popup.html","type":"log:error","text":"Unchecked runtime.lastError: Could not establish connection. Receiving end does not exist. chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/popup.html"}])
-DIAG studio {"u":"chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/email-studio/index.html","t":"XPIDER Email Template Studio","b":5560,"rs":"complete","txt":"XPIDER · Email Template Studio\nvivpr.pro · 이미지 + HTML + 일반 텍스트 · 발송 전 품질 검토\nPREVIEW ONLY · 전송 없음\n이메일 작성\n메시지 종류\n업무 / 서비스 안내\n마케팅 / 뉴스레터 (수신 동의 필수)\n제목\n미리보기 문구\n발신 브"}
+DIAG studio {"u":"chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/email-studio/index.html","t":"XPIDER Email Template Studio","b":7443,"rs":"complete","txt":"XPIDER · Email Template Studio\nvivpr.pro · 이미지 + HTML + 일반 텍스트 · 발송 전 품질 검토\n🧪 TEST SEND 활성화 (Resend Simulator) · 🔒 상용 발송 잠금\n이메일 작성\n메시지 종류\n업무 / 서비스 안내\n마케팅 / 뉴스"}
 PASS STUDIO_RENDERS_UNDER_MV3_CSP :: {"title":"XPIDER Email Template Studio","checks":11,"sandbox":"","srcdoc":1354,"inlineScripts":0,"inlineStyleTags":0}
 PASS PREVIEW_IFRAME_SANDBOX_EMPTY :: ""
 PASS BODY_AND_HEADING_HTML_ESCAPED :: no raw <script>/<img> in srcdoc
@@ -26,4 +26,4 @@ PASS TXT_EXPORT_HAS_UNSUB_AND_ADDRESS :: bytes=195
 PASS NO_NON_GET_OR_UNEXPECTED_NETWORK_FROM_STUDIO :: []
 PASS NO_CSP_OR_JS_ERRORS_IN_STUDIO_CONSOLE :: []
 
-25/25 PASS -> E:\vivpr\ai\extension-form-sender\_wt_email_next\evidence\browser_gate_latest\email_studio\report_email_studio_chrome_runtime.json
+25/25 PASS -> C:\Users\oPus\.gemini\antigravity\brain\39737f43-3ee8-47a1-a4fb-53e319ab562e\scratch\repo_fix_p0\evidence\browser_gate_latest\email_studio\report_email_studio_chrome_runtime.json

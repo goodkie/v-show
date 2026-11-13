@@ -61,3 +61,134 @@ el('exportJson').onclick=()=>download('xpider-vivpr-template.json','application/
 el('desktop').onclick=()=>el('preview').style.width='100%';
 el('mobile').onclick=()=>el('preview').style.width='min(360px,100%)';
 render();
+
+function callBg(msg) {
+  return new Promise(res => {
+    try {
+      if (typeof chrome !== 'undefined' && chrome.runtime && typeof chrome.runtime.sendMessage === 'function') {
+        chrome.runtime.sendMessage(msg, r => {
+          if (chrome.runtime.lastError) {
+            res({ ok: false, error: chrome.runtime.lastError.message });
+          } else {
+            res(r || { ok: false, error: 'NO_RESPONSE' });
+          }
+        });
+      } else {
+        res({ ok: false, error: 'CHROME_RUNTIME_NOT_AVAILABLE' });
+      }
+    } catch (err) {
+      res({ ok: false, error: err.message });
+    }
+  });
+}
+
+function getSidecarConfig() {
+  const rawPort = el('sidecarPort') ? Number(el('sidecarPort').value) : 18990;
+  const sidecarPort = (Number.isInteger(rawPort) && rawPort >= 1024 && rawPort <= 65535) ? rawPort : 18990;
+  const sidecarToken = el('sidecarToken') ? el('sidecarToken').value.trim() : '';
+  return { sidecarPort, sidecarToken };
+}
+
+async function checkCompanionStatus() {
+  const box = el('testSendStatus');
+  if (!box) return;
+  const { sidecarPort, sidecarToken } = getSidecarConfig();
+  box.className = 'status-box status-loading';
+  box.textContent = `⏳ Sidecar (127.0.0.1:${sidecarPort}) 핸드셰이크 및 연결 상태 확인 중...`;
+  const resp = await callBg({ action: 'GET_EMAIL_TEST_STATUS', sidecarPort, sidecarToken });
+  if (resp && resp.ok && resp.data) {
+    const d = resp.data;
+    const compBuild = (resp.handshake && resp.handshake.companionBuildId) || 'verified';
+    if (d.resendApiKeyConfigured) {
+      box.className = 'status-box status-success';
+      box.textContent = `✅ Email Test Sidecar 연결 및 핸드셰이크 성공 (127.0.0.1:${sidecarPort})\n• Sidecar Build: ${compBuild}\n• Resend API Key 설정됨 (서버사이드 안전 보관)\n• 시뮬레이터 수신자 대상 테스트 발송 준비 완료`;
+    } else {
+      box.className = 'status-box status-blocked';
+      box.textContent = `⚠️ Email Test Sidecar 연결 성공 (127.0.0.1:${sidecarPort})\n• Sidecar Build: ${compBuild}\n• KEY_MISSING: RESEND_API_KEY 미설정 (서버사이드 환경변수 필요)\n• 시뮬레이터 발송 요청 시 차단 안내(RESEND_API_KEY_NOT_CONFIGURED)가 반환됩니다.`;
+    }
+  } else if (resp && resp.reason === 'COMPANION_VERSION_MISMATCH') {
+    box.className = 'status-box status-blocked';
+    box.textContent = `⛔ [WRONG_COMPANION: COMPANION_VERSION_MISMATCH (포트 ${sidecarPort})]\n• 감지된 서비스: ${resp.companionBuildId || 'unknown'}\n• 필요한 기능: email-test-send\n• 조치 방법: 포트 ${sidecarPort}에는 구버전 서비스가 실행 중입니다. 포트 18990에서 START_EMAIL_TEST_SIDECAR.bat를 실행하세요.`;
+  } else if (resp && (resp.reason === 'UNAUTHORIZED' || resp.reason === 'SIDECAR_TOKEN_REQUIRED' || resp.httpStatus === 401)) {
+    box.className = 'status-box status-error';
+    box.textContent = `❌ [인증 필요: UNAUTHORIZED (HTTP 401)]\n• ${resp.message || 'START_EMAIL_TEST_SIDECAR.bat 콘솔에 표시된 Sidecar 제어 토큰을 위 입력란에 붙여넣어 주세요.'}`;
+  } else if (resp && (resp.reason === 'FORBIDDEN_ORIGIN' || resp.httpStatus === 403)) {
+    box.className = 'status-box status-error';
+    box.textContent = `❌ [Origin 거부: FORBIDDEN_ORIGIN (HTTP 403)]\n• ${resp.message || '허용되지 않은 Origin 요청입니다.'}`;
+  } else if (resp && (resp.reason === 'ENDPOINT_NOT_FOUND' || resp.httpStatus === 404)) {
+    box.className = 'status-box status-error';
+    box.textContent = `❌ [엔드포인트 없음: ENDPOINT_NOT_FOUND (HTTP 404)]\n• ${resp.message || 'Sidecar 버전이 일치하지 않습니다.'}`;
+  } else {
+    box.className = 'status-box status-error';
+    box.textContent = `❌ [MISSING_COMPANION] Sidecar 미실행 또는 연결 실패 (127.0.0.1:${sidecarPort})\n• 상세: ${resp?.error || 'OFFLINE'}\n• 새 패키지의 START_EMAIL_TEST_SIDECAR.bat를 실행한 뒤 다시 확인하세요.`;
+  }
+}
+
+let testSendCoolingDown = false;
+async function triggerTestSend() {
+  if (testSendCoolingDown) return;
+  const box = el('testSendStatus');
+  const btn = el('btnTestSend');
+  const { sidecarPort, sidecarToken } = getSidecarConfig();
+  const recipient = el('testRecipient') ? el('testRecipient').value.trim() : '';
+  const allowed = ['delivered@resend.dev', 'bounced@resend.dev', 'complained@resend.dev'];
+  if (!allowed.includes(recipient)) {
+    box.className = 'status-box status-error';
+    box.textContent = '❌ 허용되지 않은 수신자입니다. Resend 공식 시뮬레이터 수신자만 선택 가능합니다.';
+    return;
+  }
+
+  const v = values();
+  const subject = v.subject || 'XPIDER Test Send';
+  const html = htmlFor(v);
+  const text = textFor(v);
+  const idempotencyKey = 'xpider_sim_' + Date.now() + '_' + Math.random().toString(36).slice(2, 12);
+
+  testSendCoolingDown = true;
+  btn.disabled = true;
+  box.className = 'status-box status-loading';
+  box.textContent = `⏳ 시뮬레이터 테스트 발송 요청 중...\n• Sidecar: http://127.0.0.1:${sidecarPort}\n• 수신자: ${recipient}\n• 발신자: onboarding@resend.dev\n• Idempotency-Key: ${idempotencyKey}`;
+
+  const resp = await callBg({
+    action: 'EMAIL_TEST_SEND',
+    sidecarPort,
+    sidecarToken,
+    to: recipient,
+    subject,
+    html,
+    text,
+    idempotencyKey
+  });
+
+  if (resp && resp.status === 'SUCCESS') {
+    box.className = 'status-box status-success';
+    box.textContent = `✅ [발송 접수 성공] Resend 이벤트 시뮬레이터가 정상 접수하였습니다.\n• Provider Message ID: ${resp.providerMessageId || 'OK'}\n• 수신자: ${resp.to}\n• 발신자: ${resp.from}\n• 접수시각: ${resp.timestamp || new Date().toISOString()}`;
+  } else if (resp && resp.status === 'BLOCKED') {
+    box.className = 'status-box status-blocked';
+    box.textContent = `⛔ [발송 차단 (FAIL-CLOSED)]\n• 사유: ${resp.reason || (Array.isArray(resp.reasons) ? resp.reasons.join(', ') : 'POLICY_BLOCKED')}\n• 상세: ${resp.message || '인증 또는 자격 요건 미충족'}\n• 수신자: ${resp.recipient || recipient}`;
+  } else if (resp && resp.status === 'PROVIDER_ERROR') {
+    box.className = 'status-box status-error';
+    box.textContent = `❌ [Resend 공급자 오류]\n• HTTP 상태: ${resp.httpStatus}\n• 오류: ${resp.error}\n• 상세: ${resp.message}`;
+  } else {
+    box.className = 'status-box status-error';
+    box.textContent = `❌ [전송 실패]\n• 오류: ${resp?.message || resp?.error || '알 수 없는 전송 실패'}`;
+  }
+
+  let remainingSec = 5;
+  btn.textContent = `⏳ 쿨다운 대기 (${remainingSec}s)`;
+  const timer = setInterval(() => {
+    remainingSec--;
+    if (remainingSec <= 0) {
+      clearInterval(timer);
+      testSendCoolingDown = false;
+      btn.disabled = false;
+      btn.textContent = '▶ 시뮬레이터 테스트 발송 (Test Send)';
+    } else {
+      btn.textContent = `⏳ 쿨다운 대기 (${remainingSec}s)`;
+    }
+  }, 1000);
+}
+
+if (el('btnTestSend')) el('btnTestSend').onclick = triggerTestSend;
+if (el('btnCheckCompanion')) el('btnCheckCompanion').onclick = checkCompanionStatus;
+setTimeout(checkCompanionStatus, 300);

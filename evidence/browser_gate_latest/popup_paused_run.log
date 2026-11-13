@@ -1,4 +1,4 @@
-PASS BROWSER_STARTED :: Edg/157.0.4341.42
+PASS BROWSER_STARTED :: Edg/157.0.4341.46
 PASS EXTENSION_LOADED :: ldlijlaccfeelfdhgnjbibniocefckjj
 PASS LIVE_BACKGROUND_SERVICE_WORKER_ATTACHED :: chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/background.js
 PASS NO_isPausedState_REFERENCEERROR_LIVE_BG_IDLE :: bg={"isActive":false,"isPaused":false,"hasPausedCheckpoint":false} ui={"startRowHidden":false,"multiHidden":true,"resumeBtn":true,"pausedFlag":false,"url":"chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/popup.ht"} errors=[]

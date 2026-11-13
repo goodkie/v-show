@@ -20,4 +20,5 @@ companion/.firewall_guardian.json
 backups/
 dist/staging_candidate_v7/
 dist/clean_room_unpacked_v7/
+scratch/
 

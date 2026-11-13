@@ -1731,14 +1731,11 @@ async function hydrateSettings(overrideV2Store = null) {
         const ownerTestBanner = document.getElementById('owner-function-test-banner');
         const ownerTestGroup = document.getElementById('owner-function-test-group');
         try {
-            const isTestAuthorized = (typeof BuildProvenance !== 'undefined' && typeof BuildProvenance.isTestOnlyBuild === 'function')
-                ? BuildProvenance.isTestOnlyBuild()
-                : Boolean(typeof BuildProvenance !== 'undefined' && BuildProvenance.BUILD_INFO && (
-                    BuildProvenance.BUILD_INFO.channel === 'TEST_ONLY' ||
-                    BuildProvenance.BUILD_INFO.channel === 'OWNER_BETA' ||
-                    (typeof BuildProvenance.BUILD_INFO.channel === 'string' && BuildProvenance.BUILD_INFO.channel.startsWith('OWNER_BETA')) ||
-                    BuildProvenance.BUILD_INFO.testOnly === true
-                ));
+            const isTestAuthorized = (typeof BuildProvenance !== 'undefined' && typeof BuildProvenance.isOwnerTestAuthorized === 'function')
+                ? BuildProvenance.isOwnerTestAuthorized()
+                : ((typeof BuildProvenance !== 'undefined' && typeof BuildProvenance.isTestOnlyBuild === 'function')
+                    ? BuildProvenance.isTestOnlyBuild()
+                    : false);
 
             if (!isTestAuthorized) {
                 if (ownerTestGroup) ownerTestGroup.style.display = 'none';
@@ -6926,15 +6923,12 @@ function initOwnerAutoSetup() {
         autoSetupBtn.addEventListener('click', async () => {
             console.log('[BUTTON_CLICK] id=auto-setup-btn');
             try {
-                // 1. Detect BuildProvenance TEST_ONLY
-                const isTestAuthorized = (typeof BuildProvenance !== 'undefined' && typeof BuildProvenance.isTestOnlyBuild === 'function')
-                    ? BuildProvenance.isTestOnlyBuild()
-                    : Boolean(typeof BuildProvenance !== 'undefined' && BuildProvenance.BUILD_INFO && (
-                        BuildProvenance.BUILD_INFO.channel === 'TEST_ONLY' ||
-                        BuildProvenance.BUILD_INFO.channel === 'OWNER_BETA' ||
-                        (typeof BuildProvenance.BUILD_INFO.channel === 'string' && BuildProvenance.BUILD_INFO.channel.startsWith('OWNER_BETA')) ||
-                        BuildProvenance.BUILD_INFO.testOnly === true
-                    ));
+                // 1. Detect BuildProvenance TEST_ONLY or OWNER_BETA authorization
+                const isTestAuthorized = (typeof BuildProvenance !== 'undefined' && typeof BuildProvenance.isOwnerTestAuthorized === 'function')
+                    ? BuildProvenance.isOwnerTestAuthorized()
+                    : ((typeof BuildProvenance !== 'undefined' && typeof BuildProvenance.isTestOnlyBuild === 'function')
+                        ? BuildProvenance.isTestOnlyBuild()
+                        : false);
 
                 if (!isTestAuthorized) {
                     showAutoSetupFeedback('AUTO SETUP FAILED — Runtime build is not authorized for TEST_ONLY or OWNER_BETA channel.', 'error');
