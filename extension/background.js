@@ -3985,25 +3985,114 @@ const _handleMainMessageInner = (request, sender, sendResponse) => {
 
         case 'GET_EMAIL_TEST_STATUS': {
             (async () => {
+                const pg = (typeof PrivacyGateway !== 'undefined' && PrivacyGateway.getInstance) ? PrivacyGateway.getInstance() : null;
+                const ctrlPort = (pg && pg.config && pg.config.relayControlPort) || 18989;
+                const extBuildId = (typeof BuildProvenance !== 'undefined' && BuildProvenance.BUILD_INFO && BuildProvenance.BUILD_INFO.buildId) || 'V7.0.0-OWNER-BETA-TEST-SEND-20261113';
                 try {
-                    const pg = (typeof PrivacyGateway !== 'undefined' && PrivacyGateway.getInstance) ? PrivacyGateway.getInstance() : null;
+                    const hcCtrl = new AbortController();
+                    const hcTimer = setTimeout(() => hcCtrl.abort(), 4000);
+                    const healthResp = await fetch(`http://127.0.0.1:${ctrlPort}/health`, { method: 'GET', signal: hcCtrl.signal }).finally(() => clearTimeout(hcTimer));
+                    if (!healthResp.ok) {
+                        sendResponse({
+                            ok: false,
+                            companionOnline: true,
+                            status: 'BLOCKED',
+                            httpStatus: healthResp.status,
+                            reason: 'COMPANION_HEALTH_ERROR',
+                            error: `HTTP_${healthResp.status}`,
+                            message: `컴패니언 /health 응답 오류 (HTTP ${healthResp.status}).`
+                        });
+                        return;
+                    }
+                    const health = await healthResp.json();
+                    const caps = Array.isArray(health.apiCapabilities) ? health.apiCapabilities : [];
+                    const compBuildId = health.companionBuildId || null;
+                    const majorMatch = typeof compBuildId === 'string' && compBuildId.split('-')[0] === extBuildId.split('-')[0];
+                    if (!caps.includes('email-test-send') || !majorMatch) {
+                        sendResponse({
+                            ok: false,
+                            companionOnline: true,
+                            status: 'BLOCKED',
+                            reason: 'COMPANION_VERSION_MISMATCH',
+                            error: 'COMPANION_VERSION_MISMATCH',
+                            companionBuildId: compBuildId,
+                            companionImplementationHead: health.companionImplementationHead || null,
+                            extensionBuildId: extBuildId,
+                            apiCapabilities: caps,
+                            message: `포트 ${ctrlPort}에서 구버전 컴패니언(${compBuildId || 'unknown'})이 실행 중이며 email-test-send 기능이 없습니다. 기존 컴패니언을 안전하게 종료한 뒤 새 패키지의 START_COMPANION_FOR_TEST_SEND.bat를 실행하세요.`
+                        });
+                        return;
+                    }
+
                     if (pg && !pg.ephemeralRelayToken && typeof pg.fetchRelayControlToken === 'function') {
                         try { await pg.fetchRelayControlToken(); } catch (_) {}
                     }
-                    const token = pg ? pg.ephemeralRelayToken : null;
-                    const ctrlPort = (pg && pg.config && pg.config.relayControlPort) || 18989;
-                    const resp = await fetch(`http://127.0.0.1:${ctrlPort}/email/test-send/status`, {
+                    let token = pg ? pg.ephemeralRelayToken : null;
+                    const stCtrl = new AbortController();
+                    const stTimer = setTimeout(() => stCtrl.abort(), 5000);
+                    let resp = await fetch(`http://127.0.0.1:${ctrlPort}/email/test-send/status`, {
                         method: 'GET',
-                        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
-                    });
+                        headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+                        signal: stCtrl.signal
+                    }).finally(() => clearTimeout(stTimer));
+                    if (resp.status === 401 && pg && typeof pg.fetchRelayControlToken === 'function') {
+                        try { token = await pg.fetchRelayControlToken(); } catch (_) {}
+                        if (token) {
+                            const retryCtrl = new AbortController();
+                            const retryTimer = setTimeout(() => retryCtrl.abort(), 5000);
+                            resp = await fetch(`http://127.0.0.1:${ctrlPort}/email/test-send/status`, {
+                                method: 'GET',
+                                headers: { 'Authorization': `Bearer ${token}` },
+                                signal: retryCtrl.signal
+                            }).finally(() => clearTimeout(retryTimer));
+                        }
+                    }
+                    if (resp.status === 401) {
+                        sendResponse({
+                            ok: false,
+                            companionOnline: true,
+                            status: 'BLOCKED',
+                            httpStatus: 401,
+                            reason: 'UNAUTHORIZED',
+                            error: 'UNAUTHORIZED',
+                            companionBuildId: compBuildId,
+                            message: '컴패니언 Bearer 제어 토큰 인증에 실패했습니다 (HTTP 401). Native Messaging 호스트 또는 제어 토큰을 확인하세요.'
+                        });
+                        return;
+                    }
+                    if (resp.status === 404) {
+                        sendResponse({
+                            ok: false,
+                            companionOnline: true,
+                            status: 'BLOCKED',
+                            httpStatus: 404,
+                            reason: 'ENDPOINT_NOT_FOUND',
+                            error: 'ENDPOINT_NOT_FOUND',
+                            companionBuildId: compBuildId,
+                            message: '컴패니언에서 /email/test-send/status 엔드포인트를 찾을 수 없습니다 (HTTP 404).'
+                        });
+                        return;
+                    }
                     if (!resp.ok) {
-                        sendResponse({ ok: false, companionOnline: true, status: resp.status, error: `HTTP_${resp.status}` });
+                        sendResponse({ ok: false, companionOnline: true, status: 'BLOCKED', httpStatus: resp.status, error: `HTTP_${resp.status}` });
                         return;
                     }
                     const data = await resp.json();
-                    sendResponse({ ok: true, companionOnline: true, data });
+                    sendResponse({
+                        ok: true,
+                        companionOnline: true,
+                        handshake: { companionBuildId: compBuildId, extensionBuildId: extBuildId, capabilityVerified: true },
+                        data
+                    });
                 } catch (err) {
-                    sendResponse({ ok: false, companionOnline: false, error: err.message });
+                    const isTimeout = err && err.name === 'AbortError';
+                    sendResponse({
+                        ok: false,
+                        companionOnline: false,
+                        status: 'BLOCKED',
+                        reason: isTimeout ? 'REQUEST_TIMEOUT' : 'COMPANION_OFFLINE_OR_NETWORK_ERROR',
+                        error: isTimeout ? 'REQUEST_TIMEOUT' : err.message
+                    });
                 }
             })();
             return true;
@@ -4011,13 +4100,48 @@ const _handleMainMessageInner = (request, sender, sendResponse) => {
 
         case 'EMAIL_TEST_SEND': {
             (async () => {
+                const pg = (typeof PrivacyGateway !== 'undefined' && PrivacyGateway.getInstance) ? PrivacyGateway.getInstance() : null;
+                const ctrlPort = (pg && pg.config && pg.config.relayControlPort) || 18989;
+                const extBuildId = (typeof BuildProvenance !== 'undefined' && BuildProvenance.BUILD_INFO && BuildProvenance.BUILD_INFO.buildId) || 'V7.0.0-OWNER-BETA-TEST-SEND-20261113';
                 try {
-                    const pg = (typeof PrivacyGateway !== 'undefined' && PrivacyGateway.getInstance) ? PrivacyGateway.getInstance() : null;
+                    const hcCtrl = new AbortController();
+                    const hcTimer = setTimeout(() => hcCtrl.abort(), 4000);
+                    const healthResp = await fetch(`http://127.0.0.1:${ctrlPort}/health`, { method: 'GET', signal: hcCtrl.signal }).finally(() => clearTimeout(hcTimer));
+                    if (!healthResp.ok) {
+                        sendResponse({
+                            ok: false,
+                            status: 'BLOCKED',
+                            httpStatus: healthResp.status,
+                            reason: 'COMPANION_HEALTH_ERROR',
+                            error: `HTTP_${healthResp.status}`,
+                            message: `컴패니언 /health 응답 오류 (HTTP ${healthResp.status}).`
+                        });
+                        return;
+                    }
+                    const health = await healthResp.json();
+                    const caps = Array.isArray(health.apiCapabilities) ? health.apiCapabilities : [];
+                    const compBuildId = health.companionBuildId || null;
+                    const majorMatch = typeof compBuildId === 'string' && compBuildId.split('-')[0] === extBuildId.split('-')[0];
+                    if (!caps.includes('email-test-send') || !majorMatch) {
+                        sendResponse({
+                            ok: false,
+                            companionOnline: true,
+                            status: 'BLOCKED',
+                            reason: 'COMPANION_VERSION_MISMATCH',
+                            error: 'COMPANION_VERSION_MISMATCH',
+                            companionBuildId: compBuildId,
+                            extensionBuildId: extBuildId,
+                            message: `포트 ${ctrlPort}의 컴패니언(${compBuildId || 'unknown'})이 email-test-send 기능을 지원하지 않습니다. 기존 컴패니언을 안전하게 종료한 후 새 패키지의 START_COMPANION_FOR_TEST_SEND.bat를 실행하세요.`
+                        });
+                        return;
+                    }
+
                     if (pg && !pg.ephemeralRelayToken && typeof pg.fetchRelayControlToken === 'function') {
                         try { await pg.fetchRelayControlToken(); } catch (_) {}
                     }
                     const token = pg ? pg.ephemeralRelayToken : null;
-                    const ctrlPort = (pg && pg.config && pg.config.relayControlPort) || 18989;
+                    const postCtrl = new AbortController();
+                    const postTimer = setTimeout(() => postCtrl.abort(), 15000);
                     const resp = await fetch(`http://127.0.0.1:${ctrlPort}/email/test-send`, {
                         method: 'POST',
                         headers: {
@@ -4030,17 +4154,45 @@ const _handleMainMessageInner = (request, sender, sendResponse) => {
                             html: request.html,
                             text: request.text,
                             idempotencyKey: request.idempotencyKey
-                        })
-                    });
-                    const data = await resp.json();
+                        }),
+                        signal: postCtrl.signal
+                    }).finally(() => clearTimeout(postTimer));
+
+                    let data = {};
+                    try { data = await resp.json(); } catch (_) {}
+                    if (resp.status === 401) {
+                        sendResponse({
+                            ok: false,
+                            httpStatus: 401,
+                            status: 'BLOCKED',
+                            reason: 'UNAUTHORIZED',
+                            error: data.error || 'UNAUTHORIZED',
+                            message: data.message || '컴패니언 Bearer 인증 토큰이 없거나 일치하지 않습니다 (HTTP 401).'
+                        });
+                        return;
+                    }
+                    if (resp.status === 404) {
+                        sendResponse({
+                            ok: false,
+                            httpStatus: 404,
+                            status: 'BLOCKED',
+                            reason: 'ENDPOINT_NOT_FOUND',
+                            error: data.error || 'ENDPOINT_NOT_FOUND',
+                            message: '컴패니언에서 /email/test-send 엔드포인트를 찾을 수 없습니다 (버전 불일치 가능성).'
+                        });
+                        return;
+                    }
                     sendResponse({ ok: resp.ok, httpStatus: resp.status, ...data });
                 } catch (err) {
+                    const isTimeout = err && err.name === 'AbortError';
                     sendResponse({
                         ok: false,
                         status: 'BLOCKED',
-                        reason: 'COMPANION_OFFLINE_OR_NETWORK_ERROR',
-                        error: err.message,
-                        message: `Companion service at 127.0.0.1:18989 is offline or unreachable: ${err.message}`
+                        reason: isTimeout ? 'REQUEST_TIMEOUT' : 'COMPANION_OFFLINE_OR_NETWORK_ERROR',
+                        error: isTimeout ? 'REQUEST_TIMEOUT' : err.message,
+                        message: isTimeout
+                            ? '컴패니언 테스트 발송 응답 시간이 초과되었습니다 (15s timeout).'
+                            : `Companion service at 127.0.0.1:${ctrlPort} is offline or unreachable: ${err.message}`
                     });
                 }
             })();

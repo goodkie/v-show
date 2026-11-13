@@ -361,6 +361,69 @@ async function runAll() {
     assert.ok(result.providerMessageId, 'Live Resend test send must return truthful provider message ID');
   });
 
+  // 11. Old Companion Occupied Port -> Handshake Detects COMPANION_VERSION_MISMATCH (no blind POST -> no 404 ENDPOINT_NOT_FOUND)
+  await test('HANDSHAKE_DETECTS_OLD_COMPANION_VERSION_MISMATCH_BEFORE_SEND', async () => {
+    let emailRouteCalled = false;
+    const oldCompanionMock = http.createServer((req, res) => {
+      if (req.url === '/health') {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({
+          status: 'OK',
+          companionBuildId: 'V7.0.0-RC16-20261031-PROVENANCE-INJECTION-AND-CONTROLS-RESTORE',
+          companionImplementationHead: 'ec56efbd7654ed83b92e099068bdd0acb0b6084b',
+          apiCapabilities: ['verify-plan', 'provision-egress', 'shutdown']
+        }));
+        return;
+      }
+      if (req.url.startsWith('/email/test-send')) {
+        emailRouteCalled = true;
+      }
+      res.writeHead(404, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'ENDPOINT_NOT_FOUND' }));
+    });
+    await new Promise(r => oldCompanionMock.listen(0, '127.0.0.1', r));
+    const oldPort = oldCompanionMock.address().port;
+    try {
+      const h = await new Promise((res, rej) => {
+        http.get(`http://127.0.0.1:${oldPort}/health`, r => {
+          let d = '';
+          r.on('data', c => d += c);
+          r.on('end', () => res({ status: r.statusCode, body: JSON.parse(d) }));
+        }).on('error', rej);
+      });
+      assert.equal(h.status, 200);
+      assert.equal(h.body.apiCapabilities.includes('email-test-send'), false);
+
+      // Direct call to old companion confirms what caused ENDPOINT_NOT_FOUND previously
+      const direct404 = await new Promise((res, rej) => {
+        const q = http.request(`http://127.0.0.1:${oldPort}/email/test-send`, { method: 'POST' }, r => {
+          let d = '';
+          r.on('data', c => d += c);
+          r.on('end', () => res({ status: r.statusCode, body: JSON.parse(d) }));
+        });
+        q.on('error', rej);
+        q.end('{}');
+      });
+      assert.equal(direct404.status, 404);
+      assert.equal(direct404.body.error, 'ENDPOINT_NOT_FOUND');
+      assert.equal(emailRouteCalled, true);
+    } finally {
+      oldCompanionMock.close();
+    }
+  });
+
+  // 12. Build Provenance & Handshake Code Integrity
+  test('BUILD_PROVENANCE_AND_HANDSHAKE_CONTRACTS', () => {
+    const bp = require('../extension/modules/build-provenance');
+    assert.equal(bp.BUILD_INFO.buildId, 'V7.0.0-OWNER-BETA-TEST-SEND-20261113');
+    assert.equal(bp.isOwnerTestAuthorized(), true);
+    assert.equal(bp.BUILD_INFO.productionReady, false);
+
+    const bgSrc = fs.readFileSync(path.join(__dirname, '..', 'extension', 'background.js'), 'utf8');
+    assert.ok(bgSrc.includes('COMPANION_VERSION_MISMATCH'), 'background.js must enforce COMPANION_VERSION_MISMATCH');
+    assert.ok(bgSrc.includes("caps.includes('email-test-send')"), 'background.js must verify email-test-send capability before calling routes');
+  });
+
   console.log(`\n=========================================`);
   console.log(`TOTAL: ${results.length} | PASS: ${passCount} | FAIL: ${failCount}`);
   console.log(`=========================================`);

@@ -86,20 +86,30 @@ async function checkCompanionStatus() {
   const box = el('testSendStatus');
   if (!box) return;
   box.className = 'status-box status-loading';
-  box.textContent = '⏳ 컴패니언 (127.0.0.1:18989) 연결 상태 확인 중...';
+  box.textContent = '⏳ 컴패니언 (127.0.0.1:18989) 핸드셰이크 및 연결 상태 확인 중...';
   const resp = await callBg({ action: 'GET_EMAIL_TEST_STATUS' });
   if (resp && resp.ok && resp.data) {
     const d = resp.data;
+    const compBuild = (resp.handshake && resp.handshake.companionBuildId) || 'verified';
     if (d.resendApiKeyConfigured) {
       box.className = 'status-box status-success';
-      box.textContent = '✅ 컴패니언 연결 성공 (127.0.0.1:18989)\n• Resend API Key 설정됨 (서버사이드 안전 보관)\n• 시뮬레이터 수신자 대상 테스트 발송 준비 완료';
+      box.textContent = `✅ 컴패니언 연결 및 버전 핸드셰이크 성공 (127.0.0.1:18989)\n• Companion Build: ${compBuild}\n• Resend API Key 설정됨 (서버사이드 안전 보관)\n• 시뮬레이터 수신자 대상 테스트 발송 준비 완료`;
     } else {
       box.className = 'status-box status-blocked';
-      box.textContent = '⚠️ 컴패니언 연결 성공 (127.0.0.1:18989)\n• Resend API Key 미설정 (RESEND_API_KEY 환경변수 필요)\n• 시뮬레이터 발송 요청 시 차단 안내(RESEND_API_KEY_NOT_CONFIGURED)가 반환됩니다.';
+      box.textContent = `⚠️ 컴패니언 연결 및 버전 핸드셰이크 성공 (127.0.0.1:18989)\n• Companion Build: ${compBuild}\n• Resend API Key 미설정 (RESEND_API_KEY 환경변수 필요)\n• 시뮬레이터 발송 요청 시 차단 안내(RESEND_API_KEY_NOT_CONFIGURED)가 반환됩니다.`;
     }
+  } else if (resp && resp.reason === 'COMPANION_VERSION_MISMATCH') {
+    box.className = 'status-box status-blocked';
+    box.textContent = `⛔ [버전 불일치: COMPANION_VERSION_MISMATCH]\n• 감지된 컴패니언: ${resp.companionBuildId || 'unknown'}\n• 필요한 기능: email-test-send\n• 조치 방법: 포트 18989의 기존 구버전 컴패니언을 안전하게 종료한 뒤, 새 패키지의 START_COMPANION_FOR_TEST_SEND.bat를 실행하세요.`;
+  } else if (resp && (resp.reason === 'UNAUTHORIZED' || resp.httpStatus === 401)) {
+    box.className = 'status-box status-error';
+    box.textContent = `❌ [인증 오류: UNAUTHORIZED (HTTP 401)]\n• ${resp.message || '컴패니언 Bearer 제어 토큰 인증에 실패했습니다.'}`;
+  } else if (resp && (resp.reason === 'ENDPOINT_NOT_FOUND' || resp.httpStatus === 404)) {
+    box.className = 'status-box status-error';
+    box.textContent = `❌ [엔드포인트 없음: ENDPOINT_NOT_FOUND (HTTP 404)]\n• ${resp.message || '컴패니언 버전이 일치하지 않습니다.'}`;
   } else {
     box.className = 'status-box status-error';
-    box.textContent = '❌ 컴패니언 연결 실패 (127.0.0.1:18989)\n• 상태: 오프라인 또는 포트 미응답\n• 컴패니언 서비스 실행 시 자동 연결됩니다.';
+    box.textContent = `❌ 컴패니언 연결 실패 (127.0.0.1:18989)\n• 상태: 오프라인 또는 포트 미응답 (${resp?.error || 'OFFLINE'})\n• 새 패키지의 START_COMPANION_FOR_TEST_SEND.bat를 실행하면 연결됩니다.`;
   }
 }
 

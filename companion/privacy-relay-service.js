@@ -68,8 +68,8 @@ process.on('unhandledRejection', (reason) => {
 });
 
 // [Defect Q2 Hardening - Issue #6 Comment #6244711545] Authoritative companion build identity & capabilities
-const COMPANION_BUILD_ID = 'V7.0.0-RC16-20261031-PROVENANCE-INJECTION-AND-CONTROLS-RESTORE';
-const COMPANION_IMPLEMENTATION_HEAD = 'ec56efbd7654ed83b92e099068bdd0acb0b6084b';
+const COMPANION_BUILD_ID = 'V7.0.0-OWNER-BETA-TEST-SEND-20261113';
+const COMPANION_IMPLEMENTATION_HEAD = 'email-test-send-20261113';
 
 function isCompatibleExtensionBuild(extBuildId, companionBuildId) {
   if (!extBuildId || typeof extBuildId !== 'string') return false;

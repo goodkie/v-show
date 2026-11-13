@@ -14,12 +14,12 @@
 
     const BUILD_INFO = {
         version: "7.0.0",
-        buildId: "V7.0.0-RC11-20261030-THREE-MODE-CONTRACTS-PASS",
-        channel: "OWNER_BETA_V7_DUAL_MODE",
-        tag: "v7.0.0-rc11",
+        buildId: "V7.0.0-OWNER-BETA-TEST-SEND-20261113",
+        channel: "OWNER_BETA_V7_TEST_SEND",
+        tag: "v7.0.0-owner-beta-test-send",
         manifestVersion: 3,
-        implementationHead: "20678ada6491bf842ec7e996a88108152c76007f",
-        implementationHeadShort: "20678ada",
+        implementationHead: "email-test-send-20261113",
+        implementationHeadShort: "testsend",
         builtAt: new Date().toISOString(),
         testOnly: false,
         productionReady: false,
@@ -45,7 +45,9 @@
             "GENEROUS_ROW_CLEARANCE_NO_CLIPPING",
             "INSTANT_SYNCHRONOUS_RESUME_MODAL",
             "EXACT_QUEUE_RECONCILIATION_73_74",
-            "STRICT_COHERENT_RUNTIME_HANDSHAKE"
+            "STRICT_COHERENT_RUNTIME_HANDSHAKE",
+            "EMAIL_STUDIO_TEST_SEND",
+            "COMPANION_CAPABILITY_HANDSHAKE"
         ])
     };
 
