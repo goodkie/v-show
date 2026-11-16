@@ -12,12 +12,12 @@ const path = require('node:path');
 const crypto = require('node:crypto');
 const resendTestMode = require('./resend-test-mode');
 const { EmailSimulatorLedger } = require('./email-simulator-ledger');
-const { writeProtectedSecretFile, verifyWindowsDacl } = require('./email-test-sidecar-set-key');
+const { writeProtectedSecretFile, verifyWindowsDacl, writeKeySecurely } = require('./email-test-sidecar-set-key');
 const { getSidecarPaths } = require('./sidecar-paths');
 
 const DEFAULT_SIDECAR_PORT = 18990;
-const SIDECAR_BUILD_ID = 'V7.0.0-OWNER-BETA-TEST-SEND-SIDECAR-20261116-LOCKED10';
-const SIDECAR_IMPLEMENTATION_HEAD = 'email-test-sidecar-20261116-locked10';
+const SIDECAR_BUILD_ID = 'V7.0.0-OWNER-BETA-TEST-SEND-SIDECAR-20261116-LOCKED11';
+const SIDECAR_IMPLEMENTATION_HEAD = 'email-test-sidecar-20261116-locked11';
 const SIDECAR_API_CAPABILITIES = ['email-test-send', 'email-test-sidecar-v1', 'email-test-ledger-v1'];
 const EXPOSED_RC3_6_TOKEN_SHA256 = '597a70b99c11c7f4d13a075204ac240bb08a7a1d6c08c78268328e0bb59daeda';
 const EXTENSION_ORIGIN_RE = /^chrome-extension:\/\/[a-p]{32}$/;
@@ -303,6 +303,74 @@ class EmailTestSidecar {
             note: 'ACCEPTED means Resend event simulator accepted the event, NOT real mailbox delivery.',
             entries: this.ledger.listRecent(25)
           }));
+          return;
+        }
+
+        if (pathname === '/email/test-send/key' && req.method === 'POST') {
+          let raw = '';
+          let tooLarge = false;
+          req.on('data', chunk => {
+            raw += chunk;
+            if (raw.length > 8192) {
+              tooLarge = true;
+              req.destroy();
+            }
+          });
+          req.on('end', () => {
+            if (tooLarge) return;
+            try {
+              const payload = raw ? JSON.parse(raw) : {};
+              if (payload.userConsentConfirmed !== true) {
+                res.writeHead(400, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({
+                  ok: false,
+                  status: 'BLOCKED',
+                  reason: 'USER_CONSENT_REQUIRED',
+                  message: 'Explicit user consent is required before provisioning the local Resend API key.'
+                }));
+                return;
+              }
+              const trimmed = String(payload.apiKey || '').trim();
+              if (!trimmed || !/^re_[A-Za-z0-9_-]{8,}$/.test(trimmed)) {
+                res.writeHead(400, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({
+                  ok: false,
+                  status: 'BLOCKED',
+                  reason: trimmed ? 'INVALID_KEY_FORMAT' : 'EMPTY_KEY',
+                  message: 'Resend API Key must match /^re_[A-Za-z0-9_-]{8,}$/.'
+                }));
+                return;
+              }
+              const targetKeyPath = (this.trustedTestMode && this.localKeyFile !== null)
+                ? this.localKeyFile
+                : getSidecarPaths(this.trustedTestMode ? this.stateDir : undefined, { trustedTestMode: this.trustedTestMode }).keyFile;
+              try {
+                writeKeySecurely(targetKeyPath, trimmed);
+              } catch (provErr) {
+                res.writeHead(500, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({
+                  ok: false,
+                  status: 'BLOCKED',
+                  reason: 'KEY_PROVISION_FAILED',
+                  message: provErr && provErr.message ? provErr.message : 'Failed to write NTFS-protected key file.'
+                }));
+                return;
+              }
+              const loaded = Boolean(this.resolveResendApiKey());
+              res.writeHead(200, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({
+                ok: true,
+                status: 'PROVISIONED',
+                resendApiKeyConfigured: loaded,
+                keyStatus: this.keyStatus || 'FORMAT_VALID_KEY_PRESENT',
+                keyPath: targetKeyPath,
+                note: 'Key saved to NTFS user-protected storage. Local format valid only; provider authentication is verified on simulator test send.'
+              }));
+            } catch (err) {
+              res.writeHead(400, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ ok: false, status: 'ERROR', reason: 'INVALID_REQUEST', message: err.message }));
+            }
+          });
           return;
         }
 

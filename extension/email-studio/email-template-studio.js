@@ -100,7 +100,7 @@ async function checkCompanionStatus() {
     const d = resp.data;
     const hs = resp.handshake || {};
     const compBuild = hs.companionBuildId || d.companionBuildId || 'verified';
-    const extBuild = hs.extensionBuildId || 'V7.0.0-OWNER-BETA-TEST-SEND-SIDECAR-20261116-LOCKED10';
+    const extBuild = hs.extensionBuildId || 'V7.0.0-OWNER-BETA-TEST-SEND-SIDECAR-20261116-LOCKED11';
     const pidLabel = hs.companionPid || d.pid || 'unknown';
     const capsLabel = Array.isArray(hs.apiCapabilities) ? hs.apiCapabilities.join(', ') : 'email-test-send';
     if (d.resendApiKeyConfigured) {
@@ -108,7 +108,7 @@ async function checkCompanionStatus() {
       box.textContent = `✅ Email Test Sidecar 연결 및 핸드셰이크 성공 (127.0.0.1:${sidecarPort})\n• Extension Build: ${extBuild}\n• Sidecar Build: ${compBuild} (PID: ${pidLabel})\n• Capabilities: ${capsLabel}\n• Resend API Key 상태: ${d.keyStatus || 'FORMAT_VALID_KEY_PRESENT'} (로컬 형식 검증만 완료 · 공급자 인증은 테스트 발송 시 확인)\n• 시뮬레이터 수신자 대상 테스트 발송 준비 완료`;
     } else {
       box.className = 'status-box status-blocked';
-      box.textContent = `⚠️ Email Test Sidecar 연결됨 — API 키 미설정 (127.0.0.1:${sidecarPort})\n• Extension Build: ${extBuild}\n• Sidecar Build: ${compBuild} (PID: ${pidLabel})\n• 사유: KEY_MISSING (RESEND_API_KEY_NOT_CONFIGURED)\n• 조치 방법:\n  1) STOP_EMAIL_TEST_SIDECAR.bat 실행 (기존 18990 사이드카만 종료)\n  2) SET_RESEND_API_KEY.bat 실행하여 로컬 보안 경로에 키 저장\n  3) START_EMAIL_TEST_SIDECAR.bat 재실행 후 "Sidecar 상태 확인" 다시 클릭`;
+      box.textContent = `⚠️ Email Test Sidecar 연결됨 — API 키 미설정 (127.0.0.1:${sidecarPort})\n• Extension Build: ${extBuild}\n• Sidecar Build: ${compBuild} (PID: ${pidLabel})\n• 사유: ${d.keyStatus || 'KEY_MISSING'} (RESEND_API_KEY_NOT_CONFIGURED)\n• 원클릭 조치: 위 "🔑 Resend API 키 설정" 입력란에 re_... 키를 입력하고 동의 체크 후 "🔑 NTFS 보안 저장 후 상태 확인"을 누르세요 (터미널/PowerShell 불필요).`;
     }
   } else if (resp && resp.reason === 'COMPANION_VERSION_MISMATCH') {
     box.className = 'status-box status-blocked';
@@ -271,6 +271,35 @@ async function loadLedger() {
 if (el('btnSaveDraft')) el('btnSaveDraft').onclick = saveTemplateDraft;
 if (el('btnLoadDraft')) el('btnLoadDraft').onclick = loadTemplateDraft;
 if (el('btnLoadLedger')) el('btnLoadLedger').onclick = loadLedger;
+if (el('btnSaveResendKey')) {
+  el('btnSaveResendKey').onclick = async () => {
+    const box = el('testSendStatus');
+    const keyInput = el('resendApiKeyInput');
+    const consentEl = el('resendKeyConsent');
+    const apiKey = keyInput ? keyInput.value.trim() : '';
+    const userConsentConfirmed = Boolean(consentEl && consentEl.checked);
+    if (!userConsentConfirmed) {
+      if (box) { box.className = 'status-box status-blocked'; box.textContent = '⚠️ 로컬 NTFS 보안 저장 동의 체크박스를 먼저 선택하세요.'; }
+      return;
+    }
+    if (!apiKey) {
+      if (box) { box.className = 'status-box status-blocked'; box.textContent = '⚠️ Resend API Key (re_...)를 입력하세요.'; }
+      return;
+    }
+    const { sidecarPort, sidecarToken } = getSidecarConfig();
+    if (box) { box.className = 'status-box status-loading'; box.textContent = '🔑 NTFS 사용자 전용 경로에 API 키 보안 저장 중...'; }
+    const res = await callBg({ action: 'SET_EMAIL_TEST_RESEND_KEY', sidecarPort, sidecarToken, apiKey, userConsentConfirmed: true });
+    if (keyInput) keyInput.value = '';
+    if (consentEl) consentEl.checked = false;
+    if (res && res.ok) {
+      await checkCompanionStatus();
+      await loadLedger();
+    } else if (box) {
+      box.className = 'status-box status-error';
+      box.textContent = `❌ [API 키 보안 저장 실패: ${res?.reason || 'KEY_PROVISION_FAILED'}]\n• ${res?.message || 'Sidecar 연결/페어링 상태 또는 키 형식(re_...)을 확인하세요.'}`;
+    }
+  };
+}
 if (el('btnPairSidecar')) {
   el('btnPairSidecar').onclick = async () => {
     const box = el('testSendStatus');

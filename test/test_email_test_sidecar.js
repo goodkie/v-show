@@ -1222,6 +1222,90 @@ function request(port, method, urlPath, headers = {}, body = null) {
       }
     });
 
+    await runTest('IN_APP_KEY_PROVISIONING_CONSENT_ACL_FAIL_CLOSED_AND_ISOLATED_SIMULATOR_SEND', async () => {
+      const { verifyWindowsDacl } = require('../companion/email-test-sidecar-set-key');
+      const provDir = path.join(tmpDir, 'in_app_prov_state');
+      const provKeyFile = path.join(provDir, '.resend_api_key');
+      let isolatedTransportCalls = 0;
+      const sProv = new EmailTestSidecar({
+        trustedTestMode: true,
+        port: 20017,
+        stateDir: provDir,
+        localKeyFile: provKeyFile,
+        rateLimitMs: 0,
+        transportImpl: async ({ to, idempotencyKey }) => {
+          isolatedTransportCalls++;
+          return {
+            status: 'SUCCESS',
+            provider: 'resend',
+            mode: 'TEST_SIMULATOR',
+            providerMessageId: `sim_msg_prov_${isolatedTransportCalls}`,
+            to,
+            from: 'onboarding@resend.dev',
+            timestamp: new Date().toISOString(),
+            idempotencyKey
+          };
+        }
+      });
+      await sProv.start();
+      try {
+        // 1. Unauth / forbidden origin fail closed
+        const r401 = await request(20017, 'POST', '/email/test-send/key', {}, { apiKey: 're_valid_12345678', userConsentConfirmed: true });
+        assert.equal(r401.status, 401);
+        const r403 = await request(20017, 'POST', '/email/test-send/key', {
+          Origin: 'https://evil.example',
+          Authorization: `Bearer ${sProv.token}`
+        }, { apiKey: 're_valid_12345678', userConsentConfirmed: true });
+        assert.equal(r403.status, 403);
+
+        // 2. Missing consent rejected 400
+        const rNoConsent = await request(20017, 'POST', '/email/test-send/key', {
+          Authorization: `Bearer ${sProv.token}`
+        }, { apiKey: 're_valid_12345678', userConsentConfirmed: false });
+        assert.equal(rNoConsent.status, 400);
+        assert.equal(rNoConsent.json.reason, 'USER_CONSENT_REQUIRED');
+
+        // 3. Malformed key rejected 400 without echoing secret
+        const rBadFmt = await request(20017, 'POST', '/email/test-send/key', {
+          Authorization: `Bearer ${sProv.token}`
+        }, { apiKey: 'not_a_resend_key_secret_xyz', userConsentConfirmed: true });
+        assert.equal(rBadFmt.status, 400);
+        assert.equal(rBadFmt.json.reason, 'INVALID_KEY_FORMAT');
+        assert.equal(rBadFmt.raw.includes('not_a_resend_key_secret_xyz'), false);
+
+        // 4. Valid consented provision writes NTFS DACL key, never echoes secret, enables isolated simulator send + idempotent replay
+        const testSecret = 're_isolated_inapp_prov_987654321';
+        const rProv = await request(20017, 'POST', '/email/test-send/key', {
+          Authorization: `Bearer ${sProv.token}`
+        }, { apiKey: testSecret, userConsentConfirmed: true });
+        assert.equal(rProv.status, 200);
+        assert.equal(rProv.json.ok, true);
+        assert.equal(rProv.json.keyStatus, 'FORMAT_VALID_KEY_PRESENT');
+        assert.equal(rProv.raw.includes(testSecret), false, 'Response must NEVER echo provisioned API key!');
+        if (process.platform === 'win32' && process.env.USERNAME) {
+          verifyWindowsDacl(provKeyFile, process.env.USERNAME);
+        }
+
+        // 5. Isolated simulator send to delivered@resend.dev -> ACCEPTED -> ledger -> idempotent replay (zero duplicate call)
+        const sRes1 = await request(20017, 'POST', '/email/test-send', {
+          Authorization: `Bearer ${sProv.token}`
+        }, { to: 'delivered@resend.dev', subject: 'Isolated Smoke', idempotencyKey: 'inapp_prov_sim_000001' });
+        assert.equal(sRes1.status, 200);
+        assert.equal(sRes1.json.status, 'SUCCESS');
+        assert.equal(sRes1.json.deliveryStatus, 'PROVIDER_ACCEPTED_SIMULATOR_ONLY');
+        assert.equal(isolatedTransportCalls, 1);
+
+        const sRes2 = await request(20017, 'POST', '/email/test-send', {
+          Authorization: `Bearer ${sProv.token}`
+        }, { to: 'delivered@resend.dev', subject: 'Isolated Smoke', idempotencyKey: 'inapp_prov_sim_000001' });
+        assert.equal(sRes2.status, 200);
+        assert.equal(sRes2.json.idempotentReplay, true);
+        assert.equal(isolatedTransportCalls, 1);
+      } finally {
+        await sProv.stop();
+      }
+    });
+
     console.log(`\nALL SIDECAR TESTS PASSED (${pass}/${pass})`);
   } finally {
     await sidecar.stop();

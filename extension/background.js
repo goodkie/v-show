@@ -4015,6 +4015,69 @@ const _handleMainMessageInner = (request, sender, sendResponse) => {
             return true;
         }
 
+        case 'SET_EMAIL_TEST_RESEND_KEY': {
+            (async () => {
+                const reqPort = Number(request.sidecarPort);
+                const ctrlPort = (Number.isInteger(reqPort) && reqPort >= 1024 && reqPort <= 65535) ? reqPort : 18990;
+                const extBuildId = (typeof BuildProvenance !== 'undefined' && BuildProvenance.BUILD_INFO && BuildProvenance.BUILD_INFO.buildId) || 'V7.0.0-OWNER-BETA-TEST-SEND-SIDECAR-20261116-LOCKED11';
+                try {
+                    if (request.userConsentConfirmed !== true) {
+                        sendResponse({ ok: false, status: 'BLOCKED', reason: 'USER_CONSENT_REQUIRED', message: '로컬 NTFS 보안 저장 전 명시적 사용자 동의가 필요합니다.' });
+                        return;
+                    }
+                    const hcCtrl = new AbortController();
+                    const hcTimer = setTimeout(() => hcCtrl.abort(), 4000);
+                    const healthResp = await fetch(`http://127.0.0.1:${ctrlPort}/health`, { method: 'GET', signal: hcCtrl.signal }).finally(() => clearTimeout(hcTimer));
+                    if (!healthResp.ok) {
+                        sendResponse({ ok: false, status: 'BLOCKED', httpStatus: healthResp.status, reason: 'COMPANION_HEALTH_ERROR' });
+                        return;
+                    }
+                    const health = await healthResp.json();
+                    const caps = Array.isArray(health.apiCapabilities) ? health.apiCapabilities : [];
+                    const compBuildId = health.companionBuildId || null;
+                    const majorMatch = typeof compBuildId === 'string' && compBuildId.split('-')[0] === extBuildId.split('-')[0];
+                    if (!caps.includes('email-test-send') || !majorMatch) {
+                        sendResponse({ ok: false, status: 'BLOCKED', reason: 'COMPANION_VERSION_MISMATCH', companionBuildId: compBuildId });
+                        return;
+                    }
+                    const explicitToken = (typeof request.sidecarToken === 'string' && request.sidecarToken.trim()) ? request.sidecarToken.trim() : null;
+                    const pairNativeKeyToken = async (forceRefresh = false) => {
+                        if (!forceRefresh && globalThis.__xpiderPairedSidecarToken) return globalThis.__xpiderPairedSidecarToken;
+                        if (!chrome?.runtime?.sendNativeMessage) return null;
+                        return await new Promise((resolve) => {
+                            chrome.runtime.sendNativeMessage('com.xpider.email_sidecar', { action: 'GET_SIDECAR_TOKEN' }, (res) => {
+                                if (!chrome.runtime.lastError && res && res.ok && typeof res.token === 'string' && res.token.trim().length >= 16) {
+                                    globalThis.__xpiderPairedSidecarToken = res.token.trim();
+                                    return resolve(globalThis.__xpiderPairedSidecarToken);
+                                }
+                                resolve(null);
+                            });
+                        });
+                    };
+                    let token = explicitToken || await pairNativeKeyToken(false);
+                    const postKey = async (tok) => fetch(`http://127.0.0.1:${ctrlPort}/email/test-send/key`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            ...(tok ? { 'Authorization': `Bearer ${tok}` } : {})
+                        },
+                        body: JSON.stringify({ apiKey: String(request.apiKey || ''), userConsentConfirmed: true })
+                    });
+                    let resp = await postKey(token);
+                    if (resp.status === 401 && !explicitToken) {
+                        globalThis.__xpiderPairedSidecarToken = null;
+                        token = await pairNativeKeyToken(true);
+                        if (token) resp = await postKey(token);
+                    }
+                    const data = await resp.json().catch(() => ({}));
+                    sendResponse({ ok: resp.ok && Boolean(data.ok), httpStatus: resp.status, ...data });
+                } catch (err) {
+                    sendResponse({ ok: false, status: 'ERROR', reason: 'COMPANION_OFFLINE_OR_NETWORK_ERROR', message: err.message });
+                }
+            })();
+            return true;
+        }
+
         case 'GET_EMAIL_TEST_STATUS': {
             (async () => {
                 const pg = (typeof PrivacyGateway !== 'undefined' && PrivacyGateway.getInstance) ? PrivacyGateway.getInstance() : null;
