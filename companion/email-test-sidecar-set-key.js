@@ -32,6 +32,12 @@ rl.question('Enter your Resend API Key (starts with re_): ', (answer) => {
   }
   fs.mkdirSync(path.dirname(keyPath), { recursive: true });
   fs.writeFileSync(keyPath, trimmed + '\n', { mode: 0o600 });
+  if (process.platform === 'win32' && process.env.USERNAME) {
+    try {
+      const { execFileSync } = require('node:child_process');
+      execFileSync('icacls', [keyPath, '/inheritance:r', '/grant:r', `${process.env.USERNAME}:(R,W)`], { stdio: 'ignore' });
+    } catch (_) {}
+  }
   console.log('');
   console.log('[OK] RESEND_API_KEY saved securely to local protected path (value not echoed).');
   console.log('Next: If sidecar is already running, run STOP_EMAIL_TEST_SIDECAR.bat then START_EMAIL_TEST_SIDECAR.bat.');

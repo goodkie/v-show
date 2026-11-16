@@ -4240,6 +4240,36 @@ const _handleMainMessageInner = (request, sender, sendResponse) => {
             return true;
         }
 
+        case 'GET_EMAIL_TEST_LEDGER': {
+            (async () => {
+                const reqPort = Number(request.sidecarPort);
+                const ctrlPort = (Number.isInteger(reqPort) && reqPort >= 1024 && reqPort <= 65535) ? reqPort : 18990;
+                try {
+                    const token = (typeof request.sidecarToken === 'string' && request.sidecarToken.trim()) ? request.sidecarToken.trim() : null;
+                    const hc = await fetch(`http://127.0.0.1:${ctrlPort}/health`, { method: 'GET' });
+                    if (!hc.ok) {
+                        sendResponse({ ok: false, httpStatus: hc.status, error: `HTTP_${hc.status}` });
+                        return;
+                    }
+                    const health = await hc.json();
+                    const caps = Array.isArray(health.apiCapabilities) ? health.apiCapabilities : [];
+                    if (!caps.includes('email-test-send')) {
+                        sendResponse({ ok: false, reason: 'COMPANION_VERSION_MISMATCH', error: 'COMPANION_VERSION_MISMATCH' });
+                        return;
+                    }
+                    const resp = await fetch(`http://127.0.0.1:${ctrlPort}/email/test-send/ledger`, {
+                        method: 'GET',
+                        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+                    });
+                    const data = await resp.json().catch(() => ({}));
+                    sendResponse({ ok: resp.ok, httpStatus: resp.status, data });
+                } catch (err) {
+                    sendResponse({ ok: false, error: err.message });
+                }
+            })();
+            return true;
+        }
+
         case 'XPIDER_LOG':
             logBg(null, `[Solver] ${request.message}`, request.status === 'FAIL' ? 'error' : 'info');
             sendResponse({ success: true });

@@ -26,7 +26,7 @@
 <label for="company">발신자 회사 / 사업자명</label><input id="company" value="vivpr.pro">
 <label for="address">사업자 우편주소 (마케팅 메일에 필수)</label><input id="address" placeholder="실제 운영 주소를 입력">
 <label for="unsubscribe">구독 취소 HTTPS URL (수신자별 고유 토큰 필요)</label><input id="unsubscribe" placeholder="https://vivpr.pro/unsubscribe/{recipient-token}">
-<div class="actions"><button class="primary" id="exportHtml">HTML 저장</button><button id="exportText">텍스트 저장</button><button id="exportJson">템플릿 JSON</button></div>
+<div class="actions"><button class="primary" id="exportHtml">HTML 저장</button><button id="exportText">텍스트 저장</button><button id="exportJson">템플릿 JSON</button><button id="btnSaveDraft">초안 저장</button><button id="btnLoadDraft">초안 불러오기</button></div>
 <div class="note">이미지 파일은 PC 내 미리보기만 지원합니다. 실제 발송용 HTML에는 공개 HTTPS 이미지 URL을 입력해야 합니다. 이메일 본문의 링크만으로 RFC 8058 원클릭 구독 취소 헤더가 생성되는 것은 아닙니다. 해당 헤더와 작동하는 POST 엔드포인트는 발송 서비스에서 별도 검증해야 합니다.</div>
 <div class="checks"><b>발송 전 콘텐츠 검사</b><ul id="checkList" aria-live="polite"></ul><small>주의 사항은 휴리스틱 점검이며 Gmail/Resend 스팸 점수 또는 받은편지함 도착 보장이 아닙니다.</small></div>
 </section>
@@ -40,12 +40,13 @@
 <div class="test-send-box">
 <h4>🧪 Resend 공식 이벤트 시뮬레이터 테스트 발송</h4>
 <p class="desc">실제 고객에게는 절대 발송되지 않으며, Resend 공식 이벤트 시뮬레이터로만 발송됩니다 (격리 Email Test Sidecar 127.0.0.1 경유 · 기존 18989/18988 프라이버시 릴레이 무간섭).</p>
-<div class="note" id="extBuildInfo">Extension Build: V7.0.0-OWNER-BETA-TEST-SEND-SIDECAR-20261116 · Expected Sidecar: 127.0.0.1:18990 (email-test-send, email-test-sidecar-v1)</div>
+<div class="note" id="extBuildInfo">Extension Build: V7.0.0-OWNER-BETA-TEST-SEND-SIDECAR-20261116-LEDGER · Expected Sidecar: 127.0.0.1:18990 (email-test-send, email-test-sidecar-v1, email-test-ledger-v1)</div>
 <div class="inline"><div><label for="sidecarPort">Sidecar 루프백 포트 (127.0.0.1)</label><input id="sidecarPort" type="number" min="1024" max="65535" value="18990"></div><div><label for="sidecarToken">Sidecar 제어 토큰 (Bearer, 메모리 전용)</label><input id="sidecarToken" type="password" autocomplete="off" placeholder="START_EMAIL_TEST_SIDECAR.bat 콘솔 토큰 입력"></div></div>
 <div class="form-row"><label for="testSender">발신 주소 (고정)</label><input id="testSender" value="onboarding@resend.dev" readonly class="readonly-input"><small class="muted">Resend 테스트 전용 공용 발신자 (별도 DNS 인증 불필요)</small></div>
 <div class="form-row"><label for="testRecipient">시뮬레이터 수신자 (1개 필수)</label><select id="testRecipient"><option value="delivered@resend.dev">delivered@resend.dev (정상 수신 시뮬레이션)</option><option value="bounced@resend.dev">bounced@resend.dev (반송 / Bounce 시뮬레이션)</option><option value="complained@resend.dev">complained@resend.dev (스팸신고 / Complaint 시뮬레이션)</option></select></div>
-<div class="actions"><button class="primary" id="btnTestSend">▶ 시뮬레이터 테스트 발송 (Test Send)</button><button id="btnCheckCompanion">Sidecar 상태 확인</button></div>
+<div class="actions"><button class="primary" id="btnTestSend">▶ 시뮬레이터 테스트 발송 (Test Send)</button><button id="btnCheckCompanion">Sidecar 상태 확인</button><button id="btnLoadLedger">발송 원장 조회</button></div>
 <div id="testSendStatus" class="status-box status-idle" aria-live="polite">대기 중: Sidecar 포트(기본 18990)와 제어 토큰을 확인한 뒤 테스트 발송 버튼을 누르세요.</div>
+<div id="ledgerView" class="status-box status-idle" aria-live="polite">원장 미조회: '발송 원장 조회'를 누르면 ACCEPTED(시뮬레이터 접수 ≠ 실제 수신함 도착) 및 차단 이력이 표시됩니다.</div>
 </div>
 <div class="prod-send-box locked">
 <div class="prod-header"><h4>🔒 상용(운영) 발송 (Production Send)</h4><span class="badge-locked">STRICT HOLD · 잠금</span></div>

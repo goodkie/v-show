@@ -38,6 +38,7 @@ function request(port, method, urlPath, headers = {}, body = null) {
     port: 19991,
     tokenFile: path.join(tmpDir, '.email_sidecar_token'),
     pidFile: path.join(tmpDir, '.email_sidecar.pid'),
+    ledgerFile: path.join(tmpDir, '.email_simulator_ledger.jsonl'),
     apiKeyOverride: '',
     rateLimitMs: 1200,
     transportImpl: async (payload) => {
@@ -181,6 +182,7 @@ function request(port, method, urlPath, headers = {}, body = null) {
           port: 19992,
           tokenFile: path.join(tmpDir, '.tok2'),
           pidFile: path.join(tmpDir, '.pid2'),
+          ledgerFile: path.join(tmpDir, '.ledger2.jsonl'),
           localKeyFile: keyFile
         });
         assert.equal(s2.resolveResendApiKey(), 're_local_protected_12345678');
@@ -194,6 +196,90 @@ function request(port, method, urlPath, headers = {}, body = null) {
         await s2.stop();
       } finally {
         if (prevEnv !== undefined) process.env.RESEND_API_KEY = prevEnv;
+      }
+    });
+
+    await runTest('SIDECAR_LEDGER_PERSISTS_ACROSS_RESTART_AND_RECONCILES_TIMEOUT', async () => {
+      const sharedLedger = path.join(tmpDir, '.shared_ledger.jsonl');
+      let calls = 0;
+      const sA = new EmailTestSidecar({
+        port: 19993,
+        token: 'ledger_test_token_0123456789',
+        tokenFile: path.join(tmpDir, '.tok_ledger'),
+        pidFile: path.join(tmpDir, '.pid_ledger'),
+        ledgerFile: sharedLedger,
+        apiKeyOverride: 're_test_ledger_key_123456',
+        rateLimitMs: 0,
+        transportImpl: async () => {
+          calls++;
+          if (calls === 1) {
+            return {
+              status: 'SUCCESS',
+              provider: 'resend',
+              mode: 'TEST_SIMULATOR',
+              providerMessageId: 'msg_ledger_persist_001',
+              to: 'delivered@resend.dev',
+              from: 'onboarding@resend.dev',
+              timestamp: new Date().toISOString()
+            };
+          }
+          throw new Error('Request timeout ETIMEDOUT');
+        }
+      });
+      await sA.start();
+      const r1 = await request(19993, 'POST', '/email/test-send', {
+        Authorization: 'Bearer ledger_test_token_0123456789',
+        'Content-Type': 'application/json'
+      }, { to: 'delivered@resend.dev', subject: 'L1', text: 'B1', idempotencyKey: 'ledger_persist_key_0001' });
+      assert.equal(r1.status, 200);
+      assert.equal(r1.json.deliveryStatus, 'PROVIDER_ACCEPTED_SIMULATOR_ONLY');
+
+      const rTimeout = await request(19993, 'POST', '/email/test-send', {
+        Authorization: 'Bearer ledger_test_token_0123456789',
+        'Content-Type': 'application/json'
+      }, { to: 'delivered@resend.dev', subject: 'L2', text: 'B2', idempotencyKey: 'ledger_timeout_key_0002' });
+      assert.equal(rTimeout.status, 504);
+      assert.equal(rTimeout.json.error, 'TIMEOUT');
+      await sA.stop();
+
+      // Restart new sidecar pointing to same ledgerFile
+      const sB = new EmailTestSidecar({
+        port: 19994,
+        token: 'ledger_test_token_0123456789',
+        tokenFile: path.join(tmpDir, '.tok_ledger'),
+        pidFile: path.join(tmpDir, '.pid_ledger'),
+        ledgerFile: sharedLedger,
+        apiKeyOverride: 're_test_ledger_key_123456',
+        rateLimitMs: 0,
+        transportImpl: async () => { calls++; throw new Error('Should not re-POST'); }
+      });
+      await sB.start();
+      try {
+        const replay = await request(19994, 'POST', '/email/test-send', {
+          Authorization: 'Bearer ledger_test_token_0123456789',
+          'Content-Type': 'application/json'
+        }, { to: 'delivered@resend.dev', subject: 'L1', text: 'B1', idempotencyKey: 'ledger_persist_key_0001' });
+        assert.equal(replay.status, 200);
+        assert.equal(replay.json.idempotentReplay, true);
+        assert.equal(replay.json.providerMessageId, 'msg_ledger_persist_001');
+        assert.equal(calls, 2, 'Replay across restart must NOT invoke transport');
+
+        const ambig = await request(19994, 'POST', '/email/test-send', {
+          Authorization: 'Bearer ledger_test_token_0123456789',
+          'Content-Type': 'application/json'
+        }, { to: 'delivered@resend.dev', subject: 'L2', text: 'B2', idempotencyKey: 'ledger_timeout_key_0002' });
+        assert.equal(ambig.status, 409);
+        assert.equal(ambig.json.reason, 'PRIOR_REQUEST_AMBIGUOUS');
+        assert.equal(calls, 2, 'Ambiguous timeout must NOT silently re-POST');
+
+        const ledgerGet = await request(19994, 'GET', '/email/test-send/ledger', {
+          Authorization: 'Bearer ledger_test_token_0123456789'
+        });
+        assert.equal(ledgerGet.status, 200);
+        assert.equal(ledgerGet.json.entries.length, 2);
+        assert.equal(ledgerGet.raw.includes('re_test_ledger_key_123456'), false);
+      } finally {
+        await sB.stop();
       }
     });
 

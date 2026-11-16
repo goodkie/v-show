@@ -100,7 +100,7 @@ async function checkCompanionStatus() {
     const d = resp.data;
     const hs = resp.handshake || {};
     const compBuild = hs.companionBuildId || d.companionBuildId || 'verified';
-    const extBuild = hs.extensionBuildId || 'V7.0.0-OWNER-BETA-TEST-SEND-SIDECAR-20261116';
+    const extBuild = hs.extensionBuildId || 'V7.0.0-OWNER-BETA-TEST-SEND-SIDECAR-20261116-LEDGER';
     const pidLabel = hs.companionPid || d.pid || 'unknown';
     const capsLabel = Array.isArray(hs.apiCapabilities) ? hs.apiCapabilities.join(', ') : 'email-test-send';
     if (d.resendApiKeyConfigured) {
@@ -195,4 +195,80 @@ async function triggerTestSend() {
 
 if (el('btnTestSend')) el('btnTestSend').onclick = triggerTestSend;
 if (el('btnCheckCompanion')) el('btnCheckCompanion').onclick = checkCompanionStatus;
+
+const DRAFT_STORAGE_KEY = 'xpider_email_studio_draft_v1';
+const DRAFT_FIELDS = ['kind', 'subject', 'preheader', 'brand', 'heading', 'body', 'image', 'alt', 'cta', 'link', 'reply', 'company', 'address', 'unsubscribe'];
+
+function saveTemplateDraft() {
+  try {
+    const draft = {};
+    for (const f of DRAFT_FIELDS) {
+      if (el(f)) draft[f] = el(f).value;
+    }
+    localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify({ savedAt: new Date().toISOString(), draft }));
+    const box = el('testSendStatus');
+    if (box) {
+      box.className = 'status-box status-success';
+      box.textContent = '💾 템플릿 초안이 브라우저 로컬에 저장되었습니다 (비밀키/토큰 제외).';
+    }
+  } catch (e) {
+    const box = el('testSendStatus');
+    if (box) { box.className = 'status-box status-error'; box.textContent = '❌ 초안 저장 실패: ' + e.message; }
+  }
+}
+
+function loadTemplateDraft() {
+  try {
+    const raw = localStorage.getItem(DRAFT_STORAGE_KEY);
+    if (!raw) {
+      const box = el('testSendStatus');
+      if (box) { box.className = 'status-box status-blocked'; box.textContent = 'ℹ️ 저장된 템플릿 초안이 없습니다.'; }
+      return;
+    }
+    const parsed = JSON.parse(raw);
+    const d = parsed && parsed.draft ? parsed.draft : {};
+    for (const f of DRAFT_FIELDS) {
+      if (el(f) && typeof d[f] === 'string') el(f).value = d[f];
+    }
+    render();
+    const box = el('testSendStatus');
+    if (box) {
+      box.className = 'status-box status-success';
+      box.textContent = `📂 저장된 템플릿 초안을 불러왔습니다 (${parsed.savedAt || ''}).`;
+    }
+  } catch (e) {
+    const box = el('testSendStatus');
+    if (box) { box.className = 'status-box status-error'; box.textContent = '❌ 초안 불러오기 실패: ' + e.message; }
+  }
+}
+
+async function loadLedger() {
+  const box = el('ledgerView');
+  if (!box) return;
+  const { sidecarPort, sidecarToken } = getSidecarConfig();
+  box.className = 'status-box status-loading';
+  box.textContent = '⏳ 시뮬레이터 발송 원장 조회 중...';
+  const resp = await callBg({ action: 'GET_EMAIL_TEST_LEDGER', sidecarPort, sidecarToken });
+  if (!resp || !resp.ok || !resp.data) {
+    box.className = 'status-box status-error';
+    box.textContent = `❌ 원장 조회 실패 (HTTP ${resp?.httpStatus || '-'}): ${resp?.error || 'Sidecar 연결/토큰 확인 필요'}`;
+    return;
+  }
+  const entries = Array.isArray(resp.data.entries) ? resp.data.entries : [];
+  if (entries.length === 0) {
+    box.className = 'status-box status-idle';
+    box.textContent = '📒 시뮬레이터 발송 원장 비어 있음 (아직 기록된 테스트 발송 없음).';
+    return;
+  }
+  const lines = ['📒 시뮬레이터 발송 원장 (최근 ' + entries.length + '건 · ACCEPTED ≠ 실제 수신함 도착)'];
+  for (const e of entries.slice(0, 10)) {
+    lines.push(`• [${e.status}] ${e.recipient || '-'} | msgId=${e.providerMessageId || '-'} | key=${e.idempotencyKey || '-'} | err=${e.errorCode || '-'} | ${e.updatedAt || ''}`);
+  }
+  box.className = 'status-box status-success';
+  box.textContent = lines.join('\n');
+}
+
+if (el('btnSaveDraft')) el('btnSaveDraft').onclick = saveTemplateDraft;
+if (el('btnLoadDraft')) el('btnLoadDraft').onclick = loadTemplateDraft;
+if (el('btnLoadLedger')) el('btnLoadLedger').onclick = loadLedger;
 setTimeout(checkCompanionStatus, 300);
