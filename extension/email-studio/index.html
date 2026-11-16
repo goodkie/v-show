@@ -35,12 +35,24 @@
 <iframe id="preview" title="이메일 내용 미리보기" sandbox=""></iframe>
 <div class="note" id="summary">이 템플릿은 미리보기용입니다. 실제 메일 발송은 진행하지 않습니다.</div>
 
+<div class="send-control-card" id="recipientCard" aria-label="수신자 관리 및 발송 검토">
+<div class="send-header"><h3>👥 수신자 관리 · 발송 검토 (Review)</h3><span class="badge-test">DRY-RUN · 실제 발송 없음</span></div>
+<label for="recipientCsv">수신자 CSV 붙여넣기 또는 파일 선택 (email 열 필수 · 이름 열 선택)</label>
+<textarea id="recipientCsv" rows="4" placeholder="email,name&#10;a@example.com,홍길동"></textarea>
+<div class="actions"><input type="file" id="recipientFile" accept=".csv,.txt,text/csv,text/plain"><button id="btnImportRecipients">가져오기 · 중복 제거</button></div>
+<label for="optOutList">수신 거부(opt-out) / 제외 목록 (이메일 또는 @도메인, 공백·쉼표 구분)</label>
+<textarea id="optOutList" rows="2" placeholder="blocked@example.com @competitor.com"></textarea>
+<label style="display:flex;align-items:center;gap:6px;margin:6px 0;font-size:12px;"><input id="consentAttest" type="checkbox"> 이 목록의 수신자는 직접 수신 동의했거나 적법한 근거가 있음을 확인합니다 (마케팅 메일 필수)</label>
+<div class="actions"><button id="btnBuildReview">발송 전 검토</button><button id="btnDryRun" class="primary">드라이런 실행 (발송 없음)</button><button id="btnQueueStop">중지</button><button id="btnQueueResume">이어서</button><button id="btnQueueCsv">결과 CSV 저장</button></div>
+<div id="recipientStatus" class="status-box status-idle" aria-live="polite">수신자 목록 없음. CSV를 가져오세요.</div>
+</div>
 <div class="send-control-card" aria-label="이메일 발송 제어">
+
 <div class="send-header"><h3>🚀 이메일 발송 제어 (Email Delivery)</h3><span class="badge-test">🧪 TEST SIMULATOR ONLY</span></div>
 <div class="test-send-box">
 <h4>🧪 Resend 공식 이벤트 시뮬레이터 테스트 발송</h4>
 <p class="desc">실제 고객에게는 절대 발송되지 않으며, Resend 공식 이벤트 시뮬레이터로만 발송됩니다 (격리 Email Test Sidecar 127.0.0.1 경유 · 기존 18989/18988 프라이버시 릴레이 무간섭).</p>
-<div class="note" id="extBuildInfo">Extension Build: V7.0.0-OWNER-BETA-TEST-SEND-SIDECAR-20261116-LOCKED11 · Expected Sidecar: 127.0.0.1:18990 (email-test-send, email-test-sidecar-v1, email-test-ledger-v1)</div>
+<div class="note" id="extBuildInfo">Extension Build: V7.0.0-OWNER-BETA-TEST-SEND-SIDECAR-20261116-LOCKED12 · Expected Sidecar: 127.0.0.1:18990 (email-test-send, email-test-sidecar-v1, email-test-ledger-v1)</div>
 <div class="inline"><div><label for="sidecarPort">Sidecar 루프백 포트 (127.0.0.1)</label><input id="sidecarPort" type="number" min="1024" max="65535" value="18990"></div><div><label for="sidecarToken">Sidecar 제어 토큰 (자동 페어링 우선 · 메모리 전용)</label><input id="sidecarToken" type="password" autocomplete="off" placeholder="자동 페어링 사용 (수동 입력 불필요)"></div></div>
 <div id="keySetupPanel" class="status-box status-idle" style="margin:8px 0;">
   <b>🔑 Resend API 키 설정 (로컬 NTFS 보안 저장 · 브라우저/로그 미저장)</b>
@@ -62,4 +74,5 @@
 </div>
 </div>
 </section></main>
+<script src="recipient-manager.js"></script>
 <script src="email-template-studio.js"></script></body></html>

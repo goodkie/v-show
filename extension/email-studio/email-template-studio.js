@@ -100,7 +100,7 @@ async function checkCompanionStatus() {
     const d = resp.data;
     const hs = resp.handshake || {};
     const compBuild = hs.companionBuildId || d.companionBuildId || 'verified';
-    const extBuild = hs.extensionBuildId || 'V7.0.0-OWNER-BETA-TEST-SEND-SIDECAR-20261116-LOCKED11';
+    const extBuild = hs.extensionBuildId || 'V7.0.0-OWNER-BETA-TEST-SEND-SIDECAR-20261116-LOCKED12';
     const pidLabel = hs.companionPid || d.pid || 'unknown';
     const capsLabel = Array.isArray(hs.apiCapabilities) ? hs.apiCapabilities.join(', ') : 'email-test-send';
     if (d.resendApiKeyConfigured) {
@@ -339,3 +339,76 @@ if (el('btnPickTokenFile') && el('sidecarTokenFileInput')) {
   };
 }
 setTimeout(checkCompanionStatus, 300);
+
+// ===== Recipient manager / review / dry-run queue (local only, no network) =====
+(function initRecipientUi() {
+  if (!el('btnImportRecipients') || typeof RecipientManager === 'undefined') return;
+  const RM = RecipientManager;
+  const KEY = 'xpider_email_studio_recipients_v1';
+  let recipients = [];
+  let queue = null;
+  const box = () => el('recipientStatus');
+  const say = (cls, txt) => { const b = box(); if (b) { b.className = 'status-box ' + cls; b.textContent = txt; } };
+  function persist() {
+    try { localStorage.setItem(KEY, JSON.stringify({ recipients, queue, optOut: el('optOutList').value, savedAt: new Date().toISOString() })); } catch (_) {}
+  }
+  function restore() {
+    try {
+      const raw = localStorage.getItem(KEY);
+      if (!raw) return;
+      const d = JSON.parse(raw);
+      recipients = Array.isArray(d.recipients) ? d.recipients : [];
+      queue = d.queue && Array.isArray(d.queue.entries) ? RM.resumeNormalize(d.queue) : null;
+      if (typeof d.optOut === 'string') el('optOutList').value = d.optOut;
+      if (recipients.length) say('status-idle', `📂 저장된 수신자 ${recipients.length}명 복원${queue ? ' · 큐 ' + JSON.stringify(RM.summarizeQueue(queue)) : ''}`);
+    } catch (_) {}
+  }
+  function suppression() { return RM.parseSuppression(el('optOutList').value); }
+  function messageKind() { return el('kind') ? el('kind').value : 'service'; }
+  function buildReview() {
+    return RM.buildReview(recipients, suppression(), { messageKind: messageKind(), consentAttestation: el('consentAttest').checked });
+  }
+  el('btnImportRecipients').onclick = () => {
+    const res = RM.importRecipients(el('recipientCsv').value, { source: 'csv-import' });
+    recipients = res.valid;
+    queue = null;
+    persist();
+    const inv = res.invalid.slice(0, 5).map(i => `L${i.line}:${i.reason}`).join(', ');
+    say(res.valid.length ? 'status-success' : 'status-blocked',
+      `✅ 유효 ${res.valid.length}명 · 중복 제거 ${res.duplicates.length} · 무효 ${res.invalid.length}${inv ? ' (' + inv + ')' : ''}`);
+  };
+  el('recipientFile').onchange = async (ev) => {
+    const f = ev.target.files && ev.target.files[0];
+    if (!f) return;
+    el('recipientCsv').value = await f.text();
+    ev.target.value = '';
+    el('btnImportRecipients').click();
+  };
+  el('btnBuildReview').onclick = () => {
+    if (!recipients.length) return say('status-blocked', '⚠️ 먼저 수신자를 가져오세요.');
+    const rv = buildReview();
+    const s = rv.summary;
+    say(s.ready ? 'status-success' : 'status-blocked',
+      `📋 발송 전 검토 (${messageKind()})\n• 전체 ${s.total} · 발송 가능 ${s.ready} · 수신거부 제외 ${s.suppressed} · 동의 미확인 제외 ${s.noConsent}\n• 상용 발송: 🔒 STRICT HOLD (SPF/DKIM/DMARC·수신거부 엔드포인트·Webhook 증거 및 Owner 승인 필요)\n• 드라이런은 실제 이메일을 전송하지 않습니다.`);
+  };
+  el('btnDryRun').onclick = async () => {
+    if (!recipients.length) return say('status-blocked', '⚠️ 먼저 수신자를 가져오세요.');
+    if (!queue) queue = RM.createQueue(buildReview().entries);
+    say('status-loading', '⏳ 드라이런 진행 중 (발송 없음)...');
+    const sum = await RM.runQueue(queue, async () => ({ ok: true, dryRun: true }), { delayMs: 0 });
+    persist();
+    say('status-success', `✅ 드라이런 완료 (실제 발송 0건)\n${JSON.stringify(sum)}`);
+  };
+  el('btnQueueStop').onclick = () => { if (queue) { RM.stopQueue(queue); persist(); say('status-blocked', '⏸️ 중지됨. "이어서"로 재개하세요.'); } };
+  el('btnQueueResume').onclick = () => { if (queue) { RM.resumeNormalize(queue); el('btnDryRun').click(); } else say('status-blocked', '⚠️ 재개할 큐가 없습니다.'); };
+  el('btnQueueCsv').onclick = () => {
+    if (!queue) return say('status-blocked', '⚠️ 저장할 결과가 없습니다.');
+    const blob = new Blob(['\uFEFF' + RM.queueToCsv(queue)], { type: 'text/csv;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'xpider_recipient_status.csv';
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  };
+  restore();
+})();
