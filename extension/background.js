@@ -4078,6 +4078,52 @@ const _handleMainMessageInner = (request, sender, sendResponse) => {
             return true;
         }
 
+        case 'GET_EMAIL_PRODUCTION_PREFLIGHT':
+        case 'SYNC_EMAIL_PRODUCTION_RECIPIENTS': {
+            (async () => {
+                const reqPort = Number(request.sidecarPort);
+                const ctrlPort = (Number.isInteger(reqPort) && reqPort >= 1024 && reqPort <= 65535) ? reqPort : 18990;
+                try {
+                    const explicitToken = (typeof request.sidecarToken === 'string' && request.sidecarToken.trim()) ? request.sidecarToken.trim() : null;
+                    const pairTok = async (forceRefresh = false) => {
+                        if (!forceRefresh && globalThis.__xpiderPairedSidecarToken) return globalThis.__xpiderPairedSidecarToken;
+                        if (!chrome?.runtime?.sendNativeMessage) return null;
+                        return await new Promise((resolve) => {
+                            chrome.runtime.sendNativeMessage('com.xpider.email_sidecar', { action: 'GET_SIDECAR_TOKEN' }, (res) => {
+                                if (!chrome.runtime.lastError && res && res.ok && typeof res.token === 'string' && res.token.trim().length >= 16) {
+                                    globalThis.__xpiderPairedSidecarToken = res.token.trim();
+                                    return resolve(globalThis.__xpiderPairedSidecarToken);
+                                }
+                                resolve(null);
+                            });
+                        });
+                    };
+                    let token = explicitToken || await pairTok(false);
+                    const isSync = request.action === 'SYNC_EMAIL_PRODUCTION_RECIPIENTS';
+                    const url = `http://127.0.0.1:${ctrlPort}${isSync ? '/email/production/import' : '/email/production/preflight'}`;
+                    const doFetch = async (tok) => fetch(url, {
+                        method: isSync ? 'POST' : 'GET',
+                        headers: {
+                            ...(isSync ? { 'Content-Type': 'application/json' } : {}),
+                            ...(tok ? { 'Authorization': `Bearer ${tok}` } : {})
+                        },
+                        ...(isSync ? { body: JSON.stringify(request.payload || {}) } : {})
+                    });
+                    let resp = await doFetch(token);
+                    if (resp.status === 401 && !explicitToken) {
+                        globalThis.__xpiderPairedSidecarToken = null;
+                        token = await pairTok(true);
+                        if (token) resp = await doFetch(token);
+                    }
+                    const data = await resp.json().catch(() => ({}));
+                    sendResponse({ ok: resp.ok, httpStatus: resp.status, data });
+                } catch (err) {
+                    sendResponse({ ok: false, error: err.message });
+                }
+            })();
+            return true;
+        }
+
         case 'GET_EMAIL_TEST_STATUS': {
             (async () => {
                 const pg = (typeof PrivacyGateway !== 'undefined' && PrivacyGateway.getInstance) ? PrivacyGateway.getInstance() : null;

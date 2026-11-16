@@ -52,7 +52,7 @@
 <div class="test-send-box">
 <h4>🧪 Resend 공식 이벤트 시뮬레이터 테스트 발송</h4>
 <p class="desc">실제 고객에게는 절대 발송되지 않으며, Resend 공식 이벤트 시뮬레이터로만 발송됩니다 (격리 Email Test Sidecar 127.0.0.1 경유 · 기존 18989/18988 프라이버시 릴레이 무간섭).</p>
-<div class="note" id="extBuildInfo">Extension Build: V7.0.0-OWNER-BETA-TEST-SEND-SIDECAR-20261116-LOCKED12 · Expected Sidecar: 127.0.0.1:18990 (email-test-send, email-test-sidecar-v1, email-test-ledger-v1)</div>
+<div class="note" id="extBuildInfo">Extension Build: V7.0.0-OWNER-BETA-TEST-SEND-SIDECAR-20261116-LOCKED13 · Expected Sidecar: 127.0.0.1:18990 (email-test-send, email-test-sidecar-v1, email-test-ledger-v1)</div>
 <div class="inline"><div><label for="sidecarPort">Sidecar 루프백 포트 (127.0.0.1)</label><input id="sidecarPort" type="number" min="1024" max="65535" value="18990"></div><div><label for="sidecarToken">Sidecar 제어 토큰 (자동 페어링 우선 · 메모리 전용)</label><input id="sidecarToken" type="password" autocomplete="off" placeholder="자동 페어링 사용 (수동 입력 불필요)"></div></div>
 <div id="keySetupPanel" class="status-box status-idle" style="margin:8px 0;">
   <b>🔑 Resend API 키 설정 (로컬 NTFS 보안 저장 · 브라우저/로그 미저장)</b>
@@ -70,7 +70,8 @@
 <div class="prod-send-box locked">
 <div class="prod-header"><h4>🔒 상용(운영) 발송 (Production Send)</h4><span class="badge-locked">STRICT HOLD · 잠금</span></div>
 <p class="desc warning-text">⚠️ <b>상용 발송 엄격 통제 중:</b> vivpr.pro 도메인의 SPF/DKIM/DMARC DNS 인증, 수신 동의 원장(Consent Ledger), RFC 8058 One-Click 원클릭 수신 거부 엔드포인트 및 Webhook 독립 검증 전까지 운영 발송은 엄격히 차단됩니다.</p>
-<div class="actions"><button disabled class="btn-disabled" id="btnProdSend" title="운영 도메인 및 수신동의 검증 필요">운영 이메일 대량 발송 (비활성화됨)</button></div>
+<div class="actions"><button disabled class="btn-disabled" id="btnProdSend" title="운영 도메인 및 수신동의 검증 필요">운영 이메일 대량 발송 (비활성화됨)</button><button id="btnCheckProdPreflight">🔍 운영 DNS · 동의원장 · 수신거부 · 웹훅 점검</button></div>
+<div id="prodPreflightStatus" class="status-box status-idle" aria-live="polite">운영 점검 대기 중: 버튼을 누르면 vivpr.pro 실시간 DNS(SPF/DKIM/DMARC), NTFS 동의/수신거부 원장, RFC 8058 수신거부 및 웹훅 준비 상태를 확인합니다.</div>
 </div>
 </div>
 </section></main>

@@ -100,7 +100,7 @@ async function checkCompanionStatus() {
     const d = resp.data;
     const hs = resp.handshake || {};
     const compBuild = hs.companionBuildId || d.companionBuildId || 'verified';
-    const extBuild = hs.extensionBuildId || 'V7.0.0-OWNER-BETA-TEST-SEND-SIDECAR-20261116-LOCKED12';
+    const extBuild = hs.extensionBuildId || 'V7.0.0-OWNER-BETA-TEST-SEND-SIDECAR-20261116-LOCKED13';
     const pidLabel = hs.companionPid || d.pid || 'unknown';
     const capsLabel = Array.isArray(hs.apiCapabilities) ? hs.apiCapabilities.join(', ') : 'email-test-send';
     if (d.resendApiKeyConfigured) {
@@ -368,11 +368,28 @@ setTimeout(checkCompanionStatus, 300);
   function buildReview() {
     return RM.buildReview(recipients, suppression(), { messageKind: messageKind(), consentAttestation: el('consentAttest').checked });
   }
+  async function syncSidecarRecipients() {
+    try {
+      const { sidecarPort, sidecarToken } = getSidecarConfig();
+      await callBg({
+        action: 'SYNC_EMAIL_PRODUCTION_RECIPIENTS',
+        sidecarPort,
+        sidecarToken,
+        payload: {
+          csvText: el('recipientCsv').value,
+          optOutText: el('optOutList').value,
+          messageKind: messageKind(),
+          consentAttested: el('consentAttest').checked
+        }
+      });
+    } catch (_) {}
+  }
   el('btnImportRecipients').onclick = () => {
     const res = RM.importRecipients(el('recipientCsv').value, { source: 'csv-import' });
     recipients = res.valid;
     queue = null;
     persist();
+    syncSidecarRecipients();
     const inv = res.invalid.slice(0, 5).map(i => `L${i.line}:${i.reason}`).join(', ');
     say(res.valid.length ? 'status-success' : 'status-blocked',
       `✅ 유효 ${res.valid.length}명 · 중복 제거 ${res.duplicates.length} · 무효 ${res.invalid.length}${inv ? ' (' + inv + ')' : ''}`);
@@ -388,9 +405,41 @@ setTimeout(checkCompanionStatus, 300);
     if (!recipients.length) return say('status-blocked', '⚠️ 먼저 수신자를 가져오세요.');
     const rv = buildReview();
     const s = rv.summary;
+    syncSidecarRecipients();
     say(s.ready ? 'status-success' : 'status-blocked',
       `📋 발송 전 검토 (${messageKind()})\n• 전체 ${s.total} · 발송 가능 ${s.ready} · 수신거부 제외 ${s.suppressed} · 동의 미확인 제외 ${s.noConsent}\n• 상용 발송: 🔒 STRICT HOLD (SPF/DKIM/DMARC·수신거부 엔드포인트·Webhook 증거 및 Owner 승인 필요)\n• 드라이런은 실제 이메일을 전송하지 않습니다.`);
   };
+  if (el('btnCheckProdPreflight')) {
+    el('btnCheckProdPreflight').onclick = async () => {
+      const pBox = el('prodPreflightStatus');
+      if (!pBox) return;
+      pBox.className = 'status-box status-loading';
+      pBox.textContent = '⏳ vivpr.pro 실시간 DNS 및 Sidecar 운영 준비 상태 점검 중...';
+      await syncSidecarRecipients();
+      const { sidecarPort, sidecarToken } = getSidecarConfig();
+      const r = await callBg({ action: 'GET_EMAIL_PRODUCTION_PREFLIGHT', sidecarPort, sidecarToken });
+      if (!r || !r.ok || !r.data) {
+        pBox.className = 'status-box status-error';
+        pBox.textContent = `❌ 운영 점검 실패 (HTTP ${r?.httpStatus || '-'}): Sidecar 연결/페어링을 먼저 확인하세요.`;
+        return;
+      }
+      const d = r.data;
+      const dns = d.dns || {};
+      const qs = d.queueSummary || {};
+      const todo = Array.isArray(d.minimalAuthorizationNeededForSingleLiveSend) ? d.minimalAuthorizationNeededForSingleLiveSend : [];
+      pBox.className = dns.allVerified ? 'status-box status-success' : 'status-box status-blocked';
+      pBox.textContent = [
+        `🔍 [운영 발송 점검 결과 — 도메인: ${d.domain || 'vivpr.pro'}]`,
+        `• DNS SPF (send.vivpr.pro): ${dns.spf?.pass ? '✅ PASS' : `❌ 미설정 (root=${dns.spf?.rootRecord || 'none'}, send=${dns.spf?.sendError || 'none'})`}`,
+        `• DNS DKIM (resend._domainkey.vivpr.pro): ${dns.dkim?.pass ? '✅ PASS' : `❌ 미설정 (${dns.dkim?.error || 'ENOTFOUND'})`}`,
+        `• DNS DMARC (_dmarc.vivpr.pro): ${dns.dmarc?.pass ? '✅ PASS' : `❌ 미설정 (${dns.dmarc?.error || 'ENOTFOUND'})`}`,
+        `• NTFS 동의 원장: ${qs.consentedRecordsOnDisk || 0}건 | 수신거부/반송 원장: ${qs.suppressedRecordsOnDisk || 0}건`,
+        `• 로컬 RFC 8058 수신거부 & Svix 웹훅: ${d.localUnsubscribeEndpoint || 'WORKING'} / ${d.webhookEndpoint || 'WORKING'}`,
+        `• 단일 실발송을 위해 필요한 최소 승인/조치 (${todo.length}건):`,
+        ...todo.map(x => `  - ${x}`)
+      ].join('\n');
+    };
+  }
   el('btnDryRun').onclick = async () => {
     if (!recipients.length) return say('status-blocked', '⚠️ 먼저 수신자를 가져오세요.');
     if (!queue) queue = RM.createQueue(buildReview().entries);

@@ -14,10 +14,11 @@ const resendTestMode = require('./resend-test-mode');
 const { EmailSimulatorLedger } = require('./email-simulator-ledger');
 const { writeProtectedSecretFile, verifyWindowsDacl, writeKeySecurely } = require('./email-test-sidecar-set-key');
 const { getSidecarPaths } = require('./sidecar-paths');
+const { EmailProductionPipeline } = require('./email-production-pipeline');
 
 const DEFAULT_SIDECAR_PORT = 18990;
-const SIDECAR_BUILD_ID = 'V7.0.0-OWNER-BETA-TEST-SEND-SIDECAR-20261116-LOCKED12';
-const SIDECAR_IMPLEMENTATION_HEAD = 'email-test-sidecar-20261116-locked12';
+const SIDECAR_BUILD_ID = 'V7.0.0-OWNER-BETA-TEST-SEND-SIDECAR-20261116-LOCKED13';
+const SIDECAR_IMPLEMENTATION_HEAD = 'email-test-sidecar-20261116-locked13';
 const SIDECAR_API_CAPABILITIES = ['email-test-send', 'email-test-sidecar-v1', 'email-test-ledger-v1'];
 const EXPOSED_RC3_6_TOKEN_SHA256 = '597a70b99c11c7f4d13a075204ac240bb08a7a1d6c08c78268328e0bb59daeda';
 const EXTENSION_ORIGIN_RE = /^chrome-extension:\/\/[a-p]{32}$/;
@@ -71,6 +72,12 @@ class EmailTestSidecar {
     this.idempotencyCache = new Map();
     this.server = null;
     this.token = this._loadOrCreateToken(options.token);
+    this.pipeline = new EmailProductionPipeline({
+      stateDir: this.stateDir,
+      trustedTestMode: this.trustedTestMode,
+      dnsResolver: this.trustedTestMode ? options.dnsResolver : null,
+      providerTransport: this.trustedTestMode ? options.providerTransport : null
+    });
   }
 
   _loadOrCreateToken(explicitToken) {
@@ -252,6 +259,40 @@ class EmailTestSidecar {
         const urlObj = new URL(req.url, `http://${this.host}:${this.port}`);
         const pathname = urlObj.pathname;
 
+        // Public loopback RFC 8058 One-Click Unsubscribe endpoint (no Bearer token required per RFC 8058)
+        if (pathname.startsWith('/unsubscribe/')) {
+          let raw = '';
+          let tooLarge = false;
+          req.on('data', c => { raw += c; if (raw.length > 8192) { tooLarge = true; req.destroy(); } });
+          req.on('end', () => {
+            if (tooLarge) return;
+            const out = this.pipeline.handleUnsubscribeHttp(req, raw);
+            res.setHeader('Cache-Control', 'no-store');
+            if (out.contentType && out.htmlBody && req.headers.accept && req.headers.accept.includes('text/html')) {
+              res.writeHead(out.statusCode, { 'Content-Type': out.contentType });
+              res.end(out.htmlBody);
+              return;
+            }
+            res.writeHead(out.statusCode, { 'Content-Type': 'application/json; charset=utf-8' });
+            res.end(JSON.stringify(out.body));
+          });
+          return;
+        }
+
+        // Public loopback Resend Svix Webhook endpoint (authenticated via Svix HMAC-SHA256 headers)
+        if (pathname === '/webhooks/resend' && req.method === 'POST') {
+          let raw = '';
+          let tooLarge = false;
+          req.on('data', c => { raw += c; if (raw.length > 65536) { tooLarge = true; req.destroy(); } });
+          req.on('end', () => {
+            if (tooLarge) return;
+            const out = this.pipeline.handleResendWebhookHttp(req.headers, raw);
+            res.writeHead(out.statusCode, { 'Content-Type': 'application/json; charset=utf-8' });
+            res.end(JSON.stringify(out.body));
+          });
+          return;
+        }
+
         if (pathname === '/health' && req.method === 'GET') {
           res.writeHead(200, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({
@@ -303,6 +344,58 @@ class EmailTestSidecar {
             note: 'ACCEPTED means Resend event simulator accepted the event, NOT real mailbox delivery.',
             entries: this.ledger.listRecent(25)
           }));
+          return;
+        }
+
+        if (pathname === '/email/production/preflight' && req.method === 'GET') {
+          const hasKey = Boolean(this.resolveResendApiKey());
+          const pf = await this.pipeline.evaluatePreflight({
+            hasResendKey: hasKey,
+            keyStatus: this.keyStatus || (hasKey ? 'FORMAT_VALID_KEY_PRESENT' : 'KEY_MISSING'),
+            ownerExplicitApproval: false
+          });
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify(pf));
+          return;
+        }
+
+        if ((pathname === '/email/production/import' || pathname === '/email/production/queue/run' || pathname === '/email/production/queue/stop') && req.method === 'POST') {
+          let raw = '';
+          let tooLarge = false;
+          req.on('data', c => { raw += c; if (raw.length > 524288) { tooLarge = true; req.destroy(); } });
+          req.on('end', async () => {
+            if (tooLarge) return;
+            try {
+              const payload = raw ? JSON.parse(raw) : {};
+              if (pathname === '/email/production/import') {
+                const out = this.pipeline.importAndPersistRecipients(payload);
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify(out));
+                return;
+              }
+              if (pathname === '/email/production/queue/stop') {
+                const out = this.pipeline.stopQueue();
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ ok: true, status: 'STOPPED', summary: out }));
+                return;
+              }
+              if (pathname === '/email/production/queue/run') {
+                const hasKey = Boolean(this.resolveResendApiKey());
+                const out = await this.pipeline.runQueue({
+                  ...payload,
+                  baseUrl: `http://127.0.0.1:${this.port}`,
+                  hasResendKey: hasKey,
+                  ownerExplicitApproval: false
+                });
+                res.writeHead(out.ok ? 200 : 409, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify(out));
+                return;
+              }
+            } catch (err) {
+              res.writeHead(400, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ ok: false, error: err.message }));
+            }
+          });
           return;
         }
 
