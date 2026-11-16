@@ -15,8 +15,8 @@ const { EmailSimulatorLedger } = require('./email-simulator-ledger');
 const { writeProtectedSecretFile, verifyWindowsDacl } = require('./email-test-sidecar-set-key');
 
 const DEFAULT_SIDECAR_PORT = 18990;
-const SIDECAR_BUILD_ID = 'V7.0.0-OWNER-BETA-TEST-SEND-SIDECAR-20261116-LOCKED3';
-const SIDECAR_IMPLEMENTATION_HEAD = 'email-test-sidecar-20261116-locked3';
+const SIDECAR_BUILD_ID = 'V7.0.0-OWNER-BETA-TEST-SEND-SIDECAR-20261116-LOCKED4';
+const SIDECAR_IMPLEMENTATION_HEAD = 'email-test-sidecar-20261116-locked4';
 const SIDECAR_API_CAPABILITIES = ['email-test-send', 'email-test-sidecar-v1', 'email-test-ledger-v1'];
 const EXPOSED_RC3_6_TOKEN_SHA256 = '597a70b99c11c7f4d13a075204ac240bb08a7a1d6c08c78268328e0bb59daeda';
 const EXTENSION_ORIGIN_RE = /^chrome-extension:\/\/[a-p]{32}$/;
@@ -365,14 +365,15 @@ class EmailTestSidecar {
                 }));
                 return;
               }
-              if (priorRec && (priorRec.status === 'REQUESTED' || priorRec.status === 'AMBIGUOUS_TIMEOUT')) {
+              const unresolved = this.ledger.findUnresolvedAmbiguous();
+              if (unresolved) {
                 res.writeHead(409, { 'Content-Type': 'application/json' });
                 res.end(JSON.stringify({
                   status: 'AMBIGUOUS_NEEDS_RECONCILE',
                   reason: 'PRIOR_REQUEST_AMBIGUOUS',
-                  errorCode: priorRec.errorCode || 'AMBIGUOUS_TIMEOUT',
-                  idempotencyKey,
-                  message: '이전 요청 상태가 불명확(AMBIGUOUS)합니다. 공급자 정합성 확인 또는 독립적인 승인·초기화 전까지 새 키로 재전송하지 마세요 (Do not retry under a new key until provider reconciliation or explicit independently authorized reset).'
+                  errorCode: unresolved.errorCode || 'AMBIGUOUS_TIMEOUT',
+                  idempotencyKey: unresolved.idempotencyKey,
+                  message: '미결(AMBIGUOUS) 상태의 발송 원장이 존재합니다. 공급자 정합성 확인 또는 독립적인 승인·초기화 전까지 새 키로도 재전송하지 마세요 (Do not retry under a new key until provider reconciliation or explicit independently authorized reset).'
                 }));
                 return;
               }
@@ -436,7 +437,7 @@ class EmailTestSidecar {
                 res.writeHead(500, { 'Content-Type': 'application/json' });
                 res.end(JSON.stringify({
                   status: 'BLOCKED',
-                  reason: persistErr.code === 'LEDGER_LOCK_CONTENTION' ? 'LEDGER_LOCK_CONTENTION' : 'LEDGER_PERSISTENCE_FAILED',
+                  reason: persistErr.code || 'LEDGER_PERSISTENCE_FAILED',
                   reconciliationRequired: true,
                   message: persistErr.message
                 }));

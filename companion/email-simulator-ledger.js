@@ -1,12 +1,11 @@
 'use strict';
 /**
- * Append-only Simulator Send Ledger (Directive #6908909594, #6909086536, #6909266178, #6909563410)
- * - Cross-process exclusive wx lockfile with unique lockId ownership nonce.
- * - Never steals a lock from a verified live PID based on elapsed age alone.
- * - Ownership-verified release in finally block (never unlinks a newer owner's lock).
+ * Append-only Simulator Send Ledger (Directive #6908909594, #6909086536, #6909266178, #6909563410, #6909942552)
+ * - Fail-closed single-owner wx lock protocol: NEVER auto-reclaims or steals another PID's lock.
+ *   If a dead-PID or stale lock remains after crash, fails closed with LEDGER_STALE_LOCK_RECONCILIATION_REQUIRED.
+ * - Fails closed on ANY unresolved REQUESTED/AMBIGUOUS_TIMEOUT record (even under a new idempotencyKey).
  * - Fails closed in BOTH append() and reserveRequest() when ledger is corrupt/truncated/unreadable.
- * - Transactional durable append + fsync BEFORE updating in-memory state.
- * - Scrubs API keys, Bearer tokens, and non-simulator PII before persistence & export.
+ * - Verifies Windows NTFS DACL before reporting durable state or allowing provider POST.
  */
 const fs = require('node:fs');
 const path = require('node:path');
@@ -53,7 +52,6 @@ class EmailSimulatorLedger {
     this.ledgerFile = options.ledgerFile || path.join(__dirname, '.email_simulator_ledger.jsonl');
     this.lockFile = options.lockFile || (this.ledgerFile + '.lock');
     this.lockTimeoutMs = Number.isFinite(options.lockTimeoutMs) ? options.lockTimeoutMs : 2500;
-    this.staleLockMs = Number.isFinite(options.staleLockMs) ? options.staleLockMs : 15000;
     this.fsImpl = options.fsImpl || fs;
     this.byKey = new Map();
     this.events = [];
@@ -99,6 +97,15 @@ class EmailSimulatorLedger {
     }
   }
 
+  findUnresolvedAmbiguous() {
+    for (const rec of this.byKey.values()) {
+      if (rec && (rec.status === 'REQUESTED' || rec.status === 'AMBIGUOUS_TIMEOUT')) {
+        return rec;
+      }
+    }
+    return null;
+  }
+
   _withExclusiveLock(fn) {
     const dir = path.dirname(this.lockFile);
     this.fsImpl.mkdirSync(dir, { recursive: true });
@@ -125,69 +132,25 @@ class EmailSimulatorLedger {
           lockErr.code = 'LEDGER_LOCK_FAILED';
           throw lockErr;
         }
-        // Inspect existing lock: NEVER reclaim a verified live PID based solely on elapsed age!
-        let inspectedDead = null;
-        try {
-          const raw = this.fsImpl.readFileSync(this.lockFile, 'utf8');
-          const info = JSON.parse(raw);
-          const ownerPid = Number(info.pid);
-          if (!isPidAlive(ownerPid)) {
-            inspectedDead = { pid: ownerPid, lockId: info.lockId || null };
-          }
-          // If ownerPid IS alive, do NOT reclaim regardless of ageMs! Wait until deadline.
-        } catch (_) {
-          // Malformed or partial lockfile: only reclaim if older than staleLockMs
-          try {
-            const st = this.fsImpl.statSync(this.lockFile);
-            if ((Date.now() - st.mtimeMs) > this.staleLockMs) {
-              inspectedDead = { malformed: true, mtimeMs: st.mtimeMs };
-            }
-          } catch (_) {
-            // Lock disappeared concurrently; retry immediately
-            continue;
-          }
-        }
-
-        if (inspectedDead) {
-          // Race-safe reclaim: serialize reclaimers via <lockFile>.reclaim and re-verify identity!
-          const reclaimMutex = `${this.lockFile}.reclaim`;
-          let rfd = null;
-          try {
-            rfd = this.fsImpl.openSync(reclaimMutex, 'wx', 0o600);
-            try {
-              this.fsImpl.writeSync(rfd, JSON.stringify({ pid: process.pid, lockId: myLockId, createdAt: Date.now() }));
-            } finally {
-              this.fsImpl.closeSync(rfd);
-            }
-            // Re-read this.lockFile AFTER acquiring reclaimMutex to prove it is STILL the exact same dead/malformed lock
-            let stillSameDead = false;
-            try {
-              const rawAfter = this.fsImpl.readFileSync(this.lockFile, 'utf8');
-              const infoAfter = JSON.parse(rawAfter);
-              if (!inspectedDead.malformed && Number(infoAfter.pid) === inspectedDead.pid && (infoAfter.lockId || null) === inspectedDead.lockId && !isPidAlive(Number(infoAfter.pid))) {
-                stillSameDead = true;
-              }
-            } catch (_) {
-              if (inspectedDead.malformed) {
-                stillSameDead = true;
-              }
-            }
-            if (stillSameDead) {
-              this.fsImpl.unlinkSync(this.lockFile);
-            }
-          } catch (_) {
-            // Another reclaimer holds reclaimMutex or lock changed; retry cleanly
-          } finally {
-            if (rfd !== null) {
-              try { this.fsImpl.unlinkSync(reclaimMutex); } catch (_) {}
-            }
-          }
-          continue;
-        }
-
+        // Fail-closed: NEVER auto-unlink or steal an existing lockfile.
+        // Wait until deadline for a live owner to release, otherwise fail closed!
         if (Date.now() >= deadline) {
-          const timeoutErr = new Error('LEDGER_LOCK_CONTENTION: Another active sidecar process holds the ledger lock');
-          timeoutErr.code = 'LEDGER_LOCK_CONTENTION';
+          let deadOwner = false;
+          let ownerPid = null;
+          try {
+            const info = JSON.parse(this.fsImpl.readFileSync(this.lockFile, 'utf8'));
+            ownerPid = Number(info.pid);
+            if (!isPidAlive(ownerPid)) deadOwner = true;
+          } catch (_) {
+            deadOwner = true;
+          }
+          const code = deadOwner ? 'LEDGER_STALE_LOCK_RECONCILIATION_REQUIRED' : 'LEDGER_LOCK_CONTENTION';
+          const timeoutErr = new Error(
+            deadOwner
+              ? `${code}: Aborted/crashed lockfile present (pid=${ownerPid}); operator reconciliation required`
+              : `${code}: Another active sidecar process holds the ledger lock (pid=${ownerPid})`
+          );
+          timeoutErr.code = code;
           throw timeoutErr;
         }
         const waitUntil = Date.now() + 15;
@@ -198,7 +161,7 @@ class EmailSimulatorLedger {
     try {
       return fn();
     } finally {
-      // Ownership-verified release: only unlink if lockfile still belongs to (process.pid, myLockId)
+      // Single-owner ownership-verified release: only unlink our own (pid, lockId)
       try {
         const currentRaw = this.fsImpl.readFileSync(this.lockFile, 'utf8');
         const current = JSON.parse(currentRaw);
@@ -206,6 +169,21 @@ class EmailSimulatorLedger {
           this.fsImpl.unlinkSync(this.lockFile);
         }
       } catch (_) {}
+    }
+  }
+
+  _verifyLedgerAcl(isNewFile) {
+    if (this.fsImpl === fs && process.platform === 'win32' && process.env.USERNAME) {
+      try {
+        if (isNewFile) {
+          execFileSync('icacls', [this.ledgerFile, '/inheritance:r', '/grant:r', `${process.env.USERNAME}:(R,W)`], { stdio: 'pipe' });
+        }
+        verifyWindowsDacl(this.ledgerFile, process.env.USERNAME);
+      } catch (aclErr) {
+        const err = new Error(`LEDGER_ACL_VERIFICATION_FAILED: ${aclErr.message}`);
+        err.code = 'LEDGER_ACL_VERIFICATION_FAILED';
+        throw err;
+      }
     }
   }
 
@@ -231,6 +209,11 @@ class EmailSimulatorLedger {
     const serialized = JSON.stringify(record) + '\n';
     this.fsImpl.mkdirSync(path.dirname(this.ledgerFile), { recursive: true });
     const isNewFile = !this.fsImpl.existsSync(this.ledgerFile);
+    if (!isNewFile) {
+      // Precondition: verify DACL on pre-existing ledger file BEFORE appending or sending
+      this._verifyLedgerAcl(false);
+    }
+
     let fd = null;
     try {
       fd = this.fsImpl.openSync(this.ledgerFile, 'a', 0o600);
@@ -252,17 +235,8 @@ class EmailSimulatorLedger {
       }
     }
 
-    if (this.fsImpl === fs && process.platform === 'win32' && process.env.USERNAME) {
-      try {
-        if (isNewFile) {
-          execFileSync('icacls', [this.ledgerFile, '/inheritance:r', '/grant:r', `${process.env.USERNAME}:(R,W)`], { stdio: 'pipe' });
-        }
-        verifyWindowsDacl(this.ledgerFile, process.env.USERNAME);
-      } catch (aclErr) {
-        const err = new Error(`LEDGER_ACL_VERIFICATION_FAILED: ${aclErr.message}`);
-        err.code = 'LEDGER_ACL_VERIFICATION_FAILED';
-        throw err;
-      }
+    if (isNewFile) {
+      this._verifyLedgerAcl(true);
     }
 
     this.lastPersistError = null;
@@ -294,13 +268,12 @@ class EmailSimulatorLedger {
         return { action: 'CORRUPT_BLOCKED', corruptReason: this.corruptReason, corruptLineCount: this.corruptLineCount };
       }
       const existing = this.byKey.get(idempotencyKey);
-      if (existing) {
-        if (existing.status === 'ACCEPTED') {
-          return { action: 'REPLAY_ACCEPTED', record: existing };
-        }
-        if (existing.status === 'REQUESTED' || existing.status === 'AMBIGUOUS_TIMEOUT') {
-          return { action: 'AMBIGUOUS_CONFLICT', record: existing };
-        }
+      if (existing && existing.status === 'ACCEPTED') {
+        return { action: 'REPLAY_ACCEPTED', record: existing };
+      }
+      const unresolved = this.findUnresolvedAmbiguous();
+      if (unresolved) {
+        return { action: 'AMBIGUOUS_CONFLICT', record: unresolved };
       }
       const reserved = this._appendUnlocked({
         idempotencyKey,

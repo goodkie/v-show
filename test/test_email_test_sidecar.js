@@ -330,10 +330,13 @@ function request(port, method, urlPath, headers = {}, body = null) {
       });
       diskFullSidecar.ledger.fsImpl = {
         ...fs,
-        openSync: () => 999,
-        writeSync: () => { const e = new Error('ENOSPC: no space left on device'); e.code = 'ENOSPC'; throw e; },
+        openSync: (p, flags, m) => String(flags).includes('x') ? fs.openSync(p, flags, m) : 999,
+        writeSync: (fd, buf) => {
+          if (fd !== 999) return fs.writeSync(fd, buf);
+          const e = new Error('ENOSPC: no space left on device'); e.code = 'ENOSPC'; throw e;
+        },
         fsyncSync: () => {},
-        closeSync: () => {}
+        closeSync: (fd) => { if (fd !== 999) fs.closeSync(fd); }
       };
       await diskFullSidecar.start();
       try {
@@ -424,13 +427,23 @@ function request(port, method, urlPath, headers = {}, body = null) {
         }
       });
 
-      // Stale lockfile held by dead PID should recover automatically
-      fs.writeFileSync(sharedLedger + '.lock', JSON.stringify({ pid: 999999, createdAt: Date.now() - 60000 }));
+      // Stale/dead-PID lockfile must FAIL CLOSED (no auto-steal) with 0 outbound POST
+      fs.writeFileSync(sharedLedger + '.lock', JSON.stringify({ pid: 999999, lockId: 'dead_crash_nonce', createdAt: Date.now() - 60000 }));
       const s1 = makeSc(19998);
       const s2 = makeSc(19999);
+      s1.ledger.lockTimeoutMs = 150;
+      s2.ledger.lockTimeoutMs = 150;
       await s1.start();
       await s2.start();
       try {
+        const blockedStale = await request(19998, 'POST', '/email/test-send', { Authorization: 'Bearer concurrent_tok_12345678', 'Content-Type': 'application/json' },
+          { to: 'delivered@resend.dev', subject: 'S', text: 'B', idempotencyKey: 'concurrent_race_key_0001' });
+        assert.equal(blockedStale.status, 500);
+        assert.equal(blockedStale.json.reason, 'LEDGER_STALE_LOCK_RECONCILIATION_REQUIRED');
+        assert.equal(transportCalls, 0, 'Stale dead-PID lock MUST fail closed without provider POST');
+
+        // After operator reconciliation removes stale lock, concurrent sidecars still permit only ONE provider POST
+        fs.unlinkSync(sharedLedger + '.lock');
         const [r1, r2] = await Promise.all([
           request(19998, 'POST', '/email/test-send', { Authorization: 'Bearer concurrent_tok_12345678', 'Content-Type': 'application/json' },
             { to: 'delivered@resend.dev', subject: 'S', text: 'B', idempotencyKey: 'concurrent_race_key_0001' }),
@@ -599,8 +612,43 @@ function request(port, method, urlPath, headers = {}, body = null) {
         assert.equal(conflict.json.reason, 'PRIOR_REQUEST_AMBIGUOUS');
         assert.ok(conflict.json.message.includes('Do not retry under a new key'));
         assert.equal(conflict.json.message.includes('새 idempotencyKey로 재시도'), false);
+
+        // Even with a CHANGED idempotencyKey, unresolved AMBIGUOUS_TIMEOUT must fail closed with 0 POST
+        const changedKeyResp = await request(20003, 'POST', '/email/test-send', { Authorization: 'Bearer ambig_msg_tok_123456', 'Content-Type': 'application/json' },
+          { to: 'delivered@resend.dev', subject: 'A', text: 'B', idempotencyKey: 'ambig_changed_new_key_02' });
+        assert.equal(changedKeyResp.status, 409);
+        assert.equal(changedKeyResp.json.reason, 'PRIOR_REQUEST_AMBIGUOUS');
       } finally {
         await sAmb.stop();
+      }
+    });
+
+    await runTest('REAL_WINDOWS_NTFS_ACL_FAILURE_BLOCKS_SEND_BEFORE_POST', async () => {
+      if (process.platform !== 'win32') return;
+      const { execFileSync } = require('node:child_process');
+      const weakLedger = path.join(tmpDir, '.weak_acl_ledger.jsonl');
+      fs.writeFileSync(weakLedger, '', 'utf8');
+      execFileSync('icacls', [weakLedger, '/grant', 'Everyone:R'], { stdio: 'pipe' });
+      let postCalls = 0;
+      const sWeak = new EmailTestSidecar({
+        port: 20004,
+        token: 'weak_acl_tok_123456',
+        tokenFile: path.join(tmpDir, '.tok_weak'),
+        pidFile: path.join(tmpDir, '.pid_weak'),
+        ledgerFile: weakLedger,
+        apiKeyOverride: 're_test_weak_123456',
+        rateLimitMs: 0,
+        transportImpl: async () => { postCalls++; return { status: 'SUCCESS' }; }
+      });
+      await sWeak.start();
+      try {
+        const resp = await request(20004, 'POST', '/email/test-send', { Authorization: 'Bearer weak_acl_tok_123456', 'Content-Type': 'application/json' },
+          { to: 'delivered@resend.dev', subject: 'W', text: 'W', idempotencyKey: 'weak_acl_test_key_0001' });
+        assert.equal(resp.status, 500);
+        assert.equal(resp.json.reason, 'LEDGER_ACL_VERIFICATION_FAILED');
+        assert.equal(postCalls, 0, 'Weak pre-existing Windows DACL MUST fail closed with 0 provider POSTs');
+      } finally {
+        await sWeak.stop();
       }
     });
 

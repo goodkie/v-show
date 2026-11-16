@@ -100,7 +100,7 @@ async function checkCompanionStatus() {
     const d = resp.data;
     const hs = resp.handshake || {};
     const compBuild = hs.companionBuildId || d.companionBuildId || 'verified';
-    const extBuild = hs.extensionBuildId || 'V7.0.0-OWNER-BETA-TEST-SEND-SIDECAR-20261116-LOCKED3';
+    const extBuild = hs.extensionBuildId || 'V7.0.0-OWNER-BETA-TEST-SEND-SIDECAR-20261116-LOCKED4';
     const pidLabel = hs.companionPid || d.pid || 'unknown';
     const capsLabel = Array.isArray(hs.apiCapabilities) ? hs.apiCapabilities.join(', ') : 'email-test-send';
     if (d.resendApiKeyConfigured) {
