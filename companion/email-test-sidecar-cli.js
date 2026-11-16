@@ -4,6 +4,7 @@ const fs = require('node:fs');
 const { EmailTestSidecar, DEFAULT_SIDECAR_PORT, SIDECAR_BUILD_ID, SIDECAR_API_CAPABILITIES, parseSidecarPort } = require('./email-test-sidecar');
 const { getSidecarPaths } = require('./sidecar-paths');
 const { verifyWindowsDacl } = require('./email-test-sidecar-set-key');
+const { registerNativeMessagingHost } = require('./email-test-sidecar-register-host');
 
 function getJson(port, urlPath, headers = {}) {
   return new Promise(resolve => {
@@ -24,6 +25,10 @@ function getJson(port, urlPath, headers = {}) {
 (async () => {
   const port = parseSidecarPort(process.env.XPIDER_EMAIL_SIDECAR_PORT, DEFAULT_SIDECAR_PORT);
   const paths = getSidecarPaths();
+  let nhRegistered = false;
+  if (!process.env.XPIDER_SKIP_NATIVE_HOST_REG) {
+    try { nhRegistered = Boolean(registerNativeMessagingHost().registered); } catch (_) {}
+  }
   const existing = await getJson(port, '/health');
   if (existing.alive) {
     const j = existing.json || {};

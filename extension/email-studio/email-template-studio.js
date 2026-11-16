@@ -100,12 +100,12 @@ async function checkCompanionStatus() {
     const d = resp.data;
     const hs = resp.handshake || {};
     const compBuild = hs.companionBuildId || d.companionBuildId || 'verified';
-    const extBuild = hs.extensionBuildId || 'V7.0.0-OWNER-BETA-TEST-SEND-SIDECAR-20261116-LOCKED8';
+    const extBuild = hs.extensionBuildId || 'V7.0.0-OWNER-BETA-TEST-SEND-SIDECAR-20261116-LOCKED9';
     const pidLabel = hs.companionPid || d.pid || 'unknown';
     const capsLabel = Array.isArray(hs.apiCapabilities) ? hs.apiCapabilities.join(', ') : 'email-test-send';
     if (d.resendApiKeyConfigured) {
       box.className = 'status-box status-success';
-      box.textContent = `✅ Email Test Sidecar 연결 및 핸드셰이크 성공 (127.0.0.1:${sidecarPort})\n• Extension Build: ${extBuild}\n• Sidecar Build: ${compBuild} (PID: ${pidLabel})\n• Capabilities: ${capsLabel}\n• Resend API Key 설정됨 (서버사이드 안전 보관)\n• 시뮬레이터 수신자 대상 테스트 발송 준비 완료`;
+      box.textContent = `✅ Email Test Sidecar 연결 및 핸드셰이크 성공 (127.0.0.1:${sidecarPort})\n• Extension Build: ${extBuild}\n• Sidecar Build: ${compBuild} (PID: ${pidLabel})\n• Capabilities: ${capsLabel}\n• Resend API Key 상태: ${d.keyStatus || 'FORMAT_VALID_KEY_PRESENT'} (로컬 형식 검증만 완료 · 공급자 인증은 테스트 발송 시 확인)\n• 시뮬레이터 수신자 대상 테스트 발송 준비 완료`;
     } else {
       box.className = 'status-box status-blocked';
       box.textContent = `⚠️ Email Test Sidecar 연결됨 — API 키 미설정 (127.0.0.1:${sidecarPort})\n• Extension Build: ${extBuild}\n• Sidecar Build: ${compBuild} (PID: ${pidLabel})\n• 사유: KEY_MISSING (RESEND_API_KEY_NOT_CONFIGURED)\n• 조치 방법:\n  1) STOP_EMAIL_TEST_SIDECAR.bat 실행 (기존 18990 사이드카만 종료)\n  2) SET_RESEND_API_KEY.bat 실행하여 로컬 보안 경로에 키 저장\n  3) START_EMAIL_TEST_SIDECAR.bat 재실행 후 "Sidecar 상태 확인" 다시 클릭`;
@@ -115,7 +115,7 @@ async function checkCompanionStatus() {
     box.textContent = `⛔ [WRONG_COMPANION: COMPANION_VERSION_MISMATCH (포트 ${sidecarPort})]\n• 감지된 서비스: ${resp.companionBuildId || 'unknown'}\n• 필요한 기능: email-test-send\n• 조치 방법: 포트 ${sidecarPort}에는 구버전 서비스가 실행 중입니다. 포트 18990에서 START_EMAIL_TEST_SIDECAR.bat를 실행하세요.`;
   } else if (resp && (resp.reason === 'UNAUTHORIZED' || resp.reason === 'SIDECAR_TOKEN_REQUIRED' || resp.httpStatus === 401)) {
     box.className = 'status-box status-error';
-    box.textContent = `❌ [인증 필요: UNAUTHORIZED (HTTP 401)]\n• ${resp.message || 'START_EMAIL_TEST_SIDECAR.bat 콘솔에 표시된 Sidecar 제어 토큰을 위 입력란에 붙여넣어 주세요.'}`;
+    box.textContent = `❌ [인증 필요: UNAUTHORIZED (HTTP 401)]\n• ${resp.message || '로컬 페어링이 필요합니다.'}\n• 원클릭 조치: START_EMAIL_TEST_SIDECAR.bat 실행 후 위 "🔗 원클릭 자동 페어링" 버튼을 누르거나, "📁 토큰 파일로 연결"로 %LOCALAPPDATA%\\XPIDER\\Sidecar\\.email_sidecar_token 파일을 선택하세요 (콘솔 복사 불필요).`;
   } else if (resp && (resp.reason === 'FORBIDDEN_ORIGIN' || resp.httpStatus === 403)) {
     box.className = 'status-box status-error';
     box.textContent = `❌ [Origin 거부: FORBIDDEN_ORIGIN (HTTP 403)]\n• ${resp.message || '허용되지 않은 Origin 요청입니다.'}`;
@@ -271,4 +271,42 @@ async function loadLedger() {
 if (el('btnSaveDraft')) el('btnSaveDraft').onclick = saveTemplateDraft;
 if (el('btnLoadDraft')) el('btnLoadDraft').onclick = loadTemplateDraft;
 if (el('btnLoadLedger')) el('btnLoadLedger').onclick = loadLedger;
+if (el('btnPairSidecar')) {
+  el('btnPairSidecar').onclick = async () => {
+    const box = el('testSendStatus');
+    if (box) {
+      box.className = 'status-box status-loading';
+      box.textContent = '🔗 로컬 Sidecar 원클릭 자동 페어링 시도 중...';
+    }
+    const pairResp = await callBg({ action: 'PAIR_EMAIL_TEST_SIDECAR' });
+    if (pairResp && pairResp.ok) {
+      if (el('sidecarToken')) el('sidecarToken').value = '';
+      await checkCompanionStatus();
+      await loadLedger();
+    } else if (box) {
+      box.className = 'status-box status-error';
+      box.textContent = `❌ [원클릭 페어링 실패: ${pairResp?.error || 'PAIRING_FAILED'}]\n• ${pairResp?.message || 'START_EMAIL_TEST_SIDECAR.bat를 실행한 뒤 다시 시도하거나, "📁 토큰 파일로 연결"을 이용하세요.'}`;
+    }
+  };
+}
+if (el('btnPickTokenFile') && el('sidecarTokenFileInput')) {
+  el('btnPickTokenFile').onclick = () => el('sidecarTokenFileInput').click();
+  el('sidecarTokenFileInput').onchange = async (ev) => {
+    const file = ev.target && ev.target.files && ev.target.files[0];
+    if (!file) return;
+    try {
+      const txt = (await file.text()).trim();
+      if (txt.length < 16) {
+        const box = el('testSendStatus');
+        if (box) { box.className = 'status-box status-error'; box.textContent = '❌ 선택한 파일이 유효한 16자 이상 Sidecar 토큰 파일이 아닙니다.'; }
+        return;
+      }
+      if (el('sidecarToken')) el('sidecarToken').value = txt;
+      await checkCompanionStatus();
+      await loadLedger();
+    } finally {
+      ev.target.value = '';
+    }
+  };
+}
 setTimeout(checkCompanionStatus, 300);

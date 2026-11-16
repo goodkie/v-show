@@ -1100,6 +1100,65 @@ function request(port, method, urlPath, headers = {}, body = null) {
       fs.unlinkSync(inoLock);
     });
 
+    await runTest('NATIVE_MESSAGING_LOCAL_PAIRING_AND_STOP_PROVENANCE_GUARD', async () => {
+      const http = require('node:http');
+      const { PassThrough } = require('node:stream');
+      const { spawn, execFileSync } = require('node:child_process');
+      const { writeProtectedSecretFile } = require('../companion/email-test-sidecar-set-key');
+      const { encodeNativeMessage, readNativeMessage, handleNativeRequest } = require('../companion/email-test-sidecar-native-host');
+
+      // 1. Native framing roundtrip
+      const pt = new PassThrough();
+      const wire = encodeNativeMessage({ action: 'GET_SIDECAR_TOKEN' });
+      pt.end(wire);
+      const decoded = await readNativeMessage(pt);
+      assert.equal(decoded.action, 'GET_SIDECAR_TOKEN');
+
+      // 2. Native host fails closed on missing token and weak ACL token, succeeds on valid NTFS token
+      const nhState = path.join(tmpDir, 'nh_state');
+      fs.mkdirSync(nhState, { recursive: true });
+      const rMissing = handleNativeRequest({ action: 'GET_SIDECAR_TOKEN' }, { trustedTestMode: true, stateDir: nhState });
+      assert.equal(rMissing.ok, false);
+      assert.equal(rMissing.error, 'TOKEN_MISSING');
+
+      const nhTokFile = path.join(nhState, '.email_sidecar_token');
+      fs.writeFileSync(nhTokFile, 'nh_weak_tok_0123456789abcdef\n', 'utf8');
+      if (process.platform === 'win32') {
+        execFileSync('icacls', [nhTokFile, '/grant', 'Everyone:R'], { stdio: 'pipe' });
+        const rWeak = handleNativeRequest({ action: 'GET_SIDECAR_TOKEN' }, { trustedTestMode: true, stateDir: nhState });
+        assert.equal(rWeak.ok, false);
+        assert.equal(rWeak.error, 'TOKEN_ACL_INVALID');
+        fs.unlinkSync(nhTokFile);
+      }
+
+      writeProtectedSecretFile(nhTokFile, 'nh_valid_tok_0123456789abcdef\n');
+      const rOk = handleNativeRequest({ action: 'GET_SIDECAR_TOKEN' }, { trustedTestMode: true, stateDir: nhState });
+      assert.equal(rOk.ok, true);
+      assert.equal(rOk.token, 'nh_valid_tok_0123456789abcdef');
+
+      // 3. email-test-sidecar-stop.js refuses to kill unrelated service on port
+      const fakeLocalAppData = path.join(tmpDir, 'stop_fake_local');
+      const fakeSidecarDir = path.join(fakeLocalAppData, 'XPIDER', 'Sidecar');
+      fs.mkdirSync(fakeSidecarDir, { recursive: true });
+      fs.writeFileSync(path.join(fakeSidecarDir, '.email_sidecar.pid'), JSON.stringify({ pid: process.pid, port: 20015 }));
+      const unrelatedSrv = http.createServer((req, res) => {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ service: 'UNRELATED_APP', pid: 999999 }));
+      });
+      await new Promise(resolve => unrelatedSrv.listen(20015, '127.0.0.1', resolve));
+      try {
+        const stopEnv = { ...process.env, LOCALAPPDATA: fakeLocalAppData };
+        delete stopEnv.XPIDER_SIDECAR_STATE_DIR;
+        const stopExit = await new Promise(resolve => {
+          const p = spawn(process.execPath, [path.join(__dirname, '..', 'companion', 'email-test-sidecar-stop.js')], { env: stopEnv, stdio: 'ignore' });
+          p.on('exit', c => resolve(c));
+        });
+        assert.equal(stopExit, 2);
+      } finally {
+        await new Promise(resolve => unrelatedSrv.close(resolve));
+      }
+    });
+
     console.log(`\nALL SIDECAR TESTS PASSED (${pass}/${pass})`);
   } finally {
     await sidecar.stop();

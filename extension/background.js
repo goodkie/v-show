@@ -3983,6 +3983,38 @@ const _handleMainMessageInner = (request, sender, sendResponse) => {
             return true;
         }
 
+        case 'PAIR_EMAIL_TEST_SIDECAR': {
+            (async () => {
+                try {
+                    const msgRes = await new Promise((resolve) => {
+                        if (!chrome?.runtime?.sendNativeMessage) {
+                            return resolve({ ok: false, error: 'NATIVE_MESSAGING_API_UNAVAILABLE' });
+                        }
+                        chrome.runtime.sendNativeMessage('com.xpider.email_sidecar', { action: 'GET_SIDECAR_TOKEN' }, (resp) => {
+                            if (chrome.runtime.lastError) {
+                                return resolve({ ok: false, error: 'NATIVE_HOST_UNAVAILABLE', message: chrome.runtime.lastError.message });
+                            }
+                            resolve(resp || { ok: false, error: 'EMPTY_NATIVE_RESPONSE' });
+                        });
+                    });
+                    if (msgRes && msgRes.ok && typeof msgRes.token === 'string' && msgRes.token.trim().length >= 16) {
+                        globalThis.__xpiderPairedSidecarToken = msgRes.token.trim();
+                        sendResponse({ ok: true, paired: true, source: 'native_messaging' });
+                    } else {
+                        sendResponse({
+                            ok: false,
+                            paired: false,
+                            error: (msgRes && msgRes.error) || 'PAIRING_FAILED',
+                            message: (msgRes && msgRes.message) || '원클릭 로컬 페어링에 실패했습니다. START_EMAIL_TEST_SIDECAR.bat를 실행한 뒤 다시 시도하세요.'
+                        });
+                    }
+                } catch (err) {
+                    sendResponse({ ok: false, paired: false, error: 'PAIRING_EXCEPTION', message: err.message });
+                }
+            })();
+            return true;
+        }
+
         case 'GET_EMAIL_TEST_STATUS': {
             (async () => {
                 const pg = (typeof PrivacyGateway !== 'undefined' && PrivacyGateway.getInstance) ? PrivacyGateway.getInstance() : null;
@@ -4025,32 +4057,77 @@ const _handleMainMessageInner = (request, sender, sendResponse) => {
                         return;
                     }
 
-                    let token = (typeof request.sidecarToken === 'string' && request.sidecarToken.trim()) ? request.sidecarToken.trim() : null;
+                    const explicitToken = (typeof request.sidecarToken === 'string' && request.sidecarToken.trim()) ? request.sidecarToken.trim() : null;
+                    const pairNativeToken = async (forceRefresh = false) => {
+                        if (!forceRefresh && globalThis.__xpiderPairedSidecarToken) {
+                            return { token: globalThis.__xpiderPairedSidecarToken, source: 'memory_cache', pairingError: null };
+                        }
+                        if (!chrome?.runtime?.sendNativeMessage) {
+                            return { token: null, source: null, pairingError: 'NATIVE_MESSAGING_API_UNAVAILABLE' };
+                        }
+                        return await new Promise((resolve) => {
+                            chrome.runtime.sendNativeMessage('com.xpider.email_sidecar', { action: 'GET_SIDECAR_TOKEN' }, (res) => {
+                                if (chrome.runtime.lastError) {
+                                    return resolve({ token: null, source: null, pairingError: chrome.runtime.lastError.message || 'NATIVE_HOST_UNAVAILABLE' });
+                                }
+                                if (res && res.ok && typeof res.token === 'string' && res.token.trim().length >= 16) {
+                                    globalThis.__xpiderPairedSidecarToken = res.token.trim();
+                                    return resolve({ token: globalThis.__xpiderPairedSidecarToken, source: 'native_messaging', pairingError: null });
+                                }
+                                return resolve({ token: null, source: null, pairingError: (res && (res.error || res.message)) || 'PAIRING_FAILED' });
+                            });
+                        });
+                    };
+
+                    let pairingError = null;
+                    let token = explicitToken;
                     if (!token && ctrlPort === 18989 && pg) {
                         if (!pg.ephemeralRelayToken && typeof pg.fetchRelayControlToken === 'function') {
                             try { await pg.fetchRelayControlToken(); } catch (_) {}
                         }
                         token = pg.ephemeralRelayToken || null;
                     }
-                    const stCtrl = new AbortController();
-                    const stTimer = setTimeout(() => stCtrl.abort(), 5000);
-                    const resp = await fetch(`http://127.0.0.1:${ctrlPort}/email/test-send/status`, {
-                        method: 'GET',
-                        headers: token ? { 'Authorization': `Bearer ${token}` } : {},
-                        signal: stCtrl.signal
-                    }).finally(() => clearTimeout(stTimer));
+                    if (!token && ctrlPort !== 18989) {
+                        const paired = await pairNativeToken(false);
+                        token = paired.token;
+                        pairingError = paired.pairingError;
+                    }
+
+                    const fetchStatusWithToken = async (tok) => {
+                        const stCtrl = new AbortController();
+                        const stTimer = setTimeout(() => stCtrl.abort(), 5000);
+                        return await fetch(`http://127.0.0.1:${ctrlPort}/email/test-send/status`, {
+                            method: 'GET',
+                            headers: tok ? { 'Authorization': `Bearer ${tok}` } : {},
+                            signal: stCtrl.signal
+                        }).finally(() => clearTimeout(stTimer));
+                    };
+
+                    let resp = await fetchStatusWithToken(token);
+                    if (resp.status === 401 && !explicitToken && ctrlPort !== 18989) {
+                        // Auto-recover from stale session / sidecar token rotation
+                        globalThis.__xpiderPairedSidecarToken = null;
+                        const refreshed = await pairNativeToken(true);
+                        pairingError = refreshed.pairingError;
+                        if (refreshed.token) {
+                            token = refreshed.token;
+                            resp = await fetchStatusWithToken(token);
+                        }
+                    }
                     if (resp.status === 401) {
                         sendResponse({
                             ok: false,
                             companionOnline: true,
+                            paired: false,
+                            pairingError,
                             status: 'BLOCKED',
                             httpStatus: 401,
                             reason: token ? 'UNAUTHORIZED' : 'SIDECAR_TOKEN_REQUIRED',
                             error: 'UNAUTHORIZED',
                             companionBuildId: compBuildId,
                             message: token
-                                ? 'Sidecar Bearer 제어 토큰이 일치하지 않습니다 (HTTP 401).'
-                                : 'START_EMAIL_TEST_SIDECAR.bat 콘솔에 표시된 Sidecar 제어 토큰을 Email Studio에 입력해 주세요 (HTTP 401).'
+                                ? 'Sidecar Bearer 제어 토큰이 일치하지 않습니다 (HTTP 401). 🔗 원클릭 자동 페어링을 다시 실행하세요.'
+                                : '로컬 페어링이 필요합니다 (HTTP 401). "🔗 원클릭 자동 페어링" 또는 "📁 토큰 파일로 연결"을 누르세요.'
                         });
                         return;
                     }
@@ -4150,30 +4227,56 @@ const _handleMainMessageInner = (request, sender, sendResponse) => {
                         return;
                     }
 
-                    let token = (typeof request.sidecarToken === 'string' && request.sidecarToken.trim()) ? request.sidecarToken.trim() : null;
+                    const explicitToken = (typeof request.sidecarToken === 'string' && request.sidecarToken.trim()) ? request.sidecarToken.trim() : null;
+                    const pairNativeSendToken = async (forceRefresh = false) => {
+                        if (!forceRefresh && globalThis.__xpiderPairedSidecarToken) return globalThis.__xpiderPairedSidecarToken;
+                        if (!chrome?.runtime?.sendNativeMessage) return null;
+                        return await new Promise((resolve) => {
+                            chrome.runtime.sendNativeMessage('com.xpider.email_sidecar', { action: 'GET_SIDECAR_TOKEN' }, (res) => {
+                                if (!chrome.runtime.lastError && res && res.ok && typeof res.token === 'string' && res.token.trim().length >= 16) {
+                                    globalThis.__xpiderPairedSidecarToken = res.token.trim();
+                                    return resolve(globalThis.__xpiderPairedSidecarToken);
+                                }
+                                resolve(null);
+                            });
+                        });
+                    };
+
+                    let token = explicitToken;
                     if (!token && ctrlPort === 18989 && pg) {
                         if (!pg.ephemeralRelayToken && typeof pg.fetchRelayControlToken === 'function') {
                             try { await pg.fetchRelayControlToken(); } catch (_) {}
                         }
                         token = pg.ephemeralRelayToken || null;
                     }
-                    const postCtrl = new AbortController();
-                    const postTimer = setTimeout(() => postCtrl.abort(), 15000);
-                    const resp = await fetch(`http://127.0.0.1:${ctrlPort}/email/test-send`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-                        },
-                        body: JSON.stringify({
-                            to: request.to,
-                            subject: request.subject,
-                            html: request.html,
-                            text: request.text,
-                            idempotencyKey: request.idempotencyKey
-                        }),
-                        signal: postCtrl.signal
-                    }).finally(() => clearTimeout(postTimer));
+                    if (!token && ctrlPort !== 18989) {
+                        token = await pairNativeSendToken(false);
+                    }
+                    const postWithToken = async (tok) => {
+                        const postCtrl = new AbortController();
+                        const postTimer = setTimeout(() => postCtrl.abort(), 15000);
+                        return await fetch(`http://127.0.0.1:${ctrlPort}/email/test-send`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                ...(tok ? { 'Authorization': `Bearer ${tok}` } : {})
+                            },
+                            body: JSON.stringify({
+                                to: request.to,
+                                subject: request.subject,
+                                html: request.html,
+                                text: request.text,
+                                idempotencyKey: request.idempotencyKey
+                            }),
+                            signal: postCtrl.signal
+                        }).finally(() => clearTimeout(postTimer));
+                    };
+                    let resp = await postWithToken(token);
+                    if (resp.status === 401 && !explicitToken && ctrlPort !== 18989) {
+                        globalThis.__xpiderPairedSidecarToken = null;
+                        const refreshed = await pairNativeSendToken(true);
+                        if (refreshed) resp = await postWithToken(refreshed);
+                    }
 
                     let data = {};
                     try {
@@ -4245,7 +4348,21 @@ const _handleMainMessageInner = (request, sender, sendResponse) => {
                 const reqPort = Number(request.sidecarPort);
                 const ctrlPort = (Number.isInteger(reqPort) && reqPort >= 1024 && reqPort <= 65535) ? reqPort : 18990;
                 try {
-                    const token = (typeof request.sidecarToken === 'string' && request.sidecarToken.trim()) ? request.sidecarToken.trim() : null;
+                    const explicitToken = (typeof request.sidecarToken === 'string' && request.sidecarToken.trim()) ? request.sidecarToken.trim() : null;
+                    const pairNativeLedgerToken = async (forceRefresh = false) => {
+                        if (!forceRefresh && globalThis.__xpiderPairedSidecarToken) return globalThis.__xpiderPairedSidecarToken;
+                        if (!chrome?.runtime?.sendNativeMessage) return null;
+                        return await new Promise((resolve) => {
+                            chrome.runtime.sendNativeMessage('com.xpider.email_sidecar', { action: 'GET_SIDECAR_TOKEN' }, (res) => {
+                                if (!chrome.runtime.lastError && res && res.ok && typeof res.token === 'string' && res.token.trim().length >= 16) {
+                                    globalThis.__xpiderPairedSidecarToken = res.token.trim();
+                                    return resolve(globalThis.__xpiderPairedSidecarToken);
+                                }
+                                resolve(null);
+                            });
+                        });
+                    };
+                    let token = explicitToken || await pairNativeLedgerToken(false);
                     const hc = await fetch(`http://127.0.0.1:${ctrlPort}/health`, { method: 'GET' });
                     if (!hc.ok) {
                         sendResponse({ ok: false, httpStatus: hc.status, error: `HTTP_${hc.status}` });
@@ -4257,10 +4374,20 @@ const _handleMainMessageInner = (request, sender, sendResponse) => {
                         sendResponse({ ok: false, reason: 'COMPANION_VERSION_MISMATCH', error: 'COMPANION_VERSION_MISMATCH' });
                         return;
                     }
-                    const resp = await fetch(`http://127.0.0.1:${ctrlPort}/email/test-send/ledger`, {
+                    let resp = await fetch(`http://127.0.0.1:${ctrlPort}/email/test-send/ledger`, {
                         method: 'GET',
                         headers: token ? { 'Authorization': `Bearer ${token}` } : {}
                     });
+                    if (resp.status === 401 && !explicitToken) {
+                        globalThis.__xpiderPairedSidecarToken = null;
+                        token = await pairNativeLedgerToken(true);
+                        if (token) {
+                            resp = await fetch(`http://127.0.0.1:${ctrlPort}/email/test-send/ledger`, {
+                                method: 'GET',
+                                headers: { 'Authorization': `Bearer ${token}` }
+                            });
+                        }
+                    }
                     const data = await resp.json().catch(() => ({}));
                     sendResponse({ ok: resp.ok, httpStatus: resp.status, data });
                 } catch (err) {
