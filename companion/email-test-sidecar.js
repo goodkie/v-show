@@ -13,10 +13,11 @@ const crypto = require('node:crypto');
 const resendTestMode = require('./resend-test-mode');
 const { EmailSimulatorLedger } = require('./email-simulator-ledger');
 const { writeProtectedSecretFile, verifyWindowsDacl } = require('./email-test-sidecar-set-key');
+const { getSidecarPaths } = require('./sidecar-paths');
 
 const DEFAULT_SIDECAR_PORT = 18990;
-const SIDECAR_BUILD_ID = 'V7.0.0-OWNER-BETA-TEST-SEND-SIDECAR-20261116-LOCKED4';
-const SIDECAR_IMPLEMENTATION_HEAD = 'email-test-sidecar-20261116-locked4';
+const SIDECAR_BUILD_ID = 'V7.0.0-OWNER-BETA-TEST-SEND-SIDECAR-20261116-LOCKED5';
+const SIDECAR_IMPLEMENTATION_HEAD = 'email-test-sidecar-20261116-locked5';
 const SIDECAR_API_CAPABILITIES = ['email-test-send', 'email-test-sidecar-v1', 'email-test-ledger-v1'];
 const EXPOSED_RC3_6_TOKEN_SHA256 = '597a70b99c11c7f4d13a075204ac240bb08a7a1d6c08c78268328e0bb59daeda';
 const EXTENSION_ORIGIN_RE = /^chrome-extension:\/\/[a-p]{32}$/;
@@ -42,10 +43,12 @@ class EmailTestSidecar {
   constructor(options = {}) {
     this.port = parseSidecarPort(options.port !== undefined ? options.port : process.env.XPIDER_EMAIL_SIDECAR_PORT, DEFAULT_SIDECAR_PORT);
     this.host = '127.0.0.1';
-    this.tokenFile = options.tokenFile || path.join(__dirname, '.email_sidecar_token');
-    this.pidFile = options.pidFile || path.join(__dirname, '.email_sidecar.pid');
+    const defaultPaths = getSidecarPaths(options.stateDir);
+    this.stateDir = defaultPaths.stateDir;
+    this.tokenFile = options.tokenFile || defaultPaths.tokenFile;
+    this.pidFile = options.pidFile || defaultPaths.pidFile;
     this.ledger = new EmailSimulatorLedger({
-      ledgerFile: options.ledgerFile || path.join(__dirname, '.email_simulator_ledger.jsonl')
+      ledgerFile: options.ledgerFile || defaultPaths.ledgerFile
     });
     this.localKeyFile = options.localKeyFile !== undefined ? options.localKeyFile : null;
     this.transportImpl = typeof options.transportImpl === 'function' ? options.transportImpl : null;
@@ -87,28 +90,37 @@ class EmailTestSidecar {
 
   resolveResendApiKey() {
     this.lastKeyReadError = null;
+    this.keyStatus = 'KEY_MISSING';
     if (this.apiKeyOverride !== null) {
       const k = String(this.apiKeyOverride || '').trim();
-      return /^re_[A-Za-z0-9_-]{8,}$/.test(k) ? k : null;
+      if (!k) { this.keyStatus = 'KEY_MISSING'; return null; }
+      if (/^re_[A-Za-z0-9_-]{8,}$/.test(k)) { this.keyStatus = 'CONFIGURED'; return k; }
+      this.keyStatus = 'MALFORMED_KEY';
+      return null;
     }
     const envKey = process.env.RESEND_API_KEY;
-    if (envKey && typeof envKey === 'string') {
+    if (envKey && typeof envKey === 'string' && envKey.trim()) {
       const trimmed = envKey.trim();
-      if (/^re_[A-Za-z0-9_-]{8,}$/.test(trimmed)) return trimmed;
+      if (/^re_[A-Za-z0-9_-]{8,}$/.test(trimmed)) { this.keyStatus = 'CONFIGURED'; return trimmed; }
+      this.keyStatus = 'MALFORMED_KEY';
+      this.lastKeyReadError = 'MALFORMED_ENV_RESEND_API_KEY';
+      return null;
     }
     const candidates = this.localKeyFile !== null
       ? (this.localKeyFile ? [this.localKeyFile] : [])
       : [
-          process.env.LOCALAPPDATA ? path.join(process.env.LOCALAPPDATA, 'XPIDER', '.resend_api_key') : null,
-          path.join(__dirname, '.resend_api_key')
+          getSidecarPaths().keyFile,
+          process.env.LOCALAPPDATA ? path.join(process.env.LOCALAPPDATA, 'XPIDER', '.resend_api_key') : null
         ].filter(Boolean);
     for (const filePath of candidates) {
       if (fs.existsSync(filePath)) {
         try {
           const val = fs.readFileSync(filePath, 'utf8').trim();
-          if (/^re_[A-Za-z0-9_-]{8,}$/.test(val)) return val;
+          if (/^re_[A-Za-z0-9_-]{8,}$/.test(val)) { this.keyStatus = 'CONFIGURED'; return val; }
+          this.keyStatus = 'MALFORMED_KEY';
           this.lastKeyReadError = `INVALID_LOCAL_KEY_FORMAT:${path.basename(filePath)}`;
         } catch (err) {
+          this.keyStatus = 'LOCAL_KEY_FILE_UNREADABLE';
           this.lastKeyReadError = `LOCAL_KEY_FILE_UNREADABLE:${err.message}`;
           return null;
         }
@@ -242,6 +254,8 @@ class EmailTestSidecar {
             apiCapabilities: SIDECAR_API_CAPABILITIES,
             testSimulatorEnabled: true,
             resendApiKeyConfigured: hasKey,
+            keyStatus: this.keyStatus || (hasKey ? 'CONFIGURED' : 'KEY_MISSING'),
+            stateDir: this.stateDir,
             allowedRecipients: resendTestMode.TEST_RECIPIENTS,
             allowedFrom: resendTestMode.TEST_FROM,
             productionHold: true,
@@ -404,26 +418,31 @@ class EmailTestSidecar {
 
               const apiKey = this.resolveResendApiKey();
               if (!apiKey) {
-                const keyErrReason = this.lastKeyReadError ? 'LOCAL_KEY_FILE_UNREADABLE' : 'RESEND_API_KEY_NOT_CONFIGURED';
+                const keyErrReason = this.keyStatus === 'MALFORMED_KEY'
+                  ? 'MALFORMED_RESEND_API_KEY'
+                  : (this.keyStatus === 'LOCAL_KEY_FILE_UNREADABLE' ? 'LOCAL_KEY_FILE_UNREADABLE' : 'RESEND_API_KEY_NOT_CONFIGURED');
                 let ledgerPersisted = true;
                 let ledgerError = null;
                 try {
                   this.ledger.append({
                     idempotencyKey, recipient, status: 'BLOCKED',
-                    httpStatus: this.lastKeyReadError ? 500 : 200, errorCode: keyErrReason, reason: keyErrReason
+                    httpStatus: this.keyStatus === 'LOCAL_KEY_FILE_UNREADABLE' ? 500 : 200,
+                    errorCode: this.keyStatus || 'KEY_MISSING',
+                    reason: keyErrReason
                   });
                 } catch (e) {
                   ledgerPersisted = false;
                   ledgerError = e.message;
                 }
-                res.writeHead(this.lastKeyReadError ? 500 : 200, { 'Content-Type': 'application/json' });
+                res.writeHead(this.keyStatus === 'LOCAL_KEY_FILE_UNREADABLE' ? 500 : 200, { 'Content-Type': 'application/json' });
                 res.end(JSON.stringify({
                   status: 'BLOCKED',
                   reason: keyErrReason,
+                  keyStatus: this.keyStatus,
                   ledgerPersisted,
                   ...(ledgerError ? { ledgerError } : {}),
                   message: this.lastKeyReadError
-                    ? `Local key file error (${this.lastKeyReadError}). Fail-closed with zero outbound POST.`
+                    ? `Local key error (${this.lastKeyReadError}). Fail-closed with zero outbound POST.`
                     : 'RESEND_API_KEY is not configured on the Email Test Sidecar host. Fail-closed with zero outbound POST.'
                 }));
                 return;

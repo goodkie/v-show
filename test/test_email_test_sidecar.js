@@ -652,6 +652,59 @@ function request(port, method, urlPath, headers = {}, body = null) {
       }
     });
 
+    await runTest('PASTE_CONTROL_CHAR_SANITIZATION_NTFS_STATE_DIR_AND_KEY_STATUS', async () => {
+      const { EventEmitter } = require('node:events');
+      const { readSecretNoEcho, verifyWindowsDacl, writeKeySecurely } = require('../companion/email-test-sidecar-set-key');
+      const { getSidecarPaths } = require('../companion/sidecar-paths');
+
+      // 1. Default sidecar paths resolve under LOCALAPPDATA\XPIDER\Sidecar (NTFS) with .email_sidecar_token (underscore)
+      const paths = getSidecarPaths();
+      assert.ok(paths.tokenFile.endsWith('.email_sidecar_token'));
+      if (process.env.LOCALAPPDATA) {
+        assert.ok(paths.stateDir.startsWith(path.resolve(process.env.LOCALAPPDATA)));
+      }
+
+      // 2. Ctrl+V (ASCII 22 / \x16) control chars stripped cleanly in non-TTY / raw input
+      const fakeStream = new EventEmitter();
+      fakeStream.isTTY = false;
+      fakeStream.setEncoding = () => {};
+      fakeStream.pause = () => {};
+      fakeStream.resume = () => {};
+      const p = readSecretNoEcho('', fakeStream);
+      fakeStream.emit('data', '\x16re_ctrl_v_test_123456\r\n');
+      assert.equal(await p, 're_ctrl_v_test_123456');
+
+      // 3. Empty/invalid key rejected fail-closed
+      assert.throws(() => writeKeySecurely(path.join(tmpDir, '.empty'), '   '), /EMPTY_KEY/);
+      assert.throws(() => writeKeySecurely(path.join(tmpDir, '.bad'), 'bad_prefix_123'), /INVALID_KEY_FORMAT/);
+
+      // 4. Non-NTFS / exFAT empty icacls output rejected fail-closed
+      assert.throws(() => verifyWindowsDacl('E:\\exfat\\.resend_api_key', 'oPus', () => 'Successfully processed 0 files; Failed processing 1 files\n'), /DACL_VERIFICATION_FAILED/);
+
+      // 5. Status & send distinguish KEY_MISSING vs MALFORMED_KEY
+      const sMalformed = new EmailTestSidecar({
+        port: 20006,
+        stateDir: path.join(tmpDir, 'state_malformed'),
+        apiKeyOverride: 'invalid_not_re_prefix',
+        rateLimitMs: 0
+      });
+      await sMalformed.start();
+      try {
+        const st = await request(20006, 'GET', '/email/test-send/status', { Authorization: `Bearer ${sMalformed.token}` });
+        assert.equal(st.status, 200);
+        assert.equal(st.json.resendApiKeyConfigured, false);
+        assert.equal(st.json.keyStatus, 'MALFORMED_KEY');
+        const pBlocked = await request(20006, 'POST', '/email/test-send', {
+          Authorization: `Bearer ${sMalformed.token}`,
+          'Content-Type': 'application/json'
+        }, { to: 'delivered@resend.dev', subject: 'M', text: 'M', idempotencyKey: 'malformed_key_test_0001' });
+        assert.equal(pBlocked.json.reason, 'MALFORMED_RESEND_API_KEY');
+        assert.equal(pBlocked.json.keyStatus, 'MALFORMED_KEY');
+      } finally {
+        await sMalformed.stop();
+      }
+    });
+
     console.log(`\nALL SIDECAR TESTS PASSED (${pass}/${pass})`);
   } finally {
     await sidecar.stop();

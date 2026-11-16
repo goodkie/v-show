@@ -1,56 +1,95 @@
 'use strict';
 /**
- * Local-only Resend API Key provisioner for XPIDER Email Test Sidecar (Directive #6909086536).
- * - True no-echo terminal entry (raw mode in TTY; never echoes secret characters).
+ * Local-only Resend API Key provisioner for XPIDER Email Test Sidecar (Directive #6918564594).
+ * - Windows native masked PasswordBox GUI (supports Ctrl+V paste natively without raw-mode ASCII 22 bug).
+ * - Stores key strictly in NTFS %LOCALAPPDATA%\XPIDER\Sidecar\.resend_api_key (independent of exFAT package drive).
  * - Fail-closed Windows NTFS ACL application & effective DACL verification (no inherited/broad ACEs).
- * - Atomic temp-file write + cleanup on ACL failure (never modifies parent folder ACLs).
  */
 const fs = require('node:fs');
 const path = require('node:path');
 const { execFileSync } = require('node:child_process');
+const { getSidecarPaths } = require('./sidecar-paths');
 
 function getDefaultKeyPath() {
-  if (process.env.LOCALAPPDATA) {
-    return path.join(process.env.LOCALAPPDATA, 'XPIDER', '.resend_api_key');
-  }
-  return path.join(__dirname, '.resend_api_key');
+  return getSidecarPaths().keyFile;
 }
 
-function readSecretNoEcho(promptText) {
+function readSecretWindowsGui() {
+  const psScript = [
+    'Add-Type -AssemblyName System.Windows.Forms;',
+    'Add-Type -AssemblyName System.Drawing;',
+    '$f = New-Object System.Windows.Forms.Form;',
+    '$f.Text = "XPIDER Resend API Key Setup";',
+    '$f.Width = 440; $f.Height = 175; $f.StartPosition = "CenterScreen";',
+    '$f.FormBorderStyle = "FixedDialog"; $f.MaximizeBox = $false; $f.MinimizeBox = $false; $f.TopMost = $true;',
+    '$lbl = New-Object System.Windows.Forms.Label;',
+    '$lbl.Text = "Resend API Key (re_...) - Ctrl+V paste supported (masked):";',
+    '$lbl.Location = New-Object System.Drawing.Point(16, 16); $lbl.AutoSize = $true;',
+    '$tb = New-Object System.Windows.Forms.TextBox;',
+    '$tb.UseSystemPasswordChar = $true;',
+    '$tb.Location = New-Object System.Drawing.Point(16, 44); $tb.Width = 392;',
+    '$ok = New-Object System.Windows.Forms.Button; $ok.Text = "Save";',
+    '$ok.Location = New-Object System.Drawing.Point(242, 86); $ok.DialogResult = [System.Windows.Forms.DialogResult]::OK;',
+    '$cancel = New-Object System.Windows.Forms.Button; $cancel.Text = "Cancel";',
+    '$cancel.Location = New-Object System.Drawing.Point(328, 86); $cancel.DialogResult = [System.Windows.Forms.DialogResult]::Cancel;',
+    '$f.AcceptButton = $ok; $f.CancelButton = $cancel;',
+    '$f.Controls.AddRange(@($lbl, $tb, $ok, $cancel));',
+    '$f.Add_Shown({ $tb.Focus() });',
+    '$res = $f.ShowDialog();',
+    'if ($res -ne [System.Windows.Forms.DialogResult]::OK) { exit 2 }',
+    '$val = $tb.Text; $tb.Text = "";',
+    '[Console]::Out.Write($val)'
+  ].join(' ');
+
+  try {
+    const out = execFileSync('powershell', ['-NoProfile', '-STA', '-Command', psScript], {
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'pipe']
+    });
+    return String(out || '').trim();
+  } catch (err) {
+    if (err && err.status === 2) {
+      throw new Error('ABORTED_BY_OPERATOR');
+    }
+    throw err;
+  }
+}
+
+function readSecretNoEcho(promptText, inputStream = process.stdin) {
   return new Promise((resolve, reject) => {
-    process.stdout.write(promptText);
-    if (!process.stdin.isTTY || typeof process.stdin.setRawMode !== 'function') {
+    if (promptText) process.stdout.write(promptText);
+    if (!inputStream.isTTY || typeof inputStream.setRawMode !== 'function') {
       let data = '';
-      process.stdin.setEncoding('utf8');
-      process.stdin.on('data', chunk => {
+      inputStream.setEncoding('utf8');
+      inputStream.on('data', chunk => {
         data += chunk;
         const nl = data.search(/\r?\n/);
         if (nl !== -1) {
-          process.stdin.pause();
-          resolve(data.slice(0, nl));
+          inputStream.pause();
+          resolve(data.slice(0, nl).replace(/[\x00-\x1f\x7f]/g, ''));
         }
       });
-      process.stdin.on('error', reject);
-      process.stdin.on('end', () => resolve(data.trim()));
-      process.stdin.resume();
+      inputStream.on('error', reject);
+      inputStream.on('end', () => resolve(data.replace(/[\x00-\x1f\x7f]/g, '').trim()));
+      inputStream.resume();
       return;
     }
 
-    const stdin = process.stdin;
-    const wasRaw = stdin.isRaw;
-    stdin.setRawMode(true);
-    stdin.resume();
-    stdin.setEncoding('utf8');
+    const wasRaw = inputStream.isRaw;
+    inputStream.setRawMode(true);
+    inputStream.resume();
+    inputStream.setEncoding('utf8');
     let buf = '';
 
     const cleanup = () => {
-      stdin.removeListener('data', onData);
-      try { stdin.setRawMode(Boolean(wasRaw)); } catch (_) {}
-      stdin.pause();
+      inputStream.removeListener('data', onData);
+      try { inputStream.setRawMode(Boolean(wasRaw)); } catch (_) {}
+      inputStream.pause();
     };
 
     const onData = (ch) => {
       for (const c of ch) {
+        const code = c.charCodeAt(0);
         if (c === '\r' || c === '\n') {
           cleanup();
           process.stdout.write('\n');
@@ -65,10 +104,14 @@ function readSecretNoEcho(promptText) {
           if (buf.length > 0) buf = buf.slice(0, -1);
           continue;
         }
+        // Ignore control chars like Ctrl+V (ASCII 22 / 0x16) instead of corrupting buffer
+        if (code < 0x20 || code === 0x7f) {
+          continue;
+        }
         buf += c;
       }
     };
-    stdin.on('data', onData);
+    inputStream.on('data', onData);
   });
 }
 
@@ -77,7 +120,7 @@ function verifyWindowsDacl(targetPath, username, execSyncFn = execFileSync) {
   const lines = out.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
   const aceLines = lines.filter(l => !l.toLowerCase().startsWith('successfully processed') && l.includes(':'));
   if (aceLines.length === 0) {
-    throw new Error('DACL_VERIFICATION_FAILED: No ACE lines found in icacls output');
+    throw new Error('DACL_VERIFICATION_FAILED: No ACE lines found (non-NTFS or unsupported filesystem)');
   }
   const forbiddenPrincipals = ['everyone', 'builtin\\users', 'nt authority\\authenticated users', 'users'];
   const userLower = String(username || '').toLowerCase();
@@ -92,7 +135,7 @@ function verifyWindowsDacl(targetPath, username, execSyncFn = execFileSync) {
         throw new Error(`DACL_VERIFICATION_FAILED: Broad principal ACE detected (${fp})`);
       }
     }
-    if (userLower && lower.includes(userLower + ':')) {
+    if (userLower && (lower.includes('\\' + userLower + ':') || lower.startsWith(userLower + ':') || lower.includes(' ' + userLower + ':'))) {
       hasOwnerGrant = true;
     }
   }
@@ -133,6 +176,9 @@ function writeProtectedSecretFile(targetPath, content, options = {}) {
 
 function writeKeySecurely(keyPath, rawKey, options = {}) {
   const trimmed = String(rawKey || '').trim();
+  if (!trimmed) {
+    throw new Error('EMPTY_KEY: No Resend API Key entered');
+  }
   if (!/^re_[A-Za-z0-9_-]{8,}$/.test(trimmed)) {
     throw new Error('INVALID_KEY_FORMAT: Key must match /^re_[A-Za-z0-9_-]{8,}$/');
   }
@@ -144,13 +190,19 @@ async function main() {
   console.log('========================================================================');
   console.log('  XPIDER Email Test Sidecar - Local-Only RESEND_API_KEY Setup');
   console.log('========================================================================');
-  console.log(`Target local protected path: ${keyPath}`);
-  console.log('(No-echo input; protected NTFS ACL; never in browser, ZIP, git, or logs)');
+  console.log(`Target NTFS protected path: ${keyPath}`);
+  console.log('(Masked input; protected NTFS ACL; never in browser, ZIP, git, or logs)');
   console.log('');
 
-  const answer = await readSecretNoEcho('Enter your Resend API Key (input hidden, starts with re_): ');
+  let answer = '';
+  if (process.platform === 'win32' && process.stdin.isTTY && !process.env.XPIDER_FORCE_TTY_SECRET_PROMPT) {
+    console.log('Opening masked Windows password dialog (Ctrl+V paste supported)...');
+    answer = readSecretWindowsGui();
+  } else {
+    answer = await readSecretNoEcho('Enter your Resend API Key (input hidden, starts with re_): ');
+  }
   writeKeySecurely(keyPath, answer);
-  console.log('[OK] RESEND_API_KEY saved and ACL/DACL verified securely (value never echoed).');
+  console.log('[OK] RESEND_API_KEY saved and NTFS DACL verified securely (value never echoed).');
   console.log('Next: If sidecar is already running, run STOP_EMAIL_TEST_SIDECAR.bat then START_EMAIL_TEST_SIDECAR.bat.');
 }
 
@@ -161,4 +213,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { getDefaultKeyPath, readSecretNoEcho, verifyWindowsDacl, writeProtectedSecretFile, writeKeySecurely };
+module.exports = { getDefaultKeyPath, readSecretWindowsGui, readSecretNoEcho, verifyWindowsDacl, writeProtectedSecretFile, writeKeySecurely };

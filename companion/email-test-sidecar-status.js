@@ -1,8 +1,8 @@
 'use strict';
 const http = require('node:http');
 const fs = require('node:fs');
-const path = require('node:path');
 const { DEFAULT_SIDECAR_PORT, parseSidecarPort } = require('./email-test-sidecar');
+const { getSidecarPaths } = require('./sidecar-paths');
 
 function getJson(port, urlPath, headers = {}) {
   return new Promise((resolve, reject) => {
@@ -22,6 +22,7 @@ function getJson(port, urlPath, headers = {}) {
 
 (async () => {
   const port = parseSidecarPort(process.env.XPIDER_EMAIL_SIDECAR_PORT, DEFAULT_SIDECAR_PORT);
+  const paths = getSidecarPaths();
   try {
     const h = await getJson(port, '/health');
     if (h.status !== 200 || !h.json) {
@@ -31,16 +32,15 @@ function getJson(port, urlPath, headers = {}) {
     const caps = Array.isArray(h.json.apiCapabilities) ? h.json.apiCapabilities : [];
     console.log(`[HEALTH] http://127.0.0.1:${port}/health -> HTTP 200`);
     console.log(`  Service: ${h.json.service} | PID: ${h.json.pid} | Build: ${h.json.companionBuildId}`);
-    console.log(`  Capabilities: ${JSON.stringify(caps)}`);
+    console.log(`  State Dir: ${paths.stateDir}`);
     if (!caps.includes('email-test-send')) {
       console.log('[MISMATCH] Service on this port does NOT support email-test-send (COMPANION_VERSION_MISMATCH).');
       process.exit(2);
     }
 
-    const tokPath = path.join(__dirname, '.email_sidecar_token');
-    const token = process.env.XPIDER_EMAIL_SIDECAR_TOKEN || (fs.existsSync(tokPath) ? fs.readFileSync(tokPath, 'utf8').trim() : '');
+    const token = process.env.XPIDER_EMAIL_SIDECAR_TOKEN || (fs.existsSync(paths.tokenFile) ? fs.readFileSync(paths.tokenFile, 'utf8').trim() : '');
     if (!token) {
-      console.log('[WARN] No .email_sidecar_token found in companion/ to probe /email/test-send/status.');
+      console.log(`[WARN] Token file not found at ${paths.tokenFile} to probe /email/test-send/status.`);
       process.exit(0);
     }
     const st = await getJson(port, '/email/test-send/status', { Authorization: `Bearer ${token}` });

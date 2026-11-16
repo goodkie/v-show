@@ -1,18 +1,18 @@
 'use strict';
 const fs = require('node:fs');
-const path = require('node:path');
+const { getSidecarPaths } = require('./sidecar-paths');
 
-const pidFile = path.join(__dirname, '.email_sidecar.pid');
-if (!fs.existsSync(pidFile)) {
-  console.log('[INFO] No .email_sidecar.pid found. Email Test Sidecar is not running from this folder.');
+const paths = getSidecarPaths();
+if (!fs.existsSync(paths.pidFile)) {
+  console.log(`[INFO] No .email_sidecar.pid found at ${paths.pidFile}. Email Test Sidecar is not running.`);
   process.exit(0);
 }
 
 try {
-  const info = JSON.parse(fs.readFileSync(pidFile, 'utf8'));
+  const info = JSON.parse(fs.readFileSync(paths.pidFile, 'utf8'));
   const pid = Number(info.pid);
   if (!Number.isInteger(pid) || pid <= 0) {
-    fs.unlinkSync(pidFile);
+    fs.unlinkSync(paths.pidFile);
     console.log('[WARN] Invalid PID record removed.');
     process.exit(0);
   }
@@ -22,7 +22,7 @@ try {
   } catch (e) {
     console.log(`[INFO] Process PID ${pid} already exited (${e.code || e.message}).`);
   }
-  if (fs.existsSync(pidFile)) fs.unlinkSync(pidFile);
+  if (fs.existsSync(paths.pidFile)) fs.unlinkSync(paths.pidFile);
 } catch (err) {
   console.error('[ERROR] Could not stop sidecar:', err.message);
   process.exit(1);
