@@ -13,8 +13,8 @@ const crypto = require('node:crypto');
 const resendTestMode = require('./resend-test-mode');
 
 const DEFAULT_SIDECAR_PORT = 18990;
-const SIDECAR_BUILD_ID = 'V7.0.0-OWNER-BETA-TEST-SEND-SIDECAR-20261113';
-const SIDECAR_IMPLEMENTATION_HEAD = 'email-test-sidecar-20261113';
+const SIDECAR_BUILD_ID = 'V7.0.0-OWNER-BETA-TEST-SEND-SIDECAR-20261116';
+const SIDECAR_IMPLEMENTATION_HEAD = 'email-test-sidecar-20261116';
 const SIDECAR_API_CAPABILITIES = ['email-test-send', 'email-test-sidecar-v1'];
 const EXPOSED_RC3_6_TOKEN_SHA256 = '597a70b99c11c7f4d13a075204ac240bb08a7a1d6c08c78268328e0bb59daeda';
 const EXTENSION_ORIGIN_RE = /^chrome-extension:\/\/[a-p]{32}$/;
@@ -42,6 +42,7 @@ class EmailTestSidecar {
     this.host = '127.0.0.1';
     this.tokenFile = options.tokenFile || path.join(__dirname, '.email_sidecar_token');
     this.pidFile = options.pidFile || path.join(__dirname, '.email_sidecar.pid');
+    this.localKeyFile = options.localKeyFile !== undefined ? options.localKeyFile : null;
     this.transportImpl = typeof options.transportImpl === 'function' ? options.transportImpl : null;
     this.apiKeyOverride = options.apiKeyOverride !== undefined ? options.apiKeyOverride : null;
     this.rateLimitMs = Number.isFinite(options.rateLimitMs) ? options.rateLimitMs : 5000;
@@ -82,6 +83,20 @@ class EmailTestSidecar {
     if (envKey && typeof envKey === 'string') {
       const trimmed = envKey.trim();
       if (/^re_[A-Za-z0-9_-]{8,}$/.test(trimmed)) return trimmed;
+    }
+    const candidates = this.localKeyFile !== null
+      ? (this.localKeyFile ? [this.localKeyFile] : [])
+      : [
+          process.env.LOCALAPPDATA ? path.join(process.env.LOCALAPPDATA, 'XPIDER', '.resend_api_key') : null,
+          path.join(__dirname, '.resend_api_key')
+        ].filter(Boolean);
+    for (const filePath of candidates) {
+      try {
+        if (fs.existsSync(filePath)) {
+          const val = fs.readFileSync(filePath, 'utf8').trim();
+          if (/^re_[A-Za-z0-9_-]{8,}$/.test(val)) return val;
+        }
+      } catch (_) {}
     }
     return null;
   }
@@ -204,7 +219,11 @@ class EmailTestSidecar {
           res.end(JSON.stringify({
             status: 'OK',
             mode: 'TEST_ONLY_SIDECAR',
+            pid: process.pid,
+            controlPort: this.port,
             companionBuildId: SIDECAR_BUILD_ID,
+            companionImplementationHead: SIDECAR_IMPLEMENTATION_HEAD,
+            apiCapabilities: SIDECAR_API_CAPABILITIES,
             testSimulatorEnabled: true,
             resendApiKeyConfigured: hasKey,
             allowedRecipients: resendTestMode.TEST_RECIPIENTS,

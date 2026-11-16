@@ -171,6 +171,32 @@ function request(port, method, urlPath, headers = {}, body = null) {
       assert.equal(r404.json.error, 'ENDPOINT_NOT_FOUND');
     });
 
+    await runTest('SIDECAR_PROTECTED_LOCAL_KEY_FILE_FALLBACK', async () => {
+      const keyFile = path.join(tmpDir, '.resend_api_key');
+      fs.writeFileSync(keyFile, 're_local_protected_12345678\n', 'utf8');
+      const prevEnv = process.env.RESEND_API_KEY;
+      delete process.env.RESEND_API_KEY;
+      try {
+        const s2 = new EmailTestSidecar({
+          port: 19992,
+          tokenFile: path.join(tmpDir, '.tok2'),
+          pidFile: path.join(tmpDir, '.pid2'),
+          localKeyFile: keyFile
+        });
+        assert.equal(s2.resolveResendApiKey(), 're_local_protected_12345678');
+        await s2.start();
+        const st = await request(19992, 'GET', '/email/test-send/status', { Authorization: `Bearer ${s2.token}` });
+        assert.equal(st.status, 200);
+        assert.equal(st.json.resendApiKeyConfigured, true);
+        assert.equal(st.json.pid, process.pid);
+        assert.equal(st.json.controlPort, 19992);
+        assert.equal(st.raw.includes('re_local_protected_12345678'), false);
+        await s2.stop();
+      } finally {
+        if (prevEnv !== undefined) process.env.RESEND_API_KEY = prevEnv;
+      }
+    });
+
     console.log(`\nALL SIDECAR TESTS PASSED (${pass}/${pass})`);
   } finally {
     await sidecar.stop();

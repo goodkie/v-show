@@ -98,13 +98,17 @@ async function checkCompanionStatus() {
   const resp = await callBg({ action: 'GET_EMAIL_TEST_STATUS', sidecarPort, sidecarToken });
   if (resp && resp.ok && resp.data) {
     const d = resp.data;
-    const compBuild = (resp.handshake && resp.handshake.companionBuildId) || 'verified';
+    const hs = resp.handshake || {};
+    const compBuild = hs.companionBuildId || d.companionBuildId || 'verified';
+    const extBuild = hs.extensionBuildId || 'V7.0.0-OWNER-BETA-TEST-SEND-SIDECAR-20261116';
+    const pidLabel = hs.companionPid || d.pid || 'unknown';
+    const capsLabel = Array.isArray(hs.apiCapabilities) ? hs.apiCapabilities.join(', ') : 'email-test-send';
     if (d.resendApiKeyConfigured) {
       box.className = 'status-box status-success';
-      box.textContent = `✅ Email Test Sidecar 연결 및 핸드셰이크 성공 (127.0.0.1:${sidecarPort})\n• Sidecar Build: ${compBuild}\n• Resend API Key 설정됨 (서버사이드 안전 보관)\n• 시뮬레이터 수신자 대상 테스트 발송 준비 완료`;
+      box.textContent = `✅ Email Test Sidecar 연결 및 핸드셰이크 성공 (127.0.0.1:${sidecarPort})\n• Extension Build: ${extBuild}\n• Sidecar Build: ${compBuild} (PID: ${pidLabel})\n• Capabilities: ${capsLabel}\n• Resend API Key 설정됨 (서버사이드 안전 보관)\n• 시뮬레이터 수신자 대상 테스트 발송 준비 완료`;
     } else {
       box.className = 'status-box status-blocked';
-      box.textContent = `⚠️ Email Test Sidecar 연결 성공 (127.0.0.1:${sidecarPort})\n• Sidecar Build: ${compBuild}\n• KEY_MISSING: RESEND_API_KEY 미설정 (서버사이드 환경변수 필요)\n• 시뮬레이터 발송 요청 시 차단 안내(RESEND_API_KEY_NOT_CONFIGURED)가 반환됩니다.`;
+      box.textContent = `⚠️ Email Test Sidecar 연결됨 — API 키 미설정 (127.0.0.1:${sidecarPort})\n• Extension Build: ${extBuild}\n• Sidecar Build: ${compBuild} (PID: ${pidLabel})\n• 사유: KEY_MISSING (RESEND_API_KEY_NOT_CONFIGURED)\n• 조치 방법:\n  1) STOP_EMAIL_TEST_SIDECAR.bat 실행 (기존 18990 사이드카만 종료)\n  2) SET_RESEND_API_KEY.bat 실행하여 로컬 보안 경로에 키 저장\n  3) START_EMAIL_TEST_SIDECAR.bat 재실행 후 "Sidecar 상태 확인" 다시 클릭`;
     }
   } else if (resp && resp.reason === 'COMPANION_VERSION_MISMATCH') {
     box.className = 'status-box status-blocked';

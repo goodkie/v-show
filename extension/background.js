@@ -4087,7 +4087,14 @@ const _handleMainMessageInner = (request, sender, sendResponse) => {
                     sendResponse({
                         ok: true,
                         companionOnline: true,
-                        handshake: { companionBuildId: compBuildId, extensionBuildId: extBuildId, capabilityVerified: true },
+                        handshake: {
+                            companionBuildId: compBuildId,
+                            extensionBuildId: extBuildId,
+                            companionPid: health.pid || null,
+                            controlPort: health.controlPort || ctrlPort,
+                            apiCapabilities: caps,
+                            capabilityVerified: true
+                        },
                         data
                     });
                 } catch (err) {
