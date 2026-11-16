@@ -4039,7 +4039,7 @@ const _handleMainMessageInner = (request, sender, sendResponse) => {
             (async () => {
                 const reqPort = Number(request.sidecarPort);
                 const ctrlPort = (Number.isInteger(reqPort) && reqPort >= 1024 && reqPort <= 65535) ? reqPort : 18990;
-                const extBuildId = (typeof BuildProvenance !== 'undefined' && BuildProvenance.BUILD_INFO && BuildProvenance.BUILD_INFO.buildId) || 'V7.0.0-OWNER-BETA-TEST-SEND-SIDECAR-20261116-LOCKED15';
+                const extBuildId = (typeof BuildProvenance !== 'undefined' && BuildProvenance.BUILD_INFO && BuildProvenance.BUILD_INFO.buildId) || 'V7.0.0-OWNER-BETA-TEST-SEND-SIDECAR-20261116-LOCKED16';
                 try {
                     if (request.userConsentConfirmed !== true) {
                         sendResponse({ ok: false, status: 'BLOCKED', reason: 'USER_CONSENT_REQUIRED', message: '로컬 NTFS 보안 저장 전 명시적 사용자 동의가 필요합니다.' });
@@ -4101,7 +4101,8 @@ const _handleMainMessageInner = (request, sender, sendResponse) => {
         case 'GET_EMAIL_PRODUCTION_PREFLIGHT':
         case 'SYNC_EMAIL_PRODUCTION_RECIPIENTS':
         case 'GET_EMAIL_CONTENT_QA_STATUS':
-        case 'REQUEST_EMAIL_COPY_SUGGESTION': {
+        case 'REQUEST_EMAIL_COPY_SUGGESTION':
+        case 'VERIFY_RECIPIENT_DOMAINS_DNS': {
             (async () => {
                 const reqPort = Number(request.sidecarPort);
                 const ctrlPort = (Number.isInteger(reqPort) && reqPort >= 1024 && reqPort <= 65535) ? reqPort : 18990;
@@ -4121,12 +4122,13 @@ const _handleMainMessageInner = (request, sender, sendResponse) => {
                         });
                     };
                     let token = explicitToken || await pairTok(false);
-                    const isPost = request.action === 'SYNC_EMAIL_PRODUCTION_RECIPIENTS' || request.action === 'REQUEST_EMAIL_COPY_SUGGESTION';
+                    const isPost = request.action === 'SYNC_EMAIL_PRODUCTION_RECIPIENTS' || request.action === 'REQUEST_EMAIL_COPY_SUGGESTION' || request.action === 'VERIFY_RECIPIENT_DOMAINS_DNS';
                     const routeMap = {
                         GET_EMAIL_PRODUCTION_PREFLIGHT: '/email/production/preflight',
                         SYNC_EMAIL_PRODUCTION_RECIPIENTS: '/email/production/import',
                         GET_EMAIL_CONTENT_QA_STATUS: '/email/content-qa/status',
-                        REQUEST_EMAIL_COPY_SUGGESTION: '/email/content-qa/suggest'
+                        REQUEST_EMAIL_COPY_SUGGESTION: '/email/content-qa/suggest',
+                        VERIFY_RECIPIENT_DOMAINS_DNS: '/email/recipients/verify-dns'
                     };
                     const url = `http://127.0.0.1:${ctrlPort}${routeMap[request.action]}`;
                     const doFetch = async (tok) => fetch(url, {

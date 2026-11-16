@@ -132,7 +132,7 @@ async function checkCompanionStatus() {
     const d = resp.data;
     const hs = resp.handshake || {};
     const compBuild = hs.companionBuildId || d.companionBuildId || 'verified';
-    const extBuild = hs.extensionBuildId || 'V7.0.0-OWNER-BETA-TEST-SEND-SIDECAR-20261116-LOCKED15';
+    const extBuild = hs.extensionBuildId || 'V7.0.0-OWNER-BETA-TEST-SEND-SIDECAR-20261116-LOCKED16';
     const pidLabel = hs.companionPid || d.pid || 'unknown';
     const capsLabel = Array.isArray(hs.apiCapabilities) ? hs.apiCapabilities.join(', ') : 'email-test-send';
     if (d.resendApiKeyConfigured) {
@@ -469,7 +469,18 @@ function createBuiltinRecipientManager() {
     for (const e of queue.entries) lines.push([e.email, e.name, e.status, e.reason, e.attempts, e.providerMessageId, e.error, e.updatedAt].map(q).join(','));
     return lines.join('\r\n');
   };
-  return { STATUS, normalizeEmail, validateEmail, parseCsv, importRecipients, parseSuppression, isSuppressed, buildReview, createQueue, runQueue, stopQueue, resumeNormalize, summarizeQueue, queueToCsv, isBuiltinFallback: true };
+  const baseFallback = { STATUS, normalizeEmail, validateEmail, parseCsv, importRecipients, parseSuppression, isSuppressed, buildReview, createQueue, runQueue, stopQueue, resumeNormalize, summarizeQueue, queueToCsv, isBuiltinFallback: true };
+  if (typeof RecipientManager !== 'undefined' && RecipientManager) {
+    return Object.assign({}, RecipientManager, baseFallback, {
+      filterAndCategorizeRecipients: RecipientManager.filterAndCategorizeRecipients,
+      assignAbVariant: RecipientManager.assignAbVariant,
+      summarizeAbQueue: RecipientManager.summarizeAbQueue,
+      recipientsToCsv: RecipientManager.recipientsToCsv,
+      classifyRecipient: RecipientManager.classifyRecipient,
+      isBuiltinFallback: true
+    });
+  }
+  return baseFallback;
 }
 
 // ===== Content QA & Safe Copy Suggestion (Original vs Proposed Diff / Approve / Reject) =====
@@ -649,29 +660,105 @@ function createBuiltinRecipientManager() {
   }
 
   const KEY = 'xpider_email_studio_recipients_v1';
+  let originalRawCsv = '';
+  let allValidRecipients = [];
   let recipients = [];
+  let lastFilterResult = { retained: [], excluded: [], review: [], categoryCounts: {}, reasonCounts: {} };
   let queue = null;
   let importClickSeq = 0;
 
-  function persist() {
-    try { localStorage.setItem(KEY, JSON.stringify({ recipients, queue, optOut: el('optOutList') ? el('optOutList').value : '', savedAt: new Date().toISOString() })); } catch (_) {}
+  function getFilterOptions() {
+    return {
+      smeOnlyMode: Boolean(el('filterSmeOnly') && el('filterSmeOnly').checked),
+      excludePersonalFree: el('filterExcludePersonal') ? el('filterExcludePersonal').checked : true,
+      excludeGovPublic: el('filterExcludeGov') ? el('filterExcludeGov').checked : true,
+      excludeEcommerce: el('filterExcludeEcommerce') ? el('filterExcludeEcommerce').checked : true,
+      excludePortalPlatform: el('filterExcludePortal') ? el('filterExcludePortal').checked : true,
+      excludeLargeEnterprise: el('filterExcludeLarge') ? el('filterExcludeLarge').checked : true,
+      includeReviewInRetained: Boolean(el('filterIncludeReview') && el('filterIncludeReview').checked),
+      customSmeIncludeDomains: el('customSmeDomains') ? el('customSmeDomains').value : '',
+      customExcludeDomains: el('customExcludeDomains') ? el('customExcludeDomains').value : ''
+    };
   }
+
+  function getAbOptions() {
+    const rawRatio = el('abSplitRatio') ? Number(el('abSplitRatio').value) : 50;
+    return {
+      abEnabled: Boolean(el('abEnabled') && el('abEnabled').checked),
+      campaignId: (el('abCampaignId') && el('abCampaignId').value.trim()) || 'camp_sme_ab_v1',
+      splitPercentA: Number.isFinite(rawRatio) ? Math.max(0, Math.min(100, rawRatio)) : 50
+    };
+  }
+
+  function persist() {
+    try {
+      localStorage.setItem(KEY, JSON.stringify({
+        originalRawCsv,
+        allValidRecipients,
+        recipients,
+        queue,
+        optOut: el('optOutList') ? el('optOutList').value : '',
+        savedAt: new Date().toISOString()
+      }));
+    } catch (_) {}
+  }
+
+  function renderSmeFilterSummary(RM) {
+    const fBox = el('smeFilterStatus');
+    if (!fBox || typeof RM.filterAndCategorizeRecipients !== 'function') return;
+    const fOpts = getFilterOptions();
+    lastFilterResult = RM.filterAndCategorizeRecipients(allValidRecipients, fOpts);
+    const cc = lastFilterResult.categoryCounts || {};
+    const sampleRetained = lastFilterResult.retained.slice(0, 4).map(r => `${r.email}[${r.reasonCode}]`).join(', ');
+    const sampleExcluded = lastFilterResult.excluded.slice(0, 4).map(r => `${r.email}[${r.category}:${r.reasonCode}]`).join(', ');
+    const sampleReview = lastFilterResult.review.slice(0, 4).map(r => `${r.email}[${r.reasonCode}]`).join(', ');
+
+    fBox.textContent = [
+      `🎯 [대상 필터 분석 결과 — 원본 유효 ${allValidRecipients.length}명 · ${fOpts.smeOnlyMode ? '중소기업만 선택 ON' : '선택적 카테고리 제외 모드'}]`,
+      `• 중소기업 후보 유지(SMALL_PRIVATE_BUSINESS): ${lastFilterResult.retained.length}명${sampleRetained ? ' (' + sampleRetained + ')' : ''}`,
+      `• 제외됨(EXCLUDED): ${lastFilterResult.excluded.length}명 — 개인/무료:${cc.PERSONAL_FREE_EMAIL || 0} · 정부/공공:${cc.GOV_PUBLIC_SECTOR || 0} · 쇼핑몰/이커머스:${cc.ECOMMERCE_MARKETPLACE || 0} · 포털/플랫폼:${cc.PORTAL_PLATFORM || 0} · 대기업:${cc.LARGE_ENTERPRISE || 0}${sampleExcluded ? '\n  예시: ' + sampleExcluded : ''}`,
+      `• 확인 필요(UNKNOWN_REVIEW — 소규모 쇼핑몰·대기업 계열사·업종 미상 의심): ${lastFilterResult.review.length}명${sampleReview ? ' (' + sampleReview + ')' : ''}`,
+      `※ 주의: 도메인 기반 분류는 휴리스틱 추정이며 기업 규모(중소기업 여부)를 100% 확정하거나 마케팅 수신 동의를 대체하지 않습니다.`
+    ].join('\n');
+  }
+
+  function renderAbDashboard(RM) {
+    const abBox = el('abDashboardStatus');
+    if (!abBox || typeof RM.summarizeAbQueue !== 'function') return;
+    const abOpts = getAbOptions();
+    const targetQueue = queue || RM.createQueue(buildReview().entries);
+    const abSum = RM.summarizeAbQueue(targetQueue, abOpts);
+    const va = abSum.variants.A;
+    const vb = abSum.variants.B;
+    abBox.className = 'status-box status-success';
+    abBox.textContent = [
+      `⚖️ [A/B 테스트 비교 대시보드 — 캠페인 ID: ${abSum.campaignId} · 분할 비율 A:${abSum.splitPercentA}% / B:${100 - abSum.splitPercentA}% · 활성:${abOpts.abEnabled ? 'ON' : 'OFF(단일 A안)'}]`,
+      `• 고유 수신자 수: ${abSum.uniqueRecipientsCount}명 | 중복 수신자 ID: ${abSum.duplicateRecipientIds}건 | 실제 발송: 0건 (DRY-RUN)`,
+      `• [A안] 할당:${va.assigned}명 | 드라이런(DRY_RUN_READY):${va.DRY_RUN_READY} | 접수(ACCEPTED):${va.ACCEPTED} | 배달(DELIVERED):${va.DELIVERED} | 반송(BOUNCED):${va.BOUNCED} | 열람/클릭:미지원(추적 잠금)`,
+      `• [B안] 할당:${vb.assigned}명 | 드라이런(DRY_RUN_READY):${vb.DRY_RUN_READY} | 접수(ACCEPTED):${vb.ACCEPTED} | 배달(DELIVERED):${vb.DELIVERED} | 반송(BOUNCED):${vb.BOUNCED} | 열람/클릭:미지원(추적 잠금)`,
+      `※ ${abSum.metricsSupportNote}`
+    ].join('\n');
+  }
+
   function restore() {
     try {
       const RM = getActiveRM();
       const raw = localStorage.getItem(KEY);
       if (!raw) {
-        say('status-idle', '🟢 [수신자 관리 준비 완료 · LOCKED15] 수신자 목록 없음. CSV를 붙여넣거나 파일을 선택한 뒤 "가져오기 · 중복 제거"를 클릭하세요.');
+        say('status-idle', '🟢 [수신자 관리 준비 완료 · LOCKED16] 수신자 목록 없음. CSV를 붙여넣거나 파일을 선택한 뒤 "가져오기 · 중복 제거"를 클릭하세요.');
         return;
       }
       const d = JSON.parse(raw);
+      originalRawCsv = typeof d.originalRawCsv === 'string' ? d.originalRawCsv : '';
+      allValidRecipients = Array.isArray(d.allValidRecipients) ? d.allValidRecipients : (Array.isArray(d.recipients) ? d.recipients : []);
       recipients = Array.isArray(d.recipients) ? d.recipients : [];
       queue = d.queue && Array.isArray(d.queue.entries) ? RM.resumeNormalize(d.queue) : null;
       if (typeof d.optOut === 'string' && el('optOutList')) el('optOutList').value = d.optOut;
+      if (allValidRecipients.length) renderSmeFilterSummary(RM);
       if (recipients.length) {
-        say('status-idle', `📂 저장된 수신자 ${recipients.length}명 복원${queue ? ' · 큐 ' + JSON.stringify(RM.summarizeQueue(queue)) : ''}`);
+        say('status-idle', `📂 저장된 수신자 ${recipients.length}명 복원 (원본 유효 ${allValidRecipients.length}명)${queue ? ' · 큐 ' + JSON.stringify(RM.summarizeQueue(queue)) : ''}`);
       } else {
-        say('status-idle', '🟢 [수신자 관리 준비 완료 · LOCKED15] 수신자 목록 없음. CSV를 붙여넣거나 파일을 선택한 뒤 "가져오기 · 중복 제거"를 클릭하세요.');
+        say('status-idle', '🟢 [수신자 관리 준비 완료 · LOCKED16] 수신자 목록 없음. CSV를 붙여넣거나 파일을 선택한 뒤 "가져오기 · 중복 제거"를 클릭하세요.');
       }
     } catch (err) {
       say('status-error', `❌ [${err.code || 'ERR_RM_RESTORE_FAILED'}] ${err.message}`);
@@ -680,7 +767,14 @@ function createBuiltinRecipientManager() {
   function suppression() { return getActiveRM().parseSuppression(el('optOutList') ? el('optOutList').value : ''); }
   function messageKind() { return el('kind') ? el('kind').value : 'service'; }
   function buildReview() {
-    return getActiveRM().buildReview(recipients, suppression(), { messageKind: messageKind(), consentAttestation: Boolean(el('consentAttest') && el('consentAttest').checked) });
+    const abOpts = getAbOptions();
+    return getActiveRM().buildReview(recipients, suppression(), {
+      messageKind: messageKind(),
+      consentAttestation: Boolean(el('consentAttest') && el('consentAttest').checked),
+      abEnabled: abOpts.abEnabled,
+      campaignId: abOpts.campaignId,
+      splitPercentA: abOpts.splitPercentA
+    });
   }
   async function syncSidecarRecipients() {
     try {
@@ -714,6 +808,8 @@ function createBuiltinRecipientManager() {
       const csvEl = el('recipientCsv');
       const rawCsv = csvEl ? String(csvEl.value || '') : '';
       if (!rawCsv.trim()) {
+        originalRawCsv = '';
+        allValidRecipients = [];
         recipients = [];
         queue = null;
         persist();
@@ -721,13 +817,19 @@ function createBuiltinRecipientManager() {
         return;
       }
       const res = RM.importRecipients(rawCsv, { source: triggerSource || 'csv-import' });
-      recipients = res.valid;
+      originalRawCsv = rawCsv;
+      allValidRecipients = res.valid;
+      renderSmeFilterSummary(RM);
+      const fOpts = getFilterOptions();
+      recipients = (fOpts.smeOnlyMode && lastFilterResult && Array.isArray(lastFilterResult.retained))
+        ? lastFilterResult.retained
+        : res.valid;
       queue = null;
       persist();
       syncSidecarRecipients();
       const inv = res.invalid.slice(0, 5).map(i => `L${i.line}:${i.reason}`).join(', ');
       const dupPreview = res.duplicates.slice(0, 5).map(d => `L${d.line}:${d.email}`).join(', ');
-      const validPreview = res.valid.slice(0, 6).map(r => r.name ? `${r.email}(${r.name})` : r.email).join(', ');
+      const validPreview = recipients.slice(0, 6).map(r => r.name ? `${r.email}(${r.name})` : r.email).join(', ');
       const fbTag = RM.isBuiltinFallback ? ' · [RM_FALLBACK_ACTIVE]' : '';
       const srcTag = fileName ? `파일:${fileName}` : (triggerSource === 'button-click' ? '수동 클릭' : triggerSource);
 
@@ -737,7 +839,7 @@ function createBuiltinRecipientManager() {
         return;
       }
       say('status-success',
-        `✅ 유효 ${res.valid.length}명 · 중복 제거 ${res.duplicates.length} · 무효 ${res.invalid.length}${inv ? ' (' + inv + ')' : ''}\n• 집계 실행: #${importClickSeq} (${srcTag}${fbTag})\n• 수신 대상 미리보기: ${validPreview}${dupPreview ? '\n• 중복 제외: ' + dupPreview : ''}`);
+        `✅ 유효 ${res.valid.length}명 · 중복 제거 ${res.duplicates.length} · 무효 ${res.invalid.length}${inv ? ' (' + inv + ')' : ''}\n• 집계 실행: #${importClickSeq} (${srcTag}${fbTag}) · 활성 대상: ${recipients.length}명 (중소기업 후보:${lastFilterResult.retained.length} · 제외:${lastFilterResult.excluded.length} · 확인필요:${lastFilterResult.review.length})\n• 수신 대상 미리보기: ${validPreview || '없음'}${dupPreview ? '\n• 중복 제외: ' + dupPreview : ''}`);
     } catch (err) {
       say('status-error', `❌ [${err.code || 'ERR_CSV_IMPORT_EXCEPTION'} · #${importClickSeq}] 가져오기 처리 중 오류가 발생했습니다: ${err.message}\n• 다시 시도 방법: CSV 입력값을 확인하거나 페이지를 새로고침한 뒤 "가져오기 · 중복 제거"를 다시 클릭하세요.`);
     }
@@ -746,6 +848,148 @@ function createBuiltinRecipientManager() {
   if (el('btnImportRecipients')) {
     el('btnImportRecipients').dataset.rmBound = 'true';
     el('btnImportRecipients').onclick = () => runRecipientImport('button-click', null);
+  }
+  if (el('btnApplySmeFilter')) {
+    el('btnApplySmeFilter').onclick = () => {
+      try {
+        const RM = getActiveRM();
+        if (!allValidRecipients.length && el('recipientCsv') && el('recipientCsv').value.trim()) {
+          runRecipientImport('auto-before-filter', null);
+        }
+        if (!allValidRecipients.length) {
+          say('status-blocked', '⚠️ [NO_RECIPIENTS_FOR_FILTER] 먼저 CSV를 입력하고 "가져오기 · 중복 제거"를 실행하세요.');
+          return;
+        }
+        renderSmeFilterSummary(RM);
+        recipients = lastFilterResult.retained;
+        queue = null;
+        persist();
+        say(recipients.length ? 'status-success' : 'status-blocked',
+          `🎯 [대상 필터 적용 완료] 원본 유효 ${allValidRecipients.length}명 중 중소기업 후보 ${lastFilterResult.retained.length}명 선택됨 · 제외 ${lastFilterResult.excluded.length}명 · 확인 필요(UNKNOWN_REVIEW) ${lastFilterResult.review.length}명`);
+      } catch (err) {
+        say('status-error', `❌ [ERR_SME_FILTER] ${err.message}`);
+      }
+    };
+  }
+  if (el('btnVerifyRecipientDns')) {
+    el('btnVerifyRecipientDns').onclick = async () => {
+      try {
+        if (!el('dnsVerifyOptIn') || !el('dnsVerifyOptIn').checked) {
+          say('status-blocked', '⚠️ [DNS_VERIFY_OPT_IN_REQUIRED] 도메인 DNS(MX/A) 유효성 검사를 실행하려면 아래 동의 체크박스를 먼저 선택하세요.');
+          return;
+        }
+        if (!allValidRecipients.length && el('recipientCsv') && el('recipientCsv').value.trim()) {
+          runRecipientImport('auto-before-dns', null);
+        }
+        if (!allValidRecipients.length) {
+          say('status-blocked', '⚠️ [NO_RECIPIENTS_FOR_DNS] 먼저 수신자 CSV를 가져오세요.');
+          return;
+        }
+        const domains = [...new Set(allValidRecipients.map(r => r.email.split('@')[1]).filter(Boolean))];
+        say('status-loading', `⏳ 수신 도메인 ${domains.length}개에 대한 DNS(MX/A) 유효성 확인 중 (개별 사서함 탐색 없음)...`);
+        const { sidecarPort, sidecarToken } = getSidecarConfig();
+        const resp = await callBg({
+          action: 'VERIFY_RECIPIENT_DOMAINS_DNS',
+          sidecarPort,
+          sidecarToken,
+          payload: { optInDnsCheck: true, domains }
+        });
+        const map = (resp && resp.ok && resp.data && resp.data.results) ? resp.data.results : null;
+        let readyCnt = 0, invCnt = 0, unkCnt = 0;
+        for (const r of allValidRecipients) {
+          const dom = r.email.split('@')[1];
+          const dInfo = map && map[dom];
+          if (dInfo) {
+            r.validityStatus = dInfo.validityStatus || 'UNKNOWN';
+            r.dnsProvenance = dInfo.dnsProvenance || 'DNS_QUERIED';
+          } else {
+            r.validityStatus = 'UNKNOWN';
+            r.dnsProvenance = 'SIDECAR_OR_DNS_UNAVAILABLE';
+          }
+          if (r.validityStatus === 'DNS_MAIL_READY') readyCnt++;
+          else if (r.validityStatus === 'INVALID') invCnt++;
+          else unkCnt++;
+        }
+        const RM = getActiveRM();
+        renderSmeFilterSummary(RM);
+        recipients = (el('filterSmeOnly') && el('filterSmeOnly').checked) ? lastFilterResult.retained : allValidRecipients.filter(r => r.validityStatus !== 'INVALID');
+        persist();
+        say('status-success',
+          `🔍 [도메인 DNS(MX/A) 유효성 검사 완료 — 총 ${allValidRecipients.length}명]\n• DNS_MAIL_READY(메일서버 확인): ${readyCnt}명 · INVALID(NXDOMAIN/NullMX): ${invCnt}명 · UNKNOWN(응답지연/미확인): ${unkCnt}명\n※ 주의: 도메인 MX/A 확인은 메일 서버 설정 여부만 뜻하며, 개별 사서함(Inbox) 실존을 보장하지 않습니다.`);
+      } catch (err) {
+        say('status-error', `❌ [ERR_DNS_VERIFY_FAILED] ${err.message}`);
+      }
+    };
+  }
+  function triggerCsvDownload(filename, content) {
+    const blob = new Blob(['\uFEFF' + content], { type: 'text/csv;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  }
+  if (el('btnExportRetainedCsv')) {
+    el('btnExportRetainedCsv').onclick = () => {
+      const RM = getActiveRM();
+      if (!lastFilterResult.retained.length) return say('status-blocked', '⚠️ 저장할 중소기업(유지) 목록이 없습니다.');
+      triggerCsvDownload('xpider_sme_retained.csv', RM.recipientsToCsv(lastFilterResult.retained));
+    };
+  }
+  if (el('btnExportExcludedCsv')) {
+    el('btnExportExcludedCsv').onclick = () => {
+      const RM = getActiveRM();
+      if (!lastFilterResult.excluded.length) return say('status-blocked', '⚠️ 저장할 제외 목록이 없습니다.');
+      triggerCsvDownload('xpider_excluded_recipients.csv', RM.recipientsToCsv(lastFilterResult.excluded));
+    };
+  }
+  if (el('btnExportReviewCsv')) {
+    el('btnExportReviewCsv').onclick = () => {
+      const RM = getActiveRM();
+      if (!lastFilterResult.review.length) return say('status-blocked', '⚠️ 저장할 확인 필요(UNKNOWN_REVIEW) 목록이 없습니다.');
+      triggerCsvDownload('xpider_unknown_review_recipients.csv', RM.recipientsToCsv(lastFilterResult.review));
+    };
+  }
+  if (el('btnExportOriginalCsv')) {
+    el('btnExportOriginalCsv').onclick = () => {
+      if (!originalRawCsv) return say('status-blocked', '⚠️ 보존된 원본 CSV가 없습니다.');
+      triggerCsvDownload('xpider_original_imported.csv', originalRawCsv);
+    };
+  }
+  if (el('btnPreviewVariantA')) {
+    el('btnPreviewVariantA').onclick = () => {
+      render();
+      if (el('abDashboardStatus')) el('abDashboardStatus').textContent = '👁️ 현재 미리보기 창에 [A안 (기본 편집창)]이 표시되고 있습니다.';
+    };
+  }
+  if (el('btnPreviewVariantB')) {
+    el('btnPreviewVariantB').onclick = () => {
+      const v = values();
+      v.subject = el('abSubjectB') ? el('abSubjectB').value.trim() : v.subject;
+      v.preheader = el('abPreheaderB') ? el('abPreheaderB').value.trim() : v.preheader;
+      v.body = el('abBodyB') ? el('abBodyB').value.trim() : v.body;
+      if (el('preview')) el('preview').srcdoc = htmlFor(v, true);
+      if (el('abDashboardStatus')) el('abDashboardStatus').textContent = `👁️ 현재 미리보기 창에 [B안: ${v.subject}]이 표시되고 있습니다.`;
+    };
+  }
+  if (el('btnRunAbDryRun')) {
+    el('btnRunAbDryRun').onclick = async () => {
+      try {
+        if (el('abEnabled')) el('abEnabled').checked = true;
+        const RM = getActiveRM();
+        if (!recipients.length && el('recipientCsv') && el('recipientCsv').value.trim()) {
+          runRecipientImport('auto-before-ab-dryrun', null);
+        }
+        if (!recipients.length) return say('status-blocked', '⚠️ [NO_RECIPIENTS_LOADED] 먼저 수신자 CSV를 가져오세요.');
+        queue = RM.createQueue(buildReview().entries);
+        const sum = await RM.runQueue(queue, async () => ({ ok: true, dryRun: true }), { delayMs: 0 });
+        persist();
+        renderAbDashboard(RM);
+        say('status-success', `✅ A/B 분할 드라이런 완료 (실제 발송 0건)\n${JSON.stringify(sum)}`);
+      } catch (err) {
+        say('status-error', `❌ [ERR_AB_DRY_RUN] ${err.message}`);
+      }
+    };
   }
   if (el('recipientFile')) {
     el('recipientFile').onchange = async (ev) => {
@@ -825,6 +1069,7 @@ function createBuiltinRecipientManager() {
         say('status-loading', '⏳ 드라이런 진행 중 (발송 없음)...');
         const sum = await RM.runQueue(queue, async () => ({ ok: true, dryRun: true }), { delayMs: 0 });
         persist();
+        renderAbDashboard(RM);
         say('status-success', `✅ 드라이런 완료 (실제 발송 0건)\n${JSON.stringify(sum)}`);
       } catch (err) {
         say('status-error', `❌ [${err.code || 'ERR_DRY_RUN_FAILED'}] ${err.message}`);

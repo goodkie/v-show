@@ -403,6 +403,52 @@ function httpReq(port, method, urlPath, headers = {}, body = null) {
       assert.equal(errRes.reason, 'AI_PROVIDER_ERROR');
     });
 
+    await run('RECIPIENT_DOMAIN_DNS_MX_A_FALLBACK_NXDOMAIN_NULL_MX_AND_TIMEOUT_UNKNOWN', async () => {
+      const dnsDir = path.join(tmpDir, 'recipient_dns_state');
+      const pipe = new EmailProductionPipeline({ stateDir: dnsDir, trustedTestMode: true });
+
+      // 1. Without optInDnsCheck -> blocked (400 DNS_VERIFY_OPT_IN_REQUIRED)
+      const noOpt = await pipe.verifyRecipientDomainsDns({ optInDnsCheck: false, domains: ['sme1.co.kr'] });
+      assert.equal(noOpt.ok, false);
+      assert.equal(noOpt.reason, 'DNS_VERIFY_OPT_IN_REQUIRED');
+
+      // 2. Test MX verified, A fallback, Null MX, NXDOMAIN, and DNS timeout -> UNKNOWN
+      const dnsRes = await pipe.verifyRecipientDomainsDns({
+        optInDnsCheck: true,
+        domains: ['mx-ok.co.kr', 'a-fallback.co.kr', 'null-mx.co.kr', 'dead-domain.co.kr', 'timeout-domain.co.kr']
+      }, {
+        timeoutMs: 200,
+        resolveMx: async (d) => {
+          if (d === 'mx-ok.co.kr') return [{ exchange: 'mail.mx-ok.co.kr', priority: 10 }];
+          if (d === 'null-mx.co.kr') return [{ exchange: '.', priority: 0 }];
+          if (d === 'a-fallback.co.kr' || d === 'dead-domain.co.kr') {
+            throw Object.assign(new Error('ENODATA'), { code: 'ENODATA' });
+          }
+          if (d === 'timeout-domain.co.kr') {
+            await new Promise(r => setTimeout(r, 600));
+            return [];
+          }
+          return [];
+        },
+        resolve4: async (d) => {
+          if (d === 'a-fallback.co.kr') return ['203.0.113.10'];
+          throw Object.assign(new Error('ENOTFOUND'), { code: 'ENOTFOUND' });
+        }
+      });
+
+      assert.equal(dnsRes.ok, true);
+      assert.equal(dnsRes.results['mx-ok.co.kr'].validityStatus, 'DNS_MAIL_READY');
+      assert.equal(dnsRes.results['mx-ok.co.kr'].dnsProvenance, 'MX_RECORD_VERIFIED');
+      assert.equal(dnsRes.results['a-fallback.co.kr'].validityStatus, 'DNS_MAIL_READY');
+      assert.equal(dnsRes.results['a-fallback.co.kr'].dnsProvenance, 'A_AAAA_FALLBACK_ONLY');
+      assert.equal(dnsRes.results['null-mx.co.kr'].validityStatus, 'INVALID');
+      assert.equal(dnsRes.results['null-mx.co.kr'].dnsProvenance, 'RFC7505_NULL_MX');
+      assert.equal(dnsRes.results['dead-domain.co.kr'].validityStatus, 'INVALID');
+      assert.equal(dnsRes.results['dead-domain.co.kr'].dnsProvenance, 'DNS_NXDOMAIN');
+      assert.equal(dnsRes.results['timeout-domain.co.kr'].validityStatus, 'UNKNOWN');
+      assert.equal(dnsRes.results['timeout-domain.co.kr'].dnsProvenance, 'DNS_TIMEOUT_OR_UNAVAILABLE');
+    });
+
     console.log(`\nALL PRODUCTION PIPELINE TESTS PASSED (${pass}/${pass})`);
   } finally {
     fs.rmSync(tmpDir, { recursive: true, force: true });

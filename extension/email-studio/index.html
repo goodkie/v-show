@@ -47,23 +47,57 @@
 <div class="note" id="summary">이 템플릿은 미리보기용입니다. 실제 메일 발송은 진행하지 않습니다.</div>
 
 <div class="send-control-card" id="recipientCard" aria-label="수신자 관리 및 발송 검토">
-<div class="send-header"><h3>👥 수신자 관리 · 발송 검토 (Review)</h3><span class="badge-test">DRY-RUN · 실제 발송 없음 · LOCKED15</span></div>
-<label for="recipientCsv">수신자 CSV 붙여넣기 또는 파일 선택 (email 열 필수 · 이름 열 선택)</label>
+<div class="send-header"><h3>👥 수신자 관리 · 유효성 검사 · 중소기업(SME) 필터</h3><span class="badge-test">DRY-RUN · 실제 발송 없음 · LOCKED16</span></div>
+<label for="recipientCsv">수신자 CSV 붙여넣기 또는 파일 선택 (email 열 필수 · 이름/회사명 열 선택 · 원본 CSV는 변형 없이 보존)</label>
 <textarea id="recipientCsv" rows="4" placeholder="email,name&#10;a@example.com,홍길동"></textarea>
-<div class="actions"><input type="file" id="recipientFile" accept=".csv,.txt,text/csv,text/plain"><button type="button" id="btnImportRecipients" class="primary">가져오기 · 중복 제거</button></div>
+<div class="actions"><input type="file" id="recipientFile" accept=".csv,.txt,text/csv,text/plain"><button type="button" id="btnImportRecipients" class="primary">가져오기 · 중복 제거</button><button type="button" id="btnVerifyRecipientDns">🔍 유효성 검사 (DNS MX/A)</button></div>
+<label style="display:flex;align-items:center;gap:6px;margin:4px 0;font-size:12px;"><input id="dnsVerifyOptIn" type="checkbox"> [선택] 로컬 Sidecar를 통한 수신 도메인 DNS(MX/A) 확인 동의 (외부 제3자 목록 전송 없음 · 도메인 MX 확인은 개별 사서함 실존 보장이 아님)</label>
+
+<div id="smeFilterBox" class="status-box status-idle" style="margin:8px 0;">
+<b>🏢 대상 필터 (중소기업만 선택 · 업종별 제외 · 확인 필요 분리)</b>
+<label style="display:flex;align-items:center;gap:6px;margin:6px 0;font-size:12px;"><input id="filterSmeOnly" type="checkbox"> <b>중소기업만 선택 (개인·정부·쇼핑몰·포털·대기업 제외 및 모호한 도메인은 '확인 필요'로 분리)</b></label>
+<div style="display:flex;flex-wrap:wrap;gap:10px;margin:6px 0;font-size:12px;">
+  <label><input id="filterExcludePersonal" type="checkbox" checked> 개인/무료 이메일 제외</label>
+  <label><input id="filterExcludeGov" type="checkbox" checked> 정부/공공기관 제외</label>
+  <label><input id="filterExcludeEcommerce" type="checkbox" checked> 쇼핑몰/이커머스 제외</label>
+  <label><input id="filterExcludePortal" type="checkbox" checked> 포털/플랫폼 제외</label>
+  <label><input id="filterExcludeLarge" type="checkbox" checked> 대기업 제외</label>
+  <label><input id="filterIncludeReview" type="checkbox"> 확인 필요(UNKNOWN_REVIEW)도 발송 후보에 포함</label>
+</div>
+<div class="inline" style="margin-top:4px;"><div><label for="customSmeDomains">수동 중소기업 포함 도메인 (오버라이드)</label><input id="customSmeDomains" placeholder="sme-partner.co.kr"></div><div><label for="customExcludeDomains">수동 제외 도메인 (오버라이드)</label><input id="customExcludeDomains" placeholder="corp-sub.com"></div></div>
+<div class="actions" style="margin-top:6px;"><button type="button" class="primary" id="btnApplySmeFilter">🎯 대상 필터 적용 · 제외 사유 확인</button><button type="button" id="btnExportRetainedCsv">📥 중소기업(유지) CSV</button><button type="button" id="btnExportExcludedCsv">📥 제외 목록 CSV</button><button type="button" id="btnExportReviewCsv">📥 확인 필요 CSV</button><button type="button" id="btnExportOriginalCsv">📥 원본 CSV 보존본</button></div>
+<div id="smeFilterStatus" class="note" style="white-space:pre-wrap;margin-top:6px;">대상 필터 대기 중: "🎯 대상 필터 적용 · 제외 사유 확인"을 누르면 중소기업(유지) / 제외 사유별 건수 / 확인 필요(UNKNOWN_REVIEW) 분류와 근거(Provenance)가 표시됩니다.</div>
+</div>
+
 <label for="optOutList">수신 거부(opt-out) / 제외 목록 (이메일 또는 @도메인, 공백·쉼표 구분)</label>
 <textarea id="optOutList" rows="2" placeholder="blocked@example.com @competitor.com"></textarea>
-<label style="display:flex;align-items:center;gap:6px;margin:6px 0;font-size:12px;"><input id="consentAttest" type="checkbox"> 이 목록의 수신자는 직접 수신 동의했거나 적법한 근거가 있음을 확인합니다 (마케팅 메일 필수)</label>
+<label style="display:flex;align-items:center;gap:6px;margin:6px 0;font-size:12px;"><input id="consentAttest" type="checkbox"> 이 목록의 수신자는 직접 수신 동의했거나 적법한 근거가 있음을 확인합니다 (마케팅 메일 필수 · 주소 유효성/중소기업 분류는 수신 동의가 아님)</label>
 <div class="actions"><button type="button" id="btnBuildReview">발송 전 검토</button><button type="button" id="btnDryRun" class="primary">드라이런 실행 (발송 없음)</button><button type="button" id="btnQueueStop">중지</button><button type="button" id="btnQueueResume">이어서</button><button type="button" id="btnQueueCsv">결과 CSV 저장</button></div>
 <div id="recipientStatus" class="status-box status-idle" aria-live="polite">수신자 목록 없음. CSV를 가져오세요.</div>
 </div>
+
+<div class="send-control-card" id="abTestCard" aria-label="A/B 테스트 캠페인 설계 및 비교" style="margin-top:10px;">
+<div class="send-header"><h3>⚖️ A/B 테스트 캠페인 설계 · 드라이런 비교 (A/B Testing)</h3><span class="badge-test">결정론적 분할 · 중복 발송 0건</span></div>
+<label style="display:flex;align-items:center;gap:6px;margin:6px 0;font-size:12px;"><input id="abEnabled" type="checkbox"> <b>A/B 테스트 활성화 (수신자+캠페인 해시 기반 고정 분할 · A안은 좌측 기본 편집창 사용)</b></label>
+<div class="inline"><div><label for="abCampaignId">A/B 캠페인 ID (고정 시드)</label><input id="abCampaignId" value="camp_sme_ab_v1"></div><div><label for="abSplitRatio">A안 비율 (% · 0~100)</label><input id="abSplitRatio" type="number" min="0" max="100" value="50"></div></div>
+<label for="abSubjectB">B안 제목 (Variant B Subject)</label><input id="abSubjectB" maxlength="160" value="vivpr.pro 중소기업 맞춤 서비스 안내 (B안)">
+<label for="abPreheaderB">B안 미리보기 문구 (Variant B Preheader)</label><input id="abPreheaderB" maxlength="180" value="귀사의 업무 효율을 위한 안내입니다.">
+<label for="abBodyB">B안 본문 (Variant B Body)</label><textarea id="abBodyB" rows="4">안녕하세요, 중소기업 파트너를 위한 서비스 안내(B안)입니다.
+
+자세한 내용은 아래 공식 홈페이지 링크에서 확인하실 수 있습니다.
+
+문의사항은 언제든 회신해 주세요.</textarea>
+<div class="actions"><button type="button" id="btnPreviewVariantA">👁️ A안 미리보기</button><button type="button" id="btnPreviewVariantB">👁️ B안 미리보기</button><button type="button" class="primary" id="btnRunAbDryRun">🧪 A/B 분할 드라이런 실행 (실제 발송 없음)</button></div>
+<div id="abDashboardStatus" class="status-box status-idle" aria-live="polite" style="white-space:pre-wrap;">A/B 대시보드 대기 중: A/B 테스트를 체크하고 드라이런을 실행하면 A안 vs B안 할당·드라이런(DRY_RUN_READY)·접수(ACCEPTED)·배달(DELIVERED)·반송(BOUNCED) 비교표가 표시됩니다.</div>
+</div>
+
 <div class="send-control-card" aria-label="이메일 발송 제어">
 
 <div class="send-header"><h3>🚀 이메일 발송 제어 (Email Delivery)</h3><span class="badge-test">🧪 TEST SIMULATOR ONLY</span></div>
 <div class="test-send-box">
 <h4>🧪 Resend 공식 이벤트 시뮬레이터 테스트 발송</h4>
 <p class="desc">실제 고객에게는 절대 발송되지 않으며, Resend 공식 이벤트 시뮬레이터로만 발송됩니다 (격리 Email Test Sidecar 127.0.0.1 경유 · 기존 18989/18988 프라이버시 릴레이 무간섭).</p>
-<div class="note" id="extBuildInfo">Extension Build: V7.0.0-OWNER-BETA-TEST-SEND-SIDECAR-20261116-LOCKED15 · Expected Sidecar: 127.0.0.1:18990 (email-test-send, email-test-sidecar-v1, email-test-ledger-v1)</div>
+<div class="note" id="extBuildInfo">Extension Build: V7.0.0-OWNER-BETA-TEST-SEND-SIDECAR-20261116-LOCKED16 · Expected Sidecar: 127.0.0.1:18990 (email-test-send, email-test-sidecar-v1, email-test-ledger-v1)</div>
 <div class="inline"><div><label for="sidecarPort">Sidecar 루프백 포트 (127.0.0.1)</label><input id="sidecarPort" type="number" min="1024" max="65535" value="18990"></div><div><label for="sidecarToken">Sidecar 제어 토큰 (자동 페어링 우선 · 메모리 전용)</label><input id="sidecarToken" type="password" autocomplete="off" placeholder="자동 페어링 사용 (수동 입력 불필요)"></div></div>
 <div id="keySetupPanel" class="status-box status-idle" style="margin:8px 0;">
   <b>🔑 Resend API 키 설정 (로컬 NTFS 보안 저장 · 브라우저/로그 미저장)</b>

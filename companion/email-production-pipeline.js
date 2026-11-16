@@ -1046,6 +1046,139 @@ class EmailProductionPipeline {
       note: '교정 제안은 사용자가 [제안 수락]을 누르기 전까지 원문을 덮어쓰지 않으며, 사실관계·가격·동의 여부를 임의로 생성하지 않습니다.'
     };
   }
+
+  async verifyRecipientDomainsDns(payload = {}, options = {}) {
+    if (payload.optInDnsCheck !== true) {
+      return {
+        ok: false,
+        statusCode: 400,
+        status: 'BLOCKED',
+        reason: 'DNS_VERIFY_OPT_IN_REQUIRED',
+        message: '도메인 DNS(MX/A) 조회를 실행하려면 명시적 동의 옵션(optInDnsCheck)이 필요합니다.'
+      };
+    }
+    this.recipientDnsCache = this.recipientDnsCache || new Map();
+    const rawList = Array.isArray(payload.domains) ? payload.domains : [];
+    const uniqueDomains = [];
+    const seen = new Set();
+    for (const item of rawList.slice(0, 100)) {
+      const s = String(item || '').trim().toLowerCase();
+      const dom = RM.normalizeDomainWithIdn(s.includes('@') ? s.split('@').pop() : s);
+      if (dom && !seen.has(dom)) {
+        seen.add(dom);
+        uniqueDomains.push(dom);
+      }
+    }
+
+    const resolveMxFn = options.resolveMx || ((d) => dnsPromises.resolveMx(d));
+    const resolve4Fn = options.resolve4 || ((d) => dnsPromises.resolve4(d));
+    const timeoutMs = Number.isFinite(options.timeoutMs) ? options.timeoutMs : 2500;
+
+    const withTimeout = (promise) => Promise.race([
+      promise,
+      new Promise((_, rej) => setTimeout(() => {
+        const e = new Error('DNS_LOOKUP_TIMEOUT');
+        e.code = 'ETIMEOUT';
+        rej(e);
+      }, timeoutMs))
+    ]);
+
+    const results = {};
+    for (const domain of uniqueDomains) {
+      const cached = this.recipientDnsCache.get(domain);
+      if (cached && (Date.now() - cached.cachedAt) < 600000 && !options.resolveMx) {
+        results[domain] = cached.value;
+        continue;
+      }
+      let out;
+      try {
+        const mxRecords = await withTimeout(resolveMxFn(domain));
+        if (Array.isArray(mxRecords) && mxRecords.length > 0) {
+          const validMx = mxRecords.filter(m => m && m.exchange && m.exchange !== '.');
+          if (validMx.length > 0) {
+            out = {
+              domain,
+              validityStatus: 'DNS_MAIL_READY',
+              dnsProvenance: 'MX_RECORD_VERIFIED',
+              mxCount: validMx.length,
+              note: '도메인 MX 레코드 확인됨 (개별 사서함 실존 보장 아님)'
+            };
+          } else {
+            out = {
+              domain,
+              validityStatus: 'INVALID',
+              dnsProvenance: 'RFC7505_NULL_MX',
+              reason: 'NULL_MX_NO_MAIL',
+              note: '해당 도메인은 메일 수신 거부(Null MX)로 설정되어 있습니다.'
+            };
+          }
+        } else {
+          throw Object.assign(new Error('ENODATA'), { code: 'ENODATA' });
+        }
+      } catch (mxErr) {
+        const code = (mxErr && mxErr.code) || '';
+        if (code === 'ENODATA' || code === 'ENOTFOUND') {
+          try {
+            const aRecords = await withTimeout(resolve4Fn(domain));
+            if (Array.isArray(aRecords) && aRecords.length > 0) {
+              out = {
+                domain,
+                validityStatus: 'DNS_MAIL_READY',
+                dnsProvenance: 'A_AAAA_FALLBACK_ONLY',
+                mxCount: 0,
+                note: 'MX 레코드 없음 · RFC 5321 A 레코드 폴백 확인됨 (개별 사서함 실존 보장 아님)'
+              };
+            } else {
+              out = {
+                domain,
+                validityStatus: 'INVALID',
+                dnsProvenance: 'DNS_NXDOMAIN',
+                reason: 'DOMAIN_NXDOMAIN',
+                note: '도메인 MX 및 A 레코드가 존재하지 않습니다.'
+              };
+            }
+          } catch (aErr) {
+            const aCode = (aErr && aErr.code) || '';
+            if (aCode === 'ENOTFOUND' || aCode === 'ENODATA' || aCode === 'NXDOMAIN') {
+              out = {
+                domain,
+                validityStatus: 'INVALID',
+                dnsProvenance: 'DNS_NXDOMAIN',
+                reason: 'DOMAIN_NXDOMAIN',
+                note: '존재하지 않는 도메인(NXDOMAIN)입니다.'
+              };
+            } else {
+              out = {
+                domain,
+                validityStatus: 'UNKNOWN',
+                dnsProvenance: 'DNS_TIMEOUT_OR_UNAVAILABLE',
+                reason: aCode || 'DNS_LOOKUP_FAILED',
+                note: 'DNS 응답 지연/오류로 확인 불가 (무효로 단정하지 않음)'
+              };
+            }
+          }
+        } else {
+          out = {
+            domain,
+            validityStatus: 'UNKNOWN',
+            dnsProvenance: 'DNS_TIMEOUT_OR_UNAVAILABLE',
+            reason: code || 'DNS_LOOKUP_FAILED',
+            note: 'DNS 응답 지연/오류로 확인 불가 (무효로 단정하지 않음)'
+          };
+        }
+      }
+      this.recipientDnsCache.set(domain, { cachedAt: Date.now(), value: out });
+      results[domain] = out;
+    }
+
+    return {
+      ok: true,
+      statusCode: 200,
+      checkedCount: uniqueDomains.length,
+      results,
+      disclaimer: 'DNS(MX/A) 확인은 도메인의 메일 서버 설정 여부만 확인하며, 개별 이메일 사서함(Inbox)의 실존 또는 수신 가능 여부를 보장하지 않습니다 (무단 SMTP RCPT 탐색 미수행).'
+    };
+  }
 }
 
 module.exports = {

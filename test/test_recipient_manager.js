@@ -91,5 +91,109 @@ async function t(name, fn) { await fn(); pass++; console.log('PASS ' + name); }
     assert.ok(RM.queueToCsv(q).includes('"Q""uote"'));
   });
 
+  await t('IDN_PUNYCODE_DISPOSABLE_AND_CONFIGURABLE_ROLE_POLICY', async () => {
+    const csv = [
+      'email,name',
+      'ceo@스타트업.kr,한글도메인기업',
+      'temp@mailinator.com,일회용',
+      'noreply@sme-biz.co.kr,발신전용',
+      'valid@sme-biz.co.kr,중소기업담당자'
+    ].join('\n');
+    const r1 = RM.importRecipients(csv);
+    assert.equal(r1.valid.length, 2);
+    assert.ok(r1.valid[0].email.startsWith('ceo@xn--'));
+    assert.deepEqual(r1.invalid.map(i => i.reason).sort(), ['DISPOSABLE_DOMAIN', 'ROLE_ADDRESS']);
+
+    const rAllow = RM.importRecipients(csv, { allowDisposable: true, allowRoleAddresses: true });
+    assert.equal(rAllow.valid.length, 4);
+  });
+
+  await t('SME_CATEGORY_FILTERING_EXCLUSIONS_AMBIGUOUS_REVIEW_AND_OVERRIDES', async () => {
+    const sample = [
+      { email: 'owner@naver.com', name: '개인네이버' },
+      { email: 'user@gmail.com', name: '개인지메일' },
+      { email: 'officer@seoul.go.kr', name: '서울시청' },
+      { email: 'prof@snu.ac.kr', name: '서울대학교' },
+      { email: 'seller@coupang.com', name: '쿠팡마켓' },
+      { email: 'pm@navercorp.com', name: '네이버플랫폼' },
+      { email: 'exec@samsung.com', name: '삼성전자' },
+      { email: 'help@my-flower-shop.co.kr', name: '자체쇼핑몰의심' },
+      { email: 'ir@alpha-holdings.co.kr', name: '알파홀딩스계열사의심' },
+      { email: 'ceo@vivid-design-studio.co.kr', name: '비비드디자인스튜디오' },
+      { email: 'partner@hanbit-precision.kr', name: '한빛정밀기계' }
+    ];
+
+    const res = RM.filterAndCategorizeRecipients(sample, { smeOnlyMode: true });
+    assert.equal(res.retained.length, 2);
+    assert.deepEqual(res.retained.map(r => r.email), [
+      'ceo@vivid-design-studio.co.kr',
+      'partner@hanbit-precision.kr'
+    ]);
+    assert.equal(res.excluded.length, 7);
+    assert.equal(res.review.length, 2);
+    assert.deepEqual(res.review.map(r => r.email), [
+      'help@my-flower-shop.co.kr',
+      'ir@alpha-holdings.co.kr'
+    ]);
+    assert.equal(res.categoryCounts.PERSONAL_FREE_EMAIL, 2);
+    assert.equal(res.categoryCounts.GOV_PUBLIC_SECTOR, 2);
+    assert.equal(res.categoryCounts.ECOMMERCE_MARKETPLACE, 1);
+    assert.equal(res.categoryCounts.PORTAL_PLATFORM, 1);
+    assert.equal(res.categoryCounts.LARGE_ENTERPRISE, 1);
+    assert.equal(res.categoryCounts.UNKNOWN_REVIEW, 2);
+    assert.equal(res.categoryCounts.SMALL_PRIVATE_BUSINESS, 2);
+    assert.ok(res.retained[0].confidenceNote.includes('기업 규모 100% 확정 불가'));
+
+    // Test manual override & custom SME include domain
+    const resOverride = RM.filterAndCategorizeRecipients(sample, {
+      smeOnlyMode: true,
+      customSmeIncludeDomains: 'my-flower-shop.co.kr',
+      customExcludeDomains: 'hanbit-precision.kr'
+    });
+    assert.deepEqual(resOverride.retained.map(r => r.email), [
+      'help@my-flower-shop.co.kr',
+      'ceo@vivid-design-studio.co.kr'
+    ]);
+  });
+
+  await t('DETERMINISTIC_AB_VARIANT_SPLIT_NON_DUPLICATE_IDS_AND_SEPARATE_CSV_EXPORTS', async () => {
+    const recips = [];
+    for (let i = 1; i <= 20; i++) {
+      recips.push({ email: `b2b_${i}@sme-${i}.co.kr`, name: `SME ${i}` });
+    }
+    const rv1 = RM.buildReview(recips, new Set(), {
+      messageKind: 'marketing',
+      consentAttestation: true,
+      abEnabled: true,
+      campaignId: 'camp_det_1',
+      splitPercentA: 50
+    });
+    const rv2 = RM.buildReview(recips, new Set(), {
+      messageKind: 'marketing',
+      consentAttestation: true,
+      abEnabled: true,
+      campaignId: 'camp_det_1',
+      splitPercentA: 50
+    });
+    // Deterministic across runs
+    assert.deepEqual(rv1.entries.map(e => e.abVariant), rv2.entries.map(e => e.abVariant));
+    // Non-duplicate recipientIds
+    const idSet = new Set(rv1.entries.map(e => e.recipientId));
+    assert.equal(idSet.size, 20);
+
+    const q = RM.createQueue(rv1.entries);
+    await RM.runQueue(q, async () => ({ ok: true, dryRun: true }));
+    const abSum = RM.summarizeAbQueue(q, { campaignId: 'camp_det_1', splitPercentA: 50 });
+    assert.equal(abSum.uniqueRecipientsCount, 20);
+    assert.equal(abSum.duplicateRecipientIds, 0);
+    assert.equal(abSum.variants.A.assigned + abSum.variants.B.assigned, 20);
+    assert.ok(abSum.variants.A.assigned > 0 && abSum.variants.B.assigned > 0);
+    assert.equal(abSum.variants.A.DRY_RUN_READY + abSum.variants.B.DRY_RUN_READY, 20);
+    assert.equal(abSum.variants.A.ACCEPTED + abSum.variants.B.ACCEPTED, 0);
+
+    const csvText = RM.recipientsToCsv(rv1.entries);
+    assert.ok(csvText.includes('validityStatus,dnsProvenance,category'));
+  });
+
   console.log(`\nALL RECIPIENT MANAGER TESTS PASSED (${pass}/${pass})`);
 })().catch(e => { console.error(e); process.exit(1); });
