@@ -102,20 +102,16 @@ function verifyWindowsDacl(targetPath, username, execSyncFn = execFileSync) {
   return true;
 }
 
-function writeKeySecurely(keyPath, rawKey, options = {}) {
-  const trimmed = String(rawKey || '').trim();
-  if (!/^re_[A-Za-z0-9_-]{8,}$/.test(trimmed)) {
-    throw new Error('INVALID_KEY_FORMAT: Key must match /^re_[A-Za-z0-9_-]{8,}$/');
-  }
+function writeProtectedSecretFile(targetPath, content, options = {}) {
   const platform = options.platform || process.platform;
   const username = options.username || process.env.USERNAME || '';
   const execSyncFn = options.execSyncFn || execFileSync;
 
-  const dir = path.dirname(keyPath);
+  const dir = path.dirname(targetPath);
   fs.mkdirSync(dir, { recursive: true });
-  const tmpPath = path.join(dir, `.resend_api_key.tmp.${process.pid}.${Date.now()}`);
+  const tmpPath = path.join(dir, `${path.basename(targetPath)}.tmp.${process.pid}.${Date.now()}`);
   try {
-    fs.writeFileSync(tmpPath, trimmed + '\n', { mode: 0o600 });
+    fs.writeFileSync(tmpPath, content, { mode: 0o600 });
     if (platform === 'win32') {
       if (!username) {
         throw new Error('ACL_FAILED: USERNAME environment variable missing for icacls');
@@ -128,11 +124,19 @@ function writeKeySecurely(keyPath, rawKey, options = {}) {
         throw new Error(`POSIX_MODE_FAILED: mode=${(st.mode & 0o777).toString(8)}`);
       }
     }
-    fs.renameSync(tmpPath, keyPath);
+    fs.renameSync(tmpPath, targetPath);
   } catch (err) {
     try { if (fs.existsSync(tmpPath)) fs.unlinkSync(tmpPath); } catch (_) {}
     throw err;
   }
+}
+
+function writeKeySecurely(keyPath, rawKey, options = {}) {
+  const trimmed = String(rawKey || '').trim();
+  if (!/^re_[A-Za-z0-9_-]{8,}$/.test(trimmed)) {
+    throw new Error('INVALID_KEY_FORMAT: Key must match /^re_[A-Za-z0-9_-]{8,}$/');
+  }
+  return writeProtectedSecretFile(keyPath, trimmed + '\n', options);
 }
 
 async function main() {
@@ -157,4 +161,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { getDefaultKeyPath, readSecretNoEcho, verifyWindowsDacl, writeKeySecurely };
+module.exports = { getDefaultKeyPath, readSecretNoEcho, verifyWindowsDacl, writeProtectedSecretFile, writeKeySecurely };

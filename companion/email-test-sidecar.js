@@ -12,10 +12,11 @@ const path = require('node:path');
 const crypto = require('node:crypto');
 const resendTestMode = require('./resend-test-mode');
 const { EmailSimulatorLedger } = require('./email-simulator-ledger');
+const { writeProtectedSecretFile, verifyWindowsDacl } = require('./email-test-sidecar-set-key');
 
 const DEFAULT_SIDECAR_PORT = 18990;
-const SIDECAR_BUILD_ID = 'V7.0.0-OWNER-BETA-TEST-SEND-SIDECAR-20261116-HARDENED';
-const SIDECAR_IMPLEMENTATION_HEAD = 'email-test-sidecar-20261116-hardened';
+const SIDECAR_BUILD_ID = 'V7.0.0-OWNER-BETA-TEST-SEND-SIDECAR-20261116-LOCKED';
+const SIDECAR_IMPLEMENTATION_HEAD = 'email-test-sidecar-20261116-locked';
 const SIDECAR_API_CAPABILITIES = ['email-test-send', 'email-test-sidecar-v1', 'email-test-ledger-v1'];
 const EXPOSED_RC3_6_TOKEN_SHA256 = '597a70b99c11c7f4d13a075204ac240bb08a7a1d6c08c78268328e0bb59daeda';
 const EXTENSION_ORIGIN_RE = /^chrome-extension:\/\/[a-p]{32}$/;
@@ -65,16 +66,22 @@ class EmailTestSidecar {
     if (envTok && typeof envTok === 'string' && envTok.trim().length >= 16) {
       return envTok.trim();
     }
-    try {
-      if (fs.existsSync(this.tokenFile)) {
-        const disk = fs.readFileSync(this.tokenFile, 'utf8').trim();
-        if (disk.length >= 16) return disk;
+    if (fs.existsSync(this.tokenFile)) {
+      const disk = fs.readFileSync(this.tokenFile, 'utf8').trim();
+      if (disk.length < 16) {
+        throw new Error(`TOKEN_FILE_INVALID: ${this.tokenFile} is shorter than 16 characters`);
       }
-    } catch (_) {}
+      if (process.platform === 'win32' && process.env.USERNAME) {
+        try {
+          verifyWindowsDacl(this.tokenFile, process.env.USERNAME);
+        } catch (_) {
+          writeProtectedSecretFile(this.tokenFile, disk + '\n');
+        }
+      }
+      return disk;
+    }
     const fresh = crypto.randomBytes(24).toString('hex');
-    try {
-      fs.writeFileSync(this.tokenFile, fresh + '\n', { mode: 0o600 });
-    } catch (_) {}
+    writeProtectedSecretFile(this.tokenFile, fresh + '\n');
     return fresh;
   }
 
@@ -320,44 +327,59 @@ class EmailTestSidecar {
                 return;
               }
 
-              // Persistent cross-restart idempotency & ambiguous-state reconciliation
-              const ledgerRec = this.ledger.getByIdempotencyKey(idempotencyKey);
-              if (ledgerRec) {
-                if (ledgerRec.status === 'ACCEPTED') {
-                  res.writeHead(200, { 'Content-Type': 'application/json' });
-                  res.end(JSON.stringify({
-                    status: 'SUCCESS',
-                    deliveryStatus: 'PROVIDER_ACCEPTED_SIMULATOR_ONLY',
-                    provider: 'resend',
-                    mode: 'TEST_SIMULATOR',
-                    providerMessageId: ledgerRec.providerMessageId,
-                    to: ledgerRec.recipient,
-                    from: ledgerRec.from,
-                    timestamp: ledgerRec.receiptTimestamp,
-                    idempotencyKey,
-                    idempotentReplay: true
-                  }));
-                  return;
-                }
-                if (ledgerRec.status === 'REQUESTED' || ledgerRec.status === 'AMBIGUOUS_TIMEOUT') {
-                  res.writeHead(409, { 'Content-Type': 'application/json' });
-                  res.end(JSON.stringify({
-                    status: 'AMBIGUOUS_NEEDS_RECONCILE',
-                    reason: 'PRIOR_REQUEST_AMBIGUOUS',
-                    errorCode: ledgerRec.errorCode || 'AMBIGUOUS_TIMEOUT',
-                    idempotencyKey,
-                    message: '이전 요청 상태가 불명확(TIMEOUT/중단)합니다. 중복 발송 방지를 위해 자동 재전송하지 않습니다. 새 idempotencyKey로 재시도하세요.'
-                  }));
-                  return;
-                }
+              // Fail-closed immediately if ledger was corrupt/unreadable on startup or reload
+              this.ledger.load();
+              if (this.ledger.reconciliationRequired) {
+                res.writeHead(409, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({
+                  status: 'BLOCKED',
+                  reason: 'LEDGER_CORRUPT_RECONCILIATION_REQUIRED',
+                  corruptReason: this.ledger.corruptReason,
+                  corruptLineCount: this.ledger.corruptLineCount,
+                  reconciliationRequired: true,
+                  message: '원장 파일 손상 또는 읽기 오류가 감지되어 복구 전까지 발송이 차단됩니다.'
+                }));
+                return;
+              }
+
+              // Fast-path idempotent replay / ambiguous check BEFORE rate-limit
+              const priorRec = this.ledger.getByIdempotencyKey(idempotencyKey);
+              if (priorRec && priorRec.status === 'ACCEPTED') {
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({
+                  status: 'SUCCESS',
+                  deliveryStatus: 'PROVIDER_ACCEPTED_SIMULATOR_ONLY',
+                  provider: 'resend',
+                  mode: 'TEST_SIMULATOR',
+                  providerMessageId: priorRec.providerMessageId,
+                  to: priorRec.recipient,
+                  from: priorRec.from,
+                  timestamp: priorRec.receiptTimestamp,
+                  idempotencyKey,
+                  idempotentReplay: true
+                }));
+                return;
+              }
+              if (priorRec && (priorRec.status === 'REQUESTED' || priorRec.status === 'AMBIGUOUS_TIMEOUT')) {
+                res.writeHead(409, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({
+                  status: 'AMBIGUOUS_NEEDS_RECONCILE',
+                  reason: 'PRIOR_REQUEST_AMBIGUOUS',
+                  errorCode: priorRec.errorCode || 'AMBIGUOUS_TIMEOUT',
+                  idempotencyKey,
+                  message: '이전 요청 상태가 불명확(TIMEOUT/중단)합니다. 중복 발송 방지를 위해 자동 재전송하지 않습니다. 새 idempotencyKey로 재시도하세요.'
+                }));
+                return;
               }
 
               const now = Date.now();
               if (this.rateLimitMs > 0 && (now - this.lastTestSendAt) < this.rateLimitMs) {
-                this.ledger.append({
-                  idempotencyKey, recipient, status: 'BLOCKED',
-                  httpStatus: 429, errorCode: 'RATE_LIMIT', reason: 'RATE_LIMIT_EXCEEDED'
-                });
+                try {
+                  this.ledger.append({
+                    idempotencyKey, recipient, status: 'BLOCKED',
+                    httpStatus: 429, errorCode: 'RATE_LIMIT', reason: 'RATE_LIMIT_EXCEEDED'
+                  });
+                } catch (_) {}
                 res.writeHead(429, { 'Content-Type': 'application/json' });
                 res.end(JSON.stringify({
                   status: 'BLOCKED',
@@ -369,10 +391,12 @@ class EmailTestSidecar {
 
               const apiKey = this.resolveResendApiKey();
               if (!apiKey) {
-                this.ledger.append({
-                  idempotencyKey, recipient, status: 'BLOCKED',
-                  httpStatus: 200, errorCode: 'KEY_MISSING', reason: 'RESEND_API_KEY_NOT_CONFIGURED'
-                });
+                try {
+                  this.ledger.append({
+                    idempotencyKey, recipient, status: 'BLOCKED',
+                    httpStatus: 200, errorCode: 'KEY_MISSING', reason: 'RESEND_API_KEY_NOT_CONFIGURED'
+                  });
+                } catch (_) {}
                 res.writeHead(200, { 'Content-Type': 'application/json' });
                 res.end(JSON.stringify({
                   status: 'BLOCKED',
@@ -382,22 +406,64 @@ class EmailTestSidecar {
                 return;
               }
 
-              this.lastTestSendAt = now;
+              // Atomic cross-process exclusive lock + reservation before any external POST
+              let reservation;
               try {
-                this.ledger.append({
-                  idempotencyKey, recipient, from: resendTestMode.TEST_FROM,
-                  status: 'REQUESTED', deliveryStatus: 'PENDING_PROVIDER'
-                });
+                reservation = this.ledger.reserveRequest({ idempotencyKey, recipient, from: resendTestMode.TEST_FROM });
               } catch (persistErr) {
                 res.writeHead(500, { 'Content-Type': 'application/json' });
                 res.end(JSON.stringify({
                   status: 'BLOCKED',
-                  reason: 'LEDGER_PERSISTENCE_FAILED',
+                  reason: persistErr.code === 'LEDGER_LOCK_CONTENTION' ? 'LEDGER_LOCK_CONTENTION' : 'LEDGER_PERSISTENCE_FAILED',
                   reconciliationRequired: true,
                   message: persistErr.message
                 }));
                 return;
               }
+
+              if (reservation.action === 'CORRUPT_BLOCKED') {
+                res.writeHead(409, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({
+                  status: 'BLOCKED',
+                  reason: 'LEDGER_CORRUPT_RECONCILIATION_REQUIRED',
+                  corruptReason: reservation.corruptReason,
+                  corruptLineCount: reservation.corruptLineCount,
+                  reconciliationRequired: true,
+                  message: '원장 파일 손상 또는 읽기 오류가 감지되어 복구 전까지 발송이 차단됩니다.'
+                }));
+                return;
+              }
+              if (reservation.action === 'REPLAY_ACCEPTED') {
+                const ledgerRec = reservation.record;
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({
+                  status: 'SUCCESS',
+                  deliveryStatus: 'PROVIDER_ACCEPTED_SIMULATOR_ONLY',
+                  provider: 'resend',
+                  mode: 'TEST_SIMULATOR',
+                  providerMessageId: ledgerRec.providerMessageId,
+                  to: ledgerRec.recipient,
+                  from: ledgerRec.from,
+                  timestamp: ledgerRec.receiptTimestamp,
+                  idempotencyKey,
+                  idempotentReplay: true
+                }));
+                return;
+              }
+              if (reservation.action === 'AMBIGUOUS_CONFLICT') {
+                const ledgerRec = reservation.record;
+                res.writeHead(409, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({
+                  status: 'AMBIGUOUS_NEEDS_RECONCILE',
+                  reason: 'PRIOR_REQUEST_AMBIGUOUS',
+                  errorCode: ledgerRec.errorCode || 'AMBIGUOUS_TIMEOUT',
+                  idempotencyKey,
+                  message: '이전 요청 상태가 불명확(TIMEOUT/중단)합니다. 중복 발송 방지를 위해 자동 재전송하지 않습니다. 새 idempotencyKey로 재시도하세요.'
+                }));
+                return;
+              }
+
+              this.lastTestSendAt = now;
 
               let result;
               try {

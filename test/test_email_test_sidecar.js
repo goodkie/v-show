@@ -374,6 +374,110 @@ function request(port, method, urlPath, headers = {}, body = null) {
       assert.ok(rec.message.includes('[REDACTED_EMAIL]'));
     });
 
+    await runTest('CORRUPT_LEDGER_FAILS_CLOSED_ON_RESTART_ZERO_POST', async () => {
+      const badLedger = path.join(tmpDir, '.bad_restart_ledger.jsonl');
+      fs.writeFileSync(badLedger, '{"idempotencyKey":"partial_corrupt\n', 'utf8');
+      let postCalls = 0;
+      const sc = new EmailTestSidecar({
+        port: 19997,
+        token: 'corrupt_ledger_tok_123456',
+        tokenFile: path.join(tmpDir, '.tok_corrupt'),
+        pidFile: path.join(tmpDir, '.pid_corrupt'),
+        ledgerFile: badLedger,
+        apiKeyOverride: 're_test_corrupt_key_123456',
+        rateLimitMs: 0,
+        transportImpl: async () => { postCalls++; return { status: 'SUCCESS' }; }
+      });
+      await sc.start();
+      try {
+        const resp = await request(19997, 'POST', '/email/test-send', {
+          Authorization: 'Bearer corrupt_ledger_tok_123456',
+          'Content-Type': 'application/json'
+        }, { to: 'delivered@resend.dev', subject: 'C', text: 'C', idempotencyKey: 'corrupt_fail_closed_key_01' });
+        assert.equal(resp.status, 409);
+        assert.equal(resp.json.reason, 'LEDGER_CORRUPT_RECONCILIATION_REQUIRED');
+        assert.equal(postCalls, 0, 'Corrupt ledger MUST fail closed with zero provider POST');
+      } finally {
+        await sc.stop();
+      }
+    });
+
+    await runTest('CONCURRENT_SIDECARS_EXCLUSIVE_LOCK_AND_STALE_RECOVERY', async () => {
+      const sharedLedger = path.join(tmpDir, '.concurrent_ledger.jsonl');
+      let transportCalls = 0;
+      const makeSc = (portNum) => new EmailTestSidecar({
+        port: portNum,
+        token: 'concurrent_tok_12345678',
+        tokenFile: path.join(tmpDir, '.tok_conc'),
+        pidFile: path.join(tmpDir, `.pid_conc_${portNum}`),
+        ledgerFile: sharedLedger,
+        apiKeyOverride: 're_test_conc_key_123456',
+        rateLimitMs: 0,
+        transportImpl: async () => {
+          transportCalls++;
+          await new Promise(r => setTimeout(r, 80));
+          return {
+            status: 'SUCCESS', provider: 'resend', mode: 'TEST_SIMULATOR',
+            providerMessageId: 'msg_conc_001', to: 'delivered@resend.dev',
+            from: 'onboarding@resend.dev', timestamp: new Date().toISOString()
+          };
+        }
+      });
+
+      // Stale lockfile held by dead PID should recover automatically
+      fs.writeFileSync(sharedLedger + '.lock', JSON.stringify({ pid: 999999, createdAt: Date.now() - 60000 }));
+      const s1 = makeSc(19998);
+      const s2 = makeSc(19999);
+      await s1.start();
+      await s2.start();
+      try {
+        const [r1, r2] = await Promise.all([
+          request(19998, 'POST', '/email/test-send', { Authorization: 'Bearer concurrent_tok_12345678', 'Content-Type': 'application/json' },
+            { to: 'delivered@resend.dev', subject: 'S', text: 'B', idempotencyKey: 'concurrent_race_key_0001' }),
+          request(19999, 'POST', '/email/test-send', { Authorization: 'Bearer concurrent_tok_12345678', 'Content-Type': 'application/json' },
+            { to: 'delivered@resend.dev', subject: 'S', text: 'B', idempotencyKey: 'concurrent_race_key_0001' })
+        ]);
+        assert.equal(transportCalls, 1, 'Exclusive lock must guarantee only ONE sidecar invokes provider');
+        assert.ok(r1.status === 200 || r2.status === 200);
+      } finally {
+        await s1.stop();
+        await s2.stop();
+      }
+    });
+
+    await runTest('PREEXISTING_KEY_REPLACEMENT_AND_TOKEN_FILE_ACL_FAIL_CLOSED', async () => {
+      const { writeKeySecurely, verifyWindowsDacl } = require('../companion/email-test-sidecar-set-key');
+      const repPath = path.join(tmpDir, '.replace_acl_key');
+      writeKeySecurely(repPath, 're_first_key_12345678');
+      writeKeySecurely(repPath, 're_second_key_87654321');
+      assert.equal(fs.readFileSync(repPath, 'utf8').trim(), 're_second_key_87654321');
+      if (process.platform === 'win32') {
+        assert.equal(verifyWindowsDacl(repPath, process.env.USERNAME), true);
+      }
+
+      const tokAclPath = path.join(tmpDir, '.fresh_acl_token');
+      const sTok = new EmailTestSidecar({
+        port: 20001,
+        tokenFile: tokAclPath,
+        pidFile: path.join(tmpDir, '.pid_tok'),
+        ledgerFile: path.join(tmpDir, '.ledger_tok.jsonl')
+      });
+      assert.ok(sTok.token.length >= 16);
+      if (process.platform === 'win32') {
+        assert.equal(verifyWindowsDacl(tokAclPath, process.env.USERNAME), true);
+      }
+
+      // Unwritable/invalid token path must fail closed (throw, not silently return ephemeral)
+      const badTokPath = path.join(tmpDir, 'nonexistent_dir_file_conflict');
+      fs.writeFileSync(badTokPath, 'not_a_dir', 'utf8');
+      assert.throws(() => new EmailTestSidecar({
+        port: 20002,
+        tokenFile: path.join(badTokPath, '.token'),
+        pidFile: path.join(tmpDir, '.pid_bad'),
+        ledgerFile: path.join(tmpDir, '.ledger_bad.jsonl')
+      }));
+    });
+
     console.log(`\nALL SIDECAR TESTS PASSED (${pass}/${pass})`);
   } finally {
     await sidecar.stop();

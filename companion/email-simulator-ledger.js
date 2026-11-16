@@ -1,10 +1,10 @@
 'use strict';
 /**
- * Append-only Simulator Send Ledger (Directive #6908909594 & #6909086536)
+ * Append-only Simulator Send Ledger (Directive #6908909594, #6909086536, #6909266178)
+ * - Cross-process exclusive wx lockfile with PID + stale-lock recovery.
  * - Transactional durable append + fsync BEFORE updating in-memory state.
- * - Fails closed on disk-full / permission errors (throws LEDGER_PERSISTENCE_FAILED).
+ * - Fails closed on corrupt/truncated/unreadable ledger (reconciliationRequired=true).
  * - Scrubs API keys, Bearer tokens, and non-simulator PII before persistence & export.
- * - Tracks corrupt/partial lines on reload without crashing.
  */
 const fs = require('node:fs');
 const path = require('node:path');
@@ -33,13 +33,28 @@ function sanitizeRecipient(recipient) {
   return ALLOWED_SIMULATOR_EMAILS.has(trimmed) ? trimmed : '[REDACTED_NON_SIMULATOR_RECIPIENT]';
 }
 
+function isPidAlive(pid) {
+  if (!Number.isInteger(pid) || pid <= 0) return false;
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (err) {
+    return err && err.code === 'EPERM';
+  }
+}
+
 class EmailSimulatorLedger {
   constructor(options = {}) {
     this.ledgerFile = options.ledgerFile || path.join(__dirname, '.email_simulator_ledger.jsonl');
+    this.lockFile = options.lockFile || (this.ledgerFile + '.lock');
+    this.lockTimeoutMs = Number.isFinite(options.lockTimeoutMs) ? options.lockTimeoutMs : 2500;
+    this.staleLockMs = Number.isFinite(options.staleLockMs) ? options.staleLockMs : 15000;
     this.fsImpl = options.fsImpl || fs;
     this.byKey = new Map();
     this.events = [];
     this.corruptLineCount = 0;
+    this.reconciliationRequired = false;
+    this.corruptReason = null;
     this.lastPersistError = null;
     this.load();
   }
@@ -48,6 +63,8 @@ class EmailSimulatorLedger {
     this.byKey.clear();
     this.events = [];
     this.corruptLineCount = 0;
+    this.reconciliationRequired = false;
+    this.corruptReason = null;
     try {
       if (!this.fsImpl.existsSync(this.ledgerFile)) return;
       const lines = this.fsImpl.readFileSync(this.ledgerFile, 'utf8').split(/\r?\n/);
@@ -66,12 +83,78 @@ class EmailSimulatorLedger {
           this.corruptLineCount++;
         }
       }
+      if (this.corruptLineCount > 0) {
+        this.reconciliationRequired = true;
+        this.corruptReason = `CORRUPT_LEDGER_LINES:${this.corruptLineCount}`;
+      }
     } catch (err) {
       this.lastPersistError = err.message;
+      this.reconciliationRequired = true;
+      this.corruptReason = `UNREADABLE_LEDGER:${err.message}`;
     }
   }
 
-  append(entry) {
+  _withExclusiveLock(fn) {
+    const dir = path.dirname(this.lockFile);
+    this.fsImpl.mkdirSync(dir, { recursive: true });
+    const deadline = Date.now() + this.lockTimeoutMs;
+    let acquired = false;
+
+    while (!acquired) {
+      try {
+        const lfd = this.fsImpl.openSync(this.lockFile, 'wx', 0o600);
+        try {
+          this.fsImpl.writeSync(lfd, JSON.stringify({ pid: process.pid, createdAt: Date.now() }));
+        } finally {
+          this.fsImpl.closeSync(lfd);
+        }
+        acquired = true;
+      } catch (err) {
+        if (!err || err.code !== 'EEXIST') {
+          const lockErr = new Error(`LEDGER_LOCK_FAILED: ${err ? err.message : 'unknown'}`);
+          lockErr.code = 'LEDGER_LOCK_FAILED';
+          throw lockErr;
+        }
+        // Check stale lock
+        try {
+          const raw = this.fsImpl.readFileSync(this.lockFile, 'utf8');
+          const info = JSON.parse(raw);
+          const ageMs = Date.now() - Number(info.createdAt || 0);
+          if (!isPidAlive(Number(info.pid)) || ageMs > this.staleLockMs) {
+            try { this.fsImpl.unlinkSync(this.lockFile); } catch (_) {}
+            continue;
+          }
+        } catch (_) {
+          // Malformed or vanishing lock; check stat mtime for staleness
+          try {
+            const st = this.fsImpl.statSync(this.lockFile);
+            if ((Date.now() - st.mtimeMs) > this.staleLockMs) {
+              try { this.fsImpl.unlinkSync(this.lockFile); } catch (_) {}
+              continue;
+            }
+          } catch (_) {
+            continue;
+          }
+        }
+        if (Date.now() >= deadline) {
+          const timeoutErr = new Error('LEDGER_LOCK_CONTENTION: Another sidecar process holds the ledger lock');
+          timeoutErr.code = 'LEDGER_LOCK_CONTENTION';
+          throw timeoutErr;
+        }
+        // Brief spin wait (cross-process safe synchronous backoff ~15ms)
+        const waitUntil = Date.now() + 15;
+        while (Date.now() < waitUntil) {}
+      }
+    }
+
+    try {
+      return fn();
+    } finally {
+      try { this.fsImpl.unlinkSync(this.lockFile); } catch (_) {}
+    }
+  }
+
+  _appendUnlocked(entry) {
     const now = new Date().toISOString();
     const prev = entry.idempotencyKey ? this.byKey.get(entry.idempotencyKey) : null;
     const record = {
@@ -113,13 +196,45 @@ class EmailSimulatorLedger {
       }
     }
 
-    // Update memory ONLY after durable write + fsync succeeded
     this.lastPersistError = null;
     this.events.push(record);
     if (record.idempotencyKey) {
       this.byKey.set(record.idempotencyKey, record);
     }
     return record;
+  }
+
+  append(entry) {
+    return this._withExclusiveLock(() => {
+      this.load();
+      return this._appendUnlocked(entry);
+    });
+  }
+
+  reserveRequest({ idempotencyKey, recipient, from }) {
+    return this._withExclusiveLock(() => {
+      this.load();
+      if (this.reconciliationRequired) {
+        return { action: 'CORRUPT_BLOCKED', corruptReason: this.corruptReason, corruptLineCount: this.corruptLineCount };
+      }
+      const existing = this.byKey.get(idempotencyKey);
+      if (existing) {
+        if (existing.status === 'ACCEPTED') {
+          return { action: 'REPLAY_ACCEPTED', record: existing };
+        }
+        if (existing.status === 'REQUESTED' || existing.status === 'AMBIGUOUS_TIMEOUT') {
+          return { action: 'AMBIGUOUS_CONFLICT', record: existing };
+        }
+      }
+      const reserved = this._appendUnlocked({
+        idempotencyKey,
+        recipient,
+        from: from || 'onboarding@resend.dev',
+        status: 'REQUESTED',
+        deliveryStatus: 'PENDING_PROVIDER'
+      });
+      return { action: 'RESERVED', record: reserved };
+    });
   }
 
   getByIdempotencyKey(key) {
