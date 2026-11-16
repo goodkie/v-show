@@ -4299,8 +4299,8 @@ const _handleMainMessageInner = (request, sender, sendResponse) => {
                             reason: token ? 'UNAUTHORIZED' : 'SIDECAR_TOKEN_REQUIRED',
                             error: data.error || 'UNAUTHORIZED',
                             message: token
-                                ? (data.message || 'Sidecar Bearer 인증 토큰이 일치하지 않습니다 (HTTP 401).')
-                                : 'START_EMAIL_TEST_SIDECAR.bat 콘솔에 표시된 Sidecar 제어 토큰을 Email Studio에 입력해 주세요 (HTTP 401).'
+                                ? (data.message || 'Sidecar Bearer 인증 토큰이 일치하지 않습니다 (HTTP 401). 🔗 원클릭 자동 페어링을 다시 실행하세요.')
+                                : '로컬 페어링이 필요합니다 (HTTP 401). Email Studio에서 "🔗 원클릭 자동 페어링" 또는 "📁 토큰 파일로 연결"을 누르세요.'
                         });
                         return;
                     }
@@ -4389,6 +4389,19 @@ const _handleMainMessageInner = (request, sender, sendResponse) => {
                         }
                     }
                     const data = await resp.json().catch(() => ({}));
+                    if (resp.status === 401) {
+                        sendResponse({
+                            ok: false,
+                            httpStatus: 401,
+                            reason: token ? 'UNAUTHORIZED' : 'SIDECAR_TOKEN_REQUIRED',
+                            error: 'UNAUTHORIZED',
+                            message: token
+                                ? 'Sidecar Bearer 제어 토큰이 일치하지 않습니다 (HTTP 401). 🔗 원클릭 자동 페어링을 다시 실행하세요.'
+                                : '원장 조회를 위해 로컬 페어링이 필요합니다 (HTTP 401). "🔗 원클릭 자동 페어링" 또는 "📁 토큰 파일로 연결"을 누르세요.',
+                            data
+                        });
+                        return;
+                    }
                     sendResponse({ ok: resp.ok, httpStatus: resp.status, data });
                 } catch (err) {
                     sendResponse({ ok: false, error: err.message });

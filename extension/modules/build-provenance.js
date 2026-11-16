@@ -14,11 +14,11 @@
 
     const BUILD_INFO = {
         version: "7.0.0",
-        buildId: "V7.0.0-OWNER-BETA-TEST-SEND-SIDECAR-20261116-LOCKED9",
+        buildId: "V7.0.0-OWNER-BETA-TEST-SEND-SIDECAR-20261116-LOCKED10",
         channel: "OWNER_BETA_V7_TEST_SEND",
         tag: "v7.0.0-owner-beta-test-send-sidecar",
         manifestVersion: 3,
-        implementationHead: "email-test-sidecar-20261116-locked9",
+        implementationHead: "email-test-sidecar-20261116-locked10",
         implementationHeadShort: "sidecar",
         builtAt: new Date().toISOString(),
         testOnly: false,

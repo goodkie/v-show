@@ -26,8 +26,19 @@ function getJson(port, urlPath, headers = {}) {
   const port = parseSidecarPort(process.env.XPIDER_EMAIL_SIDECAR_PORT, DEFAULT_SIDECAR_PORT);
   const paths = getSidecarPaths();
   let nhRegistered = false;
+  let nhRegError = null;
   if (!process.env.XPIDER_SKIP_NATIVE_HOST_REG) {
-    try { nhRegistered = Boolean(registerNativeMessagingHost().registered); } catch (_) {}
+    try {
+      const regRes = registerNativeMessagingHost();
+      nhRegistered = Boolean(regRes && regRes.registered);
+      if (!nhRegistered) nhRegError = (regRes && regRes.reason) || 'REGISTRATION_RETURNED_FALSE';
+    } catch (regErr) {
+      nhRegError = regErr && regErr.message ? regErr.message : String(regErr);
+    }
+    if (!nhRegistered) {
+      console.warn(`[PAIRING_REGISTRATION_FAILED] Native Messaging host registration failed: ${nhRegError}.`);
+      console.warn('  Sidecar on 127.0.0.1 remains safe, but Email Studio auto-pairing may require "📁 토큰 파일로 연결".');
+    }
   }
   const existing = await getJson(port, '/health');
   if (existing.alive) {
@@ -81,7 +92,7 @@ function getJson(port, urlPath, headers = {}) {
       process.exit(3);
     }
     console.log(`[OK] XPIDER Email Test Sidecar is ALREADY running on http://127.0.0.1:${port}`);
-    console.log(`     PID: ${j.pid} | Build: ${j.companionBuildId} | KeyStatus: ${st.json.keyStatus}`);
+    console.log(`     PID: ${j.pid} | Build: ${j.companionBuildId} | KeyStatus: ${st.json.keyStatus} | PairingHost: ${nhRegistered ? 'REGISTERED' : (nhRegError ? `PAIRING_REGISTRATION_FAILED(${nhRegError})` : 'SKIPPED')}`);
     process.exit(0);
   }
 
@@ -93,14 +104,14 @@ function getJson(port, urlPath, headers = {}) {
   console.log(`  Build:     ${SIDECAR_BUILD_ID}`);
   console.log(`  PID:       ${process.pid}`);
   console.log(`  State Dir: ${sidecar.stateDir} (NTFS User Protected)`);
+  console.log(`  Pairing:   ${nhRegistered ? 'REGISTERED (com.xpider.email_sidecar)' : (nhRegError ? `PAIRING_REGISTRATION_FAILED (${nhRegError})` : 'SKIPPED')}`);
   console.log(`  Legacy 18989 / Proxy 18988: UNTOUCHED`);
   console.log('========================================================================');
   console.log('');
-  console.log(`  RESEND_API_KEY status     : ${sidecar.keyStatus} (${hasKey ? 'format valid, server-side protected' : 'run SET_RESEND_API_KEY.bat + STOP + START'})`);
-  console.log(`  Sidecar Bearer Token File : ${sidecar.tokenFile}`);
-  console.log(`  Sidecar Bearer Token      : ${sidecar.token}`);
+  console.log(`  RESEND_API_KEY status     : ${sidecar.keyStatus} (${hasKey ? 'format valid (unverified until simulator test send)' : 'run SET_RESEND_API_KEY.bat + STOP + START'})`);
+  console.log(`  Sidecar Bearer Token File : ${sidecar.tokenFile} (NTFS User Protected — never printed to console)`);
   console.log('');
-  console.log('  [안내] 위 Sidecar Bearer Token을 Email Studio의 "Sidecar 제어 토큰" 입력란에 붙여넣으세요.');
+  console.log('  [안내] Email Studio에서 "🔗 원클릭 자동 페어링" 또는 "📁 토큰 파일로 연결"을 사용하세요 (콘솔 복사 불필요).');
   console.log('  [주의] STOP_EMAIL_TEST_SIDECAR.bat 실행 시 이 사이드카만 안전하게 종료됩니다.');
 
   const shutdown = async () => {

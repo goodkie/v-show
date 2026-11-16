@@ -1159,6 +1159,69 @@ function request(port, method, urlPath, headers = {}, body = null) {
       }
     });
 
+    await runTest('CLI_STDOUT_STDERR_TOKEN_REDACTION_FRESH_AND_ALREADY_RUNNING', async () => {
+      const { spawn } = require('node:child_process');
+      const { writeProtectedSecretFile } = require('../companion/email-test-sidecar-set-key');
+
+      const sentinel = 'sentinel_secret_token_never_echo_987654321';
+      const cliLocal = path.join(tmpDir, 'cli_redact_localappdata');
+      const tokPath = path.join(cliLocal, 'XPIDER', 'Sidecar', '.email_sidecar_token');
+      writeProtectedSecretFile(tokPath, sentinel + '\n');
+
+      const env = {
+        ...process.env,
+        LOCALAPPDATA: cliLocal,
+        XPIDER_EMAIL_SIDECAR_PORT: '20016',
+        XPIDER_SKIP_NATIVE_HOST_REG: '1'
+      };
+      delete env.XPIDER_SIDECAR_STATE_DIR;
+      delete env.XPIDER_EMAIL_SIDECAR_TOKEN;
+      delete env.RESEND_API_KEY;
+
+      // 1. Fresh startup path: capture stdout + stderr and verify sentinel token never appears
+      const freshProc = spawn(process.execPath, [path.join(__dirname, '..', 'companion', 'email-test-sidecar-cli.js')], {
+        env,
+        stdio: ['ignore', 'pipe', 'pipe']
+      });
+      let freshOut = '';
+      freshProc.stdout.on('data', d => freshOut += d.toString('utf8'));
+      freshProc.stderr.on('data', d => freshOut += d.toString('utf8'));
+
+      try {
+        for (let i = 0; i < 40; i++) {
+          await new Promise(r => setTimeout(r, 150));
+          try {
+            const h = await request(20016, 'GET', '/health');
+            if (h.status === 200) break;
+          } catch (_) {}
+        }
+        await new Promise(r => setTimeout(r, 200));
+        assert.equal(freshOut.includes(sentinel), false, 'Fresh CLI stdout/stderr leaked Bearer token!');
+        assert.equal(freshOut.includes('붙여넣으세요'), false, 'Legacy console-paste instruction still present!');
+        assert.ok(freshOut.includes('never printed to console'));
+
+        // 2. Already-running path: spawn CLI again against running 20016 (no key -> exit 3), verify zero token leak
+        const alreadyRes = await new Promise(resolve => {
+          const p2 = spawn(process.execPath, [path.join(__dirname, '..', 'companion', 'email-test-sidecar-cli.js')], {
+            env,
+            stdio: ['ignore', 'pipe', 'pipe']
+          });
+          let out2 = '';
+          p2.stdout.on('data', d => out2 += d.toString('utf8'));
+          p2.stderr.on('data', d => out2 += d.toString('utf8'));
+          p2.on('exit', code => resolve({ code, out2 }));
+        });
+        assert.equal(alreadyRes.code, 3);
+        assert.equal(alreadyRes.out2.includes(sentinel), false, 'Already-running CLI stdout/stderr leaked Bearer token!');
+      } finally {
+        freshProc.kill('SIGTERM');
+        await new Promise(resolve => {
+          const t = setTimeout(() => { try { freshProc.kill('SIGKILL'); } catch (_) {} resolve(); }, 2000);
+          freshProc.once('exit', () => { clearTimeout(t); resolve(); });
+        });
+      }
+    });
+
     console.log(`\nALL SIDECAR TESTS PASSED (${pass}/${pass})`);
   } finally {
     await sidecar.stop();
