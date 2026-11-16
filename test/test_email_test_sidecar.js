@@ -283,6 +283,97 @@ function request(port, method, urlPath, headers = {}, body = null) {
       }
     });
 
+    await runTest('SET_KEY_NO_ECHO_AND_FAIL_CLOSED_WINDOWS_DACL', async () => {
+      const { writeKeySecurely, verifyWindowsDacl } = require('../companion/email-test-sidecar-set-key');
+      const secPath = path.join(tmpDir, '.acl_test_key');
+      writeKeySecurely(secPath, 're_acl_verify_key_123456');
+      assert.ok(fs.existsSync(secPath));
+      if (process.platform === 'win32') {
+        assert.equal(verifyWindowsDacl(secPath, process.env.USERNAME), true);
+      }
+
+      // Fail-closed when icacls fails or returns inherited ACE
+      const failPath = path.join(tmpDir, '.acl_fail_key');
+      assert.throws(() => {
+        writeKeySecurely(failPath, 're_acl_verify_key_123456', {
+          platform: 'win32',
+          username: 'tester',
+          execSyncFn: () => { throw new Error('icacls exit 5'); }
+        });
+      }, /icacls exit 5/);
+      assert.equal(fs.existsSync(failPath), false, 'Failed ACL must NOT leave unsafe key file');
+
+      assert.throws(() => {
+        writeKeySecurely(failPath, 're_acl_verify_key_123456', {
+          platform: 'win32',
+          username: 'tester',
+          execSyncFn: (cmd, args) => {
+            if (args.includes('/inheritance:r')) return '';
+            return `${failPath} BUILTIN\\Users:(I)(RX)\nSuccessfully processed 1 files`;
+          }
+        });
+      }, /DACL_VERIFICATION_FAILED/);
+      assert.equal(fs.existsSync(failPath), false, 'Inherited ACE must fail closed and delete temp');
+    });
+
+    await runTest('LEDGER_DISK_FULL_FAILS_CLOSED_ZERO_OUTBOUND_POST', async () => {
+      let postCalls = 0;
+      const diskFullSidecar = new EmailTestSidecar({
+        port: 19996,
+        token: 'disk_full_test_token_123456',
+        tokenFile: path.join(tmpDir, '.tok_df'),
+        pidFile: path.join(tmpDir, '.pid_df'),
+        ledgerFile: path.join(tmpDir, '.df_ledger.jsonl'),
+        apiKeyOverride: 're_test_df_key_123456',
+        rateLimitMs: 0,
+        transportImpl: async () => { postCalls++; return { status: 'SUCCESS' }; }
+      });
+      diskFullSidecar.ledger.fsImpl = {
+        ...fs,
+        openSync: () => 999,
+        writeSync: () => { const e = new Error('ENOSPC: no space left on device'); e.code = 'ENOSPC'; throw e; },
+        fsyncSync: () => {},
+        closeSync: () => {}
+      };
+      await diskFullSidecar.start();
+      try {
+        const resp = await request(19996, 'POST', '/email/test-send', {
+          Authorization: 'Bearer disk_full_test_token_123456',
+          'Content-Type': 'application/json'
+        }, { to: 'delivered@resend.dev', subject: 'DF', text: 'DF', idempotencyKey: 'disk_full_key_0001' });
+        assert.equal(resp.status, 500);
+        assert.equal(resp.json.reason, 'LEDGER_PERSISTENCE_FAILED');
+        assert.equal(postCalls, 0, 'Disk full before REQUESTED must prevent external POST');
+      } finally {
+        await diskFullSidecar.stop();
+      }
+    });
+
+    await runTest('LEDGER_CORRUPT_LINE_RECOVERY_AND_SECRET_PII_SCRUBBING', async () => {
+      const { EmailSimulatorLedger } = require('../companion/email-simulator-ledger');
+      const corruptPath = path.join(tmpDir, '.corrupt_ledger.jsonl');
+      const l1 = new EmailSimulatorLedger({ ledgerFile: corruptPath });
+      l1.append({
+        idempotencyKey: 'scrub_test_key_0001',
+        recipient: 'delivered@resend.dev',
+        status: 'PROVIDER_ERROR',
+        message: 'Failed with re_secret_key_999888 Bearer tok_secret_123456 for victim@customer.com'
+      });
+      // Simulate crash partial trailing line
+      fs.appendFileSync(corruptPath, '{"idempotencyKey":"partial_trunc\n', 'utf8');
+
+      const l2 = new EmailSimulatorLedger({ ledgerFile: corruptPath });
+      assert.equal(l2.corruptLineCount, 1);
+      const rec = l2.getByIdempotencyKey('scrub_test_key_0001');
+      assert.ok(rec);
+      assert.equal(rec.message.includes('re_secret_key_999888'), false);
+      assert.equal(rec.message.includes('tok_secret_123456'), false);
+      assert.equal(rec.message.includes('victim@customer.com'), false);
+      assert.ok(rec.message.includes('[REDACTED_API_KEY]'));
+      assert.ok(rec.message.includes('[REDACTED_TOKEN]'));
+      assert.ok(rec.message.includes('[REDACTED_EMAIL]'));
+    });
+
     console.log(`\nALL SIDECAR TESTS PASSED (${pass}/${pass})`);
   } finally {
     await sidecar.stop();

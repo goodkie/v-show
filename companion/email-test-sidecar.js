@@ -14,8 +14,8 @@ const resendTestMode = require('./resend-test-mode');
 const { EmailSimulatorLedger } = require('./email-simulator-ledger');
 
 const DEFAULT_SIDECAR_PORT = 18990;
-const SIDECAR_BUILD_ID = 'V7.0.0-OWNER-BETA-TEST-SEND-SIDECAR-20261116-LEDGER';
-const SIDECAR_IMPLEMENTATION_HEAD = 'email-test-sidecar-20261116-ledger';
+const SIDECAR_BUILD_ID = 'V7.0.0-OWNER-BETA-TEST-SEND-SIDECAR-20261116-HARDENED';
+const SIDECAR_IMPLEMENTATION_HEAD = 'email-test-sidecar-20261116-hardened';
 const SIDECAR_API_CAPABILITIES = ['email-test-send', 'email-test-sidecar-v1', 'email-test-ledger-v1'];
 const EXPOSED_RC3_6_TOKEN_SHA256 = '597a70b99c11c7f4d13a075204ac240bb08a7a1d6c08c78268328e0bb59daeda';
 const EXTENSION_ORIGIN_RE = /^chrome-extension:\/\/[a-p]{32}$/;
@@ -383,10 +383,21 @@ class EmailTestSidecar {
               }
 
               this.lastTestSendAt = now;
-              this.ledger.append({
-                idempotencyKey, recipient, from: resendTestMode.TEST_FROM,
-                status: 'REQUESTED', deliveryStatus: 'PENDING_PROVIDER'
-              });
+              try {
+                this.ledger.append({
+                  idempotencyKey, recipient, from: resendTestMode.TEST_FROM,
+                  status: 'REQUESTED', deliveryStatus: 'PENDING_PROVIDER'
+                });
+              } catch (persistErr) {
+                res.writeHead(500, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({
+                  status: 'BLOCKED',
+                  reason: 'LEDGER_PERSISTENCE_FAILED',
+                  reconciliationRequired: true,
+                  message: persistErr.message
+                }));
+                return;
+              }
 
               let result;
               try {
@@ -404,11 +415,15 @@ class EmailTestSidecar {
               } catch (transportErr) {
                 const isTimeout = /timeout|ETIMEDOUT|ABORT/i.test(transportErr && transportErr.message ? transportErr.message : '');
                 const errCode = isTimeout ? 'TIMEOUT' : 'NETWORK';
-                this.ledger.append({
-                  idempotencyKey, recipient, status: 'AMBIGUOUS_TIMEOUT',
-                  httpStatus: isTimeout ? 504 : 502, errorCode: errCode,
-                  reason: errCode, message: transportErr.message
-                });
+                try {
+                  this.ledger.append({
+                    idempotencyKey, recipient, status: 'AMBIGUOUS_TIMEOUT',
+                    httpStatus: isTimeout ? 504 : 502, errorCode: errCode,
+                    reason: errCode, message: transportErr.message
+                  });
+                } catch (_) {
+                  this.ledger.byKey.set(idempotencyKey, { idempotencyKey, recipient, status: 'AMBIGUOUS_TIMEOUT', errorCode: errCode });
+                }
                 res.writeHead(isTimeout ? 504 : 502, { 'Content-Type': 'application/json' });
                 res.end(JSON.stringify({
                   status: 'PROVIDER_ERROR',
@@ -426,25 +441,41 @@ class EmailTestSidecar {
 
               if (result && result.status === 'SUCCESS') {
                 const acceptedPayload = { ...result, deliveryStatus: 'PROVIDER_ACCEPTED_SIMULATOR_ONLY', idempotencyKey };
-                this.ledger.append({
-                  idempotencyKey, recipient, from: result.from || resendTestMode.TEST_FROM,
-                  status: 'ACCEPTED', deliveryStatus: 'PROVIDER_ACCEPTED_SIMULATOR_ONLY',
-                  providerMessageId: result.providerMessageId, httpStatus: 200,
-                  receiptTimestamp: result.timestamp
-                });
+                try {
+                  this.ledger.append({
+                    idempotencyKey, recipient, from: result.from || resendTestMode.TEST_FROM,
+                    status: 'ACCEPTED', deliveryStatus: 'PROVIDER_ACCEPTED_SIMULATOR_ONLY',
+                    providerMessageId: result.providerMessageId, httpStatus: 200,
+                    receiptTimestamp: result.timestamp
+                  });
+                } catch (persistErr) {
+                  this.ledger.byKey.set(idempotencyKey, { idempotencyKey, recipient, status: 'AMBIGUOUS_TIMEOUT', errorCode: 'LEDGER_PERSISTENCE_FAILED' });
+                  res.writeHead(500, { 'Content-Type': 'application/json' });
+                  res.end(JSON.stringify({
+                    status: 'AMBIGUOUS_PERSISTENCE_FAILURE',
+                    reason: 'LEDGER_PERSISTENCE_FAILED',
+                    reconciliationRequired: true,
+                    idempotencyKey,
+                    providerMessageId: result.providerMessageId,
+                    message: persistErr.message
+                  }));
+                  return;
+                }
                 this.idempotencyCache.set(idempotencyKey, { httpStatus, result: acceptedPayload, cachedAt: Date.now() });
                 res.writeHead(200, { 'Content-Type': 'application/json' });
                 res.end(JSON.stringify(acceptedPayload));
                 return;
               }
 
-              this.ledger.append({
-                idempotencyKey, recipient, status: 'PROVIDER_ERROR',
-                httpStatus: (result && result.httpStatus) || httpStatus,
-                errorCode: (result && result.error) || 'PROVIDER_ERROR',
-                reason: (result && result.error) || 'PROVIDER_ERROR',
-                message: result && result.message
-              });
+              try {
+                this.ledger.append({
+                  idempotencyKey, recipient, status: 'PROVIDER_ERROR',
+                  httpStatus: (result && result.httpStatus) || httpStatus,
+                  errorCode: (result && result.error) || 'PROVIDER_ERROR',
+                  reason: (result && result.error) || 'PROVIDER_ERROR',
+                  message: result && result.message
+                });
+              } catch (_) {}
               res.writeHead(httpStatus, { 'Content-Type': 'application/json' });
               res.end(JSON.stringify(result));
             } catch (err) {
