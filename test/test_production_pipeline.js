@@ -5,7 +5,7 @@ const path = require('node:path');
 const os = require('node:os');
 const http = require('node:http');
 const { EmailTestSidecar } = require('../companion/email-test-sidecar');
-const { verifySenderDomainDns } = require('../companion/email-production-pipeline');
+const { verifyResendDomainConfig, verifySenderDomainDns, EmailProductionPipeline } = require('../companion/email-production-pipeline');
 const { signSvixPayload } = require('../companion/resend-webhook-intake');
 
 function httpReq(port, method, urlPath, headers = {}, body = null) {
@@ -198,6 +198,136 @@ function httpReq(port, method, urlPath, headers = {}, body = null) {
       } finally {
         await sc.stop();
       }
+    });
+
+    await run('RESEND_DOMAIN_CONFIG_VERIFIER_NOT_REGISTERED_AND_VERIFIED', async () => {
+      const notReg = await verifyResendDomainConfig({
+        domain: 'vivpr.pro',
+        httpsGet: async (url) => {
+          if (url.endsWith('/domains')) {
+            return {
+              statusCode: 200,
+              body: {
+                data: [
+                  { id: 'd1', name: 'mail.3dz.site', status: 'verified' },
+                  { id: 'd2', name: 'instaheroi.com', status: 'verified' }
+                ]
+              }
+            };
+          }
+          return { statusCode: 404, body: null };
+        }
+      });
+      assert.equal(notReg.registered, false);
+      assert.equal(notReg.verified, false);
+      assert.equal(notReg.status, 'NOT_REGISTERED_IN_RESEND');
+      assert.deepEqual(notReg.existingVerifiedDomains, ['mail.3dz.site', 'instaheroi.com']);
+
+      const regOk = await verifyResendDomainConfig({
+        domain: 'vivpr.pro',
+        httpsGet: async (url) => {
+          if (url.endsWith('/domains')) {
+            return { statusCode: 200, body: { data: [{ id: 'dom_vivpr', name: 'vivpr.pro', status: 'verified' }] } };
+          }
+          return {
+            statusCode: 200,
+            body: {
+              id: 'dom_vivpr',
+              name: 'vivpr.pro',
+              status: 'verified',
+              region: 'us-east-1',
+              capabilities: { sending: 'enabled' },
+              records: [
+                { record: 'DKIM', name: 'resend2._domainkey', type: 'TXT', status: 'verified', value: 'p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCsecretvalue' },
+                { record: 'SPF', name: 'send', type: 'TXT', status: 'verified', value: 'v=spf1 include:amazonses.com ~all' }
+              ]
+            }
+          };
+        }
+      });
+      assert.equal(regOk.registered, true);
+      assert.equal(regOk.verified, true);
+      assert.deepEqual(regOk.dkimSelectors, ['resend2']);
+      assert.ok(regOk.records[0].valuePreview.endsWith('...'));
+    });
+
+    await run('CRASH_RESTART_RECONCILIATION_FAIL_CLOSED_CONSENT_AND_BOUNDED_RETRIES', async () => {
+      const crashDir = path.join(tmpDir, 'crash_reconcile_state');
+      const sentCalls = [];
+      let pipe1 = new EmailProductionPipeline({
+        stateDir: crashDir,
+        trustedTestMode: true,
+        dnsResolver: async () => [],
+        providerTransport: async (msg) => {
+          sentCalls.push(msg);
+          if (msg.to === 'transient@example.org') {
+            return { ok: false, error: 'HTTP_503_TEMPORARY' };
+          }
+          return { ok: true, providerMessageId: 'msg_' + msg.idempotencyKey };
+        }
+      });
+
+      pipe1.importAndPersistRecipients({
+        csvText: 'email,name\ncrashed_accepted@example.org,CA\ncrashed_unknown@example.org,CU\ntransient@example.org,TR\ntampered@example.org,TM',
+        messageKind: 'marketing',
+        consentAttested: true,
+        campaignId: 'camp_crash'
+      });
+
+      // Simulate process crash while entry 0 & entry 1 were in SENDING:
+      // Entry 0 had SEND_ATTEMPT_ACCEPTED written to audit log before process died;
+      // Entry 1 had only SEND_ATTEMPT_STARTED (ambiguous in-flight crash).
+      const e0 = pipe1.queue.entries[0];
+      const e1 = pipe1.queue.entries[1];
+      e0.status = 'SENDING';
+      e1.status = 'SENDING';
+      pipe1._saveQueue();
+      pipe1._appendAudit({ type: 'SEND_ATTEMPT_STARTED', idempotencyKey: e0.idempotencyKey, email: e0.email, attempt: 1 });
+      pipe1._appendAudit({ type: 'SEND_ATTEMPT_ACCEPTED', idempotencyKey: e0.idempotencyKey, providerMessageId: 'msg_recovered_from_audit' });
+      pipe1._appendAudit({ type: 'SEND_ATTEMPT_STARTED', idempotencyKey: e1.idempotencyKey, email: e1.email, attempt: 1 });
+
+      // Tamper with consent ledger for tampered@example.org
+      delete pipe1.consentLedger.records['tampered@example.org'];
+      pipe1.consentLedger._save();
+
+      // Restart pipeline from disk
+      const pipe2 = new EmailProductionPipeline({
+        stateDir: crashDir,
+        trustedTestMode: true,
+        dnsResolver: async () => [],
+        providerTransport: pipe1.providerTransport
+      });
+
+      // Verify crash reconciliation on boot:
+      // e0 -> ACCEPTED (recovered from audit log, never re-sent!)
+      // e1 -> HALTED_RECONCILE_REQUIRED (fail-closed!)
+      assert.equal(pipe2.queue.entries[0].status, 'ACCEPTED');
+      assert.equal(pipe2.queue.entries[0].providerMessageId, 'msg_recovered_from_audit');
+      assert.equal(pipe2.queue.entries[1].status, 'HALTED_RECONCILE_REQUIRED');
+
+      // Run queue (attempt 1 for transient@example.org, tampered@example.org blocked by fail-closed consent check)
+      await pipe2.runQueue({ mode: 'ISOLATED_PROVIDER_TEST', maxAttempts: 2 });
+      assert.equal(sentCalls.length, 1);
+      assert.equal(sentCalls[0].to, 'transient@example.org');
+      assert.equal(pipe2.queue.entries[2].status, 'FAILED');
+      assert.equal(pipe2.queue.entries[2].attempts, 1);
+      assert.equal(pipe2.queue.entries[3].status, 'BLOCKED_CONSENT_UNVERIFIED');
+
+      // Run queue again (attempt 2 for transient@example.org; after 2 attempts it is exhausted)
+      await pipe2.runQueue({ mode: 'ISOLATED_PROVIDER_TEST', maxAttempts: 2 });
+      assert.equal(sentCalls.length, 2);
+      assert.equal(sentCalls[1].idempotencyKey, sentCalls[0].idempotencyKey);
+      await pipe2.runQueue({ mode: 'ISOLATED_PROVIDER_TEST', maxAttempts: 2 });
+      assert.equal(sentCalls.length, 2); // No 3rd attempt beyond maxAttempts=2!
+
+      // Explicitly reconcile e1 as CONFIRMED_ACCEPTED -> no duplicate send!
+      pipe2.reconcileInFlightEntry(e1.idempotencyKey, { resolution: 'CONFIRMED_ACCEPTED', providerMessageId: 'msg_reconciled_1' });
+      assert.equal(pipe2.queue.entries[1].status, 'ACCEPTED');
+
+      // LIVE_PRODUCTION with loopback baseUrl fails closed with PUBLIC_HTTPS_UNSUBSCRIBE_REQUIRED
+      const badHttps = await pipe2.runQueue({ mode: 'LIVE_PRODUCTION', baseUrl: 'http://127.0.0.1:18990' });
+      assert.equal(badHttps.ok, false);
+      assert.equal(badHttps.reason, 'PUBLIC_HTTPS_UNSUBSCRIBE_REQUIRED');
     });
 
     console.log(`\nALL PRODUCTION PIPELINE TESTS PASSED (${pass}/${pass})`);

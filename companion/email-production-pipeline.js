@@ -10,6 +10,7 @@
  */
 const fs = require('node:fs');
 const path = require('node:path');
+const https = require('node:https');
 const crypto = require('node:crypto');
 const dnsPromises = require('node:dns').promises;
 const { DraftOutbox } = require('./email-draft-outbox');
@@ -21,12 +22,117 @@ const RM = require('../extension/email-studio/recipient-manager');
 
 const DOMAIN = 'vivpr.pro';
 
+function defaultHttpsGetJson(url, headers = {}) {
+  return new Promise((resolve) => {
+    const req = https.request(url, { method: 'GET', headers, timeout: 6000 }, (res) => {
+      let body = '';
+      res.on('data', (c) => { body += c; });
+      res.on('end', () => {
+        try {
+          resolve({ statusCode: res.statusCode, body: JSON.parse(body), error: null });
+        } catch (err) {
+          resolve({ statusCode: res.statusCode, body: null, error: 'INVALID_JSON' });
+        }
+      });
+    });
+    req.on('timeout', () => { req.destroy(); resolve({ statusCode: 0, body: null, error: 'TIMEOUT' }); });
+    req.on('error', (err) => resolve({ statusCode: 0, body: null, error: err.code || err.message || 'NETWORK_ERROR' }));
+    req.end();
+  });
+}
+
+async function verifyResendDomainConfig(options = {}) {
+  const domain = (options.domain || DOMAIN).toLowerCase();
+  const apiKey = options.apiKey || null;
+  const httpsGet = options.httpsGet || defaultHttpsGetJson;
+  if (!apiKey && !options.httpsGet) {
+    return {
+      checked: false,
+      registered: false,
+      verified: false,
+      status: 'API_KEY_NOT_PROVIDED',
+      existingVerifiedDomains: [],
+      dkimSelectors: ['resend'],
+      records: []
+    };
+  }
+  const authHeaders = apiKey ? { Authorization: `Bearer ${apiKey}` } : {};
+  const listResp = await httpsGet('https://api.resend.com/domains', authHeaders);
+  if (listResp.statusCode !== 200 || !listResp.body || !Array.isArray(listResp.body.data)) {
+    return {
+      checked: true,
+      registered: false,
+      verified: false,
+      status: listResp.statusCode === 401 || listResp.statusCode === 403 ? 'KEY_RESTRICTED_OR_INVALID' : (`RESEND_API_${listResp.statusCode || listResp.error}`),
+      existingVerifiedDomains: [],
+      dkimSelectors: ['resend'],
+      records: []
+    };
+  }
+
+  const domains = listResp.body.data;
+  const existingVerifiedDomains = domains.filter(d => d && d.status === 'verified').map(d => d.name);
+  const match = domains.find(d => d && String(d.name || '').toLowerCase() === domain);
+  if (!match) {
+    return {
+      checked: true,
+      registered: false,
+      verified: false,
+      status: 'NOT_REGISTERED_IN_RESEND',
+      existingVerifiedDomains,
+      dkimSelectors: ['resend'],
+      records: [],
+      actionRequired: `Add domain '${domain}' in Resend Dashboard -> Domains to generate its unique DKIM public key (p=...) and Return-Path records.`
+    };
+  }
+
+  const detailResp = await httpsGet(`https://api.resend.com/domains/${encodeURIComponent(match.id)}`, authHeaders);
+  const detail = (detailResp.statusCode === 200 && detailResp.body) ? detailResp.body : match;
+  const rawRecords = Array.isArray(detail.records) ? detail.records : [];
+  const dkimSelectors = [];
+  const safeRecords = rawRecords.map(r => {
+    const recName = String(r.name || '');
+    if (r.record === 'DKIM' || recName.includes('_domainkey')) {
+      const sel = recName.split('._domainkey')[0] || 'resend';
+      if (!dkimSelectors.includes(sel)) dkimSelectors.push(sel);
+    }
+    return {
+      record: r.record || 'DNS',
+      name: recName,
+      type: r.type || 'TXT',
+      status: r.status || 'unknown',
+      priority: r.priority !== undefined ? r.priority : null,
+      valuePreview: (r.type === 'TXT' && recName.includes('_domainkey') && r.value)
+        ? `${String(r.value).slice(0, 24)}...`
+        : (r.value || null)
+    };
+  });
+  if (dkimSelectors.length === 0) dkimSelectors.push('resend');
+  const isVerified = detail.status === 'verified' && (!detail.capabilities || detail.capabilities.sending === 'enabled');
+  return {
+    checked: true,
+    registered: true,
+    domainId: detail.id || match.id,
+    region: detail.region || match.region || null,
+    verified: Boolean(isVerified),
+    status: detail.status || 'unknown',
+    existingVerifiedDomains,
+    dkimSelectors,
+    records: safeRecords
+  };
+}
+
 async function verifySenderDomainDns(options = {}) {
   const domain = options.domain || DOMAIN;
-  const dkimSelector = options.dkimSelector || 'resend';
+  const candidateSelectors = Array.isArray(options.dkimSelectors) && options.dkimSelectors.length > 0
+    ? options.dkimSelectors
+    : [options.dkimSelector || 'resend'];
   const resolveTxt = options.resolveTxt || ((host) => dnsPromises.resolveTxt(host));
+  const resolveMx = options.resolveMx || (options.resolveTxt ? null : ((host) => dnsPromises.resolveMx(host)));
+  const resolveNs = options.resolveNs || (options.resolveTxt ? null : ((host) => dnsPromises.resolveNs(host)));
+  const resolveCname = options.resolveCname || (options.resolveTxt ? null : ((host) => dnsPromises.resolveCname(host)));
 
-  async function safeResolve(host) {
+  async function safeResolveTxt(host) {
     try {
       const records = await resolveTxt(host);
       const flat = (Array.isArray(records) ? records : []).map(r => Array.isArray(r) ? r.join('') : String(r));
@@ -36,43 +142,86 @@ async function verifySenderDomainDns(options = {}) {
     }
   }
 
-  const [rootTxt, sendSubTxt, dmarcTxt, dkimTxt] = await Promise.all([
-    safeResolve(domain),
-    safeResolve(`send.${domain}`),
-    safeResolve(`_dmarc.${domain}`),
-    safeResolve(`${dkimSelector}._domainkey.${domain}`)
+  async function safeResolveOther(fn, host) {
+    if (typeof fn !== 'function') return { found: false, records: [], error: null };
+    try {
+      const records = await fn(host);
+      return { found: Array.isArray(records) && records.length > 0, records: records || [], error: null };
+    } catch (err) {
+      return { found: false, records: [], error: (err && err.code) || (err && err.message) || 'DNS_LOOKUP_FAILED' };
+    }
+  }
+
+  const dkimHosts = candidateSelectors.map(sel => sel.includes('_domainkey')
+    ? (sel.endsWith(domain) ? sel : `${sel}.${domain}`)
+    : `${sel}._domainkey.${domain}`);
+
+  const [nsRes, rootMxRes, rootTxt, sendSubTxt, sendSubMx, sendSubCname, rsendSubCname, dmarcTxt, ...dkimResults] = await Promise.all([
+    safeResolveOther(resolveNs, domain),
+    safeResolveOther(resolveMx, domain),
+    safeResolveTxt(domain),
+    safeResolveTxt(`send.${domain}`),
+    safeResolveOther(resolveMx, `send.${domain}`),
+    safeResolveOther(resolveCname, `send.${domain}`),
+    safeResolveOther(resolveCname, `rsend.${domain}`),
+    safeResolveTxt(`_dmarc.${domain}`),
+    ...dkimHosts.map(h => safeResolveTxt(h))
   ]);
 
   const spfRoot = rootTxt.records.find(r => /v=spf1\b/i.test(r)) || null;
   const spfSend = sendSubTxt.records.find(r => /v=spf1\b/i.test(r)) || null;
+  const sendCnameTarget = (sendSubCname.records && sendSubCname.records[0]) || null;
+  const rsendCnameTarget = (rsendSubCname.records && rsendSubCname.records[0]) || null;
+  const sendMxRecords = (sendSubMx.records || []).map(m => `${m.priority}:${m.exchange}`);
   const spfHasResendOrSes = Boolean(
     (spfRoot && /(amazonses\.com|resend\.com|send\.vivpr\.pro)/i.test(spfRoot)) ||
-    (spfSend && /(amazonses\.com|resend\.com)/i.test(spfSend))
+    (spfSend && /(amazonses\.com|resend\.com)/i.test(spfSend)) ||
+    (sendCnameTarget && /rmta\.net|resend|amazonses/i.test(sendCnameTarget))
   );
 
   const dmarcRec = dmarcTxt.records.find(r => /v=DMARC1\b/i.test(r)) || null;
   const dmarcPolicyMatch = dmarcRec ? dmarcRec.match(/\bp\s*=\s*(none|quarantine|reject)\b/i) : null;
   const dmarcPass = Boolean(dmarcRec && dmarcPolicyMatch);
 
-  const dkimRec = dkimTxt.records.find(r => /\bp\s*=\s*[A-Za-z0-9+/=]{16,}/i.test(r)) || null;
-  const dkimPass = Boolean(dkimRec);
+  let matchedDkimHost = dkimHosts[0];
+  let matchedDkimRec = null;
+  let dkimError = dkimResults[0] ? dkimResults[0].error : 'ENOTFOUND';
+  for (let i = 0; i < dkimHosts.length; i++) {
+    const res = dkimResults[i];
+    const rec = res.records.find(r => /\bp\s*=\s*[A-Za-z0-9+/=]{16,}/i.test(r)) || null;
+    if (rec) {
+      matchedDkimHost = dkimHosts[i];
+      matchedDkimRec = rec;
+      dkimError = null;
+      break;
+    }
+  }
+  const dkimPass = Boolean(matchedDkimRec);
+  const allVerified = Boolean(spfHasResendOrSes && dkimPass && dmarcPass);
 
   return {
     domain,
     checkedAt: new Date().toISOString(),
+    authoritativeNameservers: nsRes.records,
+    rootMx: (rootMxRes.records || []).map(m => ({ priority: m.priority, exchange: m.exchange })),
+    rootSpfPreservationNote: 'Do NOT delete or blindly overwrite existing root SPF (v=spf1 include:spf.efwd.registrar-servers.com ~all) used by Namecheap Email Forwarding; Resend Return-Path SPF/MX belongs on subdomain send.vivpr.pro.',
     spf: {
       rootHost: domain,
       rootRecord: spfRoot,
       rootError: rootTxt.error,
       sendHost: `send.${domain}`,
       sendRecord: spfSend,
+      sendMxRecords,
+      sendCname: sendCnameTarget,
+      rsendCname: rsendCnameTarget,
       sendError: sendSubTxt.error,
       pass: spfHasResendOrSes
     },
     dkim: {
-      host: `${dkimSelector}._domainkey.${domain}`,
-      record: dkimRec ? (dkimRec.slice(0, 64) + '...') : null,
-      error: dkimTxt.error,
+      checkedSelectors: candidateSelectors,
+      host: matchedDkimHost,
+      record: matchedDkimRec ? (matchedDkimRec.slice(0, 64) + '...') : null,
+      error: dkimError,
       pass: dkimPass
     },
     dmarc: {
@@ -82,7 +231,31 @@ async function verifySenderDomainDns(options = {}) {
       error: dmarcTxt.error,
       pass: dmarcPass
     },
-    allVerified: Boolean(spfHasResendOrSes && dkimPass && dmarcPass)
+    externalDnsStatus: allVerified ? 'VERIFIED' : 'BLOCKED_EXTERNAL_DNS',
+    requiredRecordsToPublish: [
+      {
+        whoMustApply: 'Owner (Resend Dashboard -> Domains -> Add vivpr.pro, then Namecheap BasicDNS for vivpr.pro)',
+        host: `resend._domainkey.${domain} (or exact selector shown by Resend)`,
+        type: 'TXT',
+        value: 'p=<unique 1024/2048-bit RSA public key generated by Resend when vivpr.pro is added>',
+        purpose: 'DKIM signing verification'
+      },
+      {
+        whoMustApply: 'Owner (Namecheap BasicDNS for vivpr.pro, per Resend domain instructions)',
+        host: `send.${domain}`,
+        type: 'TXT + MX (or CNAME send.forge.rmta.net if assigned RMTA by Resend)',
+        value: 'TXT "v=spf1 include:amazonses.com ~all" + MX 10 feedback-smtp.<region>.amazonses.com (do NOT overwrite root vivpr.pro SPF)',
+        purpose: 'Return-Path SPF & bounce handling without breaking Namecheap root email forwarding'
+      },
+      {
+        whoMustApply: 'Owner (Namecheap BasicDNS for vivpr.pro)',
+        host: `_dmarc.${domain}`,
+        type: 'TXT',
+        value: `v=DMARC1; p=quarantine; rua=mailto:postmaster@${domain}; adkim=r; aspf=r;`,
+        purpose: 'DMARC alignment policy'
+      }
+    ],
+    allVerified
   };
 }
 
@@ -218,19 +391,76 @@ class EmailProductionPipeline {
     return { ok: true, configured: true };
   }
 
+  _readAuditEvents() {
+    if (!fs.existsSync(this.auditFile)) return [];
+    try {
+      return fs.readFileSync(this.auditFile, 'utf8')
+        .split('\n')
+        .filter(Boolean)
+        .map(line => { try { return JSON.parse(line); } catch (_) { return null; } })
+        .filter(Boolean);
+    } catch (_) {
+      return [];
+    }
+  }
+
   _loadQueue() {
     if (!fs.existsSync(this.queueFile)) {
       return { campaignId: 'default', messageKind: 'service', entries: [], stopped: false, startedAt: null, finishedAt: null };
     }
     try {
       const q = JSON.parse(fs.readFileSync(this.queueFile, 'utf8'));
+      const auditEvents = this._readAuditEvents();
+      let mutated = false;
       for (const e of (q.entries || [])) {
-        if (e.status === 'SENDING') e.status = 'PENDING';
+        if (e.status === 'SENDING') {
+          mutated = true;
+          const acceptedEvt = [...auditEvents].reverse().find(a => a.type === 'SEND_ATTEMPT_ACCEPTED' && a.idempotencyKey === e.idempotencyKey);
+          const failedEvt = [...auditEvents].reverse().find(a => a.type === 'SEND_ATTEMPT_FAILED' && a.idempotencyKey === e.idempotencyKey);
+          if (acceptedEvt) {
+            e.status = 'ACCEPTED';
+            e.deliveryState = 'ACCEPTED';
+            e.providerMessageId = acceptedEvt.providerMessageId || e.providerMessageId || `msg_${e.idempotencyKey}`;
+            e.reason = 'RECONCILED_FROM_AUDIT_LOG_AFTER_CRASH';
+          } else if (failedEvt && (!acceptedEvt)) {
+            e.status = 'FAILED';
+            e.error = failedEvt.error || 'CRASH_AFTER_FAILED_ATTEMPT';
+          } else {
+            e.status = 'HALTED_RECONCILE_REQUIRED';
+            e.reason = 'IN_FLIGHT_CRASH_RECONCILE_REQUIRED_FAIL_CLOSED';
+          }
+        }
+      }
+      if (mutated) {
+        const tmp = `${this.queueFile}.${process.pid}.${Date.now()}.tmp`;
+        fs.writeFileSync(tmp, JSON.stringify(q, null, 2), { mode: 0o600 });
+        fs.renameSync(tmp, this.queueFile);
       }
       return q;
     } catch (_) {
       return { campaignId: 'default', messageKind: 'service', entries: [], stopped: false, startedAt: null, finishedAt: null };
     }
+  }
+
+  reconcileInFlightEntry(idempotencyKey, { resolution, providerMessageId = null } = {}) {
+    const entry = this.queue.entries.find(e => e.idempotencyKey === idempotencyKey);
+    if (!entry) throw new Error('ENTRY_NOT_FOUND');
+    if (entry.status !== 'HALTED_RECONCILE_REQUIRED') throw new Error('ENTRY_NOT_IN_RECONCILE_REQUIRED_STATE');
+    if (resolution === 'CONFIRMED_ACCEPTED') {
+      entry.status = 'ACCEPTED';
+      entry.deliveryState = 'ACCEPTED';
+      entry.providerMessageId = providerMessageId || `msg_${idempotencyKey}`;
+      entry.reason = 'RECONCILED_CONFIRMED_ACCEPTED';
+    } else if (resolution === 'CONFIRMED_NOT_SENT') {
+      entry.status = 'PENDING';
+      entry.reason = 'RECONCILED_CONFIRMED_NOT_SENT';
+    } else {
+      throw new Error('INVALID_RECONCILIATION_RESOLUTION');
+    }
+    entry.updatedAt = new Date().toISOString();
+    this._saveQueue();
+    this._appendAudit({ type: 'IN_FLIGHT_RECONCILED', idempotencyKey, resolution, providerMessageId: entry.providerMessageId });
+    return entry;
   }
 
   _saveQueue() {
@@ -410,7 +640,7 @@ class EmailProductionPipeline {
   }
 
   summarizeQueue() {
-    const counts = { total: this.queue.entries.length, PENDING: 0, SENDING: 0, ACCEPTED: 0, DELIVERED: 0, DRY_RUN_READY: 0, FAILED: 0, SKIPPED_SUPPRESSED: 0, SKIPPED_NO_CONSENT: 0 };
+    const counts = { total: this.queue.entries.length, PENDING: 0, SENDING: 0, ACCEPTED: 0, DELIVERED: 0, DRY_RUN_READY: 0, FAILED: 0, SKIPPED_SUPPRESSED: 0, SKIPPED_NO_CONSENT: 0, HALTED_RECONCILE_REQUIRED: 0, BLOCKED_CONSENT_UNVERIFIED: 0 };
     for (const e of this.queue.entries) {
       counts[e.status] = (counts[e.status] || 0) + 1;
       if (e.deliveryState === 'DELIVERED') counts.DELIVERED++;
@@ -427,15 +657,24 @@ class EmailProductionPipeline {
     };
   }
 
-  async evaluatePreflight({ hasResendKey = false, keyStatus = 'KEY_MISSING', ownerExplicitApproval = false, publicUnsubscribeHttpsVerified = false } = {}) {
+  async evaluatePreflight({ hasResendKey = false, keyStatus = 'KEY_MISSING', apiKey = null, httpsGet = null, ownerExplicitApproval = false, publicUnsubscribeHttpsVerified = false } = {}) {
+    const resendDomainConfig = await verifyResendDomainConfig({
+      domain: DOMAIN,
+      apiKey: apiKey || null,
+      httpsGet: httpsGet || null
+    });
     const dnsReport = await verifySenderDomainDns({
       domain: DOMAIN,
+      dkimSelectors: resendDomainConfig.dkimSelectors,
       resolveTxt: this.dnsResolver || undefined
     });
     this.lastDnsReport = dnsReport;
     const summary = this.summarizeQueue();
     const webhookSecretConfigured = Boolean(this.getWebhookSecret());
     const messageClass = this.queue.messageKind === 'marketing' ? 'CONSENTED_MARKETING' : 'SERVICE_NOTIFICATION';
+    const resendVerified = resendDomainConfig.checked
+      ? Boolean(resendDomainConfig.verified && dnsReport.allVerified)
+      : Boolean(dnsReport.allVerified && hasResendKey);
 
     const gateEval = deliverabilityPolicy.evaluate({
       messageClass,
@@ -445,7 +684,7 @@ class EmailProductionPipeline {
       recipientAuthorizationEvidenceVerified: summary.consentedRecordsOnDisk > 0 && Boolean(this.queue.consentAttested),
       fromDomain: DOMAIN,
       domainOwnershipVerified: dnsReport.allVerified,
-      resendDomainVerified: dnsReport.allVerified && hasResendKey,
+      resendDomainVerified: resendVerified,
       spfVerified: dnsReport.spf.pass,
       dkimVerified: dnsReport.dkim.pass,
       dmarcAlignedVerified: dnsReport.dmarc.pass,
@@ -466,6 +705,8 @@ class EmailProductionPipeline {
     return {
       status: 'OK',
       domain: DOMAIN,
+      externalDnsStatus: (dnsReport.allVerified && (!resendDomainConfig.checked || resendDomainConfig.verified)) ? 'VERIFIED' : 'BLOCKED_EXTERNAL_DNS',
+      resendDomainConfig,
       dns: dnsReport,
       keyStatus,
       hasResendKey,
@@ -476,8 +717,9 @@ class EmailProductionPipeline {
       queueSummary: summary,
       deliverabilityGate: gateEval,
       minimalAuthorizationNeededForSingleLiveSend: [
-        ...(!dnsReport.spf.pass ? ['DNS: Add Resend SPF/return-path TXT & MX on send.vivpr.pro'] : []),
-        ...(!dnsReport.dkim.pass ? ['DNS: Add Resend DKIM TXT on resend._domainkey.vivpr.pro'] : []),
+        ...(resendDomainConfig.checked && !resendDomainConfig.registered ? [`RESEND: Register domain '${DOMAIN}' in Resend Dashboard -> Domains to generate its DKIM selector/key`] : []),
+        ...(!dnsReport.spf.pass ? ['DNS: Add Resend SPF/return-path TXT & MX on send.vivpr.pro (do NOT overwrite root vivpr.pro SPF)'] : []),
+        ...(!dnsReport.dkim.pass ? ['DNS: Add Resend DKIM TXT on resend._domainkey.vivpr.pro (as shown by Resend)'] : []),
         ...(!dnsReport.dmarc.pass ? ['DNS: Add DMARC TXT (v=DMARC1; p=quarantine;) on _dmarc.vivpr.pro'] : []),
         ...(!hasResendKey ? ['KEY: Provision rotated Resend API key (re_...) in Email Studio'] : []),
         ...(summary.consentedRecordsOnDisk === 0 ? ['CONSENT: Import recipient(s) with consent attestation checked'] : []),
@@ -493,9 +735,20 @@ class EmailProductionPipeline {
     return this.summarizeQueue();
   }
 
-  async runQueue({ mode = 'DRY_RUN', subject = '', html = '', text = '', baseUrl = 'http://127.0.0.1:18990', maxAttempts = 2, hasResendKey = false, ownerExplicitApproval = false } = {}) {
+  async runQueue({ mode = 'DRY_RUN', subject = '', html = '', text = '', baseUrl = 'http://127.0.0.1:18990', maxAttempts = 2, hasResendKey = false, apiKey = null, ownerExplicitApproval = false, publicUnsubscribeHttpsVerified = false } = {}) {
     if (mode === 'LIVE_PRODUCTION') {
-      const pf = await this.evaluatePreflight({ hasResendKey, ownerExplicitApproval });
+      const isPublicHttpsUnsub = /^https:\/\/(?!127\.0\.0\.1|localhost\b)[a-z0-9.-]+\.[a-z]{2,}/i.test(String(baseUrl || ''));
+      if (!isPublicHttpsUnsub) {
+        return {
+          ok: false,
+          status: 'BLOCKED',
+          mode,
+          reason: 'PUBLIC_HTTPS_UNSUBSCRIBE_REQUIRED',
+          blockingReasons: ['PUBLIC_HTTPS_UNSUBSCRIBE_REQUIRED'],
+          summary: this.summarizeQueue()
+        };
+      }
+      const pf = await this.evaluatePreflight({ hasResendKey, apiKey, ownerExplicitApproval, publicUnsubscribeHttpsVerified });
       if (pf.deliverabilityGate.action === 'BLOCK' || pf.deliverabilityGate.reasons.length > 0) {
         return {
           ok: false,
@@ -512,9 +765,6 @@ class EmailProductionPipeline {
       return { ok: false, status: 'BLOCKED', reason: 'ISOLATED_PROVIDER_TEST_REQUIRES_TRUSTED_TEST_MODE' };
     }
 
-    for (const e of this.queue.entries) {
-      if (e.status === 'SENDING') e.status = 'PENDING';
-    }
     this.queue.stopped = false;
     this.queue.startedAt = this.queue.startedAt || new Date().toISOString();
     this._saveQueue();
@@ -529,11 +779,37 @@ class EmailProductionPipeline {
         }
         continue;
       }
-      if (e.status === 'ACCEPTED' || e.status === 'DELIVERED' || e.status === 'DRY_RUN_READY' || String(e.status).startsWith('SKIPPED') || String(e.status).startsWith('SUPPRESSED')) {
+      if (
+        e.status === 'ACCEPTED' ||
+        e.status === 'DELIVERED' ||
+        e.status === 'DRY_RUN_READY' ||
+        e.status === 'HALTED_RECONCILE_REQUIRED' ||
+        e.status === 'BLOCKED_CONSENT_UNVERIFIED' ||
+        String(e.status).startsWith('SKIPPED') ||
+        String(e.status).startsWith('SUPPRESSED')
+      ) {
         continue;
       }
       if (e.status === 'FAILED' && e.attempts >= maxAttempts) {
         continue;
+      }
+
+      if (mode !== 'DRY_RUN' && (this.queue.consentAttested || this.queue.messageKind === 'marketing' || mode === 'LIVE_PRODUCTION')) {
+        const cRec = this.consentLedger.get(e.email);
+        const verified = Boolean(cRec && this.consentLedger.verify({
+          email: e.email,
+          authorizationSource: cRec.authorizationSource,
+          authorizationAt: cRec.authorizationAt,
+          consentProofToken: cRec.consentProofToken
+        }));
+        if (!verified) {
+          e.status = 'BLOCKED_CONSENT_UNVERIFIED';
+          e.reason = 'CONSENT_PROOF_MISSING_OR_TAMPERED_FAIL_CLOSED';
+          e.updatedAt = new Date().toISOString();
+          this._saveQueue();
+          this._appendAudit({ type: 'SEND_BLOCKED_CONSENT_UNVERIFIED', email: e.email, idempotencyKey: e.idempotencyKey });
+          continue;
+        }
       }
 
       e.status = 'SENDING';
@@ -551,6 +827,7 @@ class EmailProductionPipeline {
       }
 
       if (mode === 'ISOLATED_PROVIDER_TEST' && typeof this.providerTransport === 'function') {
+        this._appendAudit({ type: 'SEND_ATTEMPT_STARTED', idempotencyKey: e.idempotencyKey, email: e.email, attempt: e.attempts });
         try {
           const res = await this.providerTransport({
             from: `noreply@${DOMAIN}`,
@@ -562,18 +839,24 @@ class EmailProductionPipeline {
             headers: unsub.headers
           });
           if (res && res.ok) {
+            const msgId = res.providerMessageId || `msg_${e.idempotencyKey}`;
+            this._appendAudit({ type: 'SEND_ATTEMPT_ACCEPTED', idempotencyKey: e.idempotencyKey, providerMessageId: msgId });
             e.status = 'ACCEPTED';
             e.deliveryState = 'ACCEPTED';
-            e.providerMessageId = res.providerMessageId || `msg_${e.idempotencyKey}`;
+            e.providerMessageId = msgId;
             e.error = null;
             sentInThisRun++;
           } else {
+            const errStr = (res && res.error) || 'PROVIDER_ERROR';
+            this._appendAudit({ type: 'SEND_ATTEMPT_FAILED', idempotencyKey: e.idempotencyKey, error: errStr });
             e.status = 'FAILED';
-            e.error = (res && res.error) || 'PROVIDER_ERROR';
+            e.error = errStr;
           }
         } catch (err) {
+          const errStr = err.message || 'TRANSPORT_EXCEPTION';
+          this._appendAudit({ type: 'SEND_ATTEMPT_FAILED', idempotencyKey: e.idempotencyKey, error: errStr });
           e.status = 'FAILED';
-          e.error = err.message || 'TRANSPORT_EXCEPTION';
+          e.error = errStr;
         }
         e.updatedAt = new Date().toISOString();
         this._saveQueue();
@@ -598,6 +881,7 @@ class EmailProductionPipeline {
 
 module.exports = {
   DOMAIN,
+  verifyResendDomainConfig,
   verifySenderDomainDns,
   ConsentLedger,
   EmailProductionPipeline

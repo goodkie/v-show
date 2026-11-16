@@ -126,8 +126,8 @@ const put = u => new Promise((res, rej) => {
   const statusAfterCheck = await ev(`document.getElementById('testSendStatus')?.textContent`);
   rec('CHECK_COMPANION_INTERACTION_RESPONSIVE', statusAfterCheck.length > 5, statusAfterCheck);
 
-  // 7. Test interaction: Click test send (expect fail-closed since companion is not running in background during test)
-  await ev(`document.getElementById('btnTestSend')?.click()`);
+  // 7. Test interaction: Click test send on an offline port (expect fail-closed, never triggers live send)
+  await ev(`(()=>{ const p = document.getElementById('sidecarPort'); if (p) p.value = '19999'; document.getElementById('btnTestSend')?.click(); })()`);
   await sleep(1000);
   const statusAfterSend = await ev(`document.getElementById('testSendStatus')?.textContent`);
   rec('TEST_SEND_FAILS_CLOSED_GRACEFULLY', statusAfterSend.includes('전송 실패') || statusAfterSend.includes('발송 차단') || statusAfterSend.includes('컴패니언'), statusAfterSend);

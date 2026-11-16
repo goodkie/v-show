@@ -22,7 +22,8 @@ function registerNativeMessagingHost(options = {}) {
   const hostScript = path.resolve(options.hostScript || path.join(__dirname, 'email-test-sidecar-native-host.js'));
   const batPath = path.join(nhDir, 'xpider_email_sidecar_host.bat');
   const manifestPath = path.join(nhDir, `${NATIVE_HOST_NAME}.json`);
-  const nodeExe = options.nodeExe || process.execPath || 'node';
+  const bundledNode = path.resolve(__dirname, '..', 'runtime', 'node.exe');
+  const nodeExe = options.nodeExe || (fs.existsSync(bundledNode) ? bundledNode : (process.execPath || 'node'));
 
   fs.writeFileSync(batPath, `@echo off\r\n"${nodeExe}" "${hostScript}"\r\n`, 'utf8');
   fs.writeFileSync(manifestPath, JSON.stringify({

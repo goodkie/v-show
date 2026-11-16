@@ -3856,11 +3856,20 @@ const _handleMainMessageInner = (request, sender, sendResponse) => {
                     }
                     const token = pg ? pg.ephemeralRelayToken : null;
                     const ctrlPort = (pg && pg.config && pg.config.relayControlPort) || 18989;
-                    const resp = await fetch(`http://127.0.0.1:${ctrlPort}/storage-recovery/stage0-snapshot`, {
+                    let resp = await fetch(`http://127.0.0.1:${ctrlPort}/storage-recovery/stage0-snapshot`, {
                         method: 'GET',
                         headers: token ? { 'Authorization': `Bearer ${token}` } : {}
-                    });
-                    if (!resp.ok) {
+                    }).catch(() => ({ ok: false }));
+                    if (!resp || !resp.ok) {
+                        const scTok = globalThis.__xpiderPairedSidecarToken || null;
+                        if (scTok) {
+                            resp = await fetch('http://127.0.0.1:18990/storage-recovery/stage0-snapshot', {
+                                method: 'GET',
+                                headers: { 'Authorization': `Bearer ${scTok}` }
+                            }).catch(() => ({ ok: false }));
+                        }
+                    }
+                    if (!resp || !resp.ok) {
                         sendResponse({ success: false, recoveryNeeded: false, reason: 'COMPANION_SNAPSHOT_UNAVAILABLE' });
                         return;
                     }
@@ -3890,12 +3899,21 @@ const _handleMainMessageInner = (request, sender, sendResponse) => {
                     }
                     const token = pg ? pg.ephemeralRelayToken : null;
                     const ctrlPort = (pg && pg.config && pg.config.relayControlPort) || 18989;
-                    const resp = await fetch(`http://127.0.0.1:${ctrlPort}/storage-recovery/stage0-snapshot`, {
+                    let resp = await fetch(`http://127.0.0.1:${ctrlPort}/storage-recovery/stage0-snapshot`, {
                         method: 'GET',
                         headers: token ? { 'Authorization': `Bearer ${token}` } : {}
-                    });
-                    if (!resp.ok) {
-                        sendResponse({ success: false, error: `HTTP_${resp.status}` });
+                    }).catch(() => ({ ok: false, status: 0 }));
+                    if (!resp || !resp.ok) {
+                        const scTok = globalThis.__xpiderPairedSidecarToken || null;
+                        if (scTok) {
+                            resp = await fetch('http://127.0.0.1:18990/storage-recovery/stage0-snapshot', {
+                                method: 'GET',
+                                headers: { 'Authorization': `Bearer ${scTok}` }
+                            }).catch(() => ({ ok: false, status: 0 }));
+                        }
+                    }
+                    if (!resp || !resp.ok) {
+                        sendResponse({ success: false, error: `HTTP_${resp ? resp.status : 0}` });
                         return;
                     }
                     const data = await resp.json();
@@ -3907,14 +3925,16 @@ const _handleMainMessageInner = (request, sender, sendResponse) => {
                     const payload = snap.payload;
                     const payloadKeys = (payload && typeof payload === 'object') ? Object.keys(payload) : [];
                     const expectedKeys = Number(snap.expectedKeyCount || 65);
+                    const has198History = (Array.isArray(payload.xpider_history_rows) && payload.xpider_history_rows.length === 198) ||
+                        (payload.xpider_history_v1 && Array.isArray(payload.xpider_history_v1.attempts) && payload.xpider_history_v1.attempts.length === 198);
                     const hasValidManifest = (
-                        snap.schema === 'XPIDER_STAGE0_RECOVERY_SNAPSHOT_V1' &&
+                        (snap.schema === 'XPIDER_STAGE0_RECOVERY_SNAPSHOT_V1' || snap.schema === 'XPIDER_STAGE0_AUTHORITATIVE_97_92_SNAPSHOT_V1') &&
                         snap.extensionId === 'ldlijlaccfeelfdhgnjbibniocefckjj' &&
                         payloadKeys.length === expectedKeys &&
                         Number(payload.xpider_total) === 97 &&
                         Array.isArray(payload.xpider_queue) && payload.xpider_queue.length === 92 &&
                         Array.isArray(payload.xpider_saved_lists) && payload.xpider_saved_lists.length >= 1 &&
-                        payload.xpider_history_v1 && Array.isArray(payload.xpider_history_v1.attempts) && payload.xpider_history_v1.attempts.length === 198 &&
+                        has198History &&
                         payload.xpider_email_collector_v1 && Number(payload.xpider_email_collector_v1.totalUnique) === 22
                     );
                     if (!hasValidManifest) {
@@ -4019,7 +4039,7 @@ const _handleMainMessageInner = (request, sender, sendResponse) => {
             (async () => {
                 const reqPort = Number(request.sidecarPort);
                 const ctrlPort = (Number.isInteger(reqPort) && reqPort >= 1024 && reqPort <= 65535) ? reqPort : 18990;
-                const extBuildId = (typeof BuildProvenance !== 'undefined' && BuildProvenance.BUILD_INFO && BuildProvenance.BUILD_INFO.buildId) || 'V7.0.0-OWNER-BETA-TEST-SEND-SIDECAR-20261116-LOCKED12';
+                const extBuildId = (typeof BuildProvenance !== 'undefined' && BuildProvenance.BUILD_INFO && BuildProvenance.BUILD_INFO.buildId) || 'V7.0.0-OWNER-BETA-TEST-SEND-SIDECAR-20261116-LOCKED14';
                 try {
                     if (request.userConsentConfirmed !== true) {
                         sendResponse({ ok: false, status: 'BLOCKED', reason: 'USER_CONSENT_REQUIRED', message: '로컬 NTFS 보안 저장 전 명시적 사용자 동의가 필요합니다.' });

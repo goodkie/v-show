@@ -100,7 +100,7 @@ async function checkCompanionStatus() {
     const d = resp.data;
     const hs = resp.handshake || {};
     const compBuild = hs.companionBuildId || d.companionBuildId || 'verified';
-    const extBuild = hs.extensionBuildId || 'V7.0.0-OWNER-BETA-TEST-SEND-SIDECAR-20261116-LOCKED13';
+    const extBuild = hs.extensionBuildId || 'V7.0.0-OWNER-BETA-TEST-SEND-SIDECAR-20261116-LOCKED14';
     const pidLabel = hs.companionPid || d.pid || 'unknown';
     const capsLabel = Array.isArray(hs.apiCapabilities) ? hs.apiCapabilities.join(', ') : 'email-test-send';
     if (d.resendApiKeyConfigured) {
@@ -425,13 +425,15 @@ setTimeout(checkCompanionStatus, 300);
       }
       const d = r.data;
       const dns = d.dns || {};
+      const rdc = d.resendDomainConfig || {};
       const qs = d.queueSummary || {};
       const todo = Array.isArray(d.minimalAuthorizationNeededForSingleLiveSend) ? d.minimalAuthorizationNeededForSingleLiveSend : [];
-      pBox.className = dns.allVerified ? 'status-box status-success' : 'status-box status-blocked';
+      pBox.className = (d.externalDnsStatus === 'VERIFIED') ? 'status-box status-success' : 'status-box status-blocked';
       pBox.textContent = [
-        `🔍 [운영 발송 점검 결과 — 도메인: ${d.domain || 'vivpr.pro'}]`,
+        `🔍 [운영 발송 점검 결과 — 도메인: ${d.domain || 'vivpr.pro'} · 상태: ${d.externalDnsStatus || 'BLOCKED_EXTERNAL_DNS'}]`,
+        `• Resend 도메인 등록 상태: ${rdc.registered ? `✅ 등록됨 (${rdc.status})` : `❌ 미등록 (${rdc.status || 'NOT_REGISTERED_IN_RESEND'})`}`,
         `• DNS SPF (send.vivpr.pro): ${dns.spf?.pass ? '✅ PASS' : `❌ 미설정 (root=${dns.spf?.rootRecord || 'none'}, send=${dns.spf?.sendError || 'none'})`}`,
-        `• DNS DKIM (resend._domainkey.vivpr.pro): ${dns.dkim?.pass ? '✅ PASS' : `❌ 미설정 (${dns.dkim?.error || 'ENOTFOUND'})`}`,
+        `• DNS DKIM (${dns.dkim?.host || 'resend._domainkey.vivpr.pro'}): ${dns.dkim?.pass ? '✅ PASS' : `❌ 미설정 (${dns.dkim?.error || 'ENOTFOUND'})`}`,
         `• DNS DMARC (_dmarc.vivpr.pro): ${dns.dmarc?.pass ? '✅ PASS' : `❌ 미설정 (${dns.dmarc?.error || 'ENOTFOUND'})`}`,
         `• NTFS 동의 원장: ${qs.consentedRecordsOnDisk || 0}건 | 수신거부/반송 원장: ${qs.suppressedRecordsOnDisk || 0}건`,
         `• 로컬 RFC 8058 수신거부 & Svix 웹훅: ${d.localUnsubscribeEndpoint || 'WORKING'} / ${d.webhookEndpoint || 'WORKING'}`,

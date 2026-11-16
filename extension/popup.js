@@ -313,7 +313,7 @@ function getDiagnosticReport(fresh = false) {
 
     const extVer = (typeof chrome !== 'undefined' && chrome.runtime?.getManifest)
         ? chrome.runtime.getManifest()?.version
-        : '1.2.0';
+        : '7.0.0';
     const runtimeId = (typeof chrome !== 'undefined' && chrome.runtime?.id) ? chrome.runtime.id : 'N/A';
     const docVis = (typeof document !== 'undefined' && document.visibilityState) ? document.visibilityState : 'unknown';
     const originPath = (typeof window !== 'undefined' && window.location)
@@ -615,8 +615,8 @@ async function exportOwnerDebugBundle() {
     try {
         const buildInfo = (typeof BuildProvenance !== 'undefined' && BuildProvenance.BUILD_INFO)
             ? BuildProvenance.BUILD_INFO
-            : { buildId: 'R6.9G.10.3.7.1.4.11-OWNER-BETA', head: 'UNKNOWN' };
-        const buildId = buildInfo.buildId || 'R6.9G.10.3.7.1.4.11-OWNER-BETA';
+            : { buildId: 'V7.0.0-OWNER-BETA', head: 'UNKNOWN' };
+        const buildId = buildInfo.buildId || 'V7.0.0-OWNER-BETA';
         const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
         const filename = `XPIDER_DEBUG_${buildId}_${timestamp}.zip`;
 
@@ -742,7 +742,7 @@ function xpiderInvoke(channel, args, options = {}) {
         const docVis = (typeof document !== 'undefined' && document.visibilityState) ? document.visibilityState : 'unknown';
         const locHref = (typeof window !== 'undefined' && window.location) ? `${window.location.origin}${window.location.pathname}` : 'unknown';
         const rtId = (typeof chrome !== 'undefined' && chrome.runtime?.id) ? chrome.runtime.id : 'N/A';
-        const mfVer = (typeof chrome !== 'undefined' && chrome.runtime?.getManifest) ? chrome.runtime.getManifest()?.version : '1.2.0';
+        const mfVer = (typeof chrome !== 'undefined' && chrome.runtime?.getManifest) ? chrome.runtime.getManifest()?.version : '7.0.0';
         const queueCount = Array.isArray(args?.queue) ? args.queue.length : (typeof campaignQueue !== 'undefined' && Array.isArray(campaignQueue) ? campaignQueue.length : 0);
         const tplId = args?.templateId || currentTpl?.templateId || currentTpl?.id || 'N/A';
         const tplVer = args?.templateVersion || currentTpl?.templateVersion || currentTpl?.version || 1;
@@ -7421,20 +7421,25 @@ async function restoreUserSettings() {
 }
 
 function getBadgeTextFromBuildInfo(info) {
-    if (!info) return 'OWNER BETA V7.0.0-RC7';
-    let ver = 'V7.0.0-RC7';
+    if (!info) return 'OWNER BETA V7.0.0';
+    let ver = 'V7.0.0';
     if (info.tag) {
         ver = info.tag.toUpperCase();
     } else {
         const m = (info.buildId || '').match(/(?:V|R)\d+\.\d+(?:\.\d+)?[A-Za-z0-9\.\-]*/i);
         if (m) ver = m[0];
     }
-    const sha = info.implementationHeadShort || info.headShort || (info.implementationHead ? info.implementationHead.substring(0, 8) : 'rc7');
+    const sha = info.implementationHeadShort || info.headShort || (info.implementationHead ? info.implementationHead.substring(0, 8) : 'v7');
     return `OWNER BETA ${ver} [${sha}]`;
 }
 
 function initBuildProvenanceBadge() {
     if (typeof document === 'undefined') return;
+    const verTag = document.querySelector('.version-tag');
+    if (verTag) {
+        const mfVer = (typeof chrome !== 'undefined' && chrome.runtime?.getManifest) ? (chrome.runtime.getManifest()?.version || '7.0.0') : '7.0.0';
+        verTag.textContent = `v${mfVer}`;
+    }
     const badge = document.getElementById('build-provenance-badge');
     const localInfo = (typeof BuildProvenance !== 'undefined' && BuildProvenance.BUILD_INFO)
         ? BuildProvenance.BUILD_INFO

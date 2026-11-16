@@ -17,8 +17,8 @@ const { getSidecarPaths } = require('./sidecar-paths');
 const { EmailProductionPipeline } = require('./email-production-pipeline');
 
 const DEFAULT_SIDECAR_PORT = 18990;
-const SIDECAR_BUILD_ID = 'V7.0.0-OWNER-BETA-TEST-SEND-SIDECAR-20261116-LOCKED13';
-const SIDECAR_IMPLEMENTATION_HEAD = 'email-test-sidecar-20261116-locked13';
+const SIDECAR_BUILD_ID = 'V7.0.0-OWNER-BETA-TEST-SEND-SIDECAR-20261116-LOCKED14';
+const SIDECAR_IMPLEMENTATION_HEAD = 'email-test-sidecar-20261116-locked14';
 const SIDECAR_API_CAPABILITIES = ['email-test-send', 'email-test-sidecar-v1', 'email-test-ledger-v1'];
 const EXPOSED_RC3_6_TOKEN_SHA256 = '597a70b99c11c7f4d13a075204ac240bb08a7a1d6c08c78268328e0bb59daeda';
 const EXTENSION_ORIGIN_RE = /^chrome-extension:\/\/[a-p]{32}$/;
@@ -347,11 +347,33 @@ class EmailTestSidecar {
           return;
         }
 
+        if (pathname === '/storage-recovery/stage0-snapshot' && req.method === 'GET') {
+          const candidates = [
+            path.join(__dirname, 'stage0_authoritative_97_92_snapshot.json'),
+            'E:\\vivpr\\ai\\extension-form-sender\\companion\\stage0_authoritative_97_92_snapshot.json'
+          ];
+          for (const snapPath of candidates) {
+            try {
+              if (fs.existsSync(snapPath)) {
+                const snap = JSON.parse(fs.readFileSync(snapPath, 'utf8'));
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ success: true, available: true, snapshot: snap }));
+                return;
+              }
+            } catch (_) {}
+          }
+          res.writeHead(404, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ success: false, available: false, error: 'STAGE0_SNAPSHOT_NOT_FOUND' }));
+          return;
+        }
+
         if (pathname === '/email/production/preflight' && req.method === 'GET') {
-          const hasKey = Boolean(this.resolveResendApiKey());
+          const resolvedKey = this.resolveResendApiKey();
+          const hasKey = Boolean(resolvedKey);
           const pf = await this.pipeline.evaluatePreflight({
             hasResendKey: hasKey,
             keyStatus: this.keyStatus || (hasKey ? 'FORMAT_VALID_KEY_PRESENT' : 'KEY_MISSING'),
+            apiKey: (!this.trustedTestMode && resolvedKey) ? resolvedKey : null,
             ownerExplicitApproval: false
           });
           res.writeHead(200, { 'Content-Type': 'application/json' });

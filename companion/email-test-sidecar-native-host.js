@@ -6,8 +6,59 @@
  * - Zero secrets written to disk/stderr/logs; never touches legacy 18988/18989 hosts.
  */
 const fs = require('node:fs');
+const path = require('node:path');
+const http = require('node:http');
+const { spawn } = require('node:child_process');
 const { getSidecarPaths } = require('./sidecar-paths');
 const { verifyWindowsDacl } = require('./email-test-sidecar-set-key');
+const { SIDECAR_BUILD_ID } = require('./email-test-sidecar');
+
+function probeLocalHealth(port) {
+  return new Promise((resolve) => {
+    const req = http.request({ host: '127.0.0.1', port, method: 'GET', path: '/health', timeout: 1000 }, (res) => {
+      let body = '';
+      res.on('data', c => { body += c; });
+      res.on('end', () => {
+        try { resolve({ alive: res.statusCode === 200, json: JSON.parse(body) }); }
+        catch (_) { resolve({ alive: false, json: null }); }
+      });
+    });
+    req.on('timeout', () => { req.destroy(); resolve({ alive: false, json: null }); });
+    req.on('error', () => resolve({ alive: false, json: null }));
+    req.end();
+  });
+}
+
+async function ensureLocalSidecarRunning(msg = {}, options = {}) {
+  if (!msg || msg.action !== 'GET_SIDECAR_TOKEN') return { ensured: false };
+  const port = Number(msg.port) || 18990;
+  const h = await probeLocalHealth(port);
+  if (h.alive && h.json && h.json.service === 'XPIDER Email Test Sidecar' && h.json.companionBuildId === SIDECAR_BUILD_ID) {
+    return { ensured: true, alreadyRunning: true, companionBuildId: h.json.companionBuildId };
+  }
+  if (h.alive && h.json && h.json.service === 'XPIDER Email Test Sidecar' && Number.isInteger(Number(h.json.pid))) {
+    try { process.kill(Number(h.json.pid), 'SIGTERM'); } catch (_) {}
+    await new Promise(r => setTimeout(r, 400));
+  } else if (h.alive) {
+    return { ensured: false, reason: 'PORT_IN_USE_BY_OTHER_SERVICE' };
+  }
+  const sidecarScript = options.sidecarScript || path.join(__dirname, 'email-test-sidecar.js');
+  const child = spawn(process.execPath, [sidecarScript], {
+    detached: true,
+    stdio: 'ignore',
+    windowsHide: true,
+    env: { ...process.env, XPIDER_EMAIL_SIDECAR_PORT: String(port) }
+  });
+  child.unref();
+  for (let i = 0; i < 30; i++) {
+    await new Promise(r => setTimeout(r, 120));
+    const check = await probeLocalHealth(port);
+    if (check.alive && check.json && check.json.companionBuildId === SIDECAR_BUILD_ID) {
+      return { ensured: true, autoStarted: true, companionBuildId: check.json.companionBuildId };
+    }
+  }
+  return { ensured: false, reason: 'START_TIMEOUT' };
+}
 
 function readNativeMessage(stdin = process.stdin) {
   return new Promise((resolve, reject) => {
@@ -96,6 +147,9 @@ function handleNativeRequest(msg, options = {}) {
 
 async function main() {
   const msg = await readNativeMessage(process.stdin);
+  if (msg && msg.action === 'GET_SIDECAR_TOKEN' && msg.ensureRunning !== false) {
+    try { await ensureLocalSidecarRunning(msg); } catch (_) {}
+  }
   const resp = handleNativeRequest(msg);
   process.stdout.write(encodeNativeMessage(resp));
 }
@@ -112,5 +166,6 @@ if (require.main === module) {
 module.exports = {
   readNativeMessage,
   encodeNativeMessage,
-  handleNativeRequest
+  handleNativeRequest,
+  ensureLocalSidecarRunning
 };
