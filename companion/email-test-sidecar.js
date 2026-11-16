@@ -16,8 +16,8 @@ const { writeProtectedSecretFile, verifyWindowsDacl } = require('./email-test-si
 const { getSidecarPaths } = require('./sidecar-paths');
 
 const DEFAULT_SIDECAR_PORT = 18990;
-const SIDECAR_BUILD_ID = 'V7.0.0-OWNER-BETA-TEST-SEND-SIDECAR-20261116-LOCKED5';
-const SIDECAR_IMPLEMENTATION_HEAD = 'email-test-sidecar-20261116-locked5';
+const SIDECAR_BUILD_ID = 'V7.0.0-OWNER-BETA-TEST-SEND-SIDECAR-20261116-LOCKED6';
+const SIDECAR_IMPLEMENTATION_HEAD = 'email-test-sidecar-20261116-locked6';
 const SIDECAR_API_CAPABILITIES = ['email-test-send', 'email-test-sidecar-v1', 'email-test-ledger-v1'];
 const EXPOSED_RC3_6_TOKEN_SHA256 = '597a70b99c11c7f4d13a075204ac240bb08a7a1d6c08c78268328e0bb59daeda';
 const EXTENSION_ORIGIN_RE = /^chrome-extension:\/\/[a-p]{32}$/;
@@ -77,8 +77,8 @@ class EmailTestSidecar {
       if (process.platform === 'win32' && process.env.USERNAME) {
         try {
           verifyWindowsDacl(this.tokenFile, process.env.USERNAME);
-        } catch (_) {
-          writeProtectedSecretFile(this.tokenFile, disk + '\n');
+        } catch (aclErr) {
+          throw new Error(`TOKEN_ACL_INVALID: ${aclErr.message}`);
         }
       }
       return disk;
@@ -106,24 +106,32 @@ class EmailTestSidecar {
       this.lastKeyReadError = 'MALFORMED_ENV_RESEND_API_KEY';
       return null;
     }
-    const candidates = this.localKeyFile !== null
-      ? (this.localKeyFile ? [this.localKeyFile] : [])
-      : [
-          getSidecarPaths().keyFile,
-          process.env.LOCALAPPDATA ? path.join(process.env.LOCALAPPDATA, 'XPIDER', '.resend_api_key') : null
-        ].filter(Boolean);
-    for (const filePath of candidates) {
-      if (fs.existsSync(filePath)) {
+    const primaryKeyPath = this.localKeyFile !== null
+      ? this.localKeyFile
+      : getSidecarPaths(this.stateDir).keyFile;
+    if (primaryKeyPath && fs.existsSync(primaryKeyPath)) {
+      if (process.platform === 'win32' && process.env.USERNAME) {
         try {
-          const val = fs.readFileSync(filePath, 'utf8').trim();
-          if (/^re_[A-Za-z0-9_-]{8,}$/.test(val)) { this.keyStatus = 'CONFIGURED'; return val; }
-          this.keyStatus = 'MALFORMED_KEY';
-          this.lastKeyReadError = `INVALID_LOCAL_KEY_FORMAT:${path.basename(filePath)}`;
-        } catch (err) {
-          this.keyStatus = 'LOCAL_KEY_FILE_UNREADABLE';
-          this.lastKeyReadError = `LOCAL_KEY_FILE_UNREADABLE:${err.message}`;
+          verifyWindowsDacl(primaryKeyPath, process.env.USERNAME);
+        } catch (aclErr) {
+          this.keyStatus = 'KEY_ACL_INVALID';
+          this.lastKeyReadError = `KEY_ACL_INVALID:${aclErr.message}`;
           return null;
         }
+      }
+      try {
+        const val = fs.readFileSync(primaryKeyPath, 'utf8').trim();
+        if (/^re_[A-Za-z0-9_-]{8,}$/.test(val)) {
+          this.keyStatus = 'FORMAT_VALID_KEY_PRESENT';
+          return val;
+        }
+        this.keyStatus = 'MALFORMED_KEY';
+        this.lastKeyReadError = `INVALID_LOCAL_KEY_FORMAT:${path.basename(primaryKeyPath)}`;
+        return null;
+      } catch (err) {
+        this.keyStatus = 'LOCAL_KEY_FILE_UNREADABLE';
+        this.lastKeyReadError = `LOCAL_KEY_FILE_UNREADABLE:${err.message}`;
+        return null;
       }
     }
     return null;
@@ -418,15 +426,18 @@ class EmailTestSidecar {
 
               const apiKey = this.resolveResendApiKey();
               if (!apiKey) {
-                const keyErrReason = this.keyStatus === 'MALFORMED_KEY'
-                  ? 'MALFORMED_RESEND_API_KEY'
-                  : (this.keyStatus === 'LOCAL_KEY_FILE_UNREADABLE' ? 'LOCAL_KEY_FILE_UNREADABLE' : 'RESEND_API_KEY_NOT_CONFIGURED');
+                const keyErrReason = this.keyStatus === 'KEY_ACL_INVALID'
+                  ? 'KEY_ACL_INVALID'
+                  : (this.keyStatus === 'MALFORMED_KEY'
+                      ? 'MALFORMED_RESEND_API_KEY'
+                      : (this.keyStatus === 'LOCAL_KEY_FILE_UNREADABLE' ? 'LOCAL_KEY_FILE_UNREADABLE' : 'RESEND_API_KEY_NOT_CONFIGURED'));
+                const isErr500 = this.keyStatus === 'LOCAL_KEY_FILE_UNREADABLE' || this.keyStatus === 'KEY_ACL_INVALID';
                 let ledgerPersisted = true;
                 let ledgerError = null;
                 try {
                   this.ledger.append({
                     idempotencyKey, recipient, status: 'BLOCKED',
-                    httpStatus: this.keyStatus === 'LOCAL_KEY_FILE_UNREADABLE' ? 500 : 200,
+                    httpStatus: isErr500 ? 500 : 200,
                     errorCode: this.keyStatus || 'KEY_MISSING',
                     reason: keyErrReason
                   });
@@ -434,7 +445,7 @@ class EmailTestSidecar {
                   ledgerPersisted = false;
                   ledgerError = e.message;
                 }
-                res.writeHead(this.keyStatus === 'LOCAL_KEY_FILE_UNREADABLE' ? 500 : 200, { 'Content-Type': 'application/json' });
+                res.writeHead(isErr500 ? 500 : 200, { 'Content-Type': 'application/json' });
                 res.end(JSON.stringify({
                   status: 'BLOCKED',
                   reason: keyErrReason,

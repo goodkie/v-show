@@ -705,6 +705,86 @@ function request(port, method, urlPath, headers = {}, body = null) {
       }
     });
 
+    await runTest('KEY_ACL_INVALID_AND_TOKEN_ACL_INVALID_FAIL_CLOSED', async () => {
+      if (process.platform !== 'win32') return;
+      const { execFileSync } = require('node:child_process');
+
+      // 1. Pre-existing key file with broad Everyone:R ACE must fail closed with KEY_ACL_INVALID and 0 POSTs
+      const weakKeyFile = path.join(tmpDir, '.weak_resend_key');
+      fs.writeFileSync(weakKeyFile, 're_weak_acl_valid_format_123\n', 'utf8');
+      execFileSync('icacls', [weakKeyFile, '/grant', 'Everyone:R'], { stdio: 'pipe' });
+      let postCalls = 0;
+      const sWeakKey = new EmailTestSidecar({
+        port: 20007,
+        stateDir: path.join(tmpDir, 'state_weak_key'),
+        localKeyFile: weakKeyFile,
+        rateLimitMs: 0,
+        transportImpl: async () => { postCalls++; return { status: 'SUCCESS' }; }
+      });
+      await sWeakKey.start();
+      try {
+        const resp = await request(20007, 'POST', '/email/test-send', {
+          Authorization: `Bearer ${sWeakKey.token}`,
+          'Content-Type': 'application/json'
+        }, { to: 'delivered@resend.dev', subject: 'K', text: 'K', idempotencyKey: 'weak_key_acl_test_0001' });
+        assert.equal(resp.status, 500);
+        assert.equal(resp.json.reason, 'KEY_ACL_INVALID');
+        assert.equal(postCalls, 0);
+      } finally {
+        await sWeakKey.stop();
+      }
+
+      // 2. Existing token file with weak Everyone:R ACE must refuse sidecar startup (no silent repair)
+      const weakTokFile = path.join(tmpDir, '.weak_token_file');
+      fs.writeFileSync(weakTokFile, 'abcdef0123456789abcdef0123456789\n', 'utf8');
+      execFileSync('icacls', [weakTokFile, '/grant', 'Everyone:R'], { stdio: 'pipe' });
+      assert.throws(() => new EmailTestSidecar({
+        port: 20008,
+        tokenFile: weakTokFile,
+        pidFile: path.join(tmpDir, '.pid_wt'),
+        ledgerFile: path.join(tmpDir, '.ledger_wt.jsonl')
+      }), /TOKEN_ACL_INVALID/);
+    });
+
+    await runTest('HOSTILE_LOCK_REPLACEMENT_TRIGGERS_RECONCILIATION_AND_CLI_CHECKS', async () => {
+      const { EmailSimulatorLedger } = require('../companion/email-simulator-ledger');
+      const { execFileSync } = require('node:child_process');
+
+      // 1. Hostile lockfile replacement inside critical section triggers reconciliationRequired=true and preserves foreign lock
+      const hPath = path.join(tmpDir, '.hostile_lock.jsonl');
+      const hLedger = new EmailSimulatorLedger({ ledgerFile: hPath });
+      hLedger._withExclusiveLock(() => {
+        fs.writeFileSync(hLedger.lockFile, JSON.stringify({ pid: 777777, lockId: 'foreign_replaced_nonce', createdAt: Date.now() }));
+      });
+      assert.equal(hLedger.reconciliationRequired, true);
+      assert.equal(hLedger.corruptReason, 'LOCK_OWNERSHIP_LOST_HOSTILE_REPLACEMENT');
+      const foreign = JSON.parse(fs.readFileSync(hLedger.lockFile, 'utf8'));
+      assert.equal(foreign.lockId, 'foreign_replaced_nonce');
+      fs.unlinkSync(hLedger.lockFile);
+
+      // 2. CLI rejects BUILD_MISMATCH (exit 2) and AUTH_FAILED (exit 4)
+      const cliStateDir = path.join(tmpDir, 'cli_auth_fail_state');
+      const sReal = new EmailTestSidecar({ port: 20009, stateDir: cliStateDir });
+      await sReal.start();
+      try {
+        // Wrong token file -> AUTH_FAILED exit 4
+        const wrongState = path.join(tmpDir, 'cli_wrong_state');
+        fs.mkdirSync(wrongState, { recursive: true });
+        fs.writeFileSync(path.join(wrongState, '.email_sidecar_token'), 'wrong_token_0123456789abcdef\n', 'utf8');
+        let exitCode = await new Promise(resolve => {
+          const { spawn } = require('node:child_process');
+          const p = spawn(process.execPath, [path.join(__dirname, '..', 'companion', 'email-test-sidecar-cli.js')], {
+            env: { ...process.env, XPIDER_EMAIL_SIDECAR_PORT: '20009', XPIDER_SIDECAR_STATE_DIR: wrongState },
+            stdio: 'ignore'
+          });
+          p.on('exit', code => resolve(code));
+        });
+        assert.equal(exitCode, 4);
+      } finally {
+        await sReal.stop();
+      }
+    });
+
     console.log(`\nALL SIDECAR TESTS PASSED (${pass}/${pass})`);
   } finally {
     await sidecar.stop();

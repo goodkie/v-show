@@ -115,32 +115,77 @@ function readSecretNoEcho(promptText, inputStream = process.stdin) {
   });
 }
 
+let cachedCurrentUserSid = undefined;
+function getCurrentUserSid(execSyncFn = execFileSync) {
+  if (cachedCurrentUserSid !== undefined) return cachedCurrentUserSid;
+  try {
+    const out = execSyncFn('whoami', ['/user'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
+    const m = out.match(/(S-1-5-[0-9-]+)/i);
+    cachedCurrentUserSid = m ? m[1].toLowerCase() : null;
+  } catch (_) {
+    cachedCurrentUserSid = null;
+  }
+  return cachedCurrentUserSid;
+}
+
 function verifyWindowsDacl(targetPath, username, execSyncFn = execFileSync) {
   const out = execSyncFn('icacls', [targetPath], { encoding: 'utf8' });
-  const lines = out.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
-  const aceLines = lines.filter(l => !l.toLowerCase().startsWith('successfully processed') && l.includes(':'));
+  const rawLines = out.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+  const pathLower = String(targetPath || '').toLowerCase();
+  const aceLines = [];
+  for (const line of rawLines) {
+    if (line.toLowerCase().startsWith('successfully processed')) continue;
+    let trimmed = line;
+    if (pathLower && trimmed.toLowerCase().startsWith(pathLower)) {
+      trimmed = trimmed.slice(targetPath.length).trim();
+    }
+    if (trimmed.includes(':')) aceLines.push(trimmed);
+  }
   if (aceLines.length === 0) {
     throw new Error('DACL_VERIFICATION_FAILED: No ACE lines found (non-NTFS or unsupported filesystem)');
   }
-  const forbiddenPrincipals = ['everyone', 'builtin\\users', 'nt authority\\authenticated users', 'users'];
-  const userLower = String(username || '').toLowerCase();
-  let hasOwnerGrant = false;
-  for (const line of aceLines) {
-    if (/\(I\)/.test(line)) {
-      throw new Error(`DACL_VERIFICATION_FAILED: Inherited ACE detected (${line})`);
-    }
-    const lower = line.toLowerCase();
-    for (const fp of forbiddenPrincipals) {
-      if (lower.includes(fp + ':')) {
-        throw new Error(`DACL_VERIFICATION_FAILED: Broad principal ACE detected (${fp})`);
-      }
-    }
-    if (userLower && (lower.includes('\\' + userLower + ':') || lower.startsWith(userLower + ':') || lower.includes(' ' + userLower + ':'))) {
-      hasOwnerGrant = true;
-    }
+
+  const allowedPrincipals = new Set(['nt authority\\system', 'builtin\\administrators']);
+  if (username) {
+    const u = String(username).trim().toLowerCase();
+    allowedPrincipals.add(u);
+    if (process.env.USERDOMAIN) allowedPrincipals.add(`${process.env.USERDOMAIN.trim().toLowerCase()}\\${u}`);
+    if (process.env.COMPUTERNAME) allowedPrincipals.add(`${process.env.COMPUTERNAME.trim().toLowerCase()}\\${u}`);
   }
-  if (!hasOwnerGrant) {
-    throw new Error(`DACL_VERIFICATION_FAILED: Current user (${username}) ACE not verified`);
+  if (execSyncFn === execFileSync) {
+    const sid = getCurrentUserSid(execSyncFn);
+    if (sid) allowedPrincipals.add(sid);
+  }
+
+  let hasOwnerRw = false;
+  for (const ace of aceLines) {
+    const colonIdx = ace.indexOf(':');
+    if (colonIdx <= 0) {
+      throw new Error(`DACL_VERIFICATION_FAILED: Malformed ACE (${ace})`);
+    }
+    const principal = ace.slice(0, colonIdx).trim().toLowerCase();
+    const perms = ace.slice(colonIdx + 1).trim();
+
+    if (/\(I\)/i.test(perms)) {
+      throw new Error(`DACL_VERIFICATION_FAILED: Inherited ACE detected (${ace})`);
+    }
+    if (/\((DENY|N)\)/i.test(perms)) {
+      throw new Error(`DACL_VERIFICATION_FAILED: Deny/No-access ACE detected (${ace})`);
+    }
+    if (!allowedPrincipals.has(principal)) {
+      throw new Error(`DACL_VERIFICATION_FAILED: Non-owner or broad principal ACE detected (${principal})`);
+    }
+    if (principal === 'nt authority\\system' || principal === 'builtin\\administrators') {
+      continue;
+    }
+    const grantsRw = /\(F\)/i.test(perms) || /\(M\)/i.test(perms) || (/\bR\b/i.test(perms) && /\bW\b/i.test(perms)) || /\(R,W\)/i.test(perms);
+    if (!grantsRw) {
+      throw new Error(`DACL_VERIFICATION_FAILED: Owner ACE lacks read/write permission (${ace})`);
+    }
+    hasOwnerRw = true;
+  }
+  if (!hasOwnerRw) {
+    throw new Error(`DACL_VERIFICATION_FAILED: Current user (${username}) R/W ACE not verified`);
   }
   return true;
 }

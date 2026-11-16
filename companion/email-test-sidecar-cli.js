@@ -1,7 +1,7 @@
 'use strict';
 const http = require('node:http');
 const fs = require('node:fs');
-const { EmailTestSidecar, DEFAULT_SIDECAR_PORT, SIDECAR_BUILD_ID, parseSidecarPort } = require('./email-test-sidecar');
+const { EmailTestSidecar, DEFAULT_SIDECAR_PORT, SIDECAR_BUILD_ID, SIDECAR_API_CAPABILITIES, parseSidecarPort } = require('./email-test-sidecar');
 const { getSidecarPaths } = require('./sidecar-paths');
 
 function getJson(port, urlPath, headers = {}) {
@@ -24,24 +24,37 @@ function getJson(port, urlPath, headers = {}) {
   const port = parseSidecarPort(process.env.XPIDER_EMAIL_SIDECAR_PORT, DEFAULT_SIDECAR_PORT);
   const paths = getSidecarPaths();
   const existing = await getJson(port, '/health');
-  if (existing.alive && existing.json) {
-    const caps = Array.isArray(existing.json.apiCapabilities) ? existing.json.apiCapabilities : [];
-    if (caps.includes('email-test-sidecar-v1')) {
-      const tok = process.env.XPIDER_EMAIL_SIDECAR_TOKEN || (fs.existsSync(paths.tokenFile) ? fs.readFileSync(paths.tokenFile, 'utf8').trim() : '');
-      const st = tok ? await getJson(port, '/email/test-send/status', { Authorization: `Bearer ${tok}` }) : { alive: false };
-      if (st.alive && st.status === 200 && st.json && st.json.resendApiKeyConfigured === false) {
-        console.error(`[ALREADY_RUNNING_KEY_MISSING] Sidecar PID ${existing.json.pid} is already running on 127.0.0.1:${port} WITHOUT RESEND_API_KEY.`);
-        console.error('  1) Run STOP_EMAIL_TEST_SIDECAR.bat');
-        console.error('  2) Run SET_RESEND_API_KEY.bat');
-        console.error('  3) Run START_EMAIL_TEST_SIDECAR.bat');
-        process.exit(3);
-      }
-      console.log(`[OK] XPIDER Email Test Sidecar is ALREADY running on http://127.0.0.1:${port}`);
-      console.log(`     PID: ${existing.json.pid} | Build: ${existing.json.companionBuildId} | KeyConfigured: ${st.json ? Boolean(st.json.resendApiKeyConfigured) : 'unknown'}`);
-      process.exit(0);
+  if (existing.alive) {
+    const j = existing.json || {};
+    const caps = Array.isArray(j.apiCapabilities) ? j.apiCapabilities : [];
+    const hasAllCaps = SIDECAR_API_CAPABILITIES.every(c => caps.includes(c));
+    if (j.companionBuildId !== SIDECAR_BUILD_ID || !hasAllCaps) {
+      console.error(`[BUILD_MISMATCH] Service on port ${port} (${j.companionBuildId || 'unknown'}) does not match required build ${SIDECAR_BUILD_ID}.`);
+      console.error('  Stop the outdated service on this port and re-run START_EMAIL_TEST_SIDECAR.bat.');
+      process.exit(2);
     }
-    console.error(`[BLOCKED] Port ${port} is occupied by another service (${existing.json.companionBuildId || 'unknown'}).`);
-    process.exit(2);
+
+    const tok = process.env.XPIDER_EMAIL_SIDECAR_TOKEN || (fs.existsSync(paths.tokenFile) ? fs.readFileSync(paths.tokenFile, 'utf8').trim() : '');
+    if (!tok) {
+      console.error(`[AUTH_FAILED] Running sidecar matches build, but token file is missing at ${paths.tokenFile}.`);
+      process.exit(4);
+    }
+    const st = await getJson(port, '/email/test-send/status', { Authorization: `Bearer ${tok}` });
+    if (!st.alive || st.status !== 200 || !st.json) {
+      console.error(`[AUTH_FAILED] Running sidecar rejected Bearer token from ${paths.tokenFile} (HTTP ${st.status || 'ERR'}).`);
+      console.error('  Run STOP_EMAIL_TEST_SIDECAR.bat then START_EMAIL_TEST_SIDECAR.bat to re-sync token provenance.');
+      process.exit(4);
+    }
+    if (st.json.resendApiKeyConfigured === false) {
+      console.error(`[ALREADY_RUNNING_KEY_MISSING] Sidecar PID ${j.pid} is running on 127.0.0.1:${port} WITHOUT a valid RESEND_API_KEY (status: ${st.json.keyStatus || 'KEY_MISSING'}).`);
+      console.error('  1) Run STOP_EMAIL_TEST_SIDECAR.bat');
+      console.error('  2) Run SET_RESEND_API_KEY.bat');
+      console.error('  3) Run START_EMAIL_TEST_SIDECAR.bat');
+      process.exit(3);
+    }
+    console.log(`[OK] XPIDER Email Test Sidecar is ALREADY running on http://127.0.0.1:${port}`);
+    console.log(`     PID: ${j.pid} | Build: ${j.companionBuildId} | KeyStatus: ${st.json.keyStatus}`);
+    process.exit(0);
   }
 
   const sidecar = new EmailTestSidecar({ port });
@@ -55,7 +68,7 @@ function getJson(port, urlPath, headers = {}) {
   console.log(`  Legacy 18989 / Proxy 18988: UNTOUCHED`);
   console.log('========================================================================');
   console.log('');
-  console.log(`  RESEND_API_KEY status     : ${sidecar.keyStatus} (${hasKey ? 'server-side protected' : 'run SET_RESEND_API_KEY.bat + STOP + START'})`);
+  console.log(`  RESEND_API_KEY status     : ${sidecar.keyStatus} (${hasKey ? 'format valid, server-side protected' : 'run SET_RESEND_API_KEY.bat + STOP + START'})`);
   console.log(`  Sidecar Bearer Token File : ${sidecar.tokenFile}`);
   console.log(`  Sidecar Bearer Token      : ${sidecar.token}`);
   console.log('');

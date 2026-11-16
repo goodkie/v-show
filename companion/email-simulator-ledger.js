@@ -125,6 +125,17 @@ class EmailSimulatorLedger {
         } finally {
           this.fsImpl.closeSync(lfd);
         }
+        if (this.fsImpl === fs && process.platform === 'win32' && process.env.USERNAME) {
+          try {
+            execFileSync('icacls', [this.lockFile, '/inheritance:r', '/grant:r', `${process.env.USERNAME}:(R,W)`], { stdio: 'pipe' });
+            verifyWindowsDacl(this.lockFile, process.env.USERNAME);
+          } catch (aclErr) {
+            try { this.fsImpl.unlinkSync(this.lockFile); } catch (_) {}
+            const lockAclErr = new Error(`LEDGER_LOCK_ACL_FAILED: ${aclErr.message}`);
+            lockAclErr.code = 'LEDGER_LOCK_ACL_FAILED';
+            throw lockAclErr;
+          }
+        }
         acquired = true;
       } catch (err) {
         if (!err || err.code !== 'EEXIST') {
@@ -161,14 +172,21 @@ class EmailSimulatorLedger {
     try {
       return fn();
     } finally {
-      // Single-owner ownership-verified release: only unlink our own (pid, lockId)
+      // Single-owner ownership-verified release: only unlink our own (pid, lockId).
+      // If lockfile was externally replaced or removed (hostile replacement), mark reconciliationRequired=true.
       try {
         const currentRaw = this.fsImpl.readFileSync(this.lockFile, 'utf8');
         const current = JSON.parse(currentRaw);
         if (Number(current.pid) === process.pid && current.lockId === myLockId) {
           this.fsImpl.unlinkSync(this.lockFile);
+        } else {
+          this.reconciliationRequired = true;
+          this.corruptReason = 'LOCK_OWNERSHIP_LOST_HOSTILE_REPLACEMENT';
         }
-      } catch (_) {}
+      } catch (_) {
+        this.reconciliationRequired = true;
+        this.corruptReason = 'LOCK_RELEASE_READ_FAILED';
+      }
     }
   }
 
