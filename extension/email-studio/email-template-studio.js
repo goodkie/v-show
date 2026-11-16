@@ -100,7 +100,7 @@ async function checkCompanionStatus() {
     const d = resp.data;
     const hs = resp.handshake || {};
     const compBuild = hs.companionBuildId || d.companionBuildId || 'verified';
-    const extBuild = hs.extensionBuildId || 'V7.0.0-OWNER-BETA-TEST-SEND-SIDECAR-20261116-LOCKED2';
+    const extBuild = hs.extensionBuildId || 'V7.0.0-OWNER-BETA-TEST-SEND-SIDECAR-20261116-LOCKED3';
     const pidLabel = hs.companionPid || d.pid || 'unknown';
     const capsLabel = Array.isArray(hs.apiCapabilities) ? hs.apiCapabilities.join(', ') : 'email-test-send';
     if (d.resendApiKeyConfigured) {
@@ -167,7 +167,7 @@ async function triggerTestSend() {
   if (resp && resp.status === 'SUCCESS') {
     box.className = 'status-box status-success';
     box.textContent = `✅ [발송 접수 성공] Resend 이벤트 시뮬레이터가 정상 접수하였습니다.\n• Provider Message ID: ${resp.providerMessageId || 'OK'}\n• 수신자: ${resp.to}\n• 발신자: ${resp.from}\n• 접수시각: ${resp.timestamp || new Date().toISOString()}`;
-  } else if (resp && resp.status === 'BLOCKED') {
+  } else if (resp && (resp.status === 'BLOCKED' || resp.status === 'AMBIGUOUS_NEEDS_RECONCILE')) {
     box.className = 'status-box status-blocked';
     box.textContent = `⛔ [발송 차단 (FAIL-CLOSED)]\n• 사유: ${resp.reason || (Array.isArray(resp.reasons) ? resp.reasons.join(', ') : 'POLICY_BLOCKED')}\n• 상세: ${resp.message || '인증 또는 자격 요건 미충족'}\n• 수신자: ${resp.recipient || recipient}`;
   } else if (resp && resp.status === 'PROVIDER_ERROR') {

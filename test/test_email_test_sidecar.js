@@ -558,6 +558,52 @@ function request(port, method, urlPath, headers = {}, body = null) {
       }
     });
 
+    await runTest('LOCK_RECLAIM_RACE_AND_AMBIGUOUS_NON_RETRY_MESSAGE', async () => {
+      const { EmailSimulatorLedger } = require('../companion/email-simulator-ledger');
+      const raceLedger = new EmailSimulatorLedger({
+        ledgerFile: path.join(tmpDir, '.race_reclaim.jsonl'),
+        lockTimeoutMs: 100,
+        staleLockMs: 50
+      });
+      // Inject a live lockfile owned by process.pid while testing reclaim path safety:
+      // even if a stale-PID inspection raced, reclaimMutex re-reads and sees live PID, so it never unlinks it.
+      fs.writeFileSync(raceLedger.lockFile, JSON.stringify({ pid: process.pid, lockId: 'race_winner_nonce', createdAt: Date.now() }));
+      assert.throws(() => raceLedger.append({
+        idempotencyKey: 'race_no_steal_001',
+        recipient: 'delivered@resend.dev',
+        status: 'REQUESTED'
+      }), /LEDGER_LOCK_CONTENTION/);
+      const preserved = JSON.parse(fs.readFileSync(raceLedger.lockFile, 'utf8'));
+      assert.equal(preserved.lockId, 'race_winner_nonce');
+      fs.unlinkSync(raceLedger.lockFile);
+
+      // Verify PRIOR_REQUEST_AMBIGUOUS does NOT tell operator to retry with a new key
+      const ambigLedger = path.join(tmpDir, '.ambig_msg.jsonl');
+      const sAmb = new EmailTestSidecar({
+        port: 20003,
+        token: 'ambig_msg_tok_123456',
+        tokenFile: path.join(tmpDir, '.tok_ambig'),
+        pidFile: path.join(tmpDir, '.pid_ambig'),
+        ledgerFile: ambigLedger,
+        apiKeyOverride: 're_test_ambig_123456',
+        rateLimitMs: 0,
+        transportImpl: async () => { throw new Error('ETIMEDOUT'); }
+      });
+      await sAmb.start();
+      try {
+        await request(20003, 'POST', '/email/test-send', { Authorization: 'Bearer ambig_msg_tok_123456', 'Content-Type': 'application/json' },
+          { to: 'delivered@resend.dev', subject: 'A', text: 'B', idempotencyKey: 'ambig_non_retry_key_01' });
+        const conflict = await request(20003, 'POST', '/email/test-send', { Authorization: 'Bearer ambig_msg_tok_123456', 'Content-Type': 'application/json' },
+          { to: 'delivered@resend.dev', subject: 'A', text: 'B', idempotencyKey: 'ambig_non_retry_key_01' });
+        assert.equal(conflict.status, 409);
+        assert.equal(conflict.json.reason, 'PRIOR_REQUEST_AMBIGUOUS');
+        assert.ok(conflict.json.message.includes('Do not retry under a new key'));
+        assert.equal(conflict.json.message.includes('새 idempotencyKey로 재시도'), false);
+      } finally {
+        await sAmb.stop();
+      }
+    });
+
     console.log(`\nALL SIDECAR TESTS PASSED (${pass}/${pass})`);
   } finally {
     await sidecar.stop();

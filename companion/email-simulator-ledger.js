@@ -12,6 +12,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
 const { execFileSync } = require('node:child_process');
+const { verifyWindowsDacl } = require('./email-test-sidecar-set-key');
 
 const ALLOWED_SIMULATOR_EMAILS = new Set([
   'delivered@resend.dev',
@@ -125,13 +126,13 @@ class EmailSimulatorLedger {
           throw lockErr;
         }
         // Inspect existing lock: NEVER reclaim a verified live PID based solely on elapsed age!
-        let shouldReclaimDead = false;
+        let inspectedDead = null;
         try {
           const raw = this.fsImpl.readFileSync(this.lockFile, 'utf8');
           const info = JSON.parse(raw);
           const ownerPid = Number(info.pid);
           if (!isPidAlive(ownerPid)) {
-            shouldReclaimDead = true;
+            inspectedDead = { pid: ownerPid, lockId: info.lockId || null };
           }
           // If ownerPid IS alive, do NOT reclaim regardless of ageMs! Wait until deadline.
         } catch (_) {
@@ -139,7 +140,7 @@ class EmailSimulatorLedger {
           try {
             const st = this.fsImpl.statSync(this.lockFile);
             if ((Date.now() - st.mtimeMs) > this.staleLockMs) {
-              shouldReclaimDead = true;
+              inspectedDead = { malformed: true, mtimeMs: st.mtimeMs };
             }
           } catch (_) {
             // Lock disappeared concurrently; retry immediately
@@ -147,14 +148,39 @@ class EmailSimulatorLedger {
           }
         }
 
-        if (shouldReclaimDead) {
-          // Safe reclaim: rename aside to avoid unlinking a newly created lock if we lost a race
-          const deadAside = `${this.lockFile}.reclaimed.${myLockId}`;
+        if (inspectedDead) {
+          // Race-safe reclaim: serialize reclaimers via <lockFile>.reclaim and re-verify identity!
+          const reclaimMutex = `${this.lockFile}.reclaim`;
+          let rfd = null;
           try {
-            this.fsImpl.renameSync(this.lockFile, deadAside);
-            try { this.fsImpl.unlinkSync(deadAside); } catch (_) {}
+            rfd = this.fsImpl.openSync(reclaimMutex, 'wx', 0o600);
+            try {
+              this.fsImpl.writeSync(rfd, JSON.stringify({ pid: process.pid, lockId: myLockId, createdAt: Date.now() }));
+            } finally {
+              this.fsImpl.closeSync(rfd);
+            }
+            // Re-read this.lockFile AFTER acquiring reclaimMutex to prove it is STILL the exact same dead/malformed lock
+            let stillSameDead = false;
+            try {
+              const rawAfter = this.fsImpl.readFileSync(this.lockFile, 'utf8');
+              const infoAfter = JSON.parse(rawAfter);
+              if (!inspectedDead.malformed && Number(infoAfter.pid) === inspectedDead.pid && (infoAfter.lockId || null) === inspectedDead.lockId && !isPidAlive(Number(infoAfter.pid))) {
+                stillSameDead = true;
+              }
+            } catch (_) {
+              if (inspectedDead.malformed) {
+                stillSameDead = true;
+              }
+            }
+            if (stillSameDead) {
+              this.fsImpl.unlinkSync(this.lockFile);
+            }
           } catch (_) {
-            // Lost rename race to another process; retry loop cleanly
+            // Another reclaimer holds reclaimMutex or lock changed; retry cleanly
+          } finally {
+            if (rfd !== null) {
+              try { this.fsImpl.unlinkSync(reclaimMutex); } catch (_) {}
+            }
           }
           continue;
         }
@@ -226,10 +252,17 @@ class EmailSimulatorLedger {
       }
     }
 
-    if (isNewFile && this.fsImpl === fs && process.platform === 'win32' && process.env.USERNAME) {
+    if (this.fsImpl === fs && process.platform === 'win32' && process.env.USERNAME) {
       try {
-        execFileSync('icacls', [this.ledgerFile, '/inheritance:r', '/grant:r', `${process.env.USERNAME}:(R,W)`], { stdio: 'ignore' });
-      } catch (_) {}
+        if (isNewFile) {
+          execFileSync('icacls', [this.ledgerFile, '/inheritance:r', '/grant:r', `${process.env.USERNAME}:(R,W)`], { stdio: 'pipe' });
+        }
+        verifyWindowsDacl(this.ledgerFile, process.env.USERNAME);
+      } catch (aclErr) {
+        const err = new Error(`LEDGER_ACL_VERIFICATION_FAILED: ${aclErr.message}`);
+        err.code = 'LEDGER_ACL_VERIFICATION_FAILED';
+        throw err;
+      }
     }
 
     this.lastPersistError = null;

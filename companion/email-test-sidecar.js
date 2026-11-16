@@ -15,8 +15,8 @@ const { EmailSimulatorLedger } = require('./email-simulator-ledger');
 const { writeProtectedSecretFile, verifyWindowsDacl } = require('./email-test-sidecar-set-key');
 
 const DEFAULT_SIDECAR_PORT = 18990;
-const SIDECAR_BUILD_ID = 'V7.0.0-OWNER-BETA-TEST-SEND-SIDECAR-20261116-LOCKED2';
-const SIDECAR_IMPLEMENTATION_HEAD = 'email-test-sidecar-20261116-locked2';
+const SIDECAR_BUILD_ID = 'V7.0.0-OWNER-BETA-TEST-SEND-SIDECAR-20261116-LOCKED3';
+const SIDECAR_IMPLEMENTATION_HEAD = 'email-test-sidecar-20261116-locked3';
 const SIDECAR_API_CAPABILITIES = ['email-test-send', 'email-test-sidecar-v1', 'email-test-ledger-v1'];
 const EXPOSED_RC3_6_TOKEN_SHA256 = '597a70b99c11c7f4d13a075204ac240bb08a7a1d6c08c78268328e0bb59daeda';
 const EXTENSION_ORIGIN_RE = /^chrome-extension:\/\/[a-p]{32}$/;
@@ -86,6 +86,7 @@ class EmailTestSidecar {
   }
 
   resolveResendApiKey() {
+    this.lastKeyReadError = null;
     if (this.apiKeyOverride !== null) {
       const k = String(this.apiKeyOverride || '').trim();
       return /^re_[A-Za-z0-9_-]{8,}$/.test(k) ? k : null;
@@ -102,12 +103,16 @@ class EmailTestSidecar {
           path.join(__dirname, '.resend_api_key')
         ].filter(Boolean);
     for (const filePath of candidates) {
-      try {
-        if (fs.existsSync(filePath)) {
+      if (fs.existsSync(filePath)) {
+        try {
           const val = fs.readFileSync(filePath, 'utf8').trim();
           if (/^re_[A-Za-z0-9_-]{8,}$/.test(val)) return val;
+          this.lastKeyReadError = `INVALID_LOCAL_KEY_FORMAT:${path.basename(filePath)}`;
+        } catch (err) {
+          this.lastKeyReadError = `LOCAL_KEY_FILE_UNREADABLE:${err.message}`;
+          return null;
         }
-      } catch (_) {}
+      }
     }
     return null;
   }
@@ -367,23 +372,30 @@ class EmailTestSidecar {
                   reason: 'PRIOR_REQUEST_AMBIGUOUS',
                   errorCode: priorRec.errorCode || 'AMBIGUOUS_TIMEOUT',
                   idempotencyKey,
-                  message: '이전 요청 상태가 불명확(TIMEOUT/중단)합니다. 중복 발송 방지를 위해 자동 재전송하지 않습니다. 새 idempotencyKey로 재시도하세요.'
+                  message: '이전 요청 상태가 불명확(AMBIGUOUS)합니다. 공급자 정합성 확인 또는 독립적인 승인·초기화 전까지 새 키로 재전송하지 마세요 (Do not retry under a new key until provider reconciliation or explicit independently authorized reset).'
                 }));
                 return;
               }
 
               const now = Date.now();
               if (this.rateLimitMs > 0 && (now - this.lastTestSendAt) < this.rateLimitMs) {
+                let ledgerPersisted = true;
+                let ledgerError = null;
                 try {
                   this.ledger.append({
                     idempotencyKey, recipient, status: 'BLOCKED',
                     httpStatus: 429, errorCode: 'RATE_LIMIT', reason: 'RATE_LIMIT_EXCEEDED'
                   });
-                } catch (_) {}
+                } catch (e) {
+                  ledgerPersisted = false;
+                  ledgerError = e.message;
+                }
                 res.writeHead(429, { 'Content-Type': 'application/json' });
                 res.end(JSON.stringify({
                   status: 'BLOCKED',
                   reason: 'RATE_LIMIT_EXCEEDED',
+                  ledgerPersisted,
+                  ...(ledgerError ? { ledgerError } : {}),
                   message: 'Rate limit exceeded. Wait 5 seconds between simulator test sends.'
                 }));
                 return;
@@ -391,17 +403,27 @@ class EmailTestSidecar {
 
               const apiKey = this.resolveResendApiKey();
               if (!apiKey) {
+                const keyErrReason = this.lastKeyReadError ? 'LOCAL_KEY_FILE_UNREADABLE' : 'RESEND_API_KEY_NOT_CONFIGURED';
+                let ledgerPersisted = true;
+                let ledgerError = null;
                 try {
                   this.ledger.append({
                     idempotencyKey, recipient, status: 'BLOCKED',
-                    httpStatus: 200, errorCode: 'KEY_MISSING', reason: 'RESEND_API_KEY_NOT_CONFIGURED'
+                    httpStatus: this.lastKeyReadError ? 500 : 200, errorCode: keyErrReason, reason: keyErrReason
                   });
-                } catch (_) {}
-                res.writeHead(200, { 'Content-Type': 'application/json' });
+                } catch (e) {
+                  ledgerPersisted = false;
+                  ledgerError = e.message;
+                }
+                res.writeHead(this.lastKeyReadError ? 500 : 200, { 'Content-Type': 'application/json' });
                 res.end(JSON.stringify({
                   status: 'BLOCKED',
-                  reason: 'RESEND_API_KEY_NOT_CONFIGURED',
-                  message: 'RESEND_API_KEY is not configured on the Email Test Sidecar host. Fail-closed with zero outbound POST.'
+                  reason: keyErrReason,
+                  ledgerPersisted,
+                  ...(ledgerError ? { ledgerError } : {}),
+                  message: this.lastKeyReadError
+                    ? `Local key file error (${this.lastKeyReadError}). Fail-closed with zero outbound POST.`
+                    : 'RESEND_API_KEY is not configured on the Email Test Sidecar host. Fail-closed with zero outbound POST.'
                 }));
                 return;
               }
@@ -458,7 +480,7 @@ class EmailTestSidecar {
                   reason: 'PRIOR_REQUEST_AMBIGUOUS',
                   errorCode: ledgerRec.errorCode || 'AMBIGUOUS_TIMEOUT',
                   idempotencyKey,
-                  message: '이전 요청 상태가 불명확(TIMEOUT/중단)합니다. 중복 발송 방지를 위해 자동 재전송하지 않습니다. 새 idempotencyKey로 재시도하세요.'
+                  message: '이전 요청 상태가 불명확(AMBIGUOUS)합니다. 공급자 정합성 확인 또는 독립적인 승인·초기화 전까지 새 키로 재전송하지 마세요 (Do not retry under a new key until provider reconciliation or explicit independently authorized reset).'
                 }));
                 return;
               }
