@@ -26,24 +26,35 @@
 <label for="company">발신자 회사 / 사업자명</label><input id="company" value="vivpr.pro">
 <label for="address">사업자 우편주소 (마케팅 메일에 필수)</label><input id="address" placeholder="실제 운영 주소를 입력">
 <label for="unsubscribe">구독 취소 HTTPS URL (수신자별 고유 토큰 필요)</label><input id="unsubscribe" placeholder="https://vivpr.pro/unsubscribe/{recipient-token}">
-<div class="actions"><button class="primary" id="exportHtml">HTML 저장</button><button id="exportText">텍스트 저장</button><button id="exportJson">템플릿 JSON</button><button id="btnSaveDraft">초안 저장</button><button id="btnLoadDraft">초안 불러오기</button></div>
+<div class="actions"><button type="button" class="primary" id="exportHtml">HTML 저장</button><button type="button" id="exportText">텍스트 저장</button><button type="button" id="exportJson">템플릿 JSON</button><button type="button" id="btnSaveDraft">초안 저장</button><button type="button" id="btnLoadDraft">초안 불러오기</button></div>
 <div class="note">이미지 파일은 PC 내 미리보기만 지원합니다. 실제 발송용 HTML에는 공개 HTTPS 이미지 URL을 입력해야 합니다. 이메일 본문의 링크만으로 RFC 8058 원클릭 구독 취소 헤더가 생성되는 것은 아닙니다. 해당 헤더와 작동하는 POST 엔드포인트는 발송 서비스에서 별도 검증해야 합니다.</div>
-<div class="checks"><b>발송 전 콘텐츠 검사</b><ul id="checkList" aria-live="polite"></ul><small>주의 사항은 휴리스틱 점검이며 Gmail/Resend 스팸 점수 또는 받은편지함 도착 보장이 아닙니다.</small></div>
+<div class="checks"><b>발송 전 콘텐츠 검사 (규칙 기반 스팸·맞춤법·규정 점검)</b><ul id="checkList" aria-live="polite"></ul><small>주의 사항은 휴리스틱(규칙 기반) 점검이며 Gmail/Resend 스팸 점수 또는 실제 받은편지함 도착(Deliverability) 보장이 아닙니다.</small></div>
+<div class="send-control-card" id="contentQaCard" aria-label="콘텐츠 품질 및 문구 교정 제안" style="margin-top:10px;">
+<div class="send-header"><h3>🛡️ 콘텐츠 품질 · 문구 교정 제안 (Content QA)</h3><span class="badge-test" id="aiCopyStatusBadge">AI 자동 교정: 연결 필요</span></div>
+<div class="note" id="contentQaBadges">RULE_BASED_CONTENT_CHECK: PASS · AI_COPY_EDIT: NOT_CONFIGURED · PROVIDER_DOMAIN_AUTH: BLOCKED_EXTERNAL_DNS · SEND_BLOCKED: STRICT_HOLD</div>
+<div class="actions" style="margin-top:6px;"><button type="button" class="primary" id="btnRuleCopySuggest">📝 규칙 기반 문구 교정 제안 보기</button><button type="button" id="btnAiCopySuggest">🤖 AI 교정 제안 요청 (Opt-In)</button></div>
+<label style="display:flex;align-items:center;gap:6px;margin:6px 0;font-size:12px;"><input id="aiCopyOptIn" type="checkbox"> [선택] 로컬 Sidecar AI 문구 교정 요청에 동의합니다 (수신자 명단·개인식별정보는 절대 전송되지 않으며, 원문은 수락 전까지 변경되지 않습니다)</label>
+<div id="copyQaStatus" class="status-box status-idle" aria-live="polite">교정 대기 중: 원문을 절대 자동으로 덮어쓰지 않으며, 원문 vs 제안 비교 후 [제안 수락] 또는 [제안 거절]을 선택할 수 있습니다.</div>
+<div id="copyDiffPanel" class="status-box status-idle" style="display:none;margin-top:8px;">
+<div id="copyDiffContent" style="white-space:pre-wrap;font-size:12px;"></div>
+<div class="actions" style="margin-top:8px;"><button type="button" class="primary" id="btnApproveCopySuggestion">✅ 제안 수락 (편집창에 반영)</button><button type="button" id="btnRejectCopySuggestion">❌ 제안 거절 (원문 유지)</button></div>
+</div>
+</div>
 </section>
 <section class="panel" aria-label="템플릿 미리보기">
-<div class="preview-head"><h2>실시간 미리보기</h2><div class="inline"><button id="desktop">데스크톱</button><button id="mobile">모바일</button></div></div>
+<div class="preview-head"><h2>실시간 미리보기</h2><div class="inline"><button type="button" id="desktop">데스크톱</button><button type="button" id="mobile">모바일</button></div></div>
 <iframe id="preview" title="이메일 내용 미리보기" sandbox=""></iframe>
 <div class="note" id="summary">이 템플릿은 미리보기용입니다. 실제 메일 발송은 진행하지 않습니다.</div>
 
 <div class="send-control-card" id="recipientCard" aria-label="수신자 관리 및 발송 검토">
-<div class="send-header"><h3>👥 수신자 관리 · 발송 검토 (Review)</h3><span class="badge-test">DRY-RUN · 실제 발송 없음</span></div>
+<div class="send-header"><h3>👥 수신자 관리 · 발송 검토 (Review)</h3><span class="badge-test">DRY-RUN · 실제 발송 없음 · LOCKED15</span></div>
 <label for="recipientCsv">수신자 CSV 붙여넣기 또는 파일 선택 (email 열 필수 · 이름 열 선택)</label>
 <textarea id="recipientCsv" rows="4" placeholder="email,name&#10;a@example.com,홍길동"></textarea>
-<div class="actions"><input type="file" id="recipientFile" accept=".csv,.txt,text/csv,text/plain"><button id="btnImportRecipients">가져오기 · 중복 제거</button></div>
+<div class="actions"><input type="file" id="recipientFile" accept=".csv,.txt,text/csv,text/plain"><button type="button" id="btnImportRecipients" class="primary">가져오기 · 중복 제거</button></div>
 <label for="optOutList">수신 거부(opt-out) / 제외 목록 (이메일 또는 @도메인, 공백·쉼표 구분)</label>
 <textarea id="optOutList" rows="2" placeholder="blocked@example.com @competitor.com"></textarea>
 <label style="display:flex;align-items:center;gap:6px;margin:6px 0;font-size:12px;"><input id="consentAttest" type="checkbox"> 이 목록의 수신자는 직접 수신 동의했거나 적법한 근거가 있음을 확인합니다 (마케팅 메일 필수)</label>
-<div class="actions"><button id="btnBuildReview">발송 전 검토</button><button id="btnDryRun" class="primary">드라이런 실행 (발송 없음)</button><button id="btnQueueStop">중지</button><button id="btnQueueResume">이어서</button><button id="btnQueueCsv">결과 CSV 저장</button></div>
+<div class="actions"><button type="button" id="btnBuildReview">발송 전 검토</button><button type="button" id="btnDryRun" class="primary">드라이런 실행 (발송 없음)</button><button type="button" id="btnQueueStop">중지</button><button type="button" id="btnQueueResume">이어서</button><button type="button" id="btnQueueCsv">결과 CSV 저장</button></div>
 <div id="recipientStatus" class="status-box status-idle" aria-live="polite">수신자 목록 없음. CSV를 가져오세요.</div>
 </div>
 <div class="send-control-card" aria-label="이메일 발송 제어">
@@ -52,17 +63,17 @@
 <div class="test-send-box">
 <h4>🧪 Resend 공식 이벤트 시뮬레이터 테스트 발송</h4>
 <p class="desc">실제 고객에게는 절대 발송되지 않으며, Resend 공식 이벤트 시뮬레이터로만 발송됩니다 (격리 Email Test Sidecar 127.0.0.1 경유 · 기존 18989/18988 프라이버시 릴레이 무간섭).</p>
-<div class="note" id="extBuildInfo">Extension Build: V7.0.0-OWNER-BETA-TEST-SEND-SIDECAR-20261116-LOCKED14 · Expected Sidecar: 127.0.0.1:18990 (email-test-send, email-test-sidecar-v1, email-test-ledger-v1)</div>
+<div class="note" id="extBuildInfo">Extension Build: V7.0.0-OWNER-BETA-TEST-SEND-SIDECAR-20261116-LOCKED15 · Expected Sidecar: 127.0.0.1:18990 (email-test-send, email-test-sidecar-v1, email-test-ledger-v1)</div>
 <div class="inline"><div><label for="sidecarPort">Sidecar 루프백 포트 (127.0.0.1)</label><input id="sidecarPort" type="number" min="1024" max="65535" value="18990"></div><div><label for="sidecarToken">Sidecar 제어 토큰 (자동 페어링 우선 · 메모리 전용)</label><input id="sidecarToken" type="password" autocomplete="off" placeholder="자동 페어링 사용 (수동 입력 불필요)"></div></div>
 <div id="keySetupPanel" class="status-box status-idle" style="margin:8px 0;">
   <b>🔑 Resend API 키 설정 (로컬 NTFS 보안 저장 · 브라우저/로그 미저장)</b>
   <div class="form-row" style="margin-top:6px;"><input id="resendApiKeyInput" type="password" autocomplete="off" placeholder="re_... (붙여넣기 가능 · 저장 즉시 입력창 자동 초기화)"></div>
   <label style="display:flex;align-items:center;gap:6px;margin:6px 0;font-size:12px;"><input id="resendKeyConsent" type="checkbox"> 로컬 PC의 NTFS 사용자 전용 경로(%LOCALAPPDATA%\XPIDER\Sidecar\.resend_api_key)에만 저장하고 브라우저·로그·Git에 남기지 않음에 동의합니다.</label>
-  <div class="actions"><button id="btnSaveResendKey">🔑 NTFS 보안 저장 후 상태 확인</button></div>
+  <div class="actions"><button type="button" id="btnSaveResendKey">🔑 NTFS 보안 저장 후 상태 확인</button></div>
 </div>
 <div class="form-row"><label for="testSender">발신 주소 (고정)</label><input id="testSender" value="onboarding@resend.dev" readonly class="readonly-input"><small class="muted">Resend 테스트 전용 공용 발신자 (별도 DNS 인증 불필요)</small></div>
 <div class="form-row"><label for="testRecipient">시뮬레이터 수신자 (1개 필수)</label><select id="testRecipient"><option value="delivered@resend.dev">delivered@resend.dev (정상 수신 시뮬레이션)</option><option value="bounced@resend.dev">bounced@resend.dev (반송 / Bounce 시뮬레이션)</option><option value="complained@resend.dev">complained@resend.dev (스팸신고 / Complaint 시뮬레이션)</option></select></div>
-<div class="actions"><button class="primary" id="btnTestSend">▶ 시뮬레이터 테스트 발송 (Test Send)</button><button id="btnPairSidecar">🔗 원클릭 자동 페어링</button><button id="btnPickTokenFile">📁 토큰 파일로 연결</button><button id="btnCheckCompanion">Sidecar 상태 확인</button><button id="btnLoadLedger">발송 원장 조회</button></div>
+<div class="actions"><button type="button" class="primary" id="btnTestSend">▶ 시뮬레이터 테스트 발송 (Test Send)</button><button type="button" id="btnPairSidecar">🔗 원클릭 자동 페어링</button><button type="button" id="btnPickTokenFile">📁 토큰 파일로 연결</button><button type="button" id="btnCheckCompanion">Sidecar 상태 확인</button><button type="button" id="btnLoadLedger">발송 원장 조회</button></div>
 <input type="file" id="sidecarTokenFileInput" style="display:none" accept=".email_sidecar_token,text/plain,*/*">
 <div id="testSendStatus" class="status-box status-idle" aria-live="polite">대기 중: Sidecar 포트(기본 18990)와 제어 토큰을 확인한 뒤 테스트 발송 버튼을 누르세요.</div>
 <div id="ledgerView" class="status-box status-idle" aria-live="polite">원장 미조회: '발송 원장 조회'를 누르면 ACCEPTED(시뮬레이터 접수 ≠ 실제 수신함 도착) 및 차단 이력이 표시됩니다.</div>
@@ -70,7 +81,7 @@
 <div class="prod-send-box locked">
 <div class="prod-header"><h4>🔒 상용(운영) 발송 (Production Send)</h4><span class="badge-locked">STRICT HOLD · 잠금</span></div>
 <p class="desc warning-text">⚠️ <b>상용 발송 엄격 통제 중:</b> vivpr.pro 도메인의 SPF/DKIM/DMARC DNS 인증, 수신 동의 원장(Consent Ledger), RFC 8058 One-Click 원클릭 수신 거부 엔드포인트 및 Webhook 독립 검증 전까지 운영 발송은 엄격히 차단됩니다.</p>
-<div class="actions"><button disabled class="btn-disabled" id="btnProdSend" title="운영 도메인 및 수신동의 검증 필요">운영 이메일 대량 발송 (비활성화됨)</button><button id="btnCheckProdPreflight">🔍 운영 DNS · 동의원장 · 수신거부 · 웹훅 점검</button></div>
+<div class="actions"><button type="button" disabled class="btn-disabled" id="btnProdSend" title="운영 도메인 및 수신동의 검증 필요">운영 이메일 대량 발송 (비활성화됨)</button><button type="button" id="btnCheckProdPreflight">🔍 운영 DNS · 동의원장 · 수신거부 · 웹훅 점검</button></div>
 <div id="prodPreflightStatus" class="status-box status-idle" aria-live="polite">운영 점검 대기 중: 버튼을 누르면 vivpr.pro 실시간 DNS(SPF/DKIM/DMARC), NTFS 동의/수신거부 원장, RFC 8058 수신거부 및 웹훅 준비 상태를 확인합니다.</div>
 </div>
 </div>

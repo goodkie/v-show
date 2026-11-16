@@ -19,47 +19,79 @@ function htmlFor(v,preview=false){
 }
 function textFor(v){return [v.brand,v.heading,v.body,v.cta&&url(v.link)?v.cta+': '+url(v.link):'',v.company,v.address,v.kind==='marketing'?'구독 취소: '+(url(v.unsubscribe)||'[수신거부 URL 필요]'):''].filter(Boolean).join('\n\n')}
 function audit(v){
- const out=[];const add=(good,msg)=>out.push({good,msg});
- add(!!v.subject&&v.subject.length<=100,'제목은 명확하게 작성하고 지나치게 길지 않게 유지');
- add(!/^(re|fwd):/i.test(v.subject),'실제 회신/전달이 아니라면 Re:/Fwd:를 사용하지 않음');
- add(!/([!?])\1{2,}/.test(v.subject)&&!/[A-Z]{12,}/.test(v.subject),'과도한 느낌표·대문자 반복 방지');
- const phr=/100%\s*(보장|guarantee)|무조건\s*무료|확정\s*수익|당첨\s*보장|guaranteed\s*profit/i;
- add(!phr.test(v.subject+' '+v.body),'검증하기 어려운 확정·과장 표현 점검 (단어 자체가 금지되는 것은 아님)');
- add(v.body.replace(/\s+/g,'').length>=80,'이미지에만 의존하지 않고 충분한 실제 HTML 텍스트 포함');
- add(!v.image||!!v.alt,'이미지 대체 텍스트(alt) 제공');
- add(!v.image||!!url(v.image),'발송용 이미지는 접근 가능한 HTTPS URL 사용');
- add(!(v.link)&&!(v.cta)||!!url(v.link),'버튼 목적지는 정상 HTTPS URL');
- add(!!v.company,'실제 발신자명 명시');
- add(!!v.reply,'답장받을 수 있는 이메일 주소 입력 (실제 운영 여부 확인 필요)');
+ const out=[];
+ const add=(good,msg,severity,suggestion)=>out.push({
+  good,
+  severity: severity || (good ? 'PASS' : 'WARN'),
+  msg,
+  suggestion: suggestion || ''
+ });
+ add(!!v.subject&&v.subject.length<=100,'제목은 명확하게 작성하고 지나치게 길지 않게 유지 (1~100자)',!!v.subject&&v.subject.length<=100?'PASS':'FAIL','제목을 80자 이내의 구체적인 안내 문구로 요약하세요.');
+ add(!/^(?:\s*(?:re|fwd|fw|회신|전달)\s*:)/i.test(v.subject),'실제 회신/전달이 아니라면 Re:/Fwd: 말머리를 사용하지 않음',!/^(?:\s*(?:re|fwd|fw|회신|전달)\s*:)/i.test(v.subject)?'PASS':'FAIL','제안: 말머리(Re:/Fwd:)를 제거하고 실제 안내 주제를 바로 표기하세요.');
+ add(!/([!?])\1{1,}/.test(v.subject+' '+v.body)&&!/[A-Z]{12,}/.test(v.subject),'과도한 느낌표/물음표 반복(!!/??) 및 대문자 남발 방지',!/([!?])\1{1,}/.test(v.subject+' '+v.body)&&!/[A-Z]{12,}/.test(v.subject)?'PASS':'WARN','제안: 연속된 느낌표/물음표를 마침표(.) 또는 단일 부호로 정리하세요.');
+ const phr=/100%\s*(보장|확정|guarantee)|무조건\s*무료|확정\s*수익|당첨\s*보장|guaranteed\s*profit|free\s*money/i;
+ add(!phr.test(v.subject+' '+v.body),'검증하기 어려운 확정·과장 표현 점검 (단어 자체가 금지되는 것은 아님)',!phr.test(v.subject+' '+v.body)?'PASS':'FAIL','제안: "100% 보장/무조건 무료/확정 수익" 대신 객관적 사실과 조건을 명시하세요.');
+ const typoRe=/안\s+녕하세요|되요|할께요|뵙겠읍니다|[ \t]{3,}/;
+ add(!typoRe.test(v.subject+' '+v.heading+' '+v.body),'한국어/영문 기본 맞춤법·띄어쓰기 점검 (되요→돼요, 할께요→할게요, 연속 공백)',!typoRe.test(v.subject+' '+v.heading+' '+v.body)?'PASS':'WARN','제안: "📝 규칙 기반 문구 교정 제안 보기"를 눌러 맞춤법/공백 제안을 확인하세요.');
+ add(v.body.replace(/\s+/g,'').length>=80,'이미지에만 의존하지 않고 충분한 실제 HTML 텍스트 포함 (80자 이상)',v.body.replace(/\s+/g,'').length>=80?'PASS':'WARN','제안: 본문에 최소 2~3문단(80자 이상)의 안내 텍스트를 작성하세요.');
+ add(!v.image||!!v.alt,'이미지 대체 텍스트(alt) 제공',!v.image||!!v.alt?'PASS':'WARN','제안: 이미지를 표시할 수 없는 수신 환경을 위해 대체 텍스트를 입력하세요.');
+ add(!v.image||!!url(v.image),'발송용 이미지는 접근 가능한 HTTPS URL 사용',!v.image||!!url(v.image)?'PASS':'FAIL','제안: https:// 로 시작하는 공개 이미지 URL을 입력하세요.');
+ add(!(v.link)&&!(v.cta)||!!url(v.link),'버튼 목적지는 정상 HTTPS URL',!(v.link)&&!(v.cta)||!!url(v.link)?'PASS':'FAIL','제안: 버튼 링크를 유효한 https:// 주소로 입력하세요.');
+ add(!!v.company,'실제 발신자명(회사/사업자명) 명시',!!v.company?'PASS':'FAIL','제안: 발신자 회사/단체명을 정확히 입력하세요.');
+ add(!!v.reply&&/@/.test(v.reply),'답장받을 수 있는 회신 이메일 주소 입력 (실제 운영 여부 확인 필요)',!!v.reply&&/@/.test(v.reply)?'PASS':'WARN','제안: 실제 수신 가능한 운영 이메일(예: support@vivpr.pro)을 입력하세요.');
  if(v.kind==='marketing'){
-  add(!!url(v.unsubscribe),'본문의 실제 작동하는 수신 거부 링크 필요');
-  add(!!v.address,'마케팅 발신자의 실제 우편주소 표기');
-  add(false,'발송 단계에서 RFC 8058 원클릭 구독 취소 헤더 및 POST 작동 검증 필요');
-  add(false,'수신 동의·suppression 명단·Resend AUP 검증 필요');
+  add(!!url(v.unsubscribe),'본문의 실제 작동하는 수신 거부 HTTPS 링크 필요',!!url(v.unsubscribe)?'PASS':'FAIL','제안: https://vivpr.pro/unsubscribe/{token} 형식의 수신거부 URL을 입력하세요.');
+  add(!!v.address,'마케팅 발신자의 실제 우편주소 표기',!!v.address?'PASS':'FAIL','제안: 하단 푸터에 표기될 사업장 우편주소를 입력하세요.');
+  add(false,'발송 단계에서 RFC 8058 원클릭 구독 취소 헤더 및 POST 작동 검증 필요','WARN','안내: 발송 엔진에서 List-Unsubscribe-Post 헤더가 함께 검증되어야 합니다.');
+  add(false,'수신 동의·suppression 명단·Resend AUP 검증 필요','WARN','안내: 수신자 관리 카드에서 동의 확인 및 수신거부 명단 대조가 필요합니다.');
  }
- add(false,'SPF · DKIM · DMARC · 발신 도메인/계정 평판은 콘텐츠 검사 밖에서 검증');
+ add(false,'SPF · DKIM · DMARC · 발신 도메인/계정 평판은 콘텐츠 검사 밖에서 검증','WARN','안내: 하단 [운영 DNS · 동의원장 · 수신거부 · 웹훅 점검]에서 별도 확인하세요.');
  return out;
 }
+let currentAiCopyStatus = 'NOT_CONFIGURED';
+let currentProviderDomainStatus = 'BLOCKED_EXTERNAL_DNS';
+function updateContentQaStatusLine(checks){
+ const badgeEl=el('contentQaBadges');
+ if(!badgeEl)return;
+ const hasFail=Array.isArray(checks)&&checks.some(c=>c.severity==='FAIL');
+ const ruleStatus=hasFail?'FAIL':'PASS';
+ badgeEl.textContent=`RULE_BASED_CONTENT_CHECK: ${ruleStatus} · AI_COPY_EDIT: ${currentAiCopyStatus} · PROVIDER_DOMAIN_AUTH: ${currentProviderDomainStatus} · SEND_BLOCKED: STRICT_HOLD`;
+ const aiBadge=el('aiCopyStatusBadge');
+ if(aiBadge)aiBadge.textContent=currentAiCopyStatus==='READY'?'AI 자동 교정: 준비됨 (Opt-In)':'AI 자동 교정: 연결 필요';
+}
 function render(){
- const v=values();el('preview').srcdoc=htmlFor(v,true);
- const checks=audit(v);const list=el('checkList');list.replaceChildren();
- for(const item of checks){const li=document.createElement('li');li.className=item.good?'good':'warn';li.textContent=(item.good?'✓ ':'! ')+item.msg;list.append(li)}
- const warnings=checks.filter(x=>!x.good).length;el('summary').textContent='검토 항목 '+checks.length+'개 중 주의 '+warnings+'개 · 기술적 인증, 발송 권한 및 실제 전달률은 여기서 검사하지 않습니다.';
+ try{
+  const v=values();
+  if(el('preview'))el('preview').srcdoc=htmlFor(v,true);
+  const checks=audit(v);const list=el('checkList');
+  if(list){
+   list.replaceChildren();
+   for(const item of checks){
+    const li=document.createElement('li');
+    li.className=item.good?'good':'warn';
+    li.textContent=(item.good?'✓ [PASS] ':(`! [${item.severity||'WARN'}] `))+item.msg+(!item.good&&item.suggestion?` (${item.suggestion})`:'');
+    list.append(li);
+   }
+  }
+  const warnings=checks.filter(x=>!x.good).length;
+  if(el('summary'))el('summary').textContent='검토 항목 '+checks.length+'개 중 주의 '+warnings+'개 · 기술적 인증, 발송 권한 및 실제 전달률은 여기서 검사하지 않습니다.';
+  updateContentQaStatusLine(checks);
+ }catch(_){}
 }
 function download(name,type,content){const blob=new Blob([content],{type});const uri=URL.createObjectURL(blob);const a=document.createElement('a');a.href=uri;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(uri),500)}
-el('imageFile').addEventListener('change',()=>{
+if(el('imageFile'))el('imageFile').addEventListener('change',()=>{
  if(previewFileUrl)URL.revokeObjectURL(previewFileUrl);previewFileUrl='';
  const f=el('imageFile').files?.[0];if(!f)return render();
  if(!/^image\/(png|jpeg|webp|gif)$/.test(f.type)||f.size>3*1024*1024){alert('PNG/JPEG/WebP/GIF 3MB 이하 파일만 미리보기 가능합니다.');el('imageFile').value='';return render()}
  previewFileUrl=URL.createObjectURL(f);render();
 });
-for(const id of ids)el(id).addEventListener('input',render);
-el('loadRemoteImages').addEventListener('change',render);
-el('exportHtml').onclick=()=>{const v=values();if(previewFileUrl&&!url(v.image))alert('로컬 이미지는 이메일에 포함되지 않습니다. 공개 HTTPS 이미지 URL을 먼저 입력하세요.');download('xpider-vivpr-template.html','text/html;charset=utf-8',htmlFor(v))};
-el('exportText').onclick=()=>download('xpider-vivpr-template.txt','text/plain;charset=utf-8',textFor(values()));
-el('exportJson').onclick=()=>download('xpider-vivpr-template.json','application/json',JSON.stringify({version:1,template:values(),note:'No secrets, recipient list or API keys'},null,2));
-el('desktop').onclick=()=>el('preview').style.width='100%';
-el('mobile').onclick=()=>el('preview').style.width='min(360px,100%)';
+for(const id of ids){if(el(id))el(id).addEventListener('input',render);}
+if(el('loadRemoteImages'))el('loadRemoteImages').addEventListener('change',render);
+if(el('exportHtml'))el('exportHtml').onclick=()=>{const v=values();if(previewFileUrl&&!url(v.image))alert('로컬 이미지는 이메일에 포함되지 않습니다. 공개 HTTPS 이미지 URL을 먼저 입력하세요.');download('xpider-vivpr-template.html','text/html;charset=utf-8',htmlFor(v))};
+if(el('exportText'))el('exportText').onclick=()=>download('xpider-vivpr-template.txt','text/plain;charset=utf-8',textFor(values()));
+if(el('exportJson'))el('exportJson').onclick=()=>download('xpider-vivpr-template.json','application/json',JSON.stringify({version:1,template:values(),note:'No secrets, recipient list or API keys'},null,2));
+if(el('desktop'))el('desktop').onclick=()=>{if(el('preview'))el('preview').style.width='100%'};
+if(el('mobile'))el('mobile').onclick=()=>{if(el('preview'))el('preview').style.width='min(360px,100%)'};
 render();
 
 function callBg(msg) {
@@ -100,7 +132,7 @@ async function checkCompanionStatus() {
     const d = resp.data;
     const hs = resp.handshake || {};
     const compBuild = hs.companionBuildId || d.companionBuildId || 'verified';
-    const extBuild = hs.extensionBuildId || 'V7.0.0-OWNER-BETA-TEST-SEND-SIDECAR-20261116-LOCKED14';
+    const extBuild = hs.extensionBuildId || 'V7.0.0-OWNER-BETA-TEST-SEND-SIDECAR-20261116-LOCKED15';
     const pidLabel = hs.companionPid || d.pid || 'unknown';
     const capsLabel = Array.isArray(hs.apiCapabilities) ? hs.apiCapabilities.join(', ') : 'email-test-send';
     if (d.resendApiKeyConfigured) {
@@ -340,75 +372,412 @@ if (el('btnPickTokenFile') && el('sidecarTokenFileInput')) {
 }
 setTimeout(checkCompanionStatus, 300);
 
-// ===== Recipient manager / review / dry-run queue (local only, no network) =====
+function createBuiltinRecipientManager() {
+  const EMAIL_RE = /^[A-Za-z0-9._%+'-]+@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}$/;
+  const ROLE_LOCALS = new Set(['noreply', 'no-reply', 'donotreply', 'do-not-reply', 'mailer-daemon', 'postmaster']);
+  const STATUS = Object.freeze({ PENDING: 'PENDING', SENDING: 'SENDING', ACCEPTED: 'ACCEPTED', FAILED: 'FAILED', SKIPPED_SUPPRESSED: 'SKIPPED_SUPPRESSED', SKIPPED_NO_CONSENT: 'SKIPPED_NO_CONSENT', DRY_RUN_READY: 'DRY_RUN_READY' });
+  const normalizeEmail = raw => String(raw == null ? '' : raw).trim().replace(/^<|>$/g, '').toLowerCase();
+  const validateEmail = email => {
+    if (!email) return 'EMPTY';
+    if (email.length > 254) return 'TOO_LONG';
+    if (!EMAIL_RE.test(email)) return 'INVALID_FORMAT';
+    if (ROLE_LOCALS.has(email.split('@')[0])) return 'ROLE_ADDRESS';
+    return null;
+  };
+  const parseCsv = text => {
+    const rows = []; let row = [], cur = '', inQ = false;
+    const s = String(text == null ? '' : text).replace(/^\uFEFF/, '');
+    for (let i = 0; i < s.length; i++) {
+      const c = s[i];
+      if (inQ) { if (c === '"') { if (s[i + 1] === '"') { cur += '"'; i++; } else inQ = false; } else cur += c; }
+      else if (c === '"') inQ = true;
+      else if (c === ',' || c === ';' || c === '\t') { row.push(cur); cur = ''; }
+      else if (c === '\n' || c === '\r') { if (c === '\r' && s[i + 1] === '\n') i++; row.push(cur); cur = ''; if (row.some(v => v.trim() !== '')) rows.push(row); row = []; }
+      else cur += c;
+    }
+    row.push(cur); if (row.some(v => v.trim() !== '')) rows.push(row);
+    return rows;
+  };
+  const importRecipients = (text, opts) => {
+    const o = opts || {}; const rows = parseCsv(text);
+    const result = { total: rows.length, valid: [], invalid: [], duplicates: [], headerDetected: false };
+    if (!rows.length) return result;
+    let emailIdx = 0, nameIdx = -1, start = 0;
+    const head = rows[0].map(v => v.trim().toLowerCase());
+    const hi = head.findIndex(h => ['email', 'e-mail', 'mail', '이메일', '메일'].includes(h));
+    if (hi >= 0) { result.headerDetected = true; emailIdx = hi; start = 1; nameIdx = head.findIndex(h => ['name', '이름', 'company', '회사'].includes(h)); }
+    else if (!rows[0].some(v => /@/.test(v))) { start = 1; result.headerDetected = true; }
+    else { const found = rows[0].findIndex(v => /@/.test(v)); if (found >= 0) emailIdx = found; }
+    const seen = new Set();
+    for (let i = start; i < rows.length; i++) {
+      const r = rows[i]; const email = normalizeEmail(r[emailIdx]); const err = validateEmail(email);
+      if (err) { result.invalid.push({ line: i + 1, raw: String(r[emailIdx] || '').slice(0, 80), reason: err }); continue; }
+      if (seen.has(email)) { result.duplicates.push({ line: i + 1, email }); continue; }
+      seen.add(email);
+      result.valid.push({ email, name: nameIdx >= 0 ? String(r[nameIdx] || '').trim().slice(0, 80) : '', source: o.source || 'csv-import' });
+    }
+    return result;
+  };
+  const parseSuppression = text => {
+    const set = new Set();
+    String(text || '').split(/[\s,;]+/).forEach(t => {
+      const e = normalizeEmail(t);
+      if (e && !validateEmail(e)) set.add(e);
+      else if (e && /^@[a-z0-9.-]+\.[a-z]{2,}$/.test(e)) set.add(e);
+    });
+    return set;
+  };
+  const isSuppressed = (email, suppression) => Boolean(suppression && (suppression.has(email) || suppression.has('@' + email.split('@')[1])));
+  const buildReview = (recipients, suppression, opts) => {
+    const o = opts || {}; const entries = []; let ready = 0, suppressed = 0, noConsent = 0;
+    for (const r of recipients) {
+      let status = STATUS.PENDING, reason = null;
+      if (isSuppressed(r.email, suppression)) { status = STATUS.SKIPPED_SUPPRESSED; reason = 'OPT_OUT_OR_SUPPRESSED'; suppressed++; }
+      else if (o.messageKind === 'marketing' && !o.consentAttestation) { status = STATUS.SKIPPED_NO_CONSENT; reason = 'MARKETING_REQUIRES_CONSENT_ATTESTATION'; noConsent++; }
+      else ready++;
+      entries.push({ email: r.email, name: r.name || '', status, reason, attempts: 0, providerMessageId: null, error: null, updatedAt: null });
+    }
+    return { entries, summary: { total: recipients.length, ready, suppressed, noConsent } };
+  };
+  const createQueue = entries => ({ entries: entries.map(e => ({ ...e })), stopped: false, startedAt: null, finishedAt: null });
+  const summarizeQueue = queue => {
+    const s = { total: queue.entries.length };
+    for (const k of Object.keys(STATUS)) s[k] = 0;
+    for (const e of queue.entries) s[e.status] = (s[e.status] || 0) + 1;
+    return s;
+  };
+  const runQueue = async (queue, sender, opts) => {
+    const o = Object.assign({ maxAttempts: 2, delayMs: 0, now: () => new Date().toISOString() }, opts || {});
+    queue.stopped = false; queue.startedAt = queue.startedAt || o.now();
+    for (const e of queue.entries) {
+      if (queue.stopped) break;
+      if (e.status === STATUS.ACCEPTED || e.status === STATUS.DRY_RUN_READY || String(e.status).startsWith('SKIPPED')) continue;
+      if (e.status === STATUS.FAILED && e.attempts >= o.maxAttempts) continue;
+      e.status = STATUS.SENDING; e.attempts++; e.updatedAt = o.now();
+      let res; try { res = await sender(e); } catch (err) { res = { ok: false, error: err && err.message ? err.message : 'SENDER_EXCEPTION' }; }
+      e.updatedAt = o.now();
+      if (res && res.ok) { e.status = res.dryRun ? STATUS.DRY_RUN_READY : STATUS.ACCEPTED; e.providerMessageId = res.providerMessageId || null; e.error = null; }
+      else { e.status = STATUS.FAILED; e.error = (res && res.error) || 'UNKNOWN_ERROR'; }
+    }
+    return summarizeQueue(queue);
+  };
+  const stopQueue = queue => { queue.stopped = true; };
+  const resumeNormalize = queue => { for (const e of queue.entries) if (e.status === STATUS.SENDING) e.status = STATUS.PENDING; queue.stopped = false; return queue; };
+  const queueToCsv = queue => {
+    const q = v => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
+    const lines = ['email,name,status,reason,attempts,providerMessageId,error,updatedAt'];
+    for (const e of queue.entries) lines.push([e.email, e.name, e.status, e.reason, e.attempts, e.providerMessageId, e.error, e.updatedAt].map(q).join(','));
+    return lines.join('\r\n');
+  };
+  return { STATUS, normalizeEmail, validateEmail, parseCsv, importRecipients, parseSuppression, isSuppressed, buildReview, createQueue, runQueue, stopQueue, resumeNormalize, summarizeQueue, queueToCsv, isBuiltinFallback: true };
+}
+
+// ===== Content QA & Safe Copy Suggestion (Original vs Proposed Diff / Approve / Reject) =====
+(function initContentQaUi() {
+  let pendingProposal = null;
+  const qaBox = () => el('copyQaStatus');
+  const diffPanel = () => el('copyDiffPanel');
+  const diffContent = () => el('copyDiffContent');
+
+  function cleanLocalText(str, isSubject) {
+    let s = String(str || '');
+    if (isSubject) s = s.replace(/^(?:\s*(?:re|fwd|fw|회신|전달)\s*:\s*)+/i, '');
+    return s
+      .replace(/!{2,}/g, '.')
+      .replace(/\?{2,}/g, '?')
+      .replace(/100%\s*(보장|확정)/gi, '안내')
+      .replace(/무조건\s*무료/gi, '무료 안내')
+      .replace(/확정\s*수익/gi, '서비스 안내')
+      .replace(/당첨\s*보장/gi, '이벤트 안내')
+      .replace(/guaranteed\s*profit/gi, 'service update')
+      .replace(/안\s+녕하세요/g, '안녕하세요')
+      .replace(/되요/g, '돼요')
+      .replace(/할께요/g, '할게요')
+      .replace(/뵙겠읍니다/g, '뵙겠습니다')
+      .replace(/[ \t]{2,}/g, ' ')
+      .trim();
+  }
+
+  function computeLocalProposal(v) {
+    const proposed = {
+      subject: cleanLocalText(v.subject, true),
+      preheader: cleanLocalText(v.preheader, false),
+      heading: cleanLocalText(v.heading, false),
+      body: String(v.body || '').split(/\n/).map(l => cleanLocalText(l, false)).join('\n').replace(/\n{3,}/g, '\n\n').trim()
+    };
+    const diffs = [];
+    for (const [field, label] of [['subject', '제목'], ['preheader', '미리보기 문구'], ['heading', '본문 제목'], ['body', '본문']]) {
+      if (String(v[field] || '') !== proposed[field]) {
+        diffs.push({ field, label, before: String(v[field] || ''), after: proposed[field] });
+      }
+    }
+    return { originalDraft: { subject: v.subject, preheader: v.preheader, heading: v.heading, body: v.body }, proposedDraft: proposed, diffs };
+  }
+
+  function showProposalDiff(modeLabel, proposal) {
+    pendingProposal = proposal.proposedDraft;
+    const qb = qaBox();
+    const dp = diffPanel();
+    const dc = diffContent();
+    if (!proposal.diffs || proposal.diffs.length === 0) {
+      if (dp) dp.style.display = 'none';
+      if (qb) {
+        qb.className = 'status-box status-success';
+        qb.textContent = `✅ [${modeLabel}] 교정이 필요한 스팸 위험 문구·맞춤법 오류가 발견되지 않았습니다 (원문 유지).`;
+      }
+      return;
+    }
+    const lines = [`📋 [${modeLabel} — 원문 vs 교정 제안 비교 (${proposal.diffs.length}개 항목 · 수락 전까지 원문 미변경)]`];
+    for (const d of proposal.diffs) {
+      lines.push(`\n[${d.label}]\n  - 원문: ${d.before}\n  + 제안: ${d.after}`);
+    }
+    if (dc) dc.textContent = lines.join('\n');
+    if (dp) dp.style.display = 'block';
+    if (qb) {
+      qb.className = 'status-box status-idle';
+      qb.textContent = `ℹ️ [${modeLabel}] 아래 원문 vs 제안 비교를 확인한 뒤 [✅ 제안 수락] 또는 [❌ 제안 거절]을 선택하세요.`;
+    }
+  }
+
+  if (el('btnRuleCopySuggest')) {
+    el('btnRuleCopySuggest').onclick = async () => {
+      try {
+        const v = values();
+        const localProp = computeLocalProposal(v);
+        showProposalDiff('규칙 기반 문구 교정 제안', localProp);
+      } catch (err) {
+        if (qaBox()) { qaBox().className = 'status-box status-error'; qaBox().textContent = `❌ [ERR_COPY_QA] ${err.message}`; }
+      }
+    };
+  }
+
+  if (el('btnAiCopySuggest')) {
+    el('btnAiCopySuggest').onclick = async () => {
+      const qb = qaBox();
+      const dp = diffPanel();
+      if (dp) dp.style.display = 'none';
+      if (!el('aiCopyOptIn') || !el('aiCopyOptIn').checked) {
+        if (qb) {
+          qb.className = 'status-box status-blocked';
+          qb.textContent = '⚠️ [AI_OPT_IN_CONSENT_REQUIRED] AI 교정 제안을 요청하려면 동의 체크박스를 먼저 선택하세요 (수신자 명단은 전송되지 않습니다).';
+        }
+        return;
+      }
+      const v = values();
+      const { sidecarPort, sidecarToken } = getSidecarConfig();
+      if (qb) {
+        qb.className = 'status-box status-loading';
+        qb.textContent = '⏳ Sidecar를 통해 AI 교정 제안 상태 확인 및 요청 중 (수신자 명단 제외)...';
+      }
+      const resp = await callBg({
+        action: 'REQUEST_EMAIL_COPY_SUGGESTION',
+        sidecarPort,
+        sidecarToken,
+        payload: {
+          mode: 'AI',
+          optInConsent: true,
+          draft: { subject: v.subject, preheader: v.preheader, heading: v.heading, body: v.body }
+        }
+      });
+      if (resp && resp.ok && resp.data && resp.data.ok) {
+        currentAiCopyStatus = resp.data.aiCopyEditStatus || 'READY';
+        render();
+        showProposalDiff('AI 문구 교정 제안', resp.data);
+      } else {
+        const errData = (resp && resp.data) || {};
+        const reason = errData.reason || resp?.error || 'AI_PROVIDER_NOT_CONFIGURED';
+        if (reason === 'AI_PROVIDER_NOT_CONFIGURED') currentAiCopyStatus = 'NOT_CONFIGURED';
+        render();
+        if (qb) {
+          qb.className = reason === 'AI_PROVIDER_NOT_CONFIGURED' ? 'status-box status-blocked' : 'status-box status-error';
+          qb.textContent = `⚠️ [${reason}] ${errData.message || 'AI 자동 교정: 연결 필요 (승인된 AI 공급자/키가 설정되지 않았습니다. 원문 템플릿은 그대로 보존되었으며, 규칙 기반 문구 교정 제안을 이용할 수 있습니다.)'}`;
+        }
+      }
+    };
+  }
+
+  if (el('btnApproveCopySuggestion')) {
+    el('btnApproveCopySuggestion').onclick = () => {
+      if (!pendingProposal) return;
+      for (const f of ['subject', 'preheader', 'heading', 'body']) {
+        if (el(f) && typeof pendingProposal[f] === 'string') el(f).value = pendingProposal[f];
+      }
+      pendingProposal = null;
+      if (diffPanel()) diffPanel().style.display = 'none';
+      render();
+      if (qaBox()) {
+        qaBox().className = 'status-box status-success';
+        qaBox().textContent = '✅ 교정 제안이 편집창에 반영되었습니다. 발송 전 미리보기와 내용을 다시 확인하세요.';
+      }
+    };
+  }
+
+  if (el('btnRejectCopySuggestion')) {
+    el('btnRejectCopySuggestion').onclick = () => {
+      pendingProposal = null;
+      if (diffPanel()) diffPanel().style.display = 'none';
+      if (qaBox()) {
+        qaBox().className = 'status-box status-idle';
+        qaBox().textContent = '↩️ 교정 제안을 거절하고 작성자의 원본 문구를 그대로 유지했습니다.';
+      }
+    };
+  }
+})();
+
+// ===== Recipient manager / review / dry-run queue (fortified P0 CSV import fix, zero silent no-op) =====
 (function initRecipientUi() {
-  if (!el('btnImportRecipients') || typeof RecipientManager === 'undefined') return;
-  const RM = RecipientManager;
+  const box = () => el('recipientStatus');
+  const say = (cls, txt) => {
+    const b = box();
+    if (b) {
+      b.className = 'status-box ' + cls;
+      b.textContent = txt;
+      b.dataset.lastUpdated = String(Date.now());
+    }
+  };
+  const fallbackRM = createBuiltinRecipientManager();
+  function getActiveRM() {
+    if (typeof window !== 'undefined' && window.__XPIDER_FORCE_DISABLE_RM === true) {
+      const err = new Error('수신자 관리 모듈(recipient-manager.js)이 비활성화되었거나 로드되지 않았습니다.');
+      err.code = 'ERR_RM_UNAVAILABLE';
+      throw err;
+    }
+    if (typeof RecipientManager !== 'undefined' && RecipientManager && typeof RecipientManager.importRecipients === 'function') {
+      return RecipientManager;
+    }
+    return fallbackRM;
+  }
+
   const KEY = 'xpider_email_studio_recipients_v1';
   let recipients = [];
   let queue = null;
-  const box = () => el('recipientStatus');
-  const say = (cls, txt) => { const b = box(); if (b) { b.className = 'status-box ' + cls; b.textContent = txt; } };
+  let importClickSeq = 0;
+
   function persist() {
-    try { localStorage.setItem(KEY, JSON.stringify({ recipients, queue, optOut: el('optOutList').value, savedAt: new Date().toISOString() })); } catch (_) {}
+    try { localStorage.setItem(KEY, JSON.stringify({ recipients, queue, optOut: el('optOutList') ? el('optOutList').value : '', savedAt: new Date().toISOString() })); } catch (_) {}
   }
   function restore() {
     try {
+      const RM = getActiveRM();
       const raw = localStorage.getItem(KEY);
-      if (!raw) return;
+      if (!raw) {
+        say('status-idle', '🟢 [수신자 관리 준비 완료 · LOCKED15] 수신자 목록 없음. CSV를 붙여넣거나 파일을 선택한 뒤 "가져오기 · 중복 제거"를 클릭하세요.');
+        return;
+      }
       const d = JSON.parse(raw);
       recipients = Array.isArray(d.recipients) ? d.recipients : [];
       queue = d.queue && Array.isArray(d.queue.entries) ? RM.resumeNormalize(d.queue) : null;
-      if (typeof d.optOut === 'string') el('optOutList').value = d.optOut;
-      if (recipients.length) say('status-idle', `📂 저장된 수신자 ${recipients.length}명 복원${queue ? ' · 큐 ' + JSON.stringify(RM.summarizeQueue(queue)) : ''}`);
-    } catch (_) {}
+      if (typeof d.optOut === 'string' && el('optOutList')) el('optOutList').value = d.optOut;
+      if (recipients.length) {
+        say('status-idle', `📂 저장된 수신자 ${recipients.length}명 복원${queue ? ' · 큐 ' + JSON.stringify(RM.summarizeQueue(queue)) : ''}`);
+      } else {
+        say('status-idle', '🟢 [수신자 관리 준비 완료 · LOCKED15] 수신자 목록 없음. CSV를 붙여넣거나 파일을 선택한 뒤 "가져오기 · 중복 제거"를 클릭하세요.');
+      }
+    } catch (err) {
+      say('status-error', `❌ [${err.code || 'ERR_RM_RESTORE_FAILED'}] ${err.message}`);
+    }
   }
-  function suppression() { return RM.parseSuppression(el('optOutList').value); }
+  function suppression() { return getActiveRM().parseSuppression(el('optOutList') ? el('optOutList').value : ''); }
   function messageKind() { return el('kind') ? el('kind').value : 'service'; }
   function buildReview() {
-    return RM.buildReview(recipients, suppression(), { messageKind: messageKind(), consentAttestation: el('consentAttest').checked });
+    return getActiveRM().buildReview(recipients, suppression(), { messageKind: messageKind(), consentAttestation: Boolean(el('consentAttest') && el('consentAttest').checked) });
   }
   async function syncSidecarRecipients() {
     try {
       const { sidecarPort, sidecarToken } = getSidecarConfig();
-      await callBg({
+      const r = await callBg({
         action: 'SYNC_EMAIL_PRODUCTION_RECIPIENTS',
         sidecarPort,
         sidecarToken,
         payload: {
-          csvText: el('recipientCsv').value,
-          optOutText: el('optOutList').value,
+          csvText: el('recipientCsv') ? el('recipientCsv').value : '',
+          optOutText: el('optOutList') ? el('optOutList').value : '',
           messageKind: messageKind(),
-          consentAttested: el('consentAttest').checked
+          consentAttested: Boolean(el('consentAttest') && el('consentAttest').checked)
         }
       });
-    } catch (_) {}
+      return { synced: Boolean(r && r.ok) };
+    } catch (_) {
+      return { synced: false };
+    }
   }
-  el('btnImportRecipients').onclick = () => {
-    const res = RM.importRecipients(el('recipientCsv').value, { source: 'csv-import' });
-    recipients = res.valid;
-    queue = null;
-    persist();
-    syncSidecarRecipients();
-    const inv = res.invalid.slice(0, 5).map(i => `L${i.line}:${i.reason}`).join(', ');
-    say(res.valid.length ? 'status-success' : 'status-blocked',
-      `✅ 유효 ${res.valid.length}명 · 중복 제거 ${res.duplicates.length} · 무효 ${res.invalid.length}${inv ? ' (' + inv + ')' : ''}`);
-  };
-  el('recipientFile').onchange = async (ev) => {
-    const f = ev.target.files && ev.target.files[0];
-    if (!f) return;
-    el('recipientCsv').value = await f.text();
-    ev.target.value = '';
-    el('btnImportRecipients').click();
-  };
-  el('btnBuildReview').onclick = () => {
-    if (!recipients.length) return say('status-blocked', '⚠️ 먼저 수신자를 가져오세요.');
-    const rv = buildReview();
-    const s = rv.summary;
-    syncSidecarRecipients();
-    say(s.ready ? 'status-success' : 'status-blocked',
-      `📋 발송 전 검토 (${messageKind()})\n• 전체 ${s.total} · 발송 가능 ${s.ready} · 수신거부 제외 ${s.suppressed} · 동의 미확인 제외 ${s.noConsent}\n• 상용 발송: 🔒 STRICT HOLD (SPF/DKIM/DMARC·수신거부 엔드포인트·Webhook 증거 및 Owner 승인 필요)\n• 드라이런은 실제 이메일을 전송하지 않습니다.`);
-  };
+
+  function runRecipientImport(triggerSource, fileName) {
+    importClickSeq++;
+    try {
+      if (typeof window !== 'undefined' && window.__XPIDER_FORCE_IMPORT_THROW === true) {
+        const e = new Error('테스트 주입 예외: 가져오기 핸들러 내부 오류');
+        e.code = 'ERR_CSV_IMPORT_EXCEPTION';
+        throw e;
+      }
+      const RM = getActiveRM();
+      const csvEl = el('recipientCsv');
+      const rawCsv = csvEl ? String(csvEl.value || '') : '';
+      if (!rawCsv.trim()) {
+        recipients = [];
+        queue = null;
+        persist();
+        say('status-blocked', `⚠️ [CSV_EMPTY_INPUT · #${importClickSeq}] 수신자 CSV 입력란이 비어 있습니다. 이메일 목록(예: email,name)을 붙여넣거나 CSV 파일을 선택한 뒤 "가져오기 · 중복 제거"를 다시 클릭하세요.`);
+        return;
+      }
+      const res = RM.importRecipients(rawCsv, { source: triggerSource || 'csv-import' });
+      recipients = res.valid;
+      queue = null;
+      persist();
+      syncSidecarRecipients();
+      const inv = res.invalid.slice(0, 5).map(i => `L${i.line}:${i.reason}`).join(', ');
+      const dupPreview = res.duplicates.slice(0, 5).map(d => `L${d.line}:${d.email}`).join(', ');
+      const validPreview = res.valid.slice(0, 6).map(r => r.name ? `${r.email}(${r.name})` : r.email).join(', ');
+      const fbTag = RM.isBuiltinFallback ? ' · [RM_FALLBACK_ACTIVE]' : '';
+      const srcTag = fileName ? `파일:${fileName}` : (triggerSource === 'button-click' ? '수동 클릭' : triggerSource);
+
+      if (res.valid.length === 0) {
+        say('status-error',
+          `❌ [CSV_NO_VALID_RECIPIENTS · #${importClickSeq}${fbTag}] 유효 0명 · 중복 제거 ${res.duplicates.length} · 무효 ${res.invalid.length}${inv ? ' (' + inv + ')' : ''}\n• 올바른 이메일 주소(예: user@example.org)가 없습니다. CSV 형식을 확인한 뒤 다시 시도하세요.`);
+        return;
+      }
+      say('status-success',
+        `✅ 유효 ${res.valid.length}명 · 중복 제거 ${res.duplicates.length} · 무효 ${res.invalid.length}${inv ? ' (' + inv + ')' : ''}\n• 집계 실행: #${importClickSeq} (${srcTag}${fbTag})\n• 수신 대상 미리보기: ${validPreview}${dupPreview ? '\n• 중복 제외: ' + dupPreview : ''}`);
+    } catch (err) {
+      say('status-error', `❌ [${err.code || 'ERR_CSV_IMPORT_EXCEPTION'} · #${importClickSeq}] 가져오기 처리 중 오류가 발생했습니다: ${err.message}\n• 다시 시도 방법: CSV 입력값을 확인하거나 페이지를 새로고침한 뒤 "가져오기 · 중복 제거"를 다시 클릭하세요.`);
+    }
+  }
+
+  if (el('btnImportRecipients')) {
+    el('btnImportRecipients').dataset.rmBound = 'true';
+    el('btnImportRecipients').onclick = () => runRecipientImport('button-click', null);
+  }
+  if (el('recipientFile')) {
+    el('recipientFile').onchange = async (ev) => {
+      try {
+        const f = ev.target && ev.target.files && ev.target.files[0];
+        if (!f) return;
+        const text = await f.text();
+        if (el('recipientCsv')) el('recipientCsv').value = text;
+        ev.target.value = '';
+        runRecipientImport('file-picker', f.name || 'selected.csv');
+      } catch (err) {
+        say('status-error', `❌ [ERR_FILE_READ_FAILED] CSV 파일 읽기 실패: ${err.message}`);
+      }
+    };
+  }
+  if (el('btnBuildReview')) {
+    el('btnBuildReview').onclick = () => {
+      try {
+        if (!recipients.length && el('recipientCsv') && el('recipientCsv').value.trim()) {
+          runRecipientImport('auto-before-review', null);
+        }
+        if (!recipients.length) return say('status-blocked', '⚠️ [NO_RECIPIENTS_LOADED] 먼저 수신자 CSV를 입력하고 "가져오기 · 중복 제거"를 클릭하세요.');
+        const rv = buildReview();
+        const s = rv.summary;
+        syncSidecarRecipients();
+        say(s.ready ? 'status-success' : 'status-blocked',
+          `📋 발송 전 검토 (${messageKind()})\n• 전체 ${s.total} · 발송 가능 ${s.ready} · 수신거부 제외 ${s.suppressed} · 동의 미확인 제외 ${s.noConsent}\n• 상용 발송: 🔒 STRICT HOLD (SPF/DKIM/DMARC·수신거부 엔드포인트·Webhook 증거 및 Owner 승인 필요)\n• 드라이런은 실제 이메일을 전송하지 않습니다.`);
+      } catch (err) {
+        say('status-error', `❌ [${err.code || 'ERR_BUILD_REVIEW_FAILED'}] ${err.message}`);
+      }
+    };
+  }
   if (el('btnCheckProdPreflight')) {
     el('btnCheckProdPreflight').onclick = async () => {
       const pBox = el('prodPreflightStatus');
@@ -428,6 +797,8 @@ setTimeout(checkCompanionStatus, 300);
       const rdc = d.resendDomainConfig || {};
       const qs = d.queueSummary || {};
       const todo = Array.isArray(d.minimalAuthorizationNeededForSingleLiveSend) ? d.minimalAuthorizationNeededForSingleLiveSend : [];
+      currentProviderDomainStatus = d.externalDnsStatus || 'BLOCKED_EXTERNAL_DNS';
+      render();
       pBox.className = (d.externalDnsStatus === 'VERIFIED') ? 'status-box status-success' : 'status-box status-blocked';
       pBox.textContent = [
         `🔍 [운영 발송 점검 결과 — 도메인: ${d.domain || 'vivpr.pro'} · 상태: ${d.externalDnsStatus || 'BLOCKED_EXTERNAL_DNS'}]`,
@@ -442,24 +813,55 @@ setTimeout(checkCompanionStatus, 300);
       ].join('\n');
     };
   }
-  el('btnDryRun').onclick = async () => {
-    if (!recipients.length) return say('status-blocked', '⚠️ 먼저 수신자를 가져오세요.');
-    if (!queue) queue = RM.createQueue(buildReview().entries);
-    say('status-loading', '⏳ 드라이런 진행 중 (발송 없음)...');
-    const sum = await RM.runQueue(queue, async () => ({ ok: true, dryRun: true }), { delayMs: 0 });
-    persist();
-    say('status-success', `✅ 드라이런 완료 (실제 발송 0건)\n${JSON.stringify(sum)}`);
-  };
-  el('btnQueueStop').onclick = () => { if (queue) { RM.stopQueue(queue); persist(); say('status-blocked', '⏸️ 중지됨. "이어서"로 재개하세요.'); } };
-  el('btnQueueResume').onclick = () => { if (queue) { RM.resumeNormalize(queue); el('btnDryRun').click(); } else say('status-blocked', '⚠️ 재개할 큐가 없습니다.'); };
-  el('btnQueueCsv').onclick = () => {
-    if (!queue) return say('status-blocked', '⚠️ 저장할 결과가 없습니다.');
-    const blob = new Blob(['\uFEFF' + RM.queueToCsv(queue)], { type: 'text/csv;charset=utf-8' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = 'xpider_recipient_status.csv';
-    a.click();
-    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-  };
+  if (el('btnDryRun')) {
+    el('btnDryRun').onclick = async () => {
+      try {
+        const RM = getActiveRM();
+        if (!recipients.length && el('recipientCsv') && el('recipientCsv').value.trim()) {
+          runRecipientImport('auto-before-dryrun', null);
+        }
+        if (!recipients.length) return say('status-blocked', '⚠️ [NO_RECIPIENTS_LOADED] 먼저 수신자 CSV를 입력하고 "가져오기 · 중복 제거"를 클릭하세요.');
+        if (!queue) queue = RM.createQueue(buildReview().entries);
+        say('status-loading', '⏳ 드라이런 진행 중 (발송 없음)...');
+        const sum = await RM.runQueue(queue, async () => ({ ok: true, dryRun: true }), { delayMs: 0 });
+        persist();
+        say('status-success', `✅ 드라이런 완료 (실제 발송 0건)\n${JSON.stringify(sum)}`);
+      } catch (err) {
+        say('status-error', `❌ [${err.code || 'ERR_DRY_RUN_FAILED'}] ${err.message}`);
+      }
+    };
+  }
+  if (el('btnQueueStop')) {
+    el('btnQueueStop').onclick = () => {
+      try {
+        const RM = getActiveRM();
+        if (queue) { RM.stopQueue(queue); persist(); say('status-blocked', '⏸️ 중지됨. "이어서"로 재개하세요.'); }
+        else say('status-blocked', '⚠️ 중지할 실행 중인 큐가 없습니다.');
+      } catch (err) { say('status-error', `❌ ${err.message}`); }
+    };
+  }
+  if (el('btnQueueResume')) {
+    el('btnQueueResume').onclick = () => {
+      try {
+        const RM = getActiveRM();
+        if (queue) { RM.resumeNormalize(queue); el('btnDryRun').click(); }
+        else say('status-blocked', '⚠️ 재개할 큐가 없습니다.');
+      } catch (err) { say('status-error', `❌ ${err.message}`); }
+    };
+  }
+  if (el('btnQueueCsv')) {
+    el('btnQueueCsv').onclick = () => {
+      try {
+        const RM = getActiveRM();
+        if (!queue) return say('status-blocked', '⚠️ 저장할 결과가 없습니다. 먼저 드라이런을 실행하세요.');
+        const blob = new Blob(['\uFEFF' + RM.queueToCsv(queue)], { type: 'text/csv;charset=utf-8' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'xpider_recipient_status.csv';
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+      } catch (err) { say('status-error', `❌ ${err.message}`); }
+    };
+  }
   restore();
 })();

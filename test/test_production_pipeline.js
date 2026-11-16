@@ -330,6 +330,79 @@ function httpReq(port, method, urlPath, headers = {}, body = null) {
       assert.equal(badHttps.reason, 'PUBLIC_HTTPS_UNSUBSCRIBE_REQUIRED');
     });
 
+    await run('CONTENT_QA_RULE_BASED_DIFF_PII_GUARD_MISSING_AI_PROVIDER_AND_TIMEOUT_FAIL_CLOSED', async () => {
+      const qaDir = path.join(tmpDir, 'content_qa_state');
+      const pipeNoAi = new EmailProductionPipeline({ stateDir: qaDir, trustedTestMode: true });
+
+      // 1. Status reports AI_COPY_EDIT: NOT_CONFIGURED when no provider is configured
+      const st = pipeNoAi.getContentQaStatus();
+      assert.equal(st.statuses.RULE_BASED_CONTENT_CHECK, 'READY');
+      assert.equal(st.statuses.AI_COPY_EDIT, 'NOT_CONFIGURED');
+      assert.equal(st.aiStatusLabel, 'AI 자동 교정: 연결 필요');
+
+      // 2. Rejects any recipient list / PII transmission fail-closed
+      const piiBlocked = await pipeNoAi.evaluateContentQaAndSuggestCopy({
+        mode: 'RULE_BASED',
+        recipientCsv: 'u1@example.org,u2@example.org',
+        draft: { subject: 'Hello', body: 'Body' }
+      });
+      assert.equal(piiBlocked.ok, false);
+      assert.equal(piiBlocked.statusCode, 400);
+      assert.equal(piiBlocked.reason, 'RECIPIENT_PII_TRANSMISSION_FORBIDDEN');
+
+      // 3. Rule-based suggestion computes diff without overwriting originalDraft
+      const ruleRes = await pipeNoAi.evaluateContentQaAndSuggestCopy({
+        mode: 'RULE_BASED',
+        draft: {
+          subject: 'Re: 100% 보장 서비스 안내!!!',
+          preheader: '무조건 무료 혜택 안내??',
+          heading: '안 녕하세요',
+          body: '요청하신 내용이 준비되요. 곧 연락할께요!!!'
+        }
+      });
+      assert.equal(ruleRes.ok, true);
+      assert.equal(ruleRes.originalDraft.subject, 'Re: 100% 보장 서비스 안내!!!');
+      assert.equal(ruleRes.proposedDraft.subject, '안내 서비스 안내.');
+      assert.equal(ruleRes.proposedDraft.heading, '안녕하세요');
+      assert.ok(ruleRes.proposedDraft.body.includes('준비돼요'));
+      assert.ok(ruleRes.proposedDraft.body.includes('연락할게요.'));
+      assert.equal(ruleRes.diffs.length, 4);
+
+      // 4. AI mode without optInConsent fails closed (400 AI_OPT_IN_CONSENT_REQUIRED)
+      const noConsent = await pipeNoAi.evaluateContentQaAndSuggestCopy({
+        mode: 'AI',
+        optInConsent: false,
+        draft: { subject: 'Test', body: 'Test' }
+      });
+      assert.equal(noConsent.ok, false);
+      assert.equal(noConsent.reason, 'AI_OPT_IN_CONSENT_REQUIRED');
+
+      // 5. AI mode when provider not configured fails closed (503 AI_PROVIDER_NOT_CONFIGURED)
+      const noProv = await pipeNoAi.evaluateContentQaAndSuggestCopy({
+        mode: 'AI',
+        optInConsent: true,
+        draft: { subject: 'Test', body: 'Test' }
+      });
+      assert.equal(noProv.ok, false);
+      assert.equal(noProv.statusCode, 503);
+      assert.equal(noProv.reason, 'AI_PROVIDER_NOT_CONFIGURED');
+
+      // 6. AI provider failure/error fails closed (502 AI_PROVIDER_ERROR) preserving original draft
+      const pipeErrAi = new EmailProductionPipeline({
+        stateDir: path.join(tmpDir, 'content_qa_err'),
+        trustedTestMode: true,
+        aiCopyProvider: async () => { throw new Error('UPSTREAM_MODEL_UNAVAILABLE'); }
+      });
+      const errRes = await pipeErrAi.evaluateContentQaAndSuggestCopy({
+        mode: 'AI',
+        optInConsent: true,
+        draft: { subject: 'Original Subject', body: 'Original Body' }
+      });
+      assert.equal(errRes.ok, false);
+      assert.equal(errRes.statusCode, 502);
+      assert.equal(errRes.reason, 'AI_PROVIDER_ERROR');
+    });
+
     console.log(`\nALL PRODUCTION PIPELINE TESTS PASSED (${pass}/${pass})`);
   } finally {
     fs.rmSync(tmpDir, { recursive: true, force: true });

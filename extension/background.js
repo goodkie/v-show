@@ -4039,7 +4039,7 @@ const _handleMainMessageInner = (request, sender, sendResponse) => {
             (async () => {
                 const reqPort = Number(request.sidecarPort);
                 const ctrlPort = (Number.isInteger(reqPort) && reqPort >= 1024 && reqPort <= 65535) ? reqPort : 18990;
-                const extBuildId = (typeof BuildProvenance !== 'undefined' && BuildProvenance.BUILD_INFO && BuildProvenance.BUILD_INFO.buildId) || 'V7.0.0-OWNER-BETA-TEST-SEND-SIDECAR-20261116-LOCKED14';
+                const extBuildId = (typeof BuildProvenance !== 'undefined' && BuildProvenance.BUILD_INFO && BuildProvenance.BUILD_INFO.buildId) || 'V7.0.0-OWNER-BETA-TEST-SEND-SIDECAR-20261116-LOCKED15';
                 try {
                     if (request.userConsentConfirmed !== true) {
                         sendResponse({ ok: false, status: 'BLOCKED', reason: 'USER_CONSENT_REQUIRED', message: '로컬 NTFS 보안 저장 전 명시적 사용자 동의가 필요합니다.' });
@@ -4099,7 +4099,9 @@ const _handleMainMessageInner = (request, sender, sendResponse) => {
         }
 
         case 'GET_EMAIL_PRODUCTION_PREFLIGHT':
-        case 'SYNC_EMAIL_PRODUCTION_RECIPIENTS': {
+        case 'SYNC_EMAIL_PRODUCTION_RECIPIENTS':
+        case 'GET_EMAIL_CONTENT_QA_STATUS':
+        case 'REQUEST_EMAIL_COPY_SUGGESTION': {
             (async () => {
                 const reqPort = Number(request.sidecarPort);
                 const ctrlPort = (Number.isInteger(reqPort) && reqPort >= 1024 && reqPort <= 65535) ? reqPort : 18990;
@@ -4119,15 +4121,21 @@ const _handleMainMessageInner = (request, sender, sendResponse) => {
                         });
                     };
                     let token = explicitToken || await pairTok(false);
-                    const isSync = request.action === 'SYNC_EMAIL_PRODUCTION_RECIPIENTS';
-                    const url = `http://127.0.0.1:${ctrlPort}${isSync ? '/email/production/import' : '/email/production/preflight'}`;
+                    const isPost = request.action === 'SYNC_EMAIL_PRODUCTION_RECIPIENTS' || request.action === 'REQUEST_EMAIL_COPY_SUGGESTION';
+                    const routeMap = {
+                        GET_EMAIL_PRODUCTION_PREFLIGHT: '/email/production/preflight',
+                        SYNC_EMAIL_PRODUCTION_RECIPIENTS: '/email/production/import',
+                        GET_EMAIL_CONTENT_QA_STATUS: '/email/content-qa/status',
+                        REQUEST_EMAIL_COPY_SUGGESTION: '/email/content-qa/suggest'
+                    };
+                    const url = `http://127.0.0.1:${ctrlPort}${routeMap[request.action]}`;
                     const doFetch = async (tok) => fetch(url, {
-                        method: isSync ? 'POST' : 'GET',
+                        method: isPost ? 'POST' : 'GET',
                         headers: {
-                            ...(isSync ? { 'Content-Type': 'application/json' } : {}),
+                            ...(isPost ? { 'Content-Type': 'application/json' } : {}),
                             ...(tok ? { 'Authorization': `Bearer ${tok}` } : {})
                         },
-                        ...(isSync ? { body: JSON.stringify(request.payload || {}) } : {})
+                        ...(isPost ? { body: JSON.stringify(request.payload || {}) } : {})
                     });
                     let resp = await doFetch(token);
                     if (resp.status === 401 && !explicitToken) {

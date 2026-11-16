@@ -336,9 +336,11 @@ class EmailProductionPipeline {
     this.trustedTestMode = Boolean(options.trustedTestMode);
     this.dnsResolver = options.dnsResolver || null;
     this.providerTransport = options.providerTransport || null;
+    this.aiCopyProvider = (this.trustedTestMode && typeof options.aiCopyProvider === 'function') ? options.aiCopyProvider : null;
     fs.mkdirSync(this.stateDir, { recursive: true });
 
     this.secretFile = path.join(this.stateDir, '.email_pipeline_hmac_secret');
+    this.aiKeyFile = path.join(this.stateDir, '.ai_copy_api_key');
     this.hmacSecret = this._loadOrCreateHmacSecret();
     this.keyRing = { activeKeyId: 'k1', keys: { k1: this.hmacSecret } };
 
@@ -875,6 +877,173 @@ class EmailProductionPipeline {
       mode,
       sentInThisRun,
       summary: this.summarizeQueue()
+    };
+  }
+
+  getContentQaStatus() {
+    let aiConfigured = Boolean(this.aiCopyProvider);
+    if (!aiConfigured && fs.existsSync(this.aiKeyFile)) {
+      if (!this.trustedTestMode && process.platform === 'win32' && process.env.USERNAME) {
+        try { verifyWindowsDacl(this.aiKeyFile, process.env.USERNAME); aiConfigured = true; } catch (_) { aiConfigured = false; }
+      } else {
+        aiConfigured = true;
+      }
+      if (aiConfigured) {
+        try {
+          const k = fs.readFileSync(this.aiKeyFile, 'utf8').trim();
+          if (k.length < 16) aiConfigured = false;
+        } catch (_) { aiConfigured = false; }
+      }
+    }
+    const dnsOk = Boolean(this.lastDnsReport && this.lastDnsReport.allVerified);
+    return {
+      ok: true,
+      statuses: {
+        RULE_BASED_CONTENT_CHECK: 'READY',
+        AI_COPY_EDIT: aiConfigured ? 'READY' : 'NOT_CONFIGURED',
+        PROVIDER_DOMAIN_AUTH: dnsOk ? 'VERIFIED' : 'BLOCKED_EXTERNAL_DNS',
+        SEND_BLOCKED: 'STRICT_HOLD'
+      },
+      aiStatusLabel: aiConfigured ? 'AI 자동 교정: 준비됨 (Opt-In)' : 'AI 자동 교정: 연결 필요',
+      nonGuaranteeNotice: '규칙 기반 및 AI 문구 교정은 가독성·규정 준수 보조 기능이며 실제 받은편지함(Inbox) 도달을 보장하지 않습니다.'
+    };
+  }
+
+  async evaluateContentQaAndSuggestCopy(payload = {}) {
+    // 1. Fail-closed privacy guard: NEVER accept recipient lists or private identifiers
+    const forbiddenFields = ['recipients', 'recipientCsv', 'optOutList', 'emailList', 'to', 'bcc', 'cc'];
+    for (const f of forbiddenFields) {
+      if (payload[f] !== undefined && payload[f] !== null && payload[f] !== '') {
+        return {
+          ok: false,
+          statusCode: 400,
+          status: 'BLOCKED',
+          reason: 'RECIPIENT_PII_TRANSMISSION_FORBIDDEN',
+          message: `개인정보 보호 차단: 수신자 명단 또는 개인 식별 필드(${f})는 문구 교정 엔진으로 전송할 수 없습니다.`
+        };
+      }
+    }
+    const mode = payload.mode === 'AI' ? 'AI' : 'RULE_BASED';
+    const draft = payload.draft && typeof payload.draft === 'object' ? payload.draft : {};
+    const subject = String(draft.subject || '');
+    const preheader = String(draft.preheader || '');
+    const heading = String(draft.heading || '');
+    const body = String(draft.body || '');
+
+    // Check if body/subject accidentally contains a multi-address CSV dump
+    const emailMatches = (subject + '\n' + body).match(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g) || [];
+    if (emailMatches.length > 2) {
+      return {
+        ok: false,
+        statusCode: 400,
+        status: 'BLOCKED',
+        reason: 'RECIPIENT_PII_TRANSMISSION_FORBIDDEN',
+        message: '본문에 다수의 이메일 주소(수신자 명단 의심)가 포함되어 있어 전송이 차단되었습니다.'
+      };
+    }
+
+    // Compute deterministic rule-based safe revision (never invents facts, pricing, urgency, or legal claims)
+    const cleanText = (str, isSubject = false) => {
+      let s = String(str || '');
+      if (isSubject) {
+        s = s.replace(/^(?:\s*(?:re|fwd|fw|회신|전달)\s*:\s*)+/i, '');
+      }
+      s = s
+        .replace(/!{2,}/g, '.')
+        .replace(/\?{2,}/g, '?')
+        .replace(/100%\s*(보장|확정)/gi, '안내')
+        .replace(/무조건\s*무료/gi, '무료 안내')
+        .replace(/확정\s*수익/gi, '서비스 안내')
+        .replace(/당첨\s*보장/gi, '이벤트 안내')
+        .replace(/guaranteed\s*profit/gi, 'service update')
+        .replace(/안\s+녕하세요/g, '안녕하세요')
+        .replace(/되요/g, '돼요')
+        .replace(/할께요/g, '할게요')
+        .replace(/뵙겠읍니다/g, '뵙겠습니다')
+        .replace(/[ \t]{2,}/g, ' ')
+        .trim();
+      return s;
+    };
+
+    const proposed = {
+      subject: cleanText(subject, true),
+      preheader: cleanText(preheader, false),
+      heading: cleanText(heading, false),
+      body: body
+        .split(/\n/)
+        .map(line => cleanText(line, false))
+        .join('\n')
+        .replace(/\n{3,}/g, '\n\n')
+        .trim()
+    };
+
+    if (mode === 'AI') {
+      if (payload.optInConsent !== true) {
+        return {
+          ok: false,
+          statusCode: 400,
+          status: 'BLOCKED',
+          reason: 'AI_OPT_IN_CONSENT_REQUIRED',
+          message: 'AI 교정 제안을 실행하려면 명시적 동의 체크박스를 선택해야 합니다.'
+        };
+      }
+      const qaStatus = this.getContentQaStatus();
+      if (qaStatus.statuses.AI_COPY_EDIT !== 'READY' || typeof this.aiCopyProvider !== 'function') {
+        return {
+          ok: false,
+          statusCode: 503,
+          status: 'NOT_CONFIGURED',
+          aiCopyEditStatus: 'NOT_CONFIGURED',
+          reason: 'AI_PROVIDER_NOT_CONFIGURED',
+          message: 'AI 자동 교정: 연결 필요 (승인된 AI 공급자/API 키가 설정되지 않았습니다. 규칙 기반 교정 제안을 사용하세요.)'
+        };
+      }
+      try {
+        const aiResult = await Promise.race([
+          this.aiCopyProvider({ subject, preheader, heading, body }),
+          new Promise((_, rej) => setTimeout(() => rej(new Error('AI_PROVIDER_TIMEOUT')), 4000))
+        ]);
+        if (!aiResult || typeof aiResult !== 'object') {
+          throw new Error('INVALID_AI_RESPONSE');
+        }
+        proposed.subject = String(aiResult.subject || proposed.subject);
+        proposed.preheader = String(aiResult.preheader || proposed.preheader);
+        proposed.heading = String(aiResult.heading || proposed.heading);
+        proposed.body = String(aiResult.body || proposed.body);
+      } catch (err) {
+        const isTimeout = /TIMEOUT/i.test(err.message || '');
+        return {
+          ok: false,
+          statusCode: isTimeout ? 504 : 502,
+          status: 'ERROR',
+          reason: isTimeout ? 'AI_PROVIDER_TIMEOUT' : 'AI_PROVIDER_ERROR',
+          message: `AI 교정 요청 실패 (${isTimeout ? 'AI_PROVIDER_TIMEOUT' : err.message}): 원문 템플릿은 변경되지 않고 그대로 보존되었습니다.`
+        };
+      }
+    }
+
+    const diffs = [];
+    for (const [field, label, origVal, nextVal] of [
+      ['subject', '제목', subject, proposed.subject],
+      ['preheader', '미리보기 문구', preheader, proposed.preheader],
+      ['heading', '본문 제목', heading, proposed.heading],
+      ['body', '본문', body, proposed.body]
+    ]) {
+      if (origVal !== nextVal) {
+        diffs.push({ field, label, before: origVal, after: nextVal });
+      }
+    }
+
+    return {
+      ok: true,
+      statusCode: 200,
+      mode,
+      aiCopyEditStatus: this.getContentQaStatus().statuses.AI_COPY_EDIT,
+      originalDraft: { subject, preheader, heading, body },
+      proposedDraft: proposed,
+      diffs,
+      hasChanges: diffs.length > 0,
+      note: '교정 제안은 사용자가 [제안 수락]을 누르기 전까지 원문을 덮어쓰지 않으며, 사실관계·가격·동의 여부를 임의로 생성하지 않습니다.'
     };
   }
 }
