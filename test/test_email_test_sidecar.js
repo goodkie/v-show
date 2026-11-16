@@ -478,6 +478,86 @@ function request(port, method, urlPath, headers = {}, body = null) {
       }));
     });
 
+    await runTest('P0_A_LIVE_PID_LOCK_NEVER_STOLEN_EVEN_PAST_STALE_MS', async () => {
+      const { EmailSimulatorLedger } = require('../companion/email-simulator-ledger');
+      const lPath = path.join(tmpDir, '.live_pid_lock.jsonl');
+      const lck = new EmailSimulatorLedger({ ledgerFile: lPath, lockTimeoutMs: 120, staleLockMs: 20 });
+      // Write lock owned by LIVE process.pid aged 60s (> staleLockMs=20ms)
+      fs.writeFileSync(lck.lockFile, JSON.stringify({
+        pid: process.pid,
+        lockId: 'foreign_live_nonce_999',
+        createdAt: Date.now() - 60000
+      }));
+      assert.throws(() => lck.append({
+        idempotencyKey: 'live_lock_blocked_0001',
+        recipient: 'delivered@resend.dev',
+        status: 'REQUESTED'
+      }), /LEDGER_LOCK_CONTENTION/);
+      // Verify live owner's lockfile was NOT stolen or deleted
+      const stillThere = JSON.parse(fs.readFileSync(lck.lockFile, 'utf8'));
+      assert.equal(stillThere.lockId, 'foreign_live_nonce_999');
+      fs.unlinkSync(lck.lockFile);
+    });
+
+    await runTest('P0_B_C_APPEND_FAILS_CLOSED_ON_CORRUPT_UNREADABLE_SHORTWRITE_AND_DACL', async () => {
+      const { EmailSimulatorLedger } = require('../companion/email-simulator-ledger');
+      const { verifyWindowsDacl } = require('../companion/email-test-sidecar-set-key');
+
+      // 1. Corrupt ledger blocks BOTH append() and reserveRequest()
+      const cPath = path.join(tmpDir, '.p0b_corrupt.jsonl');
+      fs.writeFileSync(cPath, '{"idempotencyKey":"broken_partial\n', 'utf8');
+      const lCorrupt = new EmailSimulatorLedger({ ledgerFile: cPath });
+      assert.throws(() => lCorrupt.append({
+        idempotencyKey: 'should_block_append_001',
+        recipient: 'delivered@resend.dev',
+        status: 'ACCEPTED'
+      }), /LEDGER_CORRUPT_RECONCILIATION_REQUIRED/);
+      assert.equal(lCorrupt.reserveRequest({
+        idempotencyKey: 'should_block_resv_001',
+        recipient: 'delivered@resend.dev'
+      }).action, 'CORRUPT_BLOCKED');
+
+      // 2. Unreadable ledger blocks append()
+      const lUnreadable = new EmailSimulatorLedger({
+        ledgerFile: path.join(tmpDir, '.p0b_unreadable.jsonl'),
+        fsImpl: {
+          ...fs,
+          existsSync: () => true,
+          readFileSync: () => { throw new Error('EACCES: permission denied'); }
+        }
+      });
+      assert.equal(lUnreadable.reconciliationRequired, true);
+      assert.throws(() => lUnreadable.append({
+        idempotencyKey: 'unreadable_block_001',
+        recipient: 'delivered@resend.dev',
+        status: 'ACCEPTED'
+      }), /LEDGER_CORRUPT_RECONCILIATION_REQUIRED/);
+
+      // 3. Short write throws LEDGER_PERSISTENCE_FAILED and real ledger gets Windows DACL
+      const lShort = new EmailSimulatorLedger({
+        ledgerFile: path.join(tmpDir, '.p0c_short.jsonl'),
+        fsImpl: {
+          ...fs,
+          openSync: (p, flags, m) => flags.includes('wx') ? fs.openSync(p, flags, m) : 888,
+          writeSync: (fd, buf) => typeof buf === 'string' ? fs.writeSync(fd, buf) : 3,
+          fsyncSync: () => {},
+          closeSync: (fd) => { if (fd !== 888) fs.closeSync(fd); }
+        }
+      });
+      assert.throws(() => lShort.append({
+        idempotencyKey: 'short_write_001',
+        recipient: 'delivered@resend.dev',
+        status: 'ACCEPTED'
+      }), /SHORT_WRITE|LEDGER_PERSISTENCE_FAILED/);
+
+      const daclLedger = path.join(tmpDir, '.p0c_dacl.jsonl');
+      const lReal = new EmailSimulatorLedger({ ledgerFile: daclLedger });
+      lReal.append({ idempotencyKey: 'dacl_ok_key_0001', recipient: 'delivered@resend.dev', status: 'ACCEPTED', providerMessageId: 'msg_dacl_1' });
+      if (process.platform === 'win32') {
+        assert.equal(verifyWindowsDacl(daclLedger, process.env.USERNAME), true);
+      }
+    });
+
     console.log(`\nALL SIDECAR TESTS PASSED (${pass}/${pass})`);
   } finally {
     await sidecar.stop();

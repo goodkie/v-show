@@ -1,13 +1,17 @@
 'use strict';
 /**
- * Append-only Simulator Send Ledger (Directive #6908909594, #6909086536, #6909266178)
- * - Cross-process exclusive wx lockfile with PID + stale-lock recovery.
+ * Append-only Simulator Send Ledger (Directive #6908909594, #6909086536, #6909266178, #6909563410)
+ * - Cross-process exclusive wx lockfile with unique lockId ownership nonce.
+ * - Never steals a lock from a verified live PID based on elapsed age alone.
+ * - Ownership-verified release in finally block (never unlinks a newer owner's lock).
+ * - Fails closed in BOTH append() and reserveRequest() when ledger is corrupt/truncated/unreadable.
  * - Transactional durable append + fsync BEFORE updating in-memory state.
- * - Fails closed on corrupt/truncated/unreadable ledger (reconciliationRequired=true).
  * - Scrubs API keys, Bearer tokens, and non-simulator PII before persistence & export.
  */
 const fs = require('node:fs');
 const path = require('node:path');
+const crypto = require('node:crypto');
+const { execFileSync } = require('node:child_process');
 
 const ALLOWED_SIMULATOR_EMAILS = new Set([
   'delivered@resend.dev',
@@ -98,13 +102,18 @@ class EmailSimulatorLedger {
     const dir = path.dirname(this.lockFile);
     this.fsImpl.mkdirSync(dir, { recursive: true });
     const deadline = Date.now() + this.lockTimeoutMs;
+    const myLockId = crypto.randomBytes(16).toString('hex');
     let acquired = false;
 
     while (!acquired) {
       try {
         const lfd = this.fsImpl.openSync(this.lockFile, 'wx', 0o600);
         try {
-          this.fsImpl.writeSync(lfd, JSON.stringify({ pid: process.pid, createdAt: Date.now() }));
+          this.fsImpl.writeSync(lfd, JSON.stringify({
+            pid: process.pid,
+            lockId: myLockId,
+            createdAt: Date.now()
+          }));
         } finally {
           this.fsImpl.closeSync(lfd);
         }
@@ -115,33 +124,46 @@ class EmailSimulatorLedger {
           lockErr.code = 'LEDGER_LOCK_FAILED';
           throw lockErr;
         }
-        // Check stale lock
+        // Inspect existing lock: NEVER reclaim a verified live PID based solely on elapsed age!
+        let shouldReclaimDead = false;
         try {
           const raw = this.fsImpl.readFileSync(this.lockFile, 'utf8');
           const info = JSON.parse(raw);
-          const ageMs = Date.now() - Number(info.createdAt || 0);
-          if (!isPidAlive(Number(info.pid)) || ageMs > this.staleLockMs) {
-            try { this.fsImpl.unlinkSync(this.lockFile); } catch (_) {}
-            continue;
+          const ownerPid = Number(info.pid);
+          if (!isPidAlive(ownerPid)) {
+            shouldReclaimDead = true;
           }
+          // If ownerPid IS alive, do NOT reclaim regardless of ageMs! Wait until deadline.
         } catch (_) {
-          // Malformed or vanishing lock; check stat mtime for staleness
+          // Malformed or partial lockfile: only reclaim if older than staleLockMs
           try {
             const st = this.fsImpl.statSync(this.lockFile);
             if ((Date.now() - st.mtimeMs) > this.staleLockMs) {
-              try { this.fsImpl.unlinkSync(this.lockFile); } catch (_) {}
-              continue;
+              shouldReclaimDead = true;
             }
           } catch (_) {
+            // Lock disappeared concurrently; retry immediately
             continue;
           }
         }
+
+        if (shouldReclaimDead) {
+          // Safe reclaim: rename aside to avoid unlinking a newly created lock if we lost a race
+          const deadAside = `${this.lockFile}.reclaimed.${myLockId}`;
+          try {
+            this.fsImpl.renameSync(this.lockFile, deadAside);
+            try { this.fsImpl.unlinkSync(deadAside); } catch (_) {}
+          } catch (_) {
+            // Lost rename race to another process; retry loop cleanly
+          }
+          continue;
+        }
+
         if (Date.now() >= deadline) {
-          const timeoutErr = new Error('LEDGER_LOCK_CONTENTION: Another sidecar process holds the ledger lock');
+          const timeoutErr = new Error('LEDGER_LOCK_CONTENTION: Another active sidecar process holds the ledger lock');
           timeoutErr.code = 'LEDGER_LOCK_CONTENTION';
           throw timeoutErr;
         }
-        // Brief spin wait (cross-process safe synchronous backoff ~15ms)
         const waitUntil = Date.now() + 15;
         while (Date.now() < waitUntil) {}
       }
@@ -150,7 +172,14 @@ class EmailSimulatorLedger {
     try {
       return fn();
     } finally {
-      try { this.fsImpl.unlinkSync(this.lockFile); } catch (_) {}
+      // Ownership-verified release: only unlink if lockfile still belongs to (process.pid, myLockId)
+      try {
+        const currentRaw = this.fsImpl.readFileSync(this.lockFile, 'utf8');
+        const current = JSON.parse(currentRaw);
+        if (Number(current.pid) === process.pid && current.lockId === myLockId) {
+          this.fsImpl.unlinkSync(this.lockFile);
+        }
+      } catch (_) {}
     }
   }
 
@@ -175,6 +204,7 @@ class EmailSimulatorLedger {
 
     const serialized = JSON.stringify(record) + '\n';
     this.fsImpl.mkdirSync(path.dirname(this.ledgerFile), { recursive: true });
+    const isNewFile = !this.fsImpl.existsSync(this.ledgerFile);
     let fd = null;
     try {
       fd = this.fsImpl.openSync(this.ledgerFile, 'a', 0o600);
@@ -196,6 +226,12 @@ class EmailSimulatorLedger {
       }
     }
 
+    if (isNewFile && this.fsImpl === fs && process.platform === 'win32' && process.env.USERNAME) {
+      try {
+        execFileSync('icacls', [this.ledgerFile, '/inheritance:r', '/grant:r', `${process.env.USERNAME}:(R,W)`], { stdio: 'ignore' });
+      } catch (_) {}
+    }
+
     this.lastPersistError = null;
     this.events.push(record);
     if (record.idempotencyKey) {
@@ -207,6 +243,13 @@ class EmailSimulatorLedger {
   append(entry) {
     return this._withExclusiveLock(() => {
       this.load();
+      if (this.reconciliationRequired) {
+        const corruptErr = new Error(`LEDGER_CORRUPT_RECONCILIATION_REQUIRED: ${this.corruptReason}`);
+        corruptErr.code = 'LEDGER_CORRUPT_RECONCILIATION_REQUIRED';
+        corruptErr.corruptReason = this.corruptReason;
+        corruptErr.corruptLineCount = this.corruptLineCount;
+        throw corruptErr;
+      }
       return this._appendUnlocked(entry);
     });
   }
