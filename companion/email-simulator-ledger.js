@@ -108,6 +108,19 @@ class EmailSimulatorLedger {
     return null;
   }
 
+  /**
+   * Exclusive wx lock protocol.
+   * Threat model:
+   * - Cross-user lock tampering is blocked by Windows NTFS user-only DACLs on stateDir and lockFile.
+   * - Node.js / Windows NTFS does not provide an atomic compare-and-unlink syscall; same-UID preemption
+   *   in the microsecond window between identity+inode verification and unlinkSync() is outside the
+   *   software-only lockfile threat model. Any detected replacement, inode mismatch, or release failure
+   *   latches `lockReconciliationRequired = true` stickily and preserves foreign lockfiles.
+   * fnThrew=true precedence:
+   * - If `fn()` throws and `finally` also sees ownership loss or release failure, `lockReconciliationRequired`
+   *   is still latched `true` stickily (preserved across `load()`), while `fn()`'s original error is re-thrown
+   *   without masking; all subsequent operations fail closed with `LEDGER_CORRUPT_RECONCILIATION_REQUIRED`.
+   */
   _withExclusiveLock(fn) {
     if (this.lockReconciliationRequired) {
       const stickyErr = new Error(`LEDGER_CORRUPT_RECONCILIATION_REQUIRED: ${this.lockReconciliationReason}`);
@@ -121,11 +134,16 @@ class EmailSimulatorLedger {
     const deadline = Date.now() + this.lockTimeoutMs;
     const myLockId = crypto.randomBytes(16).toString('hex');
     let acquired = false;
+    let acquiredIno = null;
 
     while (!acquired) {
       try {
         const lfd = this.fsImpl.openSync(this.lockFile, 'wx', 0o600);
         try {
+          if (typeof this.fsImpl.fstatSync === 'function') {
+            const fst = this.fsImpl.fstatSync(lfd);
+            if (fst && fst.ino) acquiredIno = fst.ino;
+          }
           const lockPayload = Buffer.from(JSON.stringify({
             pid: process.pid,
             lockId: myLockId,
@@ -220,9 +238,11 @@ class EmailSimulatorLedger {
       // If lockfile was externally replaced or removed (hostile replacement), fail closed & throw.
       let releaseErr = null;
       try {
+        const currentStat = typeof this.fsImpl.lstatSync === 'function' ? this.fsImpl.lstatSync(this.lockFile) : null;
         const currentRaw = this.fsImpl.readFileSync(this.lockFile, 'utf8');
         const current = JSON.parse(currentRaw);
-        if (Number(current.pid) === process.pid && current.lockId === myLockId) {
+        const sameInode = !acquiredIno || !currentStat || !currentStat.ino || currentStat.ino === acquiredIno;
+        if (sameInode && Number(current.pid) === process.pid && current.lockId === myLockId) {
           this.fsImpl.unlinkSync(this.lockFile);
         } else {
           this.lockReconciliationRequired = true;

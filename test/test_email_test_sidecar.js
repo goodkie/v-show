@@ -1055,6 +1055,51 @@ function request(port, method, urlPath, headers = {}, body = null) {
       }
     });
 
+    await runTest('FN_THREW_STICKY_LOCK_RECONCILIATION_AND_INODE_MISMATCH_ZERO_DUPLICATE_POST', async () => {
+      const { EmailSimulatorLedger } = require('../companion/email-simulator-ledger');
+
+      // 1. fnThrew=true + hostile lock replacement: original error propagates, sticky lockReconciliationRequired blocks all subsequent requests + cold restart sees foreign lock
+      const fPath = path.join(tmpDir, '.fn_threw_lock.jsonl');
+      const fLedger = new EmailSimulatorLedger({ ledgerFile: fPath, lockTimeoutMs: 120 });
+      assert.throws(() => {
+        fLedger._withExclusiveLock(() => {
+          fs.writeFileSync(fLedger.lockFile, JSON.stringify({ pid: 666666, lockId: 'foreign_during_fn_throw', createdAt: Date.now() }));
+          throw new Error('ORIGINAL_FN_ERROR');
+        });
+      }, /ORIGINAL_FN_ERROR/);
+      assert.equal(fLedger.reconciliationRequired, true);
+      assert.equal(fLedger.lockReconciliationRequired, true);
+      fLedger.load();
+      assert.equal(fLedger.reconciliationRequired, true);
+      assert.throws(() => fLedger.reserveRequest({
+        idempotencyKey: 'after_fn_threw_000001',
+        recipient: 'delivered@resend.dev',
+        from: 'onboarding@resend.dev'
+      }), /LEDGER_CORRUPT_RECONCILIATION_REQUIRED/);
+      // Fresh instance on cold restart also fails closed on preserved foreign lock (no second lock owner)
+      const fRestart = new EmailSimulatorLedger({ ledgerFile: fPath, lockTimeoutMs: 120 });
+      assert.throws(() => fRestart.reserveRequest({
+        idempotencyKey: 'restart_after_fn_threw_000001',
+        recipient: 'delivered@resend.dev',
+        from: 'onboarding@resend.dev'
+      }), /LEDGER_STALE_LOCK_RECONCILIATION_REQUIRED/);
+      fs.unlinkSync(fLedger.lockFile);
+
+      // 2. Forged pid+lockId on a different inode (lstatSync.ino !== fstatSync.ino) is caught and rejected fail-closed
+      const inoPath = path.join(tmpDir, '.ino_mismatch.jsonl');
+      const inoLock = inoPath + '.lock';
+      const inoMockFs = {
+        ...fs,
+        fstatSync: () => ({ ino: 1001 }),
+        lstatSync: () => ({ ino: 2002 })
+      };
+      const inoLedger = new EmailSimulatorLedger({ ledgerFile: inoPath, fsImpl: inoMockFs });
+      assert.throws(() => inoLedger._withExclusiveLock(() => 'ok'), /LEDGER_LOCK_OWNERSHIP_LOST/);
+      assert.equal(inoLedger.reconciliationRequired, true);
+      assert.equal(fs.existsSync(inoLock), true);
+      fs.unlinkSync(inoLock);
+    });
+
     console.log(`\nALL SIDECAR TESTS PASSED (${pass}/${pass})`);
   } finally {
     await sidecar.stop();
