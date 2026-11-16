@@ -16,8 +16,8 @@ const { writeProtectedSecretFile, verifyWindowsDacl } = require('./email-test-si
 const { getSidecarPaths } = require('./sidecar-paths');
 
 const DEFAULT_SIDECAR_PORT = 18990;
-const SIDECAR_BUILD_ID = 'V7.0.0-OWNER-BETA-TEST-SEND-SIDECAR-20261116-LOCKED6';
-const SIDECAR_IMPLEMENTATION_HEAD = 'email-test-sidecar-20261116-locked6';
+const SIDECAR_BUILD_ID = 'V7.0.0-OWNER-BETA-TEST-SEND-SIDECAR-20261116-LOCKED7';
+const SIDECAR_IMPLEMENTATION_HEAD = 'email-test-sidecar-20261116-locked7';
 const SIDECAR_API_CAPABILITIES = ['email-test-send', 'email-test-sidecar-v1', 'email-test-ledger-v1'];
 const EXPOSED_RC3_6_TOKEN_SHA256 = '597a70b99c11c7f4d13a075204ac240bb08a7a1d6c08c78268328e0bb59daeda';
 const EXTENSION_ORIGIN_RE = /^chrome-extension:\/\/[a-p]{32}$/;
@@ -41,18 +41,30 @@ function timingSafeTokenEqual(a, b) {
 
 class EmailTestSidecar {
   constructor(options = {}) {
+    this.trustedTestMode = Boolean(options.trustedTestMode === true);
+    if (!this.trustedTestMode) {
+      const forbiddenKeys = ['apiKeyOverride', 'transportImpl', 'token', 'stateDir', 'tokenFile', 'pidFile', 'ledgerFile', 'localKeyFile', 'fsImpl'];
+      for (const k of forbiddenKeys) {
+        if (options[k] !== undefined && options[k] !== null) {
+          const err = new Error(`PACKAGED_MODE_TEST_INJECTION_REJECTED: option "${k}" is forbidden outside trustedTestMode`);
+          err.code = 'PACKAGED_MODE_TEST_INJECTION_REJECTED';
+          throw err;
+        }
+      }
+    }
     this.port = parseSidecarPort(options.port !== undefined ? options.port : process.env.XPIDER_EMAIL_SIDECAR_PORT, DEFAULT_SIDECAR_PORT);
     this.host = '127.0.0.1';
-    const defaultPaths = getSidecarPaths(options.stateDir);
+    const defaultPaths = getSidecarPaths(options.stateDir, { trustedTestMode: this.trustedTestMode });
     this.stateDir = defaultPaths.stateDir;
     this.tokenFile = options.tokenFile || defaultPaths.tokenFile;
     this.pidFile = options.pidFile || defaultPaths.pidFile;
     this.ledger = new EmailSimulatorLedger({
-      ledgerFile: options.ledgerFile || defaultPaths.ledgerFile
+      ledgerFile: options.ledgerFile || defaultPaths.ledgerFile,
+      ...(this.trustedTestMode && options.fsImpl ? { fsImpl: options.fsImpl } : {})
     });
     this.localKeyFile = options.localKeyFile !== undefined ? options.localKeyFile : null;
-    this.transportImpl = typeof options.transportImpl === 'function' ? options.transportImpl : null;
-    this.apiKeyOverride = options.apiKeyOverride !== undefined ? options.apiKeyOverride : null;
+    this.transportImpl = (this.trustedTestMode && typeof options.transportImpl === 'function') ? options.transportImpl : null;
+    this.apiKeyOverride = (this.trustedTestMode && options.apiKeyOverride !== undefined) ? options.apiKeyOverride : null;
     this.rateLimitMs = Number.isFinite(options.rateLimitMs) ? options.rateLimitMs : 5000;
     this.startTime = Date.now();
     this.lastTestSendAt = 0;
@@ -62,12 +74,18 @@ class EmailTestSidecar {
   }
 
   _loadOrCreateToken(explicitToken) {
-    if (explicitToken && typeof explicitToken === 'string' && explicitToken.trim().length >= 16) {
-      return explicitToken.trim();
-    }
-    const envTok = process.env.XPIDER_EMAIL_SIDECAR_TOKEN;
-    if (envTok && typeof envTok === 'string' && envTok.trim().length >= 16) {
-      return envTok.trim();
+    if (this.trustedTestMode) {
+      if (explicitToken && typeof explicitToken === 'string' && explicitToken.trim().length >= 16) {
+        return explicitToken.trim();
+      }
+      const envTok = process.env.XPIDER_EMAIL_SIDECAR_TOKEN;
+      if (envTok && typeof envTok === 'string' && envTok.trim().length >= 16) {
+        return envTok.trim();
+      }
+    } else if (process.env.XPIDER_EMAIL_SIDECAR_TOKEN && process.env.XPIDER_EMAIL_SIDECAR_TOKEN.trim()) {
+      const err = new Error('UNSAFE_ENV_TOKEN_REJECTED: XPIDER_EMAIL_SIDECAR_TOKEN is forbidden in packaged/owner mode');
+      err.code = 'UNSAFE_ENV_TOKEN_REJECTED';
+      throw err;
     }
     if (fs.existsSync(this.tokenFile)) {
       const disk = fs.readFileSync(this.tokenFile, 'utf8').trim();
@@ -91,24 +109,29 @@ class EmailTestSidecar {
   resolveResendApiKey() {
     this.lastKeyReadError = null;
     this.keyStatus = 'KEY_MISSING';
-    if (this.apiKeyOverride !== null) {
+    if (this.trustedTestMode && this.apiKeyOverride !== null) {
       const k = String(this.apiKeyOverride || '').trim();
       if (!k) { this.keyStatus = 'KEY_MISSING'; return null; }
-      if (/^re_[A-Za-z0-9_-]{8,}$/.test(k)) { this.keyStatus = 'CONFIGURED'; return k; }
+      if (/^re_[A-Za-z0-9_-]{8,}$/.test(k)) { this.keyStatus = 'FORMAT_VALID_KEY_PRESENT'; return k; }
       this.keyStatus = 'MALFORMED_KEY';
       return null;
     }
     const envKey = process.env.RESEND_API_KEY;
     if (envKey && typeof envKey === 'string' && envKey.trim()) {
+      if (!this.trustedTestMode) {
+        this.keyStatus = 'UNSAFE_ENV_KEY_REJECTED';
+        this.lastKeyReadError = 'UNSAFE_ENV_KEY_REJECTED: RESEND_API_KEY env var is forbidden in packaged/owner mode';
+        return null;
+      }
       const trimmed = envKey.trim();
-      if (/^re_[A-Za-z0-9_-]{8,}$/.test(trimmed)) { this.keyStatus = 'CONFIGURED'; return trimmed; }
+      if (/^re_[A-Za-z0-9_-]{8,}$/.test(trimmed)) { this.keyStatus = 'FORMAT_VALID_KEY_PRESENT'; return trimmed; }
       this.keyStatus = 'MALFORMED_KEY';
       this.lastKeyReadError = 'MALFORMED_ENV_RESEND_API_KEY';
       return null;
     }
-    const primaryKeyPath = this.localKeyFile !== null
+    const primaryKeyPath = (this.trustedTestMode && this.localKeyFile !== null)
       ? this.localKeyFile
-      : getSidecarPaths(this.stateDir).keyFile;
+      : getSidecarPaths(this.trustedTestMode ? this.stateDir : undefined, { trustedTestMode: this.trustedTestMode }).keyFile;
     if (primaryKeyPath && fs.existsSync(primaryKeyPath)) {
       if (process.platform === 'win32' && process.env.USERNAME) {
         try {
@@ -262,7 +285,7 @@ class EmailTestSidecar {
             apiCapabilities: SIDECAR_API_CAPABILITIES,
             testSimulatorEnabled: true,
             resendApiKeyConfigured: hasKey,
-            keyStatus: this.keyStatus || (hasKey ? 'CONFIGURED' : 'KEY_MISSING'),
+            keyStatus: this.keyStatus || (hasKey ? 'FORMAT_VALID_KEY_PRESENT' : 'KEY_MISSING'),
             stateDir: this.stateDir,
             allowedRecipients: resendTestMode.TEST_RECIPIENTS,
             allowedFrom: resendTestMode.TEST_FROM,
@@ -428,10 +451,12 @@ class EmailTestSidecar {
               if (!apiKey) {
                 const keyErrReason = this.keyStatus === 'KEY_ACL_INVALID'
                   ? 'KEY_ACL_INVALID'
-                  : (this.keyStatus === 'MALFORMED_KEY'
-                      ? 'MALFORMED_RESEND_API_KEY'
-                      : (this.keyStatus === 'LOCAL_KEY_FILE_UNREADABLE' ? 'LOCAL_KEY_FILE_UNREADABLE' : 'RESEND_API_KEY_NOT_CONFIGURED'));
-                const isErr500 = this.keyStatus === 'LOCAL_KEY_FILE_UNREADABLE' || this.keyStatus === 'KEY_ACL_INVALID';
+                  : (this.keyStatus === 'UNSAFE_ENV_KEY_REJECTED'
+                      ? 'UNSAFE_ENV_KEY_REJECTED'
+                      : (this.keyStatus === 'MALFORMED_KEY'
+                          ? 'MALFORMED_RESEND_API_KEY'
+                          : (this.keyStatus === 'LOCAL_KEY_FILE_UNREADABLE' ? 'LOCAL_KEY_FILE_UNREADABLE' : 'RESEND_API_KEY_NOT_CONFIGURED')));
+                const isErr500 = this.keyStatus === 'LOCAL_KEY_FILE_UNREADABLE' || this.keyStatus === 'KEY_ACL_INVALID' || this.keyStatus === 'UNSAFE_ENV_KEY_REJECTED';
                 let ledgerPersisted = true;
                 let ledgerError = null;
                 try {
@@ -468,8 +493,19 @@ class EmailTestSidecar {
                 res.end(JSON.stringify({
                   status: 'BLOCKED',
                   reason: persistErr.code || 'LEDGER_PERSISTENCE_FAILED',
+                  corruptReason: this.ledger.corruptReason || null,
                   reconciliationRequired: true,
                   message: persistErr.message
+                }));
+                return;
+              }
+              if (this.ledger.reconciliationRequired) {
+                res.writeHead(409, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({
+                  status: 'BLOCKED',
+                  reason: this.ledger.corruptReason || 'LEDGER_RECONCILIATION_REQUIRED',
+                  reconciliationRequired: true,
+                  message: 'Lock or ledger reconciliation required before provider POST.'
                 }));
                 return;
               }
@@ -568,15 +604,28 @@ class EmailTestSidecar {
                     receiptTimestamp: result.timestamp
                   });
                 } catch (persistErr) {
-                  this.ledger.byKey.set(idempotencyKey, { idempotencyKey, recipient, status: 'AMBIGUOUS_TIMEOUT', errorCode: 'LEDGER_PERSISTENCE_FAILED' });
+                  this.ledger.byKey.set(idempotencyKey, { idempotencyKey, recipient, status: 'AMBIGUOUS_TIMEOUT', errorCode: persistErr.code || 'LEDGER_PERSISTENCE_FAILED' });
                   res.writeHead(500, { 'Content-Type': 'application/json' });
                   res.end(JSON.stringify({
                     status: 'AMBIGUOUS_PERSISTENCE_FAILURE',
-                    reason: 'LEDGER_PERSISTENCE_FAILED',
+                    reason: persistErr.code || 'LEDGER_PERSISTENCE_FAILED',
+                    corruptReason: this.ledger.corruptReason || null,
                     reconciliationRequired: true,
                     idempotencyKey,
                     providerMessageId: result.providerMessageId,
                     message: persistErr.message
+                  }));
+                  return;
+                }
+                if (this.ledger.reconciliationRequired) {
+                  res.writeHead(500, { 'Content-Type': 'application/json' });
+                  res.end(JSON.stringify({
+                    status: 'AMBIGUOUS_PERSISTENCE_FAILURE',
+                    reason: this.ledger.corruptReason || 'LEDGER_RECONCILIATION_REQUIRED',
+                    reconciliationRequired: true,
+                    idempotencyKey,
+                    providerMessageId: result.providerMessageId,
+                    message: 'Lock or ledger reconciliation required after provider acceptance.'
                   }));
                   return;
                 }

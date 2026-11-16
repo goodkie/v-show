@@ -1,11 +1,11 @@
 {
   "gateName": "XPIDER_EMAIL_BROWSER_RUNTIME_GATE",
-  "generatedAt": "2026-11-12T16:35:28.384Z",
-  "gitHeadSha": "8c1b390d3ab07b8202ba977dcc0534caa7a98cbd",
-  "extensionTreeSha": "f6bdceed0e5575eec3ab5220d0d07bae93ef91e2",
+  "generatedAt": "2026-11-16T14:41:36.175Z",
+  "gitHeadSha": "cebff3e47b79d691e6cdfdf28863d04e98abdf09",
+  "extensionTreeSha": "a4d7e3e0194c2500842ecc3edc765d79ab1374f9",
   "nodeVersion": "v24.11.1",
   "browserExe": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
-  "browserVersion": "Edg/157.0.4341.46",
+  "browserVersion": "Edg/157.0.4341.60",
   "disposableProfileOnly": true,
   "ownerProfileTouched": false,
   "externalEmailSends": 0,
@@ -51,7 +51,7 @@
     {
       "name": "DISPOSABLE_PROFILE_ENFORCED_NO_OWNER_PROFILE",
       "pass": true,
-      "detail": "Edg/157.0.4341.46 | profile=C:\\Users\\oPus\\AppData\\Local\\Temp\\xpider_email_studio_RPt2BU"
+      "detail": "Edg/157.0.4341.60 | profile=C:\\Users\\oPus\\AppData\\Local\\Temp\\xpider_email_studio_1nr9wZ"
     },
     {
       "name": "STUDIO_REMOTE_IMAGE_HITS_BEFORE_OPTIN_ZERO",
@@ -118,37 +118,37 @@
     {
       "relativePath": "email_studio_run.log",
       "sizeBytes": 3756,
-      "sha256": "005512316eecf44ba717df8abb6cd1a8072bb3dfb718e76d6d77746ace6771c5"
+      "sha256": "58ae25fd930f5cf35e9602d94243fb0c845d708c48a80922aa9c3b312034b865"
     },
     {
       "relativePath": "email_studio/popup_with_email_studio_link.png",
-      "sizeBytes": 103912,
-      "sha256": "9302f56e9635513d5d661e5d374c3e607517ce1d80b867d89b9f14096759b9e7"
+      "sizeBytes": 104524,
+      "sha256": "095fd332e70d7782ad4e94f399b39c487f14ff0875e9a91464db967c7d2481b8"
     },
     {
       "relativePath": "email_studio/report_email_studio_chrome_runtime.json",
-      "sizeBytes": 11050,
-      "sha256": "b4887bb210b9bb304a52d6488b76272c37bb721d710e74e0a2cf4f42970c953f"
+      "sizeBytes": 11040,
+      "sha256": "186cfe51d7ef99022c736daa78f580ce35c1921ad215cbc2b3a09373c71f8ff1"
     },
     {
       "relativePath": "email_studio/studio_initial.png",
-      "sizeBytes": 22908,
-      "sha256": "4bc63d24a7f48ae7813c473b6a939b83d8cc6cf19e4ecac58836e5832a451f52"
+      "sizeBytes": 22913,
+      "sha256": "eb96ab1156a2d5491bb82b018c8e19fd202522ef844c8928b7547b4ce17e1f40"
     },
     {
       "relativePath": "email_studio/studio_local_image_preview.png",
-      "sizeBytes": 23455,
-      "sha256": "ef7f27a598b15ce761886953328fc95a8630471a318a23cb670479c32ac9a03a"
+      "sizeBytes": 23461,
+      "sha256": "a25ed0de8e92810a2bf2c414d20cd0dea140ac9ca2157b77a42ed85361ee6bf1"
     },
     {
       "relativePath": "email_studio/studio_marketing_checks.png",
-      "sizeBytes": 24017,
-      "sha256": "3a006095bace1acbfbc8e9e2714d99d1f9b04a043f77d7c3b53887eb3097d0fd"
+      "sizeBytes": 24014,
+      "sha256": "0bb243aedcf19a17bf6a4340ed5788f5ba49214ce83b3964c3f21e39da78d148"
     },
     {
       "relativePath": "email_studio/studio_mobile_preview.png",
-      "sizeBytes": 23455,
-      "sha256": "ef7f27a598b15ce761886953328fc95a8630471a318a23cb670479c32ac9a03a"
+      "sizeBytes": 23461,
+      "sha256": "a25ed0de8e92810a2bf2c414d20cd0dea140ac9ca2157b77a42ed85361ee6bf1"
     },
     {
       "relativePath": "email_studio/synthetic_1x1.png",
@@ -158,37 +158,37 @@
     {
       "relativePath": "popup_paused_run.log",
       "sizeBytes": 2792,
-      "sha256": "5b90ac2b0b488b465fcb576b60ff09e9c1fb6d330304dcb83b80a0118989446e"
+      "sha256": "5718bf63dafbfe40899d54468ec3fa1dc5039b29af68274834cdf46658c21494"
     },
     {
       "relativePath": "popup_paused/popup_LIVE_BG_ACTIVE.png",
-      "sizeBytes": 95628,
-      "sha256": "adf228a86b178be3662154821aea3b8d4e7d0faf9ca8fa4d98bdb0e11ba0abfe"
+      "sizeBytes": 96259,
+      "sha256": "72387f4564bc21a6618895d6e626ca8da01c302866dff9febd40c6435b368cf1"
     },
     {
       "relativePath": "popup_paused/popup_LIVE_BG_IDLE_WITH_POPUP_STORAGE_THROW.png",
-      "sizeBytes": 103879,
-      "sha256": "05ca94134ecd7016f3c6f01efcec5ffe8a1d0e81e32eada7055c4662ee82ecb0"
+      "sizeBytes": 104496,
+      "sha256": "4cef840e944f7aab79e098a72716d9dd132b3de9e146248205d501322e2b595c"
     },
     {
       "relativePath": "popup_paused/popup_LIVE_BG_IDLE.png",
-      "sizeBytes": 103912,
-      "sha256": "9302f56e9635513d5d661e5d374c3e607517ce1d80b867d89b9f14096759b9e7"
+      "sizeBytes": 104524,
+      "sha256": "095fd332e70d7782ad4e94f399b39c487f14ff0875e9a91464db967c7d2481b8"
     },
     {
       "relativePath": "popup_paused/popup_LIVE_BG_PAUSED_CHECKPOINT.png",
-      "sizeBytes": 95632,
-      "sha256": "d5f54107e22713dbe600524a51c263582906b1588c2a54faea9c4ecaf2ab789c"
+      "sizeBytes": 96262,
+      "sha256": "68a9df9237d2f33fbf241fc19a28d125dd2a04de884fd0db3ba0ebe37cdf36ce"
     },
     {
       "relativePath": "popup_paused/popup_LIVE_BG_PAUSED_WITH_POPUP_STORAGE_THROW.png",
-      "sizeBytes": 95623,
-      "sha256": "5d6da02572d29ad6ec3f3eb37ec65f7a05171a31988e1352028598c0f2b30efc"
+      "sizeBytes": 96258,
+      "sha256": "3347d244994abda13d06cee3fa89e70dda71f3f96292e4f13671d4f67701787d"
     },
     {
       "relativePath": "popup_paused/report_popup_paused_runtime.json",
       "sizeBytes": 6281,
-      "sha256": "5456f09c196577d4b5ceeb1e4fd305385453a0d6dec6dfe6a6092caa8b6f02b1"
+      "sha256": "a73cc2a2401e1ab9154407305d915c948facad9ee6c38d2afa41e9ad86dad27b"
     }
   ]
 }

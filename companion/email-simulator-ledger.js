@@ -58,6 +58,8 @@ class EmailSimulatorLedger {
     this.corruptLineCount = 0;
     this.reconciliationRequired = false;
     this.corruptReason = null;
+    this.lockReconciliationRequired = false;
+    this.lockReconciliationReason = null;
     this.lastPersistError = null;
     this.load();
   }
@@ -66,8 +68,8 @@ class EmailSimulatorLedger {
     this.byKey.clear();
     this.events = [];
     this.corruptLineCount = 0;
-    this.reconciliationRequired = false;
-    this.corruptReason = null;
+    this.reconciliationRequired = Boolean(this.lockReconciliationRequired);
+    this.corruptReason = this.lockReconciliationRequired ? this.lockReconciliationReason : null;
     try {
       if (!this.fsImpl.existsSync(this.ledgerFile)) return;
       const lines = this.fsImpl.readFileSync(this.ledgerFile, 'utf8').split(/\r?\n/);
@@ -107,6 +109,13 @@ class EmailSimulatorLedger {
   }
 
   _withExclusiveLock(fn) {
+    if (this.lockReconciliationRequired) {
+      const stickyErr = new Error(`LEDGER_CORRUPT_RECONCILIATION_REQUIRED: ${this.lockReconciliationReason}`);
+      stickyErr.code = 'LEDGER_CORRUPT_RECONCILIATION_REQUIRED';
+      stickyErr.reconciliationRequired = true;
+      stickyErr.corruptReason = this.lockReconciliationReason;
+      throw stickyErr;
+    }
     const dir = path.dirname(this.lockFile);
     this.fsImpl.mkdirSync(dir, { recursive: true });
     const deadline = Date.now() + this.lockTimeoutMs;
@@ -117,27 +126,58 @@ class EmailSimulatorLedger {
       try {
         const lfd = this.fsImpl.openSync(this.lockFile, 'wx', 0o600);
         try {
-          this.fsImpl.writeSync(lfd, JSON.stringify({
+          const lockPayload = Buffer.from(JSON.stringify({
             pid: process.pid,
             lockId: myLockId,
             createdAt: Date.now()
-          }));
-        } finally {
+          }), 'utf8');
+          const written = this.fsImpl.writeSync(lfd, lockPayload, 0, lockPayload.length, null);
+          if (written !== lockPayload.length) {
+            throw new Error(`LOCK_SHORT_WRITE: wrote ${written} of ${lockPayload.length} bytes`);
+          }
+        } catch (writeErr) {
+          try { this.fsImpl.closeSync(lfd); } catch (_) {}
+          this.lockReconciliationRequired = true;
+          this.lockReconciliationReason = `LOCK_ACQUISITION_PARTIAL_FAILURE:${writeErr.message}`;
+          this.reconciliationRequired = true;
+          this.corruptReason = this.lockReconciliationReason;
+          const partErr = new Error(`LEDGER_LOCK_PARTIAL_FAILURE: ${writeErr.message}`);
+          partErr.code = 'LEDGER_LOCK_PARTIAL_FAILURE';
+          partErr.reconciliationRequired = true;
+          throw partErr;
+        }
+        try {
           this.fsImpl.closeSync(lfd);
+        } catch (closeErr) {
+          this.lockReconciliationRequired = true;
+          this.lockReconciliationReason = `LOCK_ACQUISITION_PARTIAL_FAILURE:${closeErr.message}`;
+          this.reconciliationRequired = true;
+          this.corruptReason = this.lockReconciliationReason;
+          const partErr = new Error(`LEDGER_LOCK_PARTIAL_FAILURE: ${closeErr.message}`);
+          partErr.code = 'LEDGER_LOCK_PARTIAL_FAILURE';
+          partErr.reconciliationRequired = true;
+          throw partErr;
         }
         if (this.fsImpl === fs && process.platform === 'win32' && process.env.USERNAME) {
           try {
             execFileSync('icacls', [this.lockFile, '/inheritance:r', '/grant:r', `${process.env.USERNAME}:(R,W)`], { stdio: 'pipe' });
             verifyWindowsDacl(this.lockFile, process.env.USERNAME);
           } catch (aclErr) {
-            try { this.fsImpl.unlinkSync(this.lockFile); } catch (_) {}
+            this.lockReconciliationRequired = true;
+            this.lockReconciliationReason = `LEDGER_LOCK_ACL_FAILED:${aclErr.message}`;
+            this.reconciliationRequired = true;
+            this.corruptReason = this.lockReconciliationReason;
             const lockAclErr = new Error(`LEDGER_LOCK_ACL_FAILED: ${aclErr.message}`);
             lockAclErr.code = 'LEDGER_LOCK_ACL_FAILED';
+            lockAclErr.reconciliationRequired = true;
             throw lockAclErr;
           }
         }
         acquired = true;
       } catch (err) {
+        if (err && (err.code === 'LEDGER_LOCK_PARTIAL_FAILURE' || err.code === 'LEDGER_LOCK_ACL_FAILED')) {
+          throw err;
+        }
         if (!err || err.code !== 'EEXIST') {
           const lockErr = new Error(`LEDGER_LOCK_FAILED: ${err ? err.message : 'unknown'}`);
           lockErr.code = 'LEDGER_LOCK_FAILED';
@@ -169,23 +209,43 @@ class EmailSimulatorLedger {
       }
     }
 
+    let fnThrew = false;
     try {
       return fn();
+    } catch (fnErr) {
+      fnThrew = true;
+      throw fnErr;
     } finally {
       // Single-owner ownership-verified release: only unlink our own (pid, lockId).
-      // If lockfile was externally replaced or removed (hostile replacement), mark reconciliationRequired=true.
+      // If lockfile was externally replaced or removed (hostile replacement), fail closed & throw.
+      let releaseErr = null;
       try {
         const currentRaw = this.fsImpl.readFileSync(this.lockFile, 'utf8');
         const current = JSON.parse(currentRaw);
         if (Number(current.pid) === process.pid && current.lockId === myLockId) {
           this.fsImpl.unlinkSync(this.lockFile);
         } else {
+          this.lockReconciliationRequired = true;
+          this.lockReconciliationReason = 'LOCK_OWNERSHIP_LOST_HOSTILE_REPLACEMENT';
           this.reconciliationRequired = true;
-          this.corruptReason = 'LOCK_OWNERSHIP_LOST_HOSTILE_REPLACEMENT';
+          this.corruptReason = this.lockReconciliationReason;
+          releaseErr = new Error('LEDGER_LOCK_OWNERSHIP_LOST: Lockfile ownership lost due to hostile replacement');
+          releaseErr.code = 'LEDGER_LOCK_OWNERSHIP_LOST';
+          releaseErr.reconciliationRequired = true;
+          releaseErr.corruptReason = this.lockReconciliationReason;
         }
-      } catch (_) {
+      } catch (ioErr) {
+        this.lockReconciliationRequired = true;
+        this.lockReconciliationReason = 'LOCK_RELEASE_READ_FAILED';
         this.reconciliationRequired = true;
-        this.corruptReason = 'LOCK_RELEASE_READ_FAILED';
+        this.corruptReason = this.lockReconciliationReason;
+        releaseErr = new Error(`LEDGER_LOCK_RELEASE_FAILED: ${ioErr.message}`);
+        releaseErr.code = 'LEDGER_LOCK_RELEASE_FAILED';
+        releaseErr.reconciliationRequired = true;
+        releaseErr.corruptReason = this.lockReconciliationReason;
+      }
+      if (releaseErr && !fnThrew) {
+        throw releaseErr;
       }
     }
   }

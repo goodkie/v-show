@@ -1,6 +1,6 @@
 {
-  "timestamp": "2026-11-12T16:34:32.921Z",
-  "browser": "Edg/157.0.4341.46",
+  "timestamp": "2026-11-16T14:40:48.892Z",
+  "browser": "Edg/157.0.4341.60",
   "extensionId": "ldlijlaccfeelfdhgnjbibniocefckjj",
   "total": 10,
   "passed": 10,
@@ -9,7 +9,7 @@
     {
       "name": "BROWSER_STARTED",
       "pass": true,
-      "detail": "Edg/157.0.4341.46"
+      "detail": "Edg/157.0.4341.60"
     },
     {
       "name": "EXTENSION_LOADED",
@@ -44,12 +44,12 @@
     {
       "name": "CHECK_COMPANION_INTERACTION_RESPONSIVE",
       "pass": true,
-      "detail": "❌ 컴패니언 연결 실패 (127.0.0.1:18989)\n• 상태: 오프라인 또는 포트 미응답\n• 컴패니언 서비스 실행 시 자동 연결됩니다."
+      "detail": "❌ [MISSING_COMPANION] Sidecar 미실행 또는 연결 실패 (127.0.0.1:18990)\n• 상세: Failed to fetch\n• 새 패키지의 START_EMAIL_TEST_SIDECAR.bat를 실행한 뒤 다시 확인하세요."
     },
     {
       "name": "TEST_SEND_FAILS_CLOSED_GRACEFULLY",
       "pass": true,
-      "detail": "❌ [전송 실패]\n• 오류: ENDPOINT_NOT_FOUND"
+      "detail": "⛔ [발송 차단 (FAIL-CLOSED)]\n• 사유: COMPANION_OFFLINE_OR_NETWORK_ERROR\n• 상세: Email Test Sidecar at 127.0.0.1:18990 is offline or unreachable: Failed to fetch\n• 수신자: delivered@resend.dev"
     },
     {
       "name": "SCREENSHOT_CAPTURED",

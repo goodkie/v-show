@@ -3,6 +3,7 @@ const http = require('node:http');
 const fs = require('node:fs');
 const { EmailTestSidecar, DEFAULT_SIDECAR_PORT, SIDECAR_BUILD_ID, SIDECAR_API_CAPABILITIES, parseSidecarPort } = require('./email-test-sidecar');
 const { getSidecarPaths } = require('./sidecar-paths');
+const { verifyWindowsDacl } = require('./email-test-sidecar-set-key');
 
 function getJson(port, urlPath, headers = {}) {
   return new Promise(resolve => {
@@ -34,9 +35,25 @@ function getJson(port, urlPath, headers = {}) {
       process.exit(2);
     }
 
-    const tok = process.env.XPIDER_EMAIL_SIDECAR_TOKEN || (fs.existsSync(paths.tokenFile) ? fs.readFileSync(paths.tokenFile, 'utf8').trim() : '');
-    if (!tok) {
+    if (process.env.XPIDER_EMAIL_SIDECAR_TOKEN && process.env.XPIDER_EMAIL_SIDECAR_TOKEN.trim()) {
+      console.error('[UNSAFE_ENV_TOKEN_REJECTED] XPIDER_EMAIL_SIDECAR_TOKEN env override is forbidden in packaged/owner mode.');
+      process.exit(4);
+    }
+    if (!fs.existsSync(paths.tokenFile)) {
       console.error(`[AUTH_FAILED] Running sidecar matches build, but token file is missing at ${paths.tokenFile}.`);
+      process.exit(4);
+    }
+    if (process.platform === 'win32' && process.env.USERNAME) {
+      try {
+        verifyWindowsDacl(paths.tokenFile, process.env.USERNAME);
+      } catch (aclErr) {
+        console.error(`[TOKEN_ACL_INVALID] Token file ACL invalid at ${paths.tokenFile}: ${aclErr.message}`);
+        process.exit(4);
+      }
+    }
+    const tok = fs.readFileSync(paths.tokenFile, 'utf8').trim();
+    if (!tok) {
+      console.error(`[AUTH_FAILED] Running sidecar matches build, but token file is empty at ${paths.tokenFile}.`);
       process.exit(4);
     }
     const st = await getJson(port, '/email/test-send/status', { Authorization: `Bearer ${tok}` });
@@ -44,6 +61,12 @@ function getJson(port, urlPath, headers = {}) {
       console.error(`[AUTH_FAILED] Running sidecar rejected Bearer token from ${paths.tokenFile} (HTTP ${st.status || 'ERR'}).`);
       console.error('  Run STOP_EMAIL_TEST_SIDECAR.bat then START_EMAIL_TEST_SIDECAR.bat to re-sync token provenance.');
       process.exit(4);
+    }
+    const stCaps = Array.isArray(st.json.apiCapabilities) ? st.json.apiCapabilities : [];
+    const stHasAllCaps = SIDECAR_API_CAPABILITIES.every(c => stCaps.includes(c));
+    if (st.json.companionBuildId !== SIDECAR_BUILD_ID || !stHasAllCaps) {
+      console.error(`[BUILD_MISMATCH] Authenticated status on port ${port} (${st.json.companionBuildId || 'unknown'}) does not match required build ${SIDECAR_BUILD_ID}.`);
+      process.exit(2);
     }
     if (st.json.resendApiKeyConfigured === false) {
       console.error(`[ALREADY_RUNNING_KEY_MISSING] Sidecar PID ${j.pid} is running on 127.0.0.1:${port} WITHOUT a valid RESEND_API_KEY (status: ${st.json.keyStatus || 'KEY_MISSING'}).`);

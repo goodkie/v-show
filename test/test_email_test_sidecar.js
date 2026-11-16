@@ -35,6 +35,7 @@ function request(port, method, urlPath, headers = {}, body = null) {
   }
 
   const sidecar = new EmailTestSidecar({
+      trustedTestMode: true,
     port: 19991,
     tokenFile: path.join(tmpDir, '.email_sidecar_token'),
     pidFile: path.join(tmpDir, '.email_sidecar.pid'),
@@ -179,6 +180,7 @@ function request(port, method, urlPath, headers = {}, body = null) {
       delete process.env.RESEND_API_KEY;
       try {
         const s2 = new EmailTestSidecar({
+      trustedTestMode: true,
           port: 19992,
           tokenFile: path.join(tmpDir, '.tok2'),
           pidFile: path.join(tmpDir, '.pid2'),
@@ -203,6 +205,7 @@ function request(port, method, urlPath, headers = {}, body = null) {
       const sharedLedger = path.join(tmpDir, '.shared_ledger.jsonl');
       let calls = 0;
       const sA = new EmailTestSidecar({
+      trustedTestMode: true,
         port: 19993,
         token: 'ledger_test_token_0123456789',
         tokenFile: path.join(tmpDir, '.tok_ledger'),
@@ -244,6 +247,7 @@ function request(port, method, urlPath, headers = {}, body = null) {
 
       // Restart new sidecar pointing to same ledgerFile
       const sB = new EmailTestSidecar({
+      trustedTestMode: true,
         port: 19994,
         token: 'ledger_test_token_0123456789',
         tokenFile: path.join(tmpDir, '.tok_ledger'),
@@ -319,6 +323,7 @@ function request(port, method, urlPath, headers = {}, body = null) {
     await runTest('LEDGER_DISK_FULL_FAILS_CLOSED_ZERO_OUTBOUND_POST', async () => {
       let postCalls = 0;
       const diskFullSidecar = new EmailTestSidecar({
+      trustedTestMode: true,
         port: 19996,
         token: 'disk_full_test_token_123456',
         tokenFile: path.join(tmpDir, '.tok_df'),
@@ -382,6 +387,7 @@ function request(port, method, urlPath, headers = {}, body = null) {
       fs.writeFileSync(badLedger, '{"idempotencyKey":"partial_corrupt\n', 'utf8');
       let postCalls = 0;
       const sc = new EmailTestSidecar({
+      trustedTestMode: true,
         port: 19997,
         token: 'corrupt_ledger_tok_123456',
         tokenFile: path.join(tmpDir, '.tok_corrupt'),
@@ -409,6 +415,7 @@ function request(port, method, urlPath, headers = {}, body = null) {
       const sharedLedger = path.join(tmpDir, '.concurrent_ledger.jsonl');
       let transportCalls = 0;
       const makeSc = (portNum) => new EmailTestSidecar({
+      trustedTestMode: true,
         port: portNum,
         token: 'concurrent_tok_12345678',
         tokenFile: path.join(tmpDir, '.tok_conc'),
@@ -470,6 +477,7 @@ function request(port, method, urlPath, headers = {}, body = null) {
 
       const tokAclPath = path.join(tmpDir, '.fresh_acl_token');
       const sTok = new EmailTestSidecar({
+      trustedTestMode: true,
         port: 20001,
         tokenFile: tokAclPath,
         pidFile: path.join(tmpDir, '.pid_tok'),
@@ -484,6 +492,7 @@ function request(port, method, urlPath, headers = {}, body = null) {
       const badTokPath = path.join(tmpDir, 'nonexistent_dir_file_conflict');
       fs.writeFileSync(badTokPath, 'not_a_dir', 'utf8');
       assert.throws(() => new EmailTestSidecar({
+      trustedTestMode: true,
         port: 20002,
         tokenFile: path.join(badTokPath, '.token'),
         pidFile: path.join(tmpDir, '.pid_bad'),
@@ -593,6 +602,7 @@ function request(port, method, urlPath, headers = {}, body = null) {
       // Verify PRIOR_REQUEST_AMBIGUOUS does NOT tell operator to retry with a new key
       const ambigLedger = path.join(tmpDir, '.ambig_msg.jsonl');
       const sAmb = new EmailTestSidecar({
+      trustedTestMode: true,
         port: 20003,
         token: 'ambig_msg_tok_123456',
         tokenFile: path.join(tmpDir, '.tok_ambig'),
@@ -631,6 +641,7 @@ function request(port, method, urlPath, headers = {}, body = null) {
       execFileSync('icacls', [weakLedger, '/grant', 'Everyone:R'], { stdio: 'pipe' });
       let postCalls = 0;
       const sWeak = new EmailTestSidecar({
+      trustedTestMode: true,
         port: 20004,
         token: 'weak_acl_tok_123456',
         tokenFile: path.join(tmpDir, '.tok_weak'),
@@ -683,6 +694,7 @@ function request(port, method, urlPath, headers = {}, body = null) {
 
       // 5. Status & send distinguish KEY_MISSING vs MALFORMED_KEY
       const sMalformed = new EmailTestSidecar({
+      trustedTestMode: true,
         port: 20006,
         stateDir: path.join(tmpDir, 'state_malformed'),
         apiKeyOverride: 'invalid_not_re_prefix',
@@ -715,6 +727,7 @@ function request(port, method, urlPath, headers = {}, body = null) {
       execFileSync('icacls', [weakKeyFile, '/grant', 'Everyone:R'], { stdio: 'pipe' });
       let postCalls = 0;
       const sWeakKey = new EmailTestSidecar({
+      trustedTestMode: true,
         port: 20007,
         stateDir: path.join(tmpDir, 'state_weak_key'),
         localKeyFile: weakKeyFile,
@@ -739,6 +752,7 @@ function request(port, method, urlPath, headers = {}, body = null) {
       fs.writeFileSync(weakTokFile, 'abcdef0123456789abcdef0123456789\n', 'utf8');
       execFileSync('icacls', [weakTokFile, '/grant', 'Everyone:R'], { stdio: 'pipe' });
       assert.throws(() => new EmailTestSidecar({
+      trustedTestMode: true,
         port: 20008,
         tokenFile: weakTokFile,
         pidFile: path.join(tmpDir, '.pid_wt'),
@@ -748,33 +762,40 @@ function request(port, method, urlPath, headers = {}, body = null) {
 
     await runTest('HOSTILE_LOCK_REPLACEMENT_TRIGGERS_RECONCILIATION_AND_CLI_CHECKS', async () => {
       const { EmailSimulatorLedger } = require('../companion/email-simulator-ledger');
-      const { execFileSync } = require('node:child_process');
+      const { writeProtectedSecretFile } = require('../companion/email-test-sidecar-set-key');
+      const { spawn } = require('node:child_process');
 
-      // 1. Hostile lockfile replacement inside critical section triggers reconciliationRequired=true and preserves foreign lock
+      // 1. Hostile lockfile replacement inside critical section MUST throw fail-closed, mark reconciliationRequired=true, and preserve foreign lock
       const hPath = path.join(tmpDir, '.hostile_lock.jsonl');
       const hLedger = new EmailSimulatorLedger({ ledgerFile: hPath });
-      hLedger._withExclusiveLock(() => {
-        fs.writeFileSync(hLedger.lockFile, JSON.stringify({ pid: 777777, lockId: 'foreign_replaced_nonce', createdAt: Date.now() }));
-      });
+      assert.throws(() => {
+        hLedger._withExclusiveLock(() => {
+          fs.writeFileSync(hLedger.lockFile, JSON.stringify({ pid: 777777, lockId: 'foreign_replaced_nonce', createdAt: Date.now() }));
+        });
+      }, /LEDGER_LOCK_OWNERSHIP_LOST/);
       assert.equal(hLedger.reconciliationRequired, true);
       assert.equal(hLedger.corruptReason, 'LOCK_OWNERSHIP_LOST_HOSTILE_REPLACEMENT');
+      // Subsequent load() must NOT clear lockReconciliationRequired
+      hLedger.load();
+      assert.equal(hLedger.reconciliationRequired, true);
       const foreign = JSON.parse(fs.readFileSync(hLedger.lockFile, 'utf8'));
       assert.equal(foreign.lockId, 'foreign_replaced_nonce');
       fs.unlinkSync(hLedger.lockFile);
 
-      // 2. CLI rejects BUILD_MISMATCH (exit 2) and AUTH_FAILED (exit 4)
+      // 2. CLI rejects AUTH_FAILED (exit 4) when token mismatch occurs under valid NTFS LOCALAPPDATA
       const cliStateDir = path.join(tmpDir, 'cli_auth_fail_state');
-      const sReal = new EmailTestSidecar({ port: 20009, stateDir: cliStateDir });
+      const sReal = new EmailTestSidecar({ trustedTestMode: true, port: 20009, stateDir: cliStateDir });
       await sReal.start();
       try {
-        // Wrong token file -> AUTH_FAILED exit 4
-        const wrongState = path.join(tmpDir, 'cli_wrong_state');
-        fs.mkdirSync(wrongState, { recursive: true });
-        fs.writeFileSync(path.join(wrongState, '.email_sidecar_token'), 'wrong_token_0123456789abcdef\n', 'utf8');
-        let exitCode = await new Promise(resolve => {
-          const { spawn } = require('node:child_process');
+        const wrongLocalAppData = path.join(tmpDir, 'cli_wrong_localappdata');
+        const wrongSidecarDir = path.join(wrongLocalAppData, 'XPIDER', 'Sidecar');
+        writeProtectedSecretFile(path.join(wrongSidecarDir, '.email_sidecar_token'), 'wrong_token_0123456789abcdef\n');
+        const exitCode = await new Promise(resolve => {
+          const env = { ...process.env, XPIDER_EMAIL_SIDECAR_PORT: '20009', LOCALAPPDATA: wrongLocalAppData };
+          delete env.XPIDER_SIDECAR_STATE_DIR;
+          delete env.XPIDER_EMAIL_SIDECAR_TOKEN;
           const p = spawn(process.execPath, [path.join(__dirname, '..', 'companion', 'email-test-sidecar-cli.js')], {
-            env: { ...process.env, XPIDER_EMAIL_SIDECAR_PORT: '20009', XPIDER_SIDECAR_STATE_DIR: wrongState },
+            env,
             stdio: 'ignore'
           });
           p.on('exit', code => resolve(code));
@@ -782,6 +803,255 @@ function request(port, method, urlPath, headers = {}, body = null) {
         assert.equal(exitCode, 4);
       } finally {
         await sReal.stop();
+      }
+    });
+
+    await runTest('LOCK_OWNERSHIP_LOSS_FAIL_CLOSED_NO_TRANSPORT_AND_AMBIGUOUS_ACCEPTED', async () => {
+      // P0-1a: Hostile lock replacement during reserveRequest() MUST fail closed and NEVER call transport (transportCalls === 0)
+      let transportCallsA = 0;
+      const ledgerA = path.join(tmpDir, '.p01a_ledger.jsonl');
+      const lockA = ledgerA + '.lock';
+      const fsWrapA = {
+        ...fs,
+        writeSync(fd, buf, off, len, pos) {
+          const w = fs.writeSync(fd, buf, off, len, pos);
+          const txt = Buffer.isBuffer(buf) ? buf.toString('utf8', off || 0, (off || 0) + (len || buf.length)) : String(buf);
+          if (txt.includes('"REQUESTED"')) {
+            fs.writeFileSync(lockA, JSON.stringify({ pid: 888888, lockId: 'stolen_before_release', createdAt: Date.now() }));
+          }
+          return w;
+        }
+      };
+      const sA = new EmailTestSidecar({
+        trustedTestMode: true,
+        port: 20010,
+        stateDir: path.join(tmpDir, 'p01a_state'),
+        ledgerFile: ledgerA,
+        fsImpl: fsWrapA,
+        apiKeyOverride: 're_test_valid_format_123456',
+        transportImpl: async () => {
+          transportCallsA++;
+          return { status: 'SUCCESS', providerMessageId: 'should_never_happen' };
+        }
+      });
+      await sA.start();
+      try {
+        const resA = await request(20010, 'POST', '/email/test-send', {
+          Authorization: `Bearer ${sA.token}`
+        }, { to: 'delivered@resend.dev', idempotencyKey: 'p01a_hostile_reserve_000001' });
+        assert.equal(resA.status, 500);
+        assert.equal(resA.json.status, 'BLOCKED');
+        assert.equal(resA.json.reconciliationRequired, true);
+        assert.equal(resA.json.reason, 'LEDGER_LOCK_OWNERSHIP_LOST');
+        assert.equal(transportCallsA, 0);
+
+        // Retry with new key must also stay blocked (transportCallsA still 0)
+        const resA2 = await request(20010, 'POST', '/email/test-send', {
+          Authorization: `Bearer ${sA.token}`
+        }, { to: 'delivered@resend.dev', idempotencyKey: 'p01a_hostile_reserve_000002' });
+        assert.equal(resA2.status, 409);
+        assert.equal(resA2.json.reconciliationRequired, true);
+        assert.equal(transportCallsA, 0);
+      } finally {
+        await sA.stop();
+        try { fs.unlinkSync(lockA); } catch (_) {}
+      }
+
+      // P0-1b: Hostile lock replacement during ACCEPTED append MUST return AMBIGUOUS_PERSISTENCE_FAILURE, never unqualified SUCCESS
+      const ledgerB = path.join(tmpDir, '.p01b_ledger.jsonl');
+      const lockB = ledgerB + '.lock';
+      const fsWrapB = {
+        ...fs,
+        writeSync(fd, buf, off, len, pos) {
+          const w = fs.writeSync(fd, buf, off, len, pos);
+          const txt = Buffer.isBuffer(buf) ? buf.toString('utf8', off || 0, (off || 0) + (len || buf.length)) : String(buf);
+          if (txt.includes('"ACCEPTED"')) {
+            fs.writeFileSync(lockB, JSON.stringify({ pid: 999999, lockId: 'stolen_on_accepted', createdAt: Date.now() }));
+          }
+          return w;
+        }
+      };
+      const sB = new EmailTestSidecar({
+        trustedTestMode: true,
+        port: 20011,
+        stateDir: path.join(tmpDir, 'p01b_state'),
+        ledgerFile: ledgerB,
+        fsImpl: fsWrapB,
+        apiKeyOverride: 're_test_valid_format_123456',
+        transportImpl: async () => ({
+          status: 'SUCCESS',
+          providerMessageId: 'sim_msg_p01b',
+          from: 'onboarding@resend.dev',
+          timestamp: new Date().toISOString()
+        })
+      });
+      await sB.start();
+      try {
+        const resB = await request(20011, 'POST', '/email/test-send', {
+          Authorization: `Bearer ${sB.token}`
+        }, { to: 'delivered@resend.dev', idempotencyKey: 'p01b_hostile_accept_000001' });
+        assert.equal(resB.status, 500);
+        assert.equal(resB.json.status, 'AMBIGUOUS_PERSISTENCE_FAILURE');
+        assert.equal(resB.json.reconciliationRequired, true);
+        assert.equal(resB.json.reason, 'LEDGER_LOCK_OWNERSHIP_LOST');
+      } finally {
+        await sB.stop();
+        try { fs.unlinkSync(lockB); } catch (_) {}
+      }
+    });
+
+    await runTest('LOCK_ACQUISITION_PARTIAL_FAILURE_GUARDS', async () => {
+      const { EmailSimulatorLedger } = require('../companion/email-simulator-ledger');
+      const modes = ['SHORT_WRITE', 'WRITE_THROW', 'CLOSE_THROW'];
+      for (const mode of modes) {
+        const lPath = path.join(tmpDir, `.partial_${mode}.jsonl`);
+        const lockPath = lPath + '.lock';
+        let lockFdOpened = null;
+        const mockFs = {
+          ...fs,
+          openSync(p, flags, m) {
+            const fd = fs.openSync(p, flags, m);
+            if (p === lockPath) lockFdOpened = fd;
+            return fd;
+          },
+          writeSync(fd, buf, off, len, pos) {
+            if (fd === lockFdOpened) {
+              if (mode === 'SHORT_WRITE') return 3;
+              if (mode === 'WRITE_THROW') throw new Error('EIO_SIMULATED_LOCK_WRITE');
+            }
+            return fs.writeSync(fd, buf, off, len, pos);
+          },
+          closeSync(fd) {
+            const res = fs.closeSync(fd);
+            if (fd === lockFdOpened && mode === 'CLOSE_THROW') {
+              throw new Error('EIO_SIMULATED_LOCK_CLOSE');
+            }
+            return res;
+          }
+        };
+        const pLedger = new EmailSimulatorLedger({ ledgerFile: lPath, fsImpl: mockFs });
+        assert.throws(() => pLedger.reserveRequest({
+          idempotencyKey: `partial_${mode}_000001`,
+          recipient: 'delivered@resend.dev',
+          from: 'onboarding@resend.dev'
+        }), /LEDGER_LOCK_PARTIAL_FAILURE/);
+        assert.equal(pLedger.reconciliationRequired, true);
+        // Must NOT auto-clear potentially live/orphan lockfile
+        assert.equal(fs.existsSync(lockPath), true);
+        fs.unlinkSync(lockPath);
+      }
+    });
+
+    await runTest('PACKAGED_MODE_REJECTS_TEST_INJECTIONS_ENV_AND_UNSAFE_FS', async () => {
+      const { getSidecarPaths, assertSafeStateLocation } = require('../companion/sidecar-paths');
+
+      // 1. Packaged mode rejects test-only constructor injections
+      assert.throws(() => new EmailTestSidecar({ apiKeyOverride: 're_fake_12345678' }), /PACKAGED_MODE_TEST_INJECTION_REJECTED/);
+      assert.throws(() => new EmailTestSidecar({ stateDir: tmpDir }), /PACKAGED_MODE_TEST_INJECTION_REJECTED/);
+      assert.throws(() => new EmailTestSidecar({ token: '0123456789abcdef0123456789abcdef' }), /PACKAGED_MODE_TEST_INJECTION_REJECTED/);
+
+      // 2. Packaged mode rejects XPIDER_SIDECAR_STATE_DIR env override
+      const prevStateEnv = process.env.XPIDER_SIDECAR_STATE_DIR;
+      process.env.XPIDER_SIDECAR_STATE_DIR = tmpDir;
+      try {
+        assert.throws(() => getSidecarPaths(), /UNSAFE_STATE_DIR_OVERRIDE_REJECTED/);
+      } finally {
+        if (prevStateEnv === undefined) delete process.env.XPIDER_SIDECAR_STATE_DIR;
+        else process.env.XPIDER_SIDECAR_STATE_DIR = prevStateEnv;
+      }
+
+      // 3. Packaged mode rejects UNC / non-NTFS state locations
+      assert.throws(() => assertSafeStateLocation('\\\\evil-host\\share\\sidecar', { platform: 'win32' }), /UNSAFE_STATE_FILESYSTEM_REJECTED/);
+      assert.throws(() => assertSafeStateLocation('E:\\XPIDER\\Sidecar', {
+        platform: 'win32',
+        execSyncFn: () => 'exFAT\r\n'
+      }), /UNSAFE_STATE_FILESYSTEM_REJECTED/);
+
+      // 4. Packaged mode rejects XPIDER_EMAIL_SIDECAR_TOKEN and RESEND_API_KEY env overrides
+      const prevTokEnv = process.env.XPIDER_EMAIL_SIDECAR_TOKEN;
+      const prevResendEnv = process.env.RESEND_API_KEY;
+      const prevLocalAppData = process.env.LOCALAPPDATA;
+      const pkgLocalAppData = path.join(tmpDir, 'pkg_localappdata');
+      fs.mkdirSync(pkgLocalAppData, { recursive: true });
+      process.env.LOCALAPPDATA = pkgLocalAppData;
+      try {
+        process.env.XPIDER_EMAIL_SIDECAR_TOKEN = 'env_tok_0123456789abcdef';
+        assert.throws(() => new EmailTestSidecar({ port: 20012 }), /UNSAFE_ENV_TOKEN_REJECTED/);
+        delete process.env.XPIDER_EMAIL_SIDECAR_TOKEN;
+
+        process.env.RESEND_API_KEY = 're_env_should_be_rejected_12345';
+        const pkgSidecar = new EmailTestSidecar({ port: 20012 });
+        assert.equal(pkgSidecar.resolveResendApiKey(), null);
+        assert.equal(pkgSidecar.keyStatus, 'UNSAFE_ENV_KEY_REJECTED');
+      } finally {
+        if (prevTokEnv === undefined) delete process.env.XPIDER_EMAIL_SIDECAR_TOKEN;
+        else process.env.XPIDER_EMAIL_SIDECAR_TOKEN = prevTokEnv;
+        if (prevResendEnv === undefined) delete process.env.RESEND_API_KEY;
+        else process.env.RESEND_API_KEY = prevResendEnv;
+        if (prevLocalAppData === undefined) delete process.env.LOCALAPPDATA;
+        else process.env.LOCALAPPDATA = prevLocalAppData;
+      }
+
+      // 5. Key status never reports CONFIGURED from local regex alone
+      const sFmt = new EmailTestSidecar({
+        trustedTestMode: true,
+        port: 20013,
+        stateDir: path.join(tmpDir, 'fmt_state'),
+        apiKeyOverride: 're_format_valid_only_12345'
+      });
+      assert.ok(sFmt.resolveResendApiKey());
+      assert.equal(sFmt.keyStatus, 'FORMAT_VALID_KEY_PRESENT');
+    });
+
+    await runTest('CLI_AUTHENTICATED_STATUS_BUILD_AND_CAPABILITY_VERIFICATION', async () => {
+      const http = require('node:http');
+      const { spawn } = require('node:child_process');
+      const { writeProtectedSecretFile } = require('../companion/email-test-sidecar-set-key');
+
+      const mockLocalAppData = path.join(tmpDir, 'cli_status_mismatch_local');
+      const tokFile = path.join(mockLocalAppData, 'XPIDER', 'Sidecar', '.email_sidecar_token');
+      writeProtectedSecretFile(tokFile, 'mock_status_tok_0123456789abcdef\n');
+
+      // Mock server returns matching /health, but mismatched companionBuildId on /email/test-send/status
+      const mockSrv = http.createServer((req, res) => {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        if (req.url === '/health') {
+          res.end(JSON.stringify({
+            status: 'OK',
+            pid: process.pid,
+            companionBuildId: SIDECAR_BUILD_ID,
+            apiCapabilities: ['email-test-send', 'email-test-sidecar-v1', 'email-test-ledger-v1']
+          }));
+        } else {
+          res.end(JSON.stringify({
+            status: 'OK',
+            companionBuildId: 'V7.0.0-OLD-STALE-BUILD',
+            apiCapabilities: ['email-test-send'],
+            resendApiKeyConfigured: true,
+            keyStatus: 'FORMAT_VALID_KEY_PRESENT'
+          }));
+        }
+      });
+      await new Promise(resolve => mockSrv.listen(20014, '127.0.0.1', resolve));
+      try {
+        const env1 = { ...process.env, XPIDER_EMAIL_SIDECAR_PORT: '20014', LOCALAPPDATA: mockLocalAppData };
+        delete env1.XPIDER_SIDECAR_STATE_DIR;
+        delete env1.XPIDER_EMAIL_SIDECAR_TOKEN;
+        const exitBuildMismatch = await new Promise(resolve => {
+          const p = spawn(process.execPath, [path.join(__dirname, '..', 'companion', 'email-test-sidecar-cli.js')], { env: env1, stdio: 'ignore' });
+          p.on('exit', c => resolve(c));
+        });
+        assert.equal(exitBuildMismatch, 2);
+
+        // Also CLI must reject XPIDER_SIDECAR_STATE_DIR env var in packaged mode
+        const env2 = { ...process.env, XPIDER_EMAIL_SIDECAR_PORT: '20014', XPIDER_SIDECAR_STATE_DIR: tmpDir };
+        const exitUnsafeEnv = await new Promise(resolve => {
+          const p = spawn(process.execPath, [path.join(__dirname, '..', 'companion', 'email-test-sidecar-cli.js')], { env: env2, stdio: 'ignore' });
+          p.on('exit', c => resolve(c));
+        });
+        assert.notEqual(exitUnsafeEnv, 0);
+      } finally {
+        await new Promise(resolve => mockSrv.close(resolve));
       }
     });
 

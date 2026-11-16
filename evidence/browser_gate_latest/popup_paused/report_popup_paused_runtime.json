@@ -1,8 +1,8 @@
 {
-  "gitHeadSha": "8c1b390d3ab07b8202ba977dcc0534caa7a98cbd",
-  "extensionTreeSha": "f6bdceed0e5575eec3ab5220d0d07bae93ef91e2",
+  "gitHeadSha": "cebff3e47b79d691e6cdfdf28863d04e98abdf09",
+  "extensionTreeSha": "a4d7e3e0194c2500842ecc3edc765d79ab1374f9",
   "nodeVersion": "v24.11.1",
-  "browser": "Edg/157.0.4341.46",
+  "browser": "Edg/157.0.4341.60",
   "extDir": "C:\\Users\\oPus\\.gemini\\antigravity\\brain\\39737f43-3ee8-47a1-a4fb-53e319ab562e\\scratch\\repo_fix_p0\\extension",
   "disposableProfileVerified": true,
   "passed": 14,
@@ -12,7 +12,7 @@
     {
       "name": "BROWSER_STARTED",
       "pass": true,
-      "detail": "Edg/157.0.4341.46"
+      "detail": "Edg/157.0.4341.60"
     },
     {
       "name": "EXTENSION_LOADED",
