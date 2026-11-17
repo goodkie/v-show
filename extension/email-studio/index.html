@@ -49,9 +49,10 @@
         <option value="CUSTOM_HTTPS_PUT">Cloudflare R2 / HTTPS PUT 엔드포인트 (권장)</option>
       </select>
       <div id="imgHostGithubFields" class="inline" style="margin-top:4px;">
-        <div><label for="imgHostOwner">GitHub Owner</label><input id="imgHostOwner" placeholder="goodkie"></div>
-        <div><label for="imgHostRepo">Public Repo (공개 저장소만 허용)</label><input id="imgHostRepo" placeholder="xpider-public-assets"></div>
+        <div><label for="imgHostOwner">GitHub Owner (필수)</label><input id="imgHostOwner" placeholder="예: goodkie"></div>
+        <div><label for="imgHostRepo">Public Repo (저장소명 또는 URL)</label><input id="imgHostRepo" placeholder="예: xpider-email-images"></div>
         <div><label for="imgHostBranch">Branch</label><input id="imgHostBranch" value="main"></div>
+        <div><label for="imgHostPathPrefix">Path Prefix (선택)</label><input id="imgHostPathPrefix" value="images" placeholder="images (비우면 루트)"></div>
       </div>
       <div id="imgHostCustomFields" class="inline" style="display:none;margin-top:4px;">
         <div><label for="imgHostUploadEndpoint">HTTPS PUT 업로드 엔드포인트</label><input id="imgHostUploadEndpoint" type="url" placeholder="https://upload.vivpr.pro"></div>

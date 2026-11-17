@@ -10,11 +10,68 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const https = require('node:https');
+const dns = require('node:dns');
+const net = require('node:net');
 const crypto = require('node:crypto');
 const { writeProtectedSecretFile, verifyWindowsDacl } = require('./email-test-sidecar-set-key');
 
 const MAX_IMAGE_BYTES = 3 * 1024 * 1024;
 const MAX_DIMENSION = 8000;
+
+function isPrivateOrReservedIp(ip) {
+  const s = String(ip || '').trim().toLowerCase();
+  if (!s) return true;
+  if (net.isIPv4(s)) {
+    const p = s.split('.').map(Number);
+    if (p[0] === 0 || p[0] === 10 || p[0] === 127) return true;
+    if (p[0] === 169 && p[1] === 254) return true;
+    if (p[0] === 172 && p[1] >= 16 && p[1] <= 31) return true;
+    if (p[0] === 192 && p[1] === 168) return true;
+    if (p[0] === 100 && p[1] >= 64 && p[1] <= 127) return true;
+    if (p[0] >= 224) return true;
+    return false;
+  }
+  if (net.isIPv6(s)) {
+    if (s === '::' || s === '::1') return true;
+    if (s.startsWith('fc') || s.startsWith('fd') || s.startsWith('fe80') || s.startsWith('::ffff:')) {
+      if (s.startsWith('::ffff:')) return isPrivateOrReservedIp(s.slice(7));
+      return true;
+    }
+    return false;
+  }
+  return true;
+}
+
+async function assertPublicHttpsTarget(parsedUrl, trustedTestMode) {
+  if (!parsedUrl || parsedUrl.protocol !== 'https:') {
+    return { ok: false, reason: 'HTTPS_REQUIRED', message: '반드시 https:// URL이어야 합니다.' };
+  }
+  if (trustedTestMode) return { ok: true };
+  const host = String(parsedUrl.hostname || '').toLowerCase().replace(/^\[|\]$/g, '');
+  if (!host || host === 'localhost' || host.endsWith('.localhost') || host.endsWith('.local') || host.endsWith('.internal')) {
+    return { ok: false, reason: 'SSRF_LOCAL_HOST_BLOCKED', message: `내부/로컬 호스트(${host})는 허용되지 않습니다.` };
+  }
+  if (net.isIP(host)) {
+    if (isPrivateOrReservedIp(host)) {
+      return { ok: false, reason: 'SSRF_PRIVATE_IP_BLOCKED', message: `사설/루프백 IP(${host})는 허용되지 않습니다.` };
+    }
+    return { ok: true };
+  }
+  try {
+    const addrs = await dns.promises.lookup(host, { all: true });
+    if (!Array.isArray(addrs) || addrs.length === 0) {
+      return { ok: false, reason: 'HOST_DNS_UNRESOLVED', message: `호스트 DNS를 확인할 수 없습니다(${host}).` };
+    }
+    for (const a of addrs) {
+      if (isPrivateOrReservedIp(a.address)) {
+        return { ok: false, reason: 'SSRF_DNS_PRIVATE_IP_BLOCKED', message: `호스트(${host})가 사설/루프백 IP로 해석되어 차단되었습니다.` };
+      }
+    }
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, reason: 'HOST_DNS_LOOKUP_FAILED', message: `호스트 DNS 조회 실패(${host}): ${err.message}` };
+  }
+}
 
 function detectImageSignature(buf) {
   if (!Buffer.isBuffer(buf) || buf.length < 12) return null;
@@ -53,9 +110,26 @@ function detectImageSignature(buf) {
     const height = buf.readUInt16LE(8);
     return { mimeType: 'image/gif', ext: 'gif', width, height };
   }
-  // WebP: RIFF....WEBP
+  // WebP: RIFF....WEBP (parse VP8 / VP8L / VP8X dimensions)
   if (buf.slice(0, 4).toString('ascii') === 'RIFF' && buf.slice(8, 12).toString('ascii') === 'WEBP') {
-    return { mimeType: 'image/webp', ext: 'webp', width: 0, height: 0 };
+    if (buf.length < 24) return null;
+    const chunkTag = buf.slice(12, 16).toString('ascii');
+    let width = 0, height = 0;
+    if (chunkTag === 'VP8 ' && buf.length >= 30 && buf[23] === 0x9d && buf[24] === 0x01 && buf[25] === 0x2a) {
+      width = buf.readUInt16LE(26) & 0x3fff;
+      height = buf.readUInt16LE(28) & 0x3fff;
+    } else if (chunkTag === 'VP8L' && buf.length >= 25 && buf[20] === 0x2f) {
+      const bits = buf.readUInt32LE(21);
+      width = (bits & 0x3fff) + 1;
+      height = ((bits >> 14) & 0x3fff) + 1;
+    } else if (chunkTag === 'VP8X' && buf.length >= 30) {
+      width = (buf[24] | (buf[25] << 8) | (buf[26] << 16)) + 1;
+      height = (buf[27] | (buf[28] << 8) | (buf[29] << 16)) + 1;
+    } else {
+      return null;
+    }
+    if (width <= 0 || height <= 0) return null;
+    return { mimeType: 'image/webp', ext: 'webp', width, height };
   }
   return null;
 }
@@ -130,8 +204,9 @@ class EmailImageHostManager {
       };
     }
     const c = loaded.config;
+    const normPrefix = typeof c.pathPrefix === 'string' ? c.pathPrefix.replace(/^\/+|\/+$/g, '') : 'images';
     const dest = c.provider === 'GITHUB_PUBLIC_REPO'
-      ? `GitHub Public (${c.owner}/${c.repo}@${c.branch || 'main'}/${c.pathPrefix || 'email-assets'})`
+      ? `GitHub Public (${c.owner}/${c.repo}@${c.branch || 'main'}${normPrefix ? '/' + normPrefix : ''})`
       : (c.provider === 'CUSTOM_HTTPS_PUT' ? `HTTPS Object Host (${c.publicBaseUrl})` : c.provider);
     return {
       ok: true,
@@ -142,7 +217,7 @@ class EmailImageHostManager {
       owner: c.owner || null,
       repo: c.repo || null,
       branch: c.branch || 'main',
-      pathPrefix: c.pathPrefix || 'email-assets',
+      pathPrefix: normPrefix,
       publicBaseUrl: c.publicBaseUrl || null
     };
   }
@@ -159,12 +234,53 @@ class EmailImageHostManager {
 
     let cleanCfg;
     if (provider === 'GITHUB_PUBLIC_REPO') {
-      const owner = String(payload.owner || '').trim();
-      const repo = String(payload.repo || '').trim();
+      let owner = String(payload.owner || '').trim().replace(/^@/, '');
+      let repo = String(payload.repo || '').trim();
+      const ownerUrlMatch = owner.match(/^https?:\/\/github\.com\/([^/\s?#]+)\/?$/i);
+      if (ownerUrlMatch) owner = ownerUrlMatch[1];
+
+      const repoUrlMatch = repo.match(/^https?:\/\/github\.com\/([^/\s?#]+)\/([^/\s?#]+?)(?:\.git|\/.*)?$/i);
+      if (repoUrlMatch) {
+        if (!owner) owner = repoUrlMatch[1];
+        else if (owner.toLowerCase() !== repoUrlMatch[1].toLowerCase()) {
+          return { ok: false, statusCode: 400, status: 'BLOCKED', reason: 'INVALID_GITHUB_REPO_CONFIG', message: `GitHub Owner("${owner}")와 Repo URL의 소유자("${repoUrlMatch[1]}")가 일치하지 않습니다.` };
+        }
+        repo = repoUrlMatch[2];
+      } else if (repo.includes('/')) {
+        const parts = repo.replace(/^\/+|\/+$/g, '').split('/').filter(Boolean);
+        if (parts.length === 2) {
+          if (!owner) owner = parts[0];
+          else if (owner.toLowerCase() !== parts[0].toLowerCase()) {
+            return { ok: false, statusCode: 400, status: 'BLOCKED', reason: 'INVALID_GITHUB_REPO_CONFIG', message: `GitHub Owner("${owner}")와 Repo("owner/repo" 형식의 "${parts[0]}")가 일치하지 않습니다.` };
+          }
+          repo = parts[1];
+        }
+      }
+      repo = repo.replace(/\.git$/i, '');
+
       const branch = String(payload.branch || 'main').trim() || 'main';
-      const pathPrefix = String(payload.pathPrefix || 'email-assets').trim().replace(/^\/+|\/+$/g, '') || 'email-assets';
-      if (!/^[A-Za-z0-9_.-]{1,64}$/.test(owner) || !/^[A-Za-z0-9_.-]{1,100}$/.test(repo) || !/^[A-Za-z0-9_.-]{1,64}$/.test(branch) || /\.\./.test(pathPrefix)) {
-        return { ok: false, statusCode: 400, status: 'BLOCKED', reason: 'INVALID_GITHUB_REPO_CONFIG', message: '유효한 GitHub 소유자(owner), 공개 저장소(repo), 브랜치 및 안전한 경로 접두사를 입력하세요.' };
+      const rawPrefix = payload.pathPrefix === undefined || payload.pathPrefix === null ? 'images' : String(payload.pathPrefix);
+      const pathPrefix = rawPrefix.trim().replace(/\\/g, '/').replace(/^\/+|\/+$/g, '').replace(/\/{2,}/g, '/');
+
+      const badFields = [];
+      if (!owner) badFields.push('GitHub Owner(비어 있음 — 예: goodkie)');
+      else if (!/^[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?$/.test(owner) && !/^[A-Za-z0-9_.-]{1,64}$/.test(owner)) badFields.push(`GitHub Owner("${owner}")`);
+
+      if (!repo) badFields.push('Public Repo(비어 있음 — 예: xpider-email-images)');
+      else if (!/^[A-Za-z0-9_.-]{1,100}$/.test(repo)) badFields.push(`Public Repo("${repo}")`);
+
+      if (!/^[A-Za-z0-9_.-]{1,64}(?:\/[A-Za-z0-9_.-]{1,64})*$/.test(branch) || /\.\./.test(branch)) badFields.push(`Branch("${branch}")`);
+      if (/\.\./.test(pathPrefix) || (pathPrefix && !/^[A-Za-z0-9_./-]{1,120}$/.test(pathPrefix))) badFields.push(`Path Prefix("${pathPrefix}")`);
+
+      if (badFields.length > 0) {
+        return {
+          ok: false,
+          statusCode: 400,
+          status: 'BLOCKED',
+          reason: 'INVALID_GITHUB_REPO_CONFIG',
+          invalidFields: badFields,
+          message: `GitHub 저장소 설정 오류 [${badFields.join(', ')}]. Owner는 영문/숫자/하이픈, Repo는 저장소명만 입력하세요 (예: goodkie / xpider-email-images).`
+        };
       }
       cleanCfg = { provider, owner, repo, branch, pathPrefix, token, updatedAt: new Date().toISOString() };
     } else if (provider === 'CUSTOM_HTTPS_PUT') {
@@ -177,6 +293,14 @@ class EmailImageHostManager {
       }
       if (upUrl.protocol !== 'https:' || pubUrl.protocol !== 'https:') {
         return { ok: false, statusCode: 400, status: 'BLOCKED', reason: 'HTTPS_REQUIRED', message: '업로드 엔드포인트와 공개 이미지 URL은 반드시 https:// 이어야 합니다.' };
+      }
+      if (!this.trustedTestMode) {
+        for (const u of [upUrl, pubUrl]) {
+          const h = String(u.hostname || '').toLowerCase().replace(/^\[|\]$/g, '');
+          if (!h || h === 'localhost' || h.endsWith('.localhost') || h.endsWith('.local') || h.endsWith('.internal') || (net.isIP(h) && isPrivateOrReservedIp(h))) {
+            return { ok: false, statusCode: 400, status: 'BLOCKED', reason: 'SSRF_LOCAL_OR_PRIVATE_HOST_BLOCKED', message: `내부/사설 호스트(${h})는 이미지 호스팅으로 사용할 수 없습니다.` };
+          }
+        }
       }
       cleanCfg = { provider, uploadEndpoint: upUrl.href.replace(/\/+$/, ''), publicBaseUrl: pubUrl.href.replace(/\/+$/, ''), pathPrefix: 'email-assets', token, updatedAt: new Date().toISOString() };
     } else {
@@ -191,7 +315,8 @@ class EmailImageHostManager {
   async verifyPublicAnonymousGet(publicUrl, expectedMime) {
     let parsed;
     try { parsed = new URL(publicUrl); } catch (_) { return { ok: false, reason: 'INVALID_PUBLIC_URL' }; }
-    if (parsed.protocol !== 'https:') return { ok: false, reason: 'HTTPS_REQUIRED' };
+    const ssrf = await assertPublicHttpsTarget(parsed, this.trustedTestMode);
+    if (!ssrf.ok) return { ok: false, statusCode: 400, reason: ssrf.reason, message: ssrf.message };
 
     const resp = await this.httpRequest({ url: parsed.href, method: 'GET', headers: { 'Accept': 'image/*' }, timeoutMs: 8000 });
     if (resp.error === 'TIMEOUT') return { ok: false, statusCode: 504, reason: 'PUBLIC_FETCH_TIMEOUT', message: '업로드된 공개 URL 확인 시간이 초과되었습니다.' };
@@ -251,7 +376,8 @@ class EmailImageHostManager {
 
     const dateDir = new Date().toISOString().slice(0, 10).replace(/-/g, '');
     const safeName = `${sha256.slice(0, 16)}_${crypto.randomBytes(4).toString('hex')}.${sig.ext}`;
-    const relPath = `${(cfg.pathPrefix || 'email-assets').replace(/^\/+|\/+$/g, '')}/${dateDir}/${safeName}`;
+    const cleanPrefix = typeof cfg.pathPrefix === 'string' ? cfg.pathPrefix.replace(/^\/+|\/+$/g, '') : 'images';
+    const relPath = cleanPrefix ? `${cleanPrefix}/${dateDir}/${safeName}` : `${dateDir}/${safeName}`;
     let publicUrl = '';
 
     if (cfg.provider === 'GITHUB_PUBLIC_REPO') {
@@ -269,19 +395,37 @@ class EmailImageHostManager {
         return { ok: false, statusCode: 400, status: 'BLOCKED', reason: 'PRIVATE_REPO_NOT_PUBLICLY_REACHABLE', message: `비공개(private) GitHub 저장소(${cfg.owner}/${cfg.repo})는 이메일 수신자가 익명으로 열람할 수 없어 차단되었습니다. 공개(public) 저장소를 사용하세요.` };
       }
 
-      const putRes = await this.httpRequest({
-        url: `https://api.github.com/repos/${encodeURIComponent(cfg.owner)}/${encodeURIComponent(cfg.repo)}/contents/${relPath.split('/').map(encodeURIComponent).join('/')}`,
+      const targetBranch = cfg.branch || repoInfo.json.default_branch || 'main';
+      const contentsUrl = `https://api.github.com/repos/${encodeURIComponent(cfg.owner)}/${encodeURIComponent(cfg.repo)}/contents/${relPath.split('/').map(encodeURIComponent).join('/')}`;
+      const ghHeaders = { 'Authorization': `Bearer ${cfg.token}`, 'User-Agent': 'XPIDER-Email-Studio/7.0', 'Accept': 'application/vnd.github+json', 'Content-Type': 'application/json' };
+      let putRes = await this.httpRequest({
+        url: contentsUrl,
         method: 'PUT',
-        headers: { 'Authorization': `Bearer ${cfg.token}`, 'User-Agent': 'XPIDER-Email-Studio/7.0', 'Accept': 'application/vnd.github+json', 'Content-Type': 'application/json' },
-        body: { message: `chore(email-assets): upload ${safeName}`, content: buf.toString('base64'), branch: cfg.branch || 'main' },
+        headers: ghHeaders,
+        body: { message: `chore(email-assets): upload ${safeName}`, content: buf.toString('base64'), branch: targetBranch },
         timeoutMs: 12000
       });
+      // Handle empty repository (size === 0, no initial commit / branch ref yet): retry without branch so GitHub initializes default branch
+      if ((putRes.statusCode === 404 || putRes.statusCode === 409) && Number(repoInfo.json.size) === 0) {
+        putRes = await this.httpRequest({
+          url: contentsUrl,
+          method: 'PUT',
+          headers: ghHeaders,
+          body: { message: `chore(email-assets): initialize repo and upload ${safeName}`, content: buf.toString('base64') },
+          timeoutMs: 12000
+        });
+      }
       if (putRes.error || putRes.statusCode < 200 || putRes.statusCode >= 300) {
         return { ok: false, statusCode: putRes.statusCode || 502, status: 'ERROR', reason: putRes.statusCode === 401 || putRes.statusCode === 403 ? 'HOST_AUTH_FAILED' : 'UPLOAD_FAILED', message: `GitHub 업로드 실패 (HTTP ${putRes.statusCode || putRes.error}).` };
       }
-      publicUrl = `https://raw.githubusercontent.com/${encodeURIComponent(cfg.owner)}/${encodeURIComponent(cfg.repo)}/${encodeURIComponent(cfg.branch || 'main')}/${relPath}`;
+      const effectiveBranch = (putRes.json && putRes.json.commit && putRes.json.content && targetBranch) || targetBranch;
+      publicUrl = `https://raw.githubusercontent.com/${encodeURIComponent(cfg.owner)}/${encodeURIComponent(cfg.repo)}/${encodeURIComponent(effectiveBranch)}/${relPath}`;
     } else if (cfg.provider === 'CUSTOM_HTTPS_PUT') {
       const targetPutUrl = `${cfg.uploadEndpoint}/${relPath}`;
+      const ssrfPut = await assertPublicHttpsTarget(new URL(targetPutUrl), this.trustedTestMode);
+      if (!ssrfPut.ok) {
+        return { ok: false, statusCode: 400, status: 'BLOCKED', reason: ssrfPut.reason, message: ssrfPut.message };
+      }
       const putRes = await this.httpRequest({
         url: targetPutUrl,
         method: 'PUT',

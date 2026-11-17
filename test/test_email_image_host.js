@@ -124,13 +124,105 @@ function makePng(width, height) {
       assert.equal(okRes.ok, true);
       assert.equal(okRes.status, 'REMOTE_READY');
       assert.equal(okRes.verifiedAnonymousGet, true);
-      assert.ok(okRes.publicUrl.startsWith('https://raw.githubusercontent.com/goodkie/assets-repo/main/email-assets/'));
+      assert.ok(okRes.publicUrl.startsWith('https://raw.githubusercontent.com/goodkie/assets-repo/main/images/'));
       assert.equal(okRes.width, 120);
 
       // Idempotent replay on duplicate upload
       const replayRes = await mgr.uploadAndVerify({ base64Data: pngB64, publicUploadConsentConfirmed: true });
       assert.equal(replayRes.ok, true);
       assert.equal(replayRes.idempotentReplay, true);
+    });
+
+    await run('GITHUB_URL_NORMALIZATION_FIELD_DIAGNOSTICS_AND_EMPTY_REPO_BOOTSTRAP', async () => {
+      const s4 = path.join(tmpDir, 's4');
+      let putCount = 0;
+      const mgr = new EmailImageHostManager({
+        stateDir: s4,
+        trustedTestMode: true,
+        httpRequest: async ({ url, method, body }) => {
+          if (method === 'GET' && url.includes('api.github.com/repos/goodkie/xpider-email-images')) {
+            return { statusCode: 200, json: { private: false, size: 0, default_branch: 'main' } };
+          }
+          if (method === 'PUT' && url.includes('/contents/')) {
+            putCount++;
+            if (putCount === 1 && body && body.branch) {
+              return { statusCode: 404, json: { message: 'Branch not found on empty repo' } };
+            }
+            return { statusCode: 201, json: { commit: { sha: 'abc' }, content: { path: 'images/ok.png' } } };
+          }
+          if (method === 'GET' && url.startsWith('https://raw.githubusercontent.com/')) {
+            return { statusCode: 200, headers: { 'content-type': 'image/png' }, bodyBuffer: pngBuf };
+          }
+          return { statusCode: 404 };
+        }
+      });
+
+      // Full GitHub URL + trailing slash pathPrefix normalized cleanly
+      const saved = mgr.saveConfig({
+        provider: 'GITHUB_PUBLIC_REPO',
+        owner: '',
+        repo: 'https://github.com/goodkie/xpider-email-images.git',
+        branch: 'main',
+        pathPrefix: '/images/',
+        token: 'ghp_1234567890abcdef',
+        userConsentConfirmed: true
+      });
+      assert.equal(saved.ok, true);
+      assert.equal(saved.owner, 'goodkie');
+      assert.equal(saved.repo, 'xpider-email-images');
+      assert.equal(saved.pathPrefix, 'images');
+
+      // Invalid config preserves previous valid config and returns field-level diagnostics
+      const bad = mgr.saveConfig({
+        provider: 'GITHUB_PUBLIC_REPO',
+        owner: '',
+        repo: 'only-repo-without-owner',
+        branch: 'main',
+        token: 'ghp_1234567890abcdef',
+        userConsentConfirmed: true
+      });
+      assert.equal(bad.ok, false);
+      assert.equal(bad.reason, 'INVALID_GITHUB_REPO_CONFIG');
+      assert.ok(Array.isArray(bad.invalidFields) && bad.invalidFields.some(f => f.includes('Owner')));
+      assert.equal(mgr.getStatus().repo, 'xpider-email-images');
+
+      // Empty repo (size === 0) retries PUT without branch and succeeds
+      const up = await mgr.uploadAndVerify({ base64Data: pngB64, publicUploadConsentConfirmed: true });
+      assert.equal(up.ok, true);
+      assert.equal(up.status, 'REMOTE_READY');
+      assert.equal(putCount, 2);
+      assert.ok(up.publicUrl.startsWith('https://raw.githubusercontent.com/goodkie/xpider-email-images/main/images/'));
+    });
+
+    await run('WEBP_DIMENSION_CHECK_AND_SSRF_PRIVATE_HOST_BLOCKED', async () => {
+      // Oversized WebP VP8X (width=9001, height=100) must be rejected!
+      const webpHuge = Buffer.alloc(30);
+      webpHuge.write('RIFF', 0, 'ascii');
+      webpHuge.writeUInt32LE(22, 4);
+      webpHuge.write('WEBP', 8, 'ascii');
+      webpHuge.write('VP8X', 12, 'ascii');
+      const w = 9001 - 1;
+      const h = 100 - 1;
+      webpHuge[24] = w & 0xff; webpHuge[25] = (w >> 8) & 0xff; webpHuge[26] = (w >> 16) & 0xff;
+      webpHuge[27] = h & 0xff; webpHuge[28] = (h >> 8) & 0xff; webpHuge[29] = (h >> 16) & 0xff;
+      const sig = detectImageSignature(webpHuge);
+      assert.ok(sig && sig.mimeType === 'image/webp' && sig.width === 9001 && sig.height === 100);
+
+      const s5 = path.join(tmpDir, 's5');
+      const mgrProd = new EmailImageHostManager({ stateDir: s5, trustedTestMode: false });
+      const ssrf1 = mgrProd.saveConfig({
+        provider: 'CUSTOM_HTTPS_PUT',
+        uploadEndpoint: 'https://127.0.0.1/upload',
+        publicBaseUrl: 'https://cdn.example.com/assets',
+        token: 'tok_1234567890',
+        userConsentConfirmed: true
+      });
+      assert.equal(ssrf1.ok, false);
+      assert.equal(ssrf1.reason, 'SSRF_LOCAL_OR_PRIVATE_HOST_BLOCKED');
+
+      const ssrf2 = await mgrProd.verifyPublicAnonymousGet('https://169.254.169.254/latest/meta-data', 'image/png');
+      assert.equal(ssrf2.ok, false);
+      assert.equal(ssrf2.reason, 'SSRF_PRIVATE_IP_BLOCKED');
     });
 
     console.log(`\nALL IMAGE HOST TESTS PASSED (${pass}/${pass})`);

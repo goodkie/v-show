@@ -270,6 +270,7 @@ if (el('btnSaveImageHostConfig')) {
       owner: el('imgHostOwner') ? el('imgHostOwner').value.trim() : '',
       repo: el('imgHostRepo') ? el('imgHostRepo').value.trim() : '',
       branch: el('imgHostBranch') ? el('imgHostBranch').value.trim() : 'main',
+      pathPrefix: el('imgHostPathPrefix') ? el('imgHostPathPrefix').value.trim() : 'images',
       uploadEndpoint: el('imgHostUploadEndpoint') ? el('imgHostUploadEndpoint').value.trim() : '',
       publicBaseUrl: el('imgHostPublicBase') ? el('imgHostPublicBase').value.trim() : ''
     };
