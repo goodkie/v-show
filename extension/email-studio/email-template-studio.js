@@ -232,6 +232,141 @@ window.addEventListener('beforeunload',()=>{if(previewFileUrl){try{URL.revokeObj
 for(const id of ids){if(el(id))el(id).addEventListener('input',render);}
 if(el('loadRemoteImages'))el('loadRemoteImages').addEventListener('change',render);
 if(el('loadRemoteImages'))el('loadRemoteImages').addEventListener('change',probeRemotePreviewImage);
+
+async function refreshImageHostStatus() {
+  const badge = el('imageUploadHostBadge');
+  if (!badge) return;
+  const { sidecarPort, sidecarToken } = getSidecarConfig();
+  const r = await callBg({ action: 'GET_IMAGE_HOST_STATUS', sidecarPort, sidecarToken });
+  if (r && r.ok && r.data) {
+    badge.textContent = r.data.configured ? `☁️ ${r.data.destinationLabel}` : '⚙️ CONFIG_REQUIRED (호스팅 설정 필요)';
+  } else {
+    badge.textContent = '⚠️ Sidecar 미연결 (호스팅 상태 미확인)';
+  }
+}
+
+if (el('imgHostProvider')) {
+  el('imgHostProvider').onchange = () => {
+    const isGh = el('imgHostProvider').value === 'GITHUB_PUBLIC_REPO';
+    if (el('imgHostGithubFields')) el('imgHostGithubFields').style.display = isGh ? 'flex' : 'none';
+    if (el('imgHostCustomFields')) el('imgHostCustomFields').style.display = isGh ? 'none' : 'flex';
+  };
+}
+
+if (el('btnSaveImageHostConfig')) {
+  el('btnSaveImageHostConfig').onclick = async () => {
+    const st = el('imageUploadStatus');
+    const consent = el('imgHostConfigConsent');
+    if (!consent || !consent.checked) {
+      if (st) st.textContent = '⚠️ [USER_CONSENT_REQUIRED] 로컬 Sidecar NTFS 보안 파일 저장 동의 체크박스를 먼저 선택하세요.';
+      return;
+    }
+    const provider = el('imgHostProvider') ? el('imgHostProvider').value : 'GITHUB_PUBLIC_REPO';
+    const token = el('imgHostToken') ? String(el('imgHostToken').value || '').trim() : '';
+    const payload = {
+      provider,
+      token,
+      userConsentConfirmed: true,
+      owner: el('imgHostOwner') ? el('imgHostOwner').value.trim() : '',
+      repo: el('imgHostRepo') ? el('imgHostRepo').value.trim() : '',
+      branch: el('imgHostBranch') ? el('imgHostBranch').value.trim() : 'main',
+      uploadEndpoint: el('imgHostUploadEndpoint') ? el('imgHostUploadEndpoint').value.trim() : '',
+      publicBaseUrl: el('imgHostPublicBase') ? el('imgHostPublicBase').value.trim() : ''
+    };
+    const { sidecarPort, sidecarToken } = getSidecarConfig();
+    const r = await callBg({ action: 'SAVE_IMAGE_HOST_CONFIG', sidecarPort, sidecarToken, payload });
+    if (el('imgHostToken')) el('imgHostToken').value = '';
+    if (r && r.ok && r.data && r.data.ok) {
+      if (st) st.textContent = `✅ ${r.data.message}`;
+      refreshImageHostStatus();
+    } else {
+      const err = (r && r.data) || {};
+      if (st) st.textContent = `❌ [${err.reason || r?.error || 'SAVE_HOST_CONFIG_FAILED'}] ${err.message || '호스팅 설정 저장 실패'}`;
+    }
+  };
+}
+
+if (el('btnCopyUploadedImageUrl')) {
+  el('btnCopyUploadedImageUrl').onclick = async () => {
+    const u = url(val('image'));
+    const st = el('imageUploadStatus');
+    if (!u) { if (st) st.textContent = '⚠️ 복사할 공개 HTTPS 이미지 URL이 없습니다.'; return; }
+    try {
+      await navigator.clipboard.writeText(u);
+      if (st) st.textContent = `📋 복사됨: ${u}`;
+    } catch (_) {
+      if (st) st.textContent = `ℹ️ URL: ${u}`;
+    }
+  };
+}
+
+if (el('btnUploadAndInsertImage')) {
+  let uploadInFlight = false;
+  el('btnUploadAndInsertImage').onclick = async () => {
+    if (uploadInFlight) return;
+    const btn = el('btnUploadAndInsertImage');
+    const st = el('imageUploadStatus');
+    const consent = el('publicImageUploadConsent');
+    if (!consent || !consent.checked) {
+      if (st) st.textContent = '⚠️ [PUBLIC_UPLOAD_CONSENT_REQUIRED] 선택한 이미지를 공개 HTTPS URL로 업로드하려면 위 필수 동의 체크박스를 먼저 선택하세요.';
+      return;
+    }
+    const f = el('imageFile') && el('imageFile').files ? el('imageFile').files[0] : null;
+    if (!f && !previewDataUrl) {
+      if (st) st.textContent = '⚠️ [NO_IMAGE_SELECTED] 먼저 [이미지 파일 선택]에서 PNG/JPG/WebP/GIF 파일을 선택하세요.';
+      return;
+    }
+    uploadInFlight = true;
+    if (btn) btn.disabled = true;
+    try {
+      let b64 = previewDataUrl;
+      if (!b64 && f) {
+        b64 = await new Promise((resolve, reject) => {
+          const r = new FileReader();
+          r.onload = () => resolve(String(r.result || ''));
+          r.onerror = () => reject(new Error('LOCAL_FILE_READ_FAILED'));
+          r.readAsDataURL(f);
+        });
+      }
+      if (st) st.textContent = '⏳ Sidecar를 통해 이미지 시그니처 검증, 공개 업로드 및 익명 GET 확인 중...';
+      const { sidecarPort, sidecarToken } = getSidecarConfig();
+      const resp = await callBg({
+        action: 'UPLOAD_EMAIL_IMAGE',
+        sidecarPort,
+        sidecarToken,
+        payload: {
+          filename: f ? f.name : 'image.png',
+          mimeType: f ? f.type : '',
+          base64Data: b64,
+          publicUploadConsentConfirmed: true
+        }
+      });
+      const data = (resp && resp.data) || {};
+      if (resp && resp.ok && data.ok && data.publicUrl) {
+        el('image').value = data.publicUrl;
+        if (el('loadRemoteImages')) el('loadRemoteImages').checked = true;
+        clearLocalPreviewImage();
+        render();
+        probeRemotePreviewImage();
+        if (typeof saveTemplateDraft === 'function') saveTemplateDraft();
+        if (st) st.textContent = `✅ [REMOTE_READY] 업로드 및 익명 공개 GET 검증 완료 (${data.mimeType}, ${data.width}x${data.height}) → ${data.publicUrl}`;
+        refreshImageHostStatus();
+      } else {
+        const reason = data.reason || resp?.error || 'UPLOAD_FAILED';
+        if (st) st.textContent = `❌ [${reason}] ${data.message || '이미지 업로드 실패 (기존 이미지 URL 및 초안은 변경되지 않았습니다)'}`;
+      }
+    } catch (err) {
+      if (st) st.textContent = `❌ [UPLOAD_EXCEPTION] ${err.message} (기존 URL/초안 유지됨)`;
+    } finally {
+      uploadInFlight = false;
+      if (btn) btn.disabled = false;
+    }
+  };
+}
+if (el('sidecarPort')) {
+  el('sidecarPort').addEventListener('change', () => { try { refreshImageHostStatus(); } catch (_) {} });
+}
+setTimeout(() => { try { refreshImageHostStatus(); } catch (_) {} }, 50);
 if(el('exportHtml'))el('exportHtml').onclick=()=>{const v=values();if(previewFileUrl&&!url(v.image))alert('로컬 이미지는 이메일에 포함되지 않습니다. 공개 HTTPS 이미지 URL을 먼저 입력하세요.');download('xpider-vivpr-template.html','text/html;charset=utf-8',htmlFor(v))};
 if(el('exportText'))el('exportText').onclick=()=>download('xpider-vivpr-template.txt','text/plain;charset=utf-8',textFor(values()));
 if(el('exportJson'))el('exportJson').onclick=()=>download('xpider-vivpr-template.json','application/json',JSON.stringify({version:1,template:values(),note:'No secrets, recipient list or API keys'},null,2));

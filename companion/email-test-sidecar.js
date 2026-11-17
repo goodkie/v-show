@@ -15,6 +15,7 @@ const { EmailSimulatorLedger } = require('./email-simulator-ledger');
 const { writeProtectedSecretFile, verifyWindowsDacl, writeKeySecurely } = require('./email-test-sidecar-set-key');
 const { getSidecarPaths } = require('./sidecar-paths');
 const { EmailProductionPipeline } = require('./email-production-pipeline');
+const { EmailImageHostManager } = require('./email-image-host');
 
 const DEFAULT_SIDECAR_PORT = 18990;
 const SIDECAR_BUILD_ID = 'V7.0.0-OWNER-BETA-TEST-SEND-SIDECAR-20261116-LOCKED17';
@@ -78,6 +79,11 @@ class EmailTestSidecar {
       dnsResolver: this.trustedTestMode ? options.dnsResolver : null,
       providerTransport: this.trustedTestMode ? options.providerTransport : null,
       aiCopyProvider: this.trustedTestMode ? options.aiCopyProvider : null
+    });
+    this.imageHost = new EmailImageHostManager({
+      stateDir: this.stateDir,
+      trustedTestMode: this.trustedTestMode,
+      httpRequest: this.trustedTestMode ? options.imageHostHttpRequest : null
     });
   }
 
@@ -390,6 +396,50 @@ class EmailTestSidecar {
         if (pathname === '/email/content-qa/status' && req.method === 'GET') {
           res.writeHead(200, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify(this.pipeline.getContentQaStatus()));
+          return;
+        }
+
+        if (pathname === '/email/images/host/status' && req.method === 'GET') {
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify(this.imageHost.getStatus()));
+          return;
+        }
+
+        if (pathname === '/email/images/host/config' && req.method === 'POST') {
+          let raw = '';
+          let tooLarge = false;
+          req.on('data', c => { raw += c; if (raw.length > 16384) { tooLarge = true; req.destroy(); } });
+          req.on('end', () => {
+            if (tooLarge) return;
+            try {
+              const payload = raw ? JSON.parse(raw) : {};
+              const out = this.imageHost.saveConfig(payload);
+              res.writeHead(out.statusCode || (out.ok ? 200 : 400), { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify(out));
+            } catch (err) {
+              res.writeHead(400, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ ok: false, status: 'ERROR', reason: 'INVALID_JSON', message: err.message }));
+            }
+          });
+          return;
+        }
+
+        if (pathname === '/email/images/upload' && req.method === 'POST') {
+          let raw = '';
+          let tooLarge = false;
+          req.on('data', c => { raw += c; if (raw.length > 5242880) { tooLarge = true; req.destroy(); } });
+          req.on('end', async () => {
+            if (tooLarge) return;
+            try {
+              const payload = raw ? JSON.parse(raw) : {};
+              const out = await this.imageHost.uploadAndVerify(payload);
+              res.writeHead(out.statusCode || (out.ok ? 200 : 400), { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify(out));
+            } catch (err) {
+              res.writeHead(400, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ ok: false, status: 'ERROR', reason: 'INVALID_JSON', message: err.message }));
+            }
+          });
           return;
         }
 

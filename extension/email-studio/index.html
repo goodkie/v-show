@@ -29,6 +29,41 @@
   <img id="localImageThumb" alt="로컬 선택 이미지 미리보기" style="display:none;max-width:180px;max-height:110px;border-radius:6px;margin:6px 0;border:1px solid #cbd5e1;">
   <div id="remoteImageStatus">📤 <b>실제 발송 HTML 이미지 (Production email image)</b>: 공개 HTTPS 이미지 URL 미입력</div>
 </div>
+<div id="imageUploadCard" class="status-box status-idle" style="margin:6px 0;">
+  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;">
+    <b>☁️ 로컬 이미지 공개 HTTPS 업로드 → 자동 삽입</b>
+    <span id="imageUploadHostBadge" class="badge-test">호스팅 확인 중...</span>
+  </div>
+  <label style="display:flex;align-items:center;gap:6px;margin:6px 0;font-size:12px;"><input id="publicImageUploadConsent" type="checkbox"> [필수 동의] 선택한 이미지가 <b>누구나 열람 가능한 공개 HTTPS URL</b>로 업로드됨에 동의합니다 (파일 선택만으로는 업로드되지 않습니다)</label>
+  <div class="actions" style="margin-top:4px;">
+    <button type="button" id="btnUploadAndInsertImage" class="primary">🖼️ 이미지 업로드 및 자동 삽입</button>
+    <button type="button" id="btnCopyUploadedImageUrl">📋 URL 복사</button>
+  </div>
+  <div id="imageUploadStatus" class="note" aria-live="polite" style="margin-top:6px;">대기 중: 로컬 이미지 선택 후 동의 체크 → [🖼️ 이미지 업로드 및 자동 삽입]을 누르면 공개 HTTPS URL이 자동 입력되고 미리보기에 반영됩니다.</div>
+  <details id="imageHostConfigPanel" style="margin-top:6px;">
+    <summary style="cursor:pointer;font-size:12px;"><b>🔑 공개 이미지 호스팅 설정 (로컬 Sidecar NTFS 보안 저장 · 토큰 미노출)</b></summary>
+    <div style="margin-top:6px;font-size:12px;">
+      <label for="imgHostProvider">호스팅 공급자</label>
+      <select id="imgHostProvider">
+        <option value="GITHUB_PUBLIC_REPO">GitHub 공개 저장소 (Public Repo · raw.githubusercontent.com)</option>
+        <option value="CUSTOM_HTTPS_PUT">Cloudflare R2 / HTTPS PUT 엔드포인트 (권장)</option>
+      </select>
+      <div id="imgHostGithubFields" class="inline" style="margin-top:4px;">
+        <div><label for="imgHostOwner">GitHub Owner</label><input id="imgHostOwner" placeholder="goodkie"></div>
+        <div><label for="imgHostRepo">Public Repo (공개 저장소만 허용)</label><input id="imgHostRepo" placeholder="xpider-public-assets"></div>
+        <div><label for="imgHostBranch">Branch</label><input id="imgHostBranch" value="main"></div>
+      </div>
+      <div id="imgHostCustomFields" class="inline" style="display:none;margin-top:4px;">
+        <div><label for="imgHostUploadEndpoint">HTTPS PUT 업로드 엔드포인트</label><input id="imgHostUploadEndpoint" type="url" placeholder="https://upload.vivpr.pro"></div>
+        <div><label for="imgHostPublicBase">공개 이미지 Base URL (HTTPS)</label><input id="imgHostPublicBase" type="url" placeholder="https://cdn.vivpr.pro"></div>
+      </div>
+      <label for="imgHostToken">업로드 인증 토큰 (저장 즉시 입력란 초기화 · 브라우저 저장소 미저장)</label>
+      <input id="imgHostToken" type="password" autocomplete="off" placeholder="ghp_... 또는 Bearer 토큰">
+      <label style="display:flex;align-items:center;gap:6px;margin:4px 0;"><input id="imgHostConfigConsent" type="checkbox"> 호스팅 인증정보를 로컬 Sidecar NTFS 보안 파일(.image_host_config.json)에만 저장함에 동의합니다</label>
+      <div class="actions"><button type="button" id="btnSaveImageHostConfig">💾 호스팅 설정 저장</button></div>
+    </div>
+  </details>
+</div>
 <label for="alt">이미지 대체 텍스트</label><input id="alt" value="안내 이미지 설명">
 <div class="inline"><div><label for="cta">버튼 문구</label><input id="cta" value="자세히 보기"></div><div><label for="link">버튼 HTTPS 링크</label><input id="link" type="url" value="https://vivpr.pro"></div></div>
 <label for="reply">회신 이메일 (실제 운영 주소)</label><input id="reply" type="email" placeholder="support@vivpr.pro">
