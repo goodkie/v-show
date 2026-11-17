@@ -57,11 +57,13 @@
 <div class="note" id="summary">이 템플릿은 미리보기용입니다. 실제 메일 발송은 진행하지 않습니다.</div>
 
 <div class="send-control-card" id="recipientCard" aria-label="수신자 관리 및 발송 검토">
-<div class="send-header"><h3>👥 수신자 관리 · 유효성 검사 · 중소기업(SME) 필터</h3><span class="badge-test">DRY-RUN · 실제 발송 없음 · LOCKED16</span></div>
+<div class="send-header"><h3>👥 수신자 데이터 작업 센터 · 유효성 검사 · 중소기업(SME) 필터</h3><span class="badge-test">DRY-RUN · 실제 발송 없음 · LOCKED17</span></div>
 <label for="recipientCsv">수신자 CSV 붙여넣기 또는 파일 선택 (email 열 필수 · 이름/회사명 열 선택 · 원본 CSV는 변형 없이 보존)</label>
 <textarea id="recipientCsv" rows="4" placeholder="email,name&#10;a@example.com,홍길동"></textarea>
 <div class="actions"><input type="file" id="recipientFile" accept=".csv,.txt,text/csv,text/plain"><button type="button" id="btnImportRecipients" class="primary">가져오기 · 중복 제거</button><button type="button" id="btnVerifyRecipientDns">🔍 유효성 검사 (DNS MX/A)</button></div>
+<div id="importProgress" class="status-box status-idle" aria-live="polite" style="margin:6px 0;">🟢 [가져오기 대기] CSV를 붙여넣거나 파일을 선택한 뒤 "가져오기 · 중복 제거"를 클릭하세요.</div>
 <label style="display:flex;align-items:center;gap:6px;margin:4px 0;font-size:12px;"><input id="dnsVerifyOptIn" type="checkbox"> [선택] 로컬 Sidecar를 통한 수신 도메인 DNS(MX/A) 확인 동의 (외부 제3자 목록 전송 없음 · 도메인 MX 확인은 개별 사서함 실존 보장이 아님)</label>
+<div id="dnsProgress" class="status-box status-idle" aria-live="polite" style="margin:6px 0;">🔍 [DNS 검사 대기] 동의 체크박스 선택 후 "🔍 유효성 검사 (DNS MX/A)"를 클릭하세요.</div>
 
 <div id="smeFilterBox" class="status-box status-idle" style="margin:8px 0;">
 <b>🏢 대상 필터 (중소기업만 선택 · 업종별 제외 · 확인 필요 분리)</b>
@@ -76,7 +78,47 @@
 </div>
 <div class="inline" style="margin-top:4px;"><div><label for="customSmeDomains">수동 중소기업 포함 도메인 (오버라이드)</label><input id="customSmeDomains" placeholder="sme-partner.co.kr"></div><div><label for="customExcludeDomains">수동 제외 도메인 (오버라이드)</label><input id="customExcludeDomains" placeholder="corp-sub.com"></div></div>
 <div class="actions" style="margin-top:6px;"><button type="button" class="primary" id="btnApplySmeFilter">🎯 대상 필터 적용 · 제외 사유 확인</button><button type="button" id="btnExportRetainedCsv">📥 중소기업(유지) CSV</button><button type="button" id="btnExportExcludedCsv">📥 제외 목록 CSV</button><button type="button" id="btnExportReviewCsv">📥 확인 필요 CSV</button><button type="button" id="btnExportOriginalCsv">📥 원본 CSV 보존본</button></div>
+<div id="filterProgress" class="status-box status-idle" aria-live="polite" style="margin:6px 0;">🎯 [필터 대기] CSV 가져오기 후 "🎯 대상 필터 적용 · 제외 사유 확인"을 클릭하세요.</div>
 <div id="smeFilterStatus" class="note" style="white-space:pre-wrap;margin-top:6px;">대상 필터 대기 중: "🎯 대상 필터 적용 · 제외 사유 확인"을 누르면 중소기업(유지) / 제외 사유별 건수 / 확인 필요(UNKNOWN_REVIEW) 분류와 근거(Provenance)가 표시됩니다.</div>
+</div>
+
+<div id="recipientWorkCenter" class="status-box status-idle" style="margin:8px 0;">
+<b>📊 수신자 데이터 작업 센터 (진행 파이프라인 · 원본/유효/유지/제외/검토 목록)</b>
+<div id="recipientWorkflowPipeline" class="note" style="white-space:pre-wrap;margin:6px 0;font-size:12px;">1.가져오기:READY · 2.중복제거:READY · 3.DNS(Opt-In):READY · 4.SME필터:READY · 5.검토:READY · 6.내보내기/드라이런:READY</div>
+<div id="recipientReconciledCounts" class="note" style="font-weight:bold;margin:4px 0;">원본 0 → 유효 0 (중복 0 · 무효 0) → 유지 0 / 제외 0 / 검토 0</div>
+<div class="actions" id="recipientDataTabs" style="margin:6px 0;">
+  <button type="button" class="primary" data-rtab="ORIGINAL" id="tabOrig">원본 (<span id="cntOrig">0</span>)</button>
+  <button type="button" data-rtab="VALID" id="tabValid">유효 (<span id="cntValid">0</span>)</button>
+  <button type="button" data-rtab="RETAINED" id="tabRetained">유지 (<span id="cntRetained">0</span>)</button>
+  <button type="button" data-rtab="EXCLUDED" id="tabExcluded">제외 (<span id="cntExcluded">0</span>)</button>
+  <button type="button" data-rtab="REVIEW" id="tabReview">확인 필요 (<span id="cntReview">0</span>)</button>
+  <button type="button" id="btnExportActiveTabCsv">📥 현재 탭 CSV</button>
+</div>
+<div class="inline" style="margin:6px 0;">
+  <div><input id="recipientTableSearch" placeholder="이메일 · 도메인 · 사유 검색..."></div>
+  <div style="display:flex;gap:6px;align-items:center;justify-content:flex-end;">
+    <button type="button" id="btnTablePrev">◀ 이전</button>
+    <span id="tablePageInfo" class="note">1 / 1</span>
+    <button type="button" id="btnTableNext">다음 ▶</button>
+  </div>
+</div>
+<div id="recipientTableWrap" style="max-height:240px;overflow:auto;border:1px solid #d0d7de;border-radius:6px;background:#fff;">
+  <table id="recipientDataTable" style="width:100%;border-collapse:collapse;font-size:11px;">
+    <thead><tr style="background:#f6f8fa;text-align:left;">
+      <th style="padding:4px 6px;"><input type="checkbox" id="chkSelectAllRows" title="현재 페이지 전체 선택"></th>
+      <th style="padding:4px 6px;">이메일 / 행</th>
+      <th style="padding:4px 6px;">이름 · 도메인</th>
+      <th style="padding:4px 6px;">유효성 · DNS</th>
+      <th style="padding:4px 6px;">카테고리 · 사유</th>
+      <th style="padding:4px 6px;">근거(Provenance)</th>
+      <th style="padding:4px 6px;">수동 조정</th>
+    </tr></thead>
+    <tbody id="recipientTableBody"><tr><td colspan="7" style="padding:8px;color:#666;">표시할 수신자 데이터가 없습니다.</td></tr></tbody>
+  </table>
+</div>
+<details style="margin-top:6px;"><summary style="cursor:pointer;font-size:12px;"><b>🕒 작업 이력 로그 (Activity History · 새로고침 후에도 유지)</b></summary>
+<div id="recipientActivityLog" class="note" style="white-space:pre-wrap;max-height:130px;overflow:auto;margin-top:4px;font-size:11px;">기록된 작업 없음</div>
+</details>
 </div>
 
 <label for="optOutList">수신 거부(opt-out) / 제외 목록 (이메일 또는 @도메인, 공백·쉼표 구분)</label>
