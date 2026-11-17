@@ -15,8 +15,7 @@ function values(){return Object.fromEntries(ids.map(i=>[i,val(i)]))}
 function htmlFor(v,preview=false){
  const httpsPic=url(v.image);
  const localPic=preview ? (previewDataUrl || previewFileUrl) : '';
- const showRemoteInPreview=preview && el('loadRemoteImages') && el('loadRemoteImages').checked && httpsPic;
- const pic=preview ? (localPic || (showRemoteInPreview ? httpsPic : '')) : httpsPic;
+ const pic=preview ? (previewDataUrl || previewFileUrl || (el('loadRemoteImages').checked ? url(v.image) : '')) : url(v.image);
  const previewText=esc(v.preheader);
  const h='<h1 style="font-size:25px;margin:0 0 20px;line-height:1.3">'+esc(v.heading)+'</h1>';
  const blobAttr=(preview && localPic && previewFileUrl) ? ' data-local-blob="'+esc(previewFileUrl)+'"' : '';
@@ -231,7 +230,8 @@ if(el('btnClearLocalImage'))el('btnClearLocalImage').addEventListener('click',()
 if(el('btnRetryRemoteImage'))el('btnRetryRemoteImage').addEventListener('click',probeRemotePreviewImage);
 window.addEventListener('beforeunload',()=>{if(previewFileUrl){try{URL.revokeObjectURL(previewFileUrl);}catch(_){}}});
 for(const id of ids){if(el(id))el(id).addEventListener('input',render);}
-if(el('loadRemoteImages'))el('loadRemoteImages').addEventListener('change',()=>{probeRemotePreviewImage();render();});
+if(el('loadRemoteImages'))el('loadRemoteImages').addEventListener('change',render);
+if(el('loadRemoteImages'))el('loadRemoteImages').addEventListener('change',probeRemotePreviewImage);
 if(el('exportHtml'))el('exportHtml').onclick=()=>{const v=values();if(previewFileUrl&&!url(v.image))alert('로컬 이미지는 이메일에 포함되지 않습니다. 공개 HTTPS 이미지 URL을 먼저 입력하세요.');download('xpider-vivpr-template.html','text/html;charset=utf-8',htmlFor(v))};
 if(el('exportText'))el('exportText').onclick=()=>download('xpider-vivpr-template.txt','text/plain;charset=utf-8',textFor(values()));
 if(el('exportJson'))el('exportJson').onclick=()=>download('xpider-vivpr-template.json','application/json',JSON.stringify({version:1,template:values(),note:'No secrets, recipient list or API keys'},null,2));
