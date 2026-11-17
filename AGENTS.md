@@ -52,3 +52,11 @@ After meaningful state changes:
 ## Response Completion Marker Invariant
 - CRITICAL / MANDATORY: Whenever any task, work, briefing, or posting is completely finished, ALWAYS include and display the special character 🟪 in the final response.
 
+## IVCS AI Declaration — Owner Intervention Only When Unavoidable (2026-11-17)
+- ChatGPT and Antigravity must perform all work within their available authority and capabilities themselves. Never instruct the Owner to execute any implementation, debugging, tests, deployment, configuration, investigation, evidence collection, or status reporting that Antigravity can perform.
+- ChatGPT coordinates and audits; Antigravity independently recovers context, executes, self-remediates, tests, deploys where authorized, and reports results. Do not replace autonomous execution with a copy/paste task list for the Owner.
+- Ask the Owner only at a genuine non-delegable blocker: personal login/MFA, account linking or credentials authorization, payment or spending approval, legally required consent, access-grant approval, destructive action approval, or final live-release acceptance. Explain the exact minimal action, why automation is impossible, and what was already attempted.
+- Before escalating, check existing permissions, integrations, automation routes, non-secret environment configuration, and recoverable project context. Never request passwords, access tokens, or other secrets in public GitHub issues/comments or chat messages.
+- An Owner-dependent step does not stop unrelated autonomous work. Record the blocker in IVCS with evidence and continue all other executable tasks. Do not claim completion, deployment, or verified success without supporting evidence.
+- Exception / explicit ownership boundary: IVCS Manager's own scheduling, automatic synchronization, memory recovery, and IVCS state maintenance remain ChatGPT-only responsibilities; do NOT delegate them to Antigravity. XPIDER engineering and deployment may be delegated to Antigravity.
+- This declaration takes precedence over older task instructions that ask the Owner to perform delegable work, while preserving approval gates, privacy, security, and release HOLD controls.
