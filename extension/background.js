@@ -4107,7 +4107,9 @@ const _handleMainMessageInner = (request, sender, sendResponse) => {
         case 'VERIFY_RECIPIENT_DOMAINS_DNS':
         case 'GET_IMAGE_HOST_STATUS':
         case 'SAVE_IMAGE_HOST_CONFIG':
-        case 'UPLOAD_EMAIL_IMAGE': {
+        case 'UPLOAD_EMAIL_IMAGE':
+        case 'GET_UNSUBSCRIBE_STATUS':
+        case 'SAVE_UNSUBSCRIBE_CONFIG': {
             (async () => {
                 const reqPort = Number(request.sidecarPort);
                 const ctrlPort = (Number.isInteger(reqPort) && reqPort >= 1024 && reqPort <= 65535) ? reqPort : 18990;
@@ -4127,7 +4129,7 @@ const _handleMainMessageInner = (request, sender, sendResponse) => {
                         });
                     };
                     let token = explicitToken || await pairTok(false);
-                    const isPost = request.action === 'SYNC_EMAIL_PRODUCTION_RECIPIENTS' || request.action === 'SAVE_GEMINI_COPY_API_KEY' || request.action === 'TEST_GEMINI_COPY_CONNECTION' || request.action === 'REQUEST_EMAIL_COPY_SUGGESTION' || request.action === 'VERIFY_RECIPIENT_DOMAINS_DNS' || request.action === 'SAVE_IMAGE_HOST_CONFIG' || request.action === 'UPLOAD_EMAIL_IMAGE';
+                    const isPost = request.action === 'SYNC_EMAIL_PRODUCTION_RECIPIENTS' || request.action === 'SAVE_GEMINI_COPY_API_KEY' || request.action === 'TEST_GEMINI_COPY_CONNECTION' || request.action === 'REQUEST_EMAIL_COPY_SUGGESTION' || request.action === 'VERIFY_RECIPIENT_DOMAINS_DNS' || request.action === 'SAVE_IMAGE_HOST_CONFIG' || request.action === 'UPLOAD_EMAIL_IMAGE' || request.action === 'SAVE_UNSUBSCRIBE_CONFIG';
                     const routeMap = {
                         GET_EMAIL_PRODUCTION_PREFLIGHT: '/email/production/preflight',
                         SYNC_EMAIL_PRODUCTION_RECIPIENTS: '/email/production/import',
@@ -4138,7 +4140,9 @@ const _handleMainMessageInner = (request, sender, sendResponse) => {
                         VERIFY_RECIPIENT_DOMAINS_DNS: '/email/recipients/verify-dns',
                         GET_IMAGE_HOST_STATUS: '/email/images/host/status',
                         SAVE_IMAGE_HOST_CONFIG: '/email/images/host/config',
-                        UPLOAD_EMAIL_IMAGE: '/email/images/upload'
+                        UPLOAD_EMAIL_IMAGE: '/email/images/upload',
+                        GET_UNSUBSCRIBE_STATUS: '/email/unsubscribe/status',
+                        SAVE_UNSUBSCRIBE_CONFIG: '/email/unsubscribe/config'
                     };
                     const url = `http://127.0.0.1:${ctrlPort}${routeMap[request.action]}`;
                     const doFetch = async (tok) => fetch(url, {

@@ -14,7 +14,7 @@ const https = require('node:https');
 const crypto = require('node:crypto');
 const dnsPromises = require('node:dns').promises;
 const { DraftOutbox } = require('./email-draft-outbox');
-const { issueUnsubscribeToken, verifyUnsubscribeToken, createUnsubscribeProcessor, PRODUCTION_UNSUBSCRIBE_ENDPOINT_STATUS } = require('./email-unsubscribe-server');
+const { issueUnsubscribeToken, verifyUnsubscribeToken, createUnsubscribeProcessor, injectUnsubscribeFooter, PRODUCTION_UNSUBSCRIBE_ENDPOINT_STATUS } = require('./email-unsubscribe-server');
 const { ResendWebhookIntake, signSvixPayload, PRODUCTION_WEBHOOK_ENDPOINT_STATUS } = require('./resend-webhook-intake');
 const deliverabilityPolicy = require('./email-deliverability-v2-policy');
 const { writeProtectedSecretFile, verifyWindowsDacl } = require('./email-test-sidecar-set-key');
@@ -383,6 +383,8 @@ class EmailProductionPipeline {
     this.outboxFile = path.join(this.stateDir, '.email_draft_outbox.json');
     this.webhookStateFile = path.join(this.stateDir, '.email_webhook_state.json');
     this.webhookSecretFile = path.join(this.stateDir, '.resend_webhook_secret');
+    this.unsubConfigFile = path.join(this.stateDir, '.unsubscribe_config.json');
+    this.unsubTokensFile = path.join(this.stateDir, '.unsubscribe_tokens.json');
     this.queueFile = path.join(this.stateDir, '.email_production_queue.json');
     this.auditFile = path.join(this.stateDir, '.email_production_audit.jsonl');
 
@@ -511,11 +513,93 @@ class EmailProductionPipeline {
     fs.appendFileSync(this.auditFile, line, { mode: 0o600 });
   }
 
-  issueRecipientUnsubscribeHeaders(email, campaignId = 'default', baseUrl = 'http://127.0.0.1:18990') {
-    const token = issueUnsubscribeToken({ email, campaignId, keyRing: this.keyRing });
-    const url = `${baseUrl.replace(/\/$/, '')}/unsubscribe/${token}`;
+  getUnsubscribePublicConfig() {
+    if (!fs.existsSync(this.unsubConfigFile)) {
+      return {
+        ok: true,
+        configured: false,
+        status: 'CONFIG_REQUIRED',
+        publicBaseUrl: null,
+        endpointTemplate: null,
+        reason: 'PUBLIC_HTTPS_UNSUBSCRIBE_NOT_CONFIGURED'
+      };
+    }
+    if (!this.trustedTestMode && process.platform === 'win32' && process.env.USERNAME) {
+      try { verifyWindowsDacl(this.unsubConfigFile, process.env.USERNAME); } catch (e) {
+        return { ok: false, configured: false, status: 'BLOCKED', publicBaseUrl: null, reason: 'UNSUBSCRIBE_CONFIG_ACL_INVALID', message: e.message };
+      }
+    }
+    try {
+      const cfg = JSON.parse(fs.readFileSync(this.unsubConfigFile, 'utf8'));
+      const base = String((cfg && cfg.publicBaseUrl) || '').replace(/\/+$/, '');
+      if (!/^https:\/\/[a-z0-9.-]+/i.test(base)) {
+        return { ok: true, configured: false, status: 'CONFIG_REQUIRED', publicBaseUrl: null, reason: 'INVALID_UNSUBSCRIBE_BASE_URL' };
+      }
+      return {
+        ok: true,
+        configured: true,
+        status: 'READY',
+        publicBaseUrl: base,
+        endpointTemplate: `${base}/unsubscribe/{token}`,
+        updatedAt: cfg.updatedAt || null
+      };
+    } catch (_) {
+      return { ok: true, configured: false, status: 'CONFIG_REQUIRED', publicBaseUrl: null, reason: 'UNSUBSCRIBE_CONFIG_UNREADABLE' };
+    }
+  }
+
+  saveUnsubscribePublicConfig(payload = {}) {
+    let parsed;
+    try {
+      parsed = new URL(String(payload.publicBaseUrl || '').trim());
+    } catch (_) {
+      return { ok: false, statusCode: 400, status: 'BLOCKED', reason: 'INVALID_UNSUBSCRIBE_BASE_URL', message: '유효한 https:// 구독 취소 기본 URL을 입력하세요 (예: https://vivpr.pro).' };
+    }
+    if (parsed.protocol !== 'https:') {
+      return { ok: false, statusCode: 400, status: 'BLOCKED', reason: 'HTTPS_REQUIRED', message: '구독 취소 기본 URL은 반드시 https:// 이어야 합니다.' };
+    }
+    const host = String(parsed.hostname || '').toLowerCase();
+    if (!this.trustedTestMode && (host === 'localhost' || host === '127.0.0.1' || host === '::1' || host.endsWith('.local') || host.endsWith('.internal') || /^(?:10\.|192\.168\.|169\.254\.|172\.(?:1[6-9]|2\d|3[01])\.)/.test(host))) {
+      return { ok: false, statusCode: 400, status: 'BLOCKED', reason: 'PUBLIC_HTTPS_UNSUBSCRIBE_REQUIRED', message: `로컬/사설 호스트(${host})는 실제 수신자용 구독 취소 URL로 사용할 수 없습니다.` };
+    }
+    const cleanBase = parsed.origin + parsed.pathname.replace(/\/+$/, '');
+    writeProtectedSecretFile(this.unsubConfigFile, JSON.stringify({
+      publicBaseUrl: cleanBase,
+      updatedAt: new Date().toISOString()
+    }, null, 2) + '\n');
+    this._appendAudit({ type: 'UNSUBSCRIBE_PUBLIC_CONFIG_SAVED', publicBaseUrl: cleanBase });
+    return { ok: true, statusCode: 200, ...this.getUnsubscribePublicConfig(), message: `구독 취소 공개 HTTPS 기본 URL이 저장되었습니다 (${cleanBase}/unsubscribe/{토큰}).` };
+  }
+
+  _recordIssuedUnsubscribeTokenHash({ tokenHash, email, campaignId, jti, expiresAt }) {
+    let store = {};
+    try {
+      if (fs.existsSync(this.unsubTokensFile)) {
+        store = JSON.parse(fs.readFileSync(this.unsubTokensFile, 'utf8')) || {};
+      }
+    } catch (_) { store = {}; }
+    if (store[tokenHash]) return false;
+    const recipientHash = crypto.createHash('sha256').update(String(email || '').trim().toLowerCase()).digest('hex');
+    store[tokenHash] = { recipientHash, campaignId, jti, issuedAt: new Date().toISOString(), expiresAt };
+    writeProtectedSecretFile(this.unsubTokensFile, JSON.stringify(store, null, 2) + '\n');
+    return true;
+  }
+
+  issueRecipientUnsubscribeHeaders(email, campaignId = 'default', baseUrl = null) {
+    const resolvedBase = baseUrl || this.getUnsubscribePublicConfig().publicBaseUrl || 'http://127.0.0.1:18990';
+    let token = '';
+    let tokenHash = '';
+    for (let attempt = 0; attempt < 3; attempt++) {
+      token = issueUnsubscribeToken({ email, campaignId, keyRing: this.keyRing });
+      tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+      if (this._recordIssuedUnsubscribeTokenHash({ tokenHash, email, campaignId, jti: tokenHash.slice(0, 16), expiresAt: new Date(Date.now() + 90 * 86400000).toISOString() })) {
+        break;
+      }
+    }
+    const url = `${String(resolvedBase).replace(/\/$/, '')}/unsubscribe/${token}`;
     return {
       token,
+      tokenHash,
       url,
       headers: {
         'List-Unsubscribe': `<${url}>`,
@@ -864,14 +948,15 @@ class EmailProductionPipeline {
       }
 
       if (mode === 'ISOLATED_PROVIDER_TEST' && typeof this.providerTransport === 'function') {
+        const rendered = injectUnsubscribeFooter({ html, text, unsubscribeUrl: unsub.url });
         this._appendAudit({ type: 'SEND_ATTEMPT_STARTED', idempotencyKey: e.idempotencyKey, email: e.email, attempt: e.attempts });
         try {
           const res = await this.providerTransport({
             from: `noreply@${DOMAIN}`,
             to: e.email,
             subject,
-            html,
-            text,
+            html: rendered.html,
+            text: rendered.text,
             idempotencyKey: e.idempotencyKey,
             headers: unsub.headers
           });

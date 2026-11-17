@@ -70,7 +70,24 @@
 <label for="reply">회신 이메일 (실제 운영 주소)</label><input id="reply" type="email" placeholder="support@vivpr.pro">
 <label for="company">발신자 회사 / 사업자명</label><input id="company" value="vivpr.pro">
 <label for="address">사업자 우편주소 (마케팅 메일에 필수)</label><input id="address" placeholder="실제 운영 주소를 입력">
-<label for="unsubscribe">구독 취소 HTTPS URL (수신자별 고유 토큰 필요)</label><input id="unsubscribe" placeholder="https://vivpr.pro/unsubscribe/{recipient-token}">
+<div id="unsubscribeAutoCard" class="send-control-card" style="margin:8px 0;padding:10px;">
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
+    <strong>🔕 구독 취소 (수신 거부) 자동 삽입 · RFC 8058</strong>
+    <span id="unsubscribeAutoBadge" class="badge-test">구독 취소 자동 관리: 확인 중...</span>
+  </div>
+  <div id="unsubscribeAutoNote" class="note" style="margin-top:4px;">미리보기·HTML 저장에는 예시 바닥글이 표시되며, 실제 발송 시 수신자별 고유 HTTPS 토큰과 <code>List-Unsubscribe-Post</code> 헤더가 자동 생성됩니다.</div>
+  <details id="unsubscribeConfigPanel" style="margin-top:6px;">
+    <summary style="cursor:pointer;font-size:12px;"><b>⚙️ 공개 구독 취소 HTTPS 기본 URL 설정 및 수동 재정의 (선택)</b></summary>
+    <div style="margin-top:6px;font-size:12px;">
+      <label for="unsubscribePublicBaseUrl">공개 구독 취소 HTTPS 기본 URL (상용 발송 시 필수 · 예: https://vivpr.pro)</label>
+      <input id="unsubscribePublicBaseUrl" type="url" placeholder="https://vivpr.pro (발송 시 /unsubscribe/{수신자별_고유토큰} 자동 생성)">
+      <div class="actions" style="margin-top:4px;"><button type="button" id="btnSaveUnsubscribeConfig">💾 구독 취소 기본 URL 저장</button></div>
+      <div id="unsubscribeConfigStatus" class="note" style="margin-top:4px;"></div>
+      <label for="unsubscribe" style="margin-top:6px;">(선택) 수동 구독 취소 URL 재정의 — 비워 두면 발송 시 자동 삽입됨</label>
+      <input id="unsubscribe" placeholder="(자동 삽입됨 — 수동 지정이 필요할 때만 입력)">
+    </div>
+  </details>
+</div>
 <div class="actions"><button type="button" class="primary" id="exportHtml">HTML 저장</button><button type="button" id="exportText">텍스트 저장</button><button type="button" id="exportJson">템플릿 JSON</button><button type="button" id="btnSaveDraft">초안 저장</button><button type="button" id="btnLoadDraft">초안 불러오기</button></div>
 <div class="note">이미지 파일은 PC 내 미리보기만 지원합니다. 실제 발송용 HTML에는 공개 HTTPS 이미지 URL을 입력해야 합니다. 이메일 본문의 링크만으로 RFC 8058 원클릭 구독 취소 헤더가 생성되는 것은 아닙니다. 해당 헤더와 작동하는 POST 엔드포인트는 발송 서비스에서 별도 검증해야 합니다.</div>
 <div class="checks"><b>발송 전 콘텐츠 검사 (규칙 기반 스팸·맞춤법·규정 점검)</b><ul id="checkList" aria-live="polite"></ul><small>주의 사항은 휴리스틱(규칙 기반) 점검이며 Gmail/Resend 스팸 점수 또는 실제 받은편지함 도착(Deliverability) 보장이 아닙니다.</small></div>

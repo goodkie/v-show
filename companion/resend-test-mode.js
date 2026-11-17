@@ -123,11 +123,13 @@ async function executeSimulatorSend(options = {}) {
 
   // Transport to Resend API
   const timeoutMs = Number.isInteger(options.timeoutMs) ? options.timeoutMs : 10000;
+  const extraHeaders = (options.headers && typeof options.headers === 'object') ? options.headers : {};
   const bodyPayload = {
     from,
     to: [recipient],
     subject,
     headers: {
+      ...extraHeaders,
       'X-Xpider-Test-Mode': 'resend-simulator',
       'X-Xpider-Idempotency': idempotencyKey
     }

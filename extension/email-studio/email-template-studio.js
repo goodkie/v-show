@@ -29,10 +29,24 @@ function htmlFor(v,preview=false){
   img='<div style="border:1px dashed #94a3b8;background:#f8fafc;color:#475569;padding:16px;border-radius:8px;margin:0 0 24px;font-size:12px;line-height:1.5;">'+esc(msg)+(v.alt?'<br><b>대체 텍스트(alt):</b> '+esc(v.alt):'')+'</div>';
  }
  const button=url(v.link)&&v.cta?'<p style="margin:26px 0"><a href="'+esc(url(v.link))+'" style="display:inline-block;background:#2056a0;color:#ffffff;padding:12px 20px;border-radius:5px;text-decoration:none">'+esc(v.cta)+'</a></p>':'';
- const opt=v.kind==='marketing'&&url(v.unsubscribe)?'<p><a href="'+esc(url(v.unsubscribe))+'" style="color:#475569">구독 취소</a></p>':'';
+ const manualUnsub=url(v.unsubscribe);
+ const autoUnsubBase=(typeof autoUnsubBaseUrl==='string'&&autoUnsubBaseUrl)?autoUnsubBaseUrl:'https://vivpr.pro';
+ const effectiveUnsub=manualUnsub||(autoUnsubBase.replace(/\/+$/,'')+'/unsubscribe/preview-sample-only');
+ const opt=v.kind==='marketing'
+  ?(manualUnsub
+    ?'<p><a href="'+esc(manualUnsub)+'" style="color:#475569">구독 취소</a></p>'
+    :'<p><a href="'+esc(effectiveUnsub)+'" style="color:#475569">구독 취소</a> <span style="color:#94a3b8">(미리보기용 예시 링크 — 실제 발송 시 수신자별 고유 HTTPS 토큰 자동 삽입)</span></p>')
+  :'';
  return '<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="font-family:Arial,sans-serif;margin:0;background:#f3f5f8;color:#17212f"><div style="display:none;font-size:1px;color:#f3f5f8;max-height:0;overflow:hidden">'+previewText+'</div><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f3f5f8"><tr><td align="center" style="padding:28px 12px"><table role="presentation" cellpadding="0" cellspacing="0" width="600" style="width:100%;max-width:600px;background:#fff"><tr><td style="padding:34px 28px"><div style="font-size:17px;font-weight:bold;margin-bottom:28px">'+esc(v.brand)+'</div>'+h+img+paragraphs(v.body)+button+'<hr style="border:0;border-top:1px solid #e2e8f0;margin:32px 0"><div style="font-size:12px;line-height:1.6;color:#64748b">'+esc(v.company)+(v.address?'<p>'+esc(v.address)+'</p>':'')+opt+'</div></td></tr></table></td></tr></table></body></html>';
 }
-function textFor(v){return [v.brand,v.heading,v.body,v.cta&&url(v.link)?v.cta+': '+url(v.link):'',v.company,v.address,v.kind==='marketing'?'구독 취소: '+(url(v.unsubscribe)||'[수신거부 URL 필요]'):''].filter(Boolean).join('\n\n')}
+function textFor(v){
+ const manualUnsub=url(v.unsubscribe);
+ const autoUnsubBase=(typeof autoUnsubBaseUrl==='string'&&autoUnsubBaseUrl)?autoUnsubBaseUrl:'https://vivpr.pro';
+ const unsubLine=v.kind==='marketing'
+  ?('구독 취소: '+(manualUnsub||(autoUnsubBase.replace(/\/+$/,'')+'/unsubscribe/preview-sample-only (발송 시 수신자별 고유 링크 자동 삽입)')))
+  :'';
+ return [v.brand,v.heading,v.body,v.cta&&url(v.link)?v.cta+': '+url(v.link):'',v.company,v.address,unsubLine].filter(Boolean).join('\n\n');
+}
 function audit(v){
  const out=[];
  const add=(good,msg,severity,suggestion)=>out.push({
@@ -55,14 +69,16 @@ function audit(v){
  add(!!v.company,'실제 발신자명(회사/사업자명) 명시',!!v.company?'PASS':'FAIL','제안: 발신자 회사/단체명을 정확히 입력하세요.');
  add(!!v.reply&&/@/.test(v.reply),'답장받을 수 있는 회신 이메일 주소 입력 (실제 운영 여부 확인 필요)',!!v.reply&&/@/.test(v.reply)?'PASS':'WARN','제안: 실제 수신 가능한 운영 이메일(예: support@vivpr.pro)을 입력하세요.');
  if(v.kind==='marketing'){
-  add(!!url(v.unsubscribe),'본문의 실제 작동하는 수신 거부 HTTPS 링크 필요',!!url(v.unsubscribe)?'PASS':'FAIL','제안: https://vivpr.pro/unsubscribe/{token} 형식의 수신거부 URL을 입력하세요.');
+  add(true,'본문 구독 취소(수신 거부) 링크 자동 삽입 활성화','PASS','안내: 미리보기에는 안전한 예시 링크가 표시되며, 실제 발송 시 수신자별 고유 HTTPS 링크와 List-Unsubscribe-Post 헤더가 자동 생성됩니다.');
   add(!!v.address,'마케팅 발신자의 실제 우편주소 표기',!!v.address?'PASS':'FAIL','제안: 하단 푸터에 표기될 사업장 우편주소를 입력하세요.');
-  add(false,'발송 단계에서 RFC 8058 원클릭 구독 취소 헤더 및 POST 작동 검증 필요','WARN','안내: 발송 엔진에서 List-Unsubscribe-Post 헤더가 함께 검증되어야 합니다.');
+  add(autoUnsubConfigured,'발송 단계에서 RFC 8058 원클릭 구독 취소 헤더 및 공개 HTTPS 엔드포인트 준비',autoUnsubConfigured?'PASS':'WARN',autoUnsubConfigured?'확인됨: 공개 HTTPS 구독 취소 기본 URL이 설정되었습니다.':'안내: 시뮬레이터 테스트는 로컬 검증되며, 상용 발송 전 [공개 구독 취소 HTTPS 기본 URL] 설정이 필요합니다.');
   add(false,'수신 동의·suppression 명단·Resend AUP 검증 필요','WARN','안내: 수신자 관리 카드에서 동의 확인 및 수신거부 명단 대조가 필요합니다.');
  }
  add(false,'SPF · DKIM · DMARC · 발신 도메인/계정 평판은 콘텐츠 검사 밖에서 검증','WARN','안내: 하단 [운영 DNS · 동의원장 · 수신거부 · 웹훅 점검]에서 별도 확인하세요.');
  return out;
 }
+let autoUnsubConfigured = false;
+let autoUnsubBaseUrl = '';
 let currentAiCopyStatus = 'NOT_CONFIGURED';
 let currentAiStatusLabel = 'AI 자동 교정: 연결 필요';
 let currentProviderDomainStatus = 'BLOCKED_EXTERNAL_DNS';
@@ -364,10 +380,49 @@ if (el('btnUploadAndInsertImage')) {
     }
   };
 }
-if (el('sidecarPort')) {
-  el('sidecarPort').addEventListener('change', () => { try { refreshImageHostStatus(); } catch (_) {} });
+async function refreshUnsubscribeStatus() {
+  const badge = el('unsubscribeAutoBadge');
+  if (!badge) return;
+  const { sidecarPort, sidecarToken } = getSidecarConfig();
+  const r = await callBg({ action: 'GET_UNSUBSCRIBE_STATUS', sidecarPort, sidecarToken });
+  if (r && r.ok && r.data && r.data.ok) {
+    autoUnsubConfigured = Boolean(r.data.configured);
+    autoUnsubBaseUrl = r.data.publicBaseUrl || '';
+    if (el('unsubscribePublicBaseUrl') && autoUnsubBaseUrl && !el('unsubscribePublicBaseUrl').value) {
+      el('unsubscribePublicBaseUrl').value = autoUnsubBaseUrl;
+    }
+    badge.textContent = autoUnsubConfigured
+      ? `✅ 구독 취소 자동 관리: 준비됨 (${autoUnsubBaseUrl}/unsubscribe/{토큰})`
+      : '⚙️ 구독 취소 자동 관리: 설정 필요 (미리보기·시뮬레이터 자동 삽입 / 상용 발송 차단)';
+  } else {
+    autoUnsubConfigured = false;
+    autoUnsubBaseUrl = '';
+    badge.textContent = '⚠️ 구독 취소 자동 관리: 차단됨 (Sidecar 미연결)';
+  }
+  render();
 }
-setTimeout(() => { try { refreshImageHostStatus(); } catch (_) {} }, 50);
+
+if (el('btnSaveUnsubscribeConfig')) {
+  el('btnSaveUnsubscribeConfig').onclick = async () => {
+    const st = el('unsubscribeConfigStatus');
+    const publicBaseUrl = el('unsubscribePublicBaseUrl') ? el('unsubscribePublicBaseUrl').value.trim() : '';
+    const { sidecarPort, sidecarToken } = getSidecarConfig();
+    if (st) st.textContent = '⏳ 구독 취소 공개 HTTPS 기본 URL 저장 중...';
+    const r = await callBg({ action: 'SAVE_UNSUBSCRIBE_CONFIG', sidecarPort, sidecarToken, payload: { publicBaseUrl } });
+    if (r && r.ok && r.data && r.data.ok) {
+      if (st) st.textContent = `✅ ${r.data.message || '저장 완료'}`;
+      await refreshUnsubscribeStatus();
+    } else {
+      const err = (r && r.data) || {};
+      if (st) st.textContent = `❌ [${err.reason || r?.error || 'SAVE_FAILED'}] ${err.message || '저장 실패'}`;
+    }
+  };
+}
+
+if (el('sidecarPort')) {
+  el('sidecarPort').addEventListener('change', () => { try { refreshImageHostStatus(); refreshUnsubscribeStatus(); } catch (_) {} });
+}
+setTimeout(() => { try { refreshImageHostStatus(); refreshUnsubscribeStatus(); } catch (_) {} }, 50);
 if(el('exportHtml'))el('exportHtml').onclick=()=>{const v=values();if(previewFileUrl&&!url(v.image))alert('로컬 이미지는 이메일에 포함되지 않습니다. 공개 HTTPS 이미지 URL을 먼저 입력하세요.');download('xpider-vivpr-template.html','text/html;charset=utf-8',htmlFor(v))};
 if(el('exportText'))el('exportText').onclick=()=>download('xpider-vivpr-template.txt','text/plain;charset=utf-8',textFor(values()));
 if(el('exportJson'))el('exportJson').onclick=()=>download('xpider-vivpr-template.json','application/json',JSON.stringify({version:1,template:values(),note:'No secrets, recipient list or API keys'},null,2));

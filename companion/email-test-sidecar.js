@@ -16,6 +16,7 @@ const { writeProtectedSecretFile, verifyWindowsDacl, writeKeySecurely } = requir
 const { getSidecarPaths } = require('./sidecar-paths');
 const { EmailProductionPipeline } = require('./email-production-pipeline');
 const { EmailImageHostManager } = require('./email-image-host');
+const { injectUnsubscribeFooter } = require('./email-unsubscribe-server');
 
 const DEFAULT_SIDECAR_PORT = 18990;
 const SIDECAR_BUILD_ID = 'V7.0.0-OWNER-BETA-TEST-SEND-SIDECAR-20261116-LOCKED17';
@@ -514,6 +515,32 @@ class EmailTestSidecar {
           return;
         }
 
+        if (pathname === '/email/unsubscribe/status' && req.method === 'GET') {
+          const st = this.pipeline.getUnsubscribePublicConfig();
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ ...st, localTestBaseUrl: `http://127.0.0.1:${this.port}` }));
+          return;
+        }
+
+        if (pathname === '/email/unsubscribe/config' && req.method === 'POST') {
+          let raw = '';
+          let tooLarge = false;
+          req.on('data', c => { raw += c; if (raw.length > 8192) { tooLarge = true; req.destroy(); } });
+          req.on('end', () => {
+            if (tooLarge) return;
+            try {
+              const payload = raw ? JSON.parse(raw) : {};
+              const out = this.pipeline.saveUnsubscribePublicConfig(payload);
+              res.writeHead(out.statusCode || (out.ok ? 200 : 400), { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ ...out, localTestBaseUrl: `http://127.0.0.1:${this.port}` }));
+            } catch (err) {
+              res.writeHead(400, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ ok: false, status: 'ERROR', reason: 'INVALID_JSON', message: err.message }));
+            }
+          });
+          return;
+        }
+
         if ((pathname === '/email/production/import' || pathname === '/email/production/queue/run' || pathname === '/email/production/queue/stop') && req.method === 'POST') {
           let raw = '';
           let tooLarge = false;
@@ -800,6 +827,17 @@ class EmailTestSidecar {
                 return;
               }
 
+              // Enforce persistent suppression immediately before simulator send as well
+              if (this.pipeline && this.pipeline.outbox && this.pipeline.outbox.isSuppressed(recipient)) {
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({
+                  status: 'BLOCKED',
+                  reason: 'RECIPIENT_SUPPRESSED',
+                  message: `수신자(${recipient})는 구독 취소/수신 거부 목록에 등록되어 발송이 차단되었습니다.`
+                }));
+                return;
+              }
+
               // Atomic cross-process exclusive lock + reservation before any external POST
               let reservation;
               try {
@@ -870,18 +908,37 @@ class EmailTestSidecar {
 
               this.lastTestSendAt = now;
 
+              const unsubCfg = this.pipeline ? this.pipeline.getUnsubscribePublicConfig() : { configured: false, publicBaseUrl: null };
+              const unsubBaseUrl = (unsubCfg && unsubCfg.configured && unsubCfg.publicBaseUrl)
+                ? unsubCfg.publicBaseUrl
+                : `http://127.0.0.1:${this.port}`;
+              const unsubArtifacts = this.pipeline
+                ? this.pipeline.issueRecipientUnsubscribeHeaders(recipient, 'test-send', unsubBaseUrl)
+                : { url: `${unsubBaseUrl}/unsubscribe/test`, headers: {} };
+              const renderedUnsub = injectUnsubscribeFooter({ html, text, unsubscribeUrl: unsubArtifacts.url });
+
               let result;
               try {
                 result = this.transportImpl
-                  ? await this.transportImpl({ from: resendTestMode.TEST_FROM, to: recipient, subject, html, text, idempotencyKey, apiKey })
+                  ? await this.transportImpl({
+                      from: resendTestMode.TEST_FROM,
+                      to: recipient,
+                      subject,
+                      html: renderedUnsub.html,
+                      text: renderedUnsub.text,
+                      idempotencyKey,
+                      apiKey,
+                      headers: unsubArtifacts.headers
+                    })
                   : await resendTestMode.executeSimulatorSend({
                       from: resendTestMode.TEST_FROM,
                       to: recipient,
                       subject,
-                      html,
-                      text,
+                      html: renderedUnsub.html,
+                      text: renderedUnsub.text,
                       idempotencyKey,
-                      apiKey
+                      apiKey,
+                      headers: unsubArtifacts.headers
                     });
               } catch (transportErr) {
                 const isTimeout = /timeout|ETIMEDOUT|ABORT/i.test(transportErr && transportErr.message ? transportErr.message : '');
