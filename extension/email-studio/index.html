@@ -227,10 +227,10 @@
 <div id="ledgerView" class="status-box status-idle" aria-live="polite">원장 미조회: '발송 원장 조회'를 누르면 ACCEPTED(시뮬레이터 접수 ≠ 실제 수신함 도착) 및 차단 이력이 표시됩니다.</div>
 </div>
 <div class="prod-send-box">
-<div class="prod-header"><h4>🚀 상용(운영) 발송 (Production Send)</h4><span class="badge-test" id="prodGateBadge">✅ UNLOCKED · OPT-IN ONLY</span></div>
-<p class="desc">vivpr.pro 도메인(SPF/DKIM/DMARC), HTTPS 원클릭 수신 거부(unsubscribe.vivpr.pro), HMAC 동의 원장 및 Webhook 검증이 활성화되어 있습니다. <b>수신 동의가 확인된 수신자</b>에게만 발송됩니다.</p>
+<div class="prod-header"><h4>🚀 상용(운영) 발송 (Production Send)</h4><div style="display:flex;gap:6px;flex-wrap:wrap;"><span class="badge-test" id="prodGateBadge">✅ PRODUCTION UNLOCKED</span><span class="badge-test" id="prodQueueBadge">⏸️ QUEUE NOT READY — 0 DOCUMENTED OPT-IN RECIPIENTS</span></div></div>
+<p class="desc">vivpr.pro 도메인(SPF/DKIM/DMARC), HTTPS 원클릭 수신 거부(unsubscribe.vivpr.pro), HMAC 동의 원장 및 Webhook 검증이 활성화되어 있습니다. <b>수집/스크래핑된 CSV는 수신 동의로 간주되지 않으며</b>, 명시적 수신 동의가 확인된 수신자에게만 발송됩니다.</p>
 <div class="actions"><button type="button" class="primary" id="btnProdSend" title="동의 원장·수신거부·도메인 검증을 통과한 수신자에게만 발송">🚀 운영 이메일 발송 (Verified Opt-In)</button><button type="button" id="btnCheckProdPreflight">🔍 운영 DNS · 동의원장 · 수신거부 · 웹훅 점검</button></div>
-<div id="prodPreflightStatus" class="status-box status-idle" aria-live="polite">운영 발송 준비됨: 수신자 CSV(동의 확인 체크)를 불러온 뒤 '운영 DNS · 동의원장 · 수신거부 · 웹훅 점검' 또는 '운영 이메일 발송'을 누르세요.</div>
+<div id="prodPreflightStatus" class="status-box status-idle" aria-live="polite">PRODUCTION UNLOCKED · QUEUE NOT READY — 0 DOCUMENTED OPT-IN RECIPIENTS: 수신자 CSV 입력 후 법적 수신 동의 확인 체크박스를 선택하고 "가져오기 · 중복 제거"를 누르면 큐가 준비됩니다.</div>
 </div>
 </div>
 </section></main>

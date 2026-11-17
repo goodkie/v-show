@@ -1951,16 +1951,21 @@ function createBuiltinRecipientManager() {
       render();
       const gateAction = d.deliverabilityGate?.action || 'BLOCK';
       const gateReasons = Array.isArray(d.deliverabilityGate?.reasons) ? d.deliverabilityGate.reasons : [];
+      const consentedCount = Number(qs.consentedRecordsOnDisk || 0);
+      const qReadyCount = Number(qs.counts?.PENDING || 0);
+      const qBadge = el('prodQueueBadge');
+      if (qBadge) {
+        qBadge.textContent = (qReadyCount > 0 && consentedCount > 0 && gateAction !== 'BLOCK')
+          ? `🟢 QUEUE READY — ${qReadyCount} VERIFIED OPT-IN`
+          : `⏸️ QUEUE NOT READY — ${qReadyCount > 0 ? qReadyCount : 0} QUEUED / ${consentedCount} DOCUMENTED OPT-IN`;
+      }
       pBox.className = (d.externalDnsStatus === 'VERIFIED' && gateAction !== 'BLOCK') ? 'status-box status-success' : 'status-box status-blocked';
       pBox.textContent = [
-        `🔍 [운영 발송 점검 결과 — 도메인: ${d.domain || 'vivpr.pro'} · 상태: ${d.externalDnsStatus || 'BLOCKED_EXTERNAL_DNS'} · 게이트: ${gateAction}]`,
-        `• Resend 도메인 등록 상태: ${rdc.registered ? `✅ 등록됨 (${rdc.status})` : `❌ 미등록 (${rdc.status || 'NOT_REGISTERED_IN_RESEND'})`}`,
-        `• DNS SPF (send.vivpr.pro): ${dns.spf?.pass ? '✅ PASS' : `❌ 미설정 (root=${dns.spf?.rootRecord || 'none'}, send=${dns.spf?.sendError || 'none'})`}`,
-        `• DNS DKIM (${dns.dkim?.host || 'resend._domainkey.vivpr.pro'}): ${dns.dkim?.pass ? '✅ PASS' : `❌ 미설정 (${dns.dkim?.error || 'ENOTFOUND'})`}`,
-        `• DNS DMARC (_dmarc.vivpr.pro): ${dns.dmarc?.pass ? '✅ PASS' : `❌ 미설정 (${dns.dmarc?.error || 'ENOTFOUND'})`}`,
-        `• NTFS 동의 원장: ${qs.consentedRecordsOnDisk || 0}건 | 수신거부/반송 원장: ${qs.suppressedRecordsOnDisk || 0}건`,
+        `🔍 [운영 발송 점검 — PRODUCTION UNLOCKED · 큐 상태: ${(qReadyCount > 0 && gateAction !== 'BLOCK') ? 'QUEUE READY' : 'QUEUE NOT READY — 0 ELIGIBLE QUEUED OPT-IN RECIPIENTS'}]`,
+        `• 도메인/DNS (${d.domain || 'vivpr.pro'}): ${d.externalDnsStatus || 'BLOCKED_EXTERNAL_DNS'} (Resend=${rdc.registered ? rdc.status : 'UNREGISTERED'}, SPF=${dns.spf?.pass ? 'PASS' : 'FAIL'}, DKIM=${dns.dkim?.pass ? 'PASS' : 'FAIL'}, DMARC=${dns.dmarc?.pass ? 'PASS' : 'FAIL'})`,
+        `• NTFS 동의 원장: ${consentedCount}건 | 활성 큐 대기: ${qReadyCount}건 | 수신거부/반송 원장: ${qs.suppressedRecordsOnDisk || 0}건`,
         `• 공개 HTTPS 수신거부 & Svix 웹훅: ${d.publicUnsubscribeHttpsStatus || 'UNKNOWN'} / ${d.webhookEndpoint || 'WORKING'}`,
-        ...(gateReasons.length ? [`• 차단/확인 사유: ${gateReasons.join(', ')}`] : ['• 모든 기술·동의 게이트 통과 — 동의된 수신자에게 발송 가능']),
+        ...(gateReasons.length ? [`• 현재 큐 차단 사유: ${gateReasons.join(', ')} (수집 CSV는 동의로 간주되지 않으며, 동의 확인 체크 + 가져오기 필요)`] : ['• 모든 기술·동의 게이트 통과 — 동의된 수신자에게 발송 가능']),
         ...(todo.length ? [`• 추가 필요 조치 (${todo.length}건):`, ...todo.map(x => `  - ${x}`)] : [])
       ].join('\n');
     };
