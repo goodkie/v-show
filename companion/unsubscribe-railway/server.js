@@ -36,6 +36,23 @@ function hmacB64Url(secret, message) {
   return crypto.createHmac('sha256', secret).update(message, 'utf8').digest('base64url');
 }
 
+function verifySvixSignature(headers, rawBody, secret) {
+  if (!secret || typeof secret !== 'string' || !secret.startsWith('whsec_')) return false;
+  const svixId = String(headers['svix-id'] || '');
+  const svixTs = String(headers['svix-timestamp'] || '');
+  const svixSig = String(headers['svix-signature'] || '');
+  if (!svixId || !svixTs || !svixSig) return false;
+  const tsNum = Number(svixTs);
+  if (!Number.isFinite(tsNum) || Math.abs(Math.floor(Date.now() / 1000) - tsNum) > 300) return false;
+  const keyBytes = Buffer.from(secret.slice(6), 'base64');
+  const expected = crypto.createHmac('sha256', keyBytes).update(`${svixId}.${svixTs}.${rawBody}`, 'utf8').digest('base64');
+  for (const part of svixSig.split(/\s+/)) {
+    const [ver, sig] = part.split(',');
+    if (ver === 'v1' && sig && timingSafeEqualStr(sig, expected)) return true;
+  }
+  return false;
+}
+
 function verifyUnsubscribeToken(token, secret, nowMs = Date.now()) {
   if (!token || typeof token !== 'string' || !secret || secret.length < 32) {
     return { valid: false, reason: 'MALFORMED_TOKEN' };
@@ -144,6 +161,7 @@ function createUnsubscribeRailwayServer(options = {}) {
   const dataDir = options.dataDir || process.env.DATA_DIR || path.join(__dirname, 'data');
   const hmacSecret = options.hmacSecret || process.env.UNSUBSCRIBE_HMAC_SECRET || '';
   const syncToken = options.syncToken || process.env.SIDECAR_SYNC_TOKEN || '';
+  const webhookSecret = options.webhookSecret || process.env.RESEND_WEBHOOK_SECRET || '';
   const allowedHosts = new Set(
     String(options.allowedHost || process.env.ALLOWED_HOST || 'unsubscribe.vivpr.pro')
       .split(',')
@@ -190,8 +208,41 @@ function createUnsubscribeRailwayServer(options = {}) {
         ok: true,
         service: 'xpider-unsubscribe',
         storageReady: true,
+        webhookConfigured: Boolean(webhookSecret && webhookSecret.startsWith('whsec_')),
         suppressionCount: store.suppressions.size
       });
+    }
+
+    if (pathname === '/webhooks/resend' && req.method === 'POST') {
+      let raw = '';
+      req.on('data', c => { raw += c; if (raw.length > 131072) req.destroy(); });
+      req.on('end', () => {
+        if (!verifySvixSignature(req.headers, raw, webhookSecret)) {
+          return sendJson(res, 401, { ok: false, error: 'INVALID_WEBHOOK_SIGNATURE' });
+        }
+        try {
+          const evt = JSON.parse(raw || '{}');
+          const type = String(evt.type || '');
+          const data = evt.data || {};
+          const toList = Array.isArray(data.to) ? data.to : (data.to ? [data.to] : (data.email ? [data.email] : []));
+          let suppressedCount = 0;
+          if (type === 'email.bounced' || type === 'email.complained' || type === 'contact.unsubscribed') {
+            const reason = type === 'email.bounced' ? 'BOUNCED' : (type === 'email.complained' ? 'COMPLAINED' : 'UNSUBSCRIBED');
+            for (const addr of toList) {
+              const norm = String(addr || '').trim().toLowerCase();
+              if (!norm) continue;
+              const rh = sha256Hex(norm);
+              store.suppress({ recipientHash: rh, tokenHash: `webhook:${evt.data?.email_id || type}`, reason });
+              suppressedCount++;
+            }
+          }
+          store.appendAudit({ event_type: `WEBHOOK_${type || 'UNKNOWN'}`, email_id: data.email_id || null, suppressed_count: suppressedCount });
+          return sendJson(res, 200, { ok: true, type, suppressedCount });
+        } catch (_) {
+          return sendJson(res, 400, { ok: false, error: 'INVALID_JSON' });
+        }
+      });
+      return;
     }
 
     if (pathname.startsWith('/api/sync/')) {

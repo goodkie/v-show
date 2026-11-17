@@ -88,10 +88,27 @@ function httpReq(port, method, urlPath, headers = {}, body = null) {
       }
 
       // Restart Railway server on same volume -> suppressions persist and sync to Sidecar
-      srvObj = createUnsubscribeRailwayServer({ dataDir, hmacSecret, syncToken, allowedHost: 'unsubscribe.vivpr.pro' });
+      const crypto = require('node:crypto');
+      const whSecret = 'whsec_' + Buffer.from('0123456789abcdef0123456789abcdef').toString('base64');
+      srvObj = createUnsubscribeRailwayServer({ dataDir, hmacSecret, syncToken, webhookSecret: whSecret, allowedHost: 'unsubscribe.vivpr.pro' });
       await new Promise(r => srvObj.server.listen(0, '127.0.0.1', r));
       const port2 = srvObj.server.address().port;
       try {
+        const whBody = JSON.stringify({ type: 'email.bounced', data: { email_id: 'em_b1', to: ['bounced-wh@example.org'] } });
+        const svixId = 'msg_test_1';
+        const svixTs = String(Math.floor(Date.now() / 1000));
+        const sig = crypto.createHmac('sha256', Buffer.from(whSecret.slice(6), 'base64')).update(`${svixId}.${svixTs}.${whBody}`).digest('base64');
+        const whBad = await httpReq(port2, 'POST', '/webhooks/resend', { 'Content-Type': 'application/json' }, whBody);
+        assert.equal(whBad.statusCode, 401);
+        const whOk = await httpReq(port2, 'POST', '/webhooks/resend', {
+          'Content-Type': 'application/json',
+          'svix-id': svixId,
+          'svix-timestamp': svixTs,
+          'svix-signature': `v1,${sig}`
+        }, whBody);
+        assert.equal(whOk.statusCode, 200);
+        assert.equal(whOk.json.suppressedCount, 1);
+
         const stateDir = path.join(tmpDir, 'sidecar');
         const p = new EmailProductionPipeline({ stateDir, trustedTestMode: true });
         const syncRes = await p.syncRemoteSuppressions({
@@ -99,9 +116,10 @@ function httpReq(port, method, urlPath, headers = {}, body = null) {
           syncToken
         });
         assert.equal(syncRes.ok, true);
-        assert.equal(syncRes.addedCount, 2);
+        assert.equal(syncRes.addedCount, 3);
         assert.equal(p.isRecipientSuppressed('rail-user1@example.org'), true);
         assert.equal(p.isRecipientSuppressed('rail-old@example.org'), true);
+        assert.equal(p.isRecipientSuppressed('bounced-wh@example.org'), true);
 
         const imp = p.importAndPersistRecipients({
           csvText: 'email,name\nrail-user1@example.org,User1\nok@example.org,Ok',
