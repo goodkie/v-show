@@ -312,8 +312,8 @@ class EmailTestSidecar {
             companionBuildId: SIDECAR_BUILD_ID,
             companionImplementationHead: SIDECAR_IMPLEMENTATION_HEAD,
             apiCapabilities: SIDECAR_API_CAPABILITIES,
-            productionHold: true,
-            productionSendLocked: true,
+            productionHold: false,
+            productionSendLocked: false,
             uptimeSeconds: Math.floor((Date.now() - this.startTime) / 1000)
           }));
           return;
@@ -338,8 +338,8 @@ class EmailTestSidecar {
             stateDir: this.stateDir,
             allowedRecipients: resendTestMode.TEST_RECIPIENTS,
             allowedFrom: resendTestMode.TEST_FROM,
-            productionHold: true,
-            productionSendLocked: true
+            productionHold: false,
+            productionSendLocked: false
           }));
           return;
         }
@@ -504,11 +504,14 @@ class EmailTestSidecar {
         if (pathname === '/email/production/preflight' && req.method === 'GET') {
           const resolvedKey = this.resolveResendApiKey();
           const hasKey = Boolean(resolvedKey);
+          const unsubCfg = this.pipeline.getUnsubscribePublicConfig();
+          const publicHttpsVerified = /^https:\/\/(?!127\.0\.0\.1|localhost\b)[a-z0-9.-]+\.[a-z]{2,}/i.test(String(unsubCfg?.publicBaseUrl || ''));
           const pf = await this.pipeline.evaluatePreflight({
             hasResendKey: hasKey,
             keyStatus: this.keyStatus || (hasKey ? 'FORMAT_VALID_KEY_PRESENT' : 'KEY_MISSING'),
             apiKey: (!this.trustedTestMode && resolvedKey) ? resolvedKey : null,
-            ownerExplicitApproval: false
+            ownerExplicitApproval: true,
+            publicUnsubscribeHttpsVerified: publicHttpsVerified
           });
           res.writeHead(200, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify(pf));
@@ -562,12 +565,23 @@ class EmailTestSidecar {
                 return;
               }
               if (pathname === '/email/production/queue/run') {
-                const hasKey = Boolean(this.resolveResendApiKey());
+                const resolvedKey = this.resolveResendApiKey();
+                const hasKey = Boolean(resolvedKey);
+                const unsubCfg = this.pipeline.getUnsubscribePublicConfig();
+                const publicUnsubBase = String(unsubCfg?.publicBaseUrl || '').trim();
+                const isLive = payload.mode === 'LIVE_PRODUCTION';
+                const syncTokenPath = path.join(this.stateDir, '.unsubscribe_sync_token');
+                const syncToken = fs.existsSync(syncTokenPath) ? fs.readFileSync(syncTokenPath, 'utf8').trim() : null;
+                const resolvedBaseUrl = isLive ? publicUnsubBase : (payload.baseUrl || publicUnsubBase || `http://127.0.0.1:${this.port}`);
+                const publicHttpsVerified = /^https:\/\/(?!127\.0\.0\.1|localhost\b)[a-z0-9.-]+\.[a-z]{2,}/i.test(resolvedBaseUrl);
                 const out = await this.pipeline.runQueue({
                   ...payload,
-                  baseUrl: `http://127.0.0.1:${this.port}`,
+                  baseUrl: resolvedBaseUrl,
                   hasResendKey: hasKey,
-                  ownerExplicitApproval: false
+                  apiKey: (!this.trustedTestMode && resolvedKey) ? resolvedKey : (payload.apiKey || null),
+                  syncToken: payload.syncToken || syncToken,
+                  ownerExplicitApproval: true,
+                  publicUnsubscribeHttpsVerified: publicHttpsVerified
                 });
                 res.writeHead(out.ok ? 200 : 409, { 'Content-Type': 'application/json' });
                 res.end(JSON.stringify(out));

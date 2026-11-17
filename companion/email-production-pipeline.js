@@ -943,8 +943,17 @@ class EmailProductionPipeline {
             summary: this.summarizeQueue()
           };
         }
+      } else {
+        return {
+          ok: false,
+          status: 'BLOCKED',
+          mode,
+          reason: 'UNSUBSCRIBE_SYNC_TOKEN_REQUIRED',
+          blockingReasons: ['UNSUBSCRIBE_SYNC_TOKEN_REQUIRED'],
+          summary: this.summarizeQueue()
+        };
       }
-      const pf = await this.evaluatePreflight({ hasResendKey, apiKey, ownerExplicitApproval, publicUnsubscribeHttpsVerified });
+      const pf = await this.evaluatePreflight({ hasResendKey: Boolean(hasResendKey || apiKey), apiKey, ownerExplicitApproval, publicUnsubscribeHttpsVerified });
       if (pf.deliverabilityGate.action === 'BLOCK' || pf.deliverabilityGate.reasons.length > 0) {
         return {
           ok: false,
@@ -1051,6 +1060,90 @@ class EmailProductionPipeline {
           }
         } catch (err) {
           const errStr = err.message || 'TRANSPORT_EXCEPTION';
+          this._appendAudit({ type: 'SEND_ATTEMPT_FAILED', idempotencyKey: e.idempotencyKey, error: errStr });
+          e.status = 'FAILED';
+          e.error = errStr;
+        }
+        e.updatedAt = new Date().toISOString();
+        this._saveQueue();
+      } else if (mode === 'LIVE_PRODUCTION') {
+        const resolvedApiKey = String(apiKey || '').trim();
+        if (!resolvedApiKey) {
+          this._appendAudit({ type: 'SEND_ATTEMPT_FAILED', idempotencyKey: e.idempotencyKey, error: 'RESEND_API_KEY_NOT_CONFIGURED' });
+          e.status = 'FAILED';
+          e.error = 'RESEND_API_KEY_NOT_CONFIGURED';
+          e.updatedAt = new Date().toISOString();
+          this._saveQueue();
+          continue;
+        }
+        const doFetch = typeof syncFetchImpl === 'function' ? syncFetchImpl : globalThis.fetch;
+        if (typeof doFetch !== 'function') {
+          this._appendAudit({ type: 'SEND_ATTEMPT_FAILED', idempotencyKey: e.idempotencyKey, error: 'FETCH_UNAVAILABLE' });
+          e.status = 'FAILED';
+          e.error = 'FETCH_UNAVAILABLE';
+          e.updatedAt = new Date().toISOString();
+          this._saveQueue();
+          continue;
+        }
+        const recipientHash = crypto.createHash('sha256').update(String(e.email || '').trim().toLowerCase()).digest('hex');
+        const regResp = await doFetch(`${String(baseUrl).replace(/\/+$/, '')}/api/sync/tokens`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${syncToken}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            tokenHash: unsub.tokenHash,
+            recipientHash,
+            campaignId: this.queue.campaignId,
+            issuedAt: new Date().toISOString(),
+            expiresAt: new Date(Date.now() + 365 * 86400000).toISOString()
+          })
+        });
+        if (!regResp || !regResp.ok) {
+          const errStr = `UNSUBSCRIBE_TOKEN_SYNC_HTTP_${regResp ? regResp.status : 'ERROR'}`;
+          this._appendAudit({ type: 'SEND_ATTEMPT_FAILED', idempotencyKey: e.idempotencyKey, error: errStr });
+          e.status = 'FAILED';
+          e.error = errStr;
+          e.updatedAt = new Date().toISOString();
+          this._saveQueue();
+          continue;
+        }
+        const rendered = injectUnsubscribeFooter({ html, text, unsubscribeUrl: unsub.url });
+        this._appendAudit({ type: 'SEND_ATTEMPT_STARTED', idempotencyKey: e.idempotencyKey, email: e.email, attempt: e.attempts, mode: 'LIVE_PRODUCTION' });
+        try {
+          const sendResp = await doFetch('https://api.resend.com/emails', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${resolvedApiKey}`,
+              'Content-Type': 'application/json',
+              'Idempotency-Key': e.idempotencyKey
+            },
+            body: JSON.stringify({
+              from: `XPIDER <noreply@${DOMAIN}>`,
+              to: [e.email],
+              subject,
+              html: rendered.html,
+              text: rendered.text,
+              headers: unsub.headers
+            })
+          });
+          const sendBody = await sendResp.json().catch(() => ({}));
+          if (sendResp && sendResp.ok && sendBody && sendBody.id) {
+            this._appendAudit({ type: 'SEND_ATTEMPT_ACCEPTED', idempotencyKey: e.idempotencyKey, providerMessageId: sendBody.id, mode: 'LIVE_PRODUCTION' });
+            e.status = 'ACCEPTED';
+            e.deliveryState = 'ACCEPTED';
+            e.providerMessageId = sendBody.id;
+            e.error = null;
+            sentInThisRun++;
+          } else {
+            const errStr = (sendBody && (sendBody.message || sendBody.name)) || `RESEND_HTTP_${sendResp ? sendResp.status : 'ERROR'}`;
+            this._appendAudit({ type: 'SEND_ATTEMPT_FAILED', idempotencyKey: e.idempotencyKey, error: errStr });
+            e.status = 'FAILED';
+            e.error = errStr;
+          }
+        } catch (err) {
+          const errStr = err.message || 'RESEND_FETCH_EXCEPTION';
           this._appendAudit({ type: 'SEND_ATTEMPT_FAILED', idempotencyKey: e.idempotencyKey, error: errStr });
           e.status = 'FAILED';
           e.error = errStr;

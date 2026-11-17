@@ -87,7 +87,7 @@ function updateContentQaStatusLine(checks){
  if(!badgeEl)return;
  const hasFail=Array.isArray(checks)&&checks.some(c=>c.severity==='FAIL');
  const ruleStatus=hasFail?'FAIL':'PASS';
- badgeEl.textContent=`RULE_BASED_CONTENT_CHECK: ${ruleStatus} · AI_COPY_EDIT: ${currentAiCopyStatus} · PROVIDER_DOMAIN_AUTH: ${currentProviderDomainStatus} · SEND_BLOCKED: STRICT_HOLD`;
+ badgeEl.textContent=`RULE_BASED_CONTENT_CHECK: ${ruleStatus} · AI_COPY_EDIT: ${currentAiCopyStatus} · PROVIDER_DOMAIN_AUTH: ${currentProviderDomainStatus} · PRODUCTION_SEND: ${currentProviderDomainStatus === 'VERIFIED' ? 'UNLOCKED_OPT_IN_ONLY' : 'GATE_ACTIVE'}`;
  const aiBadge=el('aiCopyStatusBadge');
  if(aiBadge)aiBadge.textContent=currentAiStatusLabel||(currentAiCopyStatus==='READY'?'AI 자동 교정: Gemini 준비됨':(currentAiCopyStatus==='ERROR'?'AI 자동 교정: 연결 오류':'AI 자동 교정: 연결 필요'));
 }
@@ -1949,17 +1949,73 @@ function createBuiltinRecipientManager() {
       const todo = Array.isArray(d.minimalAuthorizationNeededForSingleLiveSend) ? d.minimalAuthorizationNeededForSingleLiveSend : [];
       currentProviderDomainStatus = d.externalDnsStatus || 'BLOCKED_EXTERNAL_DNS';
       render();
-      pBox.className = (d.externalDnsStatus === 'VERIFIED') ? 'status-box status-success' : 'status-box status-blocked';
+      const gateAction = d.deliverabilityGate?.action || 'BLOCK';
+      const gateReasons = Array.isArray(d.deliverabilityGate?.reasons) ? d.deliverabilityGate.reasons : [];
+      pBox.className = (d.externalDnsStatus === 'VERIFIED' && gateAction !== 'BLOCK') ? 'status-box status-success' : 'status-box status-blocked';
       pBox.textContent = [
-        `🔍 [운영 발송 점검 결과 — 도메인: ${d.domain || 'vivpr.pro'} · 상태: ${d.externalDnsStatus || 'BLOCKED_EXTERNAL_DNS'}]`,
+        `🔍 [운영 발송 점검 결과 — 도메인: ${d.domain || 'vivpr.pro'} · 상태: ${d.externalDnsStatus || 'BLOCKED_EXTERNAL_DNS'} · 게이트: ${gateAction}]`,
         `• Resend 도메인 등록 상태: ${rdc.registered ? `✅ 등록됨 (${rdc.status})` : `❌ 미등록 (${rdc.status || 'NOT_REGISTERED_IN_RESEND'})`}`,
         `• DNS SPF (send.vivpr.pro): ${dns.spf?.pass ? '✅ PASS' : `❌ 미설정 (root=${dns.spf?.rootRecord || 'none'}, send=${dns.spf?.sendError || 'none'})`}`,
         `• DNS DKIM (${dns.dkim?.host || 'resend._domainkey.vivpr.pro'}): ${dns.dkim?.pass ? '✅ PASS' : `❌ 미설정 (${dns.dkim?.error || 'ENOTFOUND'})`}`,
         `• DNS DMARC (_dmarc.vivpr.pro): ${dns.dmarc?.pass ? '✅ PASS' : `❌ 미설정 (${dns.dmarc?.error || 'ENOTFOUND'})`}`,
         `• NTFS 동의 원장: ${qs.consentedRecordsOnDisk || 0}건 | 수신거부/반송 원장: ${qs.suppressedRecordsOnDisk || 0}건`,
-        `• 로컬 RFC 8058 수신거부 & Svix 웹훅: ${d.localUnsubscribeEndpoint || 'WORKING'} / ${d.webhookEndpoint || 'WORKING'}`,
-        `• 단일 실발송을 위해 필요한 최소 승인/조치 (${todo.length}건):`,
-        ...todo.map(x => `  - ${x}`)
+        `• 공개 HTTPS 수신거부 & Svix 웹훅: ${d.publicUnsubscribeHttpsStatus || 'UNKNOWN'} / ${d.webhookEndpoint || 'WORKING'}`,
+        ...(gateReasons.length ? [`• 차단/확인 사유: ${gateReasons.join(', ')}`] : ['• 모든 기술·동의 게이트 통과 — 동의된 수신자에게 발송 가능']),
+        ...(todo.length ? [`• 추가 필요 조치 (${todo.length}건):`, ...todo.map(x => `  - ${x}`)] : [])
+      ].join('\n');
+    };
+  }
+  if (el('btnProdSend')) {
+    el('btnProdSend').onclick = async () => {
+      const pBox = el('prodPreflightStatus');
+      if (!pBox) return;
+      if (!recipients.length && el('recipientCsv') && el('recipientCsv').value.trim()) {
+        runRecipientImport('auto-before-prod-send', null);
+      }
+      if (!recipients.length) {
+        pBox.className = 'status-box status-blocked';
+        pBox.textContent = '⚠️ [NO_RECIPIENTS_LOADED] 먼저 수신자 CSV를 입력하고 수신 동의 확인 체크 후 "가져오기 · 중복 제거"를 클릭하세요.';
+        return;
+      }
+      const v = values();
+      const subjectVal = (v.subject || '').trim();
+      if (!subjectVal) {
+        pBox.className = 'status-box status-blocked';
+        pBox.textContent = '⚠️ [SUBJECT_REQUIRED] 이메일 제목을 입력하세요.';
+        return;
+      }
+      pBox.className = 'status-box status-loading';
+      pBox.textContent = '⏳ 동의 원장 · 원격 수신거부 · 도메인 게이트 검증 및 운영 발송 진행 중...';
+      await syncSidecarRecipients();
+      const { sidecarPort, sidecarToken } = getSidecarConfig();
+      const r = await callBg({
+        action: 'RUN_EMAIL_PRODUCTION_QUEUE',
+        sidecarPort,
+        sidecarToken,
+        payload: {
+          mode: 'LIVE_PRODUCTION',
+          subject: subjectVal,
+          html: htmlFor(v),
+          text: textFor(v)
+        }
+      });
+      if (!r || !r.data) {
+        pBox.className = 'status-box status-error';
+        pBox.textContent = `❌ 운영 발송 요청 실패 (HTTP ${r?.httpStatus || '-'}): Sidecar 연결을 확인하세요.`;
+        return;
+      }
+      const out = r.data;
+      if (!r.ok || out.status === 'BLOCKED') {
+        pBox.className = 'status-box status-blocked';
+        pBox.textContent = `🛑 [운영 발송 차단 — Fail-Closed] 사유: ${out.reason || 'BLOCKED'}\n• 세부 사유: ${(out.blockingReasons || []).join(', ') || '-'}`;
+        return;
+      }
+      const c = out.summary?.counts || {};
+      pBox.className = 'status-box status-success';
+      pBox.textContent = [
+        `✅ [운영 발송 완료 — 상태: ${out.status}]`,
+        `• 이번 실행 실제 발송: ${out.sentInThisRun || 0}건 | ACCEPTED: ${c.ACCEPTED || 0}건 | FAILED: ${c.FAILED || 0}건`,
+        `• 제외(미동의): ${(c.SKIPPED_NO_CONSENT || 0) + (c.BLOCKED_CONSENT_UNVERIFIED || 0)}건 | 제외(수신거부): ${c.SKIPPED_SUPPRESSED || 0}건`
       ].join('\n');
     };
   }
