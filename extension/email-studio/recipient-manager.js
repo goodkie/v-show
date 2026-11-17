@@ -472,6 +472,12 @@
       originalCsvText: String(text == null ? '' : text),
       importedAt: new Date().toISOString(),
       total: rows.length,
+      sourceRowCount: 0,
+      discoveredEmailCount: 0,
+      emptyEmailCount: 0,
+      badEmailCount: 0,
+      headerMismatchCount: 0,
+      emailColumnName: null,
       valid: [],
       invalid: [],
       duplicates: [],
@@ -480,42 +486,76 @@
     if (!rows.length) return result;
     let emailIdx = 0, nameIdx = -1, start = 0;
     const head = rows[0].map(v => v.trim().toLowerCase());
-    const hi = head.findIndex(h => ['email', 'e-mail', 'mail', '이메일', '메일'].includes(h));
+    const hi = head.findIndex(h => ['email', 'e-mail', 'mail', '이메일', '메일', '이메일주소', '이메일 주소', '대표이메일', '대표 이메일'].includes(h));
     if (hi >= 0) {
       result.headerDetected = true; emailIdx = hi; start = 1;
-      nameIdx = head.findIndex(h => ['name', '이름', 'company', '회사', '업체명', '상호'].includes(h));
+      result.emailColumnName = rows[0][hi].trim();
+      nameIdx = head.findIndex(h => ['name', '이름', 'company', '회사', '회사명', '업체명', '상호', '상호명'].includes(h));
     } else if (!rows[0].some(v => /@/.test(v))) {
       start = 1; result.headerDetected = true;
     } else {
       const found = rows[0].findIndex(v => /@/.test(v));
       if (found >= 0) emailIdx = found;
     }
+    result.sourceRowCount = Math.max(0, rows.length - start);
     const seen = new Set();
     for (let i = start; i < rows.length; i++) {
       const r = rows[i];
-      const email = normalizeEmail(r[emailIdx]);
-      const err = validateEmail(email, o);
-      if (err) {
+      const lineNo = i + 1;
+      if (r.length <= emailIdx) {
+        result.headerMismatchCount++;
         result.invalid.push({
-          line: i + 1,
-          raw: String(r[emailIdx] || '').slice(0, 80),
-          reason: err,
+          line: lineNo,
+          raw: '',
+          reason: 'HEADER_MISMATCH',
           validityStatus: VALIDITY_STATUS.INVALID
         });
         continue;
       }
-      if (seen.has(email)) {
-        result.duplicates.push({ line: i + 1, email });
+      const rawCell = String(r[emailIdx] || '').trim();
+      if (!rawCell) {
+        result.emptyEmailCount++;
+        result.invalid.push({
+          line: lineNo,
+          raw: '',
+          reason: 'EMPTY_EMAIL',
+          validityStatus: VALIDITY_STATUS.INVALID
+        });
         continue;
       }
-      seen.add(email);
-      result.valid.push({
-        email,
-        name: nameIdx >= 0 ? String(r[nameIdx] || '').trim().slice(0, 80) : '',
-        source: o.source || 'csv-import',
-        validityStatus: VALIDITY_STATUS.VALID_FORMAT,
-        dnsProvenance: 'SYNTAX_ONLY_NOT_QUERIED'
-      });
+      // Split multi-email cells (e.g. "a@co.kr, b@co.kr" or "a@co.kr; b@co.kr")
+      const tokens = rawCell.includes('@')
+        ? rawCell.split(/[\s,;\/]+/).map(t => t.trim()).filter(Boolean)
+        : [rawCell];
+      const rowName = nameIdx >= 0 && r[nameIdx] !== undefined ? String(r[nameIdx] || '').trim().slice(0, 80) : '';
+      for (const tok of tokens) {
+        result.discoveredEmailCount++;
+        const email = normalizeEmail(tok);
+        const err = validateEmail(email, o);
+        if (err) {
+          result.badEmailCount++;
+          result.invalid.push({
+            line: lineNo,
+            raw: tok.slice(0, 80),
+            reason: err,
+            validityStatus: VALIDITY_STATUS.INVALID
+          });
+          continue;
+        }
+        if (seen.has(email)) {
+          result.duplicates.push({ line: lineNo, email });
+          continue;
+        }
+        seen.add(email);
+        result.valid.push({
+          email,
+          name: rowName,
+          sourceRow: lineNo,
+          source: o.source || 'csv-import',
+          validityStatus: VALIDITY_STATUS.VALID_FORMAT,
+          dnsProvenance: 'SYNTAX_ONLY_NOT_QUERIED'
+        });
+      }
     }
     return result;
   }

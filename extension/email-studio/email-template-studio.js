@@ -133,7 +133,7 @@ async function checkCompanionStatus() {
     const d = resp.data;
     const hs = resp.handshake || {};
     const compBuild = hs.companionBuildId || d.companionBuildId || 'verified';
-    const extBuild = hs.extensionBuildId || 'V7.0.0-OWNER-BETA-TEST-SEND-SIDECAR-20261116-LOCKED16';
+    const extBuild = hs.extensionBuildId || 'V7.0.0-OWNER-BETA-TEST-SEND-SIDECAR-20261116-LOCKED17';
     const pidLabel = hs.companionPid || d.pid || 'unknown';
     const capsLabel = Array.isArray(hs.apiCapabilities) ? hs.apiCapabilities.join(', ') : 'email-test-send';
     if (d.resendApiKeyConfigured) {
@@ -198,8 +198,10 @@ async function triggerTestSend() {
   });
 
   if (resp && resp.status === 'SUCCESS') {
+    const resolvedRecipient = resp.to || resp.recipient || recipient;
+    const resolvedFrom = resp.from || 'onboarding@resend.dev';
     box.className = 'status-box status-success';
-    box.textContent = `✅ [발송 접수 성공] Resend 이벤트 시뮬레이터가 정상 접수하였습니다.\n• Provider Message ID: ${resp.providerMessageId || 'OK'}\n• 수신자: ${resp.to}\n• 발신자: ${resp.from}\n• 접수시각: ${resp.timestamp || new Date().toISOString()}`;
+    box.textContent = `✅ [발송 접수 성공] Resend 이벤트 시뮬레이터가 정상 접수하였습니다 (실제 수신함 배달 아님).\n• Provider Message ID: ${resp.providerMessageId || 'OK'}\n• 수신자: ${resolvedRecipient}\n• 발신자: ${resolvedFrom}\n• 접수시각: ${resp.timestamp || new Date().toISOString()}`;
   } else if (resp && (resp.status === 'BLOCKED' || resp.status === 'AMBIGUOUS_NEEDS_RECONCILE')) {
     box.className = 'status-box status-blocked';
     box.textContent = `⛔ [발송 차단 (FAIL-CLOSED)]\n• 사유: ${resp.reason || (Array.isArray(resp.reasons) ? resp.reasons.join(', ') : 'POLICY_BLOCKED')}\n• 상세: ${resp.message || '인증 또는 자격 요건 미충족'}\n• 수신자: ${resp.recipient || recipient}`;
@@ -808,35 +810,52 @@ function createBuiltinRecipientManager() {
     pEl.textContent = labels.map(([name, st]) => `${name}:${st.state}${st.detail ? '(' + st.detail + ')' : ''}`).join(' · ');
   }
 
-  function parseRawCsvPreviewRows(csvText, importRes) {
-    const lines = String(csvText || '').replace(/^\uFEFF/, '').split(/\r?\n/).map(l => l.trim()).filter(Boolean);
-    if (!lines.length) return [];
-    const sep = lines[0].includes(';') && !lines[0].includes(',') ? ';' : ',';
-    const firstCols = lines[0].split(sep).map(c => c.trim().toLowerCase());
-    const hasHeader = firstCols.some(c => ['email', '이메일', 'mail', 'e-mail'].includes(c));
-    const emailIdx = hasHeader ? Math.max(0, firstCols.findIndex(c => ['email', '이메일', 'mail', 'e-mail'].includes(c))) : 0;
-    const nameIdx = hasHeader ? firstCols.findIndex(c => ['name', '이름', 'company', '회사', '회사명'].includes(c)) : 1;
+  function parseRawCsvPreviewRows(csvText, importRes, RM) {
+    const parseFn = (RM && typeof RM.parseCsv === 'function')
+      ? RM.parseCsv
+      : (txt) => {
+          const rows = []; let row = [], cur = '', inQ = false;
+          const s = String(txt || '').replace(/^\uFEFF/, '');
+          for (let i = 0; i < s.length; i++) {
+            const c = s[i];
+            if (inQ) { if (c === '"') { if (s[i + 1] === '"') { cur += '"'; i++; } else inQ = false; } else cur += c; }
+            else if (c === '"') inQ = true;
+            else if (c === ',' || c === ';' || c === '\t') { row.push(cur); cur = ''; }
+            else if (c === '\n' || c === '\r') { if (c === '\r' && s[i + 1] === '\n') i++; row.push(cur); cur = ''; if (row.some(v => v.trim() !== '')) rows.push(row); row = []; }
+            else cur += c;
+          }
+          row.push(cur); if (row.some(v => v.trim() !== '')) rows.push(row);
+          return rows;
+        };
+    const rows = parseFn(csvText);
+    if (!rows.length) return [];
+    const head = rows[0].map(c => String(c || '').trim().toLowerCase());
+    const hi = head.findIndex(h => ['email', 'e-mail', 'mail', '이메일', '메일', '이메일주소', '이메일 주소', '대표이메일', '대표 이메일'].includes(h));
+    const hasHeader = hi >= 0 || !rows[0].some(v => /@/.test(v));
+    const emailIdx = hi >= 0 ? hi : Math.max(0, rows[0].findIndex(v => /@/.test(v)));
+    const nameIdx = hasHeader ? head.findIndex(h => ['name', '이름', 'company', '회사', '회사명', '업체명', '상호', '상호명'].includes(h)) : 1;
     const dupMap = new Map((importRes.duplicates || []).map(d => [d.line, d]));
     const invMap = new Map((importRes.invalid || []).map(i => [i.line, i]));
     const validMap = new Map((importRes.valid || []).map(v => [v.email, v]));
     const out = [];
-    for (let i = hasHeader ? 1 : 0; i < lines.length; i++) {
+    for (let i = hasHeader ? 1 : 0; i < rows.length; i++) {
       const lineNo = i + 1;
-      const cols = lines[i].split(sep).map(c => c.trim().replace(/^"|"$/g, ''));
-      const rawEmail = String(cols[emailIdx] || '').trim().toLowerCase();
-      const rawName = nameIdx >= 0 ? String(cols[nameIdx] || '').trim() : '';
+      const cols = rows[i];
+      const rawCell = cols.length > emailIdx ? String(cols[emailIdx] || '').trim() : '';
+      const rawEmail = rawCell.toLowerCase();
+      const rawName = nameIdx >= 0 && cols[nameIdx] !== undefined ? String(cols[nameIdx] || '').trim() : '';
       const inv = invMap.get(lineNo);
       const dup = dupMap.get(lineNo);
       const val = validMap.get(rawEmail);
       out.push({
         line: lineNo,
-        email: rawEmail || `(빈 행 L${lineNo})`,
+        email: rawEmail || `(빈 이메일 행 L${lineNo})`,
         name: rawName,
-        domain: rawEmail.includes('@') ? rawEmail.split('@')[1] : '',
+        domain: rawEmail.includes('@') ? rawEmail.split('@')[1].split(/[\s,;\/]+/)[0] : '',
         validityStatus: inv ? 'INVALID' : (dup ? 'DUPLICATE' : (val ? (val.validityStatus || 'VALID_FORMAT') : 'VALID_FORMAT')),
         category: inv ? 'INVALID' : (dup ? 'DUPLICATE' : (val ? val.category : 'ORIGINAL_RAW')),
         reasonCode: inv ? inv.reason : (dup ? 'DUPLICATE_EMAIL' : 'RAW_IMPORTED_ROW'),
-        provenance: `CSV_LINE_${lineNo}`,
+        provenance: `CSV_ROW_${lineNo}`,
         immutableOriginal: true
       });
     }
@@ -1108,23 +1127,45 @@ function createBuiltinRecipientManager() {
     });
   }
   async function syncSidecarRecipients() {
+    const { sidecarPort, sidecarToken } = getSidecarConfig();
+    let syncCsv = '';
     try {
-      const { sidecarPort, sidecarToken } = getSidecarConfig();
-      const r = await callBg({
-        action: 'SYNC_EMAIL_PRODUCTION_RECIPIENTS',
-        sidecarPort,
-        sidecarToken,
-        payload: {
-          csvText: el('recipientCsv') ? el('recipientCsv').value : '',
-          optOutText: el('optOutList') ? el('optOutList').value : '',
-          messageKind: messageKind(),
-          consentAttested: Boolean(el('consentAttest') && el('consentAttest').checked)
-        }
-      });
-      return { synced: Boolean(r && r.ok), httpStatus: r && r.httpStatus, error: (r && r.error) || null };
-    } catch (err) {
-      return { synced: false, error: err.message };
+      const RM = getActiveRM();
+      const targetList = recipients.length ? recipients : allValidRecipients;
+      if (targetList.length && typeof RM.recipientsToCsv === 'function') {
+        syncCsv = RM.recipientsToCsv(targetList);
+      } else {
+        syncCsv = el('recipientCsv') ? el('recipientCsv').value : '';
+      }
+    } catch (_) {
+      syncCsv = el('recipientCsv') ? el('recipientCsv').value : '';
     }
+    const payload = {
+      csvText: syncCsv,
+      optOutText: el('optOutList') ? el('optOutList').value : '',
+      messageKind: messageKind(),
+      consentAttested: Boolean(el('consentAttest') && el('consentAttest').checked)
+    };
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        const r = await callBg({
+          action: 'SYNC_EMAIL_PRODUCTION_RECIPIENTS',
+          sidecarPort,
+          sidecarToken,
+          payload
+        });
+        if (r && r.ok) {
+          return { synced: true, httpStatus: r.httpStatus, syncedCount: (r.data && r.data.summary && r.data.summary.counts && r.data.summary.counts.total) || null };
+        }
+        if (attempt === 1) {
+          return { synced: false, httpStatus: r && r.httpStatus, error: (r && (r.error || (r.data && r.data.error))) || `HTTP_${(r && r.httpStatus) || 'ERR'}` };
+        }
+      } catch (err) {
+        if (attempt === 1) return { synced: false, error: err.message };
+      }
+      await new Promise(r => setTimeout(r, 150));
+    }
+    return { synced: false, error: 'SYNC_RETRY_EXHAUSTED' };
   }
 
   function runRecipientImport(triggerSource, fileName) {
@@ -1160,8 +1201,16 @@ function createBuiltinRecipientManager() {
       }
       const res = RM.importRecipients(rawCsv, { source: triggerSource || 'csv-import' });
       originalRawCsv = rawCsv;
-      rawRows = parseRawCsvPreviewRows(rawCsv, res);
-      importMeta = { validCount: res.valid.length, duplicateCount: res.duplicates.length, invalidCount: res.invalid.length };
+      rawRows = parseRawCsvPreviewRows(rawCsv, res, RM);
+      importMeta = {
+        sourceRowCount: res.sourceRowCount || rawRows.length,
+        discoveredEmailCount: res.discoveredEmailCount || (res.valid.length + res.duplicates.length + res.invalid.length),
+        validCount: res.valid.length,
+        duplicateCount: res.duplicates.length,
+        invalidCount: res.invalid.length,
+        emptyEmailCount: res.emptyEmailCount || 0,
+        badEmailCount: res.badEmailCount || 0
+      };
       allValidRecipients = res.valid;
       filterStale = false;
       renderSmeFilterSummary(RM);

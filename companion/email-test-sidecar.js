@@ -17,8 +17,8 @@ const { getSidecarPaths } = require('./sidecar-paths');
 const { EmailProductionPipeline } = require('./email-production-pipeline');
 
 const DEFAULT_SIDECAR_PORT = 18990;
-const SIDECAR_BUILD_ID = 'V7.0.0-OWNER-BETA-TEST-SEND-SIDECAR-20261116-LOCKED16';
-const SIDECAR_IMPLEMENTATION_HEAD = 'email-test-sidecar-20261116-locked16';
+const SIDECAR_BUILD_ID = 'V7.0.0-OWNER-BETA-TEST-SEND-SIDECAR-20261116-LOCKED17';
+const SIDECAR_IMPLEMENTATION_HEAD = 'email-test-sidecar-20261116-locked17';
 const SIDECAR_API_CAPABILITIES = ['email-test-send', 'email-test-sidecar-v1', 'email-test-ledger-v1'];
 const EXPOSED_RC3_6_TOKEN_SHA256 = '597a70b99c11c7f4d13a075204ac240bb08a7a1d6c08c78268328e0bb59daeda';
 const EXTENSION_ORIGIN_RE = /^chrome-extension:\/\/[a-p]{32}$/;
@@ -467,7 +467,7 @@ class EmailTestSidecar {
         if ((pathname === '/email/production/import' || pathname === '/email/production/queue/run' || pathname === '/email/production/queue/stop') && req.method === 'POST') {
           let raw = '';
           let tooLarge = false;
-          req.on('data', c => { raw += c; if (raw.length > 524288) { tooLarge = true; req.destroy(); } });
+          req.on('data', c => { raw += c; if (raw.length > 2097152) { tooLarge = true; req.destroy(); } });
           req.on('end', async () => {
             if (tooLarge) return;
             try {
@@ -861,7 +861,7 @@ class EmailTestSidecar {
                 : (result && result.status === 'PROVIDER_ERROR' ? 502 : 400);
 
               if (result && result.status === 'SUCCESS') {
-                const acceptedPayload = { ...result, deliveryStatus: 'PROVIDER_ACCEPTED_SIMULATOR_ONLY', idempotencyKey };
+                const acceptedPayload = { ...result, to: result.to || result.recipient || recipient, from: result.from || resendTestMode.TEST_FROM, deliveryStatus: 'PROVIDER_ACCEPTED_SIMULATOR_ONLY', idempotencyKey };
                 try {
                   this.ledger.append({
                     idempotencyKey, recipient, from: result.from || resendTestMode.TEST_FROM,

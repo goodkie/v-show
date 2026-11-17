@@ -195,5 +195,29 @@ async function t(name, fn) { await fn(); pass++; console.log('PASS ' + name); }
     assert.ok(csvText.includes('validityStatus,dnsProvenance,category'));
   });
 
+  await t('KOREAN_MULTICOLUMN_QUOTED_MULTILINE_AND_MULTI_EMAIL_CSV', () => {
+    const koreanCsv = [
+      '\uFEFF상호명,웹사이트 URL,웹사이트 유형,URL 출처,업종 검토,연결 리드 수,Lead IDs,이메일,전화번호,영업 상태',
+      '"한빛정밀, (주)",https://hanbit-precision.kr,자사몰,"Google\nSearch",제조,1,L-101,sales@hanbit-precision.kr,02-111-2222,신규',
+      '"비비드\n스튜디오",https://vivid-design.co.kr,블로그,Naver,"디자인, 브랜딩",2,"L-102, L-103","ceo@vivid-design.co.kr, hello@vivid-design.co.kr",02-333-4444,접촉중',
+      '"빈이메일업체",https://empty.co.kr,자사몰,Naver,유통,1,L-104,,02-555-6666,대기',
+      '"잘못된형식",https://bad.co.kr,자사몰,Naver,유통,1,L-105,not-an-email,02-777-8888,대기'
+    ].join('\n');
+
+    const res = RM.importRecipients(koreanCsv);
+    assert.equal(res.headerDetected, true);
+    assert.equal(res.emailColumnName, '이메일');
+    assert.equal(res.sourceRowCount, 4);
+    assert.equal(res.discoveredEmailCount, 4);
+    assert.equal(res.valid.length, 3);
+    assert.equal(res.valid[0].name, '한빛정밀, (주)');
+    assert.equal(res.valid[1].email, 'ceo@vivid-design.co.kr');
+    assert.equal(res.valid[2].email, 'hello@vivid-design.co.kr');
+    assert.equal(res.emptyEmailCount, 1);
+    assert.equal(res.badEmailCount, 1);
+    assert.equal(res.invalid.some(i => i.reason === 'EMPTY_EMAIL'), true);
+    assert.equal(res.invalid.some(i => i.reason === 'INVALID_FORMAT'), true);
+  });
+
   console.log(`\nALL RECIPIENT MANAGER TESTS PASSED (${pass}/${pass})`);
 })().catch(e => { console.error(e); process.exit(1); });
