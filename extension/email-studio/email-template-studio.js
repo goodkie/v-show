@@ -6,13 +6,29 @@ const val=id=>el(id).value.trim();
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const url=s=>{try{const u=new URL(s);return u.protocol==='https:'?u.href:''}catch{return ''}};
 let previewFileUrl='';
+let previewDataUrl='';
+let previewFileMeta=null;
+let remoteProbeTimer=null;
+let remoteProbeState={url:'',status:'IDLE',detail:''};
 const paragraphs=s=>s.split(/\n\s*\n/).filter(x=>x.trim()).map(x=>'<p style="margin:0 0 18px;line-height:1.65">'+esc(x.trim()).replace(/\n/g,'<br>')+'</p>').join('');
 function values(){return Object.fromEntries(ids.map(i=>[i,val(i)]))}
 function htmlFor(v,preview=false){
- const pic=preview ? (previewFileUrl || (el('loadRemoteImages').checked ? url(v.image) : '')) : url(v.image);
+ const httpsPic=url(v.image);
+ const localPic=preview ? (previewDataUrl || previewFileUrl) : '';
+ const showRemoteInPreview=preview && el('loadRemoteImages') && el('loadRemoteImages').checked && httpsPic;
+ const pic=preview ? (localPic || (showRemoteInPreview ? httpsPic : '')) : httpsPic;
  const previewText=esc(v.preheader);
  const h='<h1 style="font-size:25px;margin:0 0 20px;line-height:1.3">'+esc(v.heading)+'</h1>';
- const img=pic?'<img src="'+esc(pic)+'" alt="'+esc(v.alt)+'" width="560" style="display:block;max-width:100%;width:100%;height:auto;border-radius:8px;margin:0 0 24px">':'';
+ const blobAttr=(preview && localPic && previewFileUrl) ? ' data-local-blob="'+esc(previewFileUrl)+'"' : '';
+ let img='';
+ if(pic){
+  img='<img src="'+esc(pic)+'"'+blobAttr+' alt="'+esc(v.alt)+'" width="560" style="display:block;max-width:100%;width:100%;height:auto;border-radius:8px;margin:0 0 24px">';
+ }else if(preview && v.image){
+  const msg=httpsPic
+   ? '🔒 외부 HTTPS 이미지 미리보기 차단됨 (개인정보 보호 기본값 · 위 "외부 HTTPS 이미지 미리보기 로딩 허용" 체크 시 표시)'
+   : '⚠️ 유효한 공개 https:// 이미지 URL이 필요합니다 (http:// 또는 로컬 경로 불가)';
+  img='<div style="border:1px dashed #94a3b8;background:#f8fafc;color:#475569;padding:16px;border-radius:8px;margin:0 0 24px;font-size:12px;line-height:1.5;">'+esc(msg)+(v.alt?'<br><b>대체 텍스트(alt):</b> '+esc(v.alt):'')+'</div>';
+ }
  const button=url(v.link)&&v.cta?'<p style="margin:26px 0"><a href="'+esc(url(v.link))+'" style="display:inline-block;background:#2056a0;color:#ffffff;padding:12px 20px;border-radius:5px;text-decoration:none">'+esc(v.cta)+'</a></p>':'';
  const opt=v.kind==='marketing'&&url(v.unsubscribe)?'<p><a href="'+esc(url(v.unsubscribe))+'" style="color:#475569">구독 취소</a></p>':'';
  return '<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="font-family:Arial,sans-serif;margin:0;background:#f3f5f8;color:#17212f"><div style="display:none;font-size:1px;color:#f3f5f8;max-height:0;overflow:hidden">'+previewText+'</div><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f3f5f8"><tr><td align="center" style="padding:28px 12px"><table role="presentation" cellpadding="0" cellspacing="0" width="600" style="width:100%;max-width:600px;background:#fff"><tr><td style="padding:34px 28px"><div style="font-size:17px;font-weight:bold;margin-bottom:28px">'+esc(v.brand)+'</div>'+h+img+paragraphs(v.body)+button+'<hr style="border:0;border-top:1px solid #e2e8f0;margin:32px 0"><div style="font-size:12px;line-height:1.6;color:#64748b">'+esc(v.company)+(v.address?'<p>'+esc(v.address)+'</p>':'')+opt+'</div></td></tr></table></td></tr></table></body></html>';
@@ -60,10 +76,97 @@ function updateContentQaStatusLine(checks){
  const aiBadge=el('aiCopyStatusBadge');
  if(aiBadge)aiBadge.textContent=currentAiStatusLabel||(currentAiCopyStatus==='READY'?'AI 자동 교정: Gemini 준비됨':(currentAiCopyStatus==='ERROR'?'AI 자동 교정: 연결 오류':'AI 자동 교정: 연결 필요'));
 }
+function updateImageDiagnostics(v){
+ const locEl=el('localImageStatus');
+ const thumb=el('localImageThumb');
+ const remEl=el('remoteImageStatus');
+ const box=el('imageStatusBox');
+ if(locEl){
+  if(previewFileMeta && (previewFileUrl || previewDataUrl)){
+   locEl.textContent=`🖼️ 로컬 미리보기 전용 (Local preview only): ${previewFileMeta.name} (${Math.round(previewFileMeta.size/1024)}KB${previewFileMeta.dims ? ', ' + previewFileMeta.dims : ''}) — 실제 발송 HTML에는 미포함`;
+  }else if(previewFileMeta && previewFileMeta.error){
+   locEl.textContent=`❌ 로컬 이미지 오류: ${previewFileMeta.error}`;
+  }else{
+   locEl.textContent='🖼️ 로컬 미리보기 전용 (Local preview only): 선택된 파일 없음';
+  }
+ }
+ if(thumb){
+  if(previewFileUrl || previewDataUrl){
+   thumb.src=previewFileUrl || previewDataUrl;
+   thumb.style.display='block';
+  }else{
+   thumb.removeAttribute('src');
+   thumb.style.display='none';
+  }
+ }
+ const httpsPic=url(v.image);
+ const allowRemote=Boolean(el('loadRemoteImages') && el('loadRemoteImages').checked);
+ if(remEl){
+  if(!v.image){
+   remEl.textContent='📤 실제 발송 HTML 이미지 (Production email image): 공개 HTTPS 이미지 URL 미입력';
+  }else if(!httpsPic){
+   remEl.textContent='❌ 실제 발송 HTML 이미지 오류: https:// 로 시작하는 공개 URL만 허용됩니다 (http://, file:, 로컬 경로 차단)';
+  }else if(!allowRemote){
+   remEl.textContent=`🔒 실제 발송 HTML 이미지 준비됨 (${httpsPic}) — 개인정보 보호를 위해 미리보기 자동 로딩은 차단됨`;
+  }else if(remoteProbeState.url===httpsPic && remoteProbeState.status==='OK'){
+   remEl.textContent=`✅ 실제 발송 HTML 이미지 로딩 성공 (${httpsPic}${remoteProbeState.detail ? ' · ' + remoteProbeState.detail : ''})`;
+  }else if(remoteProbeState.url===httpsPic && remoteProbeState.status==='ERROR'){
+   remEl.textContent=`❌ 외부 HTTPS 이미지 로딩 실패 (${httpsPic}): ${remoteProbeState.detail || '네트워크/404/CORS/타임아웃'} — [다시 확인]을 누르거나 URL을 확인하세요.`;
+  }else if(remoteProbeState.url===httpsPic && remoteProbeState.status==='LOADING'){
+   remEl.textContent=`⏳ 외부 HTTPS 이미지 확인 중: ${httpsPic}...`;
+  }else{
+   remEl.textContent=`📤 실제 발송 HTML 이미지 (${httpsPic}) — 로딩 대기 중`;
+  }
+ }
+ if(box){
+  if((previewFileMeta && previewFileMeta.error) || (v.image && !httpsPic) || (allowRemote && httpsPic && remoteProbeState.url===httpsPic && remoteProbeState.status==='ERROR')){
+   box.className='status-box status-error';
+  }else if((previewFileUrl || previewDataUrl) || (httpsPic && (!allowRemote || remoteProbeState.status==='OK'))){
+   box.className='status-box status-success';
+  }else{
+   box.className='status-box status-idle';
+  }
+ }
+}
+function probeRemotePreviewImage(){
+ const httpsPic=url(val('image'));
+ const allowRemote=Boolean(el('loadRemoteImages') && el('loadRemoteImages').checked);
+ if(!allowRemote || !httpsPic){
+  remoteProbeState={url:httpsPic,status:'IDLE',detail:''};
+  return render();
+ }
+ if(remoteProbeTimer){clearTimeout(remoteProbeTimer);remoteProbeTimer=null;}
+ remoteProbeState={url:httpsPic,status:'LOADING',detail:''};
+ updateImageDiagnostics(values());
+ const probe=new Image();
+ let settled=false;
+ remoteProbeTimer=setTimeout(()=>{
+  if(settled)return;
+  settled=true;
+  remoteProbeState={url:httpsPic,status:'ERROR',detail:'응답 시간 초과 (Timeout 6s)'};
+  updateImageDiagnostics(values());
+ },6000);
+ probe.onload=()=>{
+  if(settled)return;
+  settled=true;
+  clearTimeout(remoteProbeTimer);
+  remoteProbeState={url:httpsPic,status:'OK',detail:`${probe.naturalWidth}x${probe.naturalHeight}`};
+  updateImageDiagnostics(values());
+ };
+ probe.onerror=()=>{
+  if(settled)return;
+  settled=true;
+  clearTimeout(remoteProbeTimer);
+  remoteProbeState={url:httpsPic,status:'ERROR',detail:'이미지 로드 실패 (404/네트워크/형식 오류 또는 CSP 차단)'};
+  updateImageDiagnostics(values());
+ };
+ probe.src=httpsPic;
+}
 function render(){
  try{
   const v=values();
   if(el('preview'))el('preview').srcdoc=htmlFor(v,true);
+  updateImageDiagnostics(v);
   const checks=audit(v);const list=el('checkList');
   if(list){
    list.replaceChildren();
@@ -79,15 +182,56 @@ function render(){
   updateContentQaStatusLine(checks);
  }catch(_){}
 }
+function clearLocalPreviewImage(){
+ if(previewFileUrl){try{URL.revokeObjectURL(previewFileUrl);}catch(_){}}
+ previewFileUrl='';
+ previewDataUrl='';
+ previewFileMeta=null;
+ if(el('imageFile'))el('imageFile').value='';
+}
 function download(name,type,content){const blob=new Blob([content],{type});const uri=URL.createObjectURL(blob);const a=document.createElement('a');a.href=uri;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(uri),500)}
 if(el('imageFile'))el('imageFile').addEventListener('change',()=>{
- if(previewFileUrl)URL.revokeObjectURL(previewFileUrl);previewFileUrl='';
- const f=el('imageFile').files?.[0];if(!f)return render();
- if(!/^image\/(png|jpeg|webp|gif)$/.test(f.type)||f.size>3*1024*1024){alert('PNG/JPEG/WebP/GIF 3MB 이하 파일만 미리보기 가능합니다.');el('imageFile').value='';return render()}
- previewFileUrl=URL.createObjectURL(f);render();
+ const input=el('imageFile');
+ const f=input&&input.files?input.files[0]:null;
+ if(previewFileUrl){try{URL.revokeObjectURL(previewFileUrl);}catch(_){}}
+ previewFileUrl='';previewDataUrl='';previewFileMeta=null;
+ if(!f)return render();
+ const mimeOk=/^image\/(png|jpeg|webp|gif)$/i.test(f.type||'');
+ const extOk=!f.type && /\.(png|jpe?g|webp|gif)$/i.test(f.name||'');
+ if((!mimeOk && !extOk)||f.size>3*1024*1024){
+  const errTxt='PNG/JPEG/WebP/GIF 3MB 이하 파일만 미리보기 가능합니다.';
+  previewFileMeta={name:f.name,size:f.size,error:errTxt};
+  alert(errTxt);
+  if(input)input.value='';
+  return render();
+ }
+ previewFileMeta={name:f.name,size:f.size,dims:''};
+ previewFileUrl=URL.createObjectURL(f);
+ try{
+  const reader=new FileReader();
+  reader.onload=()=>{
+   if(typeof reader.result==='string'&&reader.result.startsWith('data:image/')){
+    previewDataUrl=reader.result;
+    const probe=new Image();
+    probe.onload=()=>{
+     if(previewFileMeta)previewFileMeta.dims=`${probe.naturalWidth}x${probe.naturalHeight}`;
+     render();
+    };
+    probe.onerror=()=>render();
+    probe.src=previewDataUrl;
+    render();
+   }
+  };
+  reader.onerror=()=>render();
+  reader.readAsDataURL(f);
+ }catch(_){}
+ render();
 });
+if(el('btnClearLocalImage'))el('btnClearLocalImage').addEventListener('click',()=>{clearLocalPreviewImage();render();});
+if(el('btnRetryRemoteImage'))el('btnRetryRemoteImage').addEventListener('click',probeRemotePreviewImage);
+window.addEventListener('beforeunload',()=>{if(previewFileUrl){try{URL.revokeObjectURL(previewFileUrl);}catch(_){}}});
 for(const id of ids){if(el(id))el(id).addEventListener('input',render);}
-if(el('loadRemoteImages'))el('loadRemoteImages').addEventListener('change',render);
+if(el('loadRemoteImages'))el('loadRemoteImages').addEventListener('change',()=>{probeRemotePreviewImage();render();});
 if(el('exportHtml'))el('exportHtml').onclick=()=>{const v=values();if(previewFileUrl&&!url(v.image))alert('로컬 이미지는 이메일에 포함되지 않습니다. 공개 HTTPS 이미지 URL을 먼저 입력하세요.');download('xpider-vivpr-template.html','text/html;charset=utf-8',htmlFor(v))};
 if(el('exportText'))el('exportText').onclick=()=>download('xpider-vivpr-template.txt','text/plain;charset=utf-8',textFor(values()));
 if(el('exportJson'))el('exportJson').onclick=()=>download('xpider-vivpr-template.json','application/json',JSON.stringify({version:1,template:values(),note:'No secrets, recipient list or API keys'},null,2));
