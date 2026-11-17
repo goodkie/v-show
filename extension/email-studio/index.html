@@ -30,10 +30,20 @@
 <div class="note">이미지 파일은 PC 내 미리보기만 지원합니다. 실제 발송용 HTML에는 공개 HTTPS 이미지 URL을 입력해야 합니다. 이메일 본문의 링크만으로 RFC 8058 원클릭 구독 취소 헤더가 생성되는 것은 아닙니다. 해당 헤더와 작동하는 POST 엔드포인트는 발송 서비스에서 별도 검증해야 합니다.</div>
 <div class="checks"><b>발송 전 콘텐츠 검사 (규칙 기반 스팸·맞춤법·규정 점검)</b><ul id="checkList" aria-live="polite"></ul><small>주의 사항은 휴리스틱(규칙 기반) 점검이며 Gmail/Resend 스팸 점수 또는 실제 받은편지함 도착(Deliverability) 보장이 아닙니다.</small></div>
 <div class="send-control-card" id="contentQaCard" aria-label="콘텐츠 품질 및 문구 교정 제안" style="margin-top:10px;">
-<div class="send-header"><h3>🛡️ 콘텐츠 품질 · 문구 교정 제안 (Content QA)</h3><span class="badge-test" id="aiCopyStatusBadge">AI 자동 교정: 연결 필요</span></div>
+<div class="send-header"><h3>🛡️ 콘텐츠 품질 · 문구 교정 제안 (Content QA · Google Gemini)</h3><span class="badge-test" id="aiCopyStatusBadge">AI 자동 교정: 연결 필요</span></div>
 <div class="note" id="contentQaBadges">RULE_BASED_CONTENT_CHECK: PASS · AI_COPY_EDIT: NOT_CONFIGURED · PROVIDER_DOMAIN_AUTH: BLOCKED_EXTERNAL_DNS · SEND_BLOCKED: STRICT_HOLD</div>
 <div class="actions" style="margin-top:6px;"><button type="button" class="primary" id="btnRuleCopySuggest">📝 규칙 기반 문구 교정 제안 보기</button><button type="button" id="btnAiCopySuggest">🤖 AI 교정 제안 요청 (Opt-In)</button></div>
-<label style="display:flex;align-items:center;gap:6px;margin:6px 0;font-size:12px;"><input id="aiCopyOptIn" type="checkbox"> [선택] 로컬 Sidecar AI 문구 교정 요청에 동의합니다 (수신자 명단·개인식별정보는 절대 전송되지 않으며, 원문은 수락 전까지 변경되지 않습니다)</label>
+<label style="display:flex;align-items:center;gap:6px;margin:6px 0;font-size:12px;"><input id="aiCopyOptIn" type="checkbox"> [선택] Google Gemini 외부 AI에 <b>초안 문구만</b> 전송하여 교정 제안 받기에 동의합니다 (수신자 명단·개인식별정보는 절대 전송되지 않으며, 원문은 수락 전까지 변경되지 않습니다)</label>
+<div id="geminiSetupBox" class="status-box status-idle" style="margin:6px 0;">
+<b>🔑 Google Gemini API 키 등록/변경 및 연결 테스트 (로컬 Sidecar NTFS 보안 저장)</b>
+<div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:6px;">
+  <input id="geminiApiKeyInput" type="password" autocomplete="off" placeholder="AIza... (Google Gemini API 키)" style="flex:1;min-width:190px;padding:6px;font-size:12px;">
+  <button type="button" id="btnSaveGeminiKey">Gemini API 키 등록/변경</button>
+  <button type="button" id="btnTestGeminiConnection">🔌 연결 테스트</button>
+</div>
+<label style="display:flex;align-items:center;gap:6px;margin:6px 0 2px;font-size:12px;"><input id="geminiKeyConsent" type="checkbox"> Gemini API 키를 브라우저 저장소(chrome.storage)가 아닌 로컬 Sidecar 보안 파일(%LOCALAPPDATA%\XPIDER\Sidecar\.ai_copy_api_key)에 저장하는 것에 동의합니다</label>
+<div id="geminiSetupStatus" class="note" aria-live="polite">스튜디오를 열 때 외부 API를 자동 호출하지 않습니다. 키 등록 후 [연결 테스트]를 실행해야 READY 상태가 됩니다.</div>
+</div>
 <div id="copyQaStatus" class="status-box status-idle" aria-live="polite">교정 대기 중: 원문을 절대 자동으로 덮어쓰지 않으며, 원문 vs 제안 비교 후 [제안 수락] 또는 [제안 거절]을 선택할 수 있습니다.</div>
 <div id="copyDiffPanel" class="status-box status-idle" style="display:none;margin-top:8px;">
 <div id="copyDiffContent" style="white-space:pre-wrap;font-size:12px;"></div>

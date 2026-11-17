@@ -393,6 +393,44 @@ class EmailTestSidecar {
           return;
         }
 
+        if (pathname === '/email/content-qa/key' && req.method === 'POST') {
+          let raw = '';
+          let tooLarge = false;
+          req.on('data', c => { raw += c; if (raw.length > 8192) { tooLarge = true; req.destroy(); } });
+          req.on('end', () => {
+            if (tooLarge) return;
+            try {
+              const payload = raw ? JSON.parse(raw) : {};
+              const out = this.pipeline.saveAiCopyApiKey(payload);
+              res.writeHead(out.statusCode || (out.ok ? 200 : 400), { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify(out));
+            } catch (err) {
+              res.writeHead(400, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ ok: false, status: 'ERROR', reason: 'INVALID_JSON', message: err.message }));
+            }
+          });
+          return;
+        }
+
+        if (pathname === '/email/content-qa/test-connection' && req.method === 'POST') {
+          let raw = '';
+          let tooLarge = false;
+          req.on('data', c => { raw += c; if (raw.length > 8192) { tooLarge = true; req.destroy(); } });
+          req.on('end', async () => {
+            if (tooLarge) return;
+            try {
+              const payload = raw ? JSON.parse(raw) : {};
+              const out = await this.pipeline.testGeminiConnection(payload);
+              res.writeHead(out.statusCode || (out.ok ? 200 : 400), { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify(out));
+            } catch (err) {
+              res.writeHead(400, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ ok: false, status: 'ERROR', reason: 'INVALID_JSON', message: err.message }));
+            }
+          });
+          return;
+        }
+
         if (pathname === '/email/content-qa/suggest' && req.method === 'POST') {
           let raw = '';
           let tooLarge = false;

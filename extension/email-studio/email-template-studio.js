@@ -49,6 +49,7 @@ function audit(v){
  return out;
 }
 let currentAiCopyStatus = 'NOT_CONFIGURED';
+let currentAiStatusLabel = 'AI 자동 교정: 연결 필요';
 let currentProviderDomainStatus = 'BLOCKED_EXTERNAL_DNS';
 function updateContentQaStatusLine(checks){
  const badgeEl=el('contentQaBadges');
@@ -57,7 +58,7 @@ function updateContentQaStatusLine(checks){
  const ruleStatus=hasFail?'FAIL':'PASS';
  badgeEl.textContent=`RULE_BASED_CONTENT_CHECK: ${ruleStatus} · AI_COPY_EDIT: ${currentAiCopyStatus} · PROVIDER_DOMAIN_AUTH: ${currentProviderDomainStatus} · SEND_BLOCKED: STRICT_HOLD`;
  const aiBadge=el('aiCopyStatusBadge');
- if(aiBadge)aiBadge.textContent=currentAiCopyStatus==='READY'?'AI 자동 교정: 준비됨 (Opt-In)':'AI 자동 교정: 연결 필요';
+ if(aiBadge)aiBadge.textContent=currentAiStatusLabel||(currentAiCopyStatus==='READY'?'AI 자동 교정: Gemini 준비됨':(currentAiCopyStatus==='ERROR'?'AI 자동 교정: 연결 오류':'AI 자동 교정: 연결 필요'));
 }
 function render(){
  try{
@@ -592,17 +593,89 @@ function createBuiltinRecipientManager() {
       });
       if (resp && resp.ok && resp.data && resp.data.ok) {
         currentAiCopyStatus = resp.data.aiCopyEditStatus || 'READY';
+        currentAiStatusLabel = 'AI 자동 교정: Gemini 준비됨';
         render();
-        showProposalDiff('AI 문구 교정 제안', resp.data);
+        showProposalDiff('Google Gemini 문구 교정 제안', resp.data);
       } else {
         const errData = (resp && resp.data) || {};
         const reason = errData.reason || resp?.error || 'AI_PROVIDER_NOT_CONFIGURED';
-        if (reason === 'AI_PROVIDER_NOT_CONFIGURED') currentAiCopyStatus = 'NOT_CONFIGURED';
+        if (reason === 'AI_PROVIDER_NOT_CONFIGURED' || reason === 'KEY_MISSING') {
+          currentAiCopyStatus = 'NOT_CONFIGURED';
+          currentAiStatusLabel = 'AI 자동 교정: 연결 필요';
+        } else {
+          currentAiCopyStatus = 'ERROR';
+          currentAiStatusLabel = `AI 자동 교정: 연결 오류 (${reason})`;
+        }
         render();
         if (qb) {
-          qb.className = reason === 'AI_PROVIDER_NOT_CONFIGURED' ? 'status-box status-blocked' : 'status-box status-error';
-          qb.textContent = `⚠️ [${reason}] ${errData.message || 'AI 자동 교정: 연결 필요 (승인된 AI 공급자/키가 설정되지 않았습니다. 원문 템플릿은 그대로 보존되었으며, 규칙 기반 문구 교정 제안을 이용할 수 있습니다.)'}`;
+          qb.className = currentAiCopyStatus === 'NOT_CONFIGURED' ? 'status-box status-blocked' : 'status-box status-error';
+          qb.textContent = `⚠️ [${reason}] ${errData.message || 'AI 자동 교정: 연결 필요 (Gemini API 키를 등록하고 연결 테스트를 실행하세요. 원문 템플릿은 그대로 보존되었으며, 규칙 기반 문구 교정 제안을 이용할 수 있습니다.)'}`;
         }
+      }
+    };
+  }
+
+  if (el('btnSaveGeminiKey')) {
+    el('btnSaveGeminiKey').onclick = async () => {
+      const gs = el('geminiSetupStatus');
+      const keyInput = el('geminiApiKeyInput');
+      const consent = el('geminiKeyConsent');
+      if (!consent || !consent.checked) {
+        if (gs) gs.textContent = '⚠️ [USER_CONSENT_REQUIRED] 로컬 Sidecar 보안 파일 저장 동의 체크박스를 먼저 선택하세요.';
+        return;
+      }
+      const rawKey = keyInput ? String(keyInput.value || '').trim() : '';
+      if (!rawKey) {
+        if (gs) gs.textContent = '⚠️ [EMPTY_KEY] Google Gemini API 키를 입력하세요.';
+        return;
+      }
+      const { sidecarPort, sidecarToken } = getSidecarConfig();
+      if (gs) gs.textContent = '⏳ 로컬 Sidecar NTFS 보안 파일에 Gemini API 키 저장 중...';
+      const resp = await callBg({
+        action: 'SAVE_GEMINI_COPY_API_KEY',
+        sidecarPort,
+        sidecarToken,
+        payload: { apiKey: rawKey, userConsentConfirmed: true }
+      });
+      if (keyInput) keyInput.value = '';
+      if (resp && resp.ok && resp.data && resp.data.ok) {
+        currentAiCopyStatus = 'NOT_CONFIGURED';
+        currentAiStatusLabel = 'AI 자동 교정: 연결 테스트 필요 (Gemini 키 저장됨)';
+        render();
+        if (gs) gs.textContent = `✅ ${resp.data.message || '키 저장 완료. [🔌 연결 테스트]를 클릭하세요.'}`;
+      } else {
+        const errData = (resp && resp.data) || {};
+        const reason = errData.reason || resp?.error || 'SAVE_KEY_FAILED';
+        if (gs) gs.textContent = `❌ [${reason}] ${errData.message || 'Gemini API 키 저장 실패 (Sidecar 실행 여부를 확인하세요)'}`;
+      }
+    };
+  }
+
+  if (el('btnTestGeminiConnection')) {
+    el('btnTestGeminiConnection').onclick = async () => {
+      const gs = el('geminiSetupStatus');
+      const { sidecarPort, sidecarToken } = getSidecarConfig();
+      if (gs) gs.textContent = '⏳ Google Gemini 연결 테스트 중 (합성 문구만 전송, 수신자 명단 미포함)...';
+      const resp = await callBg({
+        action: 'TEST_GEMINI_COPY_CONNECTION',
+        sidecarPort,
+        sidecarToken,
+        payload: {}
+      });
+      const data = (resp && resp.data) || {};
+      if (resp && resp.ok && data.ok) {
+        currentAiCopyStatus = 'READY';
+        currentAiStatusLabel = `AI 자동 교정: Gemini 준비됨 (${data.model || 'gemini-2.5-flash'})`;
+        render();
+        if (gs) gs.textContent = `✅ [READY] ${data.message || 'Google Gemini 연결 확인 완료'}`;
+      } else {
+        const reason = data.reason || resp?.error || 'CONNECTION_TEST_FAILED';
+        currentAiCopyStatus = (reason === 'KEY_MISSING' || reason === 'KEY_ACL_INVALID') ? 'NOT_CONFIGURED' : 'ERROR';
+        currentAiStatusLabel = currentAiCopyStatus === 'NOT_CONFIGURED'
+          ? 'AI 자동 교정: 연결 필요'
+          : `AI 자동 교정: 연결 오류 (${reason})`;
+        render();
+        if (gs) gs.textContent = `❌ [${reason}] ${data.message || 'Gemini 연결 테스트 실패 — 규칙 기반 교정 기능은 계속 정상 동작합니다.'}`;
       }
     };
   }

@@ -4101,6 +4101,8 @@ const _handleMainMessageInner = (request, sender, sendResponse) => {
         case 'GET_EMAIL_PRODUCTION_PREFLIGHT':
         case 'SYNC_EMAIL_PRODUCTION_RECIPIENTS':
         case 'GET_EMAIL_CONTENT_QA_STATUS':
+        case 'SAVE_GEMINI_COPY_API_KEY':
+        case 'TEST_GEMINI_COPY_CONNECTION':
         case 'REQUEST_EMAIL_COPY_SUGGESTION':
         case 'VERIFY_RECIPIENT_DOMAINS_DNS': {
             (async () => {
@@ -4122,11 +4124,13 @@ const _handleMainMessageInner = (request, sender, sendResponse) => {
                         });
                     };
                     let token = explicitToken || await pairTok(false);
-                    const isPost = request.action === 'SYNC_EMAIL_PRODUCTION_RECIPIENTS' || request.action === 'REQUEST_EMAIL_COPY_SUGGESTION' || request.action === 'VERIFY_RECIPIENT_DOMAINS_DNS';
+                    const isPost = request.action === 'SYNC_EMAIL_PRODUCTION_RECIPIENTS' || request.action === 'SAVE_GEMINI_COPY_API_KEY' || request.action === 'TEST_GEMINI_COPY_CONNECTION' || request.action === 'REQUEST_EMAIL_COPY_SUGGESTION' || request.action === 'VERIFY_RECIPIENT_DOMAINS_DNS';
                     const routeMap = {
                         GET_EMAIL_PRODUCTION_PREFLIGHT: '/email/production/preflight',
                         SYNC_EMAIL_PRODUCTION_RECIPIENTS: '/email/production/import',
                         GET_EMAIL_CONTENT_QA_STATUS: '/email/content-qa/status',
+                        SAVE_GEMINI_COPY_API_KEY: '/email/content-qa/key',
+                        TEST_GEMINI_COPY_CONNECTION: '/email/content-qa/test-connection',
                         REQUEST_EMAIL_COPY_SUGGESTION: '/email/content-qa/suggest',
                         VERIFY_RECIPIENT_DOMAINS_DNS: '/email/recipients/verify-dns'
                     };
