@@ -14,7 +14,6 @@
                 <span class="nav-channel-badge" title="Private Owner Beta — Debug Telemetry Enabled">● PRIVATE OWNER BETA — DEBUG TELEMETRY ENABLED</span>
             </div>
             <div class="top-nav-right">
-                <a id="email-template-studio-link" href="email-studio/index.html" target="_blank" rel="noopener noreferrer" class="nav-btn" title="Open local image and text email template editor (PREVIEW ONLY)" style="display:inline-flex;align-items:center;gap:5px;text-decoration:none;font-weight:600;">✉️ Email Studio</a>
                 <button id="reset-all-lists-btn" class="nav-btn danger-nav-btn" type="button" title="Reset all accumulated list data across all tabs">⚠️ Reset Lists</button>
                 <button id="settings-toggle" class="nav-btn settings-nav-btn" type="button" title="Settings" aria-label="Settings">
                     <span class="gear-icon">⚙️</span>
@@ -29,7 +28,7 @@
                     <img src="icons/icon128.png" alt="Icon" class="app-icon-large">
                     <div class="text-group">
                         <h1 class="main-title" data-i18n="app_title">XPIDER AutoForm</h1>
-                        <h2 class="sub-title">Sender Pro <span class="version-tag">v1.2.0</span> <span id="build-provenance-badge" class="build-provenance-tag" style="font-size: 10px; background: rgba(168, 85, 247, 0.2); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.5); border-radius: 4px; padding: 2px 6px; margin-left: 6px; font-family: monospace; font-weight: bold;" title="OWNER BETA: R6.9G.10.3.7.1.4.11">OWNER BETA R6.9G.10.3.7.1.4.11</span></h2>
+                        <h2 class="sub-title">Sender Pro <span class="version-tag">v7.0.0</span> <span id="build-provenance-badge" class="build-provenance-tag" style="font-size: 10px; background: rgba(168, 85, 247, 0.2); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.5); border-radius: 4px; padding: 2px 6px; margin-left: 6px; font-family: monospace; font-weight: bold;" title="OWNER BETA V7.0.0">OWNER BETA V7.0.0</span></h2>
                     </div>
                 </div>
             </div>
@@ -43,6 +42,14 @@
                 <button type="button" id="v7-stage0-restore-btn" style="width: 100%; background: linear-gradient(135deg, #eab308, #ca8a04); color: #0f172a; font-weight: 800; font-size: 11px; padding: 7px 10px; border-radius: 5px; border: none; cursor: pointer;">♻️ Restore Stage-0 97/92 Campaign Snapshot Now</button>
             </div>
         </header>
+
+        <div class="email-studio-cta-wrap" style="width:100%;margin:10px 0 12px 0;">
+            <a id="email-template-studio-link" href="email-studio/index.html" target="_blank" rel="noopener noreferrer" role="button" tabindex="0" class="email-studio-cta" aria-label="✉️ Email Studio 열기 (이메일 템플릿·수신자 필터·A/B 드라이런)" title="이메일 템플릿 작성·수신자 필터·A/B 드라이런 스튜디오 열기 (이미 열려 있으면 해당 탭으로 이동 · 기존 폼 발송과 별도)" style="display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:8px;width:100%;min-height:44px;padding:10px 14px;border-radius:10px;background:linear-gradient(135deg,#2563eb 0%,#4f46e5 100%);color:#ffffff;border:1px solid rgba(147,197,253,0.65);font-weight:700;font-size:13px;line-height:1.3;text-decoration:none;cursor:pointer;box-shadow:0 4px 14px rgba(37,99,235,0.35);">
+                <span aria-hidden="true" style="font-size:16px;">✉️</span>
+                <span style="letter-spacing:0.2px;">Email Studio 열기</span>
+                <span style="font-size:11px;font-weight:500;color:#dbeafe;background:rgba(15,23,42,0.32);padding:2px 8px;border-radius:999px;">템플릿 · SME 필터 · A/B · 테스트 발송</span>
+            </a>
+        </div>
 
         <main>
             <!-- CAPTCHA Modal -->

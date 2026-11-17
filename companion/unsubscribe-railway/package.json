@@ -1,0 +1,13 @@
+{
+  "name": "xpider-unsubscribe",
+  "version": "1.0.0",
+  "private": true,
+  "description": "XPIDER 24/7 HTTPS Unsubscribe & RFC 8058 Suppression Service for Railway",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

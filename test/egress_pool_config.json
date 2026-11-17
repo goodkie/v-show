@@ -1,0 +1,47 @@
+{
+  "version": "1.0.3",
+  "rotationMode": "HEALTH_FAILOVER",
+  "healthCheckTimeoutMs": 10000,
+  "healthTtlMs": 60000,
+  "canaryUrl": "https://cloudflare.com/cdn-cgi/trace",
+  "selectedEgressId": "do-egress-tor1-611293905",
+  "nodes": [
+    {
+      "id": "do-egress-tor1-611293905",
+      "type": "HTTPS_PROXY",
+      "host": "143.198.40.33",
+      "port": 8443,
+      "username": "xpider_owner",
+      "password": "",
+      "credentialRef": "",
+      "privateOnly": true,
+      "transportBinding": null,
+      "ca": "-----BEGIN CERTIFICATE-----\nMIIFbTCCA1WgAwIBAgIUCKCmE9sBjX7P60OiowN3PpszprgwDQYJKoZIhvcNAQEL\nBQAwRjELMAkGA1UEBhMCVVMxDzANBgNVBAoMBlhQSURFUjEmMCQGA1UEAwwdWFBJ\nREVSIFByaXZhdGUgRWdyZXNzIFJvb3QgQ0EwHhcNMjYxMDIxMTc1ODE0WhcNMzYx\nMDE4MTc1ODE0WjBGMQswCQYDVQQGEwJVUzEPMA0GA1UECgwGWFBJREVSMSYwJAYD\nVQQDDB1YUElERVIgUHJpdmF0ZSBFZ3Jlc3MgUm9vdCBDQTCCAiIwDQYJKoZIhvcN\nAQEBBQADggIPADCCAgoCggIBAL+OeHHk6pBGW78re+qU4MnOUf8u1Y8W1i65AduP\nD3WxOwme/qiPAXgYz47mVHf5jc5p9vXvXfSyfh2Phm8wVI/8NO+ZvsHYAMoAVYri\n1nn9hd4GatioGANiYyuig47YNyOuiS1H+wruWM8RoMyjB6Nv5e8sO1EiYqKNTuJB\nQTCrzyNYFawyGJJx4nUSlWrdEYraOKxkSMie7k3NCJgbwua/EABBm2LVzqxIa4vs\nv81Wq4AkuzOMXh5Q/3g0r+BKg1CfefKIwDOVItZS0TqMH+es0VY75Rx7jDvjqU+i\njrC3AmxSS2qEe4pjFo6+7gRli21g9WbWjrc2kKiJ7473mZrVnFdyWF0lPGxm19o3\nhoIXc60WIAC7WIqprzAAStudCLfXLV8PnPvEJXXs5W8Bl76Gzczelai5li1kFDJv\naGb9O7n6ppSR3qvRy67ZcXgADVAYj3cv5Nfibs45LKS5mnm4BmXd+R4d0UGzWN1J\nwZ/dvR6H4ZFfymXtApfM/nlfv5A1bKfoK+jrdX7zFG8zmQXZsGhiT1IWbMoaeNET\nC+Xj0+OApHguP233H+f3UG+PDzoNvQJJNVdEW/Q6uxmegIKxPt6kIWdcq1MP8UiP\nDRbMUloQIlC5x2vfhxFd9hXfPZvU1asmjtoDZ0lS/W04jZfle0dYo171/Q4x+Sbu\nSsDFAgMBAAGjUzBRMB0GA1UdDgQWBBS97PqUFci9GxFvbqgg8BbHOJyFrzAfBgNV\nHSMEGDAWgBS97PqUFci9GxFvbqgg8BbHOJyFrzAPBgNVHRMBAf8EBTADAQH/MA0G\nCSqGSIb3DQEBCwUAA4ICAQCWvXvlTFad18AuakKfCoebB0sCantNvnaLd4ZDQdtf\nnX5IcIFP4OuA87Xq18wn6d2XFVpoYYQM7N7TdhPE+Wb9tEa90hQH+cS+FmAG+U76\nSeqLiE2TKXAY5IiaD1+leG2kUd+L4Z2p3h+C/Z6ouOUBoVzykWQ5yLPE+Ul7OzCe\n2owry2v1+rZ+MFUc5MTzbgviFFHbYKEAKn5i+O7l0+oxgOryvQB4yu4TxXTMMs4X\n/a8fynSbxPMw7wlpLmZXK54GNiZCgZoqn0d2YPoHtyXCHQqZYunUzH+NoED0zLf0\nCkfUOz3+JpGcudwiKjOl/gMZFDPxiVeJXiWyXQhgCKlFAg50Eph7gBol5fDmuQsZ\nn1J1hSuYTVOl1hpKIxdzQGumnV1UTycCzI+OB2o1AynNShiizcId1b+MAEtS8TnP\nmauAJGvlmilMRiITcWeVlaI4ou9xIz+rMf4e9YIwVnYtClw87h1NGzEuXhNcD/OM\nCXJ3uR+3upcma9778qfKUK+rqxtWf2pPhP3P1zOOX7IlY9kG9DUlMzNU0OXO3a3f\nTUVhCiYSZrfiPW9bp5+LoixY09KueVjb6GQ/zZPKduqkUOYwLZQTR1EBrtHAoYW1\n7+2AaUjk7y7f790CZ9ohAYeJ0kksVPWkS2bw6x+/o6To6AAokPw5qn/0R2imy4Tm\nSA==\n-----END CERTIFICATE-----",
+      "tlsCaFingerprint": "65aa0b21e265581e87e744a2f1763dd52a8536ee4be361c186b40cbc22204f70",
+      "tlsSpkiFingerprint": "60b0c4ce544c6edf034ea31ef6323f94c727cc863526176d12ff3f1957360f84",
+      "expectedEgressIp": "143.198.40.33",
+      "expectedEgressFingerprint": "05b6b53daead49e7",
+      "egressIdentityGroup": "do-143.198.40.33",
+      "canaryUrl": null,
+      "active": true,
+      "region": "TOR1",
+      "lastHealth": "UNKNOWN"
+    }
+  ],
+  "residentialProxySelected": true,
+  "residentialProxyConfig": {
+    "id": "decodo-ip-auth",
+    "host": "us.decodo.com",
+    "port": 10001,
+    "type": "HTTP_PROXY",
+    "username": "",
+    "ca": null,
+    "credentialRef": "",
+    "password": ""
+  },
+  "physicalGate": {
+    "enabled": false,
+    "pinnedEgressFingerprint": "2cce62b1113e4231",
+    "pinnedEgressIdentityGroup": "do-159.203.28.198"
+  }
+}

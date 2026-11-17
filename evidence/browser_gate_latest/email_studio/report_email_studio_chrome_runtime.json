@@ -1,10 +1,10 @@
 {
-  "gitHeadSha": "93f740f75ff33b53b6b410bddcf71bd176e0dcac",
-  "extensionTreeSha": "431e97d4cd2d9504a50be58138024d6eeb0f0a94",
+  "gitHeadSha": "cebff3e47b79d691e6cdfdf28863d04e98abdf09",
+  "extensionTreeSha": "a4d7e3e0194c2500842ecc3edc765d79ab1374f9",
   "nodeVersion": "v24.11.1",
-  "browser": "Edg/157.0.4341.42",
+  "browser": "Edg/157.0.4341.60",
   "extId": "ldlijlaccfeelfdhgnjbibniocefckjj",
-  "extDir": "E:\\vivpr\\ai\\extension-form-sender\\_wt_email_next\\extension",
+  "extDir": "C:\\Users\\oPus\\.gemini\\antigravity\\brain\\39737f43-3ee8-47a1-a4fb-53e319ab562e\\scratch\\repo_fix_p0\\extension",
   "disposableProfileVerified": true,
   "passed": 25,
   "failed": 0,
@@ -14,7 +14,7 @@
     {
       "method": "GET",
       "url": "/fixture-remote-banner.png",
-      "ts": 1794310207770,
+      "ts": 1794840059655,
       "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/157.0.0.0 Safari/537.36 Edg/157.0.0.0"
     }
   ],
@@ -22,7 +22,7 @@
     {
       "name": "BROWSER_STARTED",
       "pass": true,
-      "detail": "Edg/157.0.4341.42 | profile=C:\\Users\\oPus\\AppData\\Local\\Temp\\xpider_email_studio_UeEFpP"
+      "detail": "Edg/157.0.4341.60 | profile=C:\\Users\\oPus\\AppData\\Local\\Temp\\xpider_email_studio_1nr9wZ"
     },
     {
       "name": "EXTENSION_LOADED_UNPACKED",
@@ -179,17 +179,12 @@
     {
       "page": "chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/popup.html",
       "type": "log",
-      "text": "[BUILD_HANDSHAKE] localHead=20678ada6491bf842ec7e996a88108152c76007f backgroundHead=20678ada6491bf842ec7e996a88108152c76007f result=PASS"
+      "text": "[BUILD_HANDSHAKE] localHead=email-test-sidecar-20261116-locked7 backgroundHead=email-test-sidecar-20261116-locked7 result=PASS"
     },
     {
       "page": "chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/popup.html",
       "type": "log:error",
       "text": "Unchecked runtime.lastError: Could not establish connection. Receiving end does not exist. chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/popup.html"
-    },
-    {
-      "page": "chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/popup.html",
-      "type": "log",
-      "text": "[LEDGER_STATS] scope=currentGeneration success=0 failed=0 timeout=0 unknown=0"
     },
     {
       "page": "chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/popup.html",
@@ -210,6 +205,11 @@
       "page": "chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/popup.html",
       "type": "log",
       "text": "[POPUP_BOOT] schemaReady=true migrated=true repaired=false"
+    },
+    {
+      "page": "chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/popup.html",
+      "type": "log",
+      "text": "[LEDGER_STATS] scope=currentGeneration success=0 failed=0 timeout=0 unknown=0"
     },
     {
       "page": "chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/popup.html",
@@ -279,23 +279,23 @@
   ],
   "requests": [
     {
-      "url": "blob:chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/c54d515f-67dc-4224-b8a2-0d4ca92f3b78",
+      "url": "blob:chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/f1ffa3ba-80b9-452b-a6e2-820f3e2056a3",
       "method": "GET"
     },
     {
-      "url": "blob:chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/7d1d2520-406a-47c8-9e1f-05941a59aa8f",
+      "url": "blob:chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/b3adb8d0-3113-4bb6-b572-f68d4e98861d",
       "method": "GET"
     },
     {
-      "url": "blob:chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/882dbc71-422b-4579-a310-93e35a1eb941",
+      "url": "blob:chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/13baeb5c-cb95-4643-aed4-4697f540a088",
       "method": "GET"
     },
     {
-      "url": "blob:chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/e02a7abb-654f-44a2-9f86-37996e40906a",
+      "url": "blob:chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/fb198327-57c3-4800-a566-d2106371b65d",
       "method": "GET"
     },
     {
-      "url": "blob:chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/4bf7325e-5838-4d21-a5c2-5b9b482fc991",
+      "url": "blob:chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/1d728a43-cf27-453e-b564-30d094d96829",
       "method": "GET"
     }
   ]

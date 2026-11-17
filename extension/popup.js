@@ -313,7 +313,7 @@ function getDiagnosticReport(fresh = false) {
 
     const extVer = (typeof chrome !== 'undefined' && chrome.runtime?.getManifest)
         ? chrome.runtime.getManifest()?.version
-        : '1.2.0';
+        : '7.0.0';
     const runtimeId = (typeof chrome !== 'undefined' && chrome.runtime?.id) ? chrome.runtime.id : 'N/A';
     const docVis = (typeof document !== 'undefined' && document.visibilityState) ? document.visibilityState : 'unknown';
     const originPath = (typeof window !== 'undefined' && window.location)
@@ -615,8 +615,8 @@ async function exportOwnerDebugBundle() {
     try {
         const buildInfo = (typeof BuildProvenance !== 'undefined' && BuildProvenance.BUILD_INFO)
             ? BuildProvenance.BUILD_INFO
-            : { buildId: 'R6.9G.10.3.7.1.4.11-OWNER-BETA', head: 'UNKNOWN' };
-        const buildId = buildInfo.buildId || 'R6.9G.10.3.7.1.4.11-OWNER-BETA';
+            : { buildId: 'V7.0.0-OWNER-BETA', head: 'UNKNOWN' };
+        const buildId = buildInfo.buildId || 'V7.0.0-OWNER-BETA';
         const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
         const filename = `XPIDER_DEBUG_${buildId}_${timestamp}.zip`;
 
@@ -742,7 +742,7 @@ function xpiderInvoke(channel, args, options = {}) {
         const docVis = (typeof document !== 'undefined' && document.visibilityState) ? document.visibilityState : 'unknown';
         const locHref = (typeof window !== 'undefined' && window.location) ? `${window.location.origin}${window.location.pathname}` : 'unknown';
         const rtId = (typeof chrome !== 'undefined' && chrome.runtime?.id) ? chrome.runtime.id : 'N/A';
-        const mfVer = (typeof chrome !== 'undefined' && chrome.runtime?.getManifest) ? chrome.runtime.getManifest()?.version : '1.2.0';
+        const mfVer = (typeof chrome !== 'undefined' && chrome.runtime?.getManifest) ? chrome.runtime.getManifest()?.version : '7.0.0';
         const queueCount = Array.isArray(args?.queue) ? args.queue.length : (typeof campaignQueue !== 'undefined' && Array.isArray(campaignQueue) ? campaignQueue.length : 0);
         const tplId = args?.templateId || currentTpl?.templateId || currentTpl?.id || 'N/A';
         const tplVer = args?.templateVersion || currentTpl?.templateVersion || currentTpl?.version || 1;
@@ -1731,14 +1731,11 @@ async function hydrateSettings(overrideV2Store = null) {
         const ownerTestBanner = document.getElementById('owner-function-test-banner');
         const ownerTestGroup = document.getElementById('owner-function-test-group');
         try {
-            const isTestAuthorized = (typeof BuildProvenance !== 'undefined' && typeof BuildProvenance.isTestOnlyBuild === 'function')
-                ? BuildProvenance.isTestOnlyBuild()
-                : Boolean(typeof BuildProvenance !== 'undefined' && BuildProvenance.BUILD_INFO && (
-                    BuildProvenance.BUILD_INFO.channel === 'TEST_ONLY' ||
-                    BuildProvenance.BUILD_INFO.channel === 'OWNER_BETA' ||
-                    (typeof BuildProvenance.BUILD_INFO.channel === 'string' && BuildProvenance.BUILD_INFO.channel.startsWith('OWNER_BETA')) ||
-                    BuildProvenance.BUILD_INFO.testOnly === true
-                ));
+            const isTestAuthorized = (typeof BuildProvenance !== 'undefined' && typeof BuildProvenance.isOwnerTestAuthorized === 'function')
+                ? BuildProvenance.isOwnerTestAuthorized()
+                : ((typeof BuildProvenance !== 'undefined' && typeof BuildProvenance.isTestOnlyBuild === 'function')
+                    ? BuildProvenance.isTestOnlyBuild()
+                    : false);
 
             if (!isTestAuthorized) {
                 if (ownerTestGroup) ownerTestGroup.style.display = 'none';
@@ -5418,8 +5415,45 @@ function bindEvents() {
         console.error('[POPUP_BOOT] Tab navigation binding error:', e);
     }
 
-    // 2. Settings Toggle & Close (Isolated)
+    // 2. Settings Toggle & Close + Prominent Email Studio CTA (Isolated)
     try {
+        const emailStudioCta = document.getElementById('email-template-studio-link');
+        if (emailStudioCta && !emailStudioCta.dataset.bound) {
+            emailStudioCta.dataset.bound = 'true';
+            const openOrFocusEmailStudio = () => {
+                const studioUrl = (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.getURL)
+                    ? chrome.runtime.getURL('email-studio/index.html')
+                    : 'email-studio/index.html';
+                if (typeof chrome !== 'undefined' && chrome.tabs && chrome.tabs.query) {
+                    chrome.tabs.query({}, (tabs) => {
+                        const existing = Array.isArray(tabs)
+                            ? tabs.find(t => t && typeof t.url === 'string' && t.url.startsWith(studioUrl))
+                            : null;
+                        if (existing && existing.id !== undefined) {
+                            chrome.tabs.update(existing.id, { active: true });
+                            if (chrome.windows && existing.windowId !== undefined) {
+                                chrome.windows.update(existing.windowId, { focused: true });
+                            }
+                        } else if (chrome.tabs.create) {
+                            chrome.tabs.create({ url: studioUrl });
+                        }
+                    });
+                } else {
+                    window.open(studioUrl, '_blank', 'noopener,noreferrer');
+                }
+            };
+            emailStudioCta.addEventListener('click', (e) => {
+                e.preventDefault();
+                openOrFocusEmailStudio();
+            });
+            emailStudioCta.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    openOrFocusEmailStudio();
+                }
+            });
+        }
+
         const settingsToggle = document.getElementById('settings-toggle');
         const settingsOverlay = document.getElementById('settings-overlay');
         if (settingsToggle && !settingsToggle.dataset.bound) {
@@ -6926,15 +6960,12 @@ function initOwnerAutoSetup() {
         autoSetupBtn.addEventListener('click', async () => {
             console.log('[BUTTON_CLICK] id=auto-setup-btn');
             try {
-                // 1. Detect BuildProvenance TEST_ONLY
-                const isTestAuthorized = (typeof BuildProvenance !== 'undefined' && typeof BuildProvenance.isTestOnlyBuild === 'function')
-                    ? BuildProvenance.isTestOnlyBuild()
-                    : Boolean(typeof BuildProvenance !== 'undefined' && BuildProvenance.BUILD_INFO && (
-                        BuildProvenance.BUILD_INFO.channel === 'TEST_ONLY' ||
-                        BuildProvenance.BUILD_INFO.channel === 'OWNER_BETA' ||
-                        (typeof BuildProvenance.BUILD_INFO.channel === 'string' && BuildProvenance.BUILD_INFO.channel.startsWith('OWNER_BETA')) ||
-                        BuildProvenance.BUILD_INFO.testOnly === true
-                    ));
+                // 1. Detect BuildProvenance TEST_ONLY or OWNER_BETA authorization
+                const isTestAuthorized = (typeof BuildProvenance !== 'undefined' && typeof BuildProvenance.isOwnerTestAuthorized === 'function')
+                    ? BuildProvenance.isOwnerTestAuthorized()
+                    : ((typeof BuildProvenance !== 'undefined' && typeof BuildProvenance.isTestOnlyBuild === 'function')
+                        ? BuildProvenance.isTestOnlyBuild()
+                        : false);
 
                 if (!isTestAuthorized) {
                     showAutoSetupFeedback('AUTO SETUP FAILED — Runtime build is not authorized for TEST_ONLY or OWNER_BETA channel.', 'error');
@@ -7427,20 +7458,25 @@ async function restoreUserSettings() {
 }
 
 function getBadgeTextFromBuildInfo(info) {
-    if (!info) return 'OWNER BETA V7.0.0-RC7';
-    let ver = 'V7.0.0-RC7';
+    if (!info) return 'OWNER BETA V7.0.0';
+    let ver = 'V7.0.0';
     if (info.tag) {
         ver = info.tag.toUpperCase();
     } else {
         const m = (info.buildId || '').match(/(?:V|R)\d+\.\d+(?:\.\d+)?[A-Za-z0-9\.\-]*/i);
         if (m) ver = m[0];
     }
-    const sha = info.implementationHeadShort || info.headShort || (info.implementationHead ? info.implementationHead.substring(0, 8) : 'rc7');
+    const sha = info.implementationHeadShort || info.headShort || (info.implementationHead ? info.implementationHead.substring(0, 8) : 'v7');
     return `OWNER BETA ${ver} [${sha}]`;
 }
 
 function initBuildProvenanceBadge() {
     if (typeof document === 'undefined') return;
+    const verTag = document.querySelector('.version-tag');
+    if (verTag) {
+        const mfVer = (typeof chrome !== 'undefined' && chrome.runtime?.getManifest) ? (chrome.runtime.getManifest()?.version || '7.0.0') : '7.0.0';
+        verTag.textContent = `v${mfVer}`;
+    }
     const badge = document.getElementById('build-provenance-badge');
     const localInfo = (typeof BuildProvenance !== 'undefined' && BuildProvenance.BUILD_INFO)
         ? BuildProvenance.BUILD_INFO

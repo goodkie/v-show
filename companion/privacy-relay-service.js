@@ -40,6 +40,7 @@ const { discoverExtensionId } = require('./install_native_host');
 const { PhysicalGate } = require('./physical-gate');
 const { PrivateEgressProvisioner, TIERS } = require('./private-egress-provisioner');
 const residentialAdapter = require('./residential-proxy-adapter');
+const resendTestMode = require('./resend-test-mode');
 
 const CONTROL_PORT = 18989;
 const PROXY_PORT = 18988;
@@ -67,8 +68,8 @@ process.on('unhandledRejection', (reason) => {
 });
 
 // [Defect Q2 Hardening - Issue #6 Comment #6244711545] Authoritative companion build identity & capabilities
-const COMPANION_BUILD_ID = 'V7.0.0-RC16-20261031-PROVENANCE-INJECTION-AND-CONTROLS-RESTORE';
-const COMPANION_IMPLEMENTATION_HEAD = 'ec56efbd7654ed83b92e099068bdd0acb0b6084b';
+const COMPANION_BUILD_ID = 'V7.0.0-OWNER-BETA-TEST-SEND-20261113';
+const COMPANION_IMPLEMENTATION_HEAD = 'email-test-send-20261113';
 
 function isCompatibleExtensionBuild(extBuildId, companionBuildId) {
   if (!extBuildId || typeof extBuildId !== 'string') return false;
@@ -85,7 +86,8 @@ const COMPANION_API_CAPABILITIES = [
   'stop',
   'physical-gate',
   'recovery-status',
-  'repair-egress'
+  'repair-egress',
+  'email-test-send'
 ];
 
 // [Defect P Fix] Strict Node.js supported LTS allowlist (explicitly 22 or 24 only; rejects odd/EOL/non-LTS majors)
@@ -168,6 +170,7 @@ class PrivacyRelayService {
     this.failureThreshold = 2; // Require 2 consecutive probe failures before revoking ready
     this.controlToken = this.loadOrGenerateControlToken(options.controlToken);
     this.pool = this.loadConfig();
+    this.emailTestSendRateLimit = { lastSentAt: 0, cache: new Map() };
 
     // Deterministic trust anchor restoration (Issue #6 R6.9G.10.3.7.1.4)
     let initialPinnedFp = this.pool.physicalGate?.pinnedEgressFingerprint || null;
@@ -304,6 +307,23 @@ class PrivacyRelayService {
       fs.writeFileSync(tokenFile, newToken, { encoding: 'utf8', mode: 0o600 });
     } catch (_) { }
     return newToken;
+  }
+
+  resolveResendApiKey() {
+    if (process.env.RESEND_API_KEY && /^re_[A-Za-z0-9_-]{8,}$/.test(process.env.RESEND_API_KEY.trim())) {
+      return process.env.RESEND_API_KEY.trim();
+    }
+    if (this.pool && this.pool.resendApiKey && /^re_[A-Za-z0-9_-]{8,}$/.test(this.pool.resendApiKey.trim())) {
+      return this.pool.resendApiKey.trim();
+    }
+    const keyFile = path.join(__dirname, '.resend_api_key');
+    try {
+      if (fs.existsSync(keyFile)) {
+        const k = fs.readFileSync(keyFile, 'utf8').trim();
+        if (/^re_[A-Za-z0-9_-]{8,}$/.test(k)) return k;
+      }
+    } catch (_) { }
+    return null;
   }
 
   static rotateExposedTokenIfPresent(baseDir = __dirname) {
@@ -1776,6 +1796,155 @@ class PrivacyRelayService {
         }
         res.writeHead(404, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ success: false, available: false, error: 'STAGE0_SNAPSHOT_NOT_FOUND' }));
+        return;
+      }
+
+      // [XPIDER Email Studio Test Send] GET /email/test-send/status (Authenticated)
+      if (pathname === '/email/test-send/status' && req.method === 'GET') {
+        const hasKey = Boolean(this.resolveResendApiKey());
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({
+          status: 'OK',
+          testSimulatorEnabled: true,
+          resendApiKeyConfigured: hasKey,
+          allowedRecipients: resendTestMode.TEST_RECIPIENTS,
+          allowedFrom: resendTestMode.TEST_FROM,
+          productionHold: true,
+          productionSendLocked: true
+        }));
+        return;
+      }
+
+      // [XPIDER Email Studio Test Send] POST /email/test-send (Authenticated)
+      if (pathname === '/email/test-send' && req.method === 'POST') {
+        let body = '';
+        req.on('data', c => {
+          body += c;
+          if (body.length > 524288) { // 512KB max
+            req.destroy();
+          }
+        });
+        req.on('end', async () => {
+          let payload = null;
+          try {
+            payload = JSON.parse(body);
+          } catch (_) {
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ status: 'BLOCKED', error: 'INVALID_JSON', message: 'Malformed JSON payload' }));
+            return;
+          }
+
+          const to = payload.to;
+          const recipient = Array.isArray(to) ? to[0] : to;
+          const idempotencyKey = String(payload.idempotencyKey || '').trim();
+
+          // Reject multiple recipients
+          if (Array.isArray(to) && to.length > 1) {
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({
+              status: 'BLOCKED',
+              reason: 'MULTIPLE_RECIPIENTS_DENIED',
+              reasons: ['MULTIPLE_RECIPIENTS_DENIED'],
+              message: 'Test send accepts exactly one recipient',
+              testSimulatorEligible: false
+            }));
+            return;
+          }
+
+          // Check preflight gate on recipient
+          if (!recipient || !resendTestMode.TEST_RECIPIENTS.includes(recipient)) {
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({
+              status: 'BLOCKED',
+              reason: 'TEST_RECIPIENT_NOT_ALLOWED',
+              reasons: ['TEST_RECIPIENT_NOT_ALLOWED'],
+              message: `Recipient must be one of: ${resendTestMode.TEST_RECIPIENTS.join(', ')}`,
+              allowedRecipients: resendTestMode.TEST_RECIPIENTS,
+              testSimulatorEligible: false
+            }));
+            return;
+          }
+
+          if (!idempotencyKey || idempotencyKey.length < 16) {
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({
+              status: 'BLOCKED',
+              reason: 'IDEMPOTENCY_KEY_REQUIRED',
+              reasons: ['IDEMPOTENCY_KEY_REQUIRED'],
+              message: 'A unique idempotencyKey of at least 16 characters is required',
+              testSimulatorEligible: true
+            }));
+            return;
+          }
+
+          // Check idempotency cache
+          if (this.emailTestSendRateLimit.cache.has(idempotencyKey)) {
+            const cached = this.emailTestSendRateLimit.cache.get(idempotencyKey);
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ ...cached, idempotentReplay: true }));
+            return;
+          }
+
+          // Enforce rate limit: 1 request every 5 seconds
+          const now = Date.now();
+          const elapsed = now - this.emailTestSendRateLimit.lastSentAt;
+          if (elapsed < 5000) {
+            const retryAfterSec = Math.ceil((5000 - elapsed) / 1000);
+            res.writeHead(429, { 'Content-Type': 'application/json', 'Retry-After': String(retryAfterSec) });
+            res.end(JSON.stringify({
+              status: 'BLOCKED',
+              reason: 'RATE_LIMIT_EXCEEDED',
+              message: `Test send rate limited. Retry after ${retryAfterSec}s.`,
+              retryAfterSeconds: retryAfterSec
+            }));
+            return;
+          }
+
+          const apiKey = this.resolveResendApiKey();
+          if (!apiKey) {
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({
+              status: 'BLOCKED',
+              reason: 'RESEND_API_KEY_NOT_CONFIGURED',
+              reasons: ['RESEND_API_KEY_NOT_CONFIGURED'],
+              testSimulatorEligible: true,
+              message: 'Resend API key is not configured on companion backend. Set RESEND_API_KEY environment variable on companion host.',
+              from: resendTestMode.TEST_FROM,
+              recipient
+            }));
+            return;
+          }
+
+          this.emailTestSendRateLimit.lastSentAt = now;
+
+          try {
+            const result = await resendTestMode.executeSimulatorSend({
+              from: resendTestMode.TEST_FROM,
+              to: recipient,
+              subject: payload.subject,
+              html: payload.html,
+              text: payload.text,
+              idempotencyKey,
+              apiKey,
+              timeoutMs: payload.timeoutMs || 10000
+            });
+
+            // Cache result for 10 minutes
+            this.emailTestSendRateLimit.cache.set(idempotencyKey, result);
+            setTimeout(() => this.emailTestSendRateLimit.cache.delete(idempotencyKey), 10 * 60 * 1000);
+
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify(result));
+          } catch (sendErr) {
+            res.writeHead(500, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({
+              status: 'PROVIDER_ERROR',
+              error: sendErr.code || 'SEND_EXECUTION_FAILED',
+              message: sendErr.message,
+              recipient
+            }));
+          }
+        });
         return;
       }
 

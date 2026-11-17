@@ -19,7 +19,7 @@ const http = require('node:http');
 const crypto = require('node:crypto');
 const { URL } = require('node:url');
 
-const DEFAULT_TTL_MS = 90 * 24 * 60 * 60 * 1000; // 90 days
+const DEFAULT_TTL_MS = 10 * 365 * 24 * 60 * 60 * 1000; // 10 years (long-lived per-recipient unsubscribe)
 
 const PRODUCTION_UNSUBSCRIBE_ENDPOINT_STATUS = Object.freeze({
   publicHttpsDeployed: 'UNKNOWN',
@@ -167,12 +167,13 @@ function createUnsubscribeProcessor({ outbox, keyRing, nowFn = () => Date.now() 
     }
 
     const upperMethod = String(method || '').toUpperCase();
+    const confirmCsrf = signPayloadB64(`csrf:${verification.jti}:${verification.email}`, ring.keys[verification.kid] || ring.keys[ring.activeKeyId]);
     if (upperMethod === 'GET' || upperMethod === 'HEAD') {
       // RFC 8058 Section 3.1: GET must NEVER perform the unsubscribe action automatically.
       return {
         statusCode: 200,
         contentType: 'text/html; charset=utf-8',
-        htmlBody: `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Confirm Unsubscribe</title></head><body><form method="POST" action="/unsubscribe/${encodeURIComponent(extracted.token)}"><input type="hidden" name="List-Unsubscribe" value="One-Click"><button type="submit">Confirm Unsubscribe</button></form></body></html>`,
+        htmlBody: `<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>구독 취소 확인 · Confirm Unsubscribe</title></head><body style="font-family:system-ui,sans-serif;max-width:480px;margin:40px auto;padding:24px;border:1px solid #e2e8f0;border-radius:10px;"><h2>이메일 수신 거부 확인</h2><p>아래 버튼을 누르면 즉시 수신 거부 처리되며 이후 안내 메일이 발송되지 않습니다.</p><form method="POST" action="/unsubscribe/${encodeURIComponent(extracted.token)}"><input type="hidden" name="List-Unsubscribe" value="One-Click"><input type="hidden" name="confirmCsrf" value="${confirmCsrf}"><button type="submit" style="padding:10px 18px;background:#0f172a;color:#fff;border:0;border-radius:6px;cursor:pointer;">구독 취소 확인 (Confirm Unsubscribe)</button></form></body></html>`,
         body: {
           status: 'CONFIRMATION_REQUIRED_ON_GET',
           stateMutated: false
@@ -185,9 +186,17 @@ function createUnsubscribeProcessor({ outbox, keyRing, nowFn = () => Date.now() 
     }
 
     const bodyStr = String(body || '').trim();
+    const csrfMatch = bodyStr.match(/(?:^|&)confirmCsrf=([^&\s]+)/);
+    if (csrfMatch) {
+      const supplied = decodeURIComponent(csrfMatch[1]);
+      if (supplied !== confirmCsrf) {
+        return { statusCode: 403, body: { status: 'REJECTED', reason: 'INVALID_CONFIRM_CSRF' } };
+      }
+    }
     const isOneClickBody =
       bodyStr === '' ||
       /List-Unsubscribe\s*=\s*One-Click/i.test(bodyStr) ||
+      /List-Unsubscribe=One-Click/i.test(decodeURIComponent(bodyStr)) ||
       /name="List-Unsubscribe"[\s\S]*One-Click/i.test(bodyStr);
     if (!isOneClickBody) {
       return { statusCode: 400, body: { status: 'REJECTED', reason: 'INVALID_ONE_CLICK_POST_BODY' } };
@@ -265,10 +274,50 @@ function startLocalUnsubscribeServer({ outbox, keyRing, port = 0, host = '127.0.
   });
 }
 
+function escHtmlAttr(s) {
+  return String(s || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function injectUnsubscribeFooter({ html = '', text = '', unsubscribeUrl }) {
+  const safeUrl = String(unsubscribeUrl || '').trim();
+  if (!safeUrl || safeUrl.includes('preview-sample-only')) throw Error('UNSUBSCRIBE_URL_REQUIRED');
+  const escaped = escHtmlAttr(safeUrl);
+  const previewRe = /https?:\/\/[^\s"'<>]+\/unsubscribe\/preview-sample-only/g;
+  let outHtml = String(html || '');
+  let outText = String(text || '');
+
+  if (outHtml) {
+    if (previewRe.test(outHtml)) {
+      outHtml = outHtml.replace(previewRe, escaped);
+    } else if (!outHtml.includes(safeUrl) && !outHtml.includes(escaped)) {
+      const footer = `<p style="margin-top:16px;font-size:12px;color:#475569">더 이상 안내를 받지 않으시려면 <a href="${escaped}" style="color:#475569">구독 취소(수신 거부)</a>를 눌러주세요.</p>`;
+      if (/<\/body>/i.test(outHtml)) {
+        outHtml = outHtml.replace(/<\/body>/i, footer + '</body>');
+      } else {
+        outHtml += footer;
+      }
+    }
+  }
+  if (outText) {
+    if (previewRe.test(outText)) {
+      outText = outText.replace(previewRe, safeUrl);
+    } else if (!outText.includes(safeUrl)) {
+      outText += `\n\n구독 취소(수신 거부): ${safeUrl}`;
+    }
+  } else {
+    outText = `구독 취소(수신 거부): ${safeUrl}`;
+  }
+  if (outHtml.includes('preview-sample-only') || outText.includes('preview-sample-only')) {
+    throw Error('PREVIEW_PLACEHOLDER_FORBIDDEN_IN_SENT_MIME');
+  }
+  return { html: outHtml, text: outText };
+}
+
 module.exports = {
   issueUnsubscribeToken,
   verifyUnsubscribeToken,
   createUnsubscribeProcessor,
   startLocalUnsubscribeServer,
+  injectUnsubscribeFooter,
   PRODUCTION_UNSUBSCRIBE_ENDPOINT_STATUS
 };

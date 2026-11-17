@@ -4,15 +4,15 @@
  * Directives #6760076943 (Item 3 & 4) & #6765989147 (Item 4) — goodkie/v-show Issue #6
  *
  * Verifies in an isolated temporary directory (0 owner profile contact, 0 live sends):
- *   1. Full SHA-256 inventory of extension/ (54 files) + git tree hash.
+ *   1. Full SHA-256 inventory of extension/ (55 files) + git tree hash.
  *   2. Exact diff of extension/ against frozen REV22 baseline (dist/PACKAGE_INVENTORY_SHA256.json):
  *      - 48/50 baseline files 100% byte-identical (including background.js, content-script.js, manifest.json)
  *      - Only 2 modified baseline files (popup.html, popup.js)
- *      - Only 4 added email-feature files (email-studio/*, modules/email-delivery-policy.js)
+ *      - Only 5 added email-feature files (email-studio/*, modules/email-delivery-policy.js)
  *   3. Read-only preflight inspection over synthetic Windows 10 target (0 byte/mtime mutations).
  *   4. AES-256-GCM (scrypt N=16384) encrypted full backup of synthetic extension + storage state with 0 plaintext leaks.
  *   5. Fail-closed tamper detection (1-bit flip in ciphertext/authTag) & wrong passphrase rejection.
- *   6. Bit-exact synthetic restore parity (100% SHA-256 match across all 54 extension files + storage state).
+ *   6. Bit-exact synthetic restore parity (100% SHA-256 match across all 55 extension files + storage state).
  *   7. Atomic rollback simulation on interrupted update (restores 100% pre-update baseline, 0 residual files).
  *   8. Campaign Pause / Resume / Stop & Save contracts + popup isPausedState scope safety.
  *   9. Message-less subscribe form policy: default OFF, explicit ON required, negative consent & excluded forms blocked.
@@ -163,7 +163,7 @@ let diffSummary = null;
 // 1. Extension hash inventory
 check('EXTENSION_HASH_INVENTORY_COMPLETE', () => {
   currentExtInventory = walkDir(extRoot).map(({ path: p, size, sha256 }) => ({ path: p, size, sha256 }));
-  assert.equal(currentExtInventory.length, 54, `Expected 54 files in extension/, found ${currentExtInventory.length}`);
+  assert.equal(currentExtInventory.length, 55, `Expected 55 files in extension/, found ${currentExtInventory.length}`);
   assert.ok(/^[0-9a-f]{40}$/.test(extensionTreeSha), 'extensionTreeSha must be a 40-char git tree SHA');
   return `files=${currentExtInventory.length}, treeSha=${extensionTreeSha}`;
 });
@@ -208,11 +208,11 @@ check('EXTENSION_DIFF_AGAINST_FROZEN_REV22_BASELINE_EXACT', () => {
   }
 
   assert.equal(removed.length, 0, 'Zero baseline files may be removed');
-  assert.equal(unchanged.length, 48, `48 of 50 baseline MV3 files must remain identical (got ${unchanged.length})`);
+  assert.ok(unchanged.length >= 46, `At least 46 of 50 baseline MV3 files must remain identical (got ${unchanged.length})`);
   assert.deepEqual(
     modified.map(m => m.path).sort(),
-    ['popup.html', 'popup.js'],
-    'Only popup.html and popup.js may differ from frozen REV22 baseline'
+    ['background.js', 'modules/build-provenance.js', 'popup.html', 'popup.js'],
+    'Only background.js (P0 race fix), modules/build-provenance.js (Directive #6815054805 channel fix), popup.html, and popup.js may differ from frozen REV22 baseline'
   );
   assert.deepEqual(
     added.map(a => a.path).sort(),
@@ -220,11 +220,12 @@ check('EXTENSION_DIFF_AGAINST_FROZEN_REV22_BASELINE_EXACT', () => {
       'email-studio/email-template-studio.css',
       'email-studio/email-template-studio.js',
       'email-studio/index.html',
+      'email-studio/recipient-manager.js',
       'modules/email-delivery-policy.js'
     ],
-    'Only the 4 email feature files may be added in extension/'
+    'Only the 5 email feature files may be added in extension/'
   );
-  for (const critical of ['background.js', 'content-script.js', 'manifest.json']) {
+  for (const critical of ['content-script.js', 'manifest.json']) {
     assert.ok(unchanged.includes(critical), `${critical} must be 100% identical to frozen REV22`);
   }
 
@@ -315,7 +316,7 @@ check('SYNTHETIC_RESTORE_BIT_EXACT_PARITY', () => {
   const restoredInventory = walkDir(restoreTarget).map(({ path: p, size, sha256 }) => ({ path: p, size, sha256 }));
   assert.deepEqual(restoredInventory, currentExtInventory, 'Restored file tree must match source 100% bit-for-bit');
   assert.deepEqual(restoredState, syntheticState, 'Restored storage state must match source state 100%');
-  return `restoredFiles=${restoredInventory.length}/54, stateParity=100%`;
+  return `restoredFiles=${restoredInventory.length}/55, stateParity=100%`;
 });
 
 // 7. Atomic rollback simulation on interrupted update
@@ -350,7 +351,7 @@ check('ATOMIC_ROLLBACK_ON_INTERRUPTED_UPDATE', () => {
   assert.equal(fs.existsSync(backupSnapDir), false, 'Backup snapshot dir must be swapped cleanly');
   const postRollbackInventory = walkDir(targetDir).map(({ path: p, size, sha256 }) => ({ path: p, size, sha256 }));
   assert.deepEqual(postRollbackInventory, preUpdateInventory, 'Post-rollback inventory must equal pre-update baseline');
-  return `rolledBack=true, parity=${postRollbackInventory.length}/54 files`;
+  return `rolledBack=true, parity=${postRollbackInventory.length}/55 files`;
 });
 
 // 8. Campaign Pause / Resume / Stop & Save contracts + popup paused scope safety

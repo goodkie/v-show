@@ -1,0 +1,60 @@
+{
+  "timestamp": "2026-11-16T14:40:48.892Z",
+  "browser": "Edg/157.0.4341.60",
+  "extensionId": "ldlijlaccfeelfdhgnjbibniocefckjj",
+  "total": 10,
+  "passed": 10,
+  "failed": 0,
+  "results": [
+    {
+      "name": "BROWSER_STARTED",
+      "pass": true,
+      "detail": "Edg/157.0.4341.60"
+    },
+    {
+      "name": "EXTENSION_LOADED",
+      "pass": true,
+      "detail": "ldlijlaccfeelfdhgnjbibniocefckjj"
+    },
+    {
+      "name": "HEADER_TAG_SHOWS_TEST_SEND_AND_PROD_LOCK",
+      "pass": true,
+      "detail": "🧪 TEST SEND 활성화 (Resend Simulator) · 🔒 상용 발송 잠금"
+    },
+    {
+      "name": "RECIPIENT_OPTIONS_STRICT_SIMULATOR",
+      "pass": true,
+      "detail": "[\"delivered@resend.dev\",\"bounced@resend.dev\",\"complained@resend.dev\"]"
+    },
+    {
+      "name": "TEST_SENDER_FIXED_RESEND_DEV",
+      "pass": true,
+      "detail": "sender=onboarding@resend.dev, readonly=true"
+    },
+    {
+      "name": "BTN_TEST_SEND_ENABLED",
+      "pass": true,
+      "detail": "{\"text\":\"▶ 시뮬레이터 테스트 발송 (Test Send)\",\"disabled\":false}"
+    },
+    {
+      "name": "BTN_PROD_SEND_LOCKED",
+      "pass": true,
+      "detail": "{\"text\":\"운영 이메일 대량 발송 (비활성화됨)\",\"disabled\":true,\"title\":\"운영 도메인 및 수신동의 검증 필요\"}"
+    },
+    {
+      "name": "CHECK_COMPANION_INTERACTION_RESPONSIVE",
+      "pass": true,
+      "detail": "❌ [MISSING_COMPANION] Sidecar 미실행 또는 연결 실패 (127.0.0.1:18990)\n• 상세: Failed to fetch\n• 새 패키지의 START_EMAIL_TEST_SIDECAR.bat를 실행한 뒤 다시 확인하세요."
+    },
+    {
+      "name": "TEST_SEND_FAILS_CLOSED_GRACEFULLY",
+      "pass": true,
+      "detail": "⛔ [발송 차단 (FAIL-CLOSED)]\n• 사유: COMPANION_OFFLINE_OR_NETWORK_ERROR\n• 상세: Email Test Sidecar at 127.0.0.1:18990 is offline or unreachable: Failed to fetch\n• 수신자: delivered@resend.dev"
+    },
+    {
+      "name": "SCREENSHOT_CAPTURED",
+      "pass": true,
+      "detail": "C:\\Users\\oPus\\.gemini\\antigravity\\brain\\39737f43-3ee8-47a1-a4fb-53e319ab562e\\scratch\\repo_fix_p0\\evidence\\email_studio_test_send\\studio_test_send_verified.png"
+    }
+  ]
+}

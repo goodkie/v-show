@@ -254,8 +254,14 @@ let fixtureServer = null;
   // --- popup link
   const pop = await openPage(`chrome-extension://${extId}/popup.html`);
   console.log('DIAG popup', await ev(pop, `JSON.stringify({u:location.href,t:document.title,b:document.body?document.body.innerHTML.length:-1,rs:document.readyState,txt:(document.body?document.body.innerText:'').slice(0,160)})`));
-  const link = await ev(pop, `(()=>{const a=document.getElementById('email-template-studio-link');return a?{href:a.getAttribute('href'),target:a.target,rel:a.rel,text:a.textContent.trim()}:null})()`);
-  rec('POPUP_HAS_EMAIL_STUDIO_LINK', link && link.href === 'email-studio/index.html' && link.target === '_blank' && /noopener/.test(link.rel), JSON.stringify(link));
+  const link = await ev(pop, `(()=>{const a=document.getElementById('email-template-studio-link');const r=a?a.getBoundingClientRect():null;return a?{href:a.getAttribute('href'),target:a.target,rel:a.rel,text:a.textContent.trim(),role:a.getAttribute('role'),ariaLabel:a.getAttribute('aria-label'),title:a.getAttribute('title'),height:r?r.height:0,width:r?r.width:0,bodyWidth:document.body.getBoundingClientRect().width}:null})()`);
+  await ev(pop, `document.getElementById('email-template-studio-link').click()`);
+  await sleep(700);
+  const targetsAfterClick1 = (await getJson(`http://127.0.0.1:${PORT}/json/list`)).filter(t => String(t.url || '').includes('email-studio/index.html'));
+  await ev(pop, `document.getElementById('email-template-studio-link').dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }))`);
+  await sleep(500);
+  const targetsAfterClick2 = (await getJson(`http://127.0.0.1:${PORT}/json/list`)).filter(t => String(t.url || '').includes('email-studio/index.html'));
+  rec('POPUP_HAS_EMAIL_STUDIO_LINK', link && link.href === 'email-studio/index.html' && link.target === '_blank' && /noopener/.test(link.rel) && link.height >= 44 && link.width >= (link.bodyWidth * 0.75) && /Email Studio 열기/.test(link.text) && Boolean(link.ariaLabel) && Boolean(link.title) && targetsAfterClick1.length === 1 && targetsAfterClick2.length === 1, JSON.stringify({ ...link, afterClick1: targetsAfterClick1.length, afterEnter: targetsAfterClick2.length }));
   const navIds = await ev(pop, `[...document.querySelectorAll('.nav-btn, [data-tab], nav a, nav button')].map(x=>(x.id||x.dataset.tab||x.textContent.trim()).slice(0,30)).slice(0,30)`);
   rec('POPUP_EXISTING_NAV_ITEMS_PRESENT', navIds.length >= 3, JSON.stringify(navIds));
   await shot(pop, 'popup_with_email_studio_link.png');
