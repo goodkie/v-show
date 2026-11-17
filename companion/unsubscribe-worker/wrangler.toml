@@ -1,0 +1,21 @@
+name = "xpider-unsubscribe-worker"
+main = "src/worker.js"
+compatibility_date = "2026-11-01"
+workers_dev = false
+
+# Bind custom domain unsub.vivpr.pro in Cloudflare Dashboard or via:
+# routes = [{ pattern = "unsub.vivpr.pro/*", custom_domain = true }]
+
+[vars]
+ALLOWED_HOST = "unsub.vivpr.pro"
+RATE_LIMIT_MAX_PER_MIN = "30"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "xpider-unsubscribe-db"
+database_id = "REPLACE_WITH_CLOUDFLARE_D1_DATABASE_ID"
+migrations_dir = "migrations"
+
+# Required Secrets (set via `wrangler secret put`, NEVER commit):
+# - UNSUBSCRIBE_HMAC_SECRET (32+ bytes, shared with Sidecar keyRing)
+# - SIDECAR_SYNC_TOKEN (32+ bytes Bearer token for Sidecar <-> Worker suppression sync)

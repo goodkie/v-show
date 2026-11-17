@@ -385,11 +385,13 @@ class EmailProductionPipeline {
     this.webhookSecretFile = path.join(this.stateDir, '.resend_webhook_secret');
     this.unsubConfigFile = path.join(this.stateDir, '.unsubscribe_config.json');
     this.unsubTokensFile = path.join(this.stateDir, '.unsubscribe_tokens.json');
+    this.suppressedHashesFile = path.join(this.stateDir, '.suppressed_recipient_hashes.json');
     this.queueFile = path.join(this.stateDir, '.email_production_queue.json');
     this.auditFile = path.join(this.stateDir, '.email_production_audit.jsonl');
 
     this.consentLedger = new ConsentLedger(this.consentFile, this.hmacSecret);
     this.outbox = new DraftOutbox(this.outboxFile, { consentLedger: this.consentLedger });
+    this.suppressedHashes = this._loadSuppressedHashes();
     this.unsubscribeProcessor = createUnsubscribeProcessor({ outbox: this.outbox, keyRing: this.keyRing });
     this.queue = this._loadQueue();
     this.lastDnsReport = null;
@@ -654,9 +656,69 @@ class EmailProductionPipeline {
     return out;
   }
 
+  _loadSuppressedHashes() {
+    try {
+      if (fs.existsSync(this.suppressedHashesFile)) {
+        const arr = JSON.parse(fs.readFileSync(this.suppressedHashesFile, 'utf8'));
+        if (Array.isArray(arr)) return new Set(arr.map(x => String(x || '').toLowerCase()).filter(Boolean));
+      }
+    } catch (_) {}
+    return new Set();
+  }
+
+  _saveSuppressedHashes() {
+    writeProtectedSecretFile(this.suppressedHashesFile, JSON.stringify(Array.from(this.suppressedHashes), null, 2) + '\n');
+  }
+
+  isRecipientSuppressed(email) {
+    const norm = String(email || '').trim().toLowerCase();
+    if (!norm) return true;
+    if (this.outbox.isSuppressed(norm)) return true;
+    const h = crypto.createHash('sha256').update(norm).digest('hex');
+    return this.suppressedHashes.has(h);
+  }
+
+  async syncRemoteSuppressions({ baseUrl, syncToken, fetchImpl } = {}) {
+    const targetBase = String(baseUrl || this.getUnsubscribePublicConfig().publicBaseUrl || '').replace(/\/+$/, '');
+    const tok = String(syncToken || '').trim();
+    if (!targetBase || !tok) {
+      return { ok: false, reason: 'UNSUBSCRIBE_SYNC_NOT_CONFIGURED' };
+    }
+    const doFetch = typeof fetchImpl === 'function' ? fetchImpl : globalThis.fetch;
+    if (typeof doFetch !== 'function') {
+      return { ok: false, reason: 'FETCH_UNAVAILABLE' };
+    }
+    try {
+      const resp = await doFetch(`${targetBase}/api/sync/suppressions`, {
+        method: 'GET',
+        headers: { 'Authorization': `Bearer ${tok}` }
+      });
+      if (!resp || !resp.ok) {
+        return { ok: false, reason: `UNSUBSCRIBE_SYNC_HTTP_${resp ? resp.status : 'ERROR'}` };
+      }
+      const data = await resp.json();
+      const list = Array.isArray(data && data.suppressions) ? data.suppressions : [];
+      let added = 0;
+      for (const row of list) {
+        const rh = String((row && row.recipient_hash) || '').trim().toLowerCase();
+        if (rh && !this.suppressedHashes.has(rh)) {
+          this.suppressedHashes.add(rh);
+          added++;
+        }
+      }
+      if (added > 0) {
+        this._saveSuppressedHashes();
+        this._syncQueueSuppression();
+      }
+      return { ok: true, syncedCount: list.length, addedCount: added };
+    } catch (err) {
+      return { ok: false, reason: 'UNSUBSCRIBE_SYNC_NETWORK_ERROR', message: err.message };
+    }
+  }
+
   _syncQueueSuppression() {
     for (const e of this.queue.entries) {
-      if (this.outbox.isSuppressed(e.email) && e.status !== 'ACCEPTED' && e.status !== 'DELIVERED') {
+      if (this.isRecipientSuppressed(e.email) && e.status !== 'ACCEPTED' && e.status !== 'DELIVERED') {
         e.status = 'SKIPPED_SUPPRESSED';
         e.reason = 'OPT_OUT_OR_BOUNCE_SUPPRESSED';
       }
@@ -681,7 +743,7 @@ class EmailProductionPipeline {
 
     for (const r of parsed.valid) {
       const idempotencyKey = 'prod_' + crypto.createHash('sha256').update(`${campaignId}:${r.email}`).digest('hex').slice(0, 32);
-      const isSup = RM.isSuppressed(r.email, manualSup) || this.outbox.isSuppressed(r.email);
+      const isSup = RM.isSuppressed(r.email, manualSup) || this.isRecipientSuppressed(r.email);
       if (isSup) {
         suppressedCount++;
         entries.push({ email: r.email, name: r.name, idempotencyKey, status: 'SKIPPED_SUPPRESSED', reason: 'OPT_OUT_OR_SUPPRESSED', attempts: 0, providerMessageId: null, deliveryState: null, updatedAt: nowIso });
@@ -856,7 +918,7 @@ class EmailProductionPipeline {
     return this.summarizeQueue();
   }
 
-  async runQueue({ mode = 'DRY_RUN', subject = '', html = '', text = '', baseUrl = 'http://127.0.0.1:18990', maxAttempts = 2, hasResendKey = false, apiKey = null, ownerExplicitApproval = false, publicUnsubscribeHttpsVerified = false } = {}) {
+  async runQueue({ mode = 'DRY_RUN', subject = '', html = '', text = '', baseUrl = 'http://127.0.0.1:18990', maxAttempts = 2, hasResendKey = false, apiKey = null, ownerExplicitApproval = false, publicUnsubscribeHttpsVerified = false, syncToken = null, syncFetchImpl = null } = {}) {
     if (mode === 'LIVE_PRODUCTION') {
       const isPublicHttpsUnsub = /^https:\/\/(?!127\.0\.0\.1|localhost\b)[a-z0-9.-]+\.[a-z]{2,}/i.test(String(baseUrl || ''));
       if (!isPublicHttpsUnsub) {
@@ -868,6 +930,19 @@ class EmailProductionPipeline {
           blockingReasons: ['PUBLIC_HTTPS_UNSUBSCRIBE_REQUIRED'],
           summary: this.summarizeQueue()
         };
+      }
+      if (syncToken || syncFetchImpl) {
+        const syncRes = await this.syncRemoteSuppressions({ baseUrl, syncToken, fetchImpl: syncFetchImpl });
+        if (!syncRes.ok) {
+          return {
+            ok: false,
+            status: 'BLOCKED',
+            mode,
+            reason: 'UNSUBSCRIBE_SYNC_UNAVAILABLE',
+            blockingReasons: [syncRes.reason || 'UNSUBSCRIBE_SYNC_UNAVAILABLE'],
+            summary: this.summarizeQueue()
+          };
+        }
       }
       const pf = await this.evaluatePreflight({ hasResendKey, apiKey, ownerExplicitApproval, publicUnsubscribeHttpsVerified });
       if (pf.deliverabilityGate.action === 'BLOCK' || pf.deliverabilityGate.reasons.length > 0) {
@@ -893,7 +968,7 @@ class EmailProductionPipeline {
     let sentInThisRun = 0;
     for (const e of this.queue.entries) {
       if (this.queue.stopped) break;
-      if (this.outbox.isSuppressed(e.email)) {
+      if (this.isRecipientSuppressed(e.email)) {
         if (e.status !== 'ACCEPTED' && e.status !== 'DELIVERED') {
           e.status = 'SKIPPED_SUPPRESSED';
           e.reason = 'OPT_OUT_OR_BOUNCE_SUPPRESSED';
