@@ -5415,8 +5415,45 @@ function bindEvents() {
         console.error('[POPUP_BOOT] Tab navigation binding error:', e);
     }
 
-    // 2. Settings Toggle & Close (Isolated)
+    // 2. Settings Toggle & Close + Prominent Email Studio CTA (Isolated)
     try {
+        const emailStudioCta = document.getElementById('email-template-studio-link');
+        if (emailStudioCta && !emailStudioCta.dataset.bound) {
+            emailStudioCta.dataset.bound = 'true';
+            const openOrFocusEmailStudio = () => {
+                const studioUrl = (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.getURL)
+                    ? chrome.runtime.getURL('email-studio/index.html')
+                    : 'email-studio/index.html';
+                if (typeof chrome !== 'undefined' && chrome.tabs && chrome.tabs.query) {
+                    chrome.tabs.query({}, (tabs) => {
+                        const existing = Array.isArray(tabs)
+                            ? tabs.find(t => t && typeof t.url === 'string' && t.url.startsWith(studioUrl))
+                            : null;
+                        if (existing && existing.id !== undefined) {
+                            chrome.tabs.update(existing.id, { active: true });
+                            if (chrome.windows && existing.windowId !== undefined) {
+                                chrome.windows.update(existing.windowId, { focused: true });
+                            }
+                        } else if (chrome.tabs.create) {
+                            chrome.tabs.create({ url: studioUrl });
+                        }
+                    });
+                } else {
+                    window.open(studioUrl, '_blank', 'noopener,noreferrer');
+                }
+            };
+            emailStudioCta.addEventListener('click', (e) => {
+                e.preventDefault();
+                openOrFocusEmailStudio();
+            });
+            emailStudioCta.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    openOrFocusEmailStudio();
+                }
+            });
+        }
+
         const settingsToggle = document.getElementById('settings-toggle');
         const settingsOverlay = document.getElementById('settings-overlay');
         if (settingsToggle && !settingsToggle.dataset.bound) {
