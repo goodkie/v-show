@@ -592,7 +592,7 @@ class EmailProductionPipeline {
     for (let attempt = 0; attempt < 3; attempt++) {
       token = issueUnsubscribeToken({ email, campaignId, keyRing: this.keyRing });
       tokenHash = crypto.createHash('sha256').update(token).digest('hex');
-      if (this._recordIssuedUnsubscribeTokenHash({ tokenHash, email, campaignId, jti: tokenHash.slice(0, 16), expiresAt: new Date(Date.now() + 90 * 86400000).toISOString() })) {
+      if (this._recordIssuedUnsubscribeTokenHash({ tokenHash, email, campaignId, jti: tokenHash.slice(0, 16), expiresAt: new Date(Date.now() + 10 * 365 * 86400000).toISOString() })) {
         break;
       }
     }

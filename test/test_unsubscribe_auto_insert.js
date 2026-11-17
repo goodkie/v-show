@@ -213,6 +213,16 @@ function req(port, method, urlPath, headers = {}, body = null) {
       const prodBlocked = await p.runQueue({ mode: 'LIVE_PRODUCTION', baseUrl: 'http://127.0.0.1:18990' });
       assert.equal(prodBlocked.ok, false);
       assert.equal(prodBlocked.reason, 'PUBLIC_HTTPS_UNSUBSCRIBE_REQUIRED');
+
+      // Long-lived token check: remains valid beyond 90 days (e.g. 365 days later)
+      const { verifyUnsubscribeToken, injectUnsubscribeFooter } = require('../companion/email-unsubscribe-server');
+      const longToken = p.issueRecipientUnsubscribeHeaders('longlived@example.org', 'camp_long', 'https://vivpr.pro').token;
+      const after1Year = verifyUnsubscribeToken(longToken, { keyRing: p.keyRing, now: Date.now() + 365 * 86400000 });
+      assert.equal(after1Year.valid, true);
+      assert.equal(after1Year.email, 'longlived@example.org');
+
+      // Preview placeholder URL must NEVER pass injectUnsubscribeFooter
+      assert.throws(() => injectUnsubscribeFooter({ html: '<p>x</p>', text: 'x', unsubscribeUrl: 'https://vivpr.pro/unsubscribe/preview-sample-only' }), /UNSUBSCRIBE_URL_REQUIRED/);
     });
 
     console.log(`\nALL UNSUBSCRIBE AUTO-INSERT TESTS PASSED (${pass}/${pass})`);

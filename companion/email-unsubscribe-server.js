@@ -19,7 +19,7 @@ const http = require('node:http');
 const crypto = require('node:crypto');
 const { URL } = require('node:url');
 
-const DEFAULT_TTL_MS = 90 * 24 * 60 * 60 * 1000; // 90 days
+const DEFAULT_TTL_MS = 10 * 365 * 24 * 60 * 60 * 1000; // 10 years (long-lived per-recipient unsubscribe)
 
 const PRODUCTION_UNSUBSCRIBE_ENDPOINT_STATUS = Object.freeze({
   publicHttpsDeployed: 'UNKNOWN',
@@ -280,7 +280,7 @@ function escHtmlAttr(s) {
 
 function injectUnsubscribeFooter({ html = '', text = '', unsubscribeUrl }) {
   const safeUrl = String(unsubscribeUrl || '').trim();
-  if (!safeUrl) throw Error('UNSUBSCRIBE_URL_REQUIRED');
+  if (!safeUrl || safeUrl.includes('preview-sample-only')) throw Error('UNSUBSCRIBE_URL_REQUIRED');
   const escaped = escHtmlAttr(safeUrl);
   const previewRe = /https?:\/\/[^\s"'<>]+\/unsubscribe\/preview-sample-only/g;
   let outHtml = String(html || '');
@@ -306,6 +306,9 @@ function injectUnsubscribeFooter({ html = '', text = '', unsubscribeUrl }) {
     }
   } else {
     outText = `구독 취소(수신 거부): ${safeUrl}`;
+  }
+  if (outHtml.includes('preview-sample-only') || outText.includes('preview-sample-only')) {
+    throw Error('PREVIEW_PLACEHOLDER_FORBIDDEN_IN_SENT_MIME');
   }
   return { html: outHtml, text: outText };
 }
