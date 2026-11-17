@@ -536,7 +536,22 @@ async function triggerTestSend() {
     const resolvedRecipient = resp.to || resp.recipient || recipient;
     const resolvedFrom = resp.from || 'onboarding@resend.dev';
     box.className = 'status-box status-success';
-    box.textContent = `✅ [발송 접수 성공] Resend 이벤트 시뮬레이터가 정상 접수하였습니다 (실제 수신함 배달 아님).\n• Provider Message ID: ${resp.providerMessageId || 'OK'}\n• 수신자: ${resolvedRecipient}\n• 발신자: ${resolvedFrom}\n• 접수시각: ${resp.timestamp || new Date().toISOString()}`;
+    const up = resp.unsubscribePreview;
+    const hdrLine = up && up.headers
+      ? `\n• List-Unsubscribe: ${up.headers['List-Unsubscribe'] || '-'}\n• List-Unsubscribe-Post: ${up.headers['List-Unsubscribe-Post'] || '-'}`
+      : '';
+    box.textContent = `✅ [발송 접수 성공] Resend 이벤트 시뮬레이터가 정상 접수하였습니다 (실제 수신함 배달 아님).\n• Provider Message ID: ${resp.providerMessageId || 'OK'}\n• 수신자: ${resolvedRecipient}\n• 발신자: ${resolvedFrom}\n• 접수시각: ${resp.timestamp || new Date().toISOString()}${hdrLine}`;
+    if (up && up.url) {
+      const linkWrap = document.createElement('div');
+      linkWrap.style.marginTop = '6px';
+      const a = document.createElement('a');
+      a.href = up.url;
+      a.target = '_blank';
+      a.rel = 'noopener noreferrer';
+      a.textContent = `🔗 수신자별 구독 취소 URL 열기 (${resolvedRecipient})`;
+      linkWrap.appendChild(a);
+      box.appendChild(linkWrap);
+    }
   } else if (resp && (resp.status === 'BLOCKED' || resp.status === 'AMBIGUOUS_NEEDS_RECONCILE')) {
     box.className = 'status-box status-blocked';
     box.textContent = `⛔ [발송 차단 (FAIL-CLOSED)]\n• 사유: ${resp.reason || (Array.isArray(resp.reasons) ? resp.reasons.join(', ') : 'POLICY_BLOCKED')}\n• 상세: ${resp.message || '인증 또는 자격 요건 미충족'}\n• 수신자: ${resp.recipient || recipient}`;

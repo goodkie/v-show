@@ -828,7 +828,7 @@ class EmailTestSidecar {
               }
 
               // Enforce persistent suppression immediately before simulator send as well
-              if (this.pipeline && this.pipeline.outbox && this.pipeline.outbox.isSuppressed(recipient)) {
+              if (this.pipeline && (typeof this.pipeline.isRecipientSuppressed === 'function' ? this.pipeline.isRecipientSuppressed(recipient) : (this.pipeline.outbox && this.pipeline.outbox.isSuppressed(recipient)))) {
                 res.writeHead(200, { 'Content-Type': 'application/json' });
                 res.end(JSON.stringify({
                   status: 'BLOCKED',
@@ -968,7 +968,17 @@ class EmailTestSidecar {
                 : (result && result.status === 'PROVIDER_ERROR' ? 502 : 400);
 
               if (result && result.status === 'SUCCESS') {
-                const acceptedPayload = { ...result, to: result.to || result.recipient || recipient, from: result.from || resendTestMode.TEST_FROM, deliveryStatus: 'PROVIDER_ACCEPTED_SIMULATOR_ONLY', idempotencyKey };
+                const acceptedPayload = {
+                  ...result,
+                  to: result.to || result.recipient || recipient,
+                  from: result.from || resendTestMode.TEST_FROM,
+                  deliveryStatus: 'PROVIDER_ACCEPTED_SIMULATOR_ONLY',
+                  idempotencyKey,
+                  unsubscribePreview: {
+                    url: unsubArtifacts.url,
+                    headers: unsubArtifacts.headers
+                  }
+                };
                 try {
                   this.ledger.append({
                     idempotencyKey, recipient, from: result.from || resendTestMode.TEST_FROM,
