@@ -1745,7 +1745,10 @@ function createBuiltinRecipientManager() {
       csvText: syncCsv,
       optOutText: el('optOutList') ? el('optOutList').value : '',
       messageKind: messageKind(),
-      consentAttested: Boolean(el('consentAttest') && el('consentAttest').checked)
+      consentAttested: Boolean(el('consentAttest') && el('consentAttest').checked),
+      lawfulBasis: el('lawfulBasisSelect')?.value || 'EXPLICIT_OPT_IN',
+      jurisdiction: el('jurisdictionSelect')?.value || 'GLOBAL',
+      authorizationSource: el('authSourceInput')?.value.trim() || 'owner_csv_consent_attestation'
     };
     for (let attempt = 0; attempt < 2; attempt++) {
       try {

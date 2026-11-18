@@ -726,7 +726,31 @@ class EmailProductionPipeline {
     this._saveQueue();
   }
 
-  importAndPersistRecipients({ csvText = '', optOutText = '', messageKind = 'service', consentAttested = false, authorizationSource = 'owner_csv_consent_attestation', campaignId = 'default' }) {
+  importAndPersistRecipients({
+    csvText = '',
+    optOutText = '',
+    messageKind = 'service',
+    consentAttested = false,
+    lawfulBasis = null,
+    jurisdiction = 'GLOBAL',
+    authorizationSource = 'owner_csv_consent_attestation',
+    authorizationAt = null,
+    proofRef = '',
+    campaignId = 'default'
+  }) {
+    const normJurisdiction = String(jurisdiction || 'GLOBAL').trim().toUpperCase() || 'GLOBAL';
+    const normSource = String(authorizationSource || 'owner_csv_consent_attestation').trim() || 'owner_csv_consent_attestation';
+    const isScrapedSource = /(?:^|[-_.])(scraped|collected|purchased|email[-_]?collector|harvested)(?:$|[-_.])/i.test(normSource);
+    const resolvedBasis = lawfulBasis
+      ? String(lawfulBasis).trim().toUpperCase()
+      : (consentAttested ? 'EXPLICIT_OPT_IN' : (messageKind === 'service' ? 'SERVICE_NOTIFICATION' : 'UNVERIFIED'));
+    const validUsCanSpam = resolvedBasis === 'EXISTING_CUSTOMER_US_CAN_SPAM' && normJurisdiction === 'US';
+    const basisAuthorized = !isScrapedSource && (
+      (consentAttested && resolvedBasis === 'EXPLICIT_OPT_IN') ||
+      (consentAttested && validUsCanSpam) ||
+      (messageKind === 'service' && resolvedBasis === 'SERVICE_NOTIFICATION')
+    );
+
     const parsed = RM.importRecipients(csvText, { source: 'studio-csv' });
     const manualSup = RM.parseSuppression(optOutText);
     for (const item of manualSup) {
@@ -736,6 +760,7 @@ class EmailProductionPipeline {
     }
 
     const nowIso = new Date().toISOString();
+    const authTime = authorizationAt ? String(authorizationAt) : nowIso;
     const entries = [];
     let readyCount = 0;
     let suppressedCount = 0;
@@ -749,18 +774,29 @@ class EmailProductionPipeline {
         entries.push({ email: r.email, name: r.name, idempotencyKey, status: 'SKIPPED_SUPPRESSED', reason: 'OPT_OUT_OR_SUPPRESSED', attempts: 0, providerMessageId: null, deliveryState: null, updatedAt: nowIso });
         continue;
       }
+      if (isScrapedSource) {
+        noConsentCount++;
+        entries.push({ email: r.email, name: r.name, idempotencyKey, status: 'SKIPPED_NO_CONSENT', reason: 'UNSOLICITED_SCRAPED_SOURCE_DENIED', attempts: 0, providerMessageId: null, deliveryState: null, updatedAt: nowIso });
+        continue;
+      }
+      if (resolvedBasis === 'EXISTING_CUSTOMER_US_CAN_SPAM' && normJurisdiction !== 'US') {
+        noConsentCount++;
+        entries.push({ email: r.email, name: r.name, idempotencyKey, status: 'SKIPPED_NO_CONSENT', reason: 'US_CAN_SPAM_REQUIRES_US_JURISDICTION', attempts: 0, providerMessageId: null, deliveryState: null, updatedAt: nowIso });
+        continue;
+      }
       if (!consentAttested) {
         if (messageKind === 'marketing') {
           noConsentCount++;
           entries.push({ email: r.email, name: r.name, idempotencyKey, status: 'SKIPPED_NO_CONSENT', reason: 'MARKETING_REQUIRES_CONSENT_ATTESTATION', attempts: 0, providerMessageId: null, deliveryState: null, updatedAt: nowIso });
           continue;
         }
-      } else {
+      } else if (basisAuthorized) {
+        const sourceTag = `${normSource}|${resolvedBasis}|${normJurisdiction}${proofRef ? '|' + String(proofRef).slice(0, 64) : ''}`;
         const consentRec = this.consentLedger.recordConsent({
           email: r.email,
           name: r.name,
-          authorizationSource,
-          authorizationAt: nowIso
+          authorizationSource: sourceTag,
+          authorizationAt: authTime
         });
         this.outbox.add({
           email: r.email,
@@ -772,6 +808,10 @@ class EmailProductionPipeline {
           templateId: campaignId,
           key: idempotencyKey
         });
+      } else {
+        noConsentCount++;
+        entries.push({ email: r.email, name: r.name, idempotencyKey, status: 'SKIPPED_NO_CONSENT', reason: 'LAWFUL_BASIS_NOT_VERIFIED', attempts: 0, providerMessageId: null, deliveryState: null, updatedAt: nowIso });
+        continue;
       }
       readyCount++;
       entries.push({
@@ -780,7 +820,9 @@ class EmailProductionPipeline {
         idempotencyKey,
         status: 'PENDING',
         reason: null,
-        consentVerified: Boolean(consentAttested),
+        lawfulBasis: resolvedBasis,
+        jurisdiction: normJurisdiction,
+        consentVerified: Boolean(consentAttested && basisAuthorized),
         attempts: 0,
         providerMessageId: null,
         deliveryState: null,
@@ -791,7 +833,9 @@ class EmailProductionPipeline {
     this.queue = {
       campaignId,
       messageKind,
-      consentAttested: Boolean(consentAttested),
+      lawfulBasis: resolvedBasis,
+      jurisdiction: normJurisdiction,
+      consentAttested: Boolean(consentAttested && basisAuthorized),
       entries,
       stopped: false,
       startedAt: null,

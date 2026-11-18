@@ -203,7 +203,12 @@
 
 <label for="optOutList">수신 거부(opt-out) / 제외 목록 (이메일 또는 @도메인, 공백·쉼표 구분)</label>
 <textarea id="optOutList" rows="2" placeholder="blocked@example.com @competitor.com"></textarea>
-<label style="display:flex;align-items:center;gap:6px;margin:6px 0;font-size:12px;"><input id="consentAttest" type="checkbox"> 이 목록의 수신자는 직접 수신 동의했거나 적법한 근거가 있음을 확인합니다 (마케팅 메일 필수 · 주소 유효성/중소기업 분류는 수신 동의가 아님)</label>
+<label style="display:flex;align-items:center;gap:6px;margin:6px 0;font-size:12px;"><input id="consentAttest" type="checkbox"> 이 목록의 수신자는 적법한 발송 근거(명시적 수신 동의 또는 US CAN-SPAM 기존 고객)가 있음을 확인합니다 (수집/스크래핑 CSV는 동의로 간주되지 않음)</label>
+<div class="inline" style="margin:6px 0;">
+  <div><label for="lawfulBasisSelect">적법 발송 근거 (Lawful Basis)</label><select id="lawfulBasisSelect"><option value="EXPLICIT_OPT_IN">EXPLICIT_OPT_IN (명시적 수신 동의 · 글로벌)</option><option value="EXISTING_CUSTOMER_US_CAN_SPAM">EXISTING_CUSTOMER_US_CAN_SPAM (미국 기존 고객 · US 관할)</option><option value="SERVICE_NOTIFICATION">SERVICE_NOTIFICATION (계약/서비스 안내)</option></select></div>
+  <div><label for="jurisdictionSelect">관할 지역 (Jurisdiction)</label><select id="jurisdictionSelect"><option value="GLOBAL">GLOBAL (글로벌 / KR / EU)</option><option value="US">US (미국 CAN-SPAM)</option></select></div>
+  <div><label for="authSourceInput">증빙 출처 (Source/CRM Ref)</label><input id="authSourceInput" placeholder="예: crm_optin_2026 또는 shopify_us" value="owner_csv_consent_attestation"></div>
+</div>
 <div class="actions"><button type="button" id="btnBuildReview">발송 전 검토</button><button type="button" id="btnDryRun" class="primary">드라이런 실행 (발송 없음)</button><button type="button" id="btnQueueStop">중지</button><button type="button" id="btnQueueResume">이어서</button><button type="button" id="btnQueueCsv">결과 CSV 저장</button></div>
 <div id="recipientStatus" class="status-box status-idle" aria-live="polite">수신자 목록 없음. CSV를 가져오세요.</div>
 </div>

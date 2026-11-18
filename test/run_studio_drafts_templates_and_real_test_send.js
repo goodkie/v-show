@@ -146,5 +146,47 @@ function createMockWebStorage(initial = {}) {
     assert.ok(html.includes(`id="${id}"`), `Missing UI element #${id}`);
   }
   console.log('PASS P0D: all Draft/Template/RealTest/Production UI controls present');
-  console.log('ALL STUDIO DRAFT/TEMPLATE/REAL-TEST/PRODUCTION TESTS PASSED (7/7)');
+  // P0D-2: Lawful basis import (US CAN-SPAM vs non-US vs scraped rejection)
+  const { EmailProductionPipeline } = require('../companion/email-production-pipeline');
+  const tmpBasisDir = fs.mkdtempSync(path.join(os.tmpdir(), 'xpider-lawful-basis-'));
+  try {
+    const p = new EmailProductionPipeline({ stateDir: tmpBasisDir, trustedTestMode: true });
+    const usOk = p.importAndPersistRecipients({
+      csvText: 'email,name\nusbuyer@example.com,US Buyer',
+      messageKind: 'marketing',
+      consentAttested: true,
+      lawfulBasis: 'EXISTING_CUSTOMER_US_CAN_SPAM',
+      jurisdiction: 'US',
+      authorizationSource: 'shopify_us_customers',
+      campaignId: 'us-can-spam'
+    });
+    assert.strictEqual(usOk.summary.counts.PENDING, 1);
+
+    const nonUsBlocked = p.importAndPersistRecipients({
+      csvText: 'email,name\neubuyer@example.com,EU Buyer',
+      messageKind: 'marketing',
+      consentAttested: true,
+      lawfulBasis: 'EXISTING_CUSTOMER_US_CAN_SPAM',
+      jurisdiction: 'GLOBAL',
+      authorizationSource: 'shopify_eu_customers',
+      campaignId: 'non-us-blocked'
+    });
+    assert.strictEqual(nonUsBlocked.summary.counts.SKIPPED_NO_CONSENT, 1);
+
+    const scrapedBlocked = p.importAndPersistRecipients({
+      csvText: 'email,name\nscraped@example.com,Scraped',
+      messageKind: 'marketing',
+      consentAttested: true,
+      lawfulBasis: 'EXPLICIT_OPT_IN',
+      jurisdiction: 'GLOBAL',
+      authorizationSource: 'scraped_collector_csv',
+      campaignId: 'scraped-blocked'
+    });
+    assert.strictEqual(scrapedBlocked.summary.counts.SKIPPED_NO_CONSENT, 1);
+    console.log('PASS P0D-2: US CAN-SPAM allowed for US, blocked for non-US & scraped sources');
+  } finally {
+    fs.rmSync(tmpBasisDir, { recursive: true, force: true });
+  }
+
+  console.log('ALL STUDIO DRAFT/TEMPLATE/REAL-TEST/PRODUCTION TESTS PASSED (8/8)');
 })();
