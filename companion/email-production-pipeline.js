@@ -998,6 +998,27 @@ class EmailProductionPipeline {
   }
 
   async runQueue({ mode = 'DRY_RUN', subject = '', html = '', text = '', baseUrl = 'http://127.0.0.1:18990', maxAttempts = 2, hasResendKey = false, apiKey = null, ownerExplicitApproval = false, publicUnsubscribeHttpsVerified = false, syncToken = null, syncFetchImpl = null } = {}) {
+    if (this._queueRunning) {
+      return {
+        ok: false,
+        status: 'BLOCKED',
+        mode,
+        reason: 'QUEUE_ALREADY_RUNNING',
+        blockingReasons: ['QUEUE_ALREADY_RUNNING'],
+        koreanReason: '운영 발송 큐가 이미 실행 중입니다. 실시간 진행률 모니터를 확인하거나 [운영 큐 중지] 후 다시 시도하세요.',
+        timestamp: new Date().toISOString(),
+        summary: this.summarizeQueue()
+      };
+    }
+    this._queueRunning = true;
+    try {
+      return await this._runQueueImpl({ mode, subject, html, text, baseUrl, maxAttempts, hasResendKey, apiKey, ownerExplicitApproval, publicUnsubscribeHttpsVerified, syncToken, syncFetchImpl });
+    } finally {
+      this._queueRunning = false;
+    }
+  }
+
+  async _runQueueImpl({ mode = 'DRY_RUN', subject = '', html = '', text = '', baseUrl = 'http://127.0.0.1:18990', maxAttempts = 2, hasResendKey = false, apiKey = null, ownerExplicitApproval = false, publicUnsubscribeHttpsVerified = false, syncToken = null, syncFetchImpl = null } = {}) {
     if (mode === 'LIVE_PRODUCTION') {
       const isPublicHttpsUnsub = /^https:\/\/(?!127\.0\.0\.1|localhost\b)[a-z0-9.-]+\.[a-z]{2,}/i.test(String(baseUrl || ''));
       if (!isPublicHttpsUnsub) {
@@ -1165,20 +1186,46 @@ class EmailProductionPipeline {
           continue;
         }
         const recipientHash = crypto.createHash('sha256').update(String(e.email || '').trim().toLowerCase()).digest('hex');
-        const regResp = await doFetch(`${String(baseUrl).replace(/\/+$/, '')}/api/sync/tokens`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${syncToken}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            tokenHash: unsub.tokenHash,
-            recipientHash,
-            campaignId: this.queue.campaignId,
-            issuedAt: new Date().toISOString(),
-            expiresAt: new Date(Date.now() + 365 * 86400000).toISOString()
-          })
-        });
+        let regResp = null;
+        try {
+          regResp = await doFetch(`${String(baseUrl).replace(/\/+$/, '')}/api/sync/tokens`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${syncToken}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              tokenHash: unsub.tokenHash,
+              recipientHash,
+              campaignId: this.queue.campaignId,
+              issuedAt: new Date().toISOString(),
+              expiresAt: new Date(Date.now() + 365 * 86400000).toISOString()
+            }),
+            ...(typeof syncFetchImpl !== 'function' && typeof AbortSignal?.timeout === 'function' ? { signal: AbortSignal.timeout(15000) } : {})
+          });
+        } catch (syncErr) {
+          const errStr = `UNSUBSCRIBE_TOKEN_SYNC_EXCEPTION: ${syncErr?.message || 'FETCH_FAILED'}`;
+          // Revert SENDING -> PENDING because provider API was never called
+          e.status = 'PENDING';
+          e.error = errStr;
+          e.updatedAt = new Date().toISOString();
+          this.queue.stopped = true;
+          this.queue.stopReason = 'UNSUBSCRIBE_TOKEN_SYNC_FAILED';
+          this._saveQueue();
+          this._appendAudit({ type: 'SEND_ABORTED_PRE_PROVIDER', idempotencyKey: e.idempotencyKey, error: errStr });
+          return {
+            ok: false,
+            status: 'BLOCKED',
+            mode,
+            reason: 'UNSUBSCRIBE_TOKEN_SYNC_FAILED',
+            stopReason: 'UNSUBSCRIBE_TOKEN_SYNC_FAILED',
+            blockingReasons: ['UNSUBSCRIBE_TOKEN_SYNC_FAILED', errStr],
+            koreanReason: `수신거부 원클릭 토큰 원격 동기화 중 네트워크 오류가 발생해 발송 전 안전 차단되었습니다 (${syncErr?.message || 'FETCH_FAILED'}). 해당 수신자는 미발송(PENDING) 상태로 복원되었으며 다시 시작할 수 있습니다.`,
+            sentInThisRun,
+            timestamp: new Date().toISOString(),
+            summary: this.summarizeQueue()
+          };
+        }
         if (!regResp || !regResp.ok) {
           const errStr = `UNSUBSCRIBE_TOKEN_SYNC_HTTP_${regResp ? regResp.status : 'ERROR'}`;
           this._appendAudit({ type: 'SEND_ATTEMPT_FAILED', idempotencyKey: e.idempotencyKey, error: errStr });
@@ -1205,7 +1252,8 @@ class EmailProductionPipeline {
               html: rendered.html,
               text: rendered.text,
               headers: unsub.headers
-            })
+            }),
+            ...(typeof syncFetchImpl !== 'function' && typeof AbortSignal?.timeout === 'function' ? { signal: AbortSignal.timeout(20000) } : {})
           });
           const sendBody = await sendResp.json().catch(() => ({}));
           if (sendResp && sendResp.ok && sendBody && sendBody.id) {
@@ -1252,12 +1300,28 @@ class EmailProductionPipeline {
       this.queue.finishedAt = new Date().toISOString();
       this._saveQueue();
     }
-    this._appendAudit({ type: 'QUEUE_RUN_COMPLETED', mode, sentInThisRun, stopped: this.queue.stopped });
+    this._appendAudit({ type: 'QUEUE_RUN_COMPLETED', mode, sentInThisRun, stopped: this.queue.stopped, stopReason: this.queue.stopReason || null });
+    if (this.queue.stopped && this.queue.stopReason === 'PROVIDER_DAILY_QUOTA_EXCEEDED') {
+      return {
+        ok: true,
+        status: 'STOPPED',
+        mode,
+        reason: 'PROVIDER_DAILY_QUOTA_EXCEEDED',
+        stopReason: 'PROVIDER_DAILY_QUOTA_EXCEEDED',
+        blockingReasons: ['PROVIDER_DAILY_QUOTA_EXCEEDED'],
+        koreanReason: 'Resend 계정 일일 발송 한도에 도달하여 발송이 안전하게 일시 중지되었습니다. 기발송 건은 자동 중복 제외되며, 한도 초기화 또는 Resend 플랜 업그레이드 후 이어서 발송할 수 있습니다.',
+        sentInThisRun,
+        timestamp: new Date().toISOString(),
+        summary: this.summarizeQueue()
+      };
+    }
     return {
       ok: true,
       status: this.queue.stopped ? 'STOPPED' : 'COMPLETED',
       mode,
+      stopReason: this.queue.stopReason || null,
       sentInThisRun,
+      timestamp: new Date().toISOString(),
       summary: this.summarizeQueue()
     };
   }

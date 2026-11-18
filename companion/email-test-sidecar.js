@@ -596,8 +596,17 @@ class EmailTestSidecar {
               res.writeHead(out.ok ? 200 : 503, { 'Content-Type': 'application/json' });
               res.end(JSON.stringify(out));
             } catch (err) {
+              const msg = err?.message || 'QUEUE_RUN_EXCEPTION';
               res.writeHead(400, { 'Content-Type': 'application/json' });
-              res.end(JSON.stringify({ ok: false, error: err.message }));
+              res.end(JSON.stringify({
+                ok: false,
+                status: 'BLOCKED',
+                reason: err?.code || 'QUEUE_RUN_EXCEPTION',
+                blockingReasons: [err?.code || 'QUEUE_RUN_EXCEPTION', msg].filter(Boolean),
+                koreanReason: `운영 발송 요청 처리 중 예외가 발생하여 Fail-Closed로 중단되었습니다: ${msg}`,
+                error: msg,
+                timestamp: new Date().toISOString()
+              }));
             }
           });
           return;
@@ -617,8 +626,17 @@ class EmailTestSidecar {
               res.writeHead(200, { 'Content-Type': 'application/json' });
               res.end(JSON.stringify({ ...prev, eligibleCsv: undefined }));
             } catch (err) {
+              const msg = err?.message || 'QUEUE_RUN_EXCEPTION';
               res.writeHead(400, { 'Content-Type': 'application/json' });
-              res.end(JSON.stringify({ ok: false, error: err.message }));
+              res.end(JSON.stringify({
+                ok: false,
+                status: 'BLOCKED',
+                reason: err?.code || 'QUEUE_RUN_EXCEPTION',
+                blockingReasons: [err?.code || 'QUEUE_RUN_EXCEPTION', msg].filter(Boolean),
+                koreanReason: `운영 발송 요청 처리 중 예외가 발생하여 Fail-Closed로 중단되었습니다: ${msg}`,
+                error: msg,
+                timestamp: new Date().toISOString()
+              }));
             }
           });
           return;
@@ -674,8 +692,17 @@ class EmailTestSidecar {
               res.writeHead(runOut.ok ? 200 : 409, { 'Content-Type': 'application/json' });
               res.end(JSON.stringify({ ...runOut, waveCampaignId: prev.waveCampaignId, parentCampaignId: prev.parentCampaignId }));
             } catch (err) {
+              const msg = err?.message || 'QUEUE_RUN_EXCEPTION';
               res.writeHead(400, { 'Content-Type': 'application/json' });
-              res.end(JSON.stringify({ ok: false, error: err.message }));
+              res.end(JSON.stringify({
+                ok: false,
+                status: 'BLOCKED',
+                reason: err?.code || 'QUEUE_RUN_EXCEPTION',
+                blockingReasons: [err?.code || 'QUEUE_RUN_EXCEPTION', msg].filter(Boolean),
+                koreanReason: `운영 발송 요청 처리 중 예외가 발생하여 Fail-Closed로 중단되었습니다: ${msg}`,
+                error: msg,
+                timestamp: new Date().toISOString()
+              }));
             }
           });
           return;
@@ -933,8 +960,17 @@ class EmailTestSidecar {
                 return;
               }
             } catch (err) {
+              const msg = err?.message || 'QUEUE_RUN_EXCEPTION';
               res.writeHead(400, { 'Content-Type': 'application/json' });
-              res.end(JSON.stringify({ ok: false, error: err.message }));
+              res.end(JSON.stringify({
+                ok: false,
+                status: 'BLOCKED',
+                reason: err?.code || 'QUEUE_RUN_EXCEPTION',
+                blockingReasons: [err?.code || 'QUEUE_RUN_EXCEPTION', msg].filter(Boolean),
+                koreanReason: `운영 발송 요청 처리 중 예외가 발생하여 Fail-Closed로 중단되었습니다: ${msg}`,
+                error: msg,
+                timestamp: new Date().toISOString()
+              }));
             }
           });
           return;

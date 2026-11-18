@@ -284,9 +284,93 @@ function createMockWebStorage(initial = {}) {
     assert.strictEqual(imp5786.summary.counts.PENDING, 5786);
     assert.strictEqual(imp5786.summary.counts.SKIPPED_NO_CONSENT, 0);
     console.log('PASS P0D-5: 5,786-row verified CSV queued cleanly with zero artificial XPIDER cap');
+
+    // P0D-6: Network failure on /api/sync/tokens in LIVE_PRODUCTION never leaves entry stuck in SENDING and returns structured Fail-Closed reason
+    pBulk.importAndPersistRecipients({
+      csvText: 'email,name\nsyncfail1@example.com,SF1\nsyncfail2@example.com,SF2',
+      messageKind: 'marketing',
+      consentAttested: true,
+      lawfulBasis: 'EXPLICIT_OPT_IN',
+      jurisdiction: 'GLOBAL',
+      authorizationSource: 'owner_crm_sync_test',
+      campaignId: 'sync-fail-test'
+    });
+    const origEval = pBulk.evaluatePreflight.bind(pBulk);
+    pBulk.evaluatePreflight = async () => ({ deliverabilityGate: { action: 'ALLOW', reasons: [] }, minimalAuthorizationNeededForSingleLiveSend: [] });
+    let syncFailResendCalls = 0;
+    const syncFailOut = await pBulk.runQueue({
+      mode: 'LIVE_PRODUCTION',
+      subject: 'Sync Fail Test',
+      html: '<p>Hi</p>',
+      text: 'Hi',
+      baseUrl: 'https://unsubscribe.vivpr.pro',
+      hasResendKey: true,
+      apiKey: 're_test_12345678901234567890',
+      ownerExplicitApproval: true,
+      publicUnsubscribeHttpsVerified: true,
+      syncToken: 'sync-tok',
+      syncFetchImpl: async (url) => {
+        if (String(url).includes('/api/sync/suppressions')) {
+          return { ok: true, status: 200, json: async () => ({ hashes: [] }) };
+        }
+        if (String(url).includes('/api/sync/tokens')) {
+          throw new Error('ECONNRESET simulated');
+        }
+        syncFailResendCalls++;
+        return { ok: true, status: 200, json: async () => ({ id: 'msg_should_not_send' }) };
+      }
+    });
+    assert.strictEqual(syncFailOut.ok, false);
+    assert.strictEqual(syncFailOut.status, 'BLOCKED');
+    assert.strictEqual(syncFailOut.reason, 'UNSUBSCRIBE_TOKEN_SYNC_FAILED');
+    assert.ok(Array.isArray(syncFailOut.blockingReasons) && syncFailOut.blockingReasons.includes('UNSUBSCRIBE_TOKEN_SYNC_FAILED'));
+    assert.ok(syncFailOut.koreanReason && syncFailOut.koreanReason.length > 10);
+    assert.strictEqual(syncFailOut.summary.counts.SENDING, 0);
+    assert.strictEqual(syncFailOut.summary.counts.PENDING, 2);
+    assert.strictEqual(syncFailResendCalls, 0);
+    console.log('PASS P0D-6: /api/sync/tokens exception reverts SENDING->PENDING with structured Fail-Closed reason');
+
+    // P0D-7: Resend daily quota exceeded returns structured BLOCKED + preserves idempotency on restart
+    let quotaCallNum = 0;
+    const quotaOut = await pBulk.runQueue({
+      mode: 'LIVE_PRODUCTION',
+      subject: 'Quota Test',
+      html: '<p>Hi</p>',
+      text: 'Hi',
+      baseUrl: 'https://unsubscribe.vivpr.pro',
+      hasResendKey: true,
+      apiKey: 're_test_12345678901234567890',
+      ownerExplicitApproval: true,
+      publicUnsubscribeHttpsVerified: true,
+      syncToken: 'sync-tok',
+      syncFetchImpl: async (url) => {
+        if (String(url).includes('/api/sync/suppressions')) {
+          return { ok: true, status: 200, json: async () => ({ hashes: [] }) };
+        }
+        if (String(url).includes('/api/sync/tokens')) {
+          return { ok: true, status: 200, json: async () => ({ ok: true }) };
+        }
+        quotaCallNum++;
+        if (quotaCallNum === 1) {
+          return { ok: true, status: 200, json: async () => ({ id: 'msg_quota_1' }) };
+        }
+        return { ok: false, status: 429, json: async () => ({ name: 'daily_quota_exceeded', message: 'You have reached your daily email sending quota.' }) };
+      }
+    });
+    assert.strictEqual(quotaOut.ok, true);
+    assert.strictEqual(quotaOut.status, 'STOPPED');
+    assert.strictEqual(quotaOut.reason, 'PROVIDER_DAILY_QUOTA_EXCEEDED');
+    assert.strictEqual(quotaOut.stopReason, 'PROVIDER_DAILY_QUOTA_EXCEEDED');
+    assert.ok(Array.isArray(quotaOut.blockingReasons) && quotaOut.blockingReasons.includes('PROVIDER_DAILY_QUOTA_EXCEEDED'));
+    assert.ok(quotaOut.koreanReason && quotaOut.koreanReason.length > 10);
+    assert.strictEqual(quotaOut.sentInThisRun, 1);
+    assert.strictEqual(quotaOut.summary.counts.ACCEPTED, 1);
+    assert.strictEqual(quotaOut.summary.counts.PENDING, 1);
+    pBulk.evaluatePreflight = origEval;
+    console.log('PASS P0D-7: Resend daily quota returns structured Fail-Closed reason and keeps accepted idempotent');
   } finally {
     fs.rmSync(tmpBulkDir, { recursive: true, force: true });
   }
 
-  console.log('ALL STUDIO DRAFT/TEMPLATE/REAL-TEST/PRODUCTION TESTS PASSED (9/9)');
+  console.log('ALL STUDIO DRAFT/TEMPLATE/REAL-TEST/PRODUCTION TESTS PASSED (11/11)');
 })();

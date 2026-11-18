@@ -2417,9 +2417,25 @@ function createBuiltinRecipientManager() {
         return;
       }
       const out = r.data;
-      if (!r.ok || out.status === 'BLOCKED') {
+      if (!r.ok || out.status === 'BLOCKED' || (out.status === 'STOPPED' && out.stopReason)) {
         pBox.className = 'status-box status-blocked';
-        pBox.textContent = `🛑 [운영 발송 차단 — Fail-Closed] 사유: ${out.reason || 'BLOCKED'}\n• 세부 사유: ${(out.blockingReasons || []).join(', ') || '-'}`;
+        const reasonCode = out.reason || out.stopReason || out.error || r.error || (r.httpStatus ? `HTTP_${r.httpStatus}` : 'EXECUTION_FAILED');
+        const detailParts = [];
+        if (Array.isArray(out.blockingReasons) && out.blockingReasons.length > 0) {
+          detailParts.push(out.blockingReasons.join(', '));
+        }
+        if (out.koreanReason) detailParts.push(out.koreanReason);
+        else if (out.message) detailParts.push(out.message);
+        else if (out.error && out.error !== reasonCode) detailParts.push(out.error);
+        else if (r.error && r.error !== reasonCode) detailParts.push(r.error);
+        const c = out.summary?.counts || counts || {};
+        const ts = out.timestamp || new Date().toISOString();
+        const detailText = detailParts.length ? detailParts.join(' | ') : `HTTP ${r.httpStatus || '-'} (${reasonCode})`;
+        pBox.textContent = [
+          `🛑 [운영 발송 차단 — Fail-Closed] 사유: ${reasonCode}`,
+          `• 세부 사유: ${detailText}`,
+          `• 시각: ${ts} | 이번 실행 발송: ${out.sentInThisRun || 0}건 | 대기(PENDING): ${c.PENDING ?? '-'}건 | 기발송(ACCEPTED): ${c.ACCEPTED ?? '-'}건 | 발송중(SENDING): ${c.SENDING ?? '-'}건`
+        ].join('\n');
         return;
       }
       const c = out.summary?.counts || {};
