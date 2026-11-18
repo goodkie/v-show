@@ -2360,7 +2360,12 @@ function createBuiltinRecipientManager() {
       }
       pBox.className = 'status-box status-loading';
       pBox.textContent = '⏳ 동의 원장 · 원격 수신거부 · 도메인 게이트 검증 및 운영 발송 진행 중...';
-      await syncSidecarRecipients();
+      const syncResult = await syncSidecarRecipients();
+      if (syncResult && syncResult.synced === false && recipients.length > 0) {
+        pBox.className = 'status-box status-error';
+        pBox.textContent = `❌ [Sidecar 수신자 동기화 실패 — 발송 차단] HTTP ${syncResult.httpStatus || '-'}: ${syncResult.error || 'SYNC_FAILED'}`;
+        return;
+      }
       const { sidecarPort, sidecarToken } = getSidecarConfig();
       const pre = await callBg({ action: 'GET_EMAIL_PRODUCTION_PREFLIGHT', sidecarPort, sidecarToken });
       const counts = pre?.data?.queueSummary?.counts || {};
@@ -2368,11 +2373,15 @@ function createBuiltinRecipientManager() {
       const consentedOnDisk = Number(pre?.data?.queueSummary?.consentedRecordsOnDisk || 0);
       if (!pre?.ok || pre?.data?.deliverabilityGate?.action === 'BLOCK' || eligibleCount <= 0) {
         pBox.className = 'status-box status-blocked';
-        pBox.textContent = `🛑 [발송 차단 — 적격 미발송 ${eligibleCount}건 / 동의 원장 ${consentedOnDisk}건 / 수신거부 제외 ${counts.SKIPPED_SUPPRESSED || 0}건 / 미동의 제외 ${counts.SKIPPED_NO_CONSENT || 0}건]\n• 사유: ${(pre?.data?.deliverabilityGate?.reasons || ['RECIPIENT_AUTHORIZATION_UNKNOWN']).join(', ')}`;
+        pBox.textContent = `🛑 [발송 차단 — 적격 발송 대기 ${eligibleCount}건 / 기존 발송권한 기록 ${consentedOnDisk}건 / 미동의·미확인 제외 ${counts.SKIPPED_NO_CONSENT || 0}건 / 수신거부 제외 ${counts.SKIPPED_SUPPRESSED || 0}건 / 기발송 ${counts.ACCEPTED || 0}건]\n• 사유: ${(pre?.data?.deliverabilityGate?.reasons || ['RECIPIENT_AUTHORIZATION_UNKNOWN']).join(', ')}`;
         return;
       }
       pBox.className = 'status-box status-loading';
-      pBox.textContent = `⏳ 적격 미발송 ${eligibleCount}건에 대해 Resend 운영 발송 진행 중... (ACCEPTED ≠ DELIVERED)`;
+      pBox.textContent = `⏳ 적격 발송 대기 ${eligibleCount}건에 대해 Resend 운영 발송 진행 중... (ACCEPTED ≠ DELIVERED)`;
+      if (!livePollTimer) {
+        livePollTimer = setInterval(refreshCampaignProgress, 3000);
+        if (el('btnToggleLivePoll')) el('btnToggleLivePoll').textContent = '⏸️ 자동 폴링 중지';
+      }
       const r = await callBg({
         action: 'RUN_EMAIL_PRODUCTION_QUEUE',
         sidecarPort,
@@ -2450,6 +2459,15 @@ function createBuiltinRecipientManager() {
     }
   }
   if (el('btnRefreshCampaignProgress')) el('btnRefreshCampaignProgress').onclick = refreshCampaignProgress;
+  if (el('btnReconcileResendHistory')) {
+    el('btnReconcileResendHistory').onclick = async () => {
+      const sumBox = el('campaignMonitorSummary');
+      if (sumBox) { sumBox.className = 'status-box status-loading'; sumBox.textContent = '⏳ Resend API 이력 대조 중 (최대 25건)...'; }
+      const { sidecarPort, sidecarToken } = getSidecarConfig();
+      await callBg({ action: 'RECONCILE_CAMPAIGN_RESEND', sidecarPort, sidecarToken, payload: { campaignId: 'default', limit: 25 } });
+      await refreshCampaignProgress();
+    };
+  }
   if (el('btnToggleLivePoll')) {
     el('btnToggleLivePoll').onclick = () => {
       if (livePollTimer) {

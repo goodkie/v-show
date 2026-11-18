@@ -581,6 +581,28 @@ class EmailTestSidecar {
           }
         }
 
+        if (pathname === '/email/campaigns/reconcile' && req.method === 'POST') {
+          let raw = '';
+          req.on('data', c => { raw += c; if (raw.length > 16384) req.destroy(); });
+          req.on('end', async () => {
+            try {
+              const p = raw ? JSON.parse(raw) : {};
+              const resolvedKey = this.resolveResendApiKey();
+              const out = await this.analytics.reconcileWithResendApi({
+                apiKey: resolvedKey,
+                campaignId: p.campaignId || 'default',
+                limit: Number(p.limit || 25)
+              });
+              res.writeHead(out.ok ? 200 : 503, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify(out));
+            } catch (err) {
+              res.writeHead(400, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ ok: false, error: err.message }));
+            }
+          });
+          return;
+        }
+
         if (pathname === '/email/campaigns/second-wave/preview' && req.method === 'POST') {
           let raw = '';
           req.on('data', c => { raw += c; if (raw.length > 32768) req.destroy(); });
@@ -870,7 +892,7 @@ class EmailTestSidecar {
         if ((pathname === '/email/production/import' || pathname === '/email/production/queue/run' || pathname === '/email/production/queue/stop') && req.method === 'POST') {
           let raw = '';
           let tooLarge = false;
-          req.on('data', c => { raw += c; if (raw.length > 2097152) { tooLarge = true; req.destroy(); } });
+          req.on('data', c => { raw += c; if (raw.length > 10485760) { tooLarge = true; req.destroy(); } });
           req.on('end', async () => {
             if (tooLarge) return;
             try {

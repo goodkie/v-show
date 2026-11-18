@@ -4106,6 +4106,7 @@ const _handleMainMessageInner = (request, sender, sendResponse) => {
         case 'GET_REAL_EMAIL_STATUS':
         case 'GET_CAMPAIGN_PROGRESS':
         case 'GET_CAMPAIGN_SEGMENTS':
+        case 'RECONCILE_CAMPAIGN_RESEND':
         case 'PREVIEW_SECOND_WAVE':
         case 'START_SECOND_WAVE':
         case 'GET_MASTER_LIST_SUMMARY':
@@ -4139,7 +4140,7 @@ const _handleMainMessageInner = (request, sender, sendResponse) => {
                         });
                     };
                     let token = explicitToken || await pairTok(false);
-                    const isPost = request.action === 'SYNC_EMAIL_PRODUCTION_RECIPIENTS' || request.action === 'RUN_EMAIL_PRODUCTION_QUEUE' || request.action === 'STOP_EMAIL_PRODUCTION_QUEUE' || request.action === 'SEND_REAL_TEST_EMAIL' || request.action === 'PREVIEW_SECOND_WAVE' || request.action === 'START_SECOND_WAVE' || request.action === 'SAVE_GEMINI_COPY_API_KEY' || request.action === 'TEST_GEMINI_COPY_CONNECTION' || request.action === 'REQUEST_EMAIL_COPY_SUGGESTION' || request.action === 'VERIFY_RECIPIENT_DOMAINS_DNS' || request.action === 'SAVE_IMAGE_HOST_CONFIG' || request.action === 'UPLOAD_EMAIL_IMAGE' || request.action === 'SAVE_UNSUBSCRIBE_CONFIG';
+                    const isPost = request.action === 'SYNC_EMAIL_PRODUCTION_RECIPIENTS' || request.action === 'RUN_EMAIL_PRODUCTION_QUEUE' || request.action === 'STOP_EMAIL_PRODUCTION_QUEUE' || request.action === 'SEND_REAL_TEST_EMAIL' || request.action === 'RECONCILE_CAMPAIGN_RESEND' || request.action === 'PREVIEW_SECOND_WAVE' || request.action === 'START_SECOND_WAVE' || request.action === 'SAVE_GEMINI_COPY_API_KEY' || request.action === 'TEST_GEMINI_COPY_CONNECTION' || request.action === 'REQUEST_EMAIL_COPY_SUGGESTION' || request.action === 'VERIFY_RECIPIENT_DOMAINS_DNS' || request.action === 'SAVE_IMAGE_HOST_CONFIG' || request.action === 'UPLOAD_EMAIL_IMAGE' || request.action === 'SAVE_UNSUBSCRIBE_CONFIG';
                     const cid = encodeURIComponent(String(request.campaignId || 'default'));
                     const cutoff = encodeURIComponent(String(request.cutoffHours ?? 24));
                     const routeMap = {
@@ -4151,6 +4152,7 @@ const _handleMainMessageInner = (request, sender, sendResponse) => {
                         GET_REAL_EMAIL_STATUS: `/email/production/message-status?id=${encodeURIComponent(String(request.messageId || ''))}`,
                         GET_CAMPAIGN_PROGRESS: `/email/campaigns/${cid}/progress`,
                         GET_CAMPAIGN_SEGMENTS: `/email/campaigns/${cid}/segments?cutoffHours=${cutoff}`,
+                        RECONCILE_CAMPAIGN_RESEND: '/email/campaigns/reconcile',
                         PREVIEW_SECOND_WAVE: '/email/campaigns/second-wave/preview',
                         START_SECOND_WAVE: '/email/campaigns/second-wave/start',
                         GET_MASTER_LIST_SUMMARY: '/email/master-list',

@@ -483,6 +483,62 @@ class CampaignAnalyticsEngine {
       caveat: seg.caveat
     };
   }
+
+  async reconcileWithResendApi({ apiKey, campaignId = 'default', limit = 25, fetchImpl = null } = {}) {
+    const key = String(apiKey || '').trim();
+    const doFetch = typeof fetchImpl === 'function' ? fetchImpl : globalThis.fetch;
+    if (!key || typeof doFetch !== 'function') {
+      return { ok: false, reason: 'RESEND_KEY_OR_FETCH_UNAVAILABLE', checked: 0, updated: 0 };
+    }
+    const q = this._readJsonSafe(this.queueFile, { campaignId: 'default', entries: [] });
+    const entries = (q.campaignId === campaignId || campaignId === 'default') ? (q.entries || []) : [];
+    const { byEmailId } = this._buildEventsIndexByEmailIdAndHash();
+    const maxCheck = Math.min(Math.max(Number(limit) || 25, 1), 100);
+    let checked = 0;
+    let updated = 0;
+    for (const e of entries) {
+      if (checked >= maxCheck) break;
+      if (e.status !== 'ACCEPTED' || !e.providerMessageId) continue;
+      const evts = byEmailId.get(e.providerMessageId) || [];
+      const hasTerminal = evts.some(x => x.type === 'email.delivered' || x.type === 'email.bounced' || x.type === 'email.complained');
+      if (hasTerminal) continue;
+      checked++;
+      try {
+        const resp = await doFetch(`https://api.resend.com/emails/${encodeURIComponent(e.providerMessageId)}`, {
+          method: 'GET',
+          headers: { 'Authorization': `Bearer ${key}` }
+        });
+        if (!resp || !resp.ok) continue;
+        const det = await resp.json().catch(() => ({}));
+        const lastEvt = String(det.last_event || '').toLowerCase();
+        const evtMap = {
+          delivered: 'email.delivered',
+          bounced: 'email.bounced',
+          complained: 'email.complained',
+          opened: 'email.opened',
+          clicked: 'email.clicked',
+          delivery_delayed: 'email.delivery_delayed'
+        };
+        const mappedType = evtMap[lastEvt];
+        if (mappedType) {
+          const added = this.recordEvent({
+            event_id: `reconcile:${e.providerMessageId}:${mappedType}`,
+            type: mappedType,
+            email_id: e.providerMessageId,
+            recipient_hashes: [sha256Hex(e.email)],
+            created_at: det.created_at || new Date().toISOString(),
+            source: 'RESEND_API_RECONCILE'
+          });
+          if (added) updated++;
+        }
+      } catch (_) {}
+      if (typeof fetchImpl !== 'function') {
+        await new Promise(r => setTimeout(r, 150));
+      }
+    }
+    this.lastSyncAt = new Date().toISOString();
+    return { ok: true, checked, updated, lastSyncAt: this.lastSyncAt };
+  }
 }
 
 module.exports = {

@@ -249,7 +249,25 @@ function createMockWebStorage(initial = {}) {
     });
     assert.strictEqual(impReplay.summary.counts.PENDING, 0);
     assert.strictEqual(impReplay.summary.counts.ACCEPTED, 1);
-    console.log('PASS P0D-3: one-check bulk send mocked + re-import replay idempotency (0 duplicates)');
+
+    // P0D-4: Mixed CSV without checkbox: pre-verified ledger recipient stays PENDING, unknown is SKIPPED_NO_CONSENT (even for service)
+    pBulk.consentLedger.recordConsent({
+      email: 'preverified@example.com',
+      name: 'PreVerified',
+      authorizationSource: 'prior_verified_optin',
+      authorizationAt: new Date().toISOString()
+    });
+    const impMixed = pBulk.importAndPersistRecipients({
+      csvText: 'email,name\npreverified@example.com,Pre\nunknown@example.com,Unk',
+      messageKind: 'service',
+      consentAttested: false,
+      campaignId: 'mixed-auth-check'
+    });
+    assert.strictEqual(impMixed.summary.counts.PENDING, 1);
+    assert.strictEqual(impMixed.summary.counts.SKIPPED_NO_CONSENT, 1);
+    const pfMixed = await pBulk.evaluatePreflight({ hasResendKey: true, ownerExplicitApproval: true, publicUnsubscribeHttpsVerified: true });
+    assert.ok(!pfMixed.deliverabilityGate.reasons.includes('RECIPIENT_AUTHORIZATION_UNKNOWN'));
+    console.log('PASS P0D-3 & P0D-4: one-check bulk + mixed pre-verified vs unknown authorization');
   } finally {
     fs.rmSync(tmpBulkDir, { recursive: true, force: true });
   }

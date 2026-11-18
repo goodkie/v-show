@@ -793,13 +793,20 @@ class EmailProductionPipeline {
         entries.push({ email: r.email, name: r.name, idempotencyKey, status: 'SKIPPED_NO_CONSENT', reason: 'US_CAN_SPAM_REQUIRES_US_JURISDICTION', attempts: 0, providerMessageId: null, deliveryState: null, updatedAt: nowIso });
         continue;
       }
-      if (!consentAttested) {
-        if (messageKind === 'marketing') {
-          noConsentCount++;
-          entries.push({ email: r.email, name: r.name, idempotencyKey, status: 'SKIPPED_NO_CONSENT', reason: 'MARKETING_REQUIRES_CONSENT_ATTESTATION', attempts: 0, providerMessageId: null, deliveryState: null, updatedAt: nowIso });
-          continue;
-        }
-      } else if (basisAuthorized) {
+      const existingConsent = this.consentLedger.get(r.email);
+      const hasExistingVerifiedConsent = Boolean(existingConsent && this.consentLedger.verify({
+        email: r.email,
+        authorizationSource: existingConsent.authorizationSource,
+        authorizationAt: existingConsent.authorizationAt,
+        consentProofToken: existingConsent.consentProofToken
+      }));
+      let entryVerified = hasExistingVerifiedConsent;
+      if (!consentAttested && !hasExistingVerifiedConsent) {
+        noConsentCount++;
+        entries.push({ email: r.email, name: r.name, idempotencyKey, status: 'SKIPPED_NO_CONSENT', reason: 'AUTHORIZATION_UNKNOWN_REQUIRES_ATTESTATION', attempts: 0, providerMessageId: null, deliveryState: null, updatedAt: nowIso });
+        continue;
+      }
+      if (consentAttested && basisAuthorized) {
         const sourceTag = `${normSource}|${resolvedBasis}|${normJurisdiction}${proofRef ? '|' + String(proofRef).slice(0, 64) : ''}`;
         const consentRec = this.consentLedger.recordConsent({
           email: r.email,
@@ -817,7 +824,8 @@ class EmailProductionPipeline {
           templateId: campaignId,
           key: idempotencyKey
         });
-      } else {
+        entryVerified = true;
+      } else if (!hasExistingVerifiedConsent) {
         noConsentCount++;
         entries.push({ email: r.email, name: r.name, idempotencyKey, status: 'SKIPPED_NO_CONSENT', reason: 'LAWFUL_BASIS_NOT_VERIFIED', attempts: 0, providerMessageId: null, deliveryState: null, updatedAt: nowIso });
         continue;
@@ -831,7 +839,7 @@ class EmailProductionPipeline {
         reason: null,
         lawfulBasis: resolvedBasis,
         jurisdiction: normJurisdiction,
-        consentVerified: Boolean(consentAttested && basisAuthorized),
+        consentVerified: entryVerified,
         attempts: 0,
         providerMessageId: null,
         deliveryState: null,
@@ -912,12 +920,23 @@ class EmailProductionPipeline {
       ? Boolean(resendDomainConfig.verified && dnsReport.allVerified)
       : Boolean(dnsReport.allVerified && hasResendKey);
 
+    const eligiblePendingVerifiedCount = (this.queue.entries || []).filter(e => {
+      if (e.status !== 'PENDING') return false;
+      if (e.consentVerified === true) return true;
+      const cRec = this.consentLedger.get(e.email);
+      return Boolean(cRec && this.consentLedger.verify({
+        email: e.email,
+        authorizationSource: cRec.authorizationSource,
+        authorizationAt: cRec.authorizationAt,
+        consentProofToken: cRec.consentProofToken
+      }));
+    }).length;
     const gateEval = deliverabilityPolicy.evaluate({
       messageClass,
       coldOutreach: false,
       scrapedContacts: false,
       purchasedContacts: false,
-      recipientAuthorizationEvidenceVerified: summary.consentedRecordsOnDisk > 0 && Boolean(this.queue.consentAttested),
+      recipientAuthorizationEvidenceVerified: eligiblePendingVerifiedCount > 0 || (summary.consentedRecordsOnDisk > 0 && Boolean(this.queue.consentAttested)),
       fromDomain: DOMAIN,
       domainOwnershipVerified: dnsReport.allVerified,
       resendDomainVerified: resendVerified,
