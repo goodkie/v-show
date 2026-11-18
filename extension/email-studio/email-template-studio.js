@@ -994,6 +994,33 @@ if (el('btnCheckRealTestStatus')) {
     }
   };
 }
+if (el('consentAttest')) {
+  el('consentAttest').addEventListener('change', async () => {
+    if (!recipients.length && el('recipientCsv') && el('recipientCsv').value.trim()) {
+      runRecipientImport('auto-on-consent-check', null);
+    }
+    if (recipients.length) {
+      await syncSidecarRecipients();
+      const { sidecarPort, sidecarToken } = getSidecarConfig();
+      const pre = await callBg({ action: 'GET_EMAIL_PRODUCTION_PREFLIGHT', sidecarPort, sidecarToken }).catch(() => null);
+      if (pre && pre.ok && pre.data) {
+        const qReady = Number(pre.data.queueSummary?.counts?.PENDING || 0);
+        const consented = Number(pre.data.queueSummary?.consentedRecordsOnDisk || 0);
+        const gateOk = pre.data.deliverabilityGate?.action !== 'BLOCK' && qReady > 0;
+        if (el('prodQueueBadge')) {
+          el('prodQueueBadge').textContent = gateOk
+            ? `🟢 QUEUE READY — ${qReady} VERIFIED OPT-IN`
+            : `⏸️ QUEUE NOT READY — ${qReady} QUEUED / ${consented} DOCUMENTED OPT-IN`;
+        }
+        if (el('headerProdStateBadge')) {
+          el('headerProdStateBadge').textContent = gateOk
+            ? `✅ 상용발송 잠금 해제 · 발송 가능 ${qReady}건`
+            : `✅ 상용발송 잠금 해제 · 발송대상/자격 확인 필요 (동의기록 ${consented}건 / 대기 ${qReady}건)`;
+        }
+      }
+    }
+  });
+}
 if (el('btnLoadLedger')) el('btnLoadLedger').onclick = loadLedger;
 if (el('btnSaveResendKey')) {
   el('btnSaveResendKey').onclick = async () => {
