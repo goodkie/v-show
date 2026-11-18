@@ -4102,6 +4102,8 @@ const _handleMainMessageInner = (request, sender, sendResponse) => {
         case 'SYNC_EMAIL_PRODUCTION_RECIPIENTS':
         case 'RUN_EMAIL_PRODUCTION_QUEUE':
         case 'STOP_EMAIL_PRODUCTION_QUEUE':
+        case 'SEND_REAL_TEST_EMAIL':
+        case 'GET_REAL_EMAIL_STATUS':
         case 'GET_EMAIL_CONTENT_QA_STATUS':
         case 'SAVE_GEMINI_COPY_API_KEY':
         case 'TEST_GEMINI_COPY_CONNECTION':
@@ -4131,12 +4133,14 @@ const _handleMainMessageInner = (request, sender, sendResponse) => {
                         });
                     };
                     let token = explicitToken || await pairTok(false);
-                    const isPost = request.action === 'SYNC_EMAIL_PRODUCTION_RECIPIENTS' || request.action === 'RUN_EMAIL_PRODUCTION_QUEUE' || request.action === 'STOP_EMAIL_PRODUCTION_QUEUE' || request.action === 'SAVE_GEMINI_COPY_API_KEY' || request.action === 'TEST_GEMINI_COPY_CONNECTION' || request.action === 'REQUEST_EMAIL_COPY_SUGGESTION' || request.action === 'VERIFY_RECIPIENT_DOMAINS_DNS' || request.action === 'SAVE_IMAGE_HOST_CONFIG' || request.action === 'UPLOAD_EMAIL_IMAGE' || request.action === 'SAVE_UNSUBSCRIBE_CONFIG';
+                    const isPost = request.action === 'SYNC_EMAIL_PRODUCTION_RECIPIENTS' || request.action === 'RUN_EMAIL_PRODUCTION_QUEUE' || request.action === 'STOP_EMAIL_PRODUCTION_QUEUE' || request.action === 'SEND_REAL_TEST_EMAIL' || request.action === 'SAVE_GEMINI_COPY_API_KEY' || request.action === 'TEST_GEMINI_COPY_CONNECTION' || request.action === 'REQUEST_EMAIL_COPY_SUGGESTION' || request.action === 'VERIFY_RECIPIENT_DOMAINS_DNS' || request.action === 'SAVE_IMAGE_HOST_CONFIG' || request.action === 'UPLOAD_EMAIL_IMAGE' || request.action === 'SAVE_UNSUBSCRIBE_CONFIG';
                     const routeMap = {
                         GET_EMAIL_PRODUCTION_PREFLIGHT: '/email/production/preflight',
                         SYNC_EMAIL_PRODUCTION_RECIPIENTS: '/email/production/import',
                         RUN_EMAIL_PRODUCTION_QUEUE: '/email/production/queue/run',
                         STOP_EMAIL_PRODUCTION_QUEUE: '/email/production/queue/stop',
+                        SEND_REAL_TEST_EMAIL: '/email/production/real-test-send',
+                        GET_REAL_EMAIL_STATUS: `/email/production/message-status?id=${encodeURIComponent(String(request.messageId || ''))}`,
                         GET_EMAIL_CONTENT_QA_STATUS: '/email/content-qa/status',
                         SAVE_GEMINI_COPY_API_KEY: '/email/content-qa/key',
                         TEST_GEMINI_COPY_CONNECTION: '/email/content-qa/test-connection',

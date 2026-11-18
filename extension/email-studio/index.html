@@ -88,7 +88,25 @@
     </div>
   </details>
 </div>
-<div class="actions"><button type="button" class="primary" id="exportHtml">HTML 저장</button><button type="button" id="exportText">텍스트 저장</button><button type="button" id="exportJson">템플릿 JSON</button><button type="button" id="btnSaveDraft">초안 저장</button><button type="button" id="btnLoadDraft">초안 불러오기</button></div>
+<div class="actions"><button type="button" class="primary" id="exportHtml">HTML 저장</button><button type="button" id="exportText">텍스트 저장</button><button type="button" id="exportJson">템플릿 JSON</button><button type="button" id="btnImportTemplate">📂 템플릿 불러오기</button><button type="button" id="btnSaveDraft">💾 초안 저장</button><button type="button" id="btnLoadDraft">📥 초안 불러오기</button></div>
+<input type="file" id="importTemplateFile" accept=".json,application/json" style="display:none">
+<div class="status-box status-idle" id="draftManagerBox" style="margin-top:8px;">
+  <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;">
+    <label for="draftSelect" style="margin:0;font-size:12px;"><b>작업 초안:</b></label>
+    <select id="draftSelect" style="flex:1;min-width:160px;padding:4px;font-size:12px;"><option value="">(저장된 초안 없음)</option></select>
+    <input id="draftNameInput" placeholder="초안 이름 (선택)" style="flex:1;min-width:130px;padding:4px;font-size:12px;">
+    <button type="button" id="btnNewDraft">➕ 새 초안</button>
+    <button type="button" id="btnDeleteDraft">🗑️ 삭제</button>
+  </div>
+  <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:6px;">
+    <label for="templateLibrarySelect" style="margin:0;font-size:12px;"><b>템플릿 라이브러리:</b></label>
+    <select id="templateLibrarySelect" style="flex:1;min-width:160px;padding:4px;font-size:12px;"><option value="">(저장된 템플릿 없음)</option></select>
+    <button type="button" id="btnSaveToTemplateLibrary">⭐ 템플릿으로 저장</button>
+    <button type="button" id="btnLoadFromTemplateLibrary">📄 템플릿 적용</button>
+    <button type="button" id="btnDeleteFromTemplateLibrary">🗑️ 템플릿 삭제</button>
+  </div>
+  <div id="draftStatus" class="note" aria-live="polite" style="margin-top:6px;">초안·템플릿 저장소는 chrome.storage.local(읽기 재검증 포함)을 사용하며 비밀키·수신자 목록은 저장하지 않습니다.</div>
+</div>
 <div class="note">이미지 파일은 PC 내 미리보기만 지원합니다. 실제 발송용 HTML에는 공개 HTTPS 이미지 URL을 입력해야 합니다. 이메일 본문의 링크만으로 RFC 8058 원클릭 구독 취소 헤더가 생성되는 것은 아닙니다. 해당 헤더와 작동하는 POST 엔드포인트는 발송 서비스에서 별도 검증해야 합니다.</div>
 <div class="checks"><b>발송 전 콘텐츠 검사 (규칙 기반 스팸·맞춤법·규정 점검)</b><ul id="checkList" aria-live="polite"></ul><small>주의 사항은 휴리스틱(규칙 기반) 점검이며 Gmail/Resend 스팸 점수 또는 실제 받은편지함 도착(Deliverability) 보장이 아닙니다.</small></div>
 <div class="send-control-card" id="contentQaCard" aria-label="콘텐츠 품질 및 문구 교정 제안" style="margin-top:10px;">
@@ -226,13 +244,22 @@
 <div id="testSendStatus" class="status-box status-idle" aria-live="polite">대기 중: Sidecar 포트(기본 18990)와 제어 토큰을 확인한 뒤 테스트 발송 버튼을 누르세요.</div>
 <div id="ledgerView" class="status-box status-idle" aria-live="polite">원장 미조회: '발송 원장 조회'를 누르면 ACCEPTED(시뮬레이터 접수 ≠ 실제 수신함 도착) 및 차단 이력이 표시됩니다.</div>
 </div>
+<div class="test-send-box" id="realTestEmailBox" style="margin-top:10px;border:1px solid rgba(37,99,235,0.45);">
+<h4>📨 실제 테스트 이메일 보내기 (Real Resend · noreply@vivpr.pro)</h4>
+<p class="desc">위 시뮬레이터와 별개로, <b>실제 수신함</b>으로 테스트 메일 1통을 발송합니다 (동의 원장 기록 · HTTPS 수신거부 헤더 · Idempotency-Key 적용).</p>
+<div class="form-row"><label for="realTestRecipient">승인된 테스트 수신자 이메일 (1개)</label><input id="realTestRecipient" type="email" placeholder="예: studioberryinfo@gmail.com"></div>
+<label style="display:flex;align-items:center;gap:6px;margin:6px 0;font-size:12px;"><input id="realTestConsentCheck" type="checkbox"> 이 수신자는 본인이 관리하거나 테스트 메일 1통 수신을 명시적으로 승인한 주소임을 확인합니다.</label>
+<div class="actions"><button type="button" class="primary" id="btnRealTestSend">🚀 실제 테스트 이메일 보내기</button><button type="button" id="btnCheckRealTestStatus">🔄 최근 발송 상태 조회 (ACCEPTED vs DELIVERED)</button></div>
+<div id="realTestStatus" class="status-box status-idle" aria-live="polite">대기 중: 승인된 테스트 이메일 주소를 입력하고 동의 체크 후 '실제 테스트 이메일 보내기'를 누르세요.</div>
+</div>
 <div class="prod-send-box">
 <div class="prod-header"><h4>🚀 상용(운영) 발송 (Production Send)</h4><div style="display:flex;gap:6px;flex-wrap:wrap;"><span class="badge-test" id="prodGateBadge">✅ PRODUCTION UNLOCKED</span><span class="badge-test" id="prodQueueBadge">⏸️ QUEUE NOT READY — 0 DOCUMENTED OPT-IN RECIPIENTS</span></div></div>
 <p class="desc">vivpr.pro 도메인(SPF/DKIM/DMARC), HTTPS 원클릭 수신 거부(unsubscribe.vivpr.pro), HMAC 동의 원장 및 Webhook 검증이 활성화되어 있습니다. <b>수집/스크래핑된 CSV는 수신 동의로 간주되지 않으며</b>, 명시적 수신 동의가 확인된 수신자에게만 발송됩니다.</p>
-<div class="actions"><button type="button" class="primary" id="btnProdSend" title="동의 원장·수신거부·도메인 검증을 통과한 수신자에게만 발송">🚀 운영 이메일 발송 (Verified Opt-In)</button><button type="button" id="btnCheckProdPreflight">🔍 운영 DNS · 동의원장 · 수신거부 · 웹훅 점검</button></div>
+<div class="actions"><button type="button" class="primary" id="btnProdSend" title="동의 원장·수신거부·도메인 검증을 통과한 수신자에게만 발송">🚀 운영 이메일 발송 (Verified Opt-In)</button><button type="button" id="btnProdStop">⏹️ 운영 큐 중지</button><button type="button" id="btnCheckProdPreflight">🔍 운영 DNS · 동의원장 · 수신거부 · 웹훅 점검</button></div>
 <div id="prodPreflightStatus" class="status-box status-idle" aria-live="polite">PRODUCTION UNLOCKED · QUEUE NOT READY — 0 DOCUMENTED OPT-IN RECIPIENTS: 수신자 CSV 입력 후 법적 수신 동의 확인 체크박스를 선택하고 "가져오기 · 중복 제거"를 누르면 큐가 준비됩니다.</div>
 </div>
 </div>
 </section></main>
 <script src="recipient-manager.js"></script>
+<script src="studio-storage.js"></script>
 <script src="email-template-studio.js"></script></body></html>

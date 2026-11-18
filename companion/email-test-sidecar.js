@@ -544,6 +544,199 @@ class EmailTestSidecar {
           return;
         }
 
+        if (pathname === '/email/production/message-status' && req.method === 'GET') {
+          const msgId = String(urlObj.searchParams.get('id') || '').trim();
+          const resolvedKey = this.resolveResendApiKey();
+          if (!msgId || !/^[a-z0-9_-]{8,128}$/i.test(msgId)) {
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ ok: false, reason: 'INVALID_MESSAGE_ID' }));
+            return;
+          }
+          if (!resolvedKey) {
+            res.writeHead(503, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ ok: false, reason: 'RESEND_API_KEY_NOT_CONFIGURED' }));
+            return;
+          }
+          try {
+            const detResp = await fetch(`https://api.resend.com/emails/${encodeURIComponent(msgId)}`, {
+              headers: { 'Authorization': `Bearer ${resolvedKey}` }
+            });
+            const det = await detResp.json().catch(() => ({}));
+            res.writeHead(detResp.ok ? 200 : detResp.status, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({
+              ok: detResp.ok,
+              id: det.id || msgId,
+              last_event: det.last_event || 'unknown',
+              created_at: det.created_at || null
+            }));
+          } catch (err) {
+            res.writeHead(502, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ ok: false, reason: 'RESEND_STATUS_FETCH_ERROR', message: err.message }));
+          }
+          return;
+        }
+
+        if (pathname === '/email/production/real-test-send' && req.method === 'POST') {
+          let raw = '';
+          let tooLarge = false;
+          req.on('data', c => { raw += c; if (raw.length > 524288) { tooLarge = true; req.destroy(); } });
+          req.on('end', async () => {
+            if (tooLarge) return;
+            try {
+              const payload = raw ? JSON.parse(raw) : {};
+              if (payload.ownerTestConsentConfirmed !== true) {
+                res.writeHead(400, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ ok: false, status: 'BLOCKED', reason: 'OWNER_TEST_CONSENT_REQUIRED', message: '실제 테스트 메일 1통 수신 동의 체크박스를 선택하세요.' }));
+                return;
+              }
+              const recipient = String(payload.recipient || '').trim().toLowerCase();
+              if (!recipient || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipient)) {
+                res.writeHead(400, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ ok: false, status: 'BLOCKED', reason: 'INVALID_RECIPIENT_EMAIL' }));
+                return;
+              }
+              if (/resend\.dev$/i.test(recipient)) {
+                res.writeHead(400, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ ok: false, status: 'BLOCKED', reason: 'SIMULATOR_ADDRESS_USE_SIMULATOR_BOX' }));
+                return;
+              }
+              const resolvedKey = this.resolveResendApiKey();
+              if (!resolvedKey) {
+                res.writeHead(503, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ ok: false, status: 'BLOCKED', reason: 'RESEND_API_KEY_NOT_CONFIGURED' }));
+                return;
+              }
+              const unsubCfg = this.pipeline.getUnsubscribePublicConfig();
+              const publicUnsubBase = String(unsubCfg?.publicBaseUrl || '').trim();
+              if (!/^https:\/\/(?!127\.0\.0\.1|localhost\b)[a-z0-9.-]+\.[a-z]{2,}/i.test(publicUnsubBase)) {
+                res.writeHead(409, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ ok: false, status: 'BLOCKED', reason: 'PUBLIC_HTTPS_UNSUBSCRIBE_REQUIRED' }));
+                return;
+              }
+              const syncTokenPath = path.join(this.stateDir, '.unsubscribe_sync_token');
+              const syncToken = fs.existsSync(syncTokenPath) ? fs.readFileSync(syncTokenPath, 'utf8').trim() : '';
+              if (!syncToken) {
+                res.writeHead(409, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ ok: false, status: 'BLOCKED', reason: 'UNSUBSCRIBE_SYNC_TOKEN_REQUIRED' }));
+                return;
+              }
+
+              const consentRec = this.pipeline.consentLedger.recordConsent({
+                email: recipient,
+                name: 'Owner Real Test',
+                authorizationSource: 'owner_studio_real_test_send_consent',
+                authorizationAt: new Date().toISOString()
+              });
+              const consentOk = this.pipeline.consentLedger.verify({
+                email: recipient,
+                authorizationSource: consentRec.authorizationSource,
+                authorizationAt: consentRec.authorizationAt,
+                consentProofToken: consentRec.consentProofToken
+              });
+              if (!consentOk) {
+                res.writeHead(409, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ ok: false, status: 'BLOCKED', reason: 'CONSENT_PROOF_FAILED' }));
+                return;
+              }
+
+              const syncRes = await this.pipeline.syncRemoteSuppressions({ baseUrl: publicUnsubBase, syncToken });
+              if (!syncRes.ok) {
+                res.writeHead(503, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ ok: false, status: 'BLOCKED', reason: 'UNSUBSCRIBE_SYNC_UNAVAILABLE' }));
+                return;
+              }
+              if (this.pipeline.isRecipientSuppressed(recipient)) {
+                res.writeHead(409, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ ok: false, status: 'BLOCKED', reason: 'RECIPIENT_SUPPRESSED' }));
+                return;
+              }
+
+              const pf = await this.pipeline.evaluatePreflight({
+                hasResendKey: true,
+                apiKey: resolvedKey,
+                ownerExplicitApproval: true,
+                publicUnsubscribeHttpsVerified: true,
+                refreshProviderDomain: true
+              });
+              if (!pf.resendDomainConfig?.verified || !pf.dns?.allVerified) {
+                res.writeHead(409, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ ok: false, status: 'BLOCKED', reason: 'DOMAIN_OR_DNS_UNVERIFIED', blockingReasons: pf.deliverabilityGate?.reasons || [] }));
+                return;
+              }
+
+              const campaignId = 'studio-real-test-' + new Date().toISOString().slice(0, 10);
+              const unsub = this.pipeline.issueRecipientUnsubscribeHeaders(recipient, campaignId, publicUnsubBase);
+              const recipientHash = crypto.createHash('sha256').update(recipient).digest('hex');
+              const regResp = await fetch(`${publicUnsubBase.replace(/\/+$/, '')}/api/sync/tokens`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${syncToken}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  tokenHash: unsub.tokenHash,
+                  recipientHash,
+                  campaignId,
+                  issuedAt: new Date().toISOString(),
+                  expiresAt: new Date(Date.now() + 365 * 86400000).toISOString()
+                })
+              });
+              if (!regResp.ok) {
+                res.writeHead(502, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ ok: false, status: 'BLOCKED', reason: `UNSUBSCRIBE_TOKEN_SYNC_HTTP_${regResp.status}` }));
+                return;
+              }
+
+              const idempotencyKey = String(payload.idempotencyKey || `xpider_realtest_${Date.now()}_${crypto.randomBytes(6).toString('hex')}`).slice(0, 128);
+              const subject = String(payload.subject || '[XPIDER] Real Test Verification').trim().slice(0, 200);
+              const rawHtml = String(payload.html || '<p>XPIDER Real Test Verification</p>');
+              const rawText = String(payload.text || 'XPIDER Real Test Verification');
+              const unsubFooterHtml = `<hr style="border:none;border-top:1px solid #ddd;margin:20px 0;" /><p style="font-size:12px;color:#555;">To unsubscribe: <a href="${unsub.url}">Unsubscribe</a></p>`;
+              const finalHtml = rawHtml.includes(unsub.url) ? rawHtml : `${rawHtml}\n${unsubFooterHtml}`;
+              const finalText = rawText.includes(unsub.url) ? rawText : `${rawText}\n\nUnsubscribe: ${unsub.url}`;
+
+              this.pipeline._appendAudit({ type: 'REAL_TEST_SEND_STARTED', campaignId, idempotencyKey });
+              const sendResp = await fetch('https://api.resend.com/emails', {
+                method: 'POST',
+                headers: {
+                  'Authorization': `Bearer ${resolvedKey}`,
+                  'Content-Type': 'application/json',
+                  'Idempotency-Key': idempotencyKey
+                },
+                body: JSON.stringify({
+                  from: 'XPIDER <noreply@vivpr.pro>',
+                  to: [recipient],
+                  subject,
+                  html: finalHtml,
+                  text: finalText,
+                  headers: unsub.headers
+                })
+              });
+              const sendBody = await sendResp.json().catch(() => ({}));
+              const parts = recipient.split('@');
+              const maskedRecipient = `${parts[0].slice(0, 2)}***@${parts[1]}`;
+              if (!sendResp.ok || !sendBody.id) {
+                this.pipeline._appendAudit({ type: 'REAL_TEST_SEND_FAILED', campaignId, idempotencyKey, status: sendResp.status, error: sendBody });
+                res.writeHead(502, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ ok: false, status: 'FAILED', reason: sendBody.message || `RESEND_HTTP_${sendResp.status}` }));
+                return;
+              }
+              this.pipeline._appendAudit({ type: 'REAL_TEST_SEND_ACCEPTED', campaignId, idempotencyKey, providerMessageId: sendBody.id });
+              res.writeHead(200, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({
+                ok: true,
+                status: 'ACCEPTED',
+                deliveryState: 'ACCEPTED',
+                providerMessageId: sendBody.id,
+                idempotencyKey,
+                maskedRecipient,
+                note: 'ACCEPTED는 Resend 서버 접수 상태이며, 실제 수신함 도착(DELIVERED) 여부는 상태 조회로 확인하세요.'
+              }));
+            } catch (err) {
+              res.writeHead(400, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ ok: false, status: 'ERROR', reason: err.message }));
+            }
+          });
+          return;
+        }
+
         if ((pathname === '/email/production/import' || pathname === '/email/production/queue/run' || pathname === '/email/production/queue/stop') && req.method === 'POST') {
           let raw = '';
           let tooLarge = false;

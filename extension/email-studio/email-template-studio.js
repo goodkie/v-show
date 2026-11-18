@@ -581,49 +581,134 @@ async function triggerTestSend() {
 if (el('btnTestSend')) el('btnTestSend').onclick = triggerTestSend;
 if (el('btnCheckCompanion')) el('btnCheckCompanion').onclick = checkCompanionStatus;
 
-const DRAFT_STORAGE_KEY = 'xpider_email_studio_draft_v1';
 const DRAFT_FIELDS = ['kind', 'subject', 'preheader', 'brand', 'heading', 'body', 'image', 'alt', 'cta', 'link', 'reply', 'company', 'address', 'unsubscribe'];
+let studioDirty = false;
+let lastRealTestMsgId = null;
 
-function saveTemplateDraft() {
-  try {
-    const draft = {};
-    for (const f of DRAFT_FIELDS) {
-      if (el(f)) draft[f] = el(f).value;
-    }
-    localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify({ savedAt: new Date().toISOString(), draft }));
-    const box = el('testSendStatus');
-    if (box) {
-      box.className = 'status-box status-success';
-      box.textContent = '💾 템플릿 초안이 브라우저 로컬에 저장되었습니다 (비밀키/토큰 제외).';
-    }
-  } catch (e) {
-    const box = el('testSendStatus');
-    if (box) { box.className = 'status-box status-error'; box.textContent = '❌ 초안 저장 실패: ' + e.message; }
+function setDraftStatus(cls, msg) {
+  const ds = el('draftStatus');
+  if (ds) {
+    ds.className = `status-box ${cls}`;
+    ds.textContent = msg;
   }
 }
 
-function loadTemplateDraft() {
+function collectStudioFieldValues() {
+  const draft = {};
+  for (const f of DRAFT_FIELDS) {
+    if (el(f)) draft[f] = el(f).value;
+  }
+  return draft;
+}
+
+function applyStudioFieldValues(d) {
+  for (const f of DRAFT_FIELDS) {
+    if (el(f) && typeof d[f] === 'string') {
+      el(f).value = d[f];
+    }
+  }
+  studioDirty = false;
+  render();
+}
+
+for (const f of DRAFT_FIELDS) {
+  if (el(f)) {
+    el(f).addEventListener('input', () => { studioDirty = true; });
+    el(f).addEventListener('change', () => { studioDirty = true; });
+  }
+}
+
+async function refreshDraftAndTemplateSelectors() {
+  const storeApi = typeof window !== 'undefined' ? window.XpiderStudioStorage : null;
+  if (!storeApi) return;
+  const dRes = await storeApi.loadDraftsStore();
+  const dSel = el('draftSelect');
+  if (dSel) {
+    dSel.innerHTML = '';
+    const items = dRes.store?.items || [];
+    if (items.length === 0) {
+      const opt = document.createElement('option');
+      opt.value = '';
+      opt.textContent = '(저장된 초안 없음)';
+      dSel.appendChild(opt);
+    } else {
+      for (const item of items) {
+        const opt = document.createElement('option');
+        opt.value = item.id;
+        opt.textContent = `${item.name} (${(item.savedAt || '').slice(0, 16).replace('T', ' ')})`;
+        if (item.id === dRes.store.activeId) opt.selected = true;
+        dSel.appendChild(opt);
+      }
+    }
+  }
+  if (dRes.recovered) {
+    setDraftStatus('status-blocked', `⚠️ 손상된 기존 초안 데이터를 복구했습니다 (${dRes.error || 'RECOVERED'}).`);
+  }
+  const tRes = await storeApi.loadTemplatesLibrary();
+  const tSel = el('templateLibrarySelect');
+  if (tSel) {
+    tSel.innerHTML = '';
+    const tItems = tRes.store?.items || [];
+    if (tItems.length === 0) {
+      const opt = document.createElement('option');
+      opt.value = '';
+      opt.textContent = '(저장된 템플릿 없음)';
+      tSel.appendChild(opt);
+    } else {
+      for (const item of tItems) {
+        const opt = document.createElement('option');
+        opt.value = item.id;
+        opt.textContent = `${item.name} (${(item.savedAt || '').slice(0, 16).replace('T', ' ')})`;
+        if (item.id === tRes.store.activeId) opt.selected = true;
+        tSel.appendChild(opt);
+      }
+    }
+  }
+}
+
+async function saveTemplateDraft() {
   try {
-    const raw = localStorage.getItem(DRAFT_STORAGE_KEY);
-    if (!raw) {
-      const box = el('testSendStatus');
-      if (box) { box.className = 'status-box status-blocked'; box.textContent = 'ℹ️ 저장된 템플릿 초안이 없습니다.'; }
+    const storeApi = typeof window !== 'undefined' ? window.XpiderStudioStorage : null;
+    if (!storeApi) throw new Error('STUDIO_STORAGE_UNAVAILABLE');
+    const data = collectStudioFieldValues();
+    const dSel = el('draftSelect');
+    const selectedId = dSel && dSel.value ? dSel.value : `draft_${Date.now()}`;
+    const customName = el('draftNameInput') ? el('draftNameInput').value.trim() : '';
+    const saved = await storeApi.saveDraft({
+      id: selectedId,
+      name: customName || data.subject || '이름 없는 초안',
+      data
+    });
+    studioDirty = false;
+    await refreshDraftAndTemplateSelectors();
+    if (el('draftSelect')) el('draftSelect').value = saved.draft.id;
+    setDraftStatus('status-success', `💾 초안 저장 및 읽기 검증 완료 [${saved.backend}]: "${saved.draft.name}" (${saved.draft.savedAt})`);
+  } catch (e) {
+    setDraftStatus('status-error', `❌ 초안 저장 실패: ${e.message}`);
+  }
+}
+
+async function loadTemplateDraft() {
+  try {
+    const storeApi = typeof window !== 'undefined' ? window.XpiderStudioStorage : null;
+    if (!storeApi) throw new Error('STUDIO_STORAGE_UNAVAILABLE');
+    if (studioDirty && typeof window.confirm === 'function') {
+      if (!window.confirm('저장되지 않은 편집 내용이 있습니다. 선택한 초안을 불러와 덮어쓸까요?')) return;
+    }
+    const res = await storeApi.loadDraftsStore();
+    const items = res.store?.items || [];
+    if (items.length === 0) {
+      setDraftStatus('status-blocked', 'ℹ️ 저장된 초안이 없습니다.');
       return;
     }
-    const parsed = JSON.parse(raw);
-    const d = parsed && parsed.draft ? parsed.draft : {};
-    for (const f of DRAFT_FIELDS) {
-      if (el(f) && typeof d[f] === 'string') el(f).value = d[f];
-    }
-    render();
-    const box = el('testSendStatus');
-    if (box) {
-      box.className = 'status-box status-success';
-      box.textContent = `📂 저장된 템플릿 초안을 불러왔습니다 (${parsed.savedAt || ''}).`;
-    }
+    const dSel = el('draftSelect');
+    const targetId = (dSel && dSel.value) || res.store.activeId || items[0].id;
+    const found = items.find(x => x.id === targetId) || items[0];
+    applyStudioFieldValues(found.data);
+    if (el('draftNameInput')) el('draftNameInput').value = found.name || '';
+    setDraftStatus('status-success', `📂 초안 불러오기 완료 [${res.backend}]: "${found.name}" (${found.savedAt})`);
   } catch (e) {
-    const box = el('testSendStatus');
-    if (box) { box.className = 'status-box status-error'; box.textContent = '❌ 초안 불러오기 실패: ' + e.message; }
+    setDraftStatus('status-error', `❌ 초안 불러오기 실패: ${e.message}`);
   }
 }
 
@@ -655,6 +740,172 @@ async function loadLedger() {
 
 if (el('btnSaveDraft')) el('btnSaveDraft').onclick = saveTemplateDraft;
 if (el('btnLoadDraft')) el('btnLoadDraft').onclick = loadTemplateDraft;
+if (el('btnNewDraft')) {
+  el('btnNewDraft').onclick = () => {
+    if (studioDirty && typeof window.confirm === 'function') {
+      if (!window.confirm('저장되지 않은 편집 내용이 있습니다. 새 초안을 시작할까요?')) return;
+    }
+    if (el('draftSelect')) el('draftSelect').value = '';
+    if (el('draftNameInput')) el('draftNameInput').value = '';
+    studioDirty = false;
+    setDraftStatus('status-idle', '🆕 새 초안 ID가 준비되었습니다. 편집 후 [초안 저장]을 누르세요.');
+  };
+}
+if (el('btnDeleteDraft')) {
+  el('btnDeleteDraft').onclick = async () => {
+    const storeApi = typeof window !== 'undefined' ? window.XpiderStudioStorage : null;
+    const id = el('draftSelect')?.value;
+    if (!storeApi || !id) return setDraftStatus('status-blocked', 'ℹ️ 삭제할 초안을 먼저 선택하세요.');
+    await storeApi.deleteDraft(id);
+    await refreshDraftAndTemplateSelectors();
+    setDraftStatus('status-success', '🗑️ 선택한 초안을 삭제했습니다.');
+  };
+}
+if (el('btnImportTemplate') && el('importTemplateFile')) {
+  el('btnImportTemplate').onclick = () => {
+    el('importTemplateFile').value = '';
+    el('importTemplateFile').click();
+  };
+  el('importTemplateFile').onchange = async (ev) => {
+    const file = ev.target?.files?.[0];
+    if (!file) return;
+    try {
+      const storeApi = typeof window !== 'undefined' ? window.XpiderStudioStorage : null;
+      if (!storeApi) throw new Error('STUDIO_STORAGE_UNAVAILABLE');
+      if (file.size > 262144) throw new Error('TEMPLATE_FILE_TOO_LARGE');
+      const rawText = await file.text();
+      const validated = storeApi.validateAndSanitizeImportedTemplate(rawText);
+      if (studioDirty && typeof window.confirm === 'function') {
+        if (!window.confirm('저장되지 않은 편집 내용이 있습니다. 가져온 템플릿으로 덮어쓸까요?')) return;
+      }
+      applyStudioFieldValues(validated.template);
+      setDraftStatus('status-success', `📂 템플릿 JSON 가져오기 완료: ${file.name} (v${validated.version})`);
+    } catch (err) {
+      setDraftStatus('status-error', `❌ 템플릿 가져오기 거부됨 (기존 초안 유지): ${err.message}`);
+    }
+  };
+}
+if (el('btnSaveToTemplateLibrary')) {
+  el('btnSaveToTemplateLibrary').onclick = async () => {
+    try {
+      const storeApi = typeof window !== 'undefined' ? window.XpiderStudioStorage : null;
+      if (!storeApi) throw new Error('STUDIO_STORAGE_UNAVAILABLE');
+      const data = collectStudioFieldValues();
+      const customName = el('draftNameInput')?.value.trim() || data.subject || '재사용 템플릿';
+      const saved = await storeApi.saveTemplateToLibrary({ id: `tpl_${Date.now()}`, name: customName, data });
+      await refreshDraftAndTemplateSelectors();
+      setDraftStatus('status-success', `⭐ 템플릿 라이브러리에 저장됨 [${saved.backend}]: "${saved.template.name}"`);
+    } catch (err) {
+      setDraftStatus('status-error', `❌ 템플릿 라이브러리 저장 실패: ${err.message}`);
+    }
+  };
+}
+if (el('btnLoadFromTemplateLibrary')) {
+  el('btnLoadFromTemplateLibrary').onclick = async () => {
+    try {
+      const storeApi = typeof window !== 'undefined' ? window.XpiderStudioStorage : null;
+      const id = el('templateLibrarySelect')?.value;
+      if (!storeApi || !id) return setDraftStatus('status-blocked', 'ℹ️ 적용할 템플릿을 선택하세요.');
+      if (studioDirty && typeof window.confirm === 'function') {
+        if (!window.confirm('저장되지 않은 편집 내용이 있습니다. 선택한 템플릿을 적용할까요?')) return;
+      }
+      const res = await storeApi.loadTemplatesLibrary();
+      const found = (res.store?.items || []).find(x => x.id === id);
+      if (!found) return setDraftStatus('status-blocked', 'ℹ️ 선택한 템플릿을 찾을 수 없습니다.');
+      applyStudioFieldValues(found.data);
+      setDraftStatus('status-success', `📄 템플릿 적용 완료: "${found.name}"`);
+    } catch (err) {
+      setDraftStatus('status-error', `❌ 템플릿 적용 실패: ${err.message}`);
+    }
+  };
+}
+if (el('btnDeleteFromTemplateLibrary')) {
+  el('btnDeleteFromTemplateLibrary').onclick = async () => {
+    const storeApi = typeof window !== 'undefined' ? window.XpiderStudioStorage : null;
+    const id = el('templateLibrarySelect')?.value;
+    if (!storeApi || !id) return setDraftStatus('status-blocked', 'ℹ️ 삭제할 템플릿을 먼저 선택하세요.');
+    await storeApi.deleteTemplateFromLibrary(id);
+    await refreshDraftAndTemplateSelectors();
+    setDraftStatus('status-success', '🗑️ 템플릿 라이브러리 항목을 삭제했습니다.');
+  };
+}
+setTimeout(() => { try { refreshDraftAndTemplateSelectors(); } catch (_) {} }, 60);
+
+if (el('btnRealTestSend')) {
+  el('btnRealTestSend').onclick = async () => {
+    const box = el('realTestStatus');
+    const btn = el('btnRealTestSend');
+    const rec = el('realTestRecipient')?.value.trim() || '';
+    const consented = Boolean(el('realTestConsentCheck')?.checked);
+    if (!rec || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(rec)) {
+      if (box) { box.className = 'status-box status-blocked'; box.textContent = '⚠️ 유효한 테스트 수신자 이메일 주소를 입력하세요.'; }
+      return;
+    }
+    if (!consented) {
+      if (box) { box.className = 'status-box status-blocked'; box.textContent = '⚠️ 실제 테스트 메일 1통 수신 동의 체크박스를 선택해야 발송됩니다.'; }
+      return;
+    }
+    const v = values();
+    const subject = (v.subject || '').trim() || '[XPIDER] Real Test Verification';
+    if (typeof window.confirm === 'function') {
+      if (!window.confirm(`실제 수신함(${rec})으로 테스트 메일 1통을 발송할까요?\n제목: ${subject}`)) return;
+    }
+    const idempotencyKey = `xpider_realtest_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+    if (btn) btn.disabled = true;
+    if (box) { box.className = 'status-box status-loading'; box.textContent = `⏳ 실제 Resend API(vivpr.pro)로 테스트 메일 1통 발송 중... (${rec})`; }
+    try {
+      const { sidecarPort, sidecarToken } = getSidecarConfig();
+      const r = await callBg({
+        action: 'SEND_REAL_TEST_EMAIL',
+        sidecarPort,
+        sidecarToken,
+        payload: {
+          recipient: rec,
+          ownerTestConsentConfirmed: true,
+          subject,
+          html: htmlFor(v),
+          text: textFor(v),
+          idempotencyKey
+        }
+      });
+      if (!r || !r.ok || !r.data?.ok) {
+        if (box) { box.className = 'status-box status-error'; box.textContent = `❌ 실제 테스트 발송 실패 (HTTP ${r?.httpStatus || '-'}): ${r?.data?.reason || r?.error || 'UNKNOWN'}`; }
+        return;
+      }
+      lastRealTestMsgId = r.data.providerMessageId;
+      if (box) {
+        box.className = 'status-box status-success';
+        box.textContent = [
+          `✅ 실제 테스트 발송 접수됨 (상태: ${r.data.deliveryState || 'ACCEPTED'})`,
+          `• Provider Message ID: ${r.data.providerMessageId}`,
+          `• 수신자: ${r.data.maskedRecipient} | Idempotency-Key: ${r.data.idempotencyKey}`,
+          `• 안내: ${r.data.note}`
+        ].join('\n');
+      }
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  };
+}
+if (el('btnCheckRealTestStatus')) {
+  el('btnCheckRealTestStatus').onclick = async () => {
+    const box = el('realTestStatus');
+    if (!lastRealTestMsgId) {
+      if (box) { box.className = 'status-box status-blocked'; box.textContent = 'ℹ️ 먼저 실제 테스트 이메일을 발송하세요.'; }
+      return;
+    }
+    const { sidecarPort, sidecarToken } = getSidecarConfig();
+    const r = await callBg({ action: 'GET_REAL_EMAIL_STATUS', sidecarPort, sidecarToken, messageId: lastRealTestMsgId });
+    if (!r || !r.ok || !r.data?.ok) {
+      if (box) { box.className = 'status-box status-error'; box.textContent = `❌ 상태 조회 실패: ${r?.data?.reason || r?.error || '-'}`; }
+      return;
+    }
+    if (box) {
+      box.className = 'status-box status-success';
+      box.textContent = `📬 Resend 실시간 발송 상태: id=${r.data.id} | last_event=${r.data.last_event} | created_at=${r.data.created_at || '-'}`;
+    }
+  };
+}
 if (el('btnLoadLedger')) el('btnLoadLedger').onclick = loadLedger;
 if (el('btnSaveResendKey')) {
   el('btnSaveResendKey').onclick = async () => {
@@ -1993,6 +2244,21 @@ function createBuiltinRecipientManager() {
       pBox.textContent = '⏳ 동의 원장 · 원격 수신거부 · 도메인 게이트 검증 및 운영 발송 진행 중...';
       await syncSidecarRecipients();
       const { sidecarPort, sidecarToken } = getSidecarConfig();
+      const pre = await callBg({ action: 'GET_EMAIL_PRODUCTION_PREFLIGHT', sidecarPort, sidecarToken });
+      const eligibleCount = Number(pre?.data?.queueSummary?.counts?.PENDING || 0);
+      const consentedOnDisk = Number(pre?.data?.queueSummary?.consentedRecordsOnDisk || 0);
+      if (!pre?.ok || pre?.data?.deliverabilityGate?.action === 'BLOCK' || eligibleCount <= 0) {
+        pBox.className = 'status-box status-blocked';
+        pBox.textContent = `🛑 [운영 발송 대기 — 발송 가능 적법 수신자 ${eligibleCount}건 / 동의 원장 ${consentedOnDisk}건]\n• 사유: ${(pre?.data?.deliverabilityGate?.reasons || ['RECIPIENT_AUTHORIZATION_UNKNOWN']).join(', ')}`;
+        return;
+      }
+      if (typeof window.confirm === 'function') {
+        if (!window.confirm(`수신 동의가 검증된 ${eligibleCount}명의 수신자에게 운영 이메일을 발송할까요?\n제목: ${subjectVal}\n발신: noreply@vivpr.pro`)) {
+          pBox.className = 'status-box status-idle';
+          pBox.textContent = '⏸️ 사용자가 운영 발송을 취소했습니다 (실발송 0건).';
+          return;
+        }
+      }
       const r = await callBg({
         action: 'RUN_EMAIL_PRODUCTION_QUEUE',
         sidecarPort,
@@ -2022,6 +2288,17 @@ function createBuiltinRecipientManager() {
         `• 이번 실행 실제 발송: ${out.sentInThisRun || 0}건 | ACCEPTED: ${c.ACCEPTED || 0}건 | FAILED: ${c.FAILED || 0}건`,
         `• 제외(미동의): ${(c.SKIPPED_NO_CONSENT || 0) + (c.BLOCKED_CONSENT_UNVERIFIED || 0)}건 | 제외(수신거부): ${c.SKIPPED_SUPPRESSED || 0}건`
       ].join('\n');
+    };
+  }
+  if (el('btnProdStop')) {
+    el('btnProdStop').onclick = async () => {
+      const pBox = el('prodPreflightStatus');
+      const { sidecarPort, sidecarToken } = getSidecarConfig();
+      const r = await callBg({ action: 'STOP_EMAIL_PRODUCTION_QUEUE', sidecarPort, sidecarToken, payload: {} });
+      if (pBox) {
+        pBox.className = r?.ok ? 'status-box status-blocked' : 'status-box status-error';
+        pBox.textContent = r?.ok ? '⏹️ 운영 발송 큐가 안전하게 중지되었습니다.' : `❌ 큐 중지 요청 실패: ${r?.error || '-'}`;
+      }
     };
   }
   if (el('btnDryRun')) {
