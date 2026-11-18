@@ -268,6 +268,22 @@ function createMockWebStorage(initial = {}) {
     const pfMixed = await pBulk.evaluatePreflight({ hasResendKey: true, ownerExplicitApproval: true, publicUnsubscribeHttpsVerified: true });
     assert.ok(!pfMixed.deliverabilityGate.reasons.includes('RECIPIENT_AUTHORIZATION_UNKNOWN'));
     console.log('PASS P0D-3 & P0D-4: one-check bulk + mixed pre-verified vs unknown authorization');
+
+    // P0D-5: 5,786-row CSV import + checkbox attestation enables full eligible queue without XPIDER artificial cap
+    const rows5786 = ['email,name'];
+    for (let i = 0; i < 5786; i++) rows5786.push(`cust${i}@example.com,Cust ${i}`);
+    const imp5786 = pBulk.importAndPersistRecipients({
+      csvText: rows5786.join('\n'),
+      messageKind: 'marketing',
+      consentAttested: true,
+      lawfulBasis: 'EXPLICIT_OPT_IN',
+      jurisdiction: 'GLOBAL',
+      authorizationSource: 'owner_crm_5786',
+      campaignId: 'bulk-5786-test'
+    });
+    assert.strictEqual(imp5786.summary.counts.PENDING, 5786);
+    assert.strictEqual(imp5786.summary.counts.SKIPPED_NO_CONSENT, 0);
+    console.log('PASS P0D-5: 5,786-row verified CSV queued cleanly with zero artificial XPIDER cap');
   } finally {
     fs.rmSync(tmpBulkDir, { recursive: true, force: true });
   }

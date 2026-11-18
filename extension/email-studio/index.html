@@ -261,7 +261,8 @@
 </div>
 <div class="prod-send-box">
 <div class="prod-header"><h4>🚀 상용(운영) 발송 (Production Send)</h4><div style="display:flex;gap:6px;flex-wrap:wrap;"><span class="badge-test" id="prodGateBadge">✅ PRODUCTION UNLOCKED</span><span class="badge-test" id="prodQueueBadge">⏸️ QUEUE NOT READY — 0 DOCUMENTED OPT-IN RECIPIENTS</span></div></div>
-<p class="desc">vivpr.pro 도메인(SPF/DKIM/DMARC), HTTPS 원클릭 수신 거부(unsubscribe.vivpr.pro), HMAC 동의 원장 및 Webhook 검증이 활성화되어 있습니다. <b>수집/스크래핑된 CSV는 수신 동의로 간주되지 않으며</b>, 명시적 수신 동의가 확인된 수신자에게만 발송됩니다.</p>
+<p class="desc">vivpr.pro 도메인(SPF/DKIM/DMARC), HTTPS 원클릭 수신 거부(unsubscribe.vivpr.pro), HMAC 검증 및 Webhook이 활성화되어 있습니다. <b>수집/스크래핑된 CSV는 수신 동의로 간주되지 않으며</b>, 적법 발송 권한이 확인된 수신자에게만 발송됩니다 (Resend 계정 플랜의 일일/초당 발송 한도는 공급자 정책에 따라 자동 준수됨).</p>
+<label style="display:flex;align-items:center;gap:6px;margin:6px 0;font-size:12px;background:rgba(37,99,235,0.08);padding:6px 8px;border-radius:6px;"><input id="consentAttestProd" type="checkbox"> <b>이 수신리스트에 대한 적법한 발송 권한을 확인했습니다</b> (상단 수신자 목록 체크박스와 자동 동기화 · 수집/스크래핑/구매 목록은 체크해도 자동 제외)</label>
 <div class="actions"><button type="button" class="primary" id="btnProdSend" title="적법 발송 권한 확인 및 사전 점검 통과 후 즉시 발송">🚀 대량발송 시작</button><button type="button" id="btnProdStop">⏹️ 운영 큐 중지</button><button type="button" id="btnCheckProdPreflight">🔍 운영 DNS · 동의확인 · 수신거부 · 웹훅 점검</button></div>
 <div id="prodPreflightStatus" class="status-box status-idle" aria-live="polite">PRODUCTION UNLOCKED · QUEUE NOT READY — 0 DOCUMENTED OPT-IN RECIPIENTS: 수신자 CSV 입력 후 법적 수신 동의 확인 체크박스를 선택하고 "가져오기 · 중복 제거"를 누르면 큐가 준비됩니다.</div>
 </div>

@@ -257,6 +257,43 @@ class DraftOutbox {
     });
   }
 
+  addBatch(items = []) {
+    if (!Array.isArray(items) || items.length === 0) return { added: 0 };
+    return this._withTransaction(() => {
+      const supSet = new Set(this.data.suppressed.map(x => x.email));
+      const keySet = new Set(this.data.jobs.map(x => x.key));
+      let added = 0;
+      for (const input of items) {
+        assertNoSecrets(input);
+        const email = address(input.email);
+        if (!email) throw Error('INVALID_EMAIL');
+        if (input.authorized !== true || !input.authorizationSource || !input.authorizationAt || !Number.isFinite(Date.parse(input.authorizationAt))) {
+          throw Error('AUTHORIZATION_EVIDENCE_REQUIRED');
+        }
+        if (input.source === 'EMAIL_COLLECTOR') throw Error('COLLECTED_ADDRESS_NOT_AUTHORIZATION');
+        if (!/^[A-Za-z0-9_-]{16,100}$/.test(input.key || '')) throw Error('IDEMPOTENCY_KEY_REQUIRED');
+        const consentVerification = this._verifyConsentEvidence(email, input);
+        if (supSet.has(email) || keySet.has(input.key)) continue;
+        keySet.add(input.key);
+        this.data.jobs.push({
+          id: crypto.randomUUID(),
+          email,
+          source: input.source || 'CUSTOMER',
+          templateId: input.templateId || null,
+          key: input.key,
+          authorized: true,
+          authorizationSource: input.authorizationSource,
+          authorizationAt: input.authorizationAt,
+          consentVerification,
+          sendEligible: false,
+          status: 'DRAFT'
+        });
+        added++;
+      }
+      return { added };
+    });
+  }
+
   suppress(email, reason = 'MANUAL', meta = {}) {
     assertNoSecrets(meta);
     const e = address(email);

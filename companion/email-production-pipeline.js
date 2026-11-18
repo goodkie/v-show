@@ -313,7 +313,7 @@ class ConsentLedger {
       .digest('hex');
   }
 
-  recordConsent({ email, name = '', authorizationSource, authorizationAt }) {
+  recordConsent({ email, name = '', authorizationSource, authorizationAt, deferSave = false }) {
     const norm = RM.normalizeEmail(email);
     if (!norm || RM.validateEmail(norm)) throw new Error('INVALID_EMAIL');
     if (!authorizationSource || !authorizationAt || !Number.isFinite(Date.parse(authorizationAt))) {
@@ -328,7 +328,7 @@ class ConsentLedger {
       consentProofToken,
       recordedAt: new Date().toISOString()
     };
-    this._save();
+    if (!deferSave) this._save();
     return this.records[norm];
   }
 
@@ -767,6 +767,8 @@ class EmailProductionPipeline {
     const nowIso = new Date().toISOString();
     const authTime = authorizationAt ? String(authorizationAt) : nowIso;
     const entries = [];
+    const batchOutboxItems = [];
+    let consentDirty = false;
     let readyCount = 0;
     let suppressedCount = 0;
     let noConsentCount = 0;
@@ -812,9 +814,11 @@ class EmailProductionPipeline {
           email: r.email,
           name: r.name,
           authorizationSource: sourceTag,
-          authorizationAt: authTime
+          authorizationAt: authTime,
+          deferSave: true
         });
-        this.outbox.add({
+        consentDirty = true;
+        batchOutboxItems.push({
           email: r.email,
           authorized: true,
           authorizationSource: consentRec.authorizationSource,
@@ -846,6 +850,9 @@ class EmailProductionPipeline {
         updatedAt: nowIso
       });
     }
+
+    if (consentDirty) this.consentLedger._save();
+    if (batchOutboxItems.length > 0) this.outbox.addBatch(batchOutboxItems);
 
     this.queue = {
       campaignId,
@@ -1234,6 +1241,9 @@ class EmailProductionPipeline {
         }
         e.updatedAt = new Date().toISOString();
         this._saveQueue();
+        if (typeof syncFetchImpl !== 'function' && !this.queue.stopped) {
+          await new Promise(r => setTimeout(r, 550));
+        }
       }
     }
 

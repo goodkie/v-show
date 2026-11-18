@@ -994,32 +994,39 @@ if (el('btnCheckRealTestStatus')) {
     }
   };
 }
-if (el('consentAttest')) {
-  el('consentAttest').addEventListener('change', async () => {
-    if (!recipients.length && el('recipientCsv') && el('recipientCsv').value.trim()) {
-      runRecipientImport('auto-on-consent-check', null);
-    }
-    if (recipients.length) {
-      await syncSidecarRecipients();
-      const { sidecarPort, sidecarToken } = getSidecarConfig();
-      const pre = await callBg({ action: 'GET_EMAIL_PRODUCTION_PREFLIGHT', sidecarPort, sidecarToken }).catch(() => null);
-      if (pre && pre.ok && pre.data) {
-        const qReady = Number(pre.data.queueSummary?.counts?.PENDING || 0);
-        const consented = Number(pre.data.queueSummary?.consentedRecordsOnDisk || 0);
-        const gateOk = pre.data.deliverabilityGate?.action !== 'BLOCK' && qReady > 0;
-        if (el('prodQueueBadge')) {
-          el('prodQueueBadge').textContent = gateOk
-            ? `🟢 QUEUE READY — ${qReady} VERIFIED OPT-IN`
-            : `⏸️ QUEUE NOT READY — ${qReady} QUEUED / ${consented} DOCUMENTED OPT-IN`;
-        }
-        if (el('headerProdStateBadge')) {
-          el('headerProdStateBadge').textContent = gateOk
-            ? `✅ 상용발송 잠금 해제 · 발송 가능 ${qReady}건`
-            : `✅ 상용발송 잠금 해제 · 발송대상/자격 확인 필요 (동의기록 ${consented}건 / 대기 ${qReady}건)`;
-        }
+async function handleConsentAttestChanged(sourceEl) {
+  const checked = Boolean(sourceEl && sourceEl.checked);
+  if (el('consentAttest') && el('consentAttest').checked !== checked) el('consentAttest').checked = checked;
+  if (el('consentAttestProd') && el('consentAttestProd').checked !== checked) el('consentAttestProd').checked = checked;
+  if (!recipients.length && el('recipientCsv') && el('recipientCsv').value.trim()) {
+    runRecipientImport('auto-on-consent-check', null);
+  }
+  if (recipients.length) {
+    await syncSidecarRecipients();
+    const { sidecarPort, sidecarToken } = getSidecarConfig();
+    const pre = await callBg({ action: 'GET_EMAIL_PRODUCTION_PREFLIGHT', sidecarPort, sidecarToken }).catch(() => null);
+    if (pre && pre.ok && pre.data) {
+      const qReady = Number(pre.data.queueSummary?.counts?.PENDING || 0);
+      const consented = Number(pre.data.queueSummary?.consentedRecordsOnDisk || 0);
+      const gateOk = pre.data.deliverabilityGate?.action !== 'BLOCK' && qReady > 0;
+      if (el('prodQueueBadge')) {
+        el('prodQueueBadge').textContent = gateOk
+          ? `🟢 QUEUE READY — ${qReady} VERIFIED OPT-IN`
+          : `⏸️ QUEUE NOT READY — ${qReady} QUEUED / ${consented} DOCUMENTED OPT-IN`;
+      }
+      if (el('headerProdStateBadge')) {
+        el('headerProdStateBadge').textContent = gateOk
+          ? `✅ 상용발송 잠금 해제 · 발송 가능 ${qReady}건`
+          : `✅ 상용발송 잠금 해제 · 발송대상/자격 확인 필요 (발송 가능 ${qReady}건 / 권한기록 ${consented}건)`;
       }
     }
-  });
+  }
+}
+if (el('consentAttest')) {
+  el('consentAttest').addEventListener('change', () => handleConsentAttestChanged(el('consentAttest')));
+}
+if (el('consentAttestProd')) {
+  el('consentAttestProd').addEventListener('change', () => handleConsentAttestChanged(el('consentAttestProd')));
 }
 if (el('btnLoadLedger')) el('btnLoadLedger').onclick = loadLedger;
 if (el('btnSaveResendKey')) {
@@ -2371,9 +2378,20 @@ function createBuiltinRecipientManager() {
       const counts = pre?.data?.queueSummary?.counts || {};
       const eligibleCount = Number(counts.PENDING || 0);
       const consentedOnDisk = Number(pre?.data?.queueSummary?.consentedRecordsOnDisk || 0);
-      if (!pre?.ok || pre?.data?.deliverabilityGate?.action === 'BLOCK' || eligibleCount <= 0) {
+      const gateOkNow = Boolean(pre?.ok && pre?.data?.deliverabilityGate?.action !== 'BLOCK' && eligibleCount > 0);
+      if (el('prodQueueBadge')) {
+        el('prodQueueBadge').textContent = gateOkNow
+          ? `🟢 QUEUE READY — ${eligibleCount} VERIFIED OPT-IN`
+          : `⏸️ QUEUE NOT READY — ${eligibleCount} QUEUED / ${consentedOnDisk} DOCUMENTED OPT-IN`;
+      }
+      if (el('headerProdStateBadge')) {
+        el('headerProdStateBadge').textContent = gateOkNow
+          ? `✅ 상용발송 잠금 해제 · 발송 가능 ${eligibleCount}건`
+          : `✅ 상용발송 잠금 해제 · 발송대상/자격 확인 필요 (발송 가능 ${eligibleCount}건 / 권한기록 ${consentedOnDisk}건)`;
+      }
+      if (!gateOkNow) {
         pBox.className = 'status-box status-blocked';
-        pBox.textContent = `🛑 [발송 차단 — 적격 발송 대기 ${eligibleCount}건 / 기존 발송권한 기록 ${consentedOnDisk}건 / 미동의·미확인 제외 ${counts.SKIPPED_NO_CONSENT || 0}건 / 수신거부 제외 ${counts.SKIPPED_SUPPRESSED || 0}건 / 기발송 ${counts.ACCEPTED || 0}건]\n• 사유: ${(pre?.data?.deliverabilityGate?.reasons || ['RECIPIENT_AUTHORIZATION_UNKNOWN']).join(', ')}`;
+        pBox.textContent = `🛑 [발송 차단 — 적격 발송 대기 ${eligibleCount}건 / 기존 발송권한 기록 ${consentedOnDisk}건 / 미동의·미확인 제외 ${counts.SKIPPED_NO_CONSENT || 0}건 / 수신거부 제외 ${counts.SKIPPED_SUPPRESSED || 0}건 / 기발송 ${counts.ACCEPTED || 0}건]\n• 사유: ${(pre?.data?.deliverabilityGate?.reasons || ['RECIPIENT_AUTHORIZATION_UNKNOWN']).join(', ')}\n• 안내: 위 "이 수신리스트에 대한 적법한 발송 권한을 확인했습니다" 체크박스를 선택했는지 확인하세요 (수집/스크래핑 목록은 제외됨).`;
         return;
       }
       pBox.className = 'status-box status-loading';
