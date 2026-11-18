@@ -66,6 +66,14 @@ function sleepSync(ms) {
   Atomics.wait(view, 0, 0, ms);
 }
 
+function _safeUnlinkRegularNoLink(targetPath) {
+  const st = fs.lstatSync(targetPath);
+  if (st.isSymbolicLink() || !st.isFile() || (typeof st.nlink === 'number' && st.nlink > 1)) {
+    throw new Error('UNSAFE_UNLINK_SYMLINK_OR_HARDLINK_REJECTED');
+  }
+  fs.unlinkSync(targetPath);
+}
+
 class DraftOutbox {
   constructor(file, options = {}) {
     if (!file || typeof file !== 'string' || !path.isAbsolute(file)) {
@@ -88,7 +96,7 @@ class DraftOutbox {
     for (const entry of fs.readdirSync(dir)) {
       if (entry.startsWith(base + '.') && entry.endsWith('.tmp')) {
         try {
-          fs.unlinkSync(path.join(dir, entry));
+          _safeUnlinkRegularNoLink(path.join(dir, entry));
           swept++;
         } catch (_) {}
       }
@@ -128,9 +136,9 @@ class DraftOutbox {
       } catch (err) {
         if (err && err.code === 'EEXIST') {
           try {
-            const stat = fs.statSync(this.lockFile);
-            if (Date.now() - stat.mtimeMs > this.staleLockMs) {
-              fs.unlinkSync(this.lockFile);
+            const stat = fs.lstatSync(this.lockFile);
+            if (!stat.isSymbolicLink() && stat.isFile() && Date.now() - stat.mtimeMs > this.staleLockMs) {
+              _safeUnlinkRegularNoLink(this.lockFile);
               continue;
             }
           } catch (_) {}
@@ -150,7 +158,7 @@ class DraftOutbox {
       if (typeof fd === 'number') fs.closeSync(fd);
     } catch (_) {}
     try {
-      if (fs.existsSync(this.lockFile)) fs.unlinkSync(this.lockFile);
+      if (fs.existsSync(this.lockFile)) _safeUnlinkRegularNoLink(this.lockFile);
     } catch (_) {}
   }
 

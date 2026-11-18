@@ -239,10 +239,45 @@ class EmailSimulatorLedger {
       let releaseErr = null;
       try {
         const currentStat = typeof this.fsImpl.lstatSync === 'function' ? this.fsImpl.lstatSync(this.lockFile) : null;
-        const currentRaw = this.fsImpl.readFileSync(this.lockFile, 'utf8');
+        if (currentStat && (
+          (typeof currentStat.isSymbolicLink === 'function' && currentStat.isSymbolicLink()) ||
+          (typeof currentStat.isFile === 'function' && !currentStat.isFile())
+        )) {
+          throw Object.assign(new Error('LEDGER_LOCK_SYMLINK_OR_REPARSE_REJECTED'), { code: 'LEDGER_LOCK_SYMLINK_REJECTED' });
+        }
+        if (currentStat && typeof currentStat.nlink === 'number' && currentStat.nlink > 1) {
+          throw Object.assign(new Error('LEDGER_LOCK_HARDLINK_REJECTED'), { code: 'LEDGER_LOCK_HARDLINK_REJECTED' });
+        }
+        let currentRaw;
+        if (typeof this.fsImpl.openSync === 'function' && typeof this.fsImpl.fstatSync === 'function' && typeof this.fsImpl.closeSync === 'function') {
+          const noFollow = (fs.constants && fs.constants.O_NOFOLLOW) ? fs.constants.O_NOFOLLOW : 0;
+          const readFd = this.fsImpl.openSync(this.lockFile, fs.constants.O_RDONLY | noFollow);
+          try {
+            const fdStat = this.fsImpl.fstatSync(readFd);
+            if (fdStat && typeof fdStat.nlink === 'number' && fdStat.nlink > 1) {
+              throw Object.assign(new Error('LEDGER_LOCK_HARDLINK_REJECTED'), { code: 'LEDGER_LOCK_HARDLINK_REJECTED' });
+            }
+            if (acquiredIno && fdStat && fdStat.ino && fdStat.ino !== acquiredIno) {
+              throw Object.assign(new Error('LEDGER_LOCK_INODE_MISMATCH'), { code: 'LEDGER_LOCK_OWNERSHIP_LOST' });
+            }
+            currentRaw = this.fsImpl.readFileSync(readFd, 'utf8');
+          } finally {
+            try { this.fsImpl.closeSync(readFd); } catch (_) {}
+          }
+        } else {
+          currentRaw = this.fsImpl.readFileSync(this.lockFile, 'utf8');
+        }
         const current = JSON.parse(currentRaw);
         const sameInode = !acquiredIno || !currentStat || !currentStat.ino || currentStat.ino === acquiredIno;
         if (sameInode && Number(current.pid) === process.pid && current.lockId === myLockId) {
+          const preUnlinkStat = typeof this.fsImpl.lstatSync === 'function' ? this.fsImpl.lstatSync(this.lockFile) : null;
+          if (preUnlinkStat && (
+            (typeof preUnlinkStat.isSymbolicLink === 'function' && preUnlinkStat.isSymbolicLink()) ||
+            (typeof preUnlinkStat.nlink === 'number' && preUnlinkStat.nlink > 1) ||
+            (acquiredIno && preUnlinkStat.ino && preUnlinkStat.ino !== acquiredIno)
+          )) {
+            throw Object.assign(new Error('LEDGER_LOCK_PRE_UNLINK_TOCTOU_REJECTED'), { code: 'LEDGER_LOCK_OWNERSHIP_LOST' });
+          }
           this.fsImpl.unlinkSync(this.lockFile);
         } else {
           this.lockReconciliationRequired = true;

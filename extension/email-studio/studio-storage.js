@@ -32,7 +32,99 @@
       }
       out[f] = val;
     }
+    if (typeof src.importedHtml === 'string' && src.importedHtml.trim()) {
+      if (SECRET_RE.test(src.importedHtml)) {
+        throw new Error('SECRET_PATTERN_REJECTED:importedHtml');
+      }
+      out.importedHtml = sanitizeImportedHtmlFragment(src.importedHtml).sanitizedHtml;
+    }
     return out;
+  }
+
+  function sanitizeImportedHtmlFragment(rawHtml) {
+    const warnings = [];
+    let html = String(rawHtml || '').replace(/^\uFEFF/, '').trim();
+    const hadDangerous = /<(?:script|iframe|object|embed|form)\b|on[a-z]+\s*=|javascript:|vbscript:|data\s*:\s*text\/html/i.test(html);
+    if (hadDangerous) {
+      warnings.push('보안상 위험한 스크립트/이벤트 핸들러/active embed 요소가 제거되었습니다.');
+    }
+    html = html
+      .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '')
+      .replace(/<noscript\b[^>]*>[\s\S]*?<\/noscript>/gi, '')
+      .replace(/<iframe\b[^>]*>[\s\S]*?<\/iframe>/gi, '')
+      .replace(/<object\b[^>]*>[\s\S]*?<\/object>/gi, '')
+      .replace(/<embed\b[^>]*\/?>/gi, '')
+      .replace(/<form\b[^>]*>[\s\S]*?<\/form>/gi, '')
+      .replace(/<meta\b[^>]*http-equiv\s*=\s*["']?refresh[^>]*>/gi, '');
+    if (/<link\b[^>]*rel\s*=\s*["']?stylesheet/i.test(html)) {
+      warnings.push('외부 CSS(<link rel="stylesheet">)는 이메일 클라이언트 호환성을 위해 제거되었습니다. 인라인 style=""은 유지됩니다.');
+      html = html.replace(/<link\b[^>]*>/gi, '');
+    }
+    html = html
+      .replace(/\s+on[a-z]+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, '')
+      .replace(/(href|src)\s*=\s*(["'])\s*(?:javascript|vbscript|data\s*:\s*text\/html):[^"']*\2/gi, '$1=$2#blocked-unsafe-url$2');
+
+    const imgMatches = [...html.matchAll(/<img\b[^>]*\bsrc\s*=\s*(["'])([^"']+)\1/gi)];
+    let nonHttpsImgs = 0;
+    let firstHttpsImg = '';
+    for (const m of imgMatches) {
+      const srcVal = (m[2] || '').trim();
+      if (/^https:\/\//i.test(srcVal)) {
+        if (!firstHttpsImg) firstHttpsImg = srcVal;
+      } else {
+        nonHttpsImgs++;
+      }
+    }
+    if (nonHttpsImgs > 0) {
+      warnings.push(`상대 경로 또는 비-HTTPS 이미지 ${nonHttpsImgs}건이 감지되었습니다 (실제 발송에는 https:// 공개 URL 권장).`);
+    }
+    return { sanitizedHtml: html, warnings, firstHttpsImg };
+  }
+
+  function importHtmlEmailFile(rawHtmlText, opts = {}) {
+    const maxBytes = Number(opts.maxBytes || 524288);
+    if (typeof rawHtmlText !== 'string' || !rawHtmlText.replace(/^\uFEFF/, '').trim()) {
+      throw new Error('EMPTY_HTML_FILE');
+    }
+    if (rawHtmlText.length > maxBytes) {
+      throw new Error('HTML_FILE_TOO_LARGE');
+    }
+    const cleanRaw = rawHtmlText.replace(/^\uFEFF/, '').trim();
+    if (!/<[a-z][\s\S]*>/i.test(cleanRaw)) {
+      throw new Error('INVALID_HTML_DOCUMENT');
+    }
+    const titleMatch = cleanRaw.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+    const subject = titleMatch ? titleMatch[1].replace(/<[^>]+>/g, '').trim().slice(0, 200) : '';
+    const bodyMatch = cleanRaw.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+    const fragment = bodyMatch ? bodyMatch[1].trim() : cleanRaw;
+    const { sanitizedHtml, warnings, firstHttpsImg } = sanitizeImportedHtmlFragment(fragment);
+    if (!sanitizedHtml.trim()) {
+      throw new Error('EMPTY_SANITIZED_HTML');
+    }
+    const hMatch = sanitizedHtml.match(/<h[12][^>]*>([\s\S]*?)<\/h[12]>/i);
+    const heading = hMatch ? hMatch[1].replace(/<[^>]+>/g, '').trim().slice(0, 200) : '';
+    const linkMatch = sanitizedHtml.match(/<a\b[^>]*\bhref\s*=\s*(["'])(https:\/\/[^"']+)\1/i);
+    const ctaText = linkMatch ? '' : '';
+    const bodyText = sanitizedHtml
+      .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, ' ')
+      .replace(/<br\s*\/?>/gi, '\n')
+      .replace(/<\/(?:p|div|tr|li|h[1-6])>/gi, '\n')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/[ \t]{2,}/g, ' ')
+      .replace(/\n{3,}/g, '\n\n')
+      .trim()
+      .slice(0, 10000);
+    return {
+      ok: true,
+      subject,
+      heading,
+      bodyText,
+      importedHtml: sanitizedHtml,
+      firstHttpsImg,
+      firstHttpsLink: linkMatch ? linkMatch[2] : '',
+      warnings,
+      ctaText
+    };
   }
 
   function draftsEqual(a, b) {
@@ -298,6 +390,8 @@
     saveDraft,
     deleteDraft,
     validateAndSanitizeImportedTemplate,
+    sanitizeImportedHtmlFragment,
+    importHtmlEmailFile,
     loadTemplatesLibrary,
     saveTemplateToLibrary,
     deleteTemplateFromLibrary

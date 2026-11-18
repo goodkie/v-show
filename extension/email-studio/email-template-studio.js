@@ -10,9 +10,24 @@ let previewDataUrl='';
 let previewFileMeta=null;
 let remoteProbeTimer=null;
 let remoteProbeState={url:'',status:'IDLE',detail:''};
+let importedHtmlLayout='';
 const paragraphs=s=>s.split(/\n\s*\n/).filter(x=>x.trim()).map(x=>'<p style="margin:0 0 18px;line-height:1.65">'+esc(x.trim()).replace(/\n/g,'<br>')+'</p>').join('');
 function values(){return Object.fromEntries(ids.map(i=>[i,val(i)]))}
 function htmlFor(v,preview=false){
+ if(importedHtmlLayout){
+  const storeApi=typeof window!=='undefined'?window.XpiderStudioStorage:null;
+  const safeFrag=storeApi&&typeof storeApi.sanitizeImportedHtmlFragment==='function'
+   ? storeApi.sanitizeImportedHtmlFragment(importedHtmlLayout).sanitizedHtml
+   : importedHtmlLayout;
+  const previewText=esc(v.preheader);
+  const manualUnsub=url(v.unsubscribe);
+  const autoUnsubBase=(typeof autoUnsubBaseUrl==='string'&&autoUnsubBaseUrl)?autoUnsubBaseUrl:'https://vivpr.pro';
+  const effectiveUnsub=manualUnsub||(autoUnsubBase.replace(/\/+$/,'')+'/unsubscribe/preview-sample-only');
+  const opt=(v.kind==='marketing'&&!/unsubscribe/i.test(safeFrag))
+   ?('<hr style="border:0;border-top:1px solid #e2e8f0;margin:24px 0"><div style="font-size:12px;color:#64748b"><p><a href="'+esc(effectiveUnsub)+'" style="color:#475569">구독 취소</a></p></div>')
+   :'';
+  return '<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0;background:#f3f5f8;color:#17212f"><div style="display:none;font-size:1px;color:#f3f5f8;max-height:0;overflow:hidden">'+previewText+'</div>'+safeFrag+opt+'</body></html>';
+ }
  const httpsPic=url(v.image);
  const localPic=preview ? (previewDataUrl || previewFileUrl) : '';
  const pic=preview ? (previewDataUrl || previewFileUrl || (el('loadRemoteImages').checked ? url(v.image) : '')) : url(v.image);
@@ -598,7 +613,13 @@ function collectStudioFieldValues() {
   for (const f of DRAFT_FIELDS) {
     if (el(f)) draft[f] = el(f).value;
   }
+  if (importedHtmlLayout) draft.importedHtml = importedHtmlLayout;
   return draft;
+}
+
+function updateHtmlLayoutBanner() {
+  const b = el('htmlLayoutBanner');
+  if (b) b.style.display = importedHtmlLayout ? 'block' : 'none';
 }
 
 function applyStudioFieldValues(d) {
@@ -607,6 +628,8 @@ function applyStudioFieldValues(d) {
       el(f).value = d[f];
     }
   }
+  importedHtmlLayout = typeof d.importedHtml === 'string' ? d.importedHtml : '';
+  updateHtmlLayoutBanner();
   studioDirty = false;
   render();
 }
@@ -785,6 +808,47 @@ if (el('btnImportTemplate') && el('importTemplateFile')) {
     }
   };
 }
+if (el('btnImportHtml') && el('importHtmlFile')) {
+  el('btnImportHtml').onclick = () => {
+    el('importHtmlFile').value = '';
+    el('importHtmlFile').click();
+  };
+  el('importHtmlFile').onchange = async (ev) => {
+    const file = ev.target?.files?.[0];
+    if (!file) return;
+    try {
+      const storeApi = typeof window !== 'undefined' ? window.XpiderStudioStorage : null;
+      if (!storeApi || typeof storeApi.importHtmlEmailFile !== 'function') throw new Error('HTML_IMPORT_UNAVAILABLE');
+      if (file.size > 524288) throw new Error('HTML_FILE_TOO_LARGE (최대 512KB)');
+      const rawText = await file.text();
+      const parsed = storeApi.importHtmlEmailFile(rawText);
+      if (studioDirty && typeof window.confirm === 'function') {
+        if (!window.confirm('저장되지 않은 편집 내용이 있습니다. 가져온 HTML 파일로 덮어쓸까요?')) return;
+      }
+      if (parsed.subject && el('subject')) el('subject').value = parsed.subject;
+      if (parsed.heading && el('heading')) el('heading').value = parsed.heading;
+      if (parsed.bodyText && el('body')) el('body').value = parsed.bodyText;
+      if (parsed.firstHttpsImg && el('image')) el('image').value = parsed.firstHttpsImg;
+      if (parsed.firstHttpsLink && el('link')) el('link').value = parsed.firstHttpsLink;
+      importedHtmlLayout = parsed.importedHtml;
+      updateHtmlLayoutBanner();
+      studioDirty = false;
+      render();
+      const warnNote = parsed.warnings && parsed.warnings.length ? ` · 주의: ${parsed.warnings.join(' / ')}` : '';
+      setDraftStatus('status-success', `🌐 HTML 불러오기 완료: ${file.name} (인라인 CSS·레이아웃 유지${warnNote})`);
+    } catch (err) {
+      setDraftStatus('status-error', `❌ HTML 불러오기 거부됨 (기존 초안 유지): ${err.message}`);
+    }
+  };
+}
+if (el('btnClearImportedHtml')) {
+  el('btnClearImportedHtml').onclick = () => {
+    importedHtmlLayout = '';
+    updateHtmlLayoutBanner();
+    render();
+    setDraftStatus('status-idle', '📝 일반 텍스트 에디터 모드로 전환되었습니다.');
+  };
+}
 if (el('btnSaveToTemplateLibrary')) {
   el('btnSaveToTemplateLibrary').onclick = async () => {
     try {
@@ -829,7 +893,31 @@ if (el('btnDeleteFromTemplateLibrary')) {
     setDraftStatus('status-success', '🗑️ 템플릿 라이브러리 항목을 삭제했습니다.');
   };
 }
-setTimeout(() => { try { refreshDraftAndTemplateSelectors(); } catch (_) {} }, 60);
+setTimeout(() => {
+  try {
+    refreshDraftAndTemplateSelectors();
+    const { sidecarPort, sidecarToken } = getSidecarConfig();
+    callBg({ action: 'GET_EMAIL_PRODUCTION_PREFLIGHT', sidecarPort, sidecarToken }).then((r) => {
+      if (r && r.ok && r.data) {
+        const qs = r.data.queueSummary || {};
+        const qReady = Number(qs.counts?.PENDING || 0);
+        const consented = Number(qs.consentedRecordsOnDisk || 0);
+        const hBadge = el('headerProdStateBadge');
+        if (hBadge) {
+          hBadge.textContent = (qReady > 0 && r.data.deliverabilityGate?.action !== 'BLOCK')
+            ? `✅ 상용발송 잠금 해제 · 발송 가능 ${qReady}건`
+            : `✅ 상용발송 잠금 해제 · 발송대상/자격 확인 필요 (동의원장 ${consented}건 / 대기 ${qReady}건)`;
+        }
+        const qBadge = el('prodQueueBadge');
+        if (qBadge) {
+          qBadge.textContent = (qReady > 0 && r.data.deliverabilityGate?.action !== 'BLOCK')
+            ? `🟢 QUEUE READY — ${qReady} VERIFIED OPT-IN`
+            : `⏸️ QUEUE NOT READY — ${qReady} QUEUED / ${consented} DOCUMENTED OPT-IN`;
+        }
+      }
+    }).catch(() => {});
+  } catch (_) {}
+}, 60);
 
 if (el('btnRealTestSend')) {
   el('btnRealTestSend').onclick = async () => {
@@ -2176,7 +2264,7 @@ function createBuiltinRecipientManager() {
         const s = rv.summary;
         syncSidecarRecipients();
         say(s.ready ? 'status-success' : 'status-blocked',
-          `📋 발송 전 검토 (${messageKind()})\n• 전체 ${s.total} · 발송 가능 ${s.ready} · 수신거부 제외 ${s.suppressed} · 동의 미확인 제외 ${s.noConsent}\n• 상용 발송: 🔒 STRICT HOLD (SPF/DKIM/DMARC·수신거부 엔드포인트·Webhook 증거 및 Owner 승인 필요)\n• 드라이런은 실제 이메일을 전송하지 않습니다.`);
+          `📋 발송 전 검토 (${messageKind()})\n• 전체 ${s.total} · 발송 가능 ${s.ready} · 수신거부 제외 ${s.suppressed} · 동의 미확인 제외 ${s.noConsent}\n• 상용 발송: ✅ 잠금 해제됨 (적법 수신 근거 + 동의 원장 확인된 수신자에게만 발송)\n• 드라이런은 실제 이메일을 전송하지 않습니다.`);
       } catch (err) {
         say('status-error', `❌ [${err.code || 'ERR_BUILD_REVIEW_FAILED'}] ${err.message}`);
       }
