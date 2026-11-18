@@ -1191,9 +1191,21 @@ class EmailProductionPipeline {
             sentInThisRun++;
           } else {
             const errStr = (sendBody && (sendBody.message || sendBody.name)) || `RESEND_HTTP_${sendResp ? sendResp.status : 'ERROR'}`;
-            this._appendAudit({ type: 'SEND_ATTEMPT_FAILED', idempotencyKey: e.idempotencyKey, error: errStr });
-            e.status = 'FAILED';
-            e.error = errStr;
+            const isDailyQuota = /daily.*quota|quota.*exceeded/i.test(errStr);
+            if (isDailyQuota) {
+              e.status = 'PENDING';
+              e.error = errStr;
+              this.queue.stopped = true;
+              this.queue.stopReason = 'PROVIDER_DAILY_QUOTA_EXCEEDED';
+              this._appendAudit({ type: 'QUEUE_PAUSED_DAILY_QUOTA', idempotencyKey: e.idempotencyKey, error: errStr });
+            } else {
+              this._appendAudit({ type: 'SEND_ATTEMPT_FAILED', idempotencyKey: e.idempotencyKey, error: errStr });
+              e.status = 'FAILED';
+              e.error = errStr;
+              if (sendResp && sendResp.status === 429 && typeof syncFetchImpl !== 'function') {
+                await new Promise(r => setTimeout(r, 1200));
+              }
+            }
           }
         } catch (err) {
           const errStr = err.message || 'RESEND_FETCH_EXCEPTION';

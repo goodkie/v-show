@@ -4104,6 +4104,12 @@ const _handleMainMessageInner = (request, sender, sendResponse) => {
         case 'STOP_EMAIL_PRODUCTION_QUEUE':
         case 'SEND_REAL_TEST_EMAIL':
         case 'GET_REAL_EMAIL_STATUS':
+        case 'GET_CAMPAIGN_PROGRESS':
+        case 'GET_CAMPAIGN_SEGMENTS':
+        case 'PREVIEW_SECOND_WAVE':
+        case 'START_SECOND_WAVE':
+        case 'GET_MASTER_LIST_SUMMARY':
+        case 'EXPORT_MASTER_LIST_CSV':
         case 'GET_EMAIL_CONTENT_QA_STATUS':
         case 'SAVE_GEMINI_COPY_API_KEY':
         case 'TEST_GEMINI_COPY_CONNECTION':
@@ -4133,7 +4139,9 @@ const _handleMainMessageInner = (request, sender, sendResponse) => {
                         });
                     };
                     let token = explicitToken || await pairTok(false);
-                    const isPost = request.action === 'SYNC_EMAIL_PRODUCTION_RECIPIENTS' || request.action === 'RUN_EMAIL_PRODUCTION_QUEUE' || request.action === 'STOP_EMAIL_PRODUCTION_QUEUE' || request.action === 'SEND_REAL_TEST_EMAIL' || request.action === 'SAVE_GEMINI_COPY_API_KEY' || request.action === 'TEST_GEMINI_COPY_CONNECTION' || request.action === 'REQUEST_EMAIL_COPY_SUGGESTION' || request.action === 'VERIFY_RECIPIENT_DOMAINS_DNS' || request.action === 'SAVE_IMAGE_HOST_CONFIG' || request.action === 'UPLOAD_EMAIL_IMAGE' || request.action === 'SAVE_UNSUBSCRIBE_CONFIG';
+                    const isPost = request.action === 'SYNC_EMAIL_PRODUCTION_RECIPIENTS' || request.action === 'RUN_EMAIL_PRODUCTION_QUEUE' || request.action === 'STOP_EMAIL_PRODUCTION_QUEUE' || request.action === 'SEND_REAL_TEST_EMAIL' || request.action === 'PREVIEW_SECOND_WAVE' || request.action === 'START_SECOND_WAVE' || request.action === 'SAVE_GEMINI_COPY_API_KEY' || request.action === 'TEST_GEMINI_COPY_CONNECTION' || request.action === 'REQUEST_EMAIL_COPY_SUGGESTION' || request.action === 'VERIFY_RECIPIENT_DOMAINS_DNS' || request.action === 'SAVE_IMAGE_HOST_CONFIG' || request.action === 'UPLOAD_EMAIL_IMAGE' || request.action === 'SAVE_UNSUBSCRIBE_CONFIG';
+                    const cid = encodeURIComponent(String(request.campaignId || 'default'));
+                    const cutoff = encodeURIComponent(String(request.cutoffHours ?? 24));
                     const routeMap = {
                         GET_EMAIL_PRODUCTION_PREFLIGHT: '/email/production/preflight',
                         SYNC_EMAIL_PRODUCTION_RECIPIENTS: '/email/production/import',
@@ -4141,6 +4149,12 @@ const _handleMainMessageInner = (request, sender, sendResponse) => {
                         STOP_EMAIL_PRODUCTION_QUEUE: '/email/production/queue/stop',
                         SEND_REAL_TEST_EMAIL: '/email/production/real-test-send',
                         GET_REAL_EMAIL_STATUS: `/email/production/message-status?id=${encodeURIComponent(String(request.messageId || ''))}`,
+                        GET_CAMPAIGN_PROGRESS: `/email/campaigns/${cid}/progress`,
+                        GET_CAMPAIGN_SEGMENTS: `/email/campaigns/${cid}/segments?cutoffHours=${cutoff}`,
+                        PREVIEW_SECOND_WAVE: '/email/campaigns/second-wave/preview',
+                        START_SECOND_WAVE: '/email/campaigns/second-wave/start',
+                        GET_MASTER_LIST_SUMMARY: '/email/master-list',
+                        EXPORT_MASTER_LIST_CSV: '/email/master-list/export',
                         GET_EMAIL_CONTENT_QA_STATUS: '/email/content-qa/status',
                         SAVE_GEMINI_COPY_API_KEY: '/email/content-qa/key',
                         TEST_GEMINI_COPY_CONNECTION: '/email/content-qa/test-connection',
@@ -4167,7 +4181,10 @@ const _handleMainMessageInner = (request, sender, sendResponse) => {
                         token = await pairTok(true);
                         if (token) resp = await doFetch(token);
                     }
-                    const data = await resp.json().catch(() => ({}));
+                    const ct = String(resp.headers.get('content-type') || '');
+                    const data = ct.includes('text/csv')
+                        ? { csvText: await resp.text().catch(() => '') }
+                        : await resp.json().catch(() => ({}));
                     sendResponse({ ok: resp.ok, httpStatus: resp.status, data });
                 } catch (err) {
                     sendResponse({ ok: false, error: err.message });

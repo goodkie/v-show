@@ -92,8 +92,47 @@ class DurableSuppressionStore {
     this.suppressionsFile = path.join(this.dataDir, 'suppressions.json');
     this.tokensFile = path.join(this.dataDir, 'tokens.json');
     this.auditFile = path.join(this.dataDir, 'audit.jsonl');
+    this.eventsFile = path.join(this.dataDir, 'events.jsonl');
     this.suppressions = this._loadMap(this.suppressionsFile);
     this.tokens = this._loadMap(this.tokensFile);
+    this.eventIds = this._loadEventIds();
+  }
+
+  _loadEventIds() {
+    const ids = new Set();
+    try {
+      if (fs.existsSync(this.eventsFile)) {
+        const lines = fs.readFileSync(this.eventsFile, 'utf8').split('\n').filter(Boolean);
+        for (const l of lines) {
+          try { const o = JSON.parse(l); if (o && o.event_id) ids.add(String(o.event_id)); } catch (_) {}
+        }
+      }
+    } catch (_) {}
+    return ids;
+  }
+
+  recordProviderEvent(evt) {
+    const eventId = String(evt.event_id || '').trim();
+    if (!eventId || this.eventIds.has(eventId)) return false;
+    this.eventIds.add(eventId);
+    fs.appendFileSync(this.eventsFile, JSON.stringify(evt) + '\n', { mode: 0o600 });
+    return true;
+  }
+
+  listEvents(sinceIso = '', limit = 500) {
+    if (!fs.existsSync(this.eventsFile)) return [];
+    const max = Math.min(Math.max(Number(limit) || 500, 1), 2000);
+    const out = [];
+    const lines = fs.readFileSync(this.eventsFile, 'utf8').split('\n').filter(Boolean);
+    for (const l of lines) {
+      try {
+        const o = JSON.parse(l);
+        if (!o) continue;
+        if (sinceIso && String(o.created_at || '') < sinceIso) continue;
+        out.push(o);
+      } catch (_) {}
+    }
+    return out.slice(-max);
   }
 
   _loadMap(file) {
@@ -225,17 +264,34 @@ function createUnsubscribeRailwayServer(options = {}) {
           const type = String(evt.type || '');
           const data = evt.data || {};
           const toList = Array.isArray(data.to) ? data.to : (data.to ? [data.to] : (data.email ? [data.email] : []));
+          const recipientHashes = [];
+          for (const addr of toList) {
+            const norm = String(addr || '').trim().toLowerCase();
+            if (norm) recipientHashes.push(sha256Hex(norm));
+          }
+          const bounceSub = String(data.bounce?.type || data.bounce?.subType || '').toLowerCase();
+          const isSoftBounce = type === 'email.bounced' && (bounceSub.includes('soft') || bounceSub.includes('transient'));
           let suppressedCount = 0;
-          if (type === 'email.bounced' || type === 'email.complained' || type === 'contact.unsubscribed') {
-            const reason = type === 'email.bounced' ? 'BOUNCED' : (type === 'email.complained' ? 'COMPLAINED' : 'UNSUBSCRIBED');
-            for (const addr of toList) {
-              const norm = String(addr || '').trim().toLowerCase();
-              if (!norm) continue;
-              const rh = sha256Hex(norm);
-              store.suppress({ recipientHash: rh, tokenHash: `webhook:${evt.data?.email_id || type}`, reason });
+          if ((type === 'email.bounced' && !isSoftBounce) || type === 'email.complained' || type === 'contact.unsubscribed') {
+            const reason = type === 'email.bounced' ? 'HARD_BOUNCED' : (type === 'email.complained' ? 'COMPLAINED' : 'UNSUBSCRIBED');
+            for (const rh of recipientHashes) {
+              store.suppress({ recipientHash: rh, tokenHash: `webhook:${data.email_id || type}`, reason });
               suppressedCount++;
             }
           }
+          const svixId = String(req.headers['svix-id'] || '').trim();
+          const evtCreated = String(evt.created_at || data.created_at || new Date().toISOString());
+          const eventId = svixId || `${data.email_id || 'no_id'}:${type}:${evtCreated}`;
+          store.recordProviderEvent({
+            event_id: eventId,
+            type,
+            email_id: data.email_id || null,
+            recipient_hashes: recipientHashes,
+            bounce_type: type === 'email.bounced' ? (isSoftBounce ? 'soft' : 'hard') : null,
+            click_link: data.click?.link || null,
+            created_at: evtCreated,
+            received_at: new Date().toISOString()
+          });
           store.appendAudit({ event_type: `WEBHOOK_${type || 'UNKNOWN'}`, email_id: data.email_id || null, suppressed_count: suppressedCount });
           return sendJson(res, 200, { ok: true, type, suppressedCount });
         } catch (_) {
@@ -254,6 +310,11 @@ function createUnsubscribeRailwayServer(options = {}) {
       if (pathname === '/api/sync/suppressions' && req.method === 'GET') {
         const since = urlObj.searchParams.get('since') || '';
         return sendJson(res, 200, { ok: true, suppressions: store.listSuppressions(since) });
+      }
+      if (pathname === '/api/sync/events' && req.method === 'GET') {
+        const since = urlObj.searchParams.get('since') || '';
+        const limit = urlObj.searchParams.get('limit') || '500';
+        return sendJson(res, 200, { ok: true, events: store.listEvents(since, limit) });
       }
       if (pathname === '/api/sync/tokens' && req.method === 'POST') {
         let raw = '';

@@ -15,6 +15,7 @@ const { EmailSimulatorLedger } = require('./email-simulator-ledger');
 const { writeProtectedSecretFile, verifyWindowsDacl, writeKeySecurely } = require('./email-test-sidecar-set-key');
 const { getSidecarPaths } = require('./sidecar-paths');
 const { EmailProductionPipeline } = require('./email-production-pipeline');
+const { CampaignAnalyticsEngine } = require('./email-campaign-analytics');
 const { EmailImageHostManager } = require('./email-image-host');
 const { injectUnsubscribeFooter } = require('./email-unsubscribe-server');
 
@@ -85,6 +86,10 @@ class EmailTestSidecar {
       stateDir: this.stateDir,
       trustedTestMode: this.trustedTestMode,
       httpRequest: this.trustedTestMode ? options.imageHostHttpRequest : null
+    });
+    this.analytics = new CampaignAnalyticsEngine({
+      stateDir: this.stateDir,
+      trustedTestMode: this.trustedTestMode
     });
   }
 
@@ -541,6 +546,131 @@ class EmailTestSidecar {
               res.end(JSON.stringify({ ok: false, status: 'ERROR', reason: 'INVALID_JSON', message: err.message }));
             }
           });
+          return;
+        }
+
+        if (pathname.startsWith('/email/campaigns/') && req.method === 'GET') {
+          const parts = pathname.split('/').filter(Boolean); // ['email', 'campaigns', id, action]
+          const campaignId = decodeURIComponent(parts[2] || 'default');
+          const sub = parts[3] || 'progress';
+          const doSync = urlObj.searchParams.get('sync') !== '0';
+          if (doSync) {
+            const unsubCfg = this.pipeline.getUnsubscribePublicConfig();
+            const publicBase = String(unsubCfg?.publicBaseUrl || '').trim();
+            const syncTokPath = path.join(this.stateDir, '.unsubscribe_sync_token');
+            const syncTok = fs.existsSync(syncTokPath) ? fs.readFileSync(syncTokPath, 'utf8').trim() : '';
+            if (publicBase && syncTok) {
+              await this.analytics.syncRemoteEvents({ baseUrl: publicBase, syncToken: syncTok });
+              await this.pipeline.syncRemoteSuppressions({ baseUrl: publicBase, syncToken: syncTok }).catch(() => {});
+            }
+          }
+          if (sub === 'progress') {
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify(this.analytics.getCampaignProgress(campaignId)));
+            return;
+          }
+          if (sub === 'segments') {
+            const cutoffHours = Number(urlObj.searchParams.get('cutoffHours') || 24);
+            const seg = this.analytics.getCampaignSegments(campaignId, { cutoffHours });
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({
+              ...seg,
+              notConfirmedOpenedEmails: undefined
+            }));
+            return;
+          }
+        }
+
+        if (pathname === '/email/campaigns/second-wave/preview' && req.method === 'POST') {
+          let raw = '';
+          req.on('data', c => { raw += c; if (raw.length > 32768) req.destroy(); });
+          req.on('end', () => {
+            try {
+              const p = raw ? JSON.parse(raw) : {};
+              const prev = this.analytics.previewSecondWave({
+                parentCampaignId: p.parentCampaignId || 'default',
+                cutoffHours: Number(p.cutoffHours ?? 24),
+                waveCampaignId: p.waveCampaignId || null
+              });
+              res.writeHead(200, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ ...prev, eligibleCsv: undefined }));
+            } catch (err) {
+              res.writeHead(400, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ ok: false, error: err.message }));
+            }
+          });
+          return;
+        }
+
+        if (pathname === '/email/campaigns/second-wave/start' && req.method === 'POST') {
+          let raw = '';
+          req.on('data', c => { raw += c; if (raw.length > 524288) req.destroy(); });
+          req.on('end', async () => {
+            try {
+              const p = raw ? JSON.parse(raw) : {};
+              if (p.ownerConfirmed !== true) {
+                res.writeHead(400, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ ok: false, status: 'BLOCKED', reason: 'OWNER_CONFIRMATION_REQUIRED' }));
+                return;
+              }
+              const prev = this.analytics.previewSecondWave({
+                parentCampaignId: p.parentCampaignId || 'default',
+                cutoffHours: Number(p.cutoffHours ?? 24),
+                waveCampaignId: p.waveCampaignId || null
+              });
+              if (prev.eligibleCount <= 0) {
+                res.writeHead(409, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ ok: false, status: 'BLOCKED', reason: 'NO_ELIGIBLE_UNOPENED_RECIPIENTS', preview: { ...prev, eligibleCsv: undefined } }));
+                return;
+              }
+              const resolvedKey = this.resolveResendApiKey();
+              const unsubCfg = this.pipeline.getUnsubscribePublicConfig();
+              const publicUnsubBase = String(unsubCfg?.publicBaseUrl || '').trim();
+              const syncTokPath = path.join(this.stateDir, '.unsubscribe_sync_token');
+              const syncToken = fs.existsSync(syncTokPath) ? fs.readFileSync(syncTokPath, 'utf8').trim() : null;
+              this.pipeline.importAndPersistRecipients({
+                csvText: prev.eligibleCsv,
+                messageKind: p.messageKind || 'marketing',
+                consentAttested: true,
+                lawfulBasis: 'EXPLICIT_OPT_IN',
+                jurisdiction: p.jurisdiction || 'GLOBAL',
+                authorizationSource: `second_wave_of_${prev.parentCampaignId}`,
+                campaignId: prev.waveCampaignId
+              });
+              const runOut = await this.pipeline.runQueue({
+                mode: 'LIVE_PRODUCTION',
+                subject: String(p.subject || '').trim(),
+                html: String(p.html || ''),
+                text: String(p.text || ''),
+                baseUrl: publicUnsubBase,
+                hasResendKey: Boolean(resolvedKey),
+                apiKey: (!this.trustedTestMode && resolvedKey) ? resolvedKey : (p.apiKey || null),
+                syncToken,
+                ownerExplicitApproval: true,
+                publicUnsubscribeHttpsVerified: /^https:\/\//i.test(publicUnsubBase)
+              });
+              res.writeHead(runOut.ok ? 200 : 409, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ ...runOut, waveCampaignId: prev.waveCampaignId, parentCampaignId: prev.parentCampaignId }));
+            } catch (err) {
+              res.writeHead(400, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ ok: false, error: err.message }));
+            }
+          });
+          return;
+        }
+
+        if (pathname === '/email/master-list' && req.method === 'GET') {
+          const summary = this.analytics.syncMasterListFromRuntime();
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify(summary));
+          return;
+        }
+
+        if (pathname === '/email/master-list/export' && req.method === 'GET') {
+          this.analytics.syncMasterListFromRuntime();
+          const csv = this.analytics.exportMasterListCsv();
+          res.writeHead(200, { 'Content-Type': 'text/csv; charset=utf-8' });
+          res.end(csv);
           return;
         }
 

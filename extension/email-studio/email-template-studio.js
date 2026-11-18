@@ -89,7 +89,7 @@ function audit(v){
   add(autoUnsubConfigured,'발송 단계에서 RFC 8058 원클릭 구독 취소 헤더 및 공개 HTTPS 엔드포인트 준비',autoUnsubConfigured?'PASS':'WARN',autoUnsubConfigured?'확인됨: 공개 HTTPS 구독 취소 기본 URL이 설정되었습니다.':'안내: 시뮬레이터 테스트는 로컬 검증되며, 상용 발송 전 [공개 구독 취소 HTTPS 기본 URL] 설정이 필요합니다.');
   add(false,'수신 동의·suppression 명단·Resend AUP 검증 필요','WARN','안내: 수신자 관리 카드에서 동의 확인 및 수신거부 명단 대조가 필요합니다.');
  }
- add(false,'SPF · DKIM · DMARC · 발신 도메인/계정 평판은 콘텐츠 검사 밖에서 검증','WARN','안내: 하단 [운영 DNS · 동의원장 · 수신거부 · 웹훅 점검]에서 별도 확인하세요.');
+ add(false,'SPF · DKIM · DMARC · 발신 도메인/계정 평판은 콘텐츠 검사 밖에서 검증','WARN','안내: 하단 [운영 DNS · 발송 권한 확인 · 수신거부 · 웹훅 점검]에서 별도 확인하세요.');
  return out;
 }
 let autoUnsubConfigured = false;
@@ -906,7 +906,7 @@ setTimeout(() => {
         if (hBadge) {
           hBadge.textContent = (qReady > 0 && r.data.deliverabilityGate?.action !== 'BLOCK')
             ? `✅ 상용발송 잠금 해제 · 발송 가능 ${qReady}건`
-            : `✅ 상용발송 잠금 해제 · 발송대상/자격 확인 필요 (동의원장 ${consented}건 / 대기 ${qReady}건)`;
+            : `✅ 상용발송 잠금 해제 · 발송대상/자격 확인 필요 (발송 가능 ${qReady}건 / 권한기록 ${consented}건)`;
         }
         const qBadge = el('prodQueueBadge');
         if (qBadge) {
@@ -2413,8 +2413,152 @@ function createBuiltinRecipientManager() {
         pBox.className = r?.ok ? 'status-box status-blocked' : 'status-box status-error';
         pBox.textContent = r?.ok ? '⏹️ 운영 발송 큐가 안전하게 중지되었습니다.' : `❌ 큐 중지 요청 실패: ${r?.error || '-'}`;
       }
+      refreshCampaignProgress();
     };
   }
+
+  let livePollTimer = null;
+  let lastSyncDisplay = '-';
+  async function refreshCampaignProgress() {
+    const sumBox = el('campaignMonitorSummary');
+    const syncBadge = el('monitorSyncBadge');
+    const { sidecarPort, sidecarToken } = getSidecarConfig();
+    const r = await callBg({ action: 'GET_CAMPAIGN_PROGRESS', sidecarPort, sidecarToken, campaignId: 'default' });
+    if (!r || !r.ok || !r.data) {
+      if (syncBadge) syncBadge.textContent = `연결 끊김 / 마지막 동기화: ${lastSyncDisplay}`;
+      if (sumBox) sumBox.className = 'status-box status-blocked';
+      return;
+    }
+    const d = r.data;
+    lastSyncDisplay = d.lastSyncAt || d.updatedAt || new Date().toISOString();
+    if (syncBadge) syncBadge.textContent = `동기화: ${d.syncStatus || 'OK'} (${lastSyncDisplay.slice(11, 19)}Z)`;
+    if (el('progAcceptedBar')) el('progAcceptedBar').value = Math.min(100, Math.max(0, Number(d.acceptedPct || 0)));
+    if (el('progAcceptedText')) el('progAcceptedText').textContent = `${d.apiAccepted || 0} / ${d.target || 0} (${d.acceptedPct || 0}%)`;
+    if (el('progDeliveredBar')) el('progDeliveredBar').value = Math.min(100, Math.max(0, Number(d.deliveredPct || 0)));
+    if (el('progDeliveredText')) el('progDeliveredText').textContent = `${d.delivered || 0} / ${d.target || 0} (${d.deliveredPct || 0}%)`;
+    if (sumBox) {
+      const errKeys = Object.entries(d.errorsSummary || {}).map(([k, v]) => `${k}: ${v}건`).join(', ');
+      sumBox.className = (d.failed > 0 || d.bounced > 0 || d.complained > 0) ? 'status-box status-blocked' : 'status-box status-success';
+      sumBox.textContent = [
+        `📌 캠페인: ${d.campaignId} | 배치: ${d.batchId} | 상태: ${d.stopped ? 'STOPPED/PAUSED' : (d.finishedAt ? 'FINISHED' : 'ACTIVE')}`,
+        `• 대상(Target): ${d.target} | 미제출(Remaining): ${d.remainingToSubmit} | 발송중(In-Flight): ${d.inFlight}`,
+        `• API 접수(ACCEPTED): ${d.apiAccepted} | 전달 대기(Pending): ${d.deliveryPending} | 전달 확인(DELIVERED): ${d.delivered}`,
+        `• 오픈(Unique): ${d.openedUnique} | 클릭(Unique): ${d.clickedUnique} | 반송(Bounce): ${d.bounced} (Hard=${d.bouncedHard}, Soft=${d.bouncedSoft}) | 스팸신고: ${d.complained}`,
+        `• 실패(FAILED): ${d.failed} | 제외/수신거부: ${d.suppressed} (Unsub=${d.unsubscribed})`,
+        ...(errKeys ? [`• 실패 사유: ${errKeys}`] : [])
+      ].join('\n');
+    }
+  }
+  if (el('btnRefreshCampaignProgress')) el('btnRefreshCampaignProgress').onclick = refreshCampaignProgress;
+  if (el('btnToggleLivePoll')) {
+    el('btnToggleLivePoll').onclick = () => {
+      if (livePollTimer) {
+        clearInterval(livePollTimer);
+        livePollTimer = null;
+        el('btnToggleLivePoll').textContent = '⏱️ 자동 폴링 켜기 (3초)';
+      } else {
+        refreshCampaignProgress();
+        livePollTimer = setInterval(refreshCampaignProgress, 3000);
+        el('btnToggleLivePoll').textContent = '⏸️ 자동 폴링 중지';
+      }
+    };
+  }
+  if (el('btnPreviewSecondWave')) {
+    el('btnPreviewSecondWave').onclick = async () => {
+      const box = el('secondWaveStatus');
+      const cutoffHours = Number(el('secondWaveCutoffHours')?.value ?? 24);
+      const { sidecarPort, sidecarToken } = getSidecarConfig();
+      const [segR, prevR] = await Promise.all([
+        callBg({ action: 'GET_CAMPAIGN_SEGMENTS', sidecarPort, sidecarToken, campaignId: 'default', cutoffHours }),
+        callBg({ action: 'PREVIEW_SECOND_WAVE', sidecarPort, sidecarToken, payload: { parentCampaignId: 'default', cutoffHours } })
+      ]);
+      if (!prevR?.ok || !prevR.data) {
+        if (box) { box.className = 'status-box status-error'; box.textContent = `❌ 2차 발송 미리보기 실패: ${prevR?.error || '-'}`; }
+        return;
+      }
+      const p = prevR.data;
+      const s = segR?.data || {};
+      if (box) {
+        box.className = p.eligibleCount > 0 ? 'status-box status-success' : 'status-box status-blocked';
+        box.textContent = [
+          `🔍 [세그먼트 및 2차 발송 미리보기 — 기준: ${p.cutoffHours}시간 경과]`,
+          `• 확인된 오픈(Opened): ${s.openedCount || 0}명 | 미오픈 적격 후보(Not Confirmed Opened): ${p.eligibleCount}명`,
+          `• 전달 미확인/대기: ${s.acceptedPendingDeliveryCount || 0}명 | 제외(반송·신고·수신거부·기발송): ${p.excludedCount}명`,
+          `• 대상 웨이브 ID: ${p.waveCampaignId} | 주의: ${p.caveat}`
+        ].join('\n');
+      }
+    };
+  }
+  if (el('btnStartSecondWave')) {
+    el('btnStartSecondWave').onclick = async () => {
+      const box = el('secondWaveStatus');
+      const cutoffHours = Number(el('secondWaveCutoffHours')?.value ?? 24);
+      const { sidecarPort, sidecarToken } = getSidecarConfig();
+      const prevR = await callBg({ action: 'PREVIEW_SECOND_WAVE', sidecarPort, sidecarToken, payload: { parentCampaignId: 'default', cutoffHours } });
+      const p = prevR?.data;
+      if (!prevR?.ok || !p || p.eligibleCount <= 0) {
+        if (box) { box.className = 'status-box status-blocked'; box.textContent = `🛑 2차 발송 불가: 적격 미오픈 수신자가 0명입니다 (반송/수신거부/전달미확인 제외됨).`; }
+        return;
+      }
+      const v = values();
+      const subject = (v.subject || '').trim();
+      if (!subject) {
+        if (box) { box.className = 'status-box status-blocked'; box.textContent = '⚠️ 2차 발송 제목을 먼저 입력하세요.'; }
+        return;
+      }
+      if (typeof window.confirm === 'function') {
+        if (!window.confirm(`미오픈 적격 수신자 ${p.eligibleCount}명에게 2차 발송(${p.waveCampaignId})을 시작할까요?\n(반송·스팸신고·수신거부 대상은 이미 제외되었습니다.)`)) return;
+      }
+      const r = await callBg({
+        action: 'START_SECOND_WAVE',
+        sidecarPort,
+        sidecarToken,
+        payload: {
+          parentCampaignId: 'default',
+          waveCampaignId: p.waveCampaignId,
+          cutoffHours,
+          subject,
+          html: htmlFor(v),
+          text: textFor(v),
+          messageKind: messageKind(),
+          ownerConfirmed: true
+        }
+      });
+      if (box) {
+        box.className = r?.ok ? 'status-box status-success' : 'status-box status-error';
+        box.textContent = r?.ok
+          ? `✅ 2차 발송 완료 (${r.data.waveCampaignId}): 이번 발송 ${r.data.sentInThisRun || 0}건`
+          : `❌ 2차 발송 차단/실패: ${r?.data?.reason || r?.error || '-'}`;
+      }
+      refreshCampaignProgress();
+    };
+  }
+  if (el('btnRefreshMasterList')) {
+    el('btnRefreshMasterList').onclick = async () => {
+      const box = el('masterListStatus');
+      const { sidecarPort, sidecarToken } = getSidecarConfig();
+      const r = await callBg({ action: 'GET_MASTER_LIST_SUMMARY', sidecarPort, sidecarToken });
+      if (!r?.ok || !r.data) {
+        if (box) { box.className = 'status-box status-error'; box.textContent = `❌ 마스터 목록 조회 실패: ${r?.error || '-'}`; }
+        return;
+      }
+      const m = r.data;
+      if (box) {
+        box.className = 'status-box status-success';
+        box.textContent = `👥 마스터 수신자 목록: 전체 ${m.total}명 | 발송 가능 ${m.activeEligible}명 | 수신거부/반송 제외 ${m.suppressedCount}명 | 전달 확인 ${m.deliveredCount}명 | 오픈 확인 ${m.openedCount}명 (${m.updatedAt || ''})`;
+      }
+    };
+  }
+  if (el('btnExportMasterListCsv')) {
+    el('btnExportMasterListCsv').onclick = async () => {
+      const { sidecarPort, sidecarToken } = getSidecarConfig();
+      const r = await callBg({ action: 'EXPORT_MASTER_LIST_CSV', sidecarPort, sidecarToken });
+      if (r?.ok && r.data?.csvText) {
+        download('xpider_master_recipient_list.csv', 'text/csv;charset=utf-8', '\uFEFF' + r.data.csvText);
+      }
+    };
+  }
+  setTimeout(() => { try { refreshCampaignProgress(); } catch (_) {} }, 120);
   if (el('btnDryRun')) {
     el('btnDryRun').onclick = async () => {
       try {

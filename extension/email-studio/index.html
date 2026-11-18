@@ -265,6 +265,34 @@
 <div class="actions"><button type="button" class="primary" id="btnProdSend" title="적법 발송 권한 확인 및 사전 점검 통과 후 즉시 발송">🚀 대량발송 시작</button><button type="button" id="btnProdStop">⏹️ 운영 큐 중지</button><button type="button" id="btnCheckProdPreflight">🔍 운영 DNS · 동의확인 · 수신거부 · 웹훅 점검</button></div>
 <div id="prodPreflightStatus" class="status-box status-idle" aria-live="polite">PRODUCTION UNLOCKED · QUEUE NOT READY — 0 DOCUMENTED OPT-IN RECIPIENTS: 수신자 CSV 입력 후 법적 수신 동의 확인 체크박스를 선택하고 "가져오기 · 중복 제거"를 누르면 큐가 준비됩니다.</div>
 </div>
+<div class="send-control-card" id="campaignMonitorCard" style="margin-top:10px;">
+  <div class="send-header"><h4>📊 실시간 Resend 캠페인 모니터 · 오픈/미오픈 · 2차 발송 · 마스터 목록</h4><span class="badge-test" id="monitorSyncBadge">동기화 대기</span></div>
+  <div style="margin:6px 0;">
+    <div style="display:flex;justify-content:space-between;font-size:12px;"><span>Resend API 접수</span><b id="progAcceptedText">0 / 0 (0%)</b></div>
+    <progress id="progAcceptedBar" max="100" value="0" style="width:100%;height:14px;"></progress>
+  </div>
+  <div style="margin:6px 0;">
+    <div style="display:flex;justify-content:space-between;font-size:12px;"><span>전달 확인 (Webhook DELIVERED)</span><b id="progDeliveredText">0 / 0 (0%)</b></div>
+    <progress id="progDeliveredBar" max="100" value="0" style="width:100%;height:14px;"></progress>
+  </div>
+  <div id="campaignMonitorSummary" class="status-box status-idle" aria-live="polite" style="margin-top:6px;">실시간 캠페인 집계 대기 중...</div>
+  <div class="actions" style="margin-top:6px;">
+    <button type="button" id="btnRefreshCampaignProgress">🔄 실시간 상태 동기화</button>
+    <button type="button" id="btnToggleLivePoll">⏱️ 자동 폴링 켜기 (3초)</button>
+  </div>
+  <hr style="border:0;border-top:1px solid #e2e8f0;margin:10px 0;">
+  <div class="inline" style="align-items:end;">
+    <div><label for="secondWaveCutoffHours">미오픈 판정 기준 시간 (시간, 0=즉시)</label><input id="secondWaveCutoffHours" type="number" min="0" max="720" value="24" style="width:110px;"></div>
+    <div class="actions"><button type="button" id="btnPreviewSecondWave">🔍 미오픈 세그먼트·2차 발송 미리보기</button><button type="button" class="primary" id="btnStartSecondWave">🚀 2차 발송 — 미오픈 대상만</button></div>
+  </div>
+  <div id="secondWaveStatus" class="status-box status-idle" aria-live="polite" style="margin-top:6px;">미오픈 세그먼트 미리보기 대기 중 (참고: 이미지 차단·Apple MPP로 인해 실제 열람 시에도 미오픈으로 분류될 수 있습니다).</div>
+  <hr style="border:0;border-top:1px solid #e2e8f0;margin:10px 0;">
+  <div class="actions">
+    <button type="button" id="btnRefreshMasterList">👥 마스터 수신자 목록 동기화</button>
+    <button type="button" id="btnExportMasterListCsv">💾 마스터 목록 CSV 저장</button>
+  </div>
+  <div id="masterListStatus" class="status-box status-idle" aria-live="polite" style="margin-top:6px;">마스터 수신자 목록 미조회 (누적 발송·전달·오픈·반송·수신거부 통합 관리).</div>
+</div>
 </div>
 </section></main>
 <script src="recipient-manager.js"></script>
