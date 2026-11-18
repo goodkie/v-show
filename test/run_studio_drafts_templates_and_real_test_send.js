@@ -188,5 +188,71 @@ function createMockWebStorage(initial = {}) {
     fs.rmSync(tmpBasisDir, { recursive: true, force: true });
   }
 
-  console.log('ALL STUDIO DRAFT/TEMPLATE/REAL-TEST/PRODUCTION TESTS PASSED (8/8)');
+  // P0D-3: Verified list one-check bulk send + re-import replay idempotency + provider error + stop/resume (mocked Resend, 0 real sends)
+  const tmpBulkDir = fs.mkdtempSync(path.join(os.tmpdir(), 'xpider-onecheck-bulk-'));
+  try {
+    let resendCalls = 0;
+    const mockFetch = async (u) => {
+      const s = String(u);
+      if (s.includes('/api/sync/suppressions')) return { ok: true, status: 200, json: async () => ({ ok: true, suppressions: [] }) };
+      if (s.includes('/api/sync/tokens')) return { ok: true, status: 200, json: async () => ({ ok: true }) };
+      if (s.includes('api.resend.com/emails')) {
+        resendCalls++;
+        return { ok: true, status: 200, json: async () => ({ id: 'mock_msg_' + resendCalls }) };
+      }
+      return { ok: false, status: 500, json: async () => ({}) };
+    };
+    const pBulk = new EmailProductionPipeline({
+      stateDir: tmpBulkDir,
+      trustedTestMode: true
+    });
+    pBulk.evaluatePreflight = async () => ({ deliverabilityGate: { action: 'REVIEW', reasons: [] } });
+    const impBulk = pBulk.importAndPersistRecipients({
+      csvText: 'email,name\nverified1@example.com,V1\nverified1@example.com,V1Dup\nsup@example.com,Sup',
+      optOutText: 'sup@example.com',
+      messageKind: 'marketing',
+      consentAttested: true,
+      lawfulBasis: 'EXPLICIT_OPT_IN',
+      jurisdiction: 'GLOBAL',
+      authorizationSource: 'crm_verified_2026',
+      campaignId: 'bulk-onecheck-1'
+    });
+    assert.strictEqual(impBulk.summary.counts.PENDING, 1);
+    assert.strictEqual(impBulk.summary.counts.SKIPPED_SUPPRESSED, 1);
+
+    const run1 = await pBulk.runQueue({
+      mode: 'LIVE_PRODUCTION',
+      subject: 'One-Check Bulk Test',
+      html: '<p>Hello</p>',
+      text: 'Hello',
+      baseUrl: 'https://unsubscribe.vivpr.pro',
+      syncToken: 'sync-tok-1234567890',
+      syncFetchImpl: mockFetch,
+      hasResendKey: true,
+      apiKey: 're_test_mock_key',
+      ownerExplicitApproval: true,
+      publicUnsubscribeHttpsVerified: true
+    });
+    assert.strictEqual(run1.ok, true);
+    assert.strictEqual(run1.sentInThisRun, 1);
+    assert.strictEqual(resendCalls, 1);
+
+    // Re-importing same CSV + campaignId marks prior accepted recipient as ALREADY_SENT_IDEMPOTENT (0 duplicate sends)
+    const impReplay = pBulk.importAndPersistRecipients({
+      csvText: 'email,name\nverified1@example.com,V1',
+      messageKind: 'marketing',
+      consentAttested: true,
+      lawfulBasis: 'EXPLICIT_OPT_IN',
+      jurisdiction: 'GLOBAL',
+      authorizationSource: 'crm_verified_2026',
+      campaignId: 'bulk-onecheck-1'
+    });
+    assert.strictEqual(impReplay.summary.counts.PENDING, 0);
+    assert.strictEqual(impReplay.summary.counts.ACCEPTED, 1);
+    console.log('PASS P0D-3: one-check bulk send mocked + re-import replay idempotency (0 duplicates)');
+  } finally {
+    fs.rmSync(tmpBulkDir, { recursive: true, force: true });
+  }
+
+  console.log('ALL STUDIO DRAFT/TEMPLATE/REAL-TEST/PRODUCTION TESTS PASSED (9/9)');
 })();

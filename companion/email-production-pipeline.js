@@ -758,6 +758,11 @@ class EmailProductionPipeline {
         try { this.outbox.suppress(item, 'MANUAL'); } catch (_) {}
       }
     }
+    const alreadyAcceptedKeys = new Set(
+      this._readAuditEvents()
+        .filter(ev => ev && ev.type === 'SEND_ATTEMPT_ACCEPTED' && ev.idempotencyKey)
+        .map(ev => String(ev.idempotencyKey))
+    );
 
     const nowIso = new Date().toISOString();
     const authTime = authorizationAt ? String(authorizationAt) : nowIso;
@@ -768,6 +773,10 @@ class EmailProductionPipeline {
 
     for (const r of parsed.valid) {
       const idempotencyKey = 'prod_' + crypto.createHash('sha256').update(`${campaignId}:${r.email}`).digest('hex').slice(0, 32);
+      if (alreadyAcceptedKeys.has(idempotencyKey)) {
+        entries.push({ email: r.email, name: r.name, idempotencyKey, status: 'ACCEPTED', reason: 'ALREADY_SENT_IDEMPOTENT', attempts: 1, providerMessageId: 'prior_accepted', deliveryState: 'ACCEPTED', updatedAt: nowIso });
+        continue;
+      }
       const isSup = RM.isSuppressed(r.email, manualSup) || this.isRecipientSuppressed(r.email);
       if (isSup) {
         suppressedCount++;

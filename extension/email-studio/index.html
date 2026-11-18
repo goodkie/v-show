@@ -205,7 +205,7 @@
 
 <label for="optOutList">수신 거부(opt-out) / 제외 목록 (이메일 또는 @도메인, 공백·쉼표 구분)</label>
 <textarea id="optOutList" rows="2" placeholder="blocked@example.com @competitor.com"></textarea>
-<label style="display:flex;align-items:center;gap:6px;margin:6px 0;font-size:12px;"><input id="consentAttest" type="checkbox"> 이 목록의 수신자는 적법한 발송 근거(명시적 수신 동의 또는 US CAN-SPAM 기존 고객)가 있음을 확인합니다 (수집/스크래핑 CSV는 동의로 간주되지 않음)</label>
+<label style="display:flex;align-items:center;gap:6px;margin:6px 0;font-size:12px;"><input id="consentAttest" type="checkbox"> <b>이 수신리스트에 대한 적법한 발송 권한을 확인했습니다</b> (수집/스크래핑/구매 목록은 체크해도 자동 제외됨)</label>
 <div class="inline" style="margin:6px 0;">
   <div><label for="lawfulBasisSelect">적법 발송 근거 (Lawful Basis)</label><select id="lawfulBasisSelect"><option value="EXPLICIT_OPT_IN">EXPLICIT_OPT_IN (명시적 수신 동의 · 글로벌)</option><option value="EXISTING_CUSTOMER_US_CAN_SPAM">EXISTING_CUSTOMER_US_CAN_SPAM (미국 기존 고객 · US 관할)</option><option value="SERVICE_NOTIFICATION">SERVICE_NOTIFICATION (계약/서비스 안내)</option></select></div>
   <div><label for="jurisdictionSelect">관할 지역 (Jurisdiction)</label><select id="jurisdictionSelect"><option value="GLOBAL">GLOBAL (글로벌 / KR / EU)</option><option value="US">US (미국 CAN-SPAM)</option></select></div>
@@ -262,7 +262,7 @@
 <div class="prod-send-box">
 <div class="prod-header"><h4>🚀 상용(운영) 발송 (Production Send)</h4><div style="display:flex;gap:6px;flex-wrap:wrap;"><span class="badge-test" id="prodGateBadge">✅ PRODUCTION UNLOCKED</span><span class="badge-test" id="prodQueueBadge">⏸️ QUEUE NOT READY — 0 DOCUMENTED OPT-IN RECIPIENTS</span></div></div>
 <p class="desc">vivpr.pro 도메인(SPF/DKIM/DMARC), HTTPS 원클릭 수신 거부(unsubscribe.vivpr.pro), HMAC 동의 원장 및 Webhook 검증이 활성화되어 있습니다. <b>수집/스크래핑된 CSV는 수신 동의로 간주되지 않으며</b>, 명시적 수신 동의가 확인된 수신자에게만 발송됩니다.</p>
-<div class="actions"><button type="button" class="primary" id="btnProdSend" title="동의 원장·수신거부·도메인 검증을 통과한 수신자에게만 발송">🚀 운영 이메일 발송 (Verified Opt-In)</button><button type="button" id="btnProdStop">⏹️ 운영 큐 중지</button><button type="button" id="btnCheckProdPreflight">🔍 운영 DNS · 동의원장 · 수신거부 · 웹훅 점검</button></div>
+<div class="actions"><button type="button" class="primary" id="btnProdSend" title="적법 발송 권한 확인 및 사전 점검 통과 후 즉시 발송">🚀 대량발송 시작</button><button type="button" id="btnProdStop">⏹️ 운영 큐 중지</button><button type="button" id="btnCheckProdPreflight">🔍 운영 DNS · 동의원장 · 수신거부 · 웹훅 점검</button></div>
 <div id="prodPreflightStatus" class="status-box status-idle" aria-live="polite">PRODUCTION UNLOCKED · QUEUE NOT READY — 0 DOCUMENTED OPT-IN RECIPIENTS: 수신자 CSV 입력 후 법적 수신 동의 확인 체크박스를 선택하고 "가져오기 · 중복 제거"를 누르면 큐가 준비됩니다.</div>
 </div>
 </div>

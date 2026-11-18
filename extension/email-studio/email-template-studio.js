@@ -2336,20 +2336,16 @@ function createBuiltinRecipientManager() {
       await syncSidecarRecipients();
       const { sidecarPort, sidecarToken } = getSidecarConfig();
       const pre = await callBg({ action: 'GET_EMAIL_PRODUCTION_PREFLIGHT', sidecarPort, sidecarToken });
-      const eligibleCount = Number(pre?.data?.queueSummary?.counts?.PENDING || 0);
+      const counts = pre?.data?.queueSummary?.counts || {};
+      const eligibleCount = Number(counts.PENDING || 0);
       const consentedOnDisk = Number(pre?.data?.queueSummary?.consentedRecordsOnDisk || 0);
       if (!pre?.ok || pre?.data?.deliverabilityGate?.action === 'BLOCK' || eligibleCount <= 0) {
         pBox.className = 'status-box status-blocked';
-        pBox.textContent = `🛑 [운영 발송 대기 — 발송 가능 적법 수신자 ${eligibleCount}건 / 동의 원장 ${consentedOnDisk}건]\n• 사유: ${(pre?.data?.deliverabilityGate?.reasons || ['RECIPIENT_AUTHORIZATION_UNKNOWN']).join(', ')}`;
+        pBox.textContent = `🛑 [발송 차단 — 적격 미발송 ${eligibleCount}건 / 동의 원장 ${consentedOnDisk}건 / 수신거부 제외 ${counts.SKIPPED_SUPPRESSED || 0}건 / 미동의 제외 ${counts.SKIPPED_NO_CONSENT || 0}건]\n• 사유: ${(pre?.data?.deliverabilityGate?.reasons || ['RECIPIENT_AUTHORIZATION_UNKNOWN']).join(', ')}`;
         return;
       }
-      if (typeof window.confirm === 'function') {
-        if (!window.confirm(`수신 동의가 검증된 ${eligibleCount}명의 수신자에게 운영 이메일을 발송할까요?\n제목: ${subjectVal}\n발신: noreply@vivpr.pro`)) {
-          pBox.className = 'status-box status-idle';
-          pBox.textContent = '⏸️ 사용자가 운영 발송을 취소했습니다 (실발송 0건).';
-          return;
-        }
-      }
+      pBox.className = 'status-box status-loading';
+      pBox.textContent = `⏳ 적격 미발송 ${eligibleCount}건에 대해 Resend 운영 발송 진행 중... (ACCEPTED ≠ DELIVERED)`;
       const r = await callBg({
         action: 'RUN_EMAIL_PRODUCTION_QUEUE',
         sidecarPort,
