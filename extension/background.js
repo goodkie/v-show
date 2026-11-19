@@ -977,11 +977,109 @@ const configureSidePanel = () => {
           .catch((error) => console.error("[SidePanel Error]", error));
     }
 };
+// [Email Sidecar 18990 Auto-Start — Isolated from Privacy Relay 18988/18989]
+// Automatically starts Email Sidecar (18990) when XPIDER starts, popup opens, or Email Studio opens.
+// Deduplicated per port so concurrent requests never spawn duplicate native host processes.
+function ensureEmailSidecarStarted(port = 18990, trigger = 'auto') {
+    const reqPort = Number(port);
+    const ctrlPort = (Number.isInteger(reqPort) && reqPort >= 1024 && reqPort <= 65535 && reqPort !== 18989 && reqPort !== 18988) ? reqPort : 18990;
+    if (!globalThis.__xpiderSidecarWakePromises) globalThis.__xpiderSidecarWakePromises = new Map();
+    if (globalThis.__xpiderSidecarWakePromises.has(ctrlPort)) {
+        return globalThis.__xpiderSidecarWakePromises.get(ctrlPort);
+    }
+    const task = (async () => {
+        const startedAt = Date.now();
+        try {
+            const pg = (typeof PrivacyGateway !== 'undefined' && PrivacyGateway.getInstance) ? PrivacyGateway.getInstance() : null;
+            if (pg && typeof pg.ensureLoopbackPortBypass === 'function') {
+                await Promise.race([
+                    pg.ensureLoopbackPortBypass(ctrlPort).catch(() => null),
+                    new Promise(r => setTimeout(r, 1500))
+                ]);
+            }
+            const probeHealth = async (ms = 1500) => {
+                const c = new AbortController();
+                const t = setTimeout(() => c.abort(), ms);
+                try {
+                    const r = await fetch(`http://127.0.0.1:${ctrlPort}/health`, { method: 'GET', signal: c.signal });
+                    if (!r.ok) return { alive: false, httpStatus: r.status };
+                    const j = await r.json().catch(() => ({}));
+                    return { alive: j && j.service === 'XPIDER Email Test Sidecar', json: j };
+                } catch (_) {
+                    return { alive: false };
+                } finally {
+                    clearTimeout(t);
+                }
+            };
+            const first = await probeHealth(1500);
+            if (first.alive) {
+                return { ok: true, alreadyRunning: true, autoStarted: false, port: ctrlPort, pid: first.json?.pid || null, trigger, elapsedMs: Date.now() - startedAt };
+            }
+            if (!chrome?.runtime?.sendNativeMessage) {
+                return { ok: false, reason: 'NATIVE_MESSAGING_API_UNAVAILABLE', port: ctrlPort, trigger, elapsedMs: Date.now() - startedAt };
+            }
+            const nmRes = await new Promise((resolve) => {
+                let settled = false;
+                const timer = setTimeout(() => {
+                    if (settled) return;
+                    settled = true;
+                    resolve({ ok: false, error: 'NATIVE_HOST_TIMEOUT_10000MS' });
+                }, 10000);
+                try {
+                    chrome.runtime.sendNativeMessage('com.xpider.email_sidecar', { action: 'GET_SIDECAR_TOKEN', port: ctrlPort, ensureRunning: true }, (res) => {
+                        if (settled) return;
+                        settled = true;
+                        clearTimeout(timer);
+                        if (chrome.runtime.lastError) {
+                            return resolve({ ok: false, error: chrome.runtime.lastError.message || 'NATIVE_HOST_ERROR' });
+                        }
+                        if (res && res.ok && typeof res.token === 'string' && res.token.trim().length >= 16) {
+                            globalThis.__xpiderPairedSidecarToken = res.token.trim();
+                        }
+                        resolve(res || { ok: false, error: 'EMPTY_NATIVE_RESPONSE' });
+                    });
+                } catch (e) {
+                    if (!settled) {
+                        settled = true;
+                        clearTimeout(timer);
+                        resolve({ ok: false, error: e?.message || 'NATIVE_HOST_THROW' });
+                    }
+                }
+            });
+            const after = await probeHealth(2000);
+            return {
+                ok: Boolean(after.alive),
+                alreadyRunning: Boolean(nmRes?.sidecarEnsure?.alreadyRunning),
+                autoStarted: Boolean(nmRes?.sidecarEnsure?.autoStarted || (after.alive && !first.alive)),
+                launchMode: nmRes?.sidecarEnsure?.launchMode || null,
+                port: ctrlPort,
+                pid: after.json?.pid || nmRes?.sidecarEnsure?.pid || null,
+                trigger,
+                ...(after.alive ? {} : { reason: nmRes?.sidecarEnsure?.reason || nmRes?.error || 'SIDECAR_START_FAILED' }),
+                elapsedMs: Date.now() - startedAt
+            };
+        } catch (err) {
+            return { ok: false, reason: err?.message || 'ENSURE_EXCEPTION', port: ctrlPort, trigger, elapsedMs: Date.now() - startedAt };
+        } finally {
+            globalThis.__xpiderSidecarWakePromises.delete(ctrlPort);
+        }
+    })();
+    globalThis.__xpiderSidecarWakePromises.set(ctrlPort, task);
+    return task;
+}
+
 // Configure immediately on boot AND on install
 configureSidePanel();
 chrome.runtime.onInstalled.addListener(() => {
     configureSidePanel();
+    ensureEmailSidecarStarted(18990, 'extension_installed').catch(() => {});
 });
+if (chrome?.runtime?.onStartup && typeof chrome.runtime.onStartup.addListener === 'function') {
+    chrome.runtime.onStartup.addListener(() => {
+        configureSidePanel();
+        ensureEmailSidecarStarted(18990, 'browser_startup').catch(() => {});
+    });
+}
 // Fallback: If action click is not captured by setPanelBehavior, open sidepanel explicitly
 if (typeof chrome.action !== 'undefined' && chrome.action.onClicked) {
     chrome.action.onClicked.addListener(async (tab) => {
@@ -4229,6 +4327,16 @@ const _handleMainMessageInner = (request, sender, sendResponse) => {
             return true;
         }
 
+        case 'ENSURE_EMAIL_SIDECAR_RUNNING': {
+            (async () => {
+                const reqPort = Number(request.sidecarPort);
+                const ctrlPort = (Number.isInteger(reqPort) && reqPort >= 1024 && reqPort <= 65535) ? reqPort : 18990;
+                const res = await ensureEmailSidecarStarted(ctrlPort, String(request.trigger || 'explicit_request'));
+                sendResponse(res);
+            })();
+            return true;
+        }
+
         case 'GET_EMAIL_PRODUCTION_PREFLIGHT':
         case 'SYNC_EMAIL_PRODUCTION_RECIPIENTS':
         case 'RUN_EMAIL_PRODUCTION_QUEUE':
@@ -4374,10 +4482,11 @@ const _handleMainMessageInner = (request, sender, sendResponse) => {
                     } catch (firstFetchErr) {
                         const isFirstTimeout = firstFetchErr && (firstFetchErr.name === 'AbortError' || /abort|timeout/i.test(firstFetchErr.message || ''));
                         if (!isFirstTimeout) {
-                            // Local Sidecar may have stopped (ECONNREFUSED / Failed to fetch); invoke native host to auto-start it and retry once!
+                            // Local Sidecar may have stopped (ECONNREFUSED / Failed to fetch); wake via deduplicated native host and retry once!
                             autoWakeAttempted = true;
                             globalThis.__xpiderPairedSidecarToken = null;
-                            const wokenTok = await pairTok(true);
+                            await ensureEmailSidecarStarted(ctrlPort, `auto_wake_${request.action}`);
+                            const wokenTok = globalThis.__xpiderPairedSidecarToken || await pairTok(true);
                             if (wokenTok && !explicitToken) token = wokenTok;
                             resp = await doFetch(token);
                         } else {

@@ -22,12 +22,29 @@ function getJson(port, urlPath, headers = {}) {
   });
 }
 
+function parseCliArgs(argv = process.argv.slice(2)) {
+  let cliPort = null;
+  let skipNativeHostReg = false;
+  for (let i = 0; i < argv.length; i++) {
+    const a = String(argv[i] || '');
+    if (a === '--port' && i + 1 < argv.length) {
+      cliPort = argv[++i];
+    } else if (a.startsWith('--port=')) {
+      cliPort = a.slice('--port='.length);
+    } else if (a === '--skip-native-host-reg') {
+      skipNativeHostReg = true;
+    }
+  }
+  return { cliPort, skipNativeHostReg };
+}
+
 (async () => {
-  const port = parseSidecarPort(process.env.XPIDER_EMAIL_SIDECAR_PORT, DEFAULT_SIDECAR_PORT);
+  const { cliPort, skipNativeHostReg } = parseCliArgs();
+  const port = parseSidecarPort(cliPort !== null ? cliPort : process.env.XPIDER_EMAIL_SIDECAR_PORT, DEFAULT_SIDECAR_PORT);
   const paths = getSidecarPaths();
   let nhRegistered = false;
   let nhRegError = null;
-  if (!process.env.XPIDER_SKIP_NATIVE_HOST_REG) {
+  if (!skipNativeHostReg && !process.env.XPIDER_SKIP_NATIVE_HOST_REG) {
     try {
       const regRes = registerNativeMessagingHost();
       nhRegistered = Boolean(regRes && regRes.registered);

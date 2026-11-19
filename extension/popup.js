@@ -4829,6 +4829,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.log('[POPUP_BOOT] started');
     window.__xpider_boot.started = true;
 
+    // [Email Sidecar 18990 Auto-Start] Non-blocking wake on XPIDER popup open (never touches Privacy Relay 18988/18989)
+    try {
+        if (typeof chrome !== 'undefined' && chrome.runtime && typeof chrome.runtime.sendMessage === 'function') {
+            chrome.runtime.sendMessage({ action: 'ENSURE_EMAIL_SIDECAR_RUNNING', sidecarPort: 18990, trigger: 'popup_open' }, () => {
+                void chrome.runtime.lastError;
+            });
+        }
+    } catch (_) {}
+
     // [Y2] Purge stale dynamic modals on boot before any layout/binding
     purgeStaleDynamicModals();
 

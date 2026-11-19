@@ -8,10 +8,50 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const http = require('node:http');
-const { spawn } = require('node:child_process');
+const { spawn, spawnSync } = require('node:child_process');
 const { getSidecarPaths } = require('./sidecar-paths');
 const { verifyWindowsDacl } = require('./email-test-sidecar-set-key');
 const { SIDECAR_BUILD_ID } = require('./email-test-sidecar');
+
+function launchDetachedSidecarProcess(nodeExe, sidecarScript, port) {
+  const safePort = Number.isInteger(port) && port >= 1024 && port <= 65535 ? port : 18990;
+  // On Windows, Chrome wraps Native Messaging hosts in a KILL_ON_JOB_CLOSE Job Object.
+  // Launching via WMI Win32_Process.Create places the Sidecar under WmiPrvSE.exe (outside Chrome's Job Object),
+  // hidden (ShowWindow=0), with zero admin privileges, so it survives native host exit and browser restarts.
+  if (process.platform === 'win32' && !process.env.XPIDER_DISABLE_WMI_LAUNCH) {
+    try {
+      const psEsc = (s) => String(s).replace(/'/g, "''");
+      const cmdLine = `"${nodeExe}" "${sidecarScript}" --port ${safePort} --skip-native-host-reg`;
+      const psScript = [
+        "$ErrorActionPreference = 'Stop'",
+        "$startup = New-CimInstance -ClassName Win32_ProcessStartup -Property @{ ShowWindow = [uint16]0 } -ClientOnly",
+        `$res = Invoke-CimMethod -ClassName Win32_Process -MethodName Create -Arguments @{ CommandLine = '${psEsc(cmdLine)}'; ProcessStartupInformation = $startup }`,
+        'Write-Output ("WMI_RC=" + $res.ReturnValue + ";PID=" + $res.ProcessId)'
+      ].join('; ');
+      const ps = spawnSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-WindowStyle', 'Hidden', '-Command', psScript], {
+        timeout: 4500,
+        windowsHide: true,
+        encoding: 'utf8'
+      });
+      if (ps.status === 0 && /WMI_RC=0;PID=(\d+)/.test(String(ps.stdout || ''))) {
+        const m = String(ps.stdout).match(/WMI_RC=0;PID=(\d+)/);
+        return { launched: true, mode: 'wmi_detached', pid: m ? Number(m[1]) : null };
+      }
+    } catch (_) {}
+  }
+  const child = spawn(nodeExe, [sidecarScript, '--port', String(safePort), '--skip-native-host-reg'], {
+    detached: true,
+    stdio: 'ignore',
+    windowsHide: true,
+    env: {
+      ...process.env,
+      XPIDER_EMAIL_SIDECAR_PORT: String(safePort),
+      XPIDER_SKIP_NATIVE_HOST_REG: '1'
+    }
+  });
+  child.unref();
+  return { launched: true, mode: 'spawn_detached', pid: child.pid || null };
+}
 
 function probeLocalHealth(port) {
   return new Promise((resolve) => {
@@ -30,11 +70,12 @@ function probeLocalHealth(port) {
 }
 
 async function ensureLocalSidecarRunning(msg = {}, options = {}) {
-  if (!msg || msg.action !== 'GET_SIDECAR_TOKEN') return { ensured: false };
-  const port = Number(msg.port) || 18990;
+  if (!msg || (msg.action !== 'GET_SIDECAR_TOKEN' && msg.action !== 'ENSURE_SIDECAR_RUNNING')) return { ensured: false };
+  const rawPort = Number(msg.port);
+  const port = (Number.isInteger(rawPort) && rawPort >= 1024 && rawPort <= 65535) ? rawPort : 18990;
   const h = await probeLocalHealth(port);
   if (h.alive && h.json && h.json.service === 'XPIDER Email Test Sidecar' && h.json.companionBuildId === SIDECAR_BUILD_ID) {
-    return { ensured: true, alreadyRunning: true, companionBuildId: h.json.companionBuildId };
+    return { ensured: true, alreadyRunning: true, pid: h.json.pid || null, companionBuildId: h.json.companionBuildId };
   }
   if (h.alive && h.json && h.json.service === 'XPIDER Email Test Sidecar' && Number.isInteger(Number(h.json.pid))) {
     try { process.kill(Number(h.json.pid), 'SIGTERM'); } catch (_) {}
@@ -43,25 +84,24 @@ async function ensureLocalSidecarRunning(msg = {}, options = {}) {
     return { ensured: false, reason: 'PORT_IN_USE_BY_OTHER_SERVICE' };
   }
   const sidecarScript = options.sidecarScript || path.join(__dirname, 'email-test-sidecar-cli.js');
-  const child = spawn(process.execPath, [sidecarScript], {
-    detached: true,
-    stdio: 'ignore',
-    windowsHide: true,
-    env: {
-      ...process.env,
-      XPIDER_EMAIL_SIDECAR_PORT: String(port),
-      XPIDER_SKIP_NATIVE_HOST_REG: '1'
-    }
-  });
-  child.unref();
+  if (!fs.existsSync(sidecarScript)) {
+    return { ensured: false, reason: 'SIDECAR_CLI_NOT_FOUND' };
+  }
+  const launch = launchDetachedSidecarProcess(process.execPath, sidecarScript, port);
   for (let i = 0; i < 40; i++) {
     await new Promise(r => setTimeout(r, 150));
     const check = await probeLocalHealth(port);
     if (check.alive && check.json && check.json.companionBuildId === SIDECAR_BUILD_ID) {
-      return { ensured: true, autoStarted: true, pid: check.json.pid || null, companionBuildId: check.json.companionBuildId };
+      return {
+        ensured: true,
+        autoStarted: true,
+        launchMode: launch.mode,
+        pid: check.json.pid || launch.pid || null,
+        companionBuildId: check.json.companionBuildId
+      };
     }
   }
-  return { ensured: false, reason: 'START_TIMEOUT' };
+  return { ensured: false, reason: 'START_TIMEOUT', launchMode: launch.mode };
 }
 
 function readNativeMessage(stdin = process.stdin) {
@@ -122,6 +162,9 @@ function handleNativeRequest(msg, options = {}) {
   if (msg.action === 'PING') {
     return { ok: true, service: 'com.xpider.email_sidecar' };
   }
+  if (msg.action === 'ENSURE_SIDECAR_RUNNING') {
+    return { ok: true, service: 'com.xpider.email_sidecar', ensured: true };
+  }
   if (msg.action !== 'GET_SIDECAR_TOKEN') {
     return { ok: false, error: 'UNSUPPORTED_ACTION' };
   }
@@ -151,10 +194,14 @@ function handleNativeRequest(msg, options = {}) {
 
 async function main() {
   const msg = await readNativeMessage(process.stdin);
-  if (msg && msg.action === 'GET_SIDECAR_TOKEN' && msg.ensureRunning !== false) {
-    try { await ensureLocalSidecarRunning(msg); } catch (_) {}
+  let ensureInfo = null;
+  if (msg && (msg.action === 'GET_SIDECAR_TOKEN' || msg.action === 'ENSURE_SIDECAR_RUNNING') && msg.ensureRunning !== false) {
+    try { ensureInfo = await ensureLocalSidecarRunning(msg); } catch (e) { ensureInfo = { ensured: false, reason: e?.message || 'ENSURE_ERR' }; }
   }
   const resp = handleNativeRequest(msg);
+  if (ensureInfo && resp && typeof resp === 'object') {
+    resp.sidecarEnsure = ensureInfo;
+  }
   const outBuf = encodeNativeMessage(resp);
   process.stdout.write(outBuf, () => {
     try { process.stdin.pause(); } catch (_) {}

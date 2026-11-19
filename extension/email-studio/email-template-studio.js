@@ -757,6 +757,29 @@ if (el('btnDownloadDebugLog')) {
 }
 studioDebugLog('INFO', 'UI', 'STUDIO_BOOT', { hasChromeRuntime: Boolean(typeof chrome !== 'undefined' && chrome.runtime) });
 
+// [Method 1 Auto-Start] Ensure local Email Sidecar (18990) is running when Email Studio opens
+(async () => {
+  try {
+    const { sidecarPort } = getSidecarConfig();
+    const wake = await callBg({ action: 'ENSURE_EMAIL_SIDECAR_RUNNING', sidecarPort, trigger: 'studio_open' }, { timeoutMs: 12000 });
+    studioDebugLog(wake && wake.ok ? 'INFO' : 'WARN', 'SIDECAR', 'AUTO_ENSURE_ON_STUDIO_OPEN', {
+      ok: Boolean(wake?.ok),
+      alreadyRunning: Boolean(wake?.alreadyRunning),
+      autoStarted: Boolean(wake?.autoStarted),
+      launchMode: wake?.launchMode || null,
+      pid: wake?.pid || null,
+      elapsedMs: wake?.elapsedMs || wake?.clientElapsedMs || null,
+      reason: wake?.reason || wake?.error || null
+    });
+    if (wake && wake.ok && wake.autoStarted) {
+      if (typeof checkCompanionStatus === 'function') checkCompanionStatus().catch(() => {});
+      if (typeof el === 'function' && el('btnRefreshCampaignProgress')) {
+        try { el('btnRefreshCampaignProgress').click(); } catch (_) {}
+      }
+    }
+  } catch (_) {}
+})();
+
 function getSidecarConfig() {
   const rawPort = el('sidecarPort') ? Number(el('sidecarPort').value) : 18990;
   const sidecarPort = (Number.isInteger(rawPort) && rawPort >= 1024 && rawPort <= 65535) ? rawPort : 18990;
