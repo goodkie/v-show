@@ -802,5 +802,77 @@ function createMockWebStorage(initial = {}) {
     console.log('PASS P0D-13: native host clean exit, concurrent DNS, 18990 proxy bypass self-heal, cumulative CSV vault & debug console verified');
   }
 
-  console.log('ALL STUDIO DRAFT/TEMPLATE/REAL-TEST/PRODUCTION TESTS PASSED (17/17)');
+  // ===== P0D-14: Large-Outbox Bulk Recipient Sync Speed + Consent Scope & Timeout Hardening =====
+  {
+    const tmpBulkDir = fs.mkdtempSync(path.join(os.tmpdir(), 'xpider-bulk-sync-perf-'));
+    try {
+      const pBulk = new EmailProductionPipeline({ stateDir: tmpBulkDir, trustedTestMode: true });
+      // Pre-seed ~3,000 existing outbox jobs (multi-MB outbox simulation, like Owner's 2.2MB store)
+      const seedLines = ['email,name'];
+      for (let i = 0; i < 3000; i++) seedLines.push(`seed_${i}@example.test,Seed ${i}`);
+      const seedOut = pBulk.importAndPersistRecipients({
+        csvText: seedLines.join('\n'),
+        messageKind: 'marketing',
+        consentAttested: true,
+        lawfulBasis: 'EXPLICIT_OPT_IN',
+        campaignId: 'seed-history'
+      });
+      assert.strictEqual(seedOut.ok, true);
+      const outboxBytes = fs.statSync(path.join(tmpBulkDir, '.email_draft_outbox.json')).size;
+      assert.ok(outboxBytes > 1000000, `Expected >1MB seeded outbox, got ${outboxBytes} bytes`);
+
+      // Suppress 10 recipients in bulk and sync 1,000 production recipients
+      const bulkLines = ['email,name'];
+      const optOuts = [];
+      for (let i = 0; i < 1000; i++) {
+        bulkLines.push(`bulk_${i}@example.test,Bulk ${i}`);
+        if (i < 10) optOuts.push(`bulk_${i}@example.test`);
+      }
+      const t0 = Date.now();
+      const bulkOut = pBulk.importAndPersistRecipients({
+        csvText: bulkLines.join('\n'),
+        optOutText: optOuts.join('\n'),
+        messageKind: 'marketing',
+        consentAttested: true,
+        lawfulBasis: 'EXPLICIT_OPT_IN',
+        campaignId: 'default'
+      });
+      const firstElapsedMs = Date.now() - t0;
+      assert.strictEqual(bulkOut.ok, true);
+      assert.strictEqual(bulkOut.summary.counts.PENDING, 990);
+      assert.strictEqual(bulkOut.summary.counts.SKIPPED_SUPPRESSED, 10);
+      assert.ok(firstElapsedMs < 3500, `Expected fast 1000-recipient bulk sync on >1MB outbox (<3500ms), got ${firstElapsedMs}ms`);
+
+      // Second re-sync of same 1,000 recipients must be even faster (no-op outbox skip + O(1) suppression set)
+      const t1 = Date.now();
+      const bulkOut2 = pBulk.importAndPersistRecipients({
+        csvText: bulkLines.join('\n'),
+        optOutText: optOuts.join('\n'),
+        messageKind: 'marketing',
+        consentAttested: true,
+        lawfulBasis: 'EXPLICIT_OPT_IN',
+        campaignId: 'default'
+      });
+      const secondElapsedMs = Date.now() - t1;
+      assert.strictEqual(bulkOut2.summary.counts.PENDING, 990);
+      assert.ok(secondElapsedMs < 2000, `Expected fast steady-state re-sync (<2000ms), got ${secondElapsedMs}ms`);
+      console.log(`  [perf] seededOutbox=${Math.round(outboxBytes / 1024)}KB, 1000-sync=${firstElapsedMs}ms, re-sync=${secondElapsedMs}ms`);
+    } finally {
+      fs.rmSync(tmpBulkDir, { recursive: true, force: true });
+    }
+
+    // Verify handleConsentAttestChanged is inside initRecipientUi() scope (fixes ReferenceError: recipients is not defined)
+    const studioSrc = fs.readFileSync(path.resolve(__dirname, '../extension/email-studio/email-template-studio.js'), 'utf8');
+    const initIdx = studioSrc.indexOf('function initRecipientUi()');
+    const letRecipIdx = studioSrc.indexOf('let recipients = [];');
+    const consentFnIdx = studioSrc.indexOf('async function handleConsentAttestChanged(');
+    assert.ok(initIdx > 0 && letRecipIdx > initIdx && consentFnIdx > letRecipIdx, 'handleConsentAttestChanged must be declared inside initRecipientUi after let recipients');
+    assert.ok(studioSrc.includes('activeSyncPromise') && studioSrc.includes('buildSyncPayloadAndSig'), 'syncSidecarRecipients must deduplicate/serialize concurrent syncs');
+    assert.ok(/action === 'SYNC_EMAIL_PRODUCTION_RECIPIENTS'\s*\?\s*50000/.test(studioSrc), 'callBg must allow 50000ms for SYNC_EMAIL_PRODUCTION_RECIPIENTS');
+    const bgSrc2 = fs.readFileSync(path.resolve(__dirname, '../extension/background.js'), 'utf8');
+    assert.ok(/request\.action === 'SYNC_EMAIL_PRODUCTION_RECIPIENTS'\s*\?\s*45000/.test(bgSrc2), 'background.js must allow 45000ms for SYNC_EMAIL_PRODUCTION_RECIPIENTS');
+    console.log('PASS P0D-14: large-outbox bulk sync O(1) speed, consent handler scope fix, sync coalescing & timeout hardening verified');
+  }
+
+  console.log('ALL STUDIO DRAFT/TEMPLATE/REAL-TEST/PRODUCTION TESTS PASSED (18/18)');
 })();

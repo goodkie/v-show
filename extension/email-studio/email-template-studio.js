@@ -587,9 +587,11 @@ if (typeof window !== 'undefined') {
 
 function callBg(msg, opts = {}) {
   const action = String(msg?.action || 'UNKNOWN');
-  const defaultTimeoutMs = action === 'SEND_REAL_TEST_EMAIL'
-    ? 45000
-    : ((action === 'VERIFY_RECIPIENT_DOMAINS_DNS' || action === 'RUN_EMAIL_PRODUCTION_QUEUE' || action === 'START_SECOND_WAVE' || action === 'RECONCILE_CAMPAIGN_RESEND' || action === 'UPLOAD_EMAIL_IMAGE') ? 30000 : 20000);
+  const defaultTimeoutMs = action === 'SYNC_EMAIL_PRODUCTION_RECIPIENTS'
+    ? 50000
+    : ((action === 'SEND_REAL_TEST_EMAIL' || action === 'RUN_EMAIL_PRODUCTION_QUEUE')
+      ? 45000
+      : ((action === 'VERIFY_RECIPIENT_DOMAINS_DNS' || action === 'START_SECOND_WAVE' || action === 'RECONCILE_CAMPAIGN_RESEND' || action === 'UPLOAD_EMAIL_IMAGE') ? 30000 : 20000));
   const timeoutMs = Number.isFinite(opts.timeoutMs) ? opts.timeoutMs : defaultTimeoutMs;
   const startedAt = Date.now();
   const isNoisyPoll = action === 'GET_CAMPAIGN_PROGRESS' || action === 'GET_EMAIL_SIDECAR_LOGS';
@@ -1353,40 +1355,8 @@ if (el('btnCheckRealTestStatus')) {
     }
   };
 }
-async function handleConsentAttestChanged(sourceEl) {
-  const checked = Boolean(sourceEl && sourceEl.checked);
-  if (el('consentAttest') && el('consentAttest').checked !== checked) el('consentAttest').checked = checked;
-  if (el('consentAttestProd') && el('consentAttestProd').checked !== checked) el('consentAttestProd').checked = checked;
-  if (!recipients.length && el('recipientCsv') && el('recipientCsv').value.trim()) {
-    runRecipientImport('auto-on-consent-check', null);
-  }
-  if (recipients.length) {
-    await syncSidecarRecipients();
-    const { sidecarPort, sidecarToken } = getSidecarConfig();
-    const pre = await callBg({ action: 'GET_EMAIL_PRODUCTION_PREFLIGHT', sidecarPort, sidecarToken }).catch(() => null);
-    if (pre && pre.ok && pre.data) {
-      const qReady = Number(pre.data.queueSummary?.counts?.PENDING || 0);
-      const consented = Number(pre.data.queueSummary?.consentedRecordsOnDisk || 0);
-      const gateOk = pre.data.deliverabilityGate?.action !== 'BLOCK' && qReady > 0;
-      if (el('prodQueueBadge')) {
-        el('prodQueueBadge').textContent = gateOk
-          ? `🟢 QUEUE READY — ${qReady} VERIFIED OPT-IN`
-          : `⏸️ QUEUE NOT READY — ${qReady} QUEUED / ${consented} DOCUMENTED OPT-IN`;
-      }
-      if (el('headerProdStateBadge')) {
-        el('headerProdStateBadge').textContent = gateOk
-          ? `✅ 상용발송 잠금 해제 · 발송 가능 ${qReady}건`
-          : `✅ 상용발송 잠금 해제 · 발송대상/자격 확인 필요 (발송 가능 ${qReady}건 / 권한기록 ${consented}건)`;
-      }
-    }
-  }
-}
-if (el('consentAttest')) {
-  el('consentAttest').addEventListener('change', () => handleConsentAttestChanged(el('consentAttest')));
-}
-if (el('consentAttestProd')) {
-  el('consentAttestProd').addEventListener('change', () => handleConsentAttestChanged(el('consentAttestProd')));
-}
+// Note: consentAttest / consentAttestProd change handlers are registered inside initRecipientUi()
+// where recipients, runRecipientImport, and syncSidecarRecipients are in scope.
 if (el('btnLoadLedger')) el('btnLoadLedger').onclick = loadLedger;
 if (el('btnSaveResendKey')) {
   el('btnSaveResendKey').onclick = async () => {
@@ -2219,12 +2189,23 @@ function createBuiltinRecipientManager() {
       splitPercentA: abOpts.splitPercentA
     });
   }
-  async function syncSidecarRecipients() {
+  let activeSyncPromise = null;
+  let activeSyncSig = null;
+
+  function buildSyncPayloadAndSig() {
     const { sidecarPort, sidecarToken } = getSidecarConfig();
     let syncCsv = '';
+    let listLen = 0;
+    let firstEmail = '';
+    let lastEmail = '';
     try {
       const RM = getActiveRM();
       const targetList = recipients.length ? recipients : allValidRecipients;
+      listLen = targetList.length;
+      if (listLen > 0) {
+        firstEmail = String(targetList[0]?.email || '');
+        lastEmail = String(targetList[listLen - 1]?.email || '');
+      }
       if (targetList.length && typeof RM.recipientsToCsv === 'function') {
         syncCsv = RM.recipientsToCsv(targetList);
       } else {
@@ -2237,31 +2218,125 @@ function createBuiltinRecipientManager() {
       csvText: syncCsv,
       optOutText: el('optOutList') ? el('optOutList').value : '',
       messageKind: messageKind(),
-      consentAttested: Boolean(el('consentAttest') && el('consentAttest').checked),
+      consentAttested: Boolean((el('consentAttest') && el('consentAttest').checked) || (el('consentAttestProd') && el('consentAttestProd').checked)),
       lawfulBasis: el('lawfulBasisSelect')?.value || 'EXPLICIT_OPT_IN',
       jurisdiction: el('jurisdictionSelect')?.value || 'GLOBAL',
       authorizationSource: el('authSourceInput')?.value.trim() || 'owner_csv_consent_attestation'
     };
-    for (let attempt = 0; attempt < 2; attempt++) {
-      try {
-        const r = await callBg({
-          action: 'SYNC_EMAIL_PRODUCTION_RECIPIENTS',
-          sidecarPort,
-          sidecarToken,
-          payload
-        });
-        if (r && r.ok) {
-          return { synced: true, httpStatus: r.httpStatus, syncedCount: (r.data && r.data.summary && r.data.summary.counts && r.data.summary.counts.total) || null };
-        }
-        if (attempt === 1) {
-          return { synced: false, httpStatus: r && r.httpStatus, error: (r && (r.error || (r.data && r.data.error))) || `HTTP_${(r && r.httpStatus) || 'ERR'}` };
-        }
-      } catch (err) {
-        if (attempt === 1) return { synced: false, error: err.message };
-      }
-      await new Promise(r => setTimeout(r, 150));
+    const sig = [
+      sidecarPort,
+      listLen,
+      syncCsv.length,
+      firstEmail,
+      lastEmail,
+      payload.optOutText.length,
+      payload.messageKind,
+      payload.consentAttested ? '1' : '0',
+      payload.lawfulBasis,
+      payload.jurisdiction,
+      payload.authorizationSource
+    ].join('|');
+    return { sidecarPort, sidecarToken, payload, sig };
+  }
+
+  async function syncSidecarRecipients() {
+    const { sidecarPort, sidecarToken, payload, sig } = buildSyncPayloadAndSig();
+    // Deduplicate concurrent identical in-flight syncs (e.g. file-picker auto-sync + button-click)
+    if (activeSyncPromise && activeSyncSig === sig) {
+      return activeSyncPromise;
     }
-    return { synced: false, error: 'SYNC_RETRY_EXHAUSTED' };
+    // Serialize differing in-flight sync so Sidecar processes them cleanly in order
+    if (activeSyncPromise) {
+      try { await activeSyncPromise; } catch (_) {}
+      const latest = buildSyncPayloadAndSig();
+      if (activeSyncPromise && activeSyncSig === latest.sig) return activeSyncPromise;
+      return executeSyncNow(latest);
+    }
+    return executeSyncNow({ sidecarPort, sidecarToken, payload, sig });
+  }
+
+  function executeSyncNow({ sidecarPort, sidecarToken, payload, sig }) {
+    activeSyncSig = sig;
+    const p = (async () => {
+      for (let attempt = 0; attempt < 2; attempt++) {
+        try {
+          const r = await callBg({
+            action: 'SYNC_EMAIL_PRODUCTION_RECIPIENTS',
+            sidecarPort,
+            sidecarToken,
+            payload
+          });
+          if (r && r.ok) {
+            return {
+              synced: true,
+              httpStatus: r.httpStatus,
+              syncedCount: (r.data && r.data.summary && r.data.summary.counts && r.data.summary.counts.total) || null,
+              serverElapsedMs: (r.data && typeof r.data.elapsedMs === 'number') ? r.data.elapsedMs : null
+            };
+          }
+          if (attempt === 1) {
+            return { synced: false, httpStatus: r && r.httpStatus, error: (r && (r.error || (r.data && r.data.error))) || `HTTP_${(r && r.httpStatus) || 'ERR'}` };
+          }
+        } catch (err) {
+          if (attempt === 1) return { synced: false, error: err.message };
+        }
+        await new Promise(r => setTimeout(r, 150));
+      }
+      return { synced: false, error: 'SYNC_RETRY_EXHAUSTED' };
+    })().finally(() => {
+      if (activeSyncPromise === p) {
+        activeSyncPromise = null;
+        activeSyncSig = null;
+      }
+    });
+    activeSyncPromise = p;
+    return p;
+  }
+
+  async function handleConsentAttestChanged(sourceEl) {
+    try {
+      const checked = Boolean(sourceEl && sourceEl.checked);
+      if (el('consentAttest') && el('consentAttest').checked !== checked) el('consentAttest').checked = checked;
+      if (el('consentAttestProd') && el('consentAttestProd').checked !== checked) el('consentAttestProd').checked = checked;
+      studioDebugLog('INFO', 'PROD', 'CONSENT_ATTEST_CHANGED', { checked, recipientCount: recipients.length, vaultCount: allValidRecipients.length });
+      if (!recipients.length && el('recipientCsv') && el('recipientCsv').value.trim()) {
+        runRecipientImport('auto-on-consent-check', null);
+      }
+      if (recipients.length) {
+        const syncRes = await syncSidecarRecipients();
+        studioDebugLog(syncRes?.synced ? 'INFO' : 'WARN', 'PROD', 'CONSENT_SYNC_RESULT', {
+          synced: Boolean(syncRes?.synced),
+          syncedCount: syncRes?.syncedCount ?? null,
+          serverElapsedMs: syncRes?.serverElapsedMs ?? null,
+          error: syncRes?.error || null
+        });
+        const { sidecarPort, sidecarToken } = getSidecarConfig();
+        const pre = await callBg({ action: 'GET_EMAIL_PRODUCTION_PREFLIGHT', sidecarPort, sidecarToken }).catch(() => null);
+        if (pre && pre.ok && pre.data) {
+          const qReady = Number(pre.data.queueSummary?.counts?.PENDING || 0);
+          const consented = Number(pre.data.queueSummary?.consentedRecordsOnDisk || 0);
+          const gateOk = pre.data.deliverabilityGate?.action !== 'BLOCK' && qReady > 0;
+          if (el('prodQueueBadge')) {
+            el('prodQueueBadge').textContent = gateOk
+              ? `🟢 QUEUE READY — ${qReady} VERIFIED OPT-IN`
+              : `⏸️ QUEUE NOT READY — ${qReady} QUEUED / ${consented} DOCUMENTED OPT-IN`;
+          }
+          if (el('headerProdStateBadge')) {
+            el('headerProdStateBadge').textContent = gateOk
+              ? `✅ 상용발송 잠금 해제 · 발송 가능 ${qReady}건`
+              : `✅ 상용발송 잠금 해제 · 발송대상/자격 확인 필요 (발송 가능 ${qReady}건 / 권한기록 ${consented}건)`;
+          }
+        }
+      }
+    } catch (err) {
+      studioDebugLog('ERROR', 'PROD', 'CONSENT_ATTEST_EXCEPTION', { message: err?.message || String(err) });
+    }
+  }
+  if (el('consentAttest')) {
+    el('consentAttest').addEventListener('change', () => handleConsentAttestChanged(el('consentAttest')));
+  }
+  if (el('consentAttestProd')) {
+    el('consentAttestProd').addEventListener('change', () => handleConsentAttestChanged(el('consentAttestProd')));
   }
 
   function runRecipientImport(triggerSource, fileName, options = {}) {
@@ -2446,7 +2521,7 @@ function createBuiltinRecipientManager() {
         lastImportStatus = { cls: 'status-success', txt: `${localTxt}\n• 로컬 누적 보관 완료 / ${syncMsg}` };
         setRegion('importProgress', lastImportStatus.cls, lastImportStatus.txt);
         recordActivity('SIDECAR_SYNC', Date.now(), allValidRecipients.length, allValidRecipients.length, syncRes.synced ? 'SYNC_OK' : 'SYNC_FAILED', syncRes.synced ? 'OK' : 'OFFLINE', syncMsg);
-        studioDebugLog(syncRes.synced ? 'INFO' : 'WARN', 'CSV', 'SIDECAR_SYNC_RESULT', { synced: Boolean(syncRes.synced), totalStored: allValidRecipients.length, error: syncRes.error || null });
+        studioDebugLog(syncRes.synced ? 'INFO' : 'WARN', 'CSV', 'SIDECAR_SYNC_RESULT', { synced: Boolean(syncRes.synced), totalStored: allValidRecipients.length, serverElapsedMs: syncRes.serverElapsedMs ?? null, error: syncRes.error || null });
         persist();
       });
     } catch (err) {
@@ -2882,8 +2957,15 @@ function createBuiltinRecipientManager() {
       }
       pBox.className = 'status-box status-loading';
       pBox.textContent = '⏳ 동의 원장 · 원격 수신거부 · 도메인 게이트 검증 및 운영 발송 진행 중...';
+      studioDebugLog('INFO', 'PROD', 'PROD_SEND_START', {
+        recipientCount: recipients.length,
+        vaultCount: allValidRecipients.length,
+        consentChecked: Boolean((el('consentAttest') && el('consentAttest').checked) || (el('consentAttestProd') && el('consentAttestProd').checked)),
+        subjectLen: subjectVal.length
+      });
       const syncResult = await syncSidecarRecipients();
       if (syncResult && syncResult.synced === false && recipients.length > 0) {
+        studioDebugLog('ERROR', 'PROD', 'PROD_SEND_SYNC_FAILED', { httpStatus: syncResult.httpStatus || null, error: syncResult.error || 'SYNC_FAILED' });
         pBox.className = 'status-box status-error';
         pBox.textContent = `❌ [Sidecar 수신자 동기화 실패 — 발송 차단] HTTP ${syncResult.httpStatus || '-'}: ${syncResult.error || 'SYNC_FAILED'}`;
         return;
@@ -2905,6 +2987,12 @@ function createBuiltinRecipientManager() {
           : `✅ 상용발송 잠금 해제 · 발송대상/자격 확인 필요 (발송 가능 ${eligibleCount}건 / 권한기록 ${consentedOnDisk}건)`;
       }
       if (!gateOkNow) {
+        studioDebugLog('WARN', 'PROD', 'PROD_SEND_GATE_BLOCKED', {
+          eligibleCount,
+          consentedOnDisk,
+          reasons: pre?.data?.deliverabilityGate?.reasons || ['RECIPIENT_AUTHORIZATION_UNKNOWN'],
+          counts
+        });
         pBox.className = 'status-box status-blocked';
         pBox.textContent = `🛑 [발송 차단 — 적격 발송 대기 ${eligibleCount}건 / 기존 발송권한 기록 ${consentedOnDisk}건 / 미동의·미확인 제외 ${counts.SKIPPED_NO_CONSENT || 0}건 / 수신거부 제외 ${counts.SKIPPED_SUPPRESSED || 0}건 / 기발송 ${counts.ACCEPTED || 0}건]\n• 사유: ${(pre?.data?.deliverabilityGate?.reasons || ['RECIPIENT_AUTHORIZATION_UNKNOWN']).join(', ')}\n• 안내: 위 "이 수신리스트에 대한 적법한 발송 권한을 확인했습니다" 체크박스를 선택했는지 확인하세요 (수집/스크래핑 목록은 제외됨).`;
         return;
@@ -2965,12 +3053,14 @@ function createBuiltinRecipientManager() {
         }
       });
       if (!r || !r.data) {
+        studioDebugLog('ERROR', 'PROD', 'PROD_SEND_REQUEST_FAILED', { httpStatus: r?.httpStatus || null, error: r?.error || null });
         pBox.className = 'status-box status-error';
         pBox.textContent = `❌ 운영 발송 요청 실패 (HTTP ${r?.httpStatus || '-'}): Sidecar 연결을 확인하세요.`;
         return;
       }
       const out = r.data;
       if (r.ok && out.status === 'STARTED') {
+        studioDebugLog('INFO', 'PROD', 'PROD_SEND_BG_STARTED', { eligibleCount, status: out.status });
         bgQueueTrackingActive = true;
         pBox.className = 'status-box status-loading';
         pBox.textContent = [
@@ -2981,6 +3071,11 @@ function createBuiltinRecipientManager() {
         refreshCampaignProgress();
         return;
       }
+      studioDebugLog((r.ok && out.status !== 'BLOCKED') ? 'INFO' : 'WARN', 'PROD', 'PROD_SEND_OUTCOME', {
+        status: out.status || null,
+        reason: out.reason || out.stopReason || null,
+        sentInThisRun: out.sentInThisRun || 0
+      });
       renderProdRunOutcome(out, r, counts);
     };
   }

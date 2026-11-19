@@ -1094,18 +1094,31 @@ class EmailTestSidecar {
             try {
               const payload = raw ? JSON.parse(raw) : {};
               if (pathname === '/email/production/import') {
+                const impT0 = Date.now();
                 const out = this.pipeline.importAndPersistRecipients(payload);
+                const elapsedMs = Date.now() - impT0;
+                const c = out?.summary?.counts || {};
+                this._recordDiag('INFO', 'PROD_IMPORT', 'IMPORT_OK', {
+                  validCount: out?.imported?.validCount || 0,
+                  ready: c.PENDING || 0,
+                  accepted: c.ACCEPTED || 0,
+                  suppressed: c.SKIPPED_SUPPRESSED || 0,
+                  noConsent: c.SKIPPED_NO_CONSENT || 0,
+                  elapsedMs
+                });
                 res.writeHead(200, { 'Content-Type': 'application/json' });
-                res.end(JSON.stringify(out));
+                res.end(JSON.stringify({ ...out, elapsedMs }));
                 return;
               }
               if (pathname === '/email/production/queue/stop') {
                 const out = this.pipeline.stopQueue();
+                this._recordDiag('INFO', 'PROD_QUEUE', 'QUEUE_STOPPED', { counts: out?.counts || null });
                 res.writeHead(200, { 'Content-Type': 'application/json' });
                 res.end(JSON.stringify({ ok: true, status: 'STOPPED', summary: out }));
                 return;
               }
               if (pathname === '/email/production/queue/run') {
+                const runT0 = Date.now();
                 const resolvedKey = this.resolveResendApiKey();
                 const hasKey = Boolean(resolvedKey);
                 const unsubCfg = this.pipeline.getUnsubscribePublicConfig();
@@ -1127,6 +1140,14 @@ class EmailTestSidecar {
                 const out = payload.background === true
                   ? await this.pipeline.startQueueBackground(runArgs)
                   : await this.pipeline.runQueue(runArgs);
+                this._recordDiag(out.ok ? 'INFO' : 'WARN', 'PROD_QUEUE', out.status || 'RESULT', {
+                  mode: payload.mode || 'DRY_RUN',
+                  background: Boolean(payload.background),
+                  reason: out.reason || out.stopReason || null,
+                  sentInThisRun: out.sentInThisRun || 0,
+                  pending: out?.summary?.counts?.PENDING || 0,
+                  elapsedMs: Date.now() - runT0
+                });
                 res.writeHead(out.ok ? (out.status === 'STARTED' ? 202 : 200) : 409, { 'Content-Type': 'application/json' });
                 res.end(JSON.stringify(out));
                 return;

@@ -74,6 +74,8 @@ function _safeUnlinkRegularNoLink(targetPath) {
   fs.unlinkSync(targetPath);
 }
 
+const IN_PROCESS_FILE_GEN = new Map();
+
 class DraftOutbox {
   constructor(file, options = {}) {
     if (!file || typeof file !== 'string' || !path.isAbsolute(file)) {
@@ -85,7 +87,41 @@ class DraftOutbox {
     this.staleLockMs = Number.isFinite(options.staleLockMs) ? options.staleLockMs : 30000;
     this.consentLedger = options.consentLedger || null;
     this.sweptOrphanTemps = this._sweepOrphanedTemps();
+    this._diskSig = null;
+    this._seenGen = -1;
+    this._suppressedSet = new Set();
     this.data = this._loadFromDisk();
+    this._refreshIndexesAndSig();
+  }
+
+  _getDiskSig() {
+    try {
+      const st = fs.statSync(this.file);
+      return `${st.ino || 0}:${st.size}:${st.mtimeMs}:${st.ctimeMs}`;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  _refreshIndexesAndSig() {
+    this._suppressedSet = new Set(
+      (Array.isArray(this.data && this.data.suppressed) ? this.data.suppressed : [])
+        .map(x => x && x.email)
+        .filter(Boolean)
+    );
+    this._diskSig = this._getDiskSig();
+    this._seenGen = IN_PROCESS_FILE_GEN.get(this.file) || 0;
+  }
+
+  _reloadIfDiskChanged() {
+    const sig = this._getDiskSig();
+    const gen = IN_PROCESS_FILE_GEN.get(this.file) || 0;
+    if (sig === this._diskSig && gen === this._seenGen) {
+      return false;
+    }
+    this.data = this._loadFromDisk();
+    this._refreshIndexesAndSig();
+    return true;
   }
 
   _sweepOrphanedTemps() {
@@ -175,6 +211,8 @@ class DraftOutbox {
       fs.closeSync(fd);
       fd = null;
       fs.renameSync(temp, this.file);
+      IN_PROCESS_FILE_GEN.set(this.file, (IN_PROCESS_FILE_GEN.get(this.file) || 0) + 1);
+      this._refreshIndexesAndSig();
     } finally {
       if (fd !== null) {
         try { fs.closeSync(fd); } catch (_) {}
@@ -185,14 +223,19 @@ class DraftOutbox {
     }
   }
 
-  _withTransaction(mutator) {
+  _withTransaction(mutator, opts = {}) {
     const lockFd = this._acquireLock();
     try {
-      if (fs.existsSync(this.file)) {
+      const fileExists = fs.existsSync(this.file);
+      if (fileExists) {
         this.data = this._loadFromDisk();
+        this._refreshIndexesAndSig();
       }
       const result = mutator();
-      this._writeAtomicUnlocked();
+      const skipWrite = typeof opts.skipWriteIf === 'function' && Boolean(opts.skipWriteIf(result, fileExists));
+      if (!skipWrite) {
+        this._writeAtomicUnlocked();
+      }
       return result;
     } finally {
       this._releaseLock(lockFd);
@@ -254,7 +297,7 @@ class DraftOutbox {
       };
       this.data.jobs.push(job);
       return { status: 'DRAFT', id: job.id, consentVerification };
-    });
+    }, { skipWriteIf: (res, fileExists) => fileExists && res && res.status !== 'DRAFT' });
   }
 
   addBatch(items = []) {
@@ -291,7 +334,7 @@ class DraftOutbox {
         added++;
       }
       return { added };
-    });
+    }, { skipWriteIf: (res, fileExists) => fileExists && res && res.added === 0 });
   }
 
   suppress(email, reason = 'MANUAL', meta = {}) {
@@ -299,6 +342,7 @@ class DraftOutbox {
     const e = address(email);
     if (!e) throw Error('INVALID_EMAIL');
     if (!REASONS.has(reason)) throw Error('INVALID_REASON');
+    let mutated = false;
     return this._withTransaction(() => {
       const existing = this.data.suppressed.find(x => x.email === e);
       if (!existing) {
@@ -308,21 +352,74 @@ class DraftOutbox {
           suppressedAt: meta.suppressedAt || new Date().toISOString(),
           ...(meta.eventId ? { eventId: String(meta.eventId) } : {})
         });
+        mutated = true;
       }
       for (const x of this.data.jobs) {
-        if (x.email === e) x.status = 'CANCELLED';
+        if (x.email === e && x.status !== 'CANCELLED') {
+          x.status = 'CANCELLED';
+          mutated = true;
+        }
       }
       return { status: 'SUPPRESSED', alreadySuppressed: Boolean(existing) };
-    });
+    }, { skipWriteIf: (_res, fileExists) => fileExists && !mutated });
+  }
+
+  suppressBatch(emails = [], reason = 'MANUAL', meta = {}) {
+    assertNoSecrets(meta);
+    if (!REASONS.has(reason)) throw Error('INVALID_REASON');
+    const clean = [];
+    const seen = new Set();
+    for (const raw of (Array.isArray(emails) ? emails : [])) {
+      const e = address(raw);
+      if (e && !seen.has(e)) {
+        seen.add(e);
+        clean.push(e);
+      }
+    }
+    if (clean.length === 0) return { added: 0, cancelled: 0 };
+    return this._withTransaction(() => {
+      const existingSet = new Set(this.data.suppressed.map(x => x.email));
+      const targetSet = new Set(clean);
+      const nowIso = meta.suppressedAt || new Date().toISOString();
+      let added = 0;
+      let cancelled = 0;
+      for (const e of clean) {
+        if (!existingSet.has(e)) {
+          this.data.suppressed.push({
+            email: e,
+            reason,
+            suppressedAt: nowIso,
+            ...(meta.eventId ? { eventId: String(meta.eventId) } : {})
+          });
+          existingSet.add(e);
+          added++;
+        }
+      }
+      for (const x of this.data.jobs) {
+        if (targetSet.has(x.email) && x.status !== 'CANCELLED') {
+          x.status = 'CANCELLED';
+          cancelled++;
+        }
+      }
+      return { added, cancelled };
+    }, { skipWriteIf: (res, fileExists) => fileExists && res && res.added === 0 && res.cancelled === 0 });
+  }
+
+  getSuppressedSet() {
+    this._reloadIfDiskChanged();
+    return new Set(this._suppressedSet);
+  }
+
+  getSuppressedCount() {
+    this._reloadIfDiskChanged();
+    return this._suppressedSet.size;
   }
 
   isSuppressed(email) {
     const e = address(email);
     if (!e) return false;
-    if (fs.existsSync(this.file)) {
-      this.data = this._loadFromDisk();
-    }
-    return this.data.suppressed.some(x => x.email === e);
+    this._reloadIfDiskChanged();
+    return this._suppressedSet.has(e);
   }
 
   holdAll() {
@@ -337,6 +434,7 @@ class DraftOutbox {
   snapshot() {
     if (fs.existsSync(this.file)) {
       this.data = this._loadFromDisk();
+      this._refreshIndexesAndSig();
     }
     return structuredClone(this.data);
   }

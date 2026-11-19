@@ -675,6 +675,14 @@ class EmailProductionPipeline {
     writeProtectedSecretFile(this.suppressedHashesFile, JSON.stringify(Array.from(this.suppressedHashes), null, 2) + '\n');
   }
 
+  _isRecipientSuppressedWithSet(email, outboxSupSet) {
+    const norm = String(email || '').trim().toLowerCase();
+    if (!norm) return true;
+    if (outboxSupSet && outboxSupSet.has(norm)) return true;
+    const h = crypto.createHash('sha256').update(norm).digest('hex');
+    return this.suppressedHashes.has(h);
+  }
+
   isRecipientSuppressed(email) {
     const norm = String(email || '').trim().toLowerCase();
     if (!norm) return true;
@@ -725,8 +733,13 @@ class EmailProductionPipeline {
   }
 
   _syncQueueSuppression() {
+    const outboxSupSet = typeof this.outbox.getSuppressedSet === 'function' ? this.outbox.getSuppressedSet() : null;
     for (const e of this.queue.entries) {
-      if (this.isRecipientSuppressed(e.email) && e.status !== 'ACCEPTED' && e.status !== 'DELIVERED') {
+      if (e.status === 'ACCEPTED' || e.status === 'DELIVERED') continue;
+      const sup = outboxSupSet
+        ? this._isRecipientSuppressedWithSet(e.email, outboxSupSet)
+        : this.isRecipientSuppressed(e.email);
+      if (sup) {
         e.status = 'SKIPPED_SUPPRESSED';
         e.reason = 'OPT_OUT_OR_BOUNCE_SUPPRESSED';
       }
@@ -761,11 +774,20 @@ class EmailProductionPipeline {
 
     const parsed = RM.importRecipients(csvText, { source: 'studio-csv' });
     const manualSup = RM.parseSuppression(optOutText);
+    const manualEmails = [];
     for (const item of manualSup) {
-      if (!item.startsWith('@')) {
-        try { this.outbox.suppress(item, 'MANUAL'); } catch (_) {}
+      if (!item.startsWith('@')) manualEmails.push(item);
+    }
+    if (manualEmails.length > 0) {
+      if (typeof this.outbox.suppressBatch === 'function') {
+        try { this.outbox.suppressBatch(manualEmails, 'MANUAL'); } catch (_) {}
+      } else {
+        for (const item of manualEmails) {
+          try { this.outbox.suppress(item, 'MANUAL'); } catch (_) {}
+        }
       }
     }
+    const outboxSupSet = typeof this.outbox.getSuppressedSet === 'function' ? this.outbox.getSuppressedSet() : null;
     const alreadyAcceptedKeys = new Set(
       this._readAuditEvents()
         .filter(ev => ev && ev.type === 'SEND_ATTEMPT_ACCEPTED' && ev.idempotencyKey)
@@ -787,7 +809,7 @@ class EmailProductionPipeline {
         entries.push({ email: r.email, name: r.name, idempotencyKey, status: 'ACCEPTED', reason: 'ALREADY_SENT_IDEMPOTENT', attempts: 1, providerMessageId: 'prior_accepted', deliveryState: 'ACCEPTED', updatedAt: nowIso });
         continue;
       }
-      const isSup = RM.isSuppressed(r.email, manualSup) || this.isRecipientSuppressed(r.email);
+      const isSup = RM.isSuppressed(r.email, manualSup) || (outboxSupSet ? this._isRecipientSuppressedWithSet(r.email, outboxSupSet) : this.isRecipientSuppressed(r.email));
       if (isSup) {
         suppressedCount++;
         entries.push({ email: r.email, name: r.name, idempotencyKey, status: 'SKIPPED_SUPPRESSED', reason: 'OPT_OUT_OR_SUPPRESSED', attempts: 0, providerMessageId: null, deliveryState: null, updatedAt: nowIso });
@@ -912,7 +934,9 @@ class EmailProductionPipeline {
       finishedAt: this.queue.finishedAt,
       counts,
       consentedRecordsOnDisk: this.consentLedger.count(),
-      suppressedRecordsOnDisk: this.outbox.snapshot().suppressed.length
+      suppressedRecordsOnDisk: typeof this.outbox.getSuppressedCount === 'function'
+        ? this.outbox.getSuppressedCount()
+        : this.outbox.snapshot().suppressed.length
     };
   }
 
@@ -1195,13 +1219,6 @@ class EmailProductionPipeline {
     let sentInThisRun = 0;
     for (const e of this.queue.entries) {
       if (this.queue.stopped) break;
-      if (this.isRecipientSuppressed(e.email)) {
-        if (e.status !== 'ACCEPTED' && e.status !== 'DELIVERED') {
-          e.status = 'SKIPPED_SUPPRESSED';
-          e.reason = 'OPT_OUT_OR_BOUNCE_SUPPRESSED';
-        }
-        continue;
-      }
       if (
         e.status === 'ACCEPTED' ||
         e.status === 'DELIVERED' ||
@@ -1211,6 +1228,11 @@ class EmailProductionPipeline {
         String(e.status).startsWith('SKIPPED') ||
         String(e.status).startsWith('SUPPRESSED')
       ) {
+        continue;
+      }
+      if (this.isRecipientSuppressed(e.email)) {
+        e.status = 'SKIPPED_SUPPRESSED';
+        e.reason = 'OPT_OUT_OR_BOUNCE_SUPPRESSED';
         continue;
       }
       if (e.status === 'FAILED' && e.attempts >= maxAttempts) {

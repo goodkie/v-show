@@ -179,6 +179,32 @@ try {
     assert.equal(PRIVACY_STORAGE_REQUIREMENTS.credentialsInStoreForbidden, true);
   });
 
+  check('stat/gen-cached suppression lookups stay cross-instance fresh and suppressBatch/addBatch avoid redundant writes', () => {
+    const perfFile = path.join(dir, 'perf', 'outbox.json');
+    const a = new DraftOutbox(perfFile);
+    const b = new DraftOutbox(perfFile);
+    const batch = [];
+    for (let i = 0; i < 50; i++) {
+      batch.push({ ...base, email: `u${i}@example.test`, key: `perf-batch-key-${String(i).padStart(6, '0')}` });
+    }
+    assert.equal(a.addBatch(batch).added, 50);
+    // Second identical batch adds 0 and skips disk rewrite
+    const mtimeBefore = fs.statSync(perfFile).mtimeMs;
+    assert.equal(a.addBatch(batch).added, 0);
+    assert.equal(fs.statSync(perfFile).mtimeMs, mtimeBefore);
+
+    // Cross-instance suppression detected immediately by instance b
+    assert.equal(b.isSuppressed('u1@example.test'), false);
+    const sb = a.suppressBatch(['u1@example.test', 'u2@example.test'], 'MANUAL');
+    assert.equal(sb.added, 2);
+    assert.equal(sb.cancelled, 2);
+    assert.equal(b.isSuppressed('u1@example.test'), true);
+    assert.equal(b.isSuppressed('u2@example.test'), true);
+    assert.equal(b.isSuppressed('u3@example.test'), false);
+    assert.equal(b.getSuppressedCount(), 2);
+    assert.equal(b.getSuppressedSet().has('u2@example.test'), true);
+  });
+
   console.log(n + '/' + n + ' PASS; NO SENDS');
 } finally {
   fs.rmSync(dir, { recursive: true, force: true });
