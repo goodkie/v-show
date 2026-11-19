@@ -3026,6 +3026,110 @@ const _handleMainMessageInner = (request, sender, sendResponse) => {
             return true;
         }
 
+        case 'TOGGLE_RESIDENTIAL_PROXY': {
+            (async () => {
+                let pausedActiveCampaign = false;
+                try {
+                    const pg = (typeof PrivacyGateway !== 'undefined' && PrivacyGateway.getInstance) ? PrivacyGateway.getInstance() : null;
+                    if (!pg) return sendResponse({ success: false, error: 'PrivacyGateway unavailable' });
+                    await pg.init();
+
+                    // [Directive #7001053230 Feature A.4] During active campaign toggle:
+                    // Pause/freeze and checkpoint BEFORE changing routes; never auto-resume.
+                    if (typeof campaignState !== 'undefined' && campaignState && campaignState.isActive && typeof pauseCampaignOrchestrator === 'function') {
+                        await pauseCampaignOrchestrator(true);
+                        pausedActiveCampaign = true;
+                    }
+
+                    const targetEnabled = Boolean(request.enabled);
+                    const toggleRes = await pg.toggleResidentialProxy(targetEnabled, {
+                        verifyNow: request.verifyNow !== false
+                    });
+                    if (!toggleRes || !toggleRes.success) {
+                        return sendResponse({
+                            success: false,
+                            pausedActiveCampaign,
+                            rolledBack: Boolean(toggleRes && toggleRes.rolledBack),
+                            error: (toggleRes && (toggleRes.reason || toggleRes.error)) || 'RESIDENTIAL_TOGGLE_FAILED',
+                            status: (toggleRes && toggleRes.status) || null
+                        });
+                    }
+
+                    // Persist authoritative mirrored state only AFTER Companion confirmed persistence
+                    try {
+                        await chrome.storage.local.set({
+                            xpiderResidentialProxyEnabled: Boolean(toggleRes.residentialProxySelected),
+                            xpiderResidentialDisabledByOwner: Boolean(toggleRes.residentialDisabledByOwner)
+                        });
+                    } catch (_) {}
+
+                    // Force fresh route/egress/privacy verification after route change
+                    const egressMonitor = await pg.checkLiveEgressIp(true).catch(() => null);
+                    const preflight = await pg.runPreflight().catch(() => null);
+                    sendResponse({
+                        success: true,
+                        pausedActiveCampaign,
+                        residentialProxySelected: Boolean(toggleRes.residentialProxySelected),
+                        residentialDisabledByOwner: Boolean(toggleRes.residentialDisabledByOwner),
+                        credentialsPreserved: Boolean(toggleRes.credentialsPreserved),
+                        verification: toggleRes.verification || null,
+                        status: toggleRes.status || null,
+                        egressMonitor,
+                        preflight
+                    });
+                } catch (e) {
+                    sendResponse({ success: false, pausedActiveCampaign, error: e.message });
+                }
+            })();
+            return true;
+        }
+
+        case 'GET_DECODO_USAGE': {
+            (async () => {
+                try {
+                    const pg = (typeof PrivacyGateway !== 'undefined' && PrivacyGateway.getInstance) ? PrivacyGateway.getInstance() : null;
+                    if (!pg) return sendResponse({ success: false, error: 'PrivacyGateway unavailable' });
+                    await pg.init();
+                    const res = await pg.getDecodoUsage({ refresh: Boolean(request.refresh), fetch: Boolean(request.fetch) });
+                    sendResponse(res || { success: false, error: 'EMPTY_RESPONSE' });
+                } catch (e) {
+                    sendResponse({ success: false, error: e.message });
+                }
+            })();
+            return true;
+        }
+
+        case 'SAVE_DECODO_API_KEY': {
+            (async () => {
+                try {
+                    const pg = (typeof PrivacyGateway !== 'undefined' && PrivacyGateway.getInstance) ? PrivacyGateway.getInstance() : null;
+                    if (!pg) return sendResponse({ success: false, error: 'PrivacyGateway unavailable' });
+                    await pg.init();
+                    // Never write API key to chrome.storage; forward strictly to loopback Companion DPAPI store
+                    const res = await pg.saveDecodoApiKey(request.apiKey);
+                    sendResponse(res || { success: false, error: 'SAVE_FAILED' });
+                } catch (e) {
+                    sendResponse({ success: false, error: e.message });
+                }
+            })();
+            return true;
+        }
+
+        case 'DELETE_DECODO_API_KEY': {
+            (async () => {
+                try {
+                    const pg = (typeof PrivacyGateway !== 'undefined' && PrivacyGateway.getInstance) ? PrivacyGateway.getInstance() : null;
+                    if (!pg) return sendResponse({ success: false, error: 'PrivacyGateway unavailable' });
+                    await pg.init();
+                    const res = await pg.deleteDecodoApiKey();
+                    sendResponse(res || { success: false, error: 'DELETE_FAILED' });
+                } catch (e) {
+                    sendResponse({ success: false, error: e.message });
+                }
+            })();
+            return true;
+        }
+
         case 'RESTORE_PRIVACY_SETTINGS': {
             (async () => {
                 try {

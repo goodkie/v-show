@@ -41,6 +41,7 @@ const { PhysicalGate } = require('./physical-gate');
 const { PrivateEgressProvisioner, TIERS } = require('./private-egress-provisioner');
 const residentialAdapter = require('./residential-proxy-adapter');
 const resendTestMode = require('./resend-test-mode');
+const { DecodoUsageService } = require('./decodo-usage-service');
 
 const CONTROL_PORT = 18989;
 const PROXY_PORT = 18988;
@@ -223,6 +224,13 @@ class PrivacyRelayService {
 
     // [Stream B Two-Layer Residential Upstream] Restore optional residential upstream config & DPAPI credential
     this.residentialProxySelected = Boolean(this.pool.residentialProxySelected);
+    this.residentialDisabledByOwner = Boolean(this.pool.residentialDisabledByOwner);
+    this.decodoUsageService = new DecodoUsageService({
+      stateDir: this.companionDir,
+      fetchImpl: options.decodoFetchImpl || null,
+      cacheTtlMs: options.decodoCacheTtlMs,
+      refreshCooldownMs: options.decodoRefreshCooldownMs
+    });
     this.residentialProxyConfig = this.pool.residentialProxyConfig ? winsec.hydrateNode({
       ...this.pool.residentialProxyConfig,
       id: this.pool.residentialProxyConfig.id || 'residential-upstream-primary'
@@ -487,6 +495,7 @@ class PrivacyRelayService {
         selectedEgressId: prodActive ? prodActive.id : null,
         nodes: configNodes,
         residentialProxySelected: Boolean(this.residentialProxySelected),
+        residentialDisabledByOwner: Boolean(this.residentialDisabledByOwner),
         residentialProxyConfig: sanitizedResidential,
         physicalGate: {
           enabled: Boolean(this.physicalGate && this.physicalGate.enabled),
@@ -631,6 +640,145 @@ class PrivacyRelayService {
     }
     this.log(`[RESIDENTIAL_UPSTREAM_PROBE] id=${this.residentialProxyConfig.id || 'residential-upstream'} status=${probeResult.status} detail=${probeResult.detail} observedIpMasked=${probeResult.observedIpMasked || 'none'} sendAllowed=${probeResult.sendAllowed}`);
     return probeResult;
+  }
+
+  /**
+   * [Directive #7001053230 Feature A] Independent Residential Proxies ON/OFF Toggle
+   * - Never deletes DPAPI-encrypted residential credentials when OFF.
+   * - Destroys active tunnels before switching routes so no stale residential tunnel survives.
+   * - Persists state transactionally; rolls back to prior state if saveConfig() fails.
+   * - When OFF: ZERO Decodo probe/CONNECT traffic; independently verifies remaining configured
+   *   protected egress (DigitalOcean / Privacy Relay) and keeps PRIVACY: BLOCKED if none is verified.
+   * - When ON: verifies Decodo upstream CONNECT, exit IP, leakage gates, and freshness;
+   *   stays fail-closed on HTTP 407 or any probe failure.
+   */
+  async toggleResidentialProxy({ enabled, verifyNow = true, timeoutMs = 10000, canaryUrl = null, target = null, verifyProtectionAndProvenance = true } = {}) {
+    if (typeof enabled !== 'boolean') {
+      return { success: false, reason: 'INVALID_ENABLED_BOOLEAN' };
+    }
+    const prevSelected = Boolean(this.residentialProxySelected);
+    const prevDisabledByOwner = Boolean(this.residentialDisabledByOwner);
+    const prevState = this.residentialProxyState ? { ...this.residentialProxyState } : null;
+    const prevRelayReady = Boolean(this.relayReady);
+    const prevLifecycle = this.lifecycleState;
+
+    // 1. Tear down any existing tunnels BEFORE changing routes
+    this.destroyActiveTunnels(enabled ? 'RESIDENTIAL_TOGGLE_ON' : 'RESIDENTIAL_TOGGLE_OFF');
+
+    // 2. Apply state & persist transactionally (preserving DPAPI credentials unconditionally)
+    this.residentialProxySelected = enabled;
+    this.residentialDisabledByOwner = !enabled;
+    const saved = this.saveConfig();
+    if (!saved) {
+      // Transactional rollback on persistence failure
+      this.residentialProxySelected = prevSelected;
+      this.residentialDisabledByOwner = prevDisabledByOwner;
+      this.residentialProxyState = prevState;
+      this.relayReady = prevRelayReady;
+      this.lifecycleState = prevLifecycle;
+      this.log(`[RESIDENTIAL_TOGGLE_ROLLBACK] target=${enabled} reason=CONFIG_PERSISTENCE_FAILED`);
+      return {
+        success: false,
+        rolledBack: true,
+        reason: 'CONFIG_PERSISTENCE_FAILED',
+        residentialProxySelected: prevSelected,
+        residentialDisabledByOwner: prevDisabledByOwner
+      };
+    }
+
+    let verification = null;
+    if (!enabled) {
+      // OFF: Do NOT call probeResidentialUpstream() or touch Decodo at all.
+      // Independently verify remaining configured protected Privacy Relay / DigitalOcean egress.
+      const active = this.getActiveNode();
+      if (!active || active.active === false) {
+        this.relayReady = false;
+        this.lifecycleState = 'DEGRADED';
+        verification = { verified: false, reason: 'NO_PROTECTED_EGRESS_NODE' };
+      } else if (verifyNow) {
+        try {
+          const vRes = await this.verifyNodeEgress(active, timeoutMs || this.pool.healthCheckTimeoutMs || 5000, canaryUrl);
+          const isHealthValid = this.isNodeHealthValid(active);
+          const isPhysReady = !this.physicalGate.enabled || Boolean(this.physicalGate.state && this.physicalGate.state.ready && this.physicalGate.isFresh());
+          if (vRes && vRes.verified && isHealthValid && isPhysReady) {
+            this.relayReady = true;
+            this.lifecycleState = 'READY';
+            this.reconnectAttempt = 0;
+            try { await this.measureDnsAndIpv6Protection(2000); } catch (_) {}
+            verification = { verified: true, route: 'PROTECTED_RELAY_EGRESS', nodeId: active.id };
+          } else {
+            this.relayReady = false;
+            this.lifecycleState = 'DEGRADED';
+            verification = { verified: false, reason: (vRes && vRes.reason) || 'PROTECTED_EGRESS_UNVERIFIED' };
+          }
+        } catch (err) {
+          this.relayReady = false;
+          this.lifecycleState = 'DEGRADED';
+          verification = { verified: false, reason: err.message || 'PROTECTED_EGRESS_PROBE_ERROR' };
+        }
+      } else {
+        const isHealthValid = this.isNodeHealthValid(active);
+        const isPhysReady = !this.physicalGate.enabled || Boolean(this.physicalGate.state && this.physicalGate.state.ready && this.physicalGate.isFresh());
+        this.relayReady = Boolean(isHealthValid && isPhysReady);
+        this.lifecycleState = this.relayReady ? 'READY' : 'DEGRADED';
+        verification = { verified: this.relayReady, reason: this.relayReady ? 'EXISTING_FRESH_HEALTH' : 'PROTECTED_EGRESS_UNVERIFIED' };
+      }
+      this.log(`[RESIDENTIAL_TOGGLE] enabled=false credentialsPreserved=${Boolean(this.residentialProxyConfig)} protectedEgressVerified=${Boolean(verification && verification.verified)}`);
+      return {
+        success: true,
+        residentialProxySelected: false,
+        residentialDisabledByOwner: true,
+        credentialsPreserved: Boolean(this.residentialProxyConfig),
+        verification
+      };
+    }
+
+    // ON: Verify configured Decodo residential upstream before allowing sends
+    if (!this.residentialProxyConfig) {
+      this.residentialProxyState = residentialAdapter.status('UNCONFIGURED', 'NO_CONFIG');
+      this.relayReady = false;
+      this.lifecycleState = 'DEGRADED';
+      return {
+        success: true,
+        residentialProxySelected: true,
+        residentialDisabledByOwner: false,
+        verification: { verified: false, reason: 'RESIDENTIAL_UNCONFIGURED' }
+      };
+    }
+
+    if (verifyNow) {
+      try {
+        const resProbe = await this.probeResidentialUpstream({
+          timeoutMs,
+          target,
+          verifyProtectionAndProvenance
+        });
+        try { await this.measureDnsAndIpv6Protection(2000); } catch (_) {}
+        const verified = Boolean(resProbe && resProbe.sendAllowed && resProbe.status === 'EGRESS_VERIFIED');
+        if (!verified) {
+          this.destroyActiveTunnels(`RESIDENTIAL_TOGGLE_ON_${resProbe ? resProbe.status : 'FAILED'}`);
+        }
+        verification = {
+          verified,
+          status: resProbe ? resProbe.status : 'FAILED',
+          reason: resProbe ? resProbe.detail : 'PROBE_FAILED'
+        };
+      } catch (err) {
+        this.destroyActiveTunnels('RESIDENTIAL_TOGGLE_ON_EXCEPTION');
+        verification = { verified: false, status: 'FAILED', reason: err.message || 'PROBE_EXCEPTION' };
+      }
+    } else {
+      const verified = Boolean(this.residentialProxyState && this.residentialProxyState.sendAllowed && this.residentialProxyState.status === 'EGRESS_VERIFIED');
+      verification = { verified, status: this.residentialProxyState ? this.residentialProxyState.status : 'UNVERIFIED' };
+    }
+    this.log(`[RESIDENTIAL_TOGGLE] enabled=true verified=${Boolean(verification && verification.verified)} status=${verification && verification.status}`);
+    return {
+      success: true,
+      residentialProxySelected: true,
+      residentialDisabledByOwner: false,
+      credentialsPreserved: true,
+      verification
+    };
   }
 
   /**
@@ -1453,14 +1601,28 @@ class PrivacyRelayService {
     const decodoVerifiedRaw = Boolean(respState && respState.sendAllowed && respState.status === 'EGRESS_VERIFIED');
     const decodoSendAllowed = decodoVerifiedRaw && decodoFresh;
     const isDecodoQuota407 = Boolean(respState && (respState.status === 'AUTH_FAILED' || respState.status === 'TRAFFIC_LIMIT_EXHAUSTED') && respState.upstreamError && respState.upstreamError.toLowerCase().includes('traffic limit'));
+    const decodoUsageSnap = this.decodoUsageService ? this.decodoUsageService.getCachedSnapshot() : null;
+    const isDecodo407 = Boolean(respState && (respState.status === 'AUTH_FAILED' || respState.status === 'TRAFFIC_LIMIT_EXHAUSTED' || String(respState.detail || '').includes('407')));
+    const exhaustedProved = Boolean(isDecodoQuota407 || (decodoUsageSnap && decodoUsageSnap.exhaustedProved === true));
+    const http407Classification = isDecodo407
+      ? (exhaustedProved ? 'TRAFFIC_EXHAUSTED' : 'UPSTREAM_AUTH_OR_QUOTA_407')
+      : null;
     const lastCampaignConnectMs = this.lastCampaignConnectAt || 0;
     const decodoInUse = decodoSelected && decodoSendAllowed && lastCampaignConnectMs > 0 && (Date.now() - lastCampaignConnectMs) <= DECODO_IN_USE_WINDOW_MS;
-    const decodoStatus = !decodoSelected ? 'NOT_SELECTED'
-      : (isDecodoQuota407 ? 'BLOCKED_HTTP_407'
+    const decodoStatus = !decodoSelected
+      ? (this.residentialDisabledByOwner ? 'OFF_BY_OWNER' : 'NOT_SELECTED')
+      : (isDecodo407 ? 'BLOCKED_HTTP_407'
         : (decodoVerifiedRaw && !decodoFresh ? 'STALE_REVERIFY_REQUIRED'
           : (decodoInUse ? 'IN_USE'
             : (decodoSendAllowed ? 'CONNECTED / EGRESS_VERIFIED'
               : (respState ? respState.status : 'UNCONFIGURED')))));
+    const localRelayReady = Boolean(!this.isPaused && this.relayReady);
+    const protectedEgressVerified = Boolean(ready);
+    const residentialStatusLabel = !decodoSelected
+      ? (protectedEgressVerified ? 'RESIDENTIAL: OFF · PROTECTED EGRESS VERIFIED' : 'RESIDENTIAL: OFF · PRIVACY BLOCKED')
+      : (decodoSendAllowed ? 'RESIDENTIAL: ON · VERIFIED'
+        : (isDecodo407 ? 'RESIDENTIAL: ON · BLOCKED (HTTP_407)'
+          : `RESIDENTIAL: ON · BLOCKED (${decodoStatus})`));
 
     const opalVpnActive = Boolean(this.physicalGate && this.physicalGate.state && this.physicalGate.state.tunnelPass);
     let routeClassification = 'UNKNOWN/PARTIALLY VERIFIED';
@@ -1562,10 +1724,16 @@ class PrivacyRelayService {
       trafficStats: { ...this.trafficStats },
       physicalGate: this.physicalGate.state,
       residentialProxySelected: Boolean(this.residentialProxySelected),
+      residentialDisabledByOwner: Boolean(this.residentialDisabledByOwner),
+      residentialStatusLabel,
+      localRelayReady,
+      protectedEgressVerified,
+      http407Classification,
+      decodoUsage: decodoUsageSnap,
       dnsProtection: this.lastMeasuredDnsProtection || (ready ? 'VERIFIED_REMOTE_PROXY_CONNECT' : 'UNKNOWN'),
       ipv6Protection: this.lastMeasuredIpv6Protection || (ready ? 'VERIFIED_IPV6_DISABLED_AND_PROXY_BLOCKED' : 'UNKNOWN'),
       lastDnsIpv6CheckAt: this.lastDnsIpv6CheckAt || null,
-      decodoQuotaStatus: (this.residentialProxyState && (this.residentialProxyState.status === 'AUTH_FAILED' || this.residentialProxyState.status === 'TRAFFIC_LIMIT_EXHAUSTED') && this.residentialProxyState.upstreamError && this.residentialProxyState.upstreamError.toLowerCase().includes('traffic limit')) ? 'EXHAUSTED' : 'HEALTHY',
+      decodoQuotaStatus: exhaustedProved ? 'EXHAUSTED' : (isDecodo407 ? 'AUTH_OR_QUOTA_UNPROVED' : 'HEALTHY'),
       residentialProxy: this.residentialProxyState || {
         status: 'UNCONFIGURED',
         detail: 'NO_CONFIG',
@@ -2009,9 +2177,108 @@ class PrivacyRelayService {
         res.end(JSON.stringify({
           success: true,
           residentialProxySelected: Boolean(this.residentialProxySelected),
+          residentialDisabledByOwner: Boolean(this.residentialDisabledByOwner),
           residentialProxyConfig: redactedConfig,
-          residentialProxy: current
+          residentialProxy: current,
+          decodoUsage: this.decodoUsageService ? this.decodoUsageService.getCachedSnapshot() : null
         }));
+        return;
+      }
+
+      // [Directive #7001053230 Feature A] POST /residential-proxy/toggle (Authenticated, Transactional)
+      if (pathname === '/residential-proxy/toggle' && req.method === 'POST') {
+        let body = '';
+        req.on('data', c => body += c);
+        req.on('end', async () => {
+          try {
+            const data = JSON.parse(body || '{}');
+            if (typeof data.enabled !== 'boolean') {
+              res.writeHead(400);
+              res.end(JSON.stringify({ success: false, error: 'INVALID_ENABLED_BOOLEAN' }));
+              return;
+            }
+            const out = await this.toggleResidentialProxy({
+              enabled: data.enabled,
+              verifyNow: data.verifyNow !== false,
+              timeoutMs: data.timeoutMs || 10000,
+              canaryUrl: data.canaryUrl || null,
+              target: data.target || null,
+              verifyProtectionAndProvenance: data.verifyProtectionAndProvenance !== false
+            });
+            res.writeHead(out.success ? 200 : 500);
+            res.end(JSON.stringify({
+              ...out,
+              status: this.getStatus()
+            }));
+          } catch (e) {
+            res.writeHead(500);
+            res.end(JSON.stringify({ success: false, error: e.message }));
+          }
+        });
+        return;
+      }
+
+      // [Directive #7001053230 Feature B] GET /decodo/usage (Authenticated, Read-Only Decodo Public API)
+      if (pathname === '/decodo/usage' && req.method === 'GET') {
+        const refresh = parsed.searchParams.get('refresh') === '1' || parsed.searchParams.get('refresh') === 'true';
+        const doFetch = refresh || parsed.searchParams.get('fetch') === '1';
+        try {
+          const usage = doFetch
+            ? await this.decodoUsageService.fetchUsage({ forceRefresh: refresh })
+            : this.decodoUsageService.getCachedSnapshot();
+          res.writeHead(200);
+          res.end(JSON.stringify({
+            success: true,
+            usage
+          }));
+        } catch (e) {
+          res.writeHead(500);
+          res.end(JSON.stringify({
+            success: false,
+            error: 'DECODO_USAGE_QUERY_FAILED',
+            usage: this.decodoUsageService.getCachedSnapshot()
+          }));
+        }
+        return;
+      }
+
+      // [Directive #7001053230 Feature B] POST /decodo/api-key (Authenticated, DPAPI-encrypted separate management key)
+      if (pathname === '/decodo/api-key' && req.method === 'POST') {
+        let body = '';
+        req.on('data', c => { body += c; if (body.length > 8192) req.destroy(); });
+        req.on('end', () => {
+          try {
+            const data = JSON.parse(body || '{}');
+            const out = this.decodoUsageService.saveApiKey(data.apiKey || data.key || '');
+            res.writeHead(200);
+            res.end(JSON.stringify({
+              success: true,
+              hasApiKey: out.hasApiKey,
+              storage: out.storage,
+              usage: this.decodoUsageService.getCachedSnapshot()
+            }));
+          } catch (e) {
+            res.writeHead(400);
+            res.end(JSON.stringify({ success: false, error: e.message || 'INVALID_API_KEY' }));
+          }
+        });
+        return;
+      }
+
+      // [Directive #7001053230 Feature B] DELETE /decodo/api-key (Authenticated)
+      if (pathname === '/decodo/api-key' && req.method === 'DELETE') {
+        try {
+          const out = this.decodoUsageService.deleteApiKey();
+          res.writeHead(200);
+          res.end(JSON.stringify({
+            success: true,
+            hasApiKey: out.hasApiKey,
+            usage: this.decodoUsageService.getCachedSnapshot()
+          }));
+        } catch (e) {
+          res.writeHead(500);
+          res.end(JSON.stringify({ success: false, error: e.message }));
+        }
         return;
       }
 

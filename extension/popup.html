@@ -1069,15 +1069,61 @@
                                             <span id="row-browser-source" style="color: #64748b; font-size: 9px;">source: NONE</span>
                                         </div>
                                     </div>
-                                    <!-- Row 2: DECODO RESIDENTIAL EXIT IP -->
-                                    <div style="padding: 4px 6px; background: rgba(30, 41, 59, 0.5); border-radius: 4px; border: 1px solid rgba(255,255,255,0.05);">
-                                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                                    <!-- Row 2: DECODO RESIDENTIAL EXIT IP + Independent ON/OFF Switch & Real Usage Balance -->
+                                    <div style="padding: 6px; background: rgba(30, 41, 59, 0.55); border-radius: 4px; border: 1px solid rgba(167,139,250,0.25);">
+                                        <div style="display: flex; justify-content: space-between; align-items: center; gap: 6px;">
                                             <span style="font-weight: 700; color: #e2e8f0;">2. DECODO RESIDENTIAL EXIT IP:</span>
                                             <span id="row-decodo-status" style="font-weight: 700; color: #94a3b8;">NOT_CONFIGURED</span>
                                         </div>
                                         <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 2px;">
                                             <span id="row-decodo-ip" style="color: #a78bfa; font-weight: 600;">...</span>
                                             <span id="row-decodo-source" style="color: #64748b; font-size: 9px;">source: UPSTREAM_PROBE</span>
+                                        </div>
+                                        <!-- [Directive #7001053230 Feature A] Independent Residential Proxies ON/OFF Control -->
+                                        <div id="residential-proxy-control-box" style="margin-top: 6px; padding-top: 6px; border-top: 1px dashed rgba(148,163,184,0.25);">
+                                            <div style="display: flex; justify-content: space-between; align-items: center; gap: 6px;">
+                                                <label style="display: flex; align-items: center; gap: 5px; cursor: pointer; font-weight: 700; color: #f8fafc; font-size: 10px;" title="Decodo 주거용 프록시만 독립적으로 켜거나 끕니다. 꺼도 전역 Privacy Gateway와 보호 릴레이(DigitalOcean)는 유지되며 직접 연결로 우회하지 않습니다.">
+                                                    <input type="checkbox" id="residential-proxy-toggle" style="cursor: pointer;" />
+                                                    <span>Residential Proxies (Decodo): <span id="residential-toggle-onoff-text">OFF</span></span>
+                                                </label>
+                                                <span id="residential-proxy-state-badge" style="font-size: 9px; font-weight: 700; padding: 1px 5px; border-radius: 3px; background: rgba(148,163,184,0.15); color: #94a3b8;">RESIDENTIAL: CHECKING</span>
+                                            </div>
+                                            <div id="residential-toggle-explain" style="margin-top: 3px; font-size: 9px; color: #94a3b8; line-height: 1.3; font-family: system-ui, sans-serif;">
+                                                ON: Decodo 주거용 프록시 경유(인증·출구 IP·누출 검증 필수, 407 시 차단) · OFF: Decodo 비활성화(자격증명 보존) 및 검증된 DigitalOcean 보호 릴레이만 사용(직접 연결 불가).
+                                            </div>
+                                            <div style="display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; font-size: 8.5px;">
+                                                <span id="res-status-local-relay" style="padding: 1px 4px; border-radius: 3px; background: rgba(15,23,42,0.7); color: #94a3b8;">LOCAL RELAY: CHECKING</span>
+                                                <span id="res-status-protected-egress" style="padding: 1px 4px; border-radius: 3px; background: rgba(15,23,42,0.7); color: #94a3b8;">PROTECTED EGRESS: CHECKING</span>
+                                            </div>
+                                            <div id="residential-toggle-feedback" style="display: none; margin-top: 4px; padding: 4px 6px; border-radius: 3px; font-size: 9px; font-family: system-ui, sans-serif; line-height: 1.3;"></div>
+                                        </div>
+                                        <!-- [Directive #7001053230 Feature B] Real Decodo Remaining Traffic (Read-Only Official API) -->
+                                        <div id="decodo-usage-card" style="margin-top: 6px; padding-top: 6px; border-top: 1px dashed rgba(148,163,184,0.25);">
+                                            <div style="display: flex; justify-content: space-between; align-items: center; gap: 4px;">
+                                                <span style="font-weight: 700; color: #cbd5e1; font-size: 9.5px;">📊 DECODO TRAFFIC BALANCE</span>
+                                                <div style="display: flex; align-items: center; gap: 4px;">
+                                                    <a id="decodo-dashboard-link" href="https://dashboard.decodo.com/" target="_blank" rel="noopener noreferrer" style="color: #38bdf8; font-size: 8.5px; text-decoration: underline;">대시보드</a>
+                                                    <button id="decodo-usage-refresh-btn" type="button" class="secondary-btn-small" style="padding: 1px 5px; font-size: 8.5px; background: rgba(56,189,248,0.18); color: #38bdf8; border: 1px solid rgba(56,189,248,0.35); border-radius: 3px; cursor: pointer;">🔄 잔여 조회</button>
+                                                </div>
+                                            </div>
+                                            <div id="decodo-usage-summary" style="margin-top: 3px; font-size: 9px; color: #cbd5e1; line-height: 1.35;">
+                                                상태: 조회 전 (API 키 등록 후 [잔여 조회] 클릭)
+                                            </div>
+                                            <div id="decodo-usage-bar-wrap" style="display: none; margin-top: 3px; width: 100%; height: 6px; background: rgba(15,23,42,0.9); border-radius: 3px; overflow: hidden;">
+                                                <div id="decodo-usage-bar" style="height: 100%; width: 0%; background: #22c55e;"></div>
+                                            </div>
+                                            <div id="decodo-usage-meta" style="margin-top: 2px; font-size: 8.5px; color: #94a3b8; font-family: system-ui, sans-serif;"></div>
+                                            <details style="margin-top: 4px;">
+                                                <summary style="cursor: pointer; font-size: 8.5px; color: #94a3b8; font-family: system-ui, sans-serif;">🔑 Decodo Public API 키 관리 (DPAPI 로컬 저장 · 읽기 전용)</summary>
+                                                <div style="margin-top: 4px; display: flex; gap: 4px;">
+                                                    <input type="password" id="decodo-api-key-input" placeholder="Decodo Public API Key (프록시 비밀번호와 별도)" autocomplete="off" style="flex: 1; font-size: 9px; padding: 3px 5px; background: #0f172a; color: #f8fafc; border: 1px solid #334155; border-radius: 3px;" />
+                                                    <button id="decodo-api-key-save-btn" type="button" style="padding: 2px 6px; font-size: 8.5px; background: #0284c7; color: #fff; border: none; border-radius: 3px; cursor: pointer;">저장</button>
+                                                    <button id="decodo-api-key-delete-btn" type="button" style="padding: 2px 6px; font-size: 8.5px; background: rgba(239,68,68,0.2); color: #fca5a5; border: 1px solid rgba(239,68,68,0.4); border-radius: 3px; cursor: pointer;">삭제</button>
+                                                </div>
+                                                <div id="decodo-api-key-status" style="margin-top: 2px; font-size: 8.5px; color: #94a3b8; font-family: system-ui, sans-serif;">
+                                                    키는 Windows DPAPI로 컴패니언에만 암호화 저장되며 Chrome 저장소·로그에 남지 않습니다.
+                                                </div>
+                                            </details>
                                         </div>
                                     </div>
                                     <!-- Row 3: DIGITALOCEAN EGRESS IP -->
@@ -1241,6 +1287,16 @@
                     <button id="egress-ip-toggle-btn" type="button" style="background: none; border: none; color: #94a3b8; cursor: pointer; padding: 2px 4px; font-size: 11px;" title="Toggle Full IP / Masked">👁️</button>
                     <button id="egress-check-ip-btn" type="button" style="background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.3); color: #38bdf8; border-radius: 3px; cursor: pointer; padding: 2px 6px; font-size: 9px; font-family: monospace;" title="Check Connection & IP">Check IP</button>
                 </div>
+            </div>
+
+            <!-- [Directive #7001053230] Compact Independent Residential Proxies ON/OFF & Decodo Usage Bar -->
+            <div id="residential-quick-control" style="display: flex; justify-content: space-between; align-items: center; gap: 6px; margin-bottom: 6px; font-size: 9.5px; font-family: monospace; padding: 4px 8px; background: rgba(15, 23, 42, 0.55); border-radius: 4px; border: 1px solid rgba(167,139,250,0.25);">
+                <label style="display: flex; align-items: center; gap: 5px; cursor: pointer; color: #e2e8f0; font-weight: 700; white-space: nowrap;" title="Decodo 주거용 프록시만 독립 전환 (OFF 시 자격증명 유지·DigitalOcean 보호 릴레이만 사용, 직접 연결 금지)">
+                    <input type="checkbox" id="residential-proxy-toggle-compact" style="cursor: pointer;" />
+                    <span>Residential:</span>
+                </label>
+                <span id="residential-proxy-badge-compact" style="color: #94a3b8; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">CHECKING...</span>
+                <span id="decodo-usage-pill-compact" style="color: #94a3b8; font-size: 8.5px; white-space: nowrap; flex-shrink: 0;">잔여: -</span>
             </div>
 
             <!-- [RC9 Defect 4] Persistent CURRENT MODE HUD -->

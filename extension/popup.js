@@ -2009,7 +2009,7 @@ async function hydrateSettings(overrideV2Store = null) {
             // or 'IN_USE' (campaign-correlated CONNECT). Selected-but-not-fresh-verified must never read green.
             const decodoStatusStr = String(decodo.status || '');
             const decodoIsGood = decodoStatusStr.startsWith('CONNECTED') || decodoStatusStr === 'IN_USE';
-            const decodoInactive = !decodoStatusStr || ['NOT_SELECTED', 'NOT_CONFIGURED', 'UNCONFIGURED'].includes(decodoStatusStr);
+            const decodoInactive = !decodoStatusStr || ['NOT_SELECTED', 'OFF_BY_OWNER', 'NOT_CONFIGURED', 'UNCONFIGURED'].includes(decodoStatusStr);
             const decodoSelectedUnverified = !decodoInactive && !decodoIsGood && !isBlocked;
             if (dot) {
                 if (isBlocked) {
@@ -2121,7 +2121,255 @@ async function hydrateSettings(overrideV2Store = null) {
             if (rRouteChecked) {
                 rRouteChecked.textContent = data.activeRoute?.checkedAt ? new Date(data.activeRoute.checkedAt).toLocaleTimeString() : 'Never';
             }
+
+            // [Directive #7001053230 Feature A & B] Sync Independent Residential Toggle & Decodo Usage UI
+            renderResidentialControlState(data);
+            if (data.decodoUsage) {
+                renderDecodoUsageUI(data.decodoUsage, data.http407Classification);
+            }
         };
+
+        let lastKnownResidentialSelected = null;
+        const setResidentialFeedback = (kind, msg) => {
+            const box = document.getElementById('residential-toggle-feedback');
+            if (!box) return;
+            if (!msg) { box.style.display = 'none'; box.textContent = ''; return; }
+            box.style.display = 'block';
+            box.style.background = kind === 'error' ? 'rgba(239,68,68,0.16)' : (kind === 'warn' ? 'rgba(245,158,11,0.16)' : 'rgba(34,197,94,0.14)');
+            box.style.border = '1px solid ' + (kind === 'error' ? '#ef4444' : (kind === 'warn' ? '#f59e0b' : '#22c55e'));
+            box.style.color = kind === 'error' ? '#fca5a5' : (kind === 'warn' ? '#fde047' : '#86efac');
+            box.textContent = msg;
+        };
+
+        const renderResidentialControlState = (data) => {
+            if (!data) return;
+            const decodo = data.decodoResidential || {};
+            const selected = Boolean(data.residentialProxySelected);
+            lastKnownResidentialSelected = selected;
+            const tMain = document.getElementById('residential-proxy-toggle');
+            const tCompact = document.getElementById('residential-proxy-toggle-compact');
+            const onOffTxt = document.getElementById('residential-toggle-onoff-text');
+            const badgeMain = document.getElementById('residential-proxy-state-badge');
+            const badgeCompact = document.getElementById('residential-proxy-badge-compact');
+            const localRelayEl = document.getElementById('res-status-local-relay');
+            const protEgressEl = document.getElementById('res-status-protected-egress');
+
+            if (tMain && !tMain.disabled) tMain.checked = selected;
+            if (tCompact && !tCompact.disabled) tCompact.checked = selected;
+            if (onOffTxt) {
+                onOffTxt.textContent = selected ? 'ON' : 'OFF';
+                onOffTxt.style.color = selected ? '#a78bfa' : '#94a3b8';
+            }
+
+            const decStatus = String(decodo.status || '');
+            const is407 = decStatus === 'BLOCKED_HTTP_407' || decStatus === 'AUTH_FAILED' || decStatus.includes('407');
+            const isResVerified = selected && (decStatus.startsWith('CONNECTED') || decStatus === 'IN_USE');
+            const protVerified = Boolean(data.protectedEgressVerified || (data.activeRoute?.status === 'VERIFIED' && data.browserExit?.status === 'BROWSER_VERIFIED'));
+            const localReady = Boolean(data.localRelayReady ?? data.relayReady);
+
+            let label = data.residentialStatusLabel;
+            let color = '#94a3b8';
+            if (!selected) {
+                label = protVerified ? 'RESIDENTIAL: OFF · PROTECTED EGRESS' : 'RESIDENTIAL: OFF · PRIVACY BLOCKED';
+                color = protVerified ? '#38bdf8' : '#ef4444';
+            } else if (isResVerified) {
+                label = 'RESIDENTIAL: ON · VERIFIED';
+                color = '#22c55e';
+            } else if (is407) {
+                const cls407 = data.http407Classification === 'TRAFFIC_EXHAUSTED' ? 'TRAFFIC EXHAUSTED' : 'HTTP_407';
+                label = `RESIDENTIAL: ON · BLOCKED (${cls407})`;
+                color = '#ef4444';
+            } else {
+                label = `RESIDENTIAL: ON · BLOCKED (${decStatus || 'UNVERIFIED'})`;
+                color = '#eab308';
+            }
+
+            if (badgeMain) {
+                badgeMain.textContent = label;
+                badgeMain.style.color = color;
+            }
+            if (badgeCompact) {
+                badgeCompact.textContent = label.replace('RESIDENTIAL: ', '');
+                badgeCompact.style.color = color;
+            }
+            if (localRelayEl) {
+                localRelayEl.textContent = localReady ? 'LOCAL RELAY: READY' : 'LOCAL RELAY: BLOCKED/OFFLINE';
+                localRelayEl.style.color = localReady ? '#22c55e' : '#ef4444';
+            }
+            if (protEgressEl) {
+                protEgressEl.textContent = protVerified ? 'PROTECTED EGRESS: VERIFIED' : 'PROTECTED EGRESS: BLOCKED';
+                protEgressEl.style.color = protVerified ? '#22c55e' : '#f87171';
+            }
+            if (selected && is407) {
+                const msg407 = data.http407Classification === 'TRAFFIC_EXHAUSTED'
+                    ? '⛔ Decodo HTTP 407 (트래픽 소진 확인됨): 플랜 충전 또는 Residential OFF(DigitalOcean 보호 릴레이 전환)가 필요합니다.'
+                    : '⛔ Decodo HTTP 407 (인증 오류 또는 한도 확인 필요 — API 기준 트래픽 소진 미확인): 자격증명·잔여량을 확인하거나 Residential OFF로 보호 릴레이 전환하세요.';
+                setResidentialFeedback('error', msg407);
+            }
+        };
+
+        const renderDecodoUsageUI = (usage, http407Class = null) => {
+            const sumEl = document.getElementById('decodo-usage-summary');
+            const barWrap = document.getElementById('decodo-usage-bar-wrap');
+            const barEl = document.getElementById('decodo-usage-bar');
+            const metaEl = document.getElementById('decodo-usage-meta');
+            const compactPill = document.getElementById('decodo-usage-pill-compact');
+            const dashLink = document.getElementById('decodo-dashboard-link');
+            if (!usage) return;
+            if (dashLink && usage.dashboardUrl) dashLink.href = usage.dashboardUrl;
+
+            if (usage.isLive && Number.isFinite(usage.planTrafficGb) && Number.isFinite(usage.remainingTrafficGb)) {
+                const pct = Number(usage.remainingPct || 0);
+                const planStr = Number(usage.planTrafficGb).toFixed(2);
+                const usedStr = Number(usage.usedTrafficGb || 0).toFixed(2);
+                const remStr = Number(usage.remainingTrafficGb).toFixed(2);
+                const warnPrefix = usage.status === 'TRAFFIC_EXHAUSTED'
+                    ? '⚠️ [TRAFFIC EXHAUSTED] '
+                    : (usage.status === 'PLAN_EXPIRED' ? '⚠️ [PLAN EXPIRED] ' : '');
+                if (sumEl) {
+                    sumEl.style.color = usage.remainingTrafficGb <= 0 || usage.status === 'PLAN_EXPIRED' ? '#fca5a5' : '#86efac';
+                    sumEl.textContent = `${warnPrefix}Plan: ${planStr} GB | Used: ${usedStr} GB | Remaining: ${remStr} GB (${pct.toFixed(1)}%)`;
+                }
+                if (barWrap && barEl) {
+                    barWrap.style.display = 'block';
+                    barEl.style.width = `${Math.max(0, Math.min(100, pct))}%`;
+                    barEl.style.background = pct <= 5 ? '#ef4444' : (pct <= 20 ? '#f59e0b' : '#22c55e');
+                }
+                if (metaEl) {
+                    const parts = [
+                        `Source: ${usage.source || 'Decodo API'}`,
+                        `Scope: ${usage.scope || 'UNKNOWN'}`,
+                        usage.expiresAt ? `Expiry: ${String(usage.expiresAt).slice(0, 10)}` : null,
+                        usage.resetAt ? `Reset: ${String(usage.resetAt).slice(0, 10)}` : null,
+                        usage.lastUpdatedAt ? `Updated: ${new Date(usage.lastUpdatedAt).toLocaleTimeString()}` : null,
+                        usage.rolloverNote || null
+                    ].filter(Boolean);
+                    metaEl.textContent = parts.join(' · ');
+                }
+                if (compactPill) {
+                    compactPill.textContent = `잔여: ${remStr}GB (${pct.toFixed(0)}%)`;
+                    compactPill.style.color = usage.remainingTrafficGb <= 0 ? '#ef4444' : '#86efac';
+                }
+            } else {
+                // Truthful non-live display: NEVER fabricate totals or display stale numbers as live
+                const statusTag = usage.status === 'API_KEY_NOT_CONFIGURED' ? 'API KEY NEEDED' : (usage.status || 'USAGE_UNAVAILABLE');
+                if (sumEl) {
+                    sumEl.style.color = (usage.status === 'AUTH_INVALID' || usage.status === 'RATE_LIMITED') ? '#fca5a5' : '#cbd5e1';
+                    sumEl.textContent = `USAGE UNAVAILABLE (${statusTag})`;
+                }
+                if (barWrap) barWrap.style.display = 'none';
+                if (metaEl) {
+                    const lastOk = usage.lastSuccessAt ? ` (마지막 성공: ${new Date(usage.lastSuccessAt).toLocaleTimeString()} — 실시간 아님)` : '';
+                    metaEl.textContent = (usage.koreanReason || '잔여 트래픽을 확인할 수 없습니다.') + lastOk;
+                }
+                if (compactPill) {
+                    compactPill.textContent = usage.status === 'API_KEY_NOT_CONFIGURED' ? 'API키 미등록' : '잔여: 미확인';
+                    compactPill.style.color = '#94a3b8';
+                }
+            }
+        };
+
+        const handleResidentialToggleChange = (targetEnabled, sourceInput) => {
+            const tMain = document.getElementById('residential-proxy-toggle');
+            const tCompact = document.getElementById('residential-proxy-toggle-compact');
+            const prevState = lastKnownResidentialSelected;
+            if (tMain) { tMain.disabled = true; tMain.checked = targetEnabled; }
+            if (tCompact) { tCompact.disabled = true; tCompact.checked = targetEnabled; }
+            setResidentialFeedback('warn', targetEnabled
+                ? '⏳ Decodo 주거용 프록시 ON 전환 및 인증/출구 IP 검증 중...'
+                : '⏳ Decodo 주거용 프록시 OFF 전환(자격증명 보존) 및 DigitalOcean 보호 릴레이 검증 중...');
+
+            chrome.runtime.sendMessage({ action: 'TOGGLE_RESIDENTIAL_PROXY', enabled: targetEnabled, verifyNow: true }, (res) => {
+                if (tMain) tMain.disabled = false;
+                if (tCompact) tCompact.disabled = false;
+                if (!res || !res.success) {
+                    // Transactional UI rollback to authoritative previous state
+                    const rollbackVal = prevState !== null ? prevState : !targetEnabled;
+                    if (tMain) tMain.checked = rollbackVal;
+                    if (tCompact) tCompact.checked = rollbackVal;
+                    setResidentialFeedback('error', `❌ 전환 실패(${res?.error || 'COMPANION_OFFLINE'}) — 이전 상태(${rollbackVal ? 'ON' : 'OFF'})로 복원되었습니다.`);
+                    return;
+                }
+                if (res.egressMonitor) {
+                    window.updateEgressIpMonitorUI(res.egressMonitor);
+                } else {
+                    triggerCheckLiveEgressIp(null, true);
+                }
+                const pauseNote = res.pausedActiveCampaign ? ' [진행 중 캠페인이 안전하게 일시정지·체크포인트 저장됨 — 수동 재개 필요]' : '';
+                if (!res.residentialProxySelected) {
+                    const okProt = Boolean(res.verification && res.verification.verified);
+                    setResidentialFeedback(okProt ? 'ok' : 'error', okProt
+                        ? `✅ Residential OFF 적용 완료(Decodo 자격증명 보존 · 배경 트래픽 중단). 검증된 보호 릴레이(DigitalOcean)로 라우팅됩니다.${pauseNote}`
+                        : `⛔ Residential OFF 적용됨. 단, 검증된 보호 릴레이가 없어 PRIVACY: BLOCKED 상태를 유지합니다(직접 연결 금지).${pauseNote}`);
+                } else {
+                    const okRes = Boolean(res.verification && res.verification.verified);
+                    setResidentialFeedback(okRes ? 'ok' : 'error', okRes
+                        ? `✅ Residential ON 검증 완료 (Decodo 출구 IP 및 누출 차단 확인).${pauseNote}`
+                        : `⛔ Residential ON 전환되었으나 검증 차단(${res.verification?.status || res.verification?.reason || 'UNVERIFIED'}) — 캠페인 발송이 차단 유지됩니다.${pauseNote}`);
+                }
+            });
+        };
+
+        const refreshDecodoUsage = (forceRefresh = true) => {
+            const btn = document.getElementById('decodo-usage-refresh-btn');
+            if (btn) { btn.disabled = true; btn.textContent = '조회 중...'; }
+            chrome.runtime.sendMessage({ action: 'GET_DECODO_USAGE', refresh: forceRefresh, fetch: true }, (res) => {
+                if (btn) { btn.disabled = false; btn.textContent = '🔄 잔여 조회'; }
+                if (res && res.usage) {
+                    renderDecodoUsageUI(res.usage);
+                } else {
+                    renderDecodoUsageUI({ status: 'USAGE_UNAVAILABLE', isLive: false, koreanReason: `컴패니언 조회 실패: ${res?.error || res?.reason || 'OFFLINE'}` });
+                }
+            });
+        };
+
+        const bindResidentialAndUsageListeners = () => {
+            const tMain = document.getElementById('residential-proxy-toggle');
+            const tCompact = document.getElementById('residential-proxy-toggle-compact');
+            const refBtn = document.getElementById('decodo-usage-refresh-btn');
+            const saveKeyBtn = document.getElementById('decodo-api-key-save-btn');
+            const delKeyBtn = document.getElementById('decodo-api-key-delete-btn');
+            const keyInput = document.getElementById('decodo-api-key-input');
+            const keyStatus = document.getElementById('decodo-api-key-status');
+
+            if (tMain) tMain.onchange = () => handleResidentialToggleChange(Boolean(tMain.checked), tMain);
+            if (tCompact) tCompact.onchange = () => handleResidentialToggleChange(Boolean(tCompact.checked), tCompact);
+            if (refBtn) refBtn.onclick = () => refreshDecodoUsage(true);
+            if (saveKeyBtn && keyInput) {
+                saveKeyBtn.onclick = () => {
+                    const val = (keyInput.value || '').trim();
+                    if (!val || val.length < 12) {
+                        if (keyStatus) { keyStatus.style.color = '#fca5a5'; keyStatus.textContent = '⚠️ 유효한 Decodo Public API 키를 입력하세요 (12자 이상).'; }
+                        return;
+                    }
+                    saveKeyBtn.disabled = true;
+                    chrome.runtime.sendMessage({ action: 'SAVE_DECODO_API_KEY', apiKey: val }, (res) => {
+                        saveKeyBtn.disabled = false;
+                        keyInput.value = ''; // Never leave API key in DOM input
+                        if (res && res.success) {
+                            if (keyStatus) { keyStatus.style.color = '#86efac'; keyStatus.textContent = `✅ DPAPI 암호화 저장 완료 (${res.storage || 'DPAPI'}). 잔여 트래픽을 조회합니다...`; }
+                            refreshDecodoUsage(true);
+                        } else {
+                            if (keyStatus) { keyStatus.style.color = '#fca5a5'; keyStatus.textContent = `❌ 저장 실패: ${res?.error || res?.reason || 'ERROR'}`; }
+                        }
+                    });
+                };
+            }
+            if (delKeyBtn) {
+                delKeyBtn.onclick = () => {
+                    delKeyBtn.disabled = true;
+                    chrome.runtime.sendMessage({ action: 'DELETE_DECODO_API_KEY' }, (res) => {
+                        delKeyBtn.disabled = false;
+                        if (keyInput) keyInput.value = '';
+                        if (res && res.success) {
+                            if (keyStatus) { keyStatus.style.color = '#fde047'; keyStatus.textContent = '🗑️ 저장된 Decodo Public API 키가 삭제되었습니다.'; }
+                            if (res.usage) renderDecodoUsageUI(res.usage);
+                        }
+                    });
+                };
+            }
+        };
+        setTimeout(bindResidentialAndUsageListeners, 220);
 
         const toggleIpVisibility = () => {
             const current = localStorage.getItem('xpider_show_exact_ip') === 'true';

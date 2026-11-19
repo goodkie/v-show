@@ -502,12 +502,14 @@
                     let companionMonitor = null;
                     let relayReady = false;
                     let residentialSelected = false;
+                    let companionStatusRaw = null;
                     try {
                         if (!this.ephemeralRelayToken) {
                             await this.fetchRelayControlToken();
                         }
                         const relayStatusRes = await this.queryRelayStatus();
                         if (relayStatusRes && relayStatusRes.success && relayStatusRes.status) {
+                            companionStatusRaw = relayStatusRes.status;
                             companionMonitor = relayStatusRes.status.egressIpMonitor || null;
                             relayReady = Boolean(relayStatusRes.status.relayReady);
                             residentialSelected = Boolean(relayStatusRes.status.residentialProxySelected);
@@ -679,6 +681,13 @@
                         rawIspWan,
                         activeRoute,
                         relayReady,
+                        localRelayReady: companionStatusRaw ? Boolean(companionStatusRaw.localRelayReady ?? companionStatusRaw.relayReady) : false,
+                        protectedEgressVerified: companionStatusRaw ? Boolean(companionStatusRaw.protectedEgressVerified ?? (relayReady && bStatus === 'BROWSER_VERIFIED')) : false,
+                        residentialProxySelected: residentialSelected,
+                        residentialDisabledByOwner: Boolean(companionStatusRaw && companionStatusRaw.residentialDisabledByOwner),
+                        residentialStatusLabel: (companionStatusRaw && companionStatusRaw.residentialStatusLabel) || null,
+                        http407Classification: (companionStatusRaw && companionStatusRaw.http407Classification) || null,
+                        decodoUsage: (companionStatusRaw && companionStatusRaw.decodoUsage) || null,
                         timestamp: new Date().toISOString()
                     };
 
@@ -1526,6 +1535,79 @@
             } catch (e) {
                 return { success: false, reason: e.message };
             }
+        }
+
+        async _relayControlFetch(pathname, { method = 'GET', body = undefined } = {}) {
+            const host = this.config.relayHost || '127.0.0.1';
+            const port = this.config.relayControlPort || 18989;
+            const fetchFn = this._mockFetch !== undefined ? this._mockFetch : (typeof fetch !== 'undefined' ? fetch : null);
+            if (!fetchFn) return { success: false, reason: 'FETCH_UNAVAILABLE' };
+            try {
+                if (!this.ephemeralRelayToken) {
+                    await this.fetchRelayControlToken();
+                }
+                const runReq = async () => {
+                    const headers = this.getRelayAuthHeaders();
+                    if (body !== undefined) headers['Content-Type'] = 'application/json';
+                    return fetchFn(`http://${host}:${port}${pathname}`, {
+                        method,
+                        headers,
+                        ...(body !== undefined ? { body: JSON.stringify(body) } : {})
+                    });
+                };
+                let res = await runReq();
+                if (res && res.status === 401) {
+                    this.ephemeralRelayToken = null;
+                    await this.fetchRelayControlToken();
+                    res = await runReq();
+                }
+                const data = await res.json().catch(() => ({}));
+                if (res && res.ok) return data;
+                return { success: false, httpStatus: res ? res.status : 0, reason: data.reason || data.error || `HTTP_${res ? res.status : 'ERROR'}`, ...data };
+            } catch (e) {
+                return { success: false, reason: 'COMPANION_OFFLINE', error: e.message };
+            }
+        }
+
+        /**
+         * [Directive #7001053230 Feature A] Independent Residential Proxies ON/OFF Switch
+         */
+        async toggleResidentialProxy(enabled, opts = {}) {
+            const res = await this._relayControlFetch('/residential-proxy/toggle', {
+                method: 'POST',
+                body: {
+                    enabled: Boolean(enabled),
+                    verifyNow: opts.verifyNow !== false,
+                    timeoutMs: opts.timeoutMs || 10000
+                }
+            });
+            if (res && res.success) {
+                this.lastEgressMonitor = null;
+                this._lastEgressCheckTime = 0;
+                if (this.config) {
+                    this.config.residentialProxyEnabled = Boolean(res.residentialProxySelected);
+                }
+            }
+            return res;
+        }
+
+        /**
+         * [Directive #7001053230 Feature B] Read-only Decodo Public API Traffic Usage
+         */
+        async getDecodoUsage({ refresh = false, fetch = false } = {}) {
+            const qs = `?refresh=${refresh ? '1' : '0'}&fetch=${fetch ? '1' : '0'}`;
+            return await this._relayControlFetch(`/decodo/usage${qs}`, { method: 'GET' });
+        }
+
+        async saveDecodoApiKey(apiKey) {
+            return await this._relayControlFetch('/decodo/api-key', {
+                method: 'POST',
+                body: { apiKey: String(apiKey || '').trim() }
+            });
+        }
+
+        async deleteDecodoApiKey() {
+            return await this._relayControlFetch('/decodo/api-key', { method: 'DELETE' });
         }
 
         /**
