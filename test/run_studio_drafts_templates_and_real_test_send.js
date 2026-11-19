@@ -782,7 +782,12 @@ function createMockWebStorage(initial = {}) {
     const pgSrc = fs.readFileSync(path.resolve(__dirname, '../extension/modules/privacy-gateway.js'), 'utf8');
     assert.ok(pgSrc.includes('emailSidecarPort') && pgSrc.includes('ensureLoopbackPortBypass'), 'PrivacyGateway must include 18990 bypass & self-heal');
     const bgSrc = fs.readFileSync(path.resolve(__dirname, '../extension/background.js'), 'utf8');
-    assert.ok(bgSrc.includes('ensureLoopbackPortBypass') && bgSrc.includes('GET_EMAIL_SIDECAR_LOGS') && bgSrc.includes('NATIVE_HOST_TIMEOUT_5000MS'), 'background.js must include proxy self-heal, native timeout & sidecar logs');
+    assert.ok(bgSrc.includes('ensureLoopbackPortBypass') && bgSrc.includes('GET_EMAIL_SIDECAR_LOGS') && bgSrc.includes('NATIVE_HOST_TIMEOUT_8000MS') && bgSrc.includes('autoWakeAttempted'), 'background.js must include proxy self-heal, native timeout, auto-wake & sidecar logs');
+
+    // 3b. Native host auto-start spawns email-test-sidecar-cli.js (not library module)
+    const nhSrc = fs.readFileSync(nhScript, 'utf8');
+    assert.ok(nhSrc.includes('email-test-sidecar-cli.js'), 'Native host must spawn email-test-sidecar-cli.js');
+    assert.ok(!nhSrc.includes("path.join(__dirname, 'email-test-sidecar.js')"), 'Native host must not spawn non-CLI module');
 
     // 4. Studio UI controls for cumulative CSV vault & debug log console
     const html2 = fs.readFileSync(path.resolve(__dirname, '../extension/email-studio/index.html'), 'utf8');

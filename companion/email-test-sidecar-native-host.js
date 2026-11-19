@@ -42,19 +42,23 @@ async function ensureLocalSidecarRunning(msg = {}, options = {}) {
   } else if (h.alive) {
     return { ensured: false, reason: 'PORT_IN_USE_BY_OTHER_SERVICE' };
   }
-  const sidecarScript = options.sidecarScript || path.join(__dirname, 'email-test-sidecar.js');
+  const sidecarScript = options.sidecarScript || path.join(__dirname, 'email-test-sidecar-cli.js');
   const child = spawn(process.execPath, [sidecarScript], {
     detached: true,
     stdio: 'ignore',
     windowsHide: true,
-    env: { ...process.env, XPIDER_EMAIL_SIDECAR_PORT: String(port) }
+    env: {
+      ...process.env,
+      XPIDER_EMAIL_SIDECAR_PORT: String(port),
+      XPIDER_SKIP_NATIVE_HOST_REG: '1'
+    }
   });
   child.unref();
-  for (let i = 0; i < 30; i++) {
-    await new Promise(r => setTimeout(r, 120));
+  for (let i = 0; i < 40; i++) {
+    await new Promise(r => setTimeout(r, 150));
     const check = await probeLocalHealth(port);
     if (check.alive && check.json && check.json.companionBuildId === SIDECAR_BUILD_ID) {
-      return { ensured: true, autoStarted: true, companionBuildId: check.json.companionBuildId };
+      return { ensured: true, autoStarted: true, pid: check.json.pid || null, companionBuildId: check.json.companionBuildId };
     }
   }
   return { ensured: false, reason: 'START_TIMEOUT' };

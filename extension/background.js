@@ -4149,9 +4149,36 @@ const _handleMainMessageInner = (request, sender, sendResponse) => {
                         sendResponse({ ok: false, status: 'BLOCKED', reason: 'USER_CONSENT_REQUIRED', message: '로컬 NTFS 보안 저장 전 명시적 사용자 동의가 필요합니다.' });
                         return;
                     }
-                    const hcCtrl = new AbortController();
-                    const hcTimer = setTimeout(() => hcCtrl.abort(), 4000);
-                    const healthResp = await fetch(`http://127.0.0.1:${ctrlPort}/health`, { method: 'GET', signal: hcCtrl.signal }).finally(() => clearTimeout(hcTimer));
+                    const fetchHealth = async () => {
+                        const hcCtrl = new AbortController();
+                        const hcTimer = setTimeout(() => hcCtrl.abort(), 4000);
+                        return await fetch(`http://127.0.0.1:${ctrlPort}/health`, { method: 'GET', signal: hcCtrl.signal }).finally(() => clearTimeout(hcTimer));
+                    };
+                    let healthResp = null;
+                    try {
+                        healthResp = await fetchHealth();
+                    } catch (firstHealthErr) {
+                        // Auto-wake local Sidecar via Native Messaging Host if stopped (ECONNREFUSED)
+                        if (ctrlPort !== 18989 && chrome?.runtime?.sendNativeMessage) {
+                            await new Promise((resolve) => {
+                                let settled = false;
+                                const t = setTimeout(() => { if (!settled) { settled = true; resolve(); } }, 8000);
+                                chrome.runtime.sendNativeMessage('com.xpider.email_sidecar', { action: 'GET_SIDECAR_TOKEN', port: ctrlPort, ensureRunning: true }, (res) => {
+                                    if (!settled) {
+                                        settled = true;
+                                        clearTimeout(t);
+                                        if (!chrome.runtime.lastError && res && res.ok && typeof res.token === 'string' && res.token.trim().length >= 16) {
+                                            globalThis.__xpiderPairedSidecarToken = res.token.trim();
+                                        }
+                                        resolve();
+                                    }
+                                });
+                            });
+                            healthResp = await fetchHealth();
+                        } else {
+                            throw firstHealthErr;
+                        }
+                    }
                     if (!healthResp.ok) {
                         sendResponse({ ok: false, status: 'BLOCKED', httpStatus: healthResp.status, reason: 'COMPANION_HEALTH_ERROR' });
                         return;
@@ -4258,11 +4285,11 @@ const _handleMainMessageInner = (request, sender, sendResponse) => {
                             const timer = setTimeout(() => {
                                 if (settled) return;
                                 settled = true;
-                                nativePairingError = 'NATIVE_HOST_TIMEOUT_5000MS';
+                                nativePairingError = 'NATIVE_HOST_TIMEOUT_8000MS';
                                 resolve(null);
-                            }, 5000);
+                            }, 8000);
                             try {
-                                chrome.runtime.sendNativeMessage('com.xpider.email_sidecar', { action: 'GET_SIDECAR_TOKEN' }, (res) => {
+                                chrome.runtime.sendNativeMessage('com.xpider.email_sidecar', { action: 'GET_SIDECAR_TOKEN', port: ctrlPort, ensureRunning: true }, (res) => {
                                     if (settled) return;
                                     settled = true;
                                     clearTimeout(timer);
@@ -4340,7 +4367,23 @@ const _handleMainMessageInner = (request, sender, sendResponse) => {
                             clearTimeout(timer);
                         }
                     };
-                    let resp = await doFetch(token);
+                    let autoWakeAttempted = false;
+                    let resp = null;
+                    try {
+                        resp = await doFetch(token);
+                    } catch (firstFetchErr) {
+                        const isFirstTimeout = firstFetchErr && (firstFetchErr.name === 'AbortError' || /abort|timeout/i.test(firstFetchErr.message || ''));
+                        if (!isFirstTimeout) {
+                            // Local Sidecar may have stopped (ECONNREFUSED / Failed to fetch); invoke native host to auto-start it and retry once!
+                            autoWakeAttempted = true;
+                            globalThis.__xpiderPairedSidecarToken = null;
+                            const wokenTok = await pairTok(true);
+                            if (wokenTok && !explicitToken) token = wokenTok;
+                            resp = await doFetch(token);
+                        } else {
+                            throw firstFetchErr;
+                        }
+                    }
                     if (resp.status === 401 && !explicitToken) {
                         globalThis.__xpiderPairedSidecarToken = null;
                         token = await pairTok(true);
@@ -4390,6 +4433,7 @@ const _handleMainMessageInner = (request, sender, sendResponse) => {
                             httpStatus: resp.status,
                             elapsedMs: Math.max(0, Date.now() - bgT0),
                             proxyBypass: proxyBypassResult,
+                            autoWakeAttempted,
                             tokenSource,
                             ...(nativePairingError ? { nativePairingError } : {}),
                             contentType: ct,
@@ -4430,9 +4474,36 @@ const _handleMainMessageInner = (request, sender, sendResponse) => {
                             new Promise(r => setTimeout(r, 2000))
                         ]);
                     }
-                    const hcCtrl = new AbortController();
-                    const hcTimer = setTimeout(() => hcCtrl.abort(), 4000);
-                    const healthResp = await fetch(`http://127.0.0.1:${ctrlPort}/health`, { method: 'GET', signal: hcCtrl.signal }).finally(() => clearTimeout(hcTimer));
+                    const fetchHealth = async () => {
+                        const hcCtrl = new AbortController();
+                        const hcTimer = setTimeout(() => hcCtrl.abort(), 4000);
+                        return await fetch(`http://127.0.0.1:${ctrlPort}/health`, { method: 'GET', signal: hcCtrl.signal }).finally(() => clearTimeout(hcTimer));
+                    };
+                    let healthResp = null;
+                    try {
+                        healthResp = await fetchHealth();
+                    } catch (firstHealthErr) {
+                        // Auto-wake local Sidecar via Native Messaging Host if stopped (ECONNREFUSED)
+                        if (ctrlPort !== 18989 && chrome?.runtime?.sendNativeMessage) {
+                            await new Promise((resolve) => {
+                                let settled = false;
+                                const t = setTimeout(() => { if (!settled) { settled = true; resolve(); } }, 8000);
+                                chrome.runtime.sendNativeMessage('com.xpider.email_sidecar', { action: 'GET_SIDECAR_TOKEN', port: ctrlPort, ensureRunning: true }, (res) => {
+                                    if (!settled) {
+                                        settled = true;
+                                        clearTimeout(t);
+                                        if (!chrome.runtime.lastError && res && res.ok && typeof res.token === 'string' && res.token.trim().length >= 16) {
+                                            globalThis.__xpiderPairedSidecarToken = res.token.trim();
+                                        }
+                                        resolve();
+                                    }
+                                });
+                            });
+                            healthResp = await fetchHealth();
+                        } else {
+                            throw firstHealthErr;
+                        }
+                    }
                     if (!healthResp.ok) {
                         sendResponse({
                             ok: false,
@@ -4612,9 +4683,36 @@ const _handleMainMessageInner = (request, sender, sendResponse) => {
                 const ctrlPort = (Number.isInteger(reqPort) && reqPort >= 1024 && reqPort <= 65535) ? reqPort : 18990;
                 const extBuildId = (typeof BuildProvenance !== 'undefined' && BuildProvenance.BUILD_INFO && BuildProvenance.BUILD_INFO.buildId) || 'V7.0.0-OWNER-BETA-TEST-SEND-SIDECAR-20261113';
                 try {
-                    const hcCtrl = new AbortController();
-                    const hcTimer = setTimeout(() => hcCtrl.abort(), 4000);
-                    const healthResp = await fetch(`http://127.0.0.1:${ctrlPort}/health`, { method: 'GET', signal: hcCtrl.signal }).finally(() => clearTimeout(hcTimer));
+                    const fetchHealth = async () => {
+                        const hcCtrl = new AbortController();
+                        const hcTimer = setTimeout(() => hcCtrl.abort(), 4000);
+                        return await fetch(`http://127.0.0.1:${ctrlPort}/health`, { method: 'GET', signal: hcCtrl.signal }).finally(() => clearTimeout(hcTimer));
+                    };
+                    let healthResp = null;
+                    try {
+                        healthResp = await fetchHealth();
+                    } catch (firstHealthErr) {
+                        // Auto-wake local Sidecar via Native Messaging Host if stopped (ECONNREFUSED)
+                        if (ctrlPort !== 18989 && chrome?.runtime?.sendNativeMessage) {
+                            await new Promise((resolve) => {
+                                let settled = false;
+                                const t = setTimeout(() => { if (!settled) { settled = true; resolve(); } }, 8000);
+                                chrome.runtime.sendNativeMessage('com.xpider.email_sidecar', { action: 'GET_SIDECAR_TOKEN', port: ctrlPort, ensureRunning: true }, (res) => {
+                                    if (!settled) {
+                                        settled = true;
+                                        clearTimeout(t);
+                                        if (!chrome.runtime.lastError && res && res.ok && typeof res.token === 'string' && res.token.trim().length >= 16) {
+                                            globalThis.__xpiderPairedSidecarToken = res.token.trim();
+                                        }
+                                        resolve();
+                                    }
+                                });
+                            });
+                            healthResp = await fetchHealth();
+                        } else {
+                            throw firstHealthErr;
+                        }
+                    }
                     if (!healthResp.ok) {
                         sendResponse({
                             ok: false,
