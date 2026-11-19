@@ -366,11 +366,89 @@ function createMockWebStorage(initial = {}) {
     assert.strictEqual(quotaOut.sentInThisRun, 1);
     assert.strictEqual(quotaOut.summary.counts.ACCEPTED, 1);
     assert.strictEqual(quotaOut.summary.counts.PENDING, 1);
-    pBulk.evaluatePreflight = origEval;
     console.log('PASS P0D-7: Resend daily quota returns structured Fail-Closed reason and keeps accepted idempotent');
+
+    // P0D-8: Transient /api/sync/tokens timeouts recover cleanly on retry (attempt 3) without halting queue
+    pBulk.importAndPersistRecipients({
+      csvText: 'email,name\nretryok@example.com,RetryOK',
+      messageKind: 'marketing',
+      consentAttested: true,
+      lawfulBasis: 'EXPLICIT_OPT_IN',
+      jurisdiction: 'GLOBAL',
+      authorizationSource: 'owner_retry_test',
+      campaignId: 'retry-sync-test'
+    });
+    let syncTryCount = 0;
+    let resendIdempKeys = [];
+    const retryOut = await pBulk.runQueue({
+      mode: 'LIVE_PRODUCTION',
+      subject: 'Retry Sync Test',
+      html: '<p>Hi</p>',
+      text: 'Hi',
+      baseUrl: 'https://unsubscribe.vivpr.pro',
+      hasResendKey: true,
+      apiKey: 're_test_12345678901234567890',
+      ownerExplicitApproval: true,
+      publicUnsubscribeHttpsVerified: true,
+      syncToken: 'sync-tok',
+      syncFetchImpl: async (url, init) => {
+        if (String(url).includes('/api/sync/suppressions')) return { ok: true, status: 200, json: async () => ({ suppressions: [] }) };
+        if (String(url).includes('/api/sync/tokens')) {
+          syncTryCount++;
+          if (syncTryCount < 3) throw new Error('The operation was aborted due to timeout');
+          return { ok: true, status: 200, json: async () => ({ ok: true }) };
+        }
+        // P0D-9 combined: fail first Resend call transiently, succeed second with identical Idempotency-Key
+        resendIdempKeys.push(init.headers['Idempotency-Key']);
+        if (resendIdempKeys.length === 1) throw new Error('ETIMEDOUT transient');
+        return { ok: true, status: 200, json: async () => ({ id: 'msg_retry_ok_1' }) };
+      }
+    });
+    assert.strictEqual(retryOut.ok, true);
+    assert.strictEqual(retryOut.status, 'COMPLETED');
+    assert.strictEqual(syncTryCount, 3);
+    assert.strictEqual(resendIdempKeys.length, 2);
+    assert.strictEqual(resendIdempKeys[0], resendIdempKeys[1], 'Resend retry reused identical Idempotency-Key');
+    assert.strictEqual(retryOut.summary.counts.ACCEPTED, 1);
+    console.log('PASS P0D-8 & P0D-9: /api/sync/tokens 3-attempt retry + idempotent Resend timeout retry');
+
+    // P0D-10: startQueueBackground returns STARTED immediately and completes asynchronously with lastRunResult
+    pBulk.importAndPersistRecipients({
+      csvText: 'email,name\nbg1@example.com,BG1',
+      messageKind: 'marketing',
+      consentAttested: true,
+      lawfulBasis: 'EXPLICIT_OPT_IN',
+      jurisdiction: 'GLOBAL',
+      authorizationSource: 'owner_bg_test',
+      campaignId: 'bg-run-test'
+    });
+    const bgStart = await pBulk.startQueueBackground({
+      mode: 'LIVE_PRODUCTION',
+      subject: 'BG Test',
+      html: '<p>Hi</p>',
+      text: 'Hi',
+      baseUrl: 'https://unsubscribe.vivpr.pro',
+      hasResendKey: true,
+      apiKey: 're_test_12345678901234567890',
+      ownerExplicitApproval: true,
+      publicUnsubscribeHttpsVerified: true,
+      syncToken: 'sync-tok',
+      syncFetchImpl: async (url) => {
+        if (String(url).includes('/api/sync/suppressions')) return { ok: true, status: 200, json: async () => ({ suppressions: [] }) };
+        if (String(url).includes('/api/sync/tokens')) return { ok: true, status: 200, json: async () => ({ ok: true }) };
+        return { ok: true, status: 200, json: async () => ({ id: 'msg_bg_1' }) };
+      }
+    });
+    assert.strictEqual(bgStart.ok, true);
+    assert.strictEqual(bgStart.status, 'STARTED');
+    await pBulk._activeBgPromise;
+    assert.strictEqual(pBulk._queueRunning, false);
+    assert.ok(pBulk.lastRunResult && pBulk.lastRunResult.status === 'COMPLETED' && pBulk.lastRunResult.sentInThisRun === 1);
+    pBulk.evaluatePreflight = origEval;
+    console.log('PASS P0D-10: startQueueBackground starts cleanly and records completed lastRunResult');
   } finally {
     fs.rmSync(tmpBulkDir, { recursive: true, force: true });
   }
 
-  console.log('ALL STUDIO DRAFT/TEMPLATE/REAL-TEST/PRODUCTION TESTS PASSED (11/11)');
+  console.log('ALL STUDIO DRAFT/TEMPLATE/REAL-TEST/PRODUCTION TESTS PASSED (14/14)');
 })();

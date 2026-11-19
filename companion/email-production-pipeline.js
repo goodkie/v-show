@@ -574,12 +574,16 @@ class EmailProductionPipeline {
   }
 
   _recordIssuedUnsubscribeTokenHash({ tokenHash, email, campaignId, jti, expiresAt }) {
-    let store = {};
-    try {
-      if (fs.existsSync(this.unsubTokensFile)) {
-        store = JSON.parse(fs.readFileSync(this.unsubTokensFile, 'utf8')) || {};
-      }
-    } catch (_) { store = {}; }
+    if (!this._unsubTokensCache) {
+      let store = {};
+      try {
+        if (fs.existsSync(this.unsubTokensFile)) {
+          store = JSON.parse(fs.readFileSync(this.unsubTokensFile, 'utf8')) || {};
+        }
+      } catch (_) { store = {}; }
+      this._unsubTokensCache = store;
+    }
+    const store = this._unsubTokensCache;
     if (store[tokenHash]) return false;
     const recipientHash = crypto.createHash('sha256').update(String(email || '').trim().toLowerCase()).digest('hex');
     store[tokenHash] = { recipientHash, campaignId, jti, issuedAt: new Date().toISOString(), expiresAt };
@@ -678,7 +682,7 @@ class EmailProductionPipeline {
     return this.suppressedHashes.has(h);
   }
 
-  async syncRemoteSuppressions({ baseUrl, syncToken, fetchImpl } = {}) {
+  async syncRemoteSuppressions({ baseUrl, syncToken, fetchImpl, skipQueueSave = false } = {}) {
     const targetBase = String(baseUrl || this.getUnsubscribePublicConfig().publicBaseUrl || '').replace(/\/+$/, '');
     const tok = String(syncToken || '').trim();
     if (!targetBase || !tok) {
@@ -691,7 +695,8 @@ class EmailProductionPipeline {
     try {
       const resp = await doFetch(`${targetBase}/api/sync/suppressions`, {
         method: 'GET',
-        headers: { 'Authorization': `Bearer ${tok}` }
+        headers: { 'Authorization': `Bearer ${tok}` },
+        ...(typeof fetchImpl !== 'function' && typeof AbortSignal?.timeout === 'function' ? { signal: AbortSignal.timeout(15000) } : {})
       });
       if (!resp || !resp.ok) {
         return { ok: false, reason: `UNSUBSCRIBE_SYNC_HTTP_${resp ? resp.status : 'ERROR'}` };
@@ -708,7 +713,9 @@ class EmailProductionPipeline {
       }
       if (added > 0) {
         this._saveSuppressedHashes();
-        this._syncQueueSuppression();
+        if (!skipQueueSave) {
+          this._syncQueueSuppression();
+        }
       }
       return { ok: true, syncedCount: list.length, addedCount: added };
     } catch (err) {
@@ -997,28 +1004,7 @@ class EmailProductionPipeline {
     return this.summarizeQueue();
   }
 
-  async runQueue({ mode = 'DRY_RUN', subject = '', html = '', text = '', baseUrl = 'http://127.0.0.1:18990', maxAttempts = 2, hasResendKey = false, apiKey = null, ownerExplicitApproval = false, publicUnsubscribeHttpsVerified = false, syncToken = null, syncFetchImpl = null } = {}) {
-    if (this._queueRunning) {
-      return {
-        ok: false,
-        status: 'BLOCKED',
-        mode,
-        reason: 'QUEUE_ALREADY_RUNNING',
-        blockingReasons: ['QUEUE_ALREADY_RUNNING'],
-        koreanReason: '운영 발송 큐가 이미 실행 중입니다. 실시간 진행률 모니터를 확인하거나 [운영 큐 중지] 후 다시 시도하세요.',
-        timestamp: new Date().toISOString(),
-        summary: this.summarizeQueue()
-      };
-    }
-    this._queueRunning = true;
-    try {
-      return await this._runQueueImpl({ mode, subject, html, text, baseUrl, maxAttempts, hasResendKey, apiKey, ownerExplicitApproval, publicUnsubscribeHttpsVerified, syncToken, syncFetchImpl });
-    } finally {
-      this._queueRunning = false;
-    }
-  }
-
-  async _runQueueImpl({ mode = 'DRY_RUN', subject = '', html = '', text = '', baseUrl = 'http://127.0.0.1:18990', maxAttempts = 2, hasResendKey = false, apiKey = null, ownerExplicitApproval = false, publicUnsubscribeHttpsVerified = false, syncToken = null, syncFetchImpl = null } = {}) {
+  async _validateRunQueueGates({ mode = 'DRY_RUN', baseUrl = 'http://127.0.0.1:18990', hasResendKey = false, apiKey = null, ownerExplicitApproval = false, publicUnsubscribeHttpsVerified = false, syncToken = null, syncFetchImpl = null } = {}) {
     if (mode === 'LIVE_PRODUCTION') {
       const isPublicHttpsUnsub = /^https:\/\/(?!127\.0\.0\.1|localhost\b)[a-z0-9.-]+\.[a-z]{2,}/i.test(String(baseUrl || ''));
       if (!isPublicHttpsUnsub) {
@@ -1069,8 +1055,101 @@ class EmailProductionPipeline {
     if (mode === 'ISOLATED_PROVIDER_TEST' && !this.trustedTestMode) {
       return { ok: false, status: 'BLOCKED', reason: 'ISOLATED_PROVIDER_TEST_REQUIRES_TRUSTED_TEST_MODE' };
     }
+    return null;
+  }
 
+  async runQueue(opts = {}) {
+    const mode = opts.mode || 'DRY_RUN';
+    if (this._queueRunning) {
+      return {
+        ok: false,
+        status: 'BLOCKED',
+        mode,
+        reason: 'QUEUE_ALREADY_RUNNING',
+        blockingReasons: ['QUEUE_ALREADY_RUNNING'],
+        koreanReason: '운영 발송 큐가 이미 실행 중입니다. 실시간 진행률 모니터를 확인하거나 [운영 큐 중지] 후 다시 시도하세요.',
+        timestamp: new Date().toISOString(),
+        summary: this.summarizeQueue()
+      };
+    }
+    this._queueRunning = true;
+    this.lastRunResult = null;
+    try {
+      const blocked = await this._validateRunQueueGates(opts);
+      if (blocked) {
+        this.lastRunResult = blocked;
+        return blocked;
+      }
+      const res = await this._runQueueLoop(opts);
+      this.lastRunResult = res;
+      return res;
+    } finally {
+      this._queueRunning = false;
+    }
+  }
+
+  async startQueueBackground(opts = {}) {
+    const mode = opts.mode || 'DRY_RUN';
+    if (this._queueRunning) {
+      return {
+        ok: false,
+        status: 'BLOCKED',
+        mode,
+        reason: 'QUEUE_ALREADY_RUNNING',
+        blockingReasons: ['QUEUE_ALREADY_RUNNING'],
+        koreanReason: '운영 발송 큐가 이미 백그라운드에서 실행 중입니다. 실시간 진행률 모니터를 확인하거나 [운영 큐 중지] 후 다시 시도하세요.',
+        timestamp: new Date().toISOString(),
+        summary: this.summarizeQueue()
+      };
+    }
+    this._queueRunning = true;
+    this.lastRunResult = null;
+    let blocked = null;
+    try {
+      blocked = await this._validateRunQueueGates(opts);
+    } catch (err) {
+      this._queueRunning = false;
+      throw err;
+    }
+    if (blocked) {
+      this._queueRunning = false;
+      this.lastRunResult = blocked;
+      return blocked;
+    }
+    const bgPromise = (async () => {
+      try {
+        const res = await this._runQueueLoop(opts);
+        this.lastRunResult = res;
+      } catch (err) {
+        const msg = err?.message || 'BACKGROUND_QUEUE_EXCEPTION';
+        this.lastRunResult = {
+          ok: false,
+          status: 'BLOCKED',
+          mode,
+          reason: err?.code || 'QUEUE_RUN_EXCEPTION',
+          blockingReasons: [err?.code || 'QUEUE_RUN_EXCEPTION', msg],
+          koreanReason: `백그라운드 운영 발송 중 예외가 발생해 안전 중단되었습니다: ${msg}`,
+          timestamp: new Date().toISOString(),
+          summary: this.summarizeQueue()
+        };
+      } finally {
+        this._queueRunning = false;
+      }
+    })();
+    this._activeBgPromise = bgPromise;
+    return {
+      ok: true,
+      status: 'STARTED',
+      background: true,
+      mode,
+      timestamp: new Date().toISOString(),
+      summary: this.summarizeQueue()
+    };
+  }
+
+  async _runQueueLoop({ mode = 'DRY_RUN', subject = '', html = '', text = '', baseUrl = 'http://127.0.0.1:18990', maxAttempts = 2, hasResendKey = false, apiKey = null, ownerExplicitApproval = false, publicUnsubscribeHttpsVerified = false, syncToken = null, syncFetchImpl = null } = {}) {
     this.queue.stopped = false;
+    this.queue.stopReason = null;
     this.queue.startedAt = this.queue.startedAt || new Date().toISOString();
     this._saveQueue();
 
@@ -1186,25 +1265,49 @@ class EmailProductionPipeline {
           continue;
         }
         const recipientHash = crypto.createHash('sha256').update(String(e.email || '').trim().toLowerCase()).digest('hex');
+        const isLiveNetwork = typeof syncFetchImpl !== 'function';
+        const syncBackoffsMs = isLiveNetwork ? [1000, 2500, 5000] : [0, 0, 0];
         let regResp = null;
-        try {
-          regResp = await doFetch(`${String(baseUrl).replace(/\/+$/, '')}/api/sync/tokens`, {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${syncToken}`,
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              tokenHash: unsub.tokenHash,
-              recipientHash,
-              campaignId: this.queue.campaignId,
-              issuedAt: new Date().toISOString(),
-              expiresAt: new Date(Date.now() + 365 * 86400000).toISOString()
-            }),
-            ...(typeof syncFetchImpl !== 'function' && typeof AbortSignal?.timeout === 'function' ? { signal: AbortSignal.timeout(15000) } : {})
-          });
-        } catch (syncErr) {
-          const errStr = `UNSUBSCRIBE_TOKEN_SYNC_EXCEPTION: ${syncErr?.message || 'FETCH_FAILED'}`;
+        let lastSyncErr = null;
+        for (let sTry = 0; sTry < 3; sTry++) {
+          if (this.queue.stopped) break;
+          lastSyncErr = null;
+          try {
+            regResp = await doFetch(`${String(baseUrl).replace(/\/+$/, '')}/api/sync/tokens`, {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${syncToken}`,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                tokenHash: unsub.tokenHash,
+                recipientHash,
+                campaignId: this.queue.campaignId,
+                issuedAt: new Date().toISOString(),
+                expiresAt: new Date(Date.now() + 365 * 86400000).toISOString()
+              }),
+              ...(isLiveNetwork && typeof AbortSignal?.timeout === 'function' ? { signal: AbortSignal.timeout(25000) } : {})
+            });
+            if (regResp && regResp.ok) break;
+            const st = regResp ? regResp.status : 0;
+            const retryableHttp = st === 429 || st >= 500 || st === 0;
+            if (!retryableHttp || sTry === 2) break;
+          } catch (syncErr) {
+            lastSyncErr = syncErr;
+            regResp = null;
+            if (sTry === 2) break;
+          }
+          const delayMs = syncBackoffsMs[sTry] || 0;
+          if (delayMs > 0) await new Promise(r => setTimeout(r, delayMs));
+        }
+        if (this.queue.stopped) {
+          e.status = 'PENDING';
+          e.updatedAt = new Date().toISOString();
+          this._saveQueue();
+          break;
+        }
+        if (lastSyncErr) {
+          const errStr = `UNSUBSCRIBE_TOKEN_SYNC_EXCEPTION: ${lastSyncErr?.message || 'FETCH_FAILED'}`;
           // Revert SENDING -> PENDING because provider API was never called
           e.status = 'PENDING';
           e.error = errStr;
@@ -1220,7 +1323,7 @@ class EmailProductionPipeline {
             reason: 'UNSUBSCRIBE_TOKEN_SYNC_FAILED',
             stopReason: 'UNSUBSCRIBE_TOKEN_SYNC_FAILED',
             blockingReasons: ['UNSUBSCRIBE_TOKEN_SYNC_FAILED', errStr],
-            koreanReason: `수신거부 원클릭 토큰 원격 동기화 중 네트워크 오류가 발생해 발송 전 안전 차단되었습니다 (${syncErr?.message || 'FETCH_FAILED'}). 해당 수신자는 미발송(PENDING) 상태로 복원되었으며 다시 시작할 수 있습니다.`,
+            koreanReason: `수신거부 원클릭 토큰 원격 동기화(3회 재시도) 중 네트워크 오류가 지속되어 발송 전 안전 차단되었습니다 (${lastSyncErr?.message || 'FETCH_FAILED'}). 해당 수신자는 미발송(PENDING) 상태로 복원되었으며 다시 시작할 수 있습니다.`,
             sentInThisRun,
             timestamp: new Date().toISOString(),
             summary: this.summarizeQueue()
@@ -1237,33 +1340,39 @@ class EmailProductionPipeline {
         }
         const rendered = injectUnsubscribeFooter({ html, text, unsubscribeUrl: unsub.url });
         this._appendAudit({ type: 'SEND_ATTEMPT_STARTED', idempotencyKey: e.idempotencyKey, email: e.email, attempt: e.attempts, mode: 'LIVE_PRODUCTION' });
-        try {
-          const sendResp = await doFetch('https://api.resend.com/emails', {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${resolvedApiKey}`,
-              'Content-Type': 'application/json',
-              'Idempotency-Key': e.idempotencyKey
-            },
-            body: JSON.stringify({
-              from: `XPIDER <noreply@${DOMAIN}>`,
-              to: [e.email],
-              subject,
-              html: rendered.html,
-              text: rendered.text,
-              headers: unsub.headers
-            }),
-            ...(typeof syncFetchImpl !== 'function' && typeof AbortSignal?.timeout === 'function' ? { signal: AbortSignal.timeout(20000) } : {})
-          });
-          const sendBody = await sendResp.json().catch(() => ({}));
-          if (sendResp && sendResp.ok && sendBody && sendBody.id) {
-            this._appendAudit({ type: 'SEND_ATTEMPT_ACCEPTED', idempotencyKey: e.idempotencyKey, providerMessageId: sendBody.id, mode: 'LIVE_PRODUCTION' });
-            e.status = 'ACCEPTED';
-            e.deliveryState = 'ACCEPTED';
-            e.providerMessageId = sendBody.id;
-            e.error = null;
-            sentInThisRun++;
-          } else {
+        const resendBackoffsMs = isLiveNetwork ? [1200, 3000, 6000] : [0, 0, 0];
+        let sendHandled = false;
+        let lastResendErr = null;
+        for (let rTry = 0; rTry < 3; rTry++) {
+          try {
+            const sendResp = await doFetch('https://api.resend.com/emails', {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${resolvedApiKey}`,
+                'Content-Type': 'application/json',
+                'Idempotency-Key': e.idempotencyKey
+              },
+              body: JSON.stringify({
+                from: `XPIDER <noreply@${DOMAIN}>`,
+                to: [e.email],
+                subject,
+                html: rendered.html,
+                text: rendered.text,
+                headers: unsub.headers
+              }),
+              ...(isLiveNetwork && typeof AbortSignal?.timeout === 'function' ? { signal: AbortSignal.timeout(30000) } : {})
+            });
+            const sendBody = await sendResp.json().catch(() => ({}));
+            if (sendResp && sendResp.ok && sendBody && sendBody.id) {
+              this._appendAudit({ type: 'SEND_ATTEMPT_ACCEPTED', idempotencyKey: e.idempotencyKey, providerMessageId: sendBody.id, mode: 'LIVE_PRODUCTION' });
+              e.status = 'ACCEPTED';
+              e.deliveryState = 'ACCEPTED';
+              e.providerMessageId = sendBody.id;
+              e.error = null;
+              sentInThisRun++;
+              sendHandled = true;
+              break;
+            }
             const errStr = (sendBody && (sendBody.message || sendBody.name)) || `RESEND_HTTP_${sendResp ? sendResp.status : 'ERROR'}`;
             const isDailyQuota = /daily.*quota|quota.*exceeded/i.test(errStr);
             if (isDailyQuota) {
@@ -1272,17 +1381,32 @@ class EmailProductionPipeline {
               this.queue.stopped = true;
               this.queue.stopReason = 'PROVIDER_DAILY_QUOTA_EXCEEDED';
               this._appendAudit({ type: 'QUEUE_PAUSED_DAILY_QUOTA', idempotencyKey: e.idempotencyKey, error: errStr });
-            } else {
-              this._appendAudit({ type: 'SEND_ATTEMPT_FAILED', idempotencyKey: e.idempotencyKey, error: errStr });
-              e.status = 'FAILED';
-              e.error = errStr;
-              if (sendResp && sendResp.status === 429 && typeof syncFetchImpl !== 'function') {
-                await new Promise(r => setTimeout(r, 1200));
-              }
+              sendHandled = true;
+              break;
+            }
+            const st = sendResp ? sendResp.status : 0;
+            const retryableResend = st === 429 || st >= 500 || st === 0;
+            if (retryableResend && rTry < 2) {
+              const d = resendBackoffsMs[rTry] || 0;
+              if (d > 0) await new Promise(r => setTimeout(r, d));
+              continue;
+            }
+            this._appendAudit({ type: 'SEND_ATTEMPT_FAILED', idempotencyKey: e.idempotencyKey, error: errStr });
+            e.status = 'FAILED';
+            e.error = errStr;
+            sendHandled = true;
+            break;
+          } catch (err) {
+            lastResendErr = err;
+            if (rTry < 2) {
+              const d = resendBackoffsMs[rTry] || 0;
+              if (d > 0) await new Promise(r => setTimeout(r, d));
+              continue;
             }
           }
-        } catch (err) {
-          const errStr = err.message || 'RESEND_FETCH_EXCEPTION';
+        }
+        if (!sendHandled) {
+          const errStr = (lastResendErr && lastResendErr.message) || 'RESEND_FETCH_EXCEPTION';
           this._appendAudit({ type: 'SEND_ATTEMPT_FAILED', idempotencyKey: e.idempotencyKey, error: errStr });
           e.status = 'FAILED';
           e.error = errStr;

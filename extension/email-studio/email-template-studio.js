@@ -2400,12 +2400,45 @@ function createBuiltinRecipientManager() {
         livePollTimer = setInterval(refreshCampaignProgress, 3000);
         if (el('btnToggleLivePoll')) el('btnToggleLivePoll').textContent = '⏸️ 자동 폴링 중지';
       }
+      const renderProdRunOutcome = (out, r, fallbackCounts) => {
+        if (!out) return;
+        if ((r && !r.ok) || out.status === 'BLOCKED' || (out.status === 'STOPPED' && out.stopReason)) {
+          pBox.className = 'status-box status-blocked';
+          const reasonCode = out.reason || out.stopReason || out.error || r?.error || (r?.httpStatus ? `HTTP_${r.httpStatus}` : 'EXECUTION_FAILED');
+          const detailParts = [];
+          if (Array.isArray(out.blockingReasons) && out.blockingReasons.length > 0) {
+            detailParts.push(out.blockingReasons.join(', '));
+          }
+          if (out.koreanReason) detailParts.push(out.koreanReason);
+          else if (out.message) detailParts.push(out.message);
+          else if (out.error && out.error !== reasonCode) detailParts.push(out.error);
+          else if (r?.error && r.error !== reasonCode) detailParts.push(r.error);
+          const c = out.summary?.counts || fallbackCounts || {};
+          const ts = out.timestamp || new Date().toISOString();
+          const detailText = detailParts.length ? detailParts.join(' | ') : `HTTP ${r?.httpStatus || '-'} (${reasonCode})`;
+          pBox.textContent = [
+            `🛑 [운영 발송 차단 — Fail-Closed] 사유: ${reasonCode}`,
+            `• 세부 사유: ${detailText}`,
+            `• 시각: ${ts} | 이번 실행 발송: ${out.sentInThisRun || 0}건 | 대기(PENDING): ${c.PENDING ?? '-'}건 | 기발송(ACCEPTED): ${c.ACCEPTED ?? '-'}건 | 발송중(SENDING): ${c.SENDING ?? '-'}건`
+          ].join('\n');
+          return;
+        }
+        const c = out.summary?.counts || fallbackCounts || {};
+        pBox.className = 'status-box status-success';
+        pBox.textContent = [
+          `✅ [운영 발송 완료 — 상태: ${out.status}]`,
+          `• 이번 실행 실제 발송: ${out.sentInThisRun || 0}건 | ACCEPTED: ${c.ACCEPTED || 0}건 | FAILED: ${c.FAILED || 0}건`,
+          `• 제외(미동의): ${(c.SKIPPED_NO_CONSENT || 0) + (c.BLOCKED_CONSENT_UNVERIFIED || 0)}건 | 제외(수신거부): ${c.SKIPPED_SUPPRESSED || 0}건`
+        ].join('\n');
+      };
+
       const r = await callBg({
         action: 'RUN_EMAIL_PRODUCTION_QUEUE',
         sidecarPort,
         sidecarToken,
         payload: {
           mode: 'LIVE_PRODUCTION',
+          background: true,
           subject: subjectVal,
           html: htmlFor(v),
           text: textFor(v)
@@ -2417,34 +2450,18 @@ function createBuiltinRecipientManager() {
         return;
       }
       const out = r.data;
-      if (!r.ok || out.status === 'BLOCKED' || (out.status === 'STOPPED' && out.stopReason)) {
-        pBox.className = 'status-box status-blocked';
-        const reasonCode = out.reason || out.stopReason || out.error || r.error || (r.httpStatus ? `HTTP_${r.httpStatus}` : 'EXECUTION_FAILED');
-        const detailParts = [];
-        if (Array.isArray(out.blockingReasons) && out.blockingReasons.length > 0) {
-          detailParts.push(out.blockingReasons.join(', '));
-        }
-        if (out.koreanReason) detailParts.push(out.koreanReason);
-        else if (out.message) detailParts.push(out.message);
-        else if (out.error && out.error !== reasonCode) detailParts.push(out.error);
-        else if (r.error && r.error !== reasonCode) detailParts.push(r.error);
-        const c = out.summary?.counts || counts || {};
-        const ts = out.timestamp || new Date().toISOString();
-        const detailText = detailParts.length ? detailParts.join(' | ') : `HTTP ${r.httpStatus || '-'} (${reasonCode})`;
+      if (r.ok && out.status === 'STARTED') {
+        bgQueueTrackingActive = true;
+        pBox.className = 'status-box status-loading';
         pBox.textContent = [
-          `🛑 [운영 발송 차단 — Fail-Closed] 사유: ${reasonCode}`,
-          `• 세부 사유: ${detailText}`,
-          `• 시각: ${ts} | 이번 실행 발송: ${out.sentInThisRun || 0}건 | 대기(PENDING): ${c.PENDING ?? '-'}건 | 기발송(ACCEPTED): ${c.ACCEPTED ?? '-'}건 | 발송중(SENDING): ${c.SENDING ?? '-'}건`
+          `🚀 [백그라운드 운영 발송 진행 중 — 대기 ${eligibleCount}건]`,
+          `• Sidecar에서 3회 자동 재시도·멱등성 키·550ms 페이싱으로 안전 발송 중입니다 (브라우저 타임아웃 없음).`,
+          `• 아래 실시간 모니터가 자동 갱신되며, 언제든 [⏹️ 운영 큐 중지]로 중단할 수 있습니다.`
         ].join('\n');
+        refreshCampaignProgress();
         return;
       }
-      const c = out.summary?.counts || {};
-      pBox.className = 'status-box status-success';
-      pBox.textContent = [
-        `✅ [운영 발송 완료 — 상태: ${out.status}]`,
-        `• 이번 실행 실제 발송: ${out.sentInThisRun || 0}건 | ACCEPTED: ${c.ACCEPTED || 0}건 | FAILED: ${c.FAILED || 0}건`,
-        `• 제외(미동의): ${(c.SKIPPED_NO_CONSENT || 0) + (c.BLOCKED_CONSENT_UNVERIFIED || 0)}건 | 제외(수신거부): ${c.SKIPPED_SUPPRESSED || 0}건`
-      ].join('\n');
+      renderProdRunOutcome(out, r, counts);
     };
   }
   if (el('btnProdStop')) {
@@ -2462,6 +2479,7 @@ function createBuiltinRecipientManager() {
 
   let livePollTimer = null;
   let lastSyncDisplay = '-';
+  let bgQueueTrackingActive = false;
   async function refreshCampaignProgress() {
     const sumBox = el('campaignMonitorSummary');
     const syncBadge = el('monitorSyncBadge');
@@ -2473,6 +2491,38 @@ function createBuiltinRecipientManager() {
       return;
     }
     const d = r.data;
+    if (d.queueRunning) {
+      bgQueueTrackingActive = true;
+    } else if (bgQueueTrackingActive && d.lastRunResult) {
+      bgQueueTrackingActive = false;
+      const pBox = el('prodPreflightStatus');
+      const out = d.lastRunResult;
+      if (pBox) {
+        if (out.ok === false || out.status === 'BLOCKED' || (out.status === 'STOPPED' && out.stopReason)) {
+          pBox.className = 'status-box status-blocked';
+          const reasonCode = out.reason || out.stopReason || out.error || 'EXECUTION_STOPPED';
+          const detailParts = [];
+          if (Array.isArray(out.blockingReasons) && out.blockingReasons.length > 0) detailParts.push(out.blockingReasons.join(', '));
+          if (out.koreanReason) detailParts.push(out.koreanReason);
+          else if (out.message) detailParts.push(out.message);
+          const c = out.summary?.counts || {};
+          const ts = out.timestamp || new Date().toISOString();
+          pBox.textContent = [
+            `🛑 [운영 발송 차단 — Fail-Closed] 사유: ${reasonCode}`,
+            `• 세부 사유: ${detailParts.join(' | ') || reasonCode}`,
+            `• 시각: ${ts} | 이번 실행 발송: ${out.sentInThisRun || 0}건 | 대기(PENDING): ${c.PENDING ?? '-'}건 | 기발송(ACCEPTED): ${c.ACCEPTED ?? '-'}건 | 발송중(SENDING): ${c.SENDING ?? '-'}건`
+          ].join('\n');
+        } else {
+          const c = out.summary?.counts || {};
+          pBox.className = 'status-box status-success';
+          pBox.textContent = [
+            `✅ [운영 발송 완료 — 상태: ${out.status}]`,
+            `• 이번 실행 실제 발송: ${out.sentInThisRun || 0}건 | ACCEPTED: ${c.ACCEPTED || 0}건 | FAILED: ${c.FAILED || 0}건`,
+            `• 제외(미동의): ${(c.SKIPPED_NO_CONSENT || 0) + (c.BLOCKED_CONSENT_UNVERIFIED || 0)}건 | 제외(수신거부): ${c.SKIPPED_SUPPRESSED || 0}건`
+          ].join('\n');
+        }
+      }
+    }
     lastSyncDisplay = d.lastSyncAt || d.updatedAt || new Date().toISOString();
     if (syncBadge) syncBadge.textContent = `동기화: ${d.syncStatus || 'OK'} (${lastSyncDisplay.slice(11, 19)}Z)`;
     if (el('progAcceptedBar')) el('progAcceptedBar').value = Math.min(100, Math.max(0, Number(d.acceptedPct || 0)));

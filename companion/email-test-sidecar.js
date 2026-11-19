@@ -554,19 +554,28 @@ class EmailTestSidecar {
           const campaignId = decodeURIComponent(parts[2] || 'default');
           const sub = parts[3] || 'progress';
           const doSync = urlObj.searchParams.get('sync') !== '0';
-          if (doSync) {
+          const forceSync = urlObj.searchParams.get('forceSync') === '1';
+          const nowMs = Date.now();
+          const minSyncIntervalMs = this.pipeline._queueRunning ? 12000 : 8000;
+          if (doSync && (forceSync || !this._lastProgressRemoteSyncAt || (nowMs - this._lastProgressRemoteSyncAt) >= minSyncIntervalMs)) {
+            this._lastProgressRemoteSyncAt = nowMs;
             const unsubCfg = this.pipeline.getUnsubscribePublicConfig();
             const publicBase = String(unsubCfg?.publicBaseUrl || '').trim();
             const syncTokPath = path.join(this.stateDir, '.unsubscribe_sync_token');
             const syncTok = fs.existsSync(syncTokPath) ? fs.readFileSync(syncTokPath, 'utf8').trim() : '';
             if (publicBase && syncTok) {
-              await this.analytics.syncRemoteEvents({ baseUrl: publicBase, syncToken: syncTok });
-              await this.pipeline.syncRemoteSuppressions({ baseUrl: publicBase, syncToken: syncTok }).catch(() => {});
+              await this.analytics.syncRemoteEvents({ baseUrl: publicBase, syncToken: syncTok }).catch(() => {});
+              await this.pipeline.syncRemoteSuppressions({ baseUrl: publicBase, syncToken: syncTok, skipQueueSave: Boolean(this.pipeline._queueRunning) }).catch(() => {});
             }
           }
           if (sub === 'progress') {
+            const prog = this.analytics.getCampaignProgress(campaignId);
             res.writeHead(200, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify(this.analytics.getCampaignProgress(campaignId)));
+            res.end(JSON.stringify({
+              ...prog,
+              queueRunning: Boolean(this.pipeline._queueRunning),
+              lastRunResult: this.pipeline.lastRunResult || null
+            }));
             return;
           }
           if (sub === 'segments') {
@@ -946,7 +955,7 @@ class EmailTestSidecar {
                 const syncToken = fs.existsSync(syncTokenPath) ? fs.readFileSync(syncTokenPath, 'utf8').trim() : null;
                 const resolvedBaseUrl = isLive ? publicUnsubBase : (payload.baseUrl || publicUnsubBase || `http://127.0.0.1:${this.port}`);
                 const publicHttpsVerified = /^https:\/\/(?!127\.0\.0\.1|localhost\b)[a-z0-9.-]+\.[a-z]{2,}/i.test(resolvedBaseUrl);
-                const out = await this.pipeline.runQueue({
+                const runArgs = {
                   ...payload,
                   baseUrl: resolvedBaseUrl,
                   hasResendKey: hasKey,
@@ -954,8 +963,11 @@ class EmailTestSidecar {
                   syncToken: payload.syncToken || syncToken,
                   ownerExplicitApproval: true,
                   publicUnsubscribeHttpsVerified: publicHttpsVerified
-                });
-                res.writeHead(out.ok ? 200 : 409, { 'Content-Type': 'application/json' });
+                };
+                const out = payload.background === true
+                  ? await this.pipeline.startQueueBackground(runArgs)
+                  : await this.pipeline.runQueue(runArgs);
+                res.writeHead(out.ok ? (out.status === 'STARTED' ? 202 : 200) : 409, { 'Content-Type': 'application/json' });
                 res.end(JSON.stringify(out));
                 return;
               }
