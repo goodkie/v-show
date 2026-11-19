@@ -934,7 +934,7 @@ if (el('btnRealTestSend')) {
       return;
     }
     const v = values();
-    const subject = (v.subject || '').trim() || '[XPIDER] Real Test Verification';
+    const subject = (v.subject || '').trim() || `${(v.company || 'vivpr.pro').trim()} · Test Email`;
     if (typeof window.confirm === 'function') {
       if (!window.confirm(`실제 수신함(${rec})으로 테스트 메일 1통을 발송할까요?\n제목: ${subject}`)) return;
     }
@@ -951,6 +951,7 @@ if (el('btnRealTestSend')) {
           recipient: rec,
           ownerTestConsentConfirmed: true,
           subject,
+          senderName: v.company,
           html: htmlFor(v),
           text: textFor(v),
           idempotencyKey
@@ -2440,6 +2441,7 @@ function createBuiltinRecipientManager() {
           mode: 'LIVE_PRODUCTION',
           background: true,
           subject: subjectVal,
+          senderName: v.company,
           html: htmlFor(v),
           text: textFor(v)
         }
@@ -2620,6 +2622,7 @@ function createBuiltinRecipientManager() {
           waveCampaignId: p.waveCampaignId,
           cutoffHours,
           subject,
+          senderName: v.company,
           html: htmlFor(v),
           text: textFor(v),
           messageKind: messageKind(),
