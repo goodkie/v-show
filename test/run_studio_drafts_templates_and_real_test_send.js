@@ -5,6 +5,7 @@ const os = require('os');
 const path = require('path');
 const studioStorage = require('../extension/email-studio/studio-storage');
 const { EmailTestSidecar } = require('../companion/email-test-sidecar');
+const { FROM_EMAIL, normalizeSenderDisplayName, formatResendSenderFrom } = require('../companion/email-sender-identity');
 
 function createMockChromeStorage(initial = {}) {
   const map = new Map(Object.entries(initial));
@@ -35,6 +36,18 @@ function createMockWebStorage(initial = {}) {
 }
 
 (async () => {
+  // P0E: Public sender name is the campaign business name, not the XPIDER product name.
+  assert.strictEqual(FROM_EMAIL, 'noreply@vivpr.pro');
+  assert.strictEqual(formatResendSenderFrom('STUDIOBERRY PLUS'), 'STUDIOBERRY PLUS <noreply@vivpr.pro>');
+  assert.strictEqual(formatResendSenderFrom('StudioBerry, Inc.'), '"StudioBerry, Inc." <noreply@vivpr.pro>');
+  assert.strictEqual(formatResendSenderFrom(''), 'vivpr.pro <noreply@vivpr.pro>');
+  assert.strictEqual(formatResendSenderFrom('Hello\r\nBcc: unintended@host.invalid'), '"Hello Bcc: unintended@host.invalid" <noreply@vivpr.pro>');
+  assert.ok(normalizeSenderDisplayName('x'.repeat(120)).length <= 80);
+  const studioSenderSource = fs.readFileSync(path.join(__dirname, '../extension/email-studio/email-template-studio.js'), 'utf8');
+  assert.strictEqual((studioSenderSource.match(/senderName: v\.company/g) || []).length, 3,
+    'Real test, production and second wave must all pass the business sender name');
+  console.log('PASS P0E: business From name, safe display-name formatting and studio sender plumbing');
+
   // P0A-1: Empty store + legacy v1 migration
   const mockChrome = createMockChromeStorage();
   const mockWeb = createMockWebStorage({
