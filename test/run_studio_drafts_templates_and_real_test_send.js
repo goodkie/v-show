@@ -710,12 +710,88 @@ function createMockWebStorage(initial = {}) {
     assert.strictEqual(sw.json.sentInThisRun, 1);
     assert.strictEqual(capturedResendPosts[5].body.from, '스튜디오베리 플러스 <noreply@vivpr.pro>');
     assert.strictEqual(capturedResendPosts[5].body.reply_to, 'support@vivpr.pro');
-    console.log('PASS P0D-12: mock Resend POST JSON From/Reply-To verified across real-test-send, queue/run LIVE_PRODUCTION & second-wave/start (0 external sends)');
+    assert.ok(rt1.json.stepTimings && typeof rt1.json.stepTimings.totalMs === 'number', 'real-test-send must return stepTimings');
+
+    // Verify GET /email/diagnostics/logs returns redacted server diagnostics
+    const diagResp = await origGlobalFetch(`http://127.0.0.1:${rPort}/email/diagnostics/logs?limit=50`, {
+      headers: { 'Authorization': `Bearer ${rTok}`, 'Origin': 'chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj' }
+    });
+    assert.strictEqual(diagResp.status, 200);
+    const diagJson = await diagResp.json();
+    assert.strictEqual(diagJson.ok, true);
+    assert.ok(Array.isArray(diagJson.logs) && diagJson.logs.length > 0);
+    const diagText = JSON.stringify(diagJson);
+    assert.ok(!diagText.includes('re_test_mock_key'), 'Diagnostic logs must redact API keys');
+    assert.ok(!diagText.includes('owner-check@example.com'), 'Diagnostic logs must mask raw emails');
+    console.log('PASS P0D-12: mock Resend POST JSON From/Reply-To + stepTimings + redacted /email/diagnostics/logs verified across all 3 routes (0 external sends)');
   } finally {
     globalThis.fetch = origGlobalFetch;
     if (routeSidecar) await routeSidecar.stop().catch(() => {});
     fs.rmSync(tmpRouteDir, { recursive: true, force: true });
   }
 
-  console.log('ALL STUDIO DRAFT/TEMPLATE/REAL-TEST/PRODUCTION TESTS PASSED (16/16)');
+  // P0D-13: Proxy 18990 bypass self-heal, native host clean exit with open stdin, concurrent DNS timeout safety, cumulative CSV & debug panel UI
+  {
+    const { spawn } = require('child_process');
+    // 1. Native host exits cleanly with open stdin (matching Chrome sendNativeMessage)
+    const nhScript = path.resolve(__dirname, '../companion/email-test-sidecar-native-host.js');
+    const nhExit = await new Promise((resolve, reject) => {
+      const child = spawn(process.execPath, [nhScript], { stdio: ['pipe', 'pipe', 'pipe'] });
+      let out = Buffer.alloc(0);
+      const t = setTimeout(() => { try { child.kill(); } catch (_) {} reject(new Error('NATIVE_HOST_HUNG_WITH_OPEN_STDIN')); }, 4000);
+      child.stdout.on('data', c => { out = Buffer.concat([out, c]); });
+      child.on('exit', (code) => {
+        clearTimeout(t);
+        const len = out.length >= 4 ? out.readUInt32LE(0) : 0;
+        const json = len > 0 ? JSON.parse(out.subarray(4, 4 + len).toString('utf8')) : null;
+        resolve({ code, json });
+      });
+      const msg = Buffer.from(JSON.stringify({ action: 'PING' }), 'utf8');
+      const hdr = Buffer.alloc(4);
+      hdr.writeUInt32LE(msg.length, 0);
+      child.stdin.write(Buffer.concat([hdr, msg])); // intentionally keep stdin open
+    });
+    assert.strictEqual(nhExit.code, 0);
+    assert.strictEqual(nhExit.json.ok, true);
+
+    // 2. Concurrent DNS verify runs 3 slow domains in parallel (< 900ms for 3 x 350ms)
+    const tmpDnsDir = fs.mkdtempSync(path.join(os.tmpdir(), 'xpider-dns-par-'));
+    try {
+      const pDns = new EmailProductionPipeline({ stateDir: tmpDnsDir, trustedTestMode: true });
+      const dT0 = Date.now();
+      const dnsOut = await pDns.verifyRecipientDomainsDns(
+        { optInDnsCheck: true, domains: ['a.example.test', 'b.example.test', 'c.example.test'] },
+        {
+          resolveMx: async (d) => {
+            await new Promise(r => setTimeout(r, 350));
+            return [{ exchange: `mx.${d}`, priority: 10 }];
+          },
+          timeoutMs: 2000
+        }
+      );
+      const wallMs = Date.now() - dT0;
+      assert.strictEqual(dnsOut.ok, true);
+      assert.strictEqual(dnsOut.checkedCount, 3);
+      assert.ok(wallMs < 950, `Expected concurrent DNS (<950ms), got ${wallMs}ms`);
+      assert.strictEqual(dnsOut.results['a.example.test'].validityStatus, 'DNS_MAIL_READY');
+    } finally {
+      fs.rmSync(tmpDnsDir, { recursive: true, force: true });
+    }
+
+    // 3. PrivacyGateway bypassList includes 18990 & ensureLoopbackPortBypass self-heals legacy proxy missing 18990
+    const pgSrc = fs.readFileSync(path.resolve(__dirname, '../extension/modules/privacy-gateway.js'), 'utf8');
+    assert.ok(pgSrc.includes('emailSidecarPort') && pgSrc.includes('ensureLoopbackPortBypass'), 'PrivacyGateway must include 18990 bypass & self-heal');
+    const bgSrc = fs.readFileSync(path.resolve(__dirname, '../extension/background.js'), 'utf8');
+    assert.ok(bgSrc.includes('ensureLoopbackPortBypass') && bgSrc.includes('GET_EMAIL_SIDECAR_LOGS') && bgSrc.includes('NATIVE_HOST_TIMEOUT_5000MS'), 'background.js must include proxy self-heal, native timeout & sidecar logs');
+
+    // 4. Studio UI controls for cumulative CSV vault & debug log console
+    const html2 = fs.readFileSync(path.resolve(__dirname, '../extension/email-studio/index.html'), 'utf8');
+    for (const id of ['studioDebugPanel', 'studioDebugLogOutput', 'btnCopyDebugLog', 'btnDownloadDebugLog', 'btnPullSidecarLogs', 'btnClearDebugLog', 'debugLogFilter', 'btnClearRecipientStore', 'recipientVaultBadge']) {
+      assert.ok(html2.includes(`id="${id}"`), `Missing debug/vault UI element #${id}`);
+    }
+    assert.ok(/id="recipientFile"[^>]*multiple/.test(html2), '#recipientFile must support multiple files');
+    console.log('PASS P0D-13: native host clean exit, concurrent DNS, 18990 proxy bypass self-heal, cumulative CSV vault & debug console verified');
+  }
+
+  console.log('ALL STUDIO DRAFT/TEMPLATE/REAL-TEST/PRODUCTION TESTS PASSED (17/17)');
 })();

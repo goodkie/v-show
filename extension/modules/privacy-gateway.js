@@ -2094,11 +2094,15 @@
             // '<-loopback>' MUST come FIRST, and explicit control-plane bypass rules MUST come AFTER it
             // as exceptions. If placed before '<-loopback>', '<-loopback>' subtracts and intercepts control calls with HTTP 502.
             const ctrlPort = this.config.relayControlPort || 18989;
+            const emailSidecarPort = Number(this.config.emailSidecarPort) || 18990;
             const fixturePort = 8088;
             const ctrlEntries = [
                 `127.0.0.1:${ctrlPort}`,
                 `localhost:${ctrlPort}`,
                 `[::1]:${ctrlPort}`,
+                `127.0.0.1:${emailSidecarPort}`,
+                `localhost:${emailSidecarPort}`,
+                `[::1]:${emailSidecarPort}`,
                 `127.0.0.1:${fixturePort}`,
                 `localhost:${fixturePort}`,
                 `[::1]:${fixturePort}`
@@ -2175,6 +2179,65 @@
                         reject(vErr);
                     }
                 });
+            });
+        }
+
+        /**
+         * Self-heal active extension-managed fixed_servers proxy when a local sidecar port (e.g. 18990)
+         * is missing from bypassList after '<-loopback>'. Prevents Chrome from routing localhost:18990
+         * through Privacy Relay (18988) -> upstream residential proxy (HTTP 403 / hang).
+         */
+        async ensureLoopbackPortBypass(port = 18990) {
+            const p = Number(port);
+            if (!Number.isInteger(p) || p < 1024 || p > 65535) return { patched: false, reason: 'INVALID_PORT' };
+            if (typeof chrome === 'undefined' || !chrome.proxy || !chrome.proxy.settings) {
+                return { patched: false, reason: 'PROXY_API_UNAVAILABLE' };
+            }
+            return new Promise((resolve) => {
+                try {
+                    chrome.proxy.settings.get({ incognito: false }, (details) => {
+                        if (chrome.runtime && chrome.runtime.lastError) {
+                            return resolve({ patched: false, reason: chrome.runtime.lastError.message });
+                        }
+                        if (!details || details.levelOfControl !== 'controlled_by_this_extension') {
+                            return resolve({ patched: false, reason: 'NOT_CONTROLLED_BY_EXTENSION', levelOfControl: details?.levelOfControl || 'unknown' });
+                        }
+                        const val = details.value;
+                        if (!val || val.mode !== 'fixed_servers' || !val.rules) {
+                            return resolve({ patched: false, reason: 'NOT_FIXED_SERVERS', mode: val?.mode || 'none' });
+                        }
+                        const curBypass = Array.isArray(val.rules.bypassList) ? [...val.rules.bypassList] : [];
+                        const needed = [`127.0.0.1:${p}`, `localhost:${p}`, `[::1]:${p}`];
+                        const hasSubtract = curBypass.includes('<-loopback>');
+                        const loopbackIdx = curBypass.indexOf('<-loopback>');
+                        const missingOrMisordered = needed.some(entry => {
+                            const idx = curBypass.indexOf(entry);
+                            return idx === -1 || (hasSubtract && idx < loopbackIdx);
+                        });
+                        if (!missingOrMisordered) {
+                            return resolve({ patched: false, reason: 'ALREADY_BYPASSED', bypassCount: curBypass.length });
+                        }
+                        const cleaned = curBypass.filter(r => r !== '<-loopback>' && !needed.includes(r));
+                        const nextBypass = hasSubtract
+                            ? ['<-loopback>', ...needed, ...cleaned]
+                            : [...needed, ...cleaned];
+                        const nextVal = {
+                            ...val,
+                            rules: {
+                                ...val.rules,
+                                bypassList: nextBypass
+                            }
+                        };
+                        chrome.proxy.settings.set({ value: nextVal, scope: 'regular' }, () => {
+                            if (chrome.runtime && chrome.runtime.lastError) {
+                                return resolve({ patched: false, reason: chrome.runtime.lastError.message });
+                            }
+                            resolve({ patched: true, port: p, bypassList: nextBypass });
+                        });
+                    });
+                } catch (err) {
+                    resolve({ patched: false, reason: err.message });
+                }
             });
         }
 

@@ -474,25 +474,288 @@ if(el('desktop'))el('desktop').onclick=()=>{if(el('preview'))el('preview').style
 if(el('mobile'))el('mobile').onclick=()=>{if(el('preview'))el('preview').style.width='min(360px,100%)'};
 render();
 
-function callBg(msg) {
+// === Real-Time Detailed Debug Logger (Copy / Save for Debugging, Auto-Redacted) ===
+const STUDIO_DEBUG_STORAGE_KEY = 'xpider_email_studio_debug_logs_v1';
+const STUDIO_DEBUG_MAX = 400;
+let studioDebugEntries = [];
+let studioDebugSeq = 0;
+
+function redactDebugVal(val, depth = 0) {
+  if (depth > 4) return '[TRUNCATED]';
+  if (val === null || val === undefined) return val;
+  if (typeof val === 'string') {
+    return val
+      .replace(/re_[A-Za-z0-9_-]{8,}/g, 're_[REDACTED]')
+      .replace(/AIza[A-Za-z0-9_-]{8,}/g, 'AIza[REDACTED]')
+      .replace(/gh[po]_[A-Za-z0-9_]{8,}/g, 'gh_[REDACTED]')
+      .replace(/Bearer\s+[A-Za-z0-9._-]{10,}/gi, 'Bearer [REDACTED]')
+      .slice(0, 500);
+  }
+  if (typeof val === 'number' || typeof val === 'boolean') return val;
+  if (Array.isArray(val)) return val.slice(0, 25).map(v => redactDebugVal(v, depth + 1));
+  if (typeof val === 'object') {
+    const out = {};
+    for (const [k, v] of Object.entries(val).slice(0, 28)) {
+      if (/^(sidecarToken|token|apiKey|password|secret|authorization)$/i.test(k)) {
+        out[k] = v ? '[REDACTED]' : '';
+      } else {
+        out[k] = redactDebugVal(v, depth + 1);
+      }
+    }
+    return out;
+  }
+  return String(val);
+}
+
+function saveDebugLogsSession() {
+  try {
+    if (typeof sessionStorage !== 'undefined') {
+      sessionStorage.setItem(STUDIO_DEBUG_STORAGE_KEY, JSON.stringify(studioDebugEntries.slice(-250)));
+    }
+  } catch (_) {}
+}
+
+function loadDebugLogsSession() {
+  try {
+    if (typeof sessionStorage !== 'undefined') {
+      const raw = sessionStorage.getItem(STUDIO_DEBUG_STORAGE_KEY);
+      if (raw) {
+        const arr = JSON.parse(raw);
+        if (Array.isArray(arr)) {
+          studioDebugEntries = arr.slice(-STUDIO_DEBUG_MAX);
+          studioDebugSeq = studioDebugEntries.reduce((m, e) => Math.max(m, Number(e.seq || 0)), 0);
+        }
+      }
+    }
+  } catch (_) {}
+}
+
+function formatDebugEntryLine(e) {
+  const detailStr = e.detail !== undefined && e.detail !== null
+    ? ' ' + (typeof e.detail === 'string' ? e.detail : JSON.stringify(e.detail))
+    : '';
+  return `[#${e.seq}] ${e.ts} [${e.level}][${e.category}] ${e.event}${detailStr}`;
+}
+
+function renderStudioDebugLogs() {
+  const outEl = el('studioDebugLogOutput');
+  const badgeEl = el('debugLogCountBadge');
+  const filterVal = el('debugLogFilter') ? el('debugLogFilter').value : 'ALL';
+  const filtered = studioDebugEntries.filter(e => {
+    if (filterVal === 'ALL') return true;
+    if (filterVal === 'ERROR') return e.level === 'ERROR' || e.level === 'WARN';
+    return e.category === filterVal;
+  });
+  if (badgeEl) badgeEl.textContent = `${filtered.length} / ${studioDebugEntries.length}건`;
+  if (outEl) {
+    outEl.textContent = filtered.length
+      ? filtered.map(formatDebugEntryLine).join('\n')
+      : '(선택된 필터에 해당하는 로그 없음)';
+    outEl.scrollTop = outEl.scrollHeight;
+  }
+}
+
+function studioDebugLog(level, category, event, detail = null) {
+  studioDebugSeq++;
+  const entry = {
+    seq: studioDebugSeq,
+    ts: new Date().toISOString(),
+    level: String(level || 'INFO').toUpperCase(),
+    category: String(category || 'UI').toUpperCase(),
+    event: String(event || 'EVENT'),
+    ...(detail !== null && detail !== undefined ? { detail: redactDebugVal(detail) } : {})
+  };
+  studioDebugEntries.push(entry);
+  if (studioDebugEntries.length > STUDIO_DEBUG_MAX) {
+    studioDebugEntries.splice(0, studioDebugEntries.length - STUDIO_DEBUG_MAX);
+  }
+  saveDebugLogsSession();
+  renderStudioDebugLogs();
+  return entry;
+}
+
+loadDebugLogsSession();
+if (typeof window !== 'undefined') {
+  window.addEventListener('error', (ev) => {
+    studioDebugLog('ERROR', 'UI', 'WINDOW_ERROR', { message: ev?.message || 'unknown', file: ev?.filename || '', line: ev?.lineno || 0 });
+  });
+  window.addEventListener('unhandledrejection', (ev) => {
+    const r = ev?.reason;
+    studioDebugLog('ERROR', 'UI', 'UNHANDLED_REJECTION', { message: r?.message || String(r || 'unknown') });
+  });
+}
+
+function callBg(msg, opts = {}) {
+  const action = String(msg?.action || 'UNKNOWN');
+  const defaultTimeoutMs = action === 'SEND_REAL_TEST_EMAIL'
+    ? 45000
+    : ((action === 'VERIFY_RECIPIENT_DOMAINS_DNS' || action === 'RUN_EMAIL_PRODUCTION_QUEUE' || action === 'START_SECOND_WAVE' || action === 'RECONCILE_CAMPAIGN_RESEND' || action === 'UPLOAD_EMAIL_IMAGE') ? 30000 : 20000);
+  const timeoutMs = Number.isFinite(opts.timeoutMs) ? opts.timeoutMs : defaultTimeoutMs;
+  const startedAt = Date.now();
+  const isNoisyPoll = action === 'GET_CAMPAIGN_PROGRESS' || action === 'GET_EMAIL_SIDECAR_LOGS';
+  if (!isNoisyPoll) {
+    studioDebugLog('INFO', 'BG', `REQ ${action}`, { port: msg?.sidecarPort || 18990, timeoutMs });
+  }
   return new Promise(res => {
+    let settled = false;
+    const finish = (out) => {
+      if (settled) return;
+      settled = true;
+      if (timer) clearTimeout(timer);
+      const elapsedMs = Math.max(0, Date.now() - startedAt);
+      const enriched = (out && typeof out === 'object') ? { ...out, clientElapsedMs: elapsedMs } : { ok: false, error: 'INVALID_BG_RESPONSE', clientElapsedMs: elapsedMs };
+      const failed = !enriched.ok;
+      if (failed || !isNoisyPoll) {
+        studioDebugLog(failed ? 'ERROR' : 'INFO', 'BG', `RES ${action}`, {
+          ok: Boolean(enriched.ok),
+          httpStatus: enriched.httpStatus || null,
+          elapsedMs,
+          timedOut: Boolean(enriched.timedOut),
+          error: enriched.error || null,
+          reason: enriched.data?.reason || enriched.reason || null,
+          proxyBypass: enriched.debugTrace?.proxyBypass || null,
+          tokenSource: enriched.debugTrace?.tokenSource || null,
+          nativePairingError: enriched.debugTrace?.nativePairingError || null,
+          nonJsonPreview: enriched.debugTrace?.nonJsonPreview || null
+        });
+      }
+      res(enriched);
+    };
+    const timer = setTimeout(() => {
+      finish({
+        ok: false,
+        timedOut: true,
+        error: `BG_MESSAGE_TIMEOUT (${action}, ${timeoutMs}ms)`,
+        message: `Background Service Worker 응답이 ${Math.round(timeoutMs / 1000)}초를 초과했습니다. 확장 프로그램 새로고침 후 다시 시도하고 디버그 로그를 복사해 주세요.`
+      });
+    }, timeoutMs);
     try {
       if (typeof chrome !== 'undefined' && chrome.runtime && typeof chrome.runtime.sendMessage === 'function') {
         chrome.runtime.sendMessage(msg, r => {
           if (chrome.runtime.lastError) {
-            res({ ok: false, error: chrome.runtime.lastError.message });
+            finish({ ok: false, error: chrome.runtime.lastError.message });
           } else {
-            res(r || { ok: false, error: 'NO_RESPONSE' });
+            finish(r || { ok: false, error: 'NO_RESPONSE' });
           }
         });
       } else {
-        res({ ok: false, error: 'CHROME_RUNTIME_NOT_AVAILABLE' });
+        finish({ ok: false, error: 'CHROME_RUNTIME_NOT_AVAILABLE' });
       }
     } catch (err) {
-      res({ ok: false, error: err.message });
+      finish({ ok: false, error: err.message });
     }
   });
 }
+
+async function buildFullDebugBundleText() {
+  const { sidecarPort, sidecarToken } = getSidecarConfig();
+  let sidecarSnap = null;
+  try {
+    const r = await callBg({ action: 'GET_EMAIL_SIDECAR_LOGS', sidecarPort, sidecarToken, limit: 120 }, { timeoutMs: 6000 });
+    sidecarSnap = r && r.ok ? r.data : { fetchError: r?.error || r?.data?.reason || `HTTP_${r?.httpStatus || 'ERR'}`, debugTrace: r?.debugTrace || null };
+  } catch (e) {
+    sidecarSnap = { fetchError: e?.message || 'EXCEPTION' };
+  }
+  const v = values();
+  const fp = formatStudioFromPreview(v);
+  const headerLines = [
+    '=== XPIDER EMAIL STUDIO DIAGNOSTIC DEBUG BUNDLE ===',
+    `GeneratedAt: ${new Date().toISOString()}`,
+    `UserAgent: ${typeof navigator !== 'undefined' ? navigator.userAgent : 'unknown'}`,
+    `SidecarPort: ${sidecarPort} | ExplicitTokenEntered: ${Boolean(sidecarToken)}`,
+    `FromPreview: ${fp.from} | SubjectLen: ${(v.subject || '').length} | ReplyToSet: ${Boolean(v.reply)}`,
+    `RealTestStatusUI: ${el('realTestStatus')?.textContent?.replace(/\s+/g, ' ').slice(0, 260) || '-'}`,
+    `DnsProgressUI: ${el('dnsProgress')?.textContent?.replace(/\s+/g, ' ').slice(0, 260) || '-'}`,
+    `ProdPreflightUI: ${el('prodPreflightStatus')?.textContent?.replace(/\s+/g, ' ').slice(0, 260) || '-'}`,
+    `VaultBadgeUI: ${el('recipientVaultBadge')?.textContent || '-'}`,
+    `MonitorSyncUI: ${el('monitorSyncBadge')?.textContent || '-'}`,
+    '',
+    '--- CLIENT STUDIO & BACKGROUND LOGS (LATEST 250) ---',
+    ...studioDebugEntries.slice(-250).map(formatDebugEntryLine),
+    '',
+    '--- SIDECAR SERVER SNAPSHOT & LOGS (REDACTED) ---',
+    sidecarSnap && Array.isArray(sidecarSnap.logs)
+      ? [
+          `PID=${sidecarSnap.pid} Port=${sidecarSnap.port} Build=${sidecarSnap.buildId} Uptime=${sidecarSnap.uptimeSeconds}s KeyStatus=${sidecarSnap.keyStatus}`,
+          `QueueSummary=${JSON.stringify(sidecarSnap.queueSummary?.counts || {})}`,
+          ...sidecarSnap.logs.map(l => `[S#${l.seq}] ${l.ts} [${l.level}][${l.category}] ${l.event}${l.detail ? ' ' + JSON.stringify(l.detail) : ''}`)
+        ].join('\n')
+      : JSON.stringify(sidecarSnap, null, 2),
+    '=== END DEBUG BUNDLE ==='
+  ];
+  return redactDebugVal(headerLines.join('\n')).slice(0, 120000);
+}
+
+if (el('debugLogFilter')) {
+  el('debugLogFilter').onchange = renderStudioDebugLogs;
+}
+if (el('btnClearDebugLog')) {
+  el('btnClearDebugLog').onclick = () => {
+    studioDebugEntries = [];
+    studioDebugSeq = 0;
+    saveDebugLogsSession();
+    renderStudioDebugLogs();
+    if (el('debugLogActionStatus')) el('debugLogActionStatus').textContent = '🧹 클라이언트 디버그 로그를 초기화했습니다.';
+  };
+}
+if (el('btnPullSidecarLogs')) {
+  el('btnPullSidecarLogs').onclick = async () => {
+    const st = el('debugLogActionStatus');
+    if (st) st.textContent = '⏳ Sidecar 서버 로그 불러오는 중...';
+    const { sidecarPort, sidecarToken } = getSidecarConfig();
+    const r = await callBg({ action: 'GET_EMAIL_SIDECAR_LOGS', sidecarPort, sidecarToken, limit: 80 }, { timeoutMs: 8000 });
+    if (!r || !r.ok || !r.data) {
+      studioDebugLog('ERROR', 'SIDECAR', 'PULL_LOGS_FAILED', { httpStatus: r?.httpStatus || null, error: r?.error || r?.data?.reason || 'UNKNOWN' });
+      if (st) st.textContent = `❌ Sidecar 로그 조회 실패: ${r?.data?.reason || r?.error || ('HTTP ' + (r?.httpStatus || '-'))}`;
+      return;
+    }
+    const logs = Array.isArray(r.data.logs) ? r.data.logs : [];
+    studioDebugLog('INFO', 'SIDECAR', 'SNAPSHOT_SYNCED', { pid: r.data.pid, uptimeSeconds: r.data.uptimeSeconds, keyStatus: r.data.keyStatus, serverLogCount: logs.length });
+    for (const sl of logs.slice(-30)) {
+      studioDebugLog(sl.level || 'INFO', 'SIDECAR', `[S#${sl.seq}] ${sl.category}:${sl.event}`, sl.detail || null);
+    }
+    if (st) st.textContent = `✅ Sidecar(PID ${r.data.pid}) 서버 로그 ${logs.length}건 동기화 완료.`;
+  };
+}
+if (el('btnCopyDebugLog')) {
+  el('btnCopyDebugLog').onclick = async () => {
+    const st = el('debugLogActionStatus');
+    if (st) st.textContent = '⏳ 전체 디버그 리포트(클라이언트 + Sidecar) 생성 및 복사 중...';
+    try {
+      const text = await buildFullDebugBundleText();
+      if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+        await navigator.clipboard.writeText(text);
+      } else {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+      }
+      if (st) st.textContent = `✅ 전체 디버그 리포트(${text.length}자)를 클립보드에 복사했습니다. 채팅창에 바로 붙여넣어 주세요!`;
+    } catch (err) {
+      if (st) st.textContent = `❌ 복사 실패: ${err.message} (대신 [💾 로그 파일 저장]을 이용해 주세요)`;
+    }
+  };
+}
+if (el('btnDownloadDebugLog')) {
+  el('btnDownloadDebugLog').onclick = async () => {
+    const st = el('debugLogActionStatus');
+    if (st) st.textContent = '⏳ 디버그 로그 파일 생성 중...';
+    try {
+      const text = await buildFullDebugBundleText();
+      const stamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+      download(`xpider-email-studio-debug-${stamp}.log`, 'text/plain;charset=utf-8', text);
+      if (st) st.textContent = `✅ 디버그 로그 파일 저장 완료 (xpider-email-studio-debug-${stamp}.log, ${text.length}자).`;
+    } catch (err) {
+      if (st) st.textContent = `❌ 저장 실패: ${err.message}`;
+    }
+  };
+}
+studioDebugLog('INFO', 'UI', 'STUDIO_BOOT', { hasChromeRuntime: Boolean(typeof chrome !== 'undefined' && chrome.runtime) });
 
 function getSidecarConfig() {
   const rawPort = el('sidecarPort') ? Number(el('sidecarPort').value) : 18990;
@@ -974,6 +1237,7 @@ if (el('btnRealTestSend')) {
     }
     const idempotencyKey = `xpider_realtest_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
     if (btn) btn.disabled = true;
+    studioDebugLog('INFO', 'SEND', 'REAL_TEST_START', { from: fp.from, subjectLen: subject.length, hasReplyTo: Boolean(v.reply), idempotencyKey });
     if (box) { box.className = 'status-box status-loading'; box.textContent = `⏳ 실제 Resend API(vivpr.pro)로 테스트 메일 1통 발송 중... (${rec} / From: ${fp.from})`; }
     try {
       const { sidecarPort, sidecarToken } = getSidecarConfig();
@@ -994,21 +1258,53 @@ if (el('btnRealTestSend')) {
           text: textFor(v),
           idempotencyKey
         }
-      });
+      }, { timeoutMs: 45000 });
       if (!r || !r.ok || !r.data?.ok) {
-        if (box) { box.className = 'status-box status-error'; box.textContent = `❌ 실제 테스트 발송 실패 (HTTP ${r?.httpStatus || '-'}): ${r?.data?.reason || r?.error || 'UNKNOWN'}`; }
+        const reason = r?.data?.reason || r?.error || 'UNKNOWN';
+        const timingTxt = r?.data?.stepTimings ? ` | 단계시간: ${JSON.stringify(r.data.stepTimings)}` : '';
+        const detailTxt = r?.data?.detail ? ` (${r.data.detail})` : '';
+        const elapsedTxt = r?.clientElapsedMs ? `${r.clientElapsedMs}ms` : '-';
+        studioDebugLog('ERROR', 'SEND', 'REAL_TEST_FAILED', {
+          httpStatus: r?.httpStatus || null,
+          reason,
+          detail: r?.data?.detail || null,
+          stepTimings: r?.data?.stepTimings || null,
+          timedOut: Boolean(r?.timedOut),
+          debugTrace: r?.debugTrace || null
+        });
+        if (box) {
+          box.className = 'status-box status-error';
+          box.textContent = [
+            `❌ 실제 테스트 발송 실패 (HTTP ${r?.httpStatus || '-'} · ${elapsedTxt}): ${reason}${detailTxt}`,
+            ...(timingTxt ? [`•${timingTxt}`] : []),
+            `• 조치: 하단 [🛠️ 실시간 상세 디버그 로그]에서 [📋 디버그 로그 복사]를 눌러 원인을 확인하거나 전달해 주세요.`
+          ].join('\n');
+        }
         return;
       }
       lastRealTestMsgId = r.data.providerMessageId;
+      studioDebugLog('INFO', 'SEND', 'REAL_TEST_ACCEPTED', {
+        providerMessageId: r.data.providerMessageId,
+        fromHeader: r.data.fromHeader || fp.from,
+        stepTimings: r.data.stepTimings || null,
+        elapsedMs: r.clientElapsedMs || null
+      });
       if (box) {
         box.className = 'status-box status-success';
+        const totalMs = r.data.stepTimings?.totalMs ?? r.clientElapsedMs;
         box.textContent = [
-          `✅ 실제 테스트 발송 접수됨 (상태: ${r.data.deliveryState || 'ACCEPTED'})`,
+          `✅ 실제 테스트 발송 접수됨 (상태: ${r.data.deliveryState || 'ACCEPTED'}${totalMs ? ` · ${totalMs}ms` : ''})`,
           `• 발신자(From): ${r.data.fromHeader || fp.from}${r.data.replyTo ? ` | Reply-To: ${r.data.replyTo}` : ''}`,
           `• Provider Message ID: ${r.data.providerMessageId}`,
           `• 수신자: ${r.data.maskedRecipient} | Idempotency-Key: ${r.data.idempotencyKey}`,
           `• 안내: ${r.data.note}`
         ].join('\n');
+      }
+    } catch (err) {
+      studioDebugLog('ERROR', 'SEND', 'REAL_TEST_EXCEPTION', { message: err?.message || String(err) });
+      if (box) {
+        box.className = 'status-box status-error';
+        box.textContent = `❌ 실제 테스트 발송 중 예외 발생: ${err?.message || String(err)} (하단 디버그 로그 복사 가능)`;
       }
     } finally {
       if (btn) btn.disabled = false;
@@ -1502,9 +1798,17 @@ function createBuiltinRecipientManager() {
   const PAGE_SIZE = 20;
   let originalRawCsv = '';
   let rawRows = [];
+  let importedFiles = [];
   let importMeta = { validCount: 0, duplicateCount: 0, invalidCount: 0 };
   let allValidRecipients = [];
   let recipients = [];
+
+  function updateRecipientVaultBadge() {
+    const b = el('recipientVaultBadge');
+    if (!b) return;
+    const fileNote = importedFiles.length ? ` · 파일 ${importedFiles.length}개` : '';
+    b.textContent = `📦 보관 리스트 누적: ${allValidRecipients.length}명${fileNote}`;
+  }
   let manualOverrides = {};
   let lastFilterResult = { retained: [], excluded: [], review: [], categoryCounts: {}, reasonCounts: {} };
   let queue = null;
@@ -1780,6 +2084,7 @@ function createBuiltinRecipientManager() {
       localStorage.setItem(KEY, JSON.stringify({
         originalRawCsv,
         rawRows,
+        importedFiles,
         importMeta,
         allValidRecipients,
         recipients,
@@ -1850,9 +2155,11 @@ function createBuiltinRecipientManager() {
       const d = JSON.parse(raw);
       originalRawCsv = typeof d.originalRawCsv === 'string' ? d.originalRawCsv : '';
       rawRows = Array.isArray(d.rawRows) ? d.rawRows : [];
+      importedFiles = Array.isArray(d.importedFiles) ? d.importedFiles : [];
       importMeta = d.importMeta && typeof d.importMeta === 'object' ? d.importMeta : { validCount: 0, duplicateCount: 0, invalidCount: 0 };
       allValidRecipients = Array.isArray(d.allValidRecipients) ? d.allValidRecipients : (Array.isArray(d.recipients) ? d.recipients : []);
       recipients = Array.isArray(d.recipients) ? d.recipients : [];
+      updateRecipientVaultBadge();
       manualOverrides = d.manualOverrides && typeof d.manualOverrides === 'object' ? d.manualOverrides : {};
       activityHistory = Array.isArray(d.activityHistory) ? d.activityHistory : [];
       if (d.workflowState && typeof d.workflowState === 'object') workflowState = d.workflowState;
@@ -1934,7 +2241,7 @@ function createBuiltinRecipientManager() {
     return { synced: false, error: 'SYNC_RETRY_EXHAUSTED' };
   }
 
-  function runRecipientImport(triggerSource, fileName) {
+  function runRecipientImport(triggerSource, fileName, options = {}) {
     importClickSeq++;
     const startedMs = Date.now();
     const btn = el('btnImportRecipients');
@@ -1947,43 +2254,121 @@ function createBuiltinRecipientManager() {
       }
       const RM = getActiveRM();
       const csvEl = el('recipientCsv');
-      const rawCsv = csvEl ? String(csvEl.value || '') : '';
+      const rawCsv = typeof options.rawCsvOverride === 'string'
+        ? options.rawCsvOverride
+        : (csvEl ? String(csvEl.value || '') : '');
+      const replaceMode = options.replace === true;
       if (!rawCsv.trim()) {
+        if (!replaceMode && allValidRecipients.length > 0) {
+          const keepTxt = `ℹ️ [입력란 비어 있음 · 기존 보관 리스트 유지] 현재 누적 보관된 수신자 ${allValidRecipients.length}명이 그대로 유지됩니다. 새 CSV를 붙여넣거나 파일을 선택해 추가하세요 (전체 초기화는 [🗑️ 보관 리스트 비우기] 버튼 사용).`;
+          lastImportStatus = { cls: 'status-idle', txt: keepTxt };
+          setRegion('importProgress', lastImportStatus.cls, lastImportStatus.txt);
+          say(lastImportStatus.cls, keepTxt);
+          studioDebugLog('INFO', 'CSV', 'IMPORT_EMPTY_KEEP_EXISTING', { existingCount: allValidRecipients.length });
+          updateRecipientVaultBadge();
+          renderWorkCenter();
+          return;
+        }
         originalRawCsv = '';
         rawRows = [];
+        importedFiles = [];
         importMeta = { validCount: 0, duplicateCount: 0, invalidCount: 0 };
         allValidRecipients = [];
         recipients = [];
         queue = null;
         workflowState.import = { state: 'FAILED', detail: 'EMPTY' };
         workflowState.dedupe = { state: 'SKIPPED', detail: '' };
-        lastImportStatus = { cls: 'status-blocked', txt: `⚠️ [CSV_EMPTY_INPUT · #${importClickSeq}] 수신자 CSV 입력란이 비어 있습니다. 이메일 목록(예: email,name)을 붙여넣거나 CSV 파일을 선택한 뒤 "가져오기 · 중복 제거"를 다시 클릭하세요.` };
+        lastImportStatus = { cls: 'status-blocked', txt: `⚠️ [CSV_EMPTY_INPUT · #${importClickSeq}] 수신자 CSV 입력란이 비어 있습니다. 이메일 목록(예: email,name)을 붙여넣거나 CSV 파일을 선택한 뒤 "➕ 가져오기 · 보관 리스트 누적"을 다시 클릭하세요.` };
         setRegion('importProgress', lastImportStatus.cls, lastImportStatus.txt);
         say(lastImportStatus.cls, lastImportStatus.txt);
         recordActivity('IMPORT', startedMs, 0, 0, 'CSV_EMPTY_INPUT', 'SKIPPED', '빈 CSV 입력');
+        updateRecipientVaultBadge();
         persist();
         renderWorkCenter();
         return;
       }
+
       const res = RM.importRecipients(rawCsv, { source: triggerSource || 'csv-import' });
-      originalRawCsv = rawCsv;
-      rawRows = parseRawCsvPreviewRows(rawCsv, res, RM);
-      importMeta = {
-        sourceRowCount: res.sourceRowCount || rawRows.length,
-        discoveredEmailCount: res.discoveredEmailCount || (res.valid.length + res.duplicates.length + res.invalid.length),
-        validCount: res.valid.length,
-        duplicateCount: res.duplicates.length,
-        invalidCount: res.invalid.length,
-        emptyEmailCount: res.emptyEmailCount || 0,
-        badEmailCount: res.badEmailCount || 0
-      };
-      allValidRecipients = res.valid;
+      const newParsedRows = parseRawCsvPreviewRows(rawCsv, res, RM);
+      const hadExisting = !replaceMode && allValidRecipients.length > 0;
+      const existingByEmail = new Map(
+        (hadExisting ? allValidRecipients : []).map(r => [String(r.email || '').trim().toLowerCase(), r])
+      );
+      let newlyAddedCount = 0;
+      let existingDupCount = 0;
+      const mergedList = hadExisting ? [...allValidRecipients] : [];
+      for (const item of res.valid) {
+        const key = String(item.email || '').trim().toLowerCase();
+        if (!key) continue;
+        if (existingByEmail.has(key)) {
+          existingDupCount++;
+          const prev = existingByEmail.get(key);
+          if (prev && !prev.name && item.name) prev.name = item.name;
+        } else {
+          existingByEmail.set(key, item);
+          mergedList.push(item);
+          newlyAddedCount++;
+        }
+      }
+
+      if (hadExisting) {
+        const priorRowsOffset = rawRows.length;
+        const taggedRows = newParsedRows.map((row, idx) => ({
+          ...row,
+          line: priorRowsOffset + idx + 1,
+          sourceFile: fileName || triggerSource || 'manual-append'
+        }));
+        rawRows = rawRows.concat(taggedRows);
+        if (rawCsv.trim() && originalRawCsv.trim() !== rawCsv.trim()) {
+          originalRawCsv = originalRawCsv ? `${originalRawCsv.replace(/\s+$/, '')}\n${rawCsv.trim()}` : rawCsv;
+        }
+        importMeta = {
+          sourceRowCount: (importMeta.sourceRowCount || 0) + (res.sourceRowCount || newParsedRows.length),
+          discoveredEmailCount: (importMeta.discoveredEmailCount || 0) + (res.discoveredEmailCount || (res.valid.length + res.duplicates.length + res.invalid.length)),
+          validCount: mergedList.length,
+          duplicateCount: (importMeta.duplicateCount || 0) + res.duplicates.length + existingDupCount,
+          invalidCount: (importMeta.invalidCount || 0) + res.invalid.length,
+          emptyEmailCount: (importMeta.emptyEmailCount || 0) + (res.emptyEmailCount || 0),
+          badEmailCount: (importMeta.badEmailCount || 0) + (res.badEmailCount || 0),
+          newlyAddedCount,
+          existingDupCount
+        };
+      } else {
+        originalRawCsv = rawCsv;
+        rawRows = newParsedRows.map(row => ({ ...row, sourceFile: fileName || triggerSource || 'initial' }));
+        importMeta = {
+          sourceRowCount: res.sourceRowCount || newParsedRows.length,
+          discoveredEmailCount: res.discoveredEmailCount || (res.valid.length + res.duplicates.length + res.invalid.length),
+          validCount: mergedList.length,
+          duplicateCount: res.duplicates.length,
+          invalidCount: res.invalid.length,
+          emptyEmailCount: res.emptyEmailCount || 0,
+          badEmailCount: res.badEmailCount || 0,
+          newlyAddedCount,
+          existingDupCount: 0
+        };
+      }
+
+      if (fileName) {
+        importedFiles.push({
+          name: fileName,
+          added: newlyAddedCount,
+          existingDup: existingDupCount,
+          inFileDup: res.duplicates.length,
+          invalid: res.invalid.length,
+          at: new Date().toISOString()
+        });
+        if (importedFiles.length > 50) importedFiles = importedFiles.slice(-50);
+      }
+
+      allValidRecipients = mergedList;
+      updateRecipientVaultBadge();
       filterStale = false;
       renderSmeFilterSummary(RM);
       const fOpts = getFilterOptions();
       recipients = (fOpts.smeOnlyMode && lastFilterResult && Array.isArray(lastFilterResult.retained))
         ? lastFilterResult.retained
-        : res.valid;
+        : allValidRecipients;
       queue = null;
       const inv = res.invalid.slice(0, 5).map(i => `L${i.line}:${i.reason}`).join(', ');
       const dupPreview = res.duplicates.slice(0, 5).map(d => `L${d.line}:${d.email}`).join(', ');
@@ -1991,7 +2376,7 @@ function createBuiltinRecipientManager() {
       const fbTag = RM.isBuiltinFallback ? ' · [RM_FALLBACK_ACTIVE]' : '';
       const srcTag = fileName ? `파일:${fileName}` : (triggerSource === 'button-click' ? '수동 클릭' : triggerSource);
 
-      if (res.valid.length === 0) {
+      if (allValidRecipients.length === 0) {
         workflowState.import = { state: 'SUCCESS', detail: `${rawRows.length}행` };
         workflowState.dedupe = { state: 'FAILED', detail: '유효 0명' };
         lastImportStatus = {
@@ -2001,46 +2386,92 @@ function createBuiltinRecipientManager() {
         setRegion('importProgress', lastImportStatus.cls, lastImportStatus.txt);
         say(lastImportStatus.cls, lastImportStatus.txt);
         recordActivity('IMPORT', startedMs, 0, rawRows.length, 'CSV_NO_VALID_RECIPIENTS', 'SKIPPED', `유효 0명 / 무효 ${res.invalid.length}`);
+        studioDebugLog('WARN', 'CSV', 'IMPORT_NO_VALID', { srcTag, invalid: res.invalid.length, inFileDup: res.duplicates.length });
         persist();
         renderWorkCenter();
         return;
       }
 
       workflowState.import = { state: 'SUCCESS', detail: `${rawRows.length}행` };
-      workflowState.dedupe = { state: 'SUCCESS', detail: `유효 ${res.valid.length}` };
+      workflowState.dedupe = { state: 'SUCCESS', detail: `누적 ${allValidRecipients.length}` };
       workflowState.filter = { state: fOpts.smeOnlyMode ? 'SUCCESS' : 'READY', detail: fOpts.smeOnlyMode ? `유지 ${lastFilterResult.retained.length}` : '' };
       activeTab = 'VALID';
       pageIndex = 0;
 
-      const localTxt = `✅ 유효 ${res.valid.length}명 · 중복 제거 ${res.duplicates.length} · 무효 ${res.invalid.length}${inv ? ' (' + inv + ')' : ''}\n• 집계 실행: #${importClickSeq} (${srcTag}${fbTag}) · 활성 대상: ${recipients.length}명 (중소기업 후보:${lastFilterResult.retained.length} · 제외:${lastFilterResult.excluded.length} · 확인필요:${lastFilterResult.review.length})\n• 수신 대상 미리보기: ${validPreview || '없음'}${dupPreview ? '\n• 중복 제외: ' + dupPreview : ''}`;
-      lastImportStatus = { cls: 'status-success', txt: localTxt + '\n• 로컬 가져오기 완료 · Sidecar 동기화 확인 중...' };
+      const filesSummary = importedFiles.length ? ` · 누적 파일 ${importedFiles.length}개 (${importedFiles.slice(-3).map(f => f.name).join(', ')})` : '';
+      const localTxt = `✅ 보관 리스트 누적 총 ${allValidRecipients.length}명 (이번 신규 +${newlyAddedCount}명 · 기존 중복 ${existingDupCount}명 · 파일내 중복 ${res.duplicates.length} · 무효 ${res.invalid.length}${inv ? ' (' + inv + ')' : ''})\n• 실행 #${importClickSeq} (${srcTag}${fbTag}${filesSummary}) · 활성 대상: ${recipients.length}명 (중소기업 후보:${lastFilterResult.retained.length} · 제외:${lastFilterResult.excluded.length} · 확인필요:${lastFilterResult.review.length})\n• 수신 대상 미리보기: ${validPreview || '없음'}${dupPreview ? '\n• 파일내 중복 제외: ' + dupPreview : ''}`;
+      lastImportStatus = { cls: 'status-success', txt: localTxt + '\n• 로컬 누적 보관 완료 · Sidecar 동기화 확인 중...' };
       setRegion('importProgress', lastImportStatus.cls, lastImportStatus.txt);
       say('status-success', localTxt);
-      recordActivity('IMPORT', startedMs, res.valid.length, rawRows.length, 'LOCAL_IMPORT_OK', 'PENDING', `유효 ${res.valid.length}명 (중복 ${res.duplicates.length}, 무효 ${res.invalid.length})`);
+      recordActivity('IMPORT', startedMs, allValidRecipients.length, rawRows.length, 'LOCAL_IMPORT_ACCUMULATED', 'PENDING', `신규 +${newlyAddedCount} / 기존중복 ${existingDupCount} / 총 ${allValidRecipients.length}명`);
+      studioDebugLog('INFO', 'CSV', 'IMPORT_ACCUMULATED', {
+        triggerSource,
+        fileName: fileName || null,
+        parsedValid: res.valid.length,
+        newlyAdded: newlyAddedCount,
+        existingDup: existingDupCount,
+        inFileDup: res.duplicates.length,
+        invalid: res.invalid.length,
+        totalStored: allValidRecipients.length,
+        fileCount: importedFiles.length
+      });
       persist();
       renderWorkCenter();
 
       syncSidecarRecipients().then(syncRes => {
-        const syncMsg = syncRes.synced ? 'Sidecar 동기화 성공' : `Sidecar 동기화 실패 (${syncRes.error || '오프라인/미연결'} — 로컬 작업 목록은 정상 보존됨)`;
-        lastImportStatus = { cls: 'status-success', txt: `${localTxt}\n• 로컬 가져오기 완료 / ${syncMsg}` };
+        const syncMsg = syncRes.synced ? 'Sidecar 동기화 성공' : `Sidecar 동기화 실패 (${syncRes.error || '오프라인/미연결'} — 로컬 누적 보관 목록은 정상 보존됨)`;
+        lastImportStatus = { cls: 'status-success', txt: `${localTxt}\n• 로컬 누적 보관 완료 / ${syncMsg}` };
         setRegion('importProgress', lastImportStatus.cls, lastImportStatus.txt);
-        recordActivity('SIDECAR_SYNC', Date.now(), res.valid.length, res.valid.length, syncRes.synced ? 'SYNC_OK' : 'SYNC_FAILED', syncRes.synced ? 'OK' : 'OFFLINE', syncMsg);
+        recordActivity('SIDECAR_SYNC', Date.now(), allValidRecipients.length, allValidRecipients.length, syncRes.synced ? 'SYNC_OK' : 'SYNC_FAILED', syncRes.synced ? 'OK' : 'OFFLINE', syncMsg);
+        studioDebugLog(syncRes.synced ? 'INFO' : 'WARN', 'CSV', 'SIDECAR_SYNC_RESULT', { synced: Boolean(syncRes.synced), totalStored: allValidRecipients.length, error: syncRes.error || null });
         persist();
       });
     } catch (err) {
       workflowState.import = { state: 'FAILED', detail: err.code || 'ERROR' };
       lastImportStatus = {
         cls: 'status-error',
-        txt: `❌ [${err.code || 'ERR_CSV_IMPORT_EXCEPTION'} · #${importClickSeq}] 가져오기 처리 중 오류가 발생했습니다: ${err.message}\n• 다시 시도 방법: CSV 입력값을 확인하거나 페이지를 새로고침한 뒤 "가져오기 · 중복 제거"를 다시 클릭하세요.`
+        txt: `❌ [${err.code || 'ERR_CSV_IMPORT_EXCEPTION'} · #${importClickSeq}] 가져오기 처리 중 오류가 발생했습니다: ${err.message}\n• 다시 시도 방법: CSV 입력값을 확인하거나 페이지를 새로고침한 뒤 "➕ 가져오기 · 보관 리스트 누적"을 다시 클릭하세요.`
       };
       setRegion('importProgress', lastImportStatus.cls, lastImportStatus.txt);
       say(lastImportStatus.cls, lastImportStatus.txt);
       recordActivity('IMPORT', startedMs, 0, 0, err.code || 'ERR_CSV_IMPORT_EXCEPTION', 'SKIPPED', err.message);
+      studioDebugLog('ERROR', 'CSV', 'IMPORT_EXCEPTION', { message: err?.message || String(err) });
       persist();
       renderWorkCenter();
     } finally {
       if (btn) btn.disabled = false;
     }
+  }
+
+  if (el('btnClearRecipientStore')) {
+    el('btnClearRecipientStore').onclick = () => {
+      if (allValidRecipients.length > 0 && typeof window.confirm === 'function') {
+        if (!window.confirm(`누적된 보낼 이메일 보관 리스트(${allValidRecipients.length}명)를 모두 비울까요?\n(비우기 후에는 새 리스트 파일을 열어 다시 누적할 수 있습니다.)`)) return;
+      }
+      originalRawCsv = '';
+      rawRows = [];
+      importedFiles = [];
+      importMeta = { validCount: 0, duplicateCount: 0, invalidCount: 0 };
+      allValidRecipients = [];
+      recipients = [];
+      manualOverrides = {};
+      lastFilterResult = { retained: [], excluded: [], review: [], categoryCounts: {}, reasonCounts: {} };
+      queue = null;
+      if (el('recipientCsv')) el('recipientCsv').value = '';
+      workflowState.import = { state: 'READY', detail: '' };
+      workflowState.dedupe = { state: 'READY', detail: '' };
+      workflowState.dns = { state: 'READY', detail: '' };
+      workflowState.filter = { state: 'READY', detail: '' };
+      lastImportStatus = { cls: 'status-idle', txt: '🗑️ [보관 리스트 비움 완료] 누적된 이메일 보관 리스트가 초기화되었습니다. 새 CSV 파일을 열어 추가하세요.' };
+      lastDnsStatus = { cls: 'status-idle', txt: '🔍 [DNS 검사 대기] 동의 체크박스 선택 후 "🔍 유효성 검사 (DNS MX/A)"를 클릭하세요.' };
+      setRegion('importProgress', lastImportStatus.cls, lastImportStatus.txt);
+      setRegion('dnsProgress', lastDnsStatus.cls, lastDnsStatus.txt);
+      say('status-idle', lastImportStatus.txt);
+      updateRecipientVaultBadge();
+      studioDebugLog('INFO', 'CSV', 'RECIPIENT_STORE_CLEARED', {});
+      persist();
+      renderWorkCenter();
+    };
   }
 
   if (el('btnImportRecipients')) {
@@ -2124,23 +2555,40 @@ function createBuiltinRecipientManager() {
         say('status-loading', loadingTxt);
 
         const { sidecarPort, sidecarToken } = getSidecarConfig();
+        studioDebugLog('INFO', 'DNS', 'VERIFY_DNS_START', { domainCount: domains.length, sampleDomains: domains.slice(0, 10), sidecarPort });
         const mergedMap = {};
         let transportFailed = false;
         let transportErrMsg = '';
         for (let i = 0; i < domains.length; i += 25) {
           const batch = domains.slice(i, i + 25);
+          const batchT0 = Date.now();
           const resp = await callBg({
             action: 'VERIFY_RECIPIENT_DOMAINS_DNS',
             sidecarPort,
             sidecarToken,
             payload: { optInDnsCheck: true, domains: batch }
-          });
+          }, { timeoutMs: 30000 });
           if (!resp || !resp.ok || !resp.data || !resp.data.results) {
             transportFailed = true;
-            transportErrMsg = (resp && (resp.data?.message || resp.error)) || `Sidecar(127.0.0.1:${sidecarPort}) 연결 실패`;
+            transportErrMsg = (resp && (resp.data?.reason || resp.data?.message || resp.error)) || `Sidecar(127.0.0.1:${sidecarPort}) 연결 실패 (HTTP ${resp?.httpStatus || '-'})`;
+            studioDebugLog('ERROR', 'DNS', 'VERIFY_DNS_BATCH_FAILED', {
+              batchIndex: Math.floor(i / 25),
+              batchSize: batch.length,
+              elapsedMs: Date.now() - batchT0,
+              httpStatus: resp?.httpStatus || null,
+              timedOut: Boolean(resp?.timedOut),
+              error: transportErrMsg,
+              debugTrace: resp?.debugTrace || null
+            });
             break;
           }
           Object.assign(mergedMap, resp.data.results);
+          studioDebugLog('INFO', 'DNS', 'VERIFY_DNS_BATCH_OK', {
+            batchIndex: Math.floor(i / 25),
+            checked: batch.length,
+            elapsedMs: Date.now() - batchT0,
+            sidecarTotalMs: resp.data.totalElapsedMs || null
+          });
           setRegion('dnsProgress', 'status-loading', `⏳ DNS(MX/A) 진행 중: ${Math.min(i + batch.length, domains.length)}/${domains.length} 도메인...`);
           await new Promise(r => setTimeout(r, 0));
         }
@@ -2316,13 +2764,17 @@ function createBuiltinRecipientManager() {
   if (el('recipientFile')) {
     el('recipientFile').onchange = async (ev) => {
       try {
-        const f = ev.target && ev.target.files && ev.target.files[0];
-        if (!f) return;
-        const text = await f.text();
-        if (el('recipientCsv')) el('recipientCsv').value = text;
+        const files = ev.target && ev.target.files ? Array.from(ev.target.files) : [];
+        if (!files.length) return;
+        for (const f of files) {
+          const text = await f.text();
+          if (el('recipientCsv')) el('recipientCsv').value = text;
+          studioDebugLog('INFO', 'CSV', 'FILE_OPENED', { fileName: f.name || 'selected.csv', bytes: f.size || text.length, existingVaultCount: allValidRecipients.length });
+          runRecipientImport('file-picker', f.name || 'selected.csv', { rawCsvOverride: text });
+        }
         ev.target.value = '';
-        runRecipientImport('file-picker', f.name || 'selected.csv');
       } catch (err) {
+        studioDebugLog('ERROR', 'CSV', 'FILE_READ_FAILED', { message: err?.message || String(err) });
         say('status-error', `❌ [ERR_FILE_READ_FAILED] CSV 파일 읽기 실패: ${err.message}`);
       }
     };

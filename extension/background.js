@@ -4224,29 +4224,75 @@ const _handleMainMessageInner = (request, sender, sendResponse) => {
         case 'SAVE_IMAGE_HOST_CONFIG':
         case 'UPLOAD_EMAIL_IMAGE':
         case 'GET_UNSUBSCRIBE_STATUS':
-        case 'SAVE_UNSUBSCRIBE_CONFIG': {
+        case 'SAVE_UNSUBSCRIBE_CONFIG':
+        case 'GET_EMAIL_SIDECAR_LOGS': {
             (async () => {
+                const bgT0 = Date.now();
                 const reqPort = Number(request.sidecarPort);
                 const ctrlPort = (Number.isInteger(reqPort) && reqPort >= 1024 && reqPort <= 65535) ? reqPort : 18990;
+                const pg = (typeof PrivacyGateway !== 'undefined' && PrivacyGateway.getInstance) ? PrivacyGateway.getInstance() : null;
+                let proxyBypassResult = { patched: false, reason: 'SKIPPED' };
+                const ensureBypassSafe = async () => {
+                    if (!pg || typeof pg.ensureLoopbackPortBypass !== 'function') return { patched: false, reason: 'NO_PG' };
+                    return await Promise.race([
+                        pg.ensureLoopbackPortBypass(ctrlPort).catch(e => ({ patched: false, reason: e?.message || 'BYPASS_ERR' })),
+                        new Promise(r => setTimeout(() => r({ patched: false, reason: 'BYPASS_CHECK_TIMEOUT' }), 2000))
+                    ]);
+                };
                 try {
+                    proxyBypassResult = await ensureBypassSafe();
                     const explicitToken = (typeof request.sidecarToken === 'string' && request.sidecarToken.trim()) ? request.sidecarToken.trim() : null;
+                    let tokenSource = explicitToken ? 'explicit_input' : 'none';
+                    let nativePairingError = null;
                     const pairTok = async (forceRefresh = false) => {
-                        if (!forceRefresh && globalThis.__xpiderPairedSidecarToken) return globalThis.__xpiderPairedSidecarToken;
-                        if (!chrome?.runtime?.sendNativeMessage) return null;
+                        if (!forceRefresh && globalThis.__xpiderPairedSidecarToken) {
+                            tokenSource = 'memory_cache';
+                            return globalThis.__xpiderPairedSidecarToken;
+                        }
+                        if (!chrome?.runtime?.sendNativeMessage) {
+                            nativePairingError = 'NATIVE_MESSAGING_API_UNAVAILABLE';
+                            return null;
+                        }
                         return await new Promise((resolve) => {
-                            chrome.runtime.sendNativeMessage('com.xpider.email_sidecar', { action: 'GET_SIDECAR_TOKEN' }, (res) => {
-                                if (!chrome.runtime.lastError && res && res.ok && typeof res.token === 'string' && res.token.trim().length >= 16) {
-                                    globalThis.__xpiderPairedSidecarToken = res.token.trim();
-                                    return resolve(globalThis.__xpiderPairedSidecarToken);
-                                }
+                            let settled = false;
+                            const timer = setTimeout(() => {
+                                if (settled) return;
+                                settled = true;
+                                nativePairingError = 'NATIVE_HOST_TIMEOUT_5000MS';
                                 resolve(null);
-                            });
+                            }, 5000);
+                            try {
+                                chrome.runtime.sendNativeMessage('com.xpider.email_sidecar', { action: 'GET_SIDECAR_TOKEN' }, (res) => {
+                                    if (settled) return;
+                                    settled = true;
+                                    clearTimeout(timer);
+                                    if (chrome.runtime.lastError) {
+                                        nativePairingError = chrome.runtime.lastError.message || 'NATIVE_HOST_ERROR';
+                                        return resolve(null);
+                                    }
+                                    if (res && res.ok && typeof res.token === 'string' && res.token.trim().length >= 16) {
+                                        globalThis.__xpiderPairedSidecarToken = res.token.trim();
+                                        tokenSource = 'native_messaging';
+                                        return resolve(globalThis.__xpiderPairedSidecarToken);
+                                    }
+                                    nativePairingError = (res && (res.error || res.message)) || 'PAIRING_FAILED';
+                                    resolve(null);
+                                });
+                            } catch (nmErr) {
+                                if (!settled) {
+                                    settled = true;
+                                    clearTimeout(timer);
+                                    nativePairingError = nmErr?.message || 'NATIVE_HOST_THROW';
+                                    resolve(null);
+                                }
+                            }
                         });
                     };
                     let token = explicitToken || await pairTok(false);
                     const isPost = request.action === 'SYNC_EMAIL_PRODUCTION_RECIPIENTS' || request.action === 'RUN_EMAIL_PRODUCTION_QUEUE' || request.action === 'STOP_EMAIL_PRODUCTION_QUEUE' || request.action === 'SEND_REAL_TEST_EMAIL' || request.action === 'RECONCILE_CAMPAIGN_RESEND' || request.action === 'PREVIEW_SECOND_WAVE' || request.action === 'START_SECOND_WAVE' || request.action === 'SAVE_GEMINI_COPY_API_KEY' || request.action === 'TEST_GEMINI_COPY_CONNECTION' || request.action === 'REQUEST_EMAIL_COPY_SUGGESTION' || request.action === 'VERIFY_RECIPIENT_DOMAINS_DNS' || request.action === 'SAVE_IMAGE_HOST_CONFIG' || request.action === 'UPLOAD_EMAIL_IMAGE' || request.action === 'SAVE_UNSUBSCRIBE_CONFIG';
                     const cid = encodeURIComponent(String(request.campaignId || 'default'));
                     const cutoff = encodeURIComponent(String(request.cutoffHours ?? 24));
+                    const logLimit = Math.max(10, Math.min(300, Number(request.limit || 150)));
                     const routeMap = {
                         GET_EMAIL_PRODUCTION_PREFLIGHT: '/email/production/preflight',
                         SYNC_EMAIL_PRODUCTION_RECIPIENTS: '/email/production/import',
@@ -4270,30 +4316,102 @@ const _handleMainMessageInner = (request, sender, sendResponse) => {
                         SAVE_IMAGE_HOST_CONFIG: '/email/images/host/config',
                         UPLOAD_EMAIL_IMAGE: '/email/images/upload',
                         GET_UNSUBSCRIBE_STATUS: '/email/unsubscribe/status',
-                        SAVE_UNSUBSCRIBE_CONFIG: '/email/unsubscribe/config'
+                        SAVE_UNSUBSCRIBE_CONFIG: '/email/unsubscribe/config',
+                        GET_EMAIL_SIDECAR_LOGS: `/email/diagnostics/logs?limit=${logLimit}`
                     };
                     const url = `http://127.0.0.1:${ctrlPort}${routeMap[request.action]}`;
-                    const doFetch = async (tok) => fetch(url, {
-                        method: isPost ? 'POST' : 'GET',
-                        headers: {
-                            ...(isPost ? { 'Content-Type': 'application/json' } : {}),
-                            ...(tok ? { 'Authorization': `Bearer ${tok}` } : {})
-                        },
-                        ...(isPost ? { body: JSON.stringify(request.payload || {}) } : {})
-                    });
+                    const timeoutMs = request.action === 'SEND_REAL_TEST_EMAIL'
+                        ? 35000
+                        : ((request.action === 'VERIFY_RECIPIENT_DOMAINS_DNS' || request.action === 'RUN_EMAIL_PRODUCTION_QUEUE' || request.action === 'RECONCILE_CAMPAIGN_RESEND' || request.action === 'START_SECOND_WAVE' || request.action === 'REQUEST_EMAIL_COPY_SUGGESTION' || request.action === 'UPLOAD_EMAIL_IMAGE') ? 25000 : 15000);
+                    const doFetch = async (tok) => {
+                        const ctrl = new AbortController();
+                        const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+                        try {
+                            return await fetch(url, {
+                                method: isPost ? 'POST' : 'GET',
+                                headers: {
+                                    ...(isPost ? { 'Content-Type': 'application/json' } : {}),
+                                    ...(tok ? { 'Authorization': `Bearer ${tok}` } : {})
+                                },
+                                ...(isPost ? { body: JSON.stringify(request.payload || {}) } : {}),
+                                signal: ctrl.signal
+                            });
+                        } finally {
+                            clearTimeout(timer);
+                        }
+                    };
                     let resp = await doFetch(token);
                     if (resp.status === 401 && !explicitToken) {
                         globalThis.__xpiderPairedSidecarToken = null;
                         token = await pairTok(true);
                         if (token) resp = await doFetch(token);
                     }
-                    const ct = String(resp.headers.get('content-type') || '');
-                    const data = ct.includes('text/csv')
-                        ? { csvText: await resp.text().catch(() => '') }
-                        : await resp.json().catch(() => ({}));
-                    sendResponse({ ok: resp.ok, httpStatus: resp.status, data });
+                    let ct = String(resp.headers.get('content-type') || '');
+                    let rawText = '';
+                    let data = {};
+                    if (ct.includes('text/csv')) {
+                        data = { csvText: await resp.text().catch(() => '') };
+                    } else {
+                        rawText = await resp.text().catch(() => '');
+                        try { data = rawText ? JSON.parse(rawText) : {}; } catch (_) { data = {}; }
+                    }
+                    // Self-heal once if response looks like proxy interception (HTTP 403 text/plain Access denied or 502 LOCAL_SIDECAR_ROUTED_VIA_PROXY_18988)
+                    const looksProxyIntercepted = (
+                        (resp.status === 403 && !ct.includes('application/json') && /access denied|restricted target/i.test(rawText)) ||
+                        (resp.status === 502 && data && data.reason === 'LOCAL_SIDECAR_ROUTED_VIA_PROXY_18988')
+                    );
+                    if (looksProxyIntercepted) {
+                        proxyBypassResult = await ensureBypassSafe();
+                        if (proxyBypassResult && proxyBypassResult.patched) {
+                            resp = await doFetch(token);
+                            ct = String(resp.headers.get('content-type') || '');
+                            rawText = ct.includes('text/csv') ? '' : await resp.text().catch(() => '');
+                            if (ct.includes('text/csv')) {
+                                data = { csvText: await resp.text().catch(() => '') };
+                            } else {
+                                try { data = rawText ? JSON.parse(rawText) : {}; } catch (_) { data = {}; }
+                            }
+                        } else {
+                            data = {
+                                ok: false,
+                                status: 'BLOCKED',
+                                reason: 'PROXY_INTERCEPTED_LOCAL_SIDECAR_18990',
+                                detail: rawText.slice(0, 200)
+                            };
+                        }
+                    }
+                    sendResponse({
+                        ok: resp.ok,
+                        httpStatus: resp.status,
+                        data,
+                        debugTrace: {
+                            action: request.action,
+                            url,
+                            httpStatus: resp.status,
+                            elapsedMs: Math.max(0, Date.now() - bgT0),
+                            proxyBypass: proxyBypassResult,
+                            tokenSource,
+                            ...(nativePairingError ? { nativePairingError } : {}),
+                            contentType: ct,
+                            ...(!resp.ok && rawText && !Object.keys(data).length ? { nonJsonPreview: rawText.slice(0, 200) } : {})
+                        }
+                    });
                 } catch (err) {
-                    sendResponse({ ok: false, error: err.message });
+                    const isTimeout = err && (err.name === 'AbortError' || /abort|timeout/i.test(err.message || ''));
+                    sendResponse({
+                        ok: false,
+                        timedOut: isTimeout,
+                        error: isTimeout ? `SIDECAR_FETCH_TIMEOUT (${request.action})` : (err?.message || 'FETCH_ERROR'),
+                        debugTrace: {
+                            action: request.action,
+                            ctrlPort,
+                            elapsedMs: Math.max(0, Date.now() - bgT0),
+                            proxyBypass: proxyBypassResult,
+                            timedOut: isTimeout,
+                            errorName: err?.name || 'Error',
+                            errorMessage: err?.message || String(err)
+                        }
+                    });
                 }
             })();
             return true;
@@ -4306,6 +4424,12 @@ const _handleMainMessageInner = (request, sender, sendResponse) => {
                 const ctrlPort = (Number.isInteger(reqPort) && reqPort >= 1024 && reqPort <= 65535) ? reqPort : 18990;
                 const extBuildId = (typeof BuildProvenance !== 'undefined' && BuildProvenance.BUILD_INFO && BuildProvenance.BUILD_INFO.buildId) || 'V7.0.0-OWNER-BETA-TEST-SEND-SIDECAR-20261113';
                 try {
+                    if (pg && typeof pg.ensureLoopbackPortBypass === 'function') {
+                        await Promise.race([
+                            pg.ensureLoopbackPortBypass(ctrlPort).catch(() => null),
+                            new Promise(r => setTimeout(r, 2000))
+                        ]);
+                    }
                     const hcCtrl = new AbortController();
                     const hcTimer = setTimeout(() => hcCtrl.abort(), 4000);
                     const healthResp = await fetch(`http://127.0.0.1:${ctrlPort}/health`, { method: 'GET', signal: hcCtrl.signal }).finally(() => clearTimeout(hcTimer));
@@ -4350,7 +4474,16 @@ const _handleMainMessageInner = (request, sender, sendResponse) => {
                             return { token: null, source: null, pairingError: 'NATIVE_MESSAGING_API_UNAVAILABLE' };
                         }
                         return await new Promise((resolve) => {
+                            let settled = false;
+                            const timer = setTimeout(() => {
+                                if (settled) return;
+                                settled = true;
+                                resolve({ token: null, source: null, pairingError: 'NATIVE_HOST_TIMEOUT_5000MS' });
+                            }, 5000);
                             chrome.runtime.sendNativeMessage('com.xpider.email_sidecar', { action: 'GET_SIDECAR_TOKEN' }, (res) => {
+                                if (settled) return;
+                                settled = true;
+                                clearTimeout(timer);
                                 if (chrome.runtime.lastError) {
                                     return resolve({ token: null, source: null, pairingError: chrome.runtime.lastError.message || 'NATIVE_HOST_UNAVAILABLE' });
                                 }

@@ -92,6 +92,52 @@ class EmailTestSidecar {
       stateDir: this.stateDir,
       trustedTestMode: this.trustedTestMode
     });
+    this.diagLogs = [];
+    this._diagSeq = 0;
+    this._recordDiag('INFO', 'SIDECAR', 'SIDECAR_INIT', { port: this.port, buildId: SIDECAR_BUILD_ID, pid: process.pid });
+  }
+
+  _redactDiagValue(val, depth = 0) {
+    if (depth > 4) return '[TRUNCATED]';
+    if (val === null || val === undefined) return val;
+    if (typeof val === 'string') {
+      return val
+        .replace(/re_[A-Za-z0-9_-]{8,}/g, 're_[REDACTED]')
+        .replace(/AIza[A-Za-z0-9_-]{8,}/g, 'AIza[REDACTED]')
+        .replace(/gh[po]_[A-Za-z0-9_]{8,}/g, 'gh_[REDACTED]')
+        .replace(/Bearer\s+[A-Za-z0-9._-]{10,}/gi, 'Bearer [REDACTED]')
+        .replace(/([A-Za-z0-9._%+-]{1,2})[A-Za-z0-9._%+-]*@([A-Za-z0-9.-]+\.[A-Za-z]{2,})/g, '$1***@$2')
+        .slice(0, 400);
+    }
+    if (typeof val === 'number' || typeof val === 'boolean') return val;
+    if (Array.isArray(val)) return val.slice(0, 20).map(v => this._redactDiagValue(v, depth + 1));
+    if (typeof val === 'object') {
+      const out = {};
+      for (const [k, v] of Object.entries(val).slice(0, 24)) {
+        if (/token|key|secret|password|authorization/i.test(k) && !/keyStatus|tokenSyncMs|hasResendKey/i.test(k)) {
+          out[k] = '[REDACTED]';
+        } else {
+          out[k] = this._redactDiagValue(v, depth + 1);
+        }
+      }
+      return out;
+    }
+    return String(val);
+  }
+
+  _recordDiag(level, category, event, detail = null) {
+    this._diagSeq = (this._diagSeq || 0) + 1;
+    const entry = {
+      seq: this._diagSeq,
+      ts: new Date().toISOString(),
+      level: String(level || 'INFO').toUpperCase(),
+      category: String(category || 'SIDECAR').toUpperCase(),
+      event: String(event || 'EVENT'),
+      ...(detail !== null && detail !== undefined ? { detail: this._redactDiagValue(detail) } : {})
+    };
+    this.diagLogs.push(entry);
+    if (this.diagLogs.length > 300) this.diagLogs.splice(0, this.diagLogs.length - 300);
+    return entry;
   }
 
   _loadOrCreateToken(explicitToken) {
@@ -325,7 +371,40 @@ class EmailTestSidecar {
           return;
         }
 
-        if (!this._checkBearer(req, res)) return;
+        if (!this._checkBearer(req, res)) {
+          this._recordDiag('WARN', 'AUTH', 'BEARER_REJECTED', { method: req.method, pathname, origin: req.headers.origin || null });
+          return;
+        }
+
+        const reqStartedAt = Date.now();
+        if (pathname !== '/email/diagnostics/logs') {
+          res.on('finish', () => {
+            this._recordDiag(
+              res.statusCode >= 500 ? 'ERROR' : (res.statusCode >= 400 ? 'WARN' : 'INFO'),
+              'HTTP',
+              `${req.method} ${pathname}`,
+              { statusCode: res.statusCode, elapsedMs: Math.max(0, Date.now() - reqStartedAt) }
+            );
+          });
+        }
+
+        if (pathname === '/email/diagnostics/logs' && req.method === 'GET') {
+          const limit = Math.max(10, Math.min(300, Number(urlObj.searchParams.get('limit') || 150)));
+          const hasKey = Boolean(this.resolveResendApiKey());
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({
+            ok: true,
+            pid: process.pid,
+            port: this.port,
+            buildId: SIDECAR_BUILD_ID,
+            uptimeSeconds: Math.floor((Date.now() - this.startTime) / 1000),
+            keyStatus: this.keyStatus || (hasKey ? 'FORMAT_VALID_KEY_PRESENT' : 'KEY_MISSING'),
+            queueSummary: this.pipeline.summarizeQueue(),
+            totalLogged: this._diagSeq,
+            logs: this.diagLogs.slice(-limit)
+          }));
+          return;
+        }
 
         if (pathname === '/email/test-send/status' && req.method === 'GET') {
           const hasKey = Boolean(this.resolveResendApiKey());
@@ -390,6 +469,15 @@ class EmailTestSidecar {
             try {
               const payload = raw ? JSON.parse(raw) : {};
               const out = await this.pipeline.verifyRecipientDomainsDns(payload);
+              const vals = out && out.results ? Object.values(out.results) : [];
+              this._recordDiag(out.ok ? 'INFO' : 'WARN', 'DNS', 'VERIFY_DOMAINS_DONE', {
+                ok: out.ok,
+                checkedCount: out.checkedCount || 0,
+                totalElapsedMs: out.totalElapsedMs || 0,
+                ready: vals.filter(v => v.validityStatus === 'DNS_MAIL_READY').length,
+                invalid: vals.filter(v => v.validityStatus === 'INVALID').length,
+                unknown: vals.filter(v => v.validityStatus === 'UNKNOWN').length
+              });
               res.writeHead(out.statusCode || (out.ok ? 200 : 400), { 'Content-Type': 'application/json' });
               res.end(JSON.stringify(out));
             } catch (err) {
@@ -831,6 +919,9 @@ class EmailTestSidecar {
                 return;
               }
 
+              const rtT0 = Date.now();
+              const stepTimings = {};
+              const consentT0 = Date.now();
               const consentRec = this.pipeline.consentLedger.recordConsent({
                 email: recipient,
                 name: 'Owner Real Test',
@@ -843,24 +934,31 @@ class EmailTestSidecar {
                 authorizationAt: consentRec.authorizationAt,
                 consentProofToken: consentRec.consentProofToken
               });
+              stepTimings.consentMs = Date.now() - consentT0;
               if (!consentOk) {
+                this._recordDiag('WARN', 'REAL_TEST', 'BLOCKED_CONSENT_PROOF_FAILED', { stepTimings });
                 res.writeHead(409, { 'Content-Type': 'application/json' });
-                res.end(JSON.stringify({ ok: false, status: 'BLOCKED', reason: 'CONSENT_PROOF_FAILED' }));
+                res.end(JSON.stringify({ ok: false, status: 'BLOCKED', reason: 'CONSENT_PROOF_FAILED', stepTimings }));
                 return;
               }
 
+              const supT0 = Date.now();
               const syncRes = await this.pipeline.syncRemoteSuppressions({ baseUrl: publicUnsubBase, syncToken });
+              stepTimings.suppressionSyncMs = Date.now() - supT0;
               if (!syncRes.ok) {
+                this._recordDiag('ERROR', 'REAL_TEST', 'BLOCKED_UNSUBSCRIBE_SYNC_UNAVAILABLE', { stepTimings, detail: syncRes.reason || null });
                 res.writeHead(503, { 'Content-Type': 'application/json' });
-                res.end(JSON.stringify({ ok: false, status: 'BLOCKED', reason: 'UNSUBSCRIBE_SYNC_UNAVAILABLE' }));
+                res.end(JSON.stringify({ ok: false, status: 'BLOCKED', reason: 'UNSUBSCRIBE_SYNC_UNAVAILABLE', detail: syncRes.reason || null, stepTimings }));
                 return;
               }
               if (this.pipeline.isRecipientSuppressed(recipient)) {
+                this._recordDiag('WARN', 'REAL_TEST', 'BLOCKED_RECIPIENT_SUPPRESSED', { stepTimings });
                 res.writeHead(409, { 'Content-Type': 'application/json' });
-                res.end(JSON.stringify({ ok: false, status: 'BLOCKED', reason: 'RECIPIENT_SUPPRESSED' }));
+                res.end(JSON.stringify({ ok: false, status: 'BLOCKED', reason: 'RECIPIENT_SUPPRESSED', stepTimings }));
                 return;
               }
 
+              const pfT0 = Date.now();
               const pf = await this.pipeline.evaluatePreflight({
                 hasResendKey: true,
                 apiKey: resolvedKey,
@@ -868,29 +966,45 @@ class EmailTestSidecar {
                 publicUnsubscribeHttpsVerified: true,
                 refreshProviderDomain: true
               });
+              stepTimings.preflightMs = Date.now() - pfT0;
               if (!pf.resendDomainConfig?.verified || !pf.dns?.allVerified) {
+                this._recordDiag('WARN', 'REAL_TEST', 'BLOCKED_DOMAIN_OR_DNS_UNVERIFIED', { stepTimings, reasons: pf.deliverabilityGate?.reasons || [] });
                 res.writeHead(409, { 'Content-Type': 'application/json' });
-                res.end(JSON.stringify({ ok: false, status: 'BLOCKED', reason: 'DOMAIN_OR_DNS_UNVERIFIED', blockingReasons: pf.deliverabilityGate?.reasons || [] }));
+                res.end(JSON.stringify({ ok: false, status: 'BLOCKED', reason: 'DOMAIN_OR_DNS_UNVERIFIED', blockingReasons: pf.deliverabilityGate?.reasons || [], stepTimings }));
                 return;
               }
 
               const campaignId = 'studio-real-test-' + new Date().toISOString().slice(0, 10);
               const unsub = this.pipeline.issueRecipientUnsubscribeHeaders(recipient, campaignId, publicUnsubBase);
               const recipientHash = crypto.createHash('sha256').update(recipient).digest('hex');
-              const regResp = await fetch(`${publicUnsubBase.replace(/\/+$/, '')}/api/sync/tokens`, {
-                method: 'POST',
-                headers: { 'Authorization': `Bearer ${syncToken}`, 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  tokenHash: unsub.tokenHash,
-                  recipientHash,
-                  campaignId,
-                  issuedAt: new Date().toISOString(),
-                  expiresAt: new Date(Date.now() + 365 * 86400000).toISOString()
-                })
-              });
-              if (!regResp.ok) {
+              const tokT0 = Date.now();
+              let regResp = null;
+              try {
+                regResp = await fetch(`${publicUnsubBase.replace(/\/+$/, '')}/api/sync/tokens`, {
+                  method: 'POST',
+                  headers: { 'Authorization': `Bearer ${syncToken}`, 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    tokenHash: unsub.tokenHash,
+                    recipientHash,
+                    campaignId,
+                    issuedAt: new Date().toISOString(),
+                    expiresAt: new Date(Date.now() + 365 * 86400000).toISOString()
+                  }),
+                  ...(typeof AbortSignal?.timeout === 'function' ? { signal: AbortSignal.timeout(15000) } : {})
+                });
+              } catch (tokErr) {
+                stepTimings.tokenSyncMs = Date.now() - tokT0;
+                const reason = /timeout|abort/i.test(tokErr?.message || '') ? 'UNSUBSCRIBE_TOKEN_SYNC_TIMEOUT' : 'UNSUBSCRIBE_TOKEN_SYNC_NETWORK_ERROR';
+                this._recordDiag('ERROR', 'REAL_TEST', reason, { stepTimings, error: tokErr?.message || '' });
                 res.writeHead(502, { 'Content-Type': 'application/json' });
-                res.end(JSON.stringify({ ok: false, status: 'BLOCKED', reason: `UNSUBSCRIBE_TOKEN_SYNC_HTTP_${regResp.status}` }));
+                res.end(JSON.stringify({ ok: false, status: 'BLOCKED', reason, detail: tokErr?.message || '', stepTimings }));
+                return;
+              }
+              stepTimings.tokenSyncMs = Date.now() - tokT0;
+              if (!regResp.ok) {
+                this._recordDiag('ERROR', 'REAL_TEST', `UNSUBSCRIBE_TOKEN_SYNC_HTTP_${regResp.status}`, { stepTimings });
+                res.writeHead(502, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ ok: false, status: 'BLOCKED', reason: `UNSUBSCRIBE_TOKEN_SYNC_HTTP_${regResp.status}`, stepTimings }));
                 return;
               }
 
@@ -903,33 +1017,51 @@ class EmailTestSidecar {
               const finalText = rawText.includes(unsub.url) ? rawText : `${rawText}\n\nUnsubscribe: ${unsub.url}`;
 
               this.pipeline._appendAudit({ type: 'REAL_TEST_SEND_STARTED', campaignId, idempotencyKey, fromDisplayName: fromRes.displayName });
-              const sendResp = await fetch('https://api.resend.com/emails', {
-                method: 'POST',
-                headers: {
-                  'Authorization': `Bearer ${resolvedKey}`,
-                  'Content-Type': 'application/json',
-                  'Idempotency-Key': idempotencyKey
-                },
-                body: JSON.stringify({
-                  from: fromRes.from,
-                  to: [recipient],
-                  subject,
-                  html: finalHtml,
-                  text: finalText,
-                  ...(replyRes.replyTo ? { reply_to: replyRes.replyTo } : {}),
-                  headers: unsub.headers
-                })
-              });
+              const resendT0 = Date.now();
+              let sendResp = null;
+              try {
+                sendResp = await fetch('https://api.resend.com/emails', {
+                  method: 'POST',
+                  headers: {
+                    'Authorization': `Bearer ${resolvedKey}`,
+                    'Content-Type': 'application/json',
+                    'Idempotency-Key': idempotencyKey
+                  },
+                  body: JSON.stringify({
+                    from: fromRes.from,
+                    to: [recipient],
+                    subject,
+                    html: finalHtml,
+                    text: finalText,
+                    ...(replyRes.replyTo ? { reply_to: replyRes.replyTo } : {}),
+                    headers: unsub.headers
+                  }),
+                  ...(typeof AbortSignal?.timeout === 'function' ? { signal: AbortSignal.timeout(20000) } : {})
+                });
+              } catch (resendErr) {
+                stepTimings.resendPostMs = Date.now() - resendT0;
+                stepTimings.totalMs = Date.now() - rtT0;
+                const reason = /timeout|abort/i.test(resendErr?.message || '') ? 'RESEND_API_TIMEOUT' : 'RESEND_API_NETWORK_ERROR';
+                this.pipeline._appendAudit({ type: 'REAL_TEST_SEND_FAILED', campaignId, idempotencyKey, error: resendErr?.message || reason });
+                this._recordDiag('ERROR', 'REAL_TEST', reason, { stepTimings, error: resendErr?.message || '' });
+                res.writeHead(502, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ ok: false, status: 'FAILED', reason, detail: resendErr?.message || '', stepTimings }));
+                return;
+              }
+              stepTimings.resendPostMs = Date.now() - resendT0;
+              stepTimings.totalMs = Date.now() - rtT0;
               const sendBody = await sendResp.json().catch(() => ({}));
               const parts = recipient.split('@');
               const maskedRecipient = `${parts[0].slice(0, 2)}***@${parts[1]}`;
               if (!sendResp.ok || !sendBody.id) {
                 this.pipeline._appendAudit({ type: 'REAL_TEST_SEND_FAILED', campaignId, idempotencyKey, status: sendResp.status, error: sendBody });
+                this._recordDiag('ERROR', 'REAL_TEST', 'RESEND_REJECTED', { status: sendResp.status, reason: sendBody.message || `RESEND_HTTP_${sendResp.status}`, stepTimings });
                 res.writeHead(502, { 'Content-Type': 'application/json' });
-                res.end(JSON.stringify({ ok: false, status: 'FAILED', reason: sendBody.message || `RESEND_HTTP_${sendResp.status}` }));
+                res.end(JSON.stringify({ ok: false, status: 'FAILED', reason: sendBody.message || `RESEND_HTTP_${sendResp.status}`, stepTimings }));
                 return;
               }
               this.pipeline._appendAudit({ type: 'REAL_TEST_SEND_ACCEPTED', campaignId, idempotencyKey, providerMessageId: sendBody.id, fromDisplayName: fromRes.displayName });
+              this._recordDiag('INFO', 'REAL_TEST', 'ACCEPTED', { providerMessageId: sendBody.id, fromDisplayName: fromRes.displayName, hasReplyTo: Boolean(replyRes.replyTo), stepTimings });
               res.writeHead(200, { 'Content-Type': 'application/json' });
               res.end(JSON.stringify({
                 ok: true,
@@ -941,9 +1073,11 @@ class EmailTestSidecar {
                 senderDisplayName: fromRes.displayName,
                 replyTo: replyRes.replyTo || null,
                 maskedRecipient,
+                stepTimings,
                 note: 'ACCEPTED는 Resend 서버 접수 상태이며, 실제 수신함 도착(DELIVERED) 여부는 상태 조회로 확인하세요.'
               }));
             } catch (err) {
+              this._recordDiag('ERROR', 'REAL_TEST', 'EXCEPTION', { error: err?.message || 'UNKNOWN' });
               res.writeHead(400, { 'Content-Type': 'application/json' });
               res.end(JSON.stringify({ ok: false, status: 'ERROR', reason: err.message }));
             }

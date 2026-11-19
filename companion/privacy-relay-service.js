@@ -3567,6 +3567,27 @@ class PrivacyRelayService {
     this.proxyServer = http.createServer((req, res) => {
       this.trafficStats.requestsProxied++;
 
+      // [Email Sidecar / Control-Plane Loopback Self-Protection]
+      // Never forward local Email Sidecar (18990) or Privacy Relay control plane (18989) to upstream proxies (Decodo/DO).
+      try {
+        const parsedReqUrl = new URL(String(req.url || ''), 'http://127.0.0.1');
+        const reqHost = String(parsedReqUrl.hostname || '').toLowerCase();
+        const reqPort = Number(parsedReqUrl.port || 80);
+        const isLoopbackHost = reqHost === '127.0.0.1' || reqHost === 'localhost' || reqHost === '::1' || reqHost === '[::1]';
+        if (isLoopbackHost && (reqPort === 18990 || reqPort === Number(this.controlPort || 18989))) {
+          this.trafficStats.failClosedDrops++;
+          this.log(`[LOCAL_SIDECAR_PROXY_GUARD] Blocked misrouted loopback request to ${reqHost}:${reqPort} (must bypass 18988)`);
+          res.writeHead(502, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({
+            ok: false,
+            status: 'BLOCKED',
+            reason: 'LOCAL_SIDECAR_ROUTED_VIA_PROXY_18988',
+            message: `로컬 Sidecar(${reqHost}:${reqPort}) 요청이 Privacy Relay 프록시(18988)로 잘못 라우팅되었습니다. 프록시 bypassList에 127.0.0.1:${reqPort}를 포함해야 합니다.`
+          }));
+          return;
+        }
+      } catch (_) {}
+
       // [R6.9G.10.3.7.1] Physical Router Security Gate Precedence & Freshness (Blocker 6)
       if (this.physicalGate && this.physicalGate.enabled) {
         const isReady = this.physicalGate.state.ready;

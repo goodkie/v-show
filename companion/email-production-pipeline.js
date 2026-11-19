@@ -2024,22 +2024,32 @@ class EmailProductionPipeline {
     const resolveMxFn = options.resolveMx || ((d) => dnsPromises.resolveMx(d));
     const resolve4Fn = options.resolve4 || ((d) => dnsPromises.resolve4(d));
     const timeoutMs = Number.isFinite(options.timeoutMs) ? options.timeoutMs : 2500;
+    const concurrency = Math.max(1, Math.min(10, Number(options.concurrency) || 5));
+    const overallStartedAt = Date.now();
 
-    const withTimeout = (promise) => Promise.race([
-      promise,
-      new Promise((_, rej) => setTimeout(() => {
-        const e = new Error('DNS_LOOKUP_TIMEOUT');
-        e.code = 'ETIMEOUT';
-        rej(e);
-      }, timeoutMs))
-    ]);
+    const withTimeout = (promise) => {
+      let timer = null;
+      const timeoutP = new Promise((_, rej) => {
+        timer = setTimeout(() => {
+          const e = new Error('DNS_LOOKUP_TIMEOUT');
+          e.code = 'ETIMEOUT';
+          rej(e);
+        }, timeoutMs);
+        if (timer && typeof timer.unref === 'function') timer.unref();
+      });
+      return Promise.race([
+        Promise.resolve(promise).finally(() => { if (timer) clearTimeout(timer); }),
+        timeoutP
+      ]);
+    };
 
     const results = {};
-    for (const domain of uniqueDomains) {
+    const checkOneDomain = async (domain) => {
+      const domStartedAt = Date.now();
       const cached = this.recipientDnsCache.get(domain);
       if (cached && (Date.now() - cached.cachedAt) < 600000 && !options.resolveMx) {
-        results[domain] = cached.value;
-        continue;
+        results[domain] = { ...cached.value, cached: true, elapsedMs: 0 };
+        return;
       }
       let out;
       try {
@@ -2118,14 +2128,25 @@ class EmailProductionPipeline {
           };
         }
       }
+      out.elapsedMs = Math.max(0, Date.now() - domStartedAt);
       this.recipientDnsCache.set(domain, { cachedAt: Date.now(), value: out });
       results[domain] = out;
-    }
+    };
+
+    let nextIdx = 0;
+    const workers = Array.from({ length: Math.min(concurrency, uniqueDomains.length) }, async () => {
+      while (nextIdx < uniqueDomains.length) {
+        const domain = uniqueDomains[nextIdx++];
+        await checkOneDomain(domain);
+      }
+    });
+    await Promise.all(workers);
 
     return {
       ok: true,
       statusCode: 200,
       checkedCount: uniqueDomains.length,
+      totalElapsedMs: Math.max(0, Date.now() - overallStartedAt),
       results,
       disclaimer: 'DNS(MX/A) 확인은 도메인의 메일 서버 설정 여부만 확인하며, 개별 이메일 사서함(Inbox)의 실존 또는 수신 가능 여부를 보장하지 않습니다 (무단 SMTP RCPT 탐색 미수행).'
     };

@@ -151,7 +151,11 @@ async function main() {
     try { await ensureLocalSidecarRunning(msg); } catch (_) {}
   }
   const resp = handleNativeRequest(msg);
-  process.stdout.write(encodeNativeMessage(resp));
+  const outBuf = encodeNativeMessage(resp);
+  process.stdout.write(outBuf, () => {
+    try { process.stdin.pause(); } catch (_) {}
+    process.exit(0);
+  });
 }
 
 if (require.main === module) {
