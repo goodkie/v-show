@@ -18,6 +18,7 @@ const { EmailProductionPipeline } = require('./email-production-pipeline');
 const { CampaignAnalyticsEngine } = require('./email-campaign-analytics');
 const { EmailImageHostManager } = require('./email-image-host');
 const { injectUnsubscribeFooter } = require('./email-unsubscribe-server');
+const { formatResendSenderFrom } = require('./email-sender-identity');
 
 const DEFAULT_SIDECAR_PORT = 18990;
 const SIDECAR_BUILD_ID = 'V7.0.0-OWNER-BETA-TEST-SEND-SIDECAR-20261116-LOCKED17';
@@ -689,6 +690,7 @@ class EmailTestSidecar {
               const runOut = await this.pipeline.runQueue({
                 mode: 'LIVE_PRODUCTION',
                 subject: String(p.subject || '').trim(),
+                senderName: String(p.senderName || '').trim(),
                 html: String(p.html || ''),
                 text: String(p.text || ''),
                 baseUrl: publicUnsubBase,
@@ -889,7 +891,7 @@ class EmailTestSidecar {
                   'Idempotency-Key': idempotencyKey
                 },
                 body: JSON.stringify({
-                  from: 'XPIDER <noreply@vivpr.pro>',
+                  from: formatResendSenderFrom(payload.senderName),
                   to: [recipient],
                   subject,
                   html: finalHtml,
