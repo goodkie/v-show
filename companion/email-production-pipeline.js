@@ -19,7 +19,7 @@ const { ResendWebhookIntake, signSvixPayload, PRODUCTION_WEBHOOK_ENDPOINT_STATUS
 const deliverabilityPolicy = require('./email-deliverability-v2-policy');
 const { writeProtectedSecretFile, verifyWindowsDacl } = require('./email-test-sidecar-set-key');
 const RM = require('../extension/email-studio/recipient-manager');
-const { formatResendSenderFrom } = require('./email-sender-identity');
+const { validateAndFormatSenderFrom, sanitizeReplyTo } = require('./vivpr-sender-identity');
 
 const DOMAIN = 'vivpr.pro';
 const GEMINI_API_BASE = 'https://generativelanguage.googleapis.com/v1beta';
@@ -1005,7 +1005,37 @@ class EmailProductionPipeline {
     return this.summarizeQueue();
   }
 
-  async _validateRunQueueGates({ mode = 'DRY_RUN', baseUrl = 'http://127.0.0.1:18990', hasResendKey = false, apiKey = null, ownerExplicitApproval = false, publicUnsubscribeHttpsVerified = false, syncToken = null, syncFetchImpl = null } = {}) {
+  async _validateRunQueueGates({ mode = 'DRY_RUN', baseUrl = 'http://127.0.0.1:18990', hasResendKey = false, apiKey = null, ownerExplicitApproval = false, publicUnsubscribeHttpsVerified = false, syncToken = null, syncFetchImpl = null, senderDisplayName = '', senderName = '', company = '', brand = '', replyTo = '' } = {}) {
+    const fromCheck = validateAndFormatSenderFrom({
+      displayName: senderDisplayName,
+      fallbackBusinessNames: [senderName, company, brand],
+      verifiedEmail: `noreply@${DOMAIN}`
+    });
+    if (!fromCheck.ok) {
+      return {
+        ok: false,
+        status: 'BLOCKED',
+        mode,
+        reason: fromCheck.reason,
+        blockingReasons: [fromCheck.reason],
+        koreanReason: '발신자 표시 이름에 허용되지 않는 제어 문자(CR/LF 등)가 포함되어 안전 차단되었습니다.',
+        summary: this.summarizeQueue()
+      };
+    }
+    if (replyTo) {
+      const rtCheck = sanitizeReplyTo(replyTo);
+      if (!rtCheck.ok) {
+        return {
+          ok: false,
+          status: 'BLOCKED',
+          mode,
+          reason: rtCheck.reason,
+          blockingReasons: [rtCheck.reason],
+          koreanReason: '회신 이메일(Reply-To) 형식이 유효하지 않거나 헤더 인젝션 문자가 감지되어 안전 차단되었습니다.',
+          summary: this.summarizeQueue()
+        };
+      }
+    }
     if (mode === 'LIVE_PRODUCTION') {
       const isPublicHttpsUnsub = /^https:\/\/(?!127\.0\.0\.1|localhost\b)[a-z0-9.-]+\.[a-z]{2,}/i.test(String(baseUrl || ''));
       if (!isPublicHttpsUnsub) {
@@ -1148,7 +1178,15 @@ class EmailProductionPipeline {
     };
   }
 
-  async _runQueueLoop({ mode = 'DRY_RUN', senderName = '', subject = '', html = '', text = '', baseUrl = 'http://127.0.0.1:18990', maxAttempts = 2, hasResendKey = false, apiKey = null, ownerExplicitApproval = false, publicUnsubscribeHttpsVerified = false, syncToken = null, syncFetchImpl = null } = {}) {
+  async _runQueueLoop({ mode = 'DRY_RUN', senderDisplayName = '', senderName = '', company = '', brand = '', replyTo = '', subject = '', html = '', text = '', baseUrl = 'http://127.0.0.1:18990', maxAttempts = 2, hasResendKey = false, apiKey = null, ownerExplicitApproval = false, publicUnsubscribeHttpsVerified = false, syncToken = null, syncFetchImpl = null } = {}) {
+    const senderFromRes = validateAndFormatSenderFrom({
+      displayName: senderDisplayName,
+      fallbackBusinessNames: [senderName, company, brand],
+      verifiedEmail: `noreply@${DOMAIN}`
+    });
+    const resolvedFromHeader = senderFromRes.ok ? senderFromRes.from : `${DOMAIN} <noreply@${DOMAIN}>`;
+    const replyToRes = sanitizeReplyTo(replyTo);
+    const resolvedReplyTo = replyToRes.ok ? replyToRes.replyTo : null;
     this.queue.stopped = false;
     this.queue.stopReason = null;
     this.queue.startedAt = this.queue.startedAt || new Date().toISOString();
@@ -1216,11 +1254,12 @@ class EmailProductionPipeline {
         this._appendAudit({ type: 'SEND_ATTEMPT_STARTED', idempotencyKey: e.idempotencyKey, email: e.email, attempt: e.attempts });
         try {
           const res = await this.providerTransport({
-            from: `noreply@${DOMAIN}`,
+            from: resolvedFromHeader,
             to: e.email,
             subject,
             html: rendered.html,
             text: rendered.text,
+            ...(resolvedReplyTo ? { reply_to: resolvedReplyTo } : {}),
             idempotencyKey: e.idempotencyKey,
             headers: unsub.headers
           });
@@ -1354,11 +1393,12 @@ class EmailProductionPipeline {
                 'Idempotency-Key': e.idempotencyKey
               },
               body: JSON.stringify({
-                from: formatResendSenderFrom(senderName),
+                from: resolvedFromHeader,
                 to: [e.email],
                 subject,
                 html: rendered.html,
                 text: rendered.text,
+                ...(resolvedReplyTo ? { reply_to: resolvedReplyTo } : {}),
                 headers: unsub.headers
               }),
               ...(isLiveNetwork && typeof AbortSignal?.timeout === 'function' ? { signal: AbortSignal.timeout(30000) } : {})

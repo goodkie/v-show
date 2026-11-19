@@ -1,8 +1,8 @@
 
 'use strict';
-const ids=['kind','subject','preheader','brand','heading','body','image','alt','cta','link','reply','company','address','unsubscribe'];
+const ids=['kind','subject','preheader','brand','senderDisplayName','heading','body','image','alt','cta','link','reply','company','address','unsubscribe'];
 const el=id=>document.getElementById(id);
-const val=id=>el(id).value.trim();
+const val=id=>el(id)?el(id).value.trim():'';
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const url=s=>{try{const u=new URL(s);return u.protocol==='https:'?u.href:''}catch{return ''}};
 let previewFileUrl='';
@@ -192,9 +192,38 @@ function probeRemotePreviewImage(){
  };
  probe.src=httpsPic;
 }
+function formatStudioFromPreview(v){
+ const rawInputs=[v.senderDisplayName||'',v.company||'',v.brand||''];
+ if(rawInputs.some(x=>/[\r\n\x00]/.test(String(x)))){
+  return {ok:false,from:'(차단: 제어 문자 CR/LF 포함)',displayName:''};
+ }
+ const clean=s=>{
+  let t=String(s||'').replace(/[\x01-\x08\x0B\x0C\x0E-\x1F\x7F\u202a-\u202e\u2066-\u2069]/g,' ').replace(/<[^>]*>/g,' ').replace(/[<>]/g,' ').replace(/[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/ig,' ').replace(/\s+/g,' ').trim();
+  while(t.length>=2&&t.startsWith('"')&&t.endsWith('"')){t=t.slice(1,-1).replace(/\\"/g,'"').replace(/\\\\/g,'\\').trim();}
+  const chars=Array.from(t);
+  return chars.length>78?chars.slice(0,78).join('').trim():t;
+ };
+ let name=clean(v.senderDisplayName);
+ if(!name){
+  for(const cand of [v.company,v.brand]){
+   const c=clean(cand);
+   if(c&&c.toLowerCase()!=='vivpr.pro'){name=c;break;}
+  }
+ }
+ if(!name)name='vivpr.pro';
+ const formatted=(name!=='vivpr.pro'&&/["\\,;:.()[\]@?]/.test(name))?`"${name.replace(/\\/g,'\\\\').replace(/"/g,'\\"')}"`:name;
+ return {ok:true,from:`${formatted} <noreply@vivpr.pro>`,displayName:name};
+}
 function render(){
  try{
   const v=values();
+  const fromPrev=el('fromHeaderPreview');
+  if(fromPrev){
+   const fp=formatStudioFromPreview(v);
+   fromPrev.innerHTML=fp.ok
+    ? `실제 발송 From 헤더 미리보기: <code>${esc(fp.from)}</code>${v.reply?` · Reply-To: <code>${esc(v.reply)}</code>`:''} (인증 발신 주소 <code>noreply@vivpr.pro</code> 유지)`
+    : `<span style="color:#b91c1c;">⚠️ ${esc(fp.from)}</span>`;
+  }
   if(el('preview'))el('preview').srcdoc=htmlFor(v,true);
   updateImageDiagnostics(v);
   const checks=audit(v);const list=el('checkList');
@@ -596,7 +625,7 @@ async function triggerTestSend() {
 if (el('btnTestSend')) el('btnTestSend').onclick = triggerTestSend;
 if (el('btnCheckCompanion')) el('btnCheckCompanion').onclick = checkCompanionStatus;
 
-const DRAFT_FIELDS = ['kind', 'subject', 'preheader', 'brand', 'heading', 'body', 'image', 'alt', 'cta', 'link', 'reply', 'company', 'address', 'unsubscribe'];
+const DRAFT_FIELDS = ['kind', 'subject', 'preheader', 'brand', 'senderDisplayName', 'heading', 'body', 'image', 'alt', 'cta', 'link', 'reply', 'company', 'address', 'unsubscribe'];
 let studioDirty = false;
 let lastRealTestMsgId = null;
 
@@ -627,6 +656,10 @@ function applyStudioFieldValues(d) {
     if (el(f) && typeof d[f] === 'string') {
       el(f).value = d[f];
     }
+  }
+  if (el('senderDisplayName') && typeof d.senderDisplayName !== 'string') {
+    const biz = String(d.company || d.brand || '').trim();
+    el('senderDisplayName').value = (biz && biz.toLowerCase() !== 'vivpr.pro') ? biz : '';
   }
   importedHtmlLayout = typeof d.importedHtml === 'string' ? d.importedHtml : '';
   updateHtmlLayoutBanner();
@@ -934,13 +967,14 @@ if (el('btnRealTestSend')) {
       return;
     }
     const v = values();
-    const subject = (v.subject || '').trim() || `${(v.company || 'vivpr.pro').trim()} · Test Email`;
+    const fp = formatStudioFromPreview(v);
+    const subject = (v.subject || '').trim() || `${(fp.displayName || v.company || 'vivpr.pro').trim()} · Test Email`;
     if (typeof window.confirm === 'function') {
-      if (!window.confirm(`실제 수신함(${rec})으로 테스트 메일 1통을 발송할까요?\n제목: ${subject}`)) return;
+      if (!window.confirm(`실제 수신함(${rec})으로 테스트 메일 1통을 발송할까요?\n발신자(From): ${fp.from}\n제목: ${subject}`)) return;
     }
     const idempotencyKey = `xpider_realtest_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
     if (btn) btn.disabled = true;
-    if (box) { box.className = 'status-box status-loading'; box.textContent = `⏳ 실제 Resend API(vivpr.pro)로 테스트 메일 1통 발송 중... (${rec})`; }
+    if (box) { box.className = 'status-box status-loading'; box.textContent = `⏳ 실제 Resend API(vivpr.pro)로 테스트 메일 1통 발송 중... (${rec} / From: ${fp.from})`; }
     try {
       const { sidecarPort, sidecarToken } = getSidecarConfig();
       const r = await callBg({
@@ -951,7 +985,11 @@ if (el('btnRealTestSend')) {
           recipient: rec,
           ownerTestConsentConfirmed: true,
           subject,
+          senderDisplayName: v.senderDisplayName || '',
           senderName: v.company,
+          company: v.company || '',
+          brand: v.brand || '',
+          replyTo: v.reply || '',
           html: htmlFor(v),
           text: textFor(v),
           idempotencyKey
@@ -966,6 +1004,7 @@ if (el('btnRealTestSend')) {
         box.className = 'status-box status-success';
         box.textContent = [
           `✅ 실제 테스트 발송 접수됨 (상태: ${r.data.deliveryState || 'ACCEPTED'})`,
+          `• 발신자(From): ${r.data.fromHeader || fp.from}${r.data.replyTo ? ` | Reply-To: ${r.data.replyTo}` : ''}`,
           `• Provider Message ID: ${r.data.providerMessageId}`,
           `• 수신자: ${r.data.maskedRecipient} | Idempotency-Key: ${r.data.idempotencyKey}`,
           `• 안내: ${r.data.note}`
@@ -2441,7 +2480,11 @@ function createBuiltinRecipientManager() {
           mode: 'LIVE_PRODUCTION',
           background: true,
           subject: subjectVal,
+          senderDisplayName: v.senderDisplayName || '',
           senderName: v.company,
+          company: v.company || '',
+          brand: v.brand || '',
+          replyTo: v.reply || '',
           html: htmlFor(v),
           text: textFor(v)
         }
@@ -2622,7 +2665,11 @@ function createBuiltinRecipientManager() {
           waveCampaignId: p.waveCampaignId,
           cutoffHours,
           subject,
+          senderDisplayName: v.senderDisplayName || '',
           senderName: v.company,
+          company: v.company || '',
+          brand: v.brand || '',
+          replyTo: v.reply || '',
           html: htmlFor(v),
           text: textFor(v),
           messageKind: messageKind(),

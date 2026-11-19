@@ -18,7 +18,7 @@ const { EmailProductionPipeline } = require('./email-production-pipeline');
 const { CampaignAnalyticsEngine } = require('./email-campaign-analytics');
 const { EmailImageHostManager } = require('./email-image-host');
 const { injectUnsubscribeFooter } = require('./email-unsubscribe-server');
-const { formatResendSenderFrom } = require('./email-sender-identity');
+const { validateAndFormatSenderFrom, sanitizeReplyTo } = require('./vivpr-sender-identity');
 
 const DEFAULT_SIDECAR_PORT = 18990;
 const SIDECAR_BUILD_ID = 'V7.0.0-OWNER-BETA-TEST-SEND-SIDECAR-20261116-LOCKED17';
@@ -690,7 +690,11 @@ class EmailTestSidecar {
               const runOut = await this.pipeline.runQueue({
                 mode: 'LIVE_PRODUCTION',
                 subject: String(p.subject || '').trim(),
+                senderDisplayName: p.senderDisplayName || '',
                 senderName: String(p.senderName || '').trim(),
+                company: p.company || '',
+                brand: p.brand || '',
+                replyTo: p.replyTo || '',
                 html: String(p.html || ''),
                 text: String(p.text || ''),
                 baseUrl: publicUnsubBase,
@@ -790,6 +794,22 @@ class EmailTestSidecar {
                 res.end(JSON.stringify({ ok: false, status: 'BLOCKED', reason: 'SIMULATOR_ADDRESS_USE_SIMULATOR_BOX' }));
                 return;
               }
+              const fromRes = validateAndFormatSenderFrom({
+                displayName: payload.senderDisplayName || '',
+                fallbackBusinessNames: [payload.senderName || '', payload.company || '', payload.brand || ''],
+                verifiedEmail: 'noreply@vivpr.pro'
+              });
+              if (!fromRes.ok) {
+                res.writeHead(400, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ ok: false, status: 'BLOCKED', reason: fromRes.reason }));
+                return;
+              }
+              const replyRes = sanitizeReplyTo(payload.replyTo || '');
+              if (!replyRes.ok) {
+                res.writeHead(400, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ ok: false, status: 'BLOCKED', reason: replyRes.reason }));
+                return;
+              }
               const resolvedKey = this.resolveResendApiKey();
               if (!resolvedKey) {
                 res.writeHead(503, { 'Content-Type': 'application/json' });
@@ -875,14 +895,14 @@ class EmailTestSidecar {
               }
 
               const idempotencyKey = String(payload.idempotencyKey || `xpider_realtest_${Date.now()}_${crypto.randomBytes(6).toString('hex')}`).slice(0, 128);
-              const subject = String(payload.subject || '[XPIDER] Real Test Verification').trim().slice(0, 200);
-              const rawHtml = String(payload.html || '<p>XPIDER Real Test Verification</p>');
-              const rawText = String(payload.text || 'XPIDER Real Test Verification');
+              const subject = String(payload.subject || `${fromRes.displayName} · Test Email`).trim().slice(0, 200);
+              const rawHtml = String(payload.html || `<p>${fromRes.displayName} Real Test Verification</p>`);
+              const rawText = String(payload.text || `${fromRes.displayName} Real Test Verification`);
               const unsubFooterHtml = `<hr style="border:none;border-top:1px solid #ddd;margin:20px 0;" /><p style="font-size:12px;color:#555;">To unsubscribe: <a href="${unsub.url}">Unsubscribe</a></p>`;
               const finalHtml = rawHtml.includes(unsub.url) ? rawHtml : `${rawHtml}\n${unsubFooterHtml}`;
               const finalText = rawText.includes(unsub.url) ? rawText : `${rawText}\n\nUnsubscribe: ${unsub.url}`;
 
-              this.pipeline._appendAudit({ type: 'REAL_TEST_SEND_STARTED', campaignId, idempotencyKey });
+              this.pipeline._appendAudit({ type: 'REAL_TEST_SEND_STARTED', campaignId, idempotencyKey, fromDisplayName: fromRes.displayName });
               const sendResp = await fetch('https://api.resend.com/emails', {
                 method: 'POST',
                 headers: {
@@ -891,11 +911,12 @@ class EmailTestSidecar {
                   'Idempotency-Key': idempotencyKey
                 },
                 body: JSON.stringify({
-                  from: formatResendSenderFrom(payload.senderName),
+                  from: fromRes.from,
                   to: [recipient],
                   subject,
                   html: finalHtml,
                   text: finalText,
+                  ...(replyRes.replyTo ? { reply_to: replyRes.replyTo } : {}),
                   headers: unsub.headers
                 })
               });
@@ -908,7 +929,7 @@ class EmailTestSidecar {
                 res.end(JSON.stringify({ ok: false, status: 'FAILED', reason: sendBody.message || `RESEND_HTTP_${sendResp.status}` }));
                 return;
               }
-              this.pipeline._appendAudit({ type: 'REAL_TEST_SEND_ACCEPTED', campaignId, idempotencyKey, providerMessageId: sendBody.id });
+              this.pipeline._appendAudit({ type: 'REAL_TEST_SEND_ACCEPTED', campaignId, idempotencyKey, providerMessageId: sendBody.id, fromDisplayName: fromRes.displayName });
               res.writeHead(200, { 'Content-Type': 'application/json' });
               res.end(JSON.stringify({
                 ok: true,
@@ -916,6 +937,9 @@ class EmailTestSidecar {
                 deliveryState: 'ACCEPTED',
                 providerMessageId: sendBody.id,
                 idempotencyKey,
+                fromHeader: fromRes.from,
+                senderDisplayName: fromRes.displayName,
+                replyTo: replyRes.replyTo || null,
                 maskedRecipient,
                 note: 'ACCEPTED는 Resend 서버 접수 상태이며, 실제 수신함 도착(DELIVERED) 여부는 상태 조회로 확인하세요.'
               }));

@@ -13,7 +13,7 @@
   const DRAFTS_STORE_KEY = 'xpider_email_studio_drafts_v2';
   const TEMPLATES_STORE_KEY = 'xpider_email_studio_templates_v2';
   const DRAFT_FIELDS = Object.freeze([
-    'kind', 'subject', 'preheader', 'brand', 'heading', 'body',
+    'kind', 'subject', 'preheader', 'brand', 'senderDisplayName', 'heading', 'body',
     'image', 'alt', 'cta', 'link', 'reply', 'company', 'address', 'unsubscribe'
   ]);
   const SECRET_RE = /AIza[0-9A-Za-z_-]{12,}|re_[0-9A-Za-z_-]{12,}|Bearer\s+[A-Za-z0-9._-]{16,}/i;

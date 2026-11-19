@@ -154,7 +154,8 @@ function createMockWebStorage(initial = {}) {
     'btnSaveDraft', 'btnLoadDraft', 'draftSelect', 'draftNameInput', 'draftStatus',
     'btnImportTemplate', 'importTemplateFile', 'templateLibrarySelect', 'btnSaveToTemplateLibrary',
     'btnRealTestSend', 'realTestRecipient', 'realTestConsentCheck', 'realTestStatus', 'btnCheckRealTestStatus',
-    'btnProdSend', 'btnProdStop', 'btnCheckProdPreflight', 'prodGateBadge', 'prodQueueBadge'
+    'btnProdSend', 'btnProdStop', 'btnCheckProdPreflight', 'prodGateBadge', 'prodQueueBadge',
+    'senderDisplayName', 'fromHeaderPreview'
   ]) {
     assert.ok(html.includes(`id="${id}"`), `Missing UI element #${id}`);
   }
@@ -463,5 +464,258 @@ function createMockWebStorage(initial = {}) {
     fs.rmSync(tmpBulkDir, { recursive: true, force: true });
   }
 
-  console.log('ALL STUDIO DRAFT/TEMPLATE/REAL-TEST/PRODUCTION TESTS PASSED (14/14)');
+  // P0D-11: senderDisplayName & company persist/restore across drafts, templates, and standalone HTML import
+  {
+    const c2 = createMockChromeStorage();
+    const w2 = createMockWebStorage();
+    const saved = await studioStorage.saveDraft({
+      id: 'draft_sender_1',
+      name: 'StudioBerry Campaign',
+      data: {
+        kind: 'marketing',
+        subject: 'STUDIOBERRY PLUS 봄 시즌 안내',
+        brand: 'StudioBerry',
+        senderDisplayName: 'STUDIOBERRY PLUS',
+        company: 'STUDIOBERRY PLUS',
+        reply: 'support@vivpr.pro',
+        heading: '안녕하세요',
+        body: '본문 테스트입니다.'
+      }
+    }, { chromeStorage: c2, webStorage: w2 });
+    assert.strictEqual(saved.ok, true);
+    const loaded = await studioStorage.loadDraftsStore({ chromeStorage: c2, webStorage: w2 });
+    assert.strictEqual(loaded.store.items[0].data.senderDisplayName, 'STUDIOBERRY PLUS');
+    assert.strictEqual(loaded.store.items[0].data.company, 'STUDIOBERRY PLUS');
+    assert.strictEqual(loaded.store.items[0].data.reply, 'support@vivpr.pro');
+
+    const tpl = await studioStorage.saveTemplateToLibrary({
+      id: 'tpl_sender_ko',
+      name: 'Korean Sender Template',
+      data: {
+        kind: 'service',
+        subject: '안내',
+        senderDisplayName: '스튜디오베리 플러스',
+        company: '스튜디오베리 주식회사',
+        reply: 'help@vivpr.pro',
+        body: '본문'
+      }
+    }, { chromeStorage: c2, webStorage: w2 });
+    assert.strictEqual(tpl.ok, true);
+    const tplLoaded = await studioStorage.loadTemplatesLibrary({ chromeStorage: c2, webStorage: w2 });
+    assert.strictEqual(tplLoaded.store.items[0].data.senderDisplayName, '스튜디오베리 플러스');
+    assert.strictEqual(tplLoaded.store.items[0].data.company, '스튜디오베리 주식회사');
+
+    // Imported standalone HTML preserves existing senderDisplayName / company without overwriting them
+    const htmlParsed = studioStorage.importHtmlEmailFile('<!doctype html><html><head><title>Imported Title</title></head><body><h1>Hello</h1><p>Imported body text here.</p></body></html>');
+    assert.strictEqual(htmlParsed.subject, 'Imported Title');
+    assert.strictEqual(htmlParsed.senderDisplayName, undefined);
+    assert.strictEqual(htmlParsed.company, undefined);
+    console.log('PASS P0D-11: senderDisplayName & company survive draft/template save/reload and HTML import');
+  }
+
+  // P0D-12: End-to-end mock Resend POST JSON capture across ALL 3 live routes (real-test-send, queue/run LIVE_PRODUCTION, second-wave/start) with 0 external calls
+  const tmpRouteDir = fs.mkdtempSync(path.join(os.tmpdir(), 'xpider-sender-routes-'));
+  const origGlobalFetch = globalThis.fetch;
+  let routeSidecar = null;
+  try {
+    const capturedResendPosts = [];
+    globalThis.fetch = async (url, init = {}) => {
+      const s = String(url);
+      if (s.startsWith('http://127.0.0.1:')) {
+        return origGlobalFetch(url, init);
+      }
+      if (s.includes('/api/sync/suppressions')) {
+        return { ok: true, status: 200, json: async () => ({ ok: true, suppressions: [] }) };
+      }
+      if (s.includes('/api/sync/events')) {
+        return { ok: true, status: 200, json: async () => ({ ok: true, events: [] }) };
+      }
+      if (s.includes('/api/sync/tokens')) {
+        return { ok: true, status: 200, json: async () => ({ ok: true }) };
+      }
+      if (s.includes('api.resend.com/emails')) {
+        const bodyObj = init && init.body ? JSON.parse(String(init.body)) : {};
+        capturedResendPosts.push({ url: s, headers: init?.headers || {}, body: bodyObj });
+        return { ok: true, status: 200, json: async () => ({ id: 'mock_resend_' + capturedResendPosts.length }) };
+      }
+      return { ok: false, status: 500, json: async () => ({ message: 'UNEXPECTED_URL:' + s }) };
+    };
+
+    fs.writeFileSync(path.join(tmpRouteDir, '.unsubscribe_sync_token'), 'mock-sync-token-1234567890', 'utf8');
+    const rPort = 19995;
+    routeSidecar = new EmailTestSidecar({
+      port: rPort,
+      stateDir: tmpRouteDir,
+      trustedTestMode: true
+    });
+    routeSidecar.resolveResendApiKey = () => 're_test_mock_key_1234567890';
+    routeSidecar.pipeline.saveUnsubscribePublicConfig({ publicBaseUrl: 'https://unsubscribe.vivpr.pro' });
+    routeSidecar.pipeline.evaluatePreflight = async () => ({
+      resendDomainConfig: { verified: true },
+      dns: { allVerified: true },
+      deliverabilityGate: { action: 'REVIEW', reasons: [] }
+    });
+    await routeSidecar.start();
+    const rTok = fs.readFileSync(path.join(tmpRouteDir, '.email_sidecar_token'), 'utf8').trim();
+    const postJson = async (p, body) => {
+      const resp = await origGlobalFetch(`http://127.0.0.1:${rPort}${p}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${rTok}`,
+          'Origin': 'chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj'
+        },
+        body: JSON.stringify(body)
+      });
+      return { status: resp.status, json: await resp.json() };
+    };
+
+    // Route 1A: real-test-send ASCII + Reply-To
+    const rt1 = await postJson('/email/production/real-test-send', {
+      recipient: 'owner-check@example.com',
+      ownerTestConsentConfirmed: true,
+      senderDisplayName: 'STUDIOBERRY PLUS',
+      senderName: 'vivpr.pro',
+      company: 'STUDIOBERRY PLUS',
+      replyTo: 'support@vivpr.pro',
+      subject: 'STUDIOBERRY PLUS 안내',
+      html: '<p>Hello</p>',
+      text: 'Hello'
+    });
+    assert.strictEqual(rt1.status, 200);
+    assert.strictEqual(rt1.json.fromHeader, 'STUDIOBERRY PLUS <noreply@vivpr.pro>');
+    assert.strictEqual(rt1.json.replyTo, 'support@vivpr.pro');
+    assert.strictEqual(capturedResendPosts[0].body.from, 'STUDIOBERRY PLUS <noreply@vivpr.pro>');
+    assert.strictEqual(capturedResendPosts[0].body.reply_to, 'support@vivpr.pro');
+    assert.strictEqual(capturedResendPosts[0].body.headers['List-Unsubscribe-Post'], 'List-Unsubscribe=One-Click');
+
+    // Route 1B: real-test-send Unicode Korean + quotes/comma + blank fallback -> vivpr.pro
+    const rtKo = await postJson('/email/production/real-test-send', {
+      recipient: 'owner-ko@example.com',
+      ownerTestConsentConfirmed: true,
+      senderDisplayName: '스튜디오베리 플러스',
+      subject: '한글 발신자 테스트',
+      html: '<p>안녕</p>',
+      text: '안녕'
+    });
+    assert.strictEqual(rtKo.status, 200);
+    assert.strictEqual(capturedResendPosts[1].body.from, '스튜디오베리 플러스 <noreply@vivpr.pro>');
+
+    const rtQuote = await postJson('/email/production/real-test-send', {
+      recipient: 'owner-q@example.com',
+      ownerTestConsentConfirmed: true,
+      senderDisplayName: 'STUDIOBERRY "PLUS", Inc.',
+      subject: 'Quotes test',
+      html: '<p>Q</p>',
+      text: 'Q'
+    });
+    assert.strictEqual(rtQuote.status, 200);
+    assert.strictEqual(capturedResendPosts[2].body.from, '"STUDIOBERRY \\"PLUS\\", Inc." <noreply@vivpr.pro>');
+
+    const rtBlank = await postJson('/email/production/real-test-send', {
+      recipient: 'owner-blank@example.com',
+      ownerTestConsentConfirmed: true,
+      senderDisplayName: '',
+      senderName: '',
+      company: '',
+      brand: '',
+      subject: '',
+      html: '<p>Blank</p>',
+      text: 'Blank'
+    });
+    assert.strictEqual(rtBlank.status, 200);
+    assert.strictEqual(capturedResendPosts[3].body.from, 'vivpr.pro <noreply@vivpr.pro>');
+    assert.ok(!capturedResendPosts[3].body.subject.includes('XPIDER'), 'Fallback subject must not use XPIDER');
+
+    // Route 1C: CR/LF injection blocked with HTTP 400 and ZERO additional Resend calls
+    const countBeforeInj = capturedResendPosts.length;
+    const rtInj = await postJson('/email/production/real-test-send', {
+      recipient: 'owner-inj@example.com',
+      ownerTestConsentConfirmed: true,
+      senderDisplayName: 'Evil\r\nBcc: steal@attacker.test',
+      subject: 'Inj',
+      html: '<p>No</p>',
+      text: 'No'
+    });
+    assert.strictEqual(rtInj.status, 400);
+    assert.strictEqual(rtInj.json.reason, 'SENDER_DISPLAY_NAME_HEADER_INJECTION_BLOCKED');
+    assert.strictEqual(capturedResendPosts.length, countBeforeInj);
+
+    // Route 2: production queue/run LIVE_PRODUCTION
+    const impQ = await postJson('/email/production/import', {
+      csvText: 'email,name\nprod1@example.com,Prod One',
+      messageKind: 'marketing',
+      consentAttested: true,
+      lawfulBasis: 'EXPLICIT_OPT_IN',
+      jurisdiction: 'GLOBAL',
+      authorizationSource: 'owner_crm_verified',
+      campaignId: 'default'
+    });
+    assert.strictEqual(impQ.status, 200);
+    // Injection blocked fail-closed on queue/run with 0 Resend calls
+    const qInj = await postJson('/email/production/queue/run', {
+      mode: 'LIVE_PRODUCTION',
+      senderDisplayName: 'Bad\nHeader',
+      subject: 'Prod',
+      html: '<p>Hi</p>',
+      text: 'Hi'
+    });
+    assert.strictEqual(qInj.status, 409);
+    assert.strictEqual(qInj.json.reason, 'SENDER_DISPLAY_NAME_HEADER_INJECTION_BLOCKED');
+    assert.strictEqual(capturedResendPosts.length, countBeforeInj);
+
+    const qOk = await postJson('/email/production/queue/run', {
+      mode: 'LIVE_PRODUCTION',
+      apiKey: 're_test_mock_key_1234567890',
+      senderDisplayName: 'STUDIOBERRY PLUS',
+      senderName: 'STUDIOBERRY PLUS',
+      company: 'STUDIOBERRY PLUS',
+      replyTo: 'support@vivpr.pro',
+      subject: 'STUDIOBERRY PLUS 캠페인',
+      html: '<p>Prod body</p>',
+      text: 'Prod body'
+    });
+    assert.strictEqual(qOk.status, 200);
+    assert.strictEqual(qOk.json.sentInThisRun, 1);
+    assert.strictEqual(capturedResendPosts[4].body.from, 'STUDIOBERRY PLUS <noreply@vivpr.pro>');
+    assert.strictEqual(capturedResendPosts[4].body.reply_to, 'support@vivpr.pro');
+    assert.strictEqual(capturedResendPosts[4].body.headers['List-Unsubscribe-Post'], 'List-Unsubscribe=One-Click');
+
+    // Route 3: second-wave/start on delivered non-opened recipient
+    const deliveredMsgId = 'mock_resend_5';
+    const cryptoMod = require('crypto');
+    routeSidecar.analytics.recordEvent({
+      event_id: 'svix_route3_delivered_1',
+      type: 'email.delivered',
+      email_id: deliveredMsgId,
+      recipient_hashes: [cryptoMod.createHash('sha256').update('prod1@example.com').digest('hex')],
+      created_at: new Date(Date.now() - 48 * 3600 * 1000).toISOString()
+    });
+    const sw = await postJson('/email/campaigns/second-wave/start', {
+      parentCampaignId: 'default',
+      waveCampaignId: 'default-wave2-sender-test',
+      cutoffHours: 0,
+      apiKey: 're_test_mock_key_1234567890',
+      senderDisplayName: '스튜디오베리 플러스',
+      senderName: '스튜디오베리 플러스',
+      company: '스튜디오베리 플러스',
+      replyTo: 'support@vivpr.pro',
+      subject: '스튜디오베리 플러스 2차 안내',
+      html: '<p>Follow up</p>',
+      text: 'Follow up',
+      messageKind: 'marketing',
+      ownerConfirmed: true
+    });
+    assert.strictEqual(sw.status, 200);
+    assert.strictEqual(sw.json.sentInThisRun, 1);
+    assert.strictEqual(capturedResendPosts[5].body.from, '스튜디오베리 플러스 <noreply@vivpr.pro>');
+    assert.strictEqual(capturedResendPosts[5].body.reply_to, 'support@vivpr.pro');
+    console.log('PASS P0D-12: mock Resend POST JSON From/Reply-To verified across real-test-send, queue/run LIVE_PRODUCTION & second-wave/start (0 external sends)');
+  } finally {
+    globalThis.fetch = origGlobalFetch;
+    if (routeSidecar) await routeSidecar.stop().catch(() => {});
+    fs.rmSync(tmpRouteDir, { recursive: true, force: true });
+  }
+
+  console.log('ALL STUDIO DRAFT/TEMPLATE/REAL-TEST/PRODUCTION TESTS PASSED (16/16)');
 })();
