@@ -19,6 +19,7 @@ const { ResendWebhookIntake, signSvixPayload, PRODUCTION_WEBHOOK_ENDPOINT_STATUS
 const deliverabilityPolicy = require('./email-deliverability-v2-policy');
 const { writeProtectedSecretFile, verifyWindowsDacl } = require('./email-test-sidecar-set-key');
 const RM = require('../extension/email-studio/recipient-manager');
+const { formatResendSenderFrom } = require('./email-sender-identity');
 
 const DOMAIN = 'vivpr.pro';
 const GEMINI_API_BASE = 'https://generativelanguage.googleapis.com/v1beta';
@@ -1147,7 +1148,7 @@ class EmailProductionPipeline {
     };
   }
 
-  async _runQueueLoop({ mode = 'DRY_RUN', subject = '', html = '', text = '', baseUrl = 'http://127.0.0.1:18990', maxAttempts = 2, hasResendKey = false, apiKey = null, ownerExplicitApproval = false, publicUnsubscribeHttpsVerified = false, syncToken = null, syncFetchImpl = null } = {}) {
+  async _runQueueLoop({ mode = 'DRY_RUN', senderName = '', subject = '', html = '', text = '', baseUrl = 'http://127.0.0.1:18990', maxAttempts = 2, hasResendKey = false, apiKey = null, ownerExplicitApproval = false, publicUnsubscribeHttpsVerified = false, syncToken = null, syncFetchImpl = null } = {}) {
     this.queue.stopped = false;
     this.queue.stopReason = null;
     this.queue.startedAt = this.queue.startedAt || new Date().toISOString();
@@ -1353,7 +1354,7 @@ class EmailProductionPipeline {
                 'Idempotency-Key': e.idempotencyKey
               },
               body: JSON.stringify({
-                from: `XPIDER <noreply@${DOMAIN}>`,
+                from: formatResendSenderFrom(senderName),
                 to: [e.email],
                 subject,
                 html: rendered.html,
