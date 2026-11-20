@@ -1222,8 +1222,21 @@ class EmailTestSidecar {
             usage24h: this.gmailVault.getRolling24hUsage(),
             hygiene: supIdx.stats,
             queueSummary: this.gmailRunner.summarizeQueue(),
+            dashboard: this.gmailRunner.getTrueDashboard(),
+            activeResendCampaign: this.gmailRunner.hasActiveResendCampaign(),
             lastRunResult: this.gmailRunner.lastRunResult || null,
             complianceNotice: 'Gmail API 200 응답은 GMAIL_API_ACCEPTED만 의미하며 전달(DELIVERED)·수신함 도착(INBOX)·열람(OPENED)이나 계정 정지 면제를 보장하지 않습니다. 한도/차단 시 타 계정으로 자동 전환하지 않고 전체 캠페인이 일시 중지됩니다.'
+          }));
+          return;
+        }
+
+        if (pathname === '/email/gmail/dashboard' && req.method === 'GET') {
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({
+            ok: true,
+            provider: 'GMAIL',
+            dashboard: this.gmailRunner.getTrueDashboard(),
+            activeResendCampaign: this.gmailRunner.hasActiveResendCampaign()
           }));
           return;
         }
@@ -1291,11 +1304,18 @@ class EmailTestSidecar {
                 res.end(JSON.stringify(out));
                 return;
               }
+              if (pathname === '/email/gmail/hygiene/check') {
+                const report = await this.gmailRunner.checkDeliverabilityHygiene(payload);
+                this._recordDiag(report.ok ? 'INFO' : 'WARN', 'GMAIL_HYGIENE', report.status || 'CHECKED', { blockers: report.blockers.length, warnings: report.warnings.length });
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ ok: true, hygiene: report, dashboard: this.gmailRunner.getTrueDashboard() }));
+                return;
+              }
               if (pathname === '/email/gmail/queue/stop') {
                 const summary = this.gmailRunner.stopQueue(payload.reason || 'OWNER_STOPPED');
                 this._recordDiag('INFO', 'GMAIL_QUEUE', 'STOPPED', { counts: summary.counts });
                 res.writeHead(200, { 'Content-Type': 'application/json' });
-                res.end(JSON.stringify({ ok: true, status: 'STOPPED', summary }));
+                res.end(JSON.stringify({ ok: true, status: 'STOPPED', summary, dashboard: this.gmailRunner.getTrueDashboard() }));
                 return;
               }
               res.writeHead(404, { 'Content-Type': 'application/json' });

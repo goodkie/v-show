@@ -17,6 +17,13 @@ const crypto = require('node:crypto');
 const { GmailSendBlocked, rawGmailMime, selectAccount, sendViaGmailApi } = require('./gmail-sender-foundation');
 const { injectUnsubscribeFooter } = require('./email-unsubscribe-server');
 const { maskEmail, normalizeEmail } = require('./gmail-account-vault');
+const {
+  AdaptiveThrottleController,
+  buildDistributedSchedulePlan,
+  assessDeliverabilityHygiene,
+  buildTrueDashboard,
+  hasHeaderInjection
+} = require('./gmail-safe-delivery-engine');
 const RM = require('../extension/email-studio/recipient-manager');
 
 const PUBLIC_UNSUB_HOST = 'unsubscribe.vivpr.pro';
@@ -43,7 +50,7 @@ function ensurePhysicalAddressInFooter({ html = '', text = '', physicalAddress =
 }
 
 class GmailCampaignRunner {
-  constructor({ stateDir, pipeline, analytics, vault, trustedTestMode = false, fetchImpl = null, syncFetchImpl = null } = {}) {
+  constructor({ stateDir, pipeline, analytics, vault, trustedTestMode = false, fetchImpl = null, syncFetchImpl = null, nowFn = null, dnsResolver = null } = {}) {
     if (!stateDir) throw new Error('STATE_DIR_REQUIRED');
     if (!pipeline) throw new Error('PIPELINE_REQUIRED');
     if (!vault) throw new Error('GMAIL_VAULT_REQUIRED');
@@ -54,31 +61,50 @@ class GmailCampaignRunner {
     this.trustedTestMode = Boolean(trustedTestMode);
     this.fetchImpl = (this.trustedTestMode && typeof fetchImpl === 'function') ? fetchImpl : globalThis.fetch;
     this.syncFetchImpl = (this.trustedTestMode && typeof syncFetchImpl === 'function') ? syncFetchImpl : this.fetchImpl;
+    this.nowFn = (this.trustedTestMode && typeof nowFn === 'function')
+      ? nowFn
+      : (typeof vault.nowFn === 'function' ? () => vault.nowFn() : () => Date.now());
+    this.dnsResolver = (this.trustedTestMode && typeof dnsResolver === 'function') ? dnsResolver : null;
 
     this.queueFile = path.join(this.stateDir, '.email_gmail_queue.json');
     this._queueRunning = false;
     this._activeBgPromise = null;
     this.lastRunResult = null;
+    this.lastHygieneReport = null;
     this.queue = this._loadQueue();
+    this.throttle = AdaptiveThrottleController.fromJSON(this.queue.throttle || null, this.nowFn);
+  }
+
+  _emptyQueue() {
+    return {
+      provider: 'GMAIL',
+      campaignId: 'default',
+      sendingMode: 'SINGLE_ACCOUNT',
+      scheduleMode: 'DISTRIBUTED_MULTI_DAY',
+      selectedAccountIds: [],
+      messageKind: 'service',
+      lawfulBasis: 'EXPLICIT_OPT_IN',
+      jurisdiction: 'GLOBAL',
+      consentAttested: false,
+      replyTo: null,
+      physicalAddress: '',
+      entries: [],
+      stopped: false,
+      stopReason: null,
+      scheduledWait: false,
+      scheduledWaitReason: null,
+      enforcementPaused: false,
+      nextPermittedExecutionAt: null,
+      throttle: new AdaptiveThrottleController({}, this.nowFn).toJSON(),
+      schedulePlan: null,
+      startedAt: null,
+      finishedAt: null
+    };
   }
 
   _loadQueue() {
     if (!fs.existsSync(this.queueFile)) {
-      return {
-        provider: 'GMAIL',
-        campaignId: 'default',
-        sendingMode: 'SINGLE_ACCOUNT',
-        selectedAccountIds: [],
-        messageKind: 'service',
-        lawfulBasis: 'EXPLICIT_OPT_IN',
-        jurisdiction: 'GLOBAL',
-        consentAttested: false,
-        entries: [],
-        stopped: false,
-        stopReason: null,
-        startedAt: null,
-        finishedAt: null
-      };
+      return this._emptyQueue();
     }
     try {
       const q = JSON.parse(fs.readFileSync(this.queueFile, 'utf8'));
@@ -89,29 +115,94 @@ class GmailCampaignRunner {
           e.status = 'HALTED_RECONCILE_REQUIRED';
           e.reason = 'IN_FLIGHT_CRASH_RECONCILE_REQUIRED_FAIL_CLOSED';
           mutated = true;
+          // Count uncertain crashed in-flight send conservatively against rolling 1m/1h/24h quota
+          try {
+            const acct = e.assignedAccountId ? this.vault.getAccountById(e.assignedAccountId) : null;
+            if (acct) {
+              this.vault.recordQuotaEvent({
+                accountId: acct.id,
+                domain: acct.domain,
+                campaignId: q.campaignId || 'default',
+                recipientHash: e.recipientHash || '',
+                idempotencyKey: e.idempotencyKey || '',
+                status: 'IN_FLIGHT_UNKNOWN'
+              });
+            }
+          } catch (_) {}
         }
       }
       if (mutated) {
+        q.stopped = true;
+        q.stopReason = 'IN_FLIGHT_CRASH_RECONCILE_REQUIRED_FAIL_CLOSED';
+        q.nextPermittedExecutionAt = null;
         this._writeQueueAtomic(q);
       }
-      return q;
+      return { ...this._emptyQueue(), ...q };
     } catch (_) {
-      return {
-        provider: 'GMAIL',
-        campaignId: 'default',
-        sendingMode: 'SINGLE_ACCOUNT',
-        selectedAccountIds: [],
-        messageKind: 'service',
-        lawfulBasis: 'EXPLICIT_OPT_IN',
-        jurisdiction: 'GLOBAL',
-        consentAttested: false,
-        entries: [],
-        stopped: false,
-        stopReason: null,
-        startedAt: null,
-        finishedAt: null
-      };
+      return this._emptyQueue();
     }
+  }
+
+  hasActiveResendCampaign() {
+    if (this.pipeline._queueRunning) return true;
+    const rq = this.pipeline.queue;
+    if (!rq || !Array.isArray(rq.entries) || rq.entries.length === 0) return false;
+    return rq.entries.some(e => e && (e.status === 'PENDING' || e.status === 'SENDING'));
+  }
+
+  getSchedulePlan() {
+    const accountsWithUsage = this.vault.getInternalAccountsWithUsage();
+    return buildDistributedSchedulePlan({
+      entries: this.queue.entries || [],
+      accountsWithUsage,
+      vault: this.vault,
+      throttle: this.throttle,
+      nowMs: this.nowFn()
+    });
+  }
+
+  async checkDeliverabilityHygiene({
+    selectedAccountIds = null,
+    fromAddress = null,
+    replyTo = undefined,
+    physicalAddress = undefined,
+    baseUrlOverride = null,
+    dnsResolver = null
+  } = {}) {
+    const accountsWithUsage = this.vault.getInternalAccountsWithUsage();
+    const ids = Array.isArray(selectedAccountIds) && selectedAccountIds.length
+      ? selectedAccountIds
+      : (Array.isArray(this.queue.selectedAccountIds) ? this.queue.selectedAccountIds : []);
+    const unsubInfo = this._resolvePublicUnsubConfig();
+    const publicBase = (this.trustedTestMode && baseUrlOverride) ? String(baseUrlOverride).replace(/\/+$/, '') : unsubInfo.publicBase;
+    const supIndex = this.buildCrossProviderSuppressionIndex();
+    const report = await assessDeliverabilityHygiene({
+      accounts: accountsWithUsage,
+      selectedAccountIds: ids,
+      fromAddress,
+      replyTo: replyTo !== undefined ? replyTo : this.queue.replyTo,
+      physicalAddress: physicalAddress !== undefined ? physicalAddress : this.queue.physicalAddress,
+      publicUnsubBase: publicBase,
+      supStats: supIndex.stats,
+      dnsResolver: (this.trustedTestMode && typeof dnsResolver === 'function') ? dnsResolver : this.dnsResolver
+    });
+    this.lastHygieneReport = report;
+    return report;
+  }
+
+  getTrueDashboard({ queueRunning = undefined } = {}) {
+    const supIndex = this.buildCrossProviderSuppressionIndex();
+    const schedulePlan = this.getSchedulePlan();
+    return buildTrueDashboard({
+      queue: this.queue,
+      vault: this.vault,
+      supIndex,
+      throttle: this.throttle,
+      schedulePlan,
+      deliverabilityHygiene: this.lastHygieneReport,
+      queueRunning: queueRunning !== undefined ? Boolean(queueRunning) : this._queueRunning,
+      lastRunResult: this.lastRunResult
+    });
   }
 
   _writeQueueAtomic(qObj) {
@@ -260,6 +351,7 @@ class GmailCampaignRunner {
     optOutText = '',
     campaignId = 'default',
     sendingMode = 'SINGLE_ACCOUNT',
+    scheduleMode = 'DISTRIBUTED_MULTI_DAY',
     selectedAccountIds = [],
     messageKind = 'service',
     consentAttested = false,
@@ -267,10 +359,40 @@ class GmailCampaignRunner {
     jurisdiction = 'GLOBAL',
     authorizationSource = 'owner_csv_consent_attestation',
     authorizationAt = null,
-    proofRef = ''
+    proofRef = '',
+    replyTo = '',
+    physicalAddress = '',
+    providerSwitchConfirmed = false,
+    throttleConfig = null
   } = {}) {
+    if (this.hasActiveResendCampaign() && providerSwitchConfirmed !== true) {
+      return {
+        ok: false,
+        statusCode: 409,
+        status: 'BLOCKED',
+        reason: 'PROVIDER_SWITCH_CONFIRMATION_REQUIRED',
+        message: '진행 중이거나 대기 중인 Resend 캠페인이 있습니다. Resend ↔ Gmail 공급자 전환은 명시적 운영자 확인 후에만 허용됩니다 (자동 전환 금지).'
+      };
+    }
+
+    const rawReplyTo = String(replyTo || '').trim();
+    let normalizedReplyTo = null;
+    if (rawReplyTo) {
+      if (hasHeaderInjection(rawReplyTo) || !normalizeEmail(rawReplyTo)) {
+        return {
+          ok: false,
+          statusCode: 400,
+          status: 'BLOCKED',
+          reason: 'REPLY_TO_INVALID_OR_INJECTION',
+          message: 'Reply-To 주소가 올바르지 않거나 금지된 제어 문자(CR/LF)가 포함되었습니다.'
+        };
+      }
+      normalizedReplyTo = normalizeEmail(rawReplyTo);
+    }
+
     const cid = sanitizeCampaignId(campaignId);
     const mode = sendingMode === 'APPROVED_ACCOUNT_POOL' ? 'APPROVED_ACCOUNT_POOL' : 'SINGLE_ACCOUNT';
+    const resolvedScheduleMode = scheduleMode === 'IMMEDIATE_STOP_ON_CAP' ? 'IMMEDIATE_STOP_ON_CAP' : 'DISTRIBUTED_MULTI_DAY';
     const cleanIds = Array.from(new Set((Array.isArray(selectedAccountIds) ? selectedAccountIds : []).map(x => String(x || '').trim()).filter(Boolean)));
     if (mode === 'SINGLE_ACCOUNT' && cleanIds.length !== 1) {
       return { ok: false, statusCode: 400, reason: 'SINGLE_ACCOUNT_REQUIRED', message: 'SINGLE_ACCOUNT 모드에서는 정확히 1개의 연결된 Gmail 계정을 선택해야 합니다.' };
@@ -491,19 +613,41 @@ class GmailCampaignRunner {
 
     if (consentDirty) this.pipeline.consentLedger._save();
 
+    this.throttle = new AdaptiveThrottleController(throttleConfig || {}, this.nowFn);
+    const prePlan = buildDistributedSchedulePlan({
+      entries,
+      accountsWithUsage,
+      vault: this.vault,
+      throttle: this.throttle,
+      nowMs: this.nowFn()
+    });
+
     this.queue = {
       provider: 'GMAIL',
       campaignId: cid,
       sendingMode: mode,
+      scheduleMode: resolvedScheduleMode,
       selectedAccountIds: cleanIds,
       messageKind,
       lawfulBasis: resolvedBasis,
       jurisdiction: normJurisdiction,
       consentAttested: Boolean(consentAttested && basisAuthorized),
+      replyTo: normalizedReplyTo,
+      physicalAddress: String(physicalAddress || '').trim(),
       allocationCounts,
       entries,
       stopped: false,
       stopReason: null,
+      scheduledWait: false,
+      scheduledWaitReason: null,
+      enforcementPaused: false,
+      nextPermittedExecutionAt: prePlan.nextPermittedExecutionAt,
+      throttle: this.throttle.toJSON(),
+      schedulePlan: {
+        estimatedDays: prePlan.estimatedDays,
+        requiresMultiDay: prePlan.requiresMultiDay,
+        daySchedule: prePlan.daySchedule
+      },
       startedAt: null,
       finishedAt: null
     };
@@ -512,13 +656,15 @@ class GmailCampaignRunner {
       type: 'GMAIL_QUEUE_PREPARED',
       campaignId: cid,
       sendingMode: mode,
+      scheduleMode: resolvedScheduleMode,
       selectedAccountIds: cleanIds,
       valid: parsed.valid.length,
       ready: readyCount,
       suppressedCrossProvider: suppressedCount,
       noConsent: noConsentCount,
       alreadySent: alreadySentCount,
-      allocationCounts
+      allocationCounts,
+      estimatedDays: prePlan.estimatedDays
     });
 
     return {
@@ -527,10 +673,13 @@ class GmailCampaignRunner {
       provider: 'GMAIL',
       campaignId: cid,
       sendingMode: mode,
+      scheduleMode: resolvedScheduleMode,
       selectedAccountIds: cleanIds,
       allocationCounts,
+      schedulePlan: prePlan,
       hygiene: supIndex.stats,
-      summary: this.summarizeQueue()
+      summary: this.summarizeQueue(),
+      dashboard: this.getTrueDashboard()
     };
   }
 
@@ -562,9 +711,16 @@ class GmailCampaignRunner {
       provider: 'GMAIL',
       campaignId: this.queue.campaignId || 'default',
       sendingMode: this.queue.sendingMode || 'SINGLE_ACCOUNT',
+      scheduleMode: this.queue.scheduleMode || 'DISTRIBUTED_MULTI_DAY',
       selectedAccountIds: Array.isArray(this.queue.selectedAccountIds) ? [...this.queue.selectedAccountIds] : [],
       stopped: Boolean(this.queue.stopped),
       stopReason: this.queue.stopReason || null,
+      scheduledWait: Boolean(this.queue.scheduledWait),
+      scheduledWaitReason: this.queue.scheduledWaitReason || null,
+      enforcementPaused: Boolean(this.queue.enforcementPaused),
+      nextPermittedExecutionAt: this.queue.nextPermittedExecutionAt || null,
+      throttle: this.throttle ? this.throttle.toJSON() : null,
+      schedulePlan: this.queue.schedulePlan || null,
       startedAt: this.queue.startedAt || null,
       finishedAt: this.queue.finishedAt || null,
       queueRunning: Boolean(this._queueRunning),
@@ -624,6 +780,7 @@ class GmailCampaignRunner {
   async sendGmailSelfTest({
     accountId,
     fromAddress = null,
+    replyTo = null,
     to,
     displayName = '',
     subject = '',
@@ -643,6 +800,13 @@ class GmailCampaignRunner {
     const normTo = normalizeEmail(to);
     if (!normTo) {
       return { ok: false, statusCode: 400, status: 'BLOCKED', reason: 'INVALID_RECIPIENT_EMAIL' };
+    }
+    let cleanReplyTo = null;
+    if (replyTo && String(replyTo).trim()) {
+      if (hasHeaderInjection(replyTo) || !normalizeEmail(replyTo)) {
+        return { ok: false, statusCode: 400, status: 'BLOCKED', reason: 'REPLY_TO_INVALID_OR_INJECTION' };
+      }
+      cleanReplyTo = normalizeEmail(replyTo);
     }
     const unsubInfo = this._resolvePublicUnsubConfig();
     const publicBase = (this.trustedTestMode && baseUrlOverride) ? String(baseUrlOverride).replace(/\/+$/, '') : unsubInfo.publicBase;
@@ -681,11 +845,21 @@ class GmailCampaignRunner {
       return { ok: false, statusCode: 409, status: 'BLOCKED', reason: 'CONSENT_PROOF_FAILED' };
     }
 
-    // 3. Validate account + rolling 24h per-account & domain caps via foundation selectAccount()
+    // 3. Validate account + rolling 1m/1h/24h per-account & domain caps via foundation selectAccount()
     const accountsWithUsage = this.vault.getInternalAccountsWithUsage();
     const targetAcct = accountsWithUsage.find(a => a.id === accountId);
     if (!targetAcct) {
       return { ok: false, statusCode: 404, status: 'BLOCKED', reason: 'ACCOUNT_NOT_FOUND' };
+    }
+    const permSelf = this.vault.getNextPermittedAtMs(targetAcct);
+    if (!permSelf.permittedNow) {
+      return {
+        ok: false,
+        statusCode: 409,
+        status: 'BLOCKED',
+        reason: permSelf.reason || 'RATE_CAP_WAIT',
+        nextPermittedExecutionAt: permSelf.waitUntilIso
+      };
     }
     const recipientHash = sha256Hex(normTo);
     const campaignId = 'gmail-self-test-' + new Date().toISOString().slice(0, 10);
@@ -739,6 +913,7 @@ class GmailCampaignRunner {
     try {
       raw = rawGmailMime({
         from: resolvedFrom || selected.from,
+        replyTo: cleanReplyTo || undefined,
         to: normTo,
         verifiedFromAddresses: targetAcct.verifiedSendAs || [targetAcct.email],
         displayName: String(displayName || '').trim() || targetAcct.domain,
@@ -830,15 +1005,24 @@ class GmailCampaignRunner {
     }
   }
 
-  // ===== Production Gmail Queue Execution (Fail-Closed, Zero Account Hopping on Block) =====
+  // ===== Production Gmail Queue Execution (Distributed Multi-Day, Downward-Only Throttle, Fail-Closed) =====
   async runGmailQueue({
     subject = '',
     displayName = '',
     html = '',
     text = '',
-    physicalAddress = '',
+    replyTo = undefined,
+    physicalAddress = undefined,
+    scheduleMode = undefined,
     ownerExplicitApproval = false,
     hygieneConfirmed = false,
+    providerSwitchConfirmed = false,
+    throttleConfig = null,
+    abuseWarning = false,
+    observedLiveComplaints = 0,
+    observedLiveBounced = 0,
+    observedLiveTotal = 0,
+    simulatedLatencyMs = null,
     baseUrlOverride = null,
     syncTokenOverride = null,
     fetchImpl = null,
@@ -846,11 +1030,65 @@ class GmailCampaignRunner {
     pacingMs = null
   } = {}) {
     if (this._queueRunning) {
-      return { ok: false, statusCode: 409, status: 'BLOCKED', reason: 'GMAIL_QUEUE_ALREADY_RUNNING', summary: this.summarizeQueue() };
+      return { ok: false, statusCode: 409, status: 'BLOCKED', reason: 'GMAIL_QUEUE_ALREADY_RUNNING', summary: this.summarizeQueue(), dashboard: this.getTrueDashboard() };
     }
     if (ownerExplicitApproval !== true) {
-      return { ok: false, statusCode: 400, status: 'BLOCKED', reason: 'OWNER_EXPLICIT_APPROVAL_REQUIRED', summary: this.summarizeQueue() };
+      return { ok: false, statusCode: 400, status: 'BLOCKED', reason: 'OWNER_EXPLICIT_APPROVAL_REQUIRED', summary: this.summarizeQueue(), dashboard: this.getTrueDashboard() };
     }
+    if (this.hasActiveResendCampaign() && providerSwitchConfirmed !== true) {
+      return {
+        ok: false,
+        statusCode: 409,
+        status: 'BLOCKED',
+        reason: 'PROVIDER_SWITCH_CONFIRMATION_REQUIRED',
+        koreanReason: '진행 중이거나 대기 중인 Resend 캠페인이 있습니다. Resend ↔ Gmail 공급자 전환은 명시적 운영자 확인 후에만 실행됩니다 (자동 전환 금지).',
+        summary: this.summarizeQueue(),
+        dashboard: this.getTrueDashboard()
+      };
+    }
+    if (this.queue.enforcementPaused === true) {
+      return {
+        ok: false,
+        statusCode: 409,
+        status: 'PAUSED',
+        campaignState: 'PAUSED_ENFORCEMENT',
+        enforcementPaused: true,
+        reason: this.queue.stopReason || 'PAUSED_ENFORCEMENT_REQUIRES_REMEDIATION',
+        nextPermittedExecutionAt: null,
+        koreanReason: `이전 공급자 정책·인증·신고 중단(${this.queue.stopReason || 'ENFORCEMENT'})으로 캠페인이 잠겨 있습니다. 원인 해결 후 새 캠페인으로 재준비하세요.`,
+        summary: this.summarizeQueue(),
+        dashboard: this.getTrueDashboard()
+      };
+    }
+    if ((this.queue.entries || []).some(e => e && e.status === 'HALTED_RECONCILE_REQUIRED')) {
+      return {
+        ok: false,
+        statusCode: 409,
+        status: 'PAUSED',
+        campaignState: 'HALTED_RECONCILE_REQUIRED',
+        reason: 'HALTED_RECONCILE_REQUIRED_NO_BLIND_RESUME',
+        nextPermittedExecutionAt: null,
+        koreanReason: '미확정(타임아웃/중단) 발송 항목(HALTED_RECONCILE_REQUIRED)이 존재합니다. 중복 발송 방지를 위해 대조 전 자동 재개를 차단합니다.',
+        summary: this.summarizeQueue(),
+        dashboard: this.getTrueDashboard()
+      };
+    }
+
+    const effectiveReplyToRaw = replyTo !== undefined ? String(replyTo || '').trim() : String(this.queue.replyTo || '').trim();
+    let effectiveReplyTo = null;
+    if (effectiveReplyToRaw) {
+      if (hasHeaderInjection(effectiveReplyToRaw) || !normalizeEmail(effectiveReplyToRaw)) {
+        return { ok: false, statusCode: 400, status: 'BLOCKED', reason: 'REPLY_TO_INVALID_OR_INJECTION', summary: this.summarizeQueue(), dashboard: this.getTrueDashboard() };
+      }
+      effectiveReplyTo = normalizeEmail(effectiveReplyToRaw);
+    }
+    const effectivePhysicalAddress = physicalAddress !== undefined
+      ? String(physicalAddress || '').trim()
+      : String(this.queue.physicalAddress || '').trim();
+    const resolvedScheduleMode = scheduleMode === 'IMMEDIATE_STOP_ON_CAP'
+      ? 'IMMEDIATE_STOP_ON_CAP'
+      : (this.queue.scheduleMode || 'DISTRIBUTED_MULTI_DAY');
+
     const supIndexPre = this.buildCrossProviderSuppressionIndex();
     if (supIndexPre.stats.elevatedBounceWarning && hygieneConfirmed !== true) {
       return {
@@ -860,7 +1098,8 @@ class GmailCampaignRunner {
         reason: 'LIST_HYGIENE_REVIEW_REQUIRED',
         hygiene: supIndexPre.stats,
         koreanReason: '과거 발송 이력에서 높은 반송률이 감지되었습니다. 리스트 위생 점검 확인 체크박스 선택 후 실행하세요.',
-        summary: this.summarizeQueue()
+        summary: this.summarizeQueue(),
+        dashboard: this.getTrueDashboard()
       };
     }
 
@@ -873,31 +1112,98 @@ class GmailCampaignRunner {
       hostOk = u.protocol === 'https:' && u.hostname.toLowerCase() === PUBLIC_UNSUB_HOST;
     } catch (_) {}
     if (!hostOk || !syncToken) {
-      return { ok: false, statusCode: 409, status: 'BLOCKED', reason: 'PUBLIC_HTTPS_UNSUBSCRIBE_REQUIRED', summary: this.summarizeQueue() };
+      return { ok: false, statusCode: 409, status: 'BLOCKED', reason: 'PUBLIC_HTTPS_UNSUBSCRIBE_REQUIRED', summary: this.summarizeQueue(), dashboard: this.getTrueDashboard() };
     }
 
     const doSyncFetch = typeof syncFetchImpl === 'function' ? syncFetchImpl : this.syncFetchImpl;
     const doGmailFetch = typeof fetchImpl === 'function' ? fetchImpl : this.fetchImpl;
     const effectivePacingMs = Number.isFinite(pacingMs) ? pacingMs : (doGmailFetch === globalThis.fetch ? 1500 : 0);
 
+    if (throttleConfig && typeof throttleConfig === 'object') {
+      // Preserve monotonic downward level; never accelerate an already-throttled campaign!
+      const merged = new AdaptiveThrottleController(throttleConfig, this.nowFn);
+      if (this.throttle && this.throttle.level > merged.level) {
+        merged.level = this.throttle.level;
+        merged.lastReason = this.throttle.lastReason;
+        merged.stopReason = this.throttle.stopReason;
+        merged.adjustments = [...this.throttle.adjustments];
+      }
+      this.throttle = merged;
+    } else if (!this.throttle) {
+      this.throttle = AdaptiveThrottleController.fromJSON(this.queue.throttle || null, this.nowFn);
+    }
+
     this._queueRunning = true;
     this.lastRunResult = null;
+    const finalize = (resObj) => {
+      this._queueRunning = false;
+      const done = {
+        ...resObj,
+        summary: this.summarizeQueue(),
+        dashboard: this.getTrueDashboard({ queueRunning: false })
+      };
+      this.lastRunResult = done;
+      return done;
+    };
     try {
       // Pre-send remote suppression sync (fail closed if unreachable)
       const supSync = await this.pipeline.syncRemoteSuppressions({ baseUrl: publicBase, syncToken, fetchImpl: doSyncFetch, skipQueueSave: true });
       if (!supSync.ok) {
-        const res = { ok: false, statusCode: 503, status: 'BLOCKED', reason: 'UNSUBSCRIBE_SYNC_UNAVAILABLE', detail: supSync.reason, summary: this.summarizeQueue() };
-        this.lastRunResult = res;
-        return res;
+        return finalize({ ok: false, statusCode: 503, status: 'BLOCKED', reason: 'UNSUBSCRIBE_SYNC_UNAVAILABLE', detail: supSync.reason });
       }
       const supIndex = this.buildCrossProviderSuppressionIndex();
 
+      // Evaluate live negative delivery signals (complaints, abnormal bounce, abuse warning) BEFORE sending
+      const liveBounceRatePct = Number(observedLiveTotal) > 0
+        ? (Number(observedLiveBounced) / Number(observedLiveTotal)) * 100
+        : (Number(observedLiveBounced) >= 2 ? 100 : 0);
+      this.throttle.observeSignals({
+        abuseWarning: Boolean(abuseWarning),
+        complaintCount: Number(observedLiveComplaints || 0),
+        liveBounceRatePct,
+        liveBouncedCount: Number(observedLiveBounced || 0)
+      });
+      if (this.throttle.shouldStop) {
+        const stopCode = this.throttle.stopReason || 'NEGATIVE_SIGNAL_ENFORCEMENT_STOP';
+        this.queue.stopped = true;
+        this.queue.stopReason = stopCode;
+        this.queue.enforcementPaused = true;
+        this.queue.scheduledWait = false;
+        this.queue.scheduledWaitReason = null;
+        this.queue.nextPermittedExecutionAt = null;
+        this.queue.throttle = this.throttle.toJSON();
+        this._saveQueue();
+        this.pipeline._appendAudit({ type: 'GMAIL_CAMPAIGN_ENFORCEMENT_PAUSED', campaignId: this.queue.campaignId, reason: stopCode });
+        return finalize({
+          ok: false,
+          statusCode: 409,
+          status: 'PAUSED',
+          campaignState: 'PAUSED_ENFORCEMENT',
+          enforcementPaused: true,
+          scheduledWait: false,
+          reason: stopCode,
+          stopReason: stopCode,
+          nextPermittedExecutionAt: null,
+          acceptedInThisRun: 0,
+          koreanReason: `부정 신호(신고·비정상 반송·남용 경고: ${stopCode}) 감지로 전체 캠페인이 즉시 안전 중지되었습니다 (타 계정·공급자 우회 금지).`
+        });
+      }
+
       this.queue.stopped = false;
       this.queue.stopReason = null;
-      this.queue.startedAt = this.queue.startedAt || new Date().toISOString();
+      this.queue.scheduledWait = false;
+      this.queue.scheduledWaitReason = null;
+      this.queue.scheduleMode = resolvedScheduleMode;
+      this.queue.replyTo = effectiveReplyTo;
+      this.queue.physicalAddress = effectivePhysicalAddress;
+      this.queue.startedAt = this.queue.startedAt || new Date(this.nowFn()).toISOString();
+      this.queue.throttle = this.throttle.toJSON();
       this._saveQueue();
 
       let acceptedInThisRun = 0;
+      let earliestDeferredWaitMs = null;
+      let earliestDeferredReason = null;
+      let deferredCount = 0;
 
       for (const e of (this.queue.entries || [])) {
         if (this.queue.stopped) break;
@@ -908,7 +1214,7 @@ class GmailCampaignRunner {
         if (supCheck.suppressed) {
           e.status = 'SKIPPED_SUPPRESSED_CROSS_PROVIDER';
           e.reason = supCheck.reason;
-          e.updatedAt = new Date().toISOString();
+          e.updatedAt = new Date(this.nowFn()).toISOString();
           this._saveQueue();
           continue;
         }
@@ -924,15 +1230,106 @@ class GmailCampaignRunner {
         if (!consentOk) {
           e.status = 'BLOCKED_CONSENT_UNVERIFIED';
           e.reason = 'CONSENT_PROOF_MISSING_OR_TAMPERED_FAIL_CLOSED';
-          e.updatedAt = new Date().toISOString();
+          e.updatedAt = new Date(this.nowFn()).toISOString();
           this._saveQueue();
           continue;
         }
 
-        // 3. Persist intent BEFORE selectAccount / network POST
+        // 3. Check account availability & rolling 1m/1h/24h/domain caps with downward-only throttle BEFORE marking SENDING
+        const usageNow = this.vault.getRolling24hUsage();
+        const accountsWithUsage = this.vault.getInternalAccountsWithUsage();
+        const assignedAcct = accountsWithUsage.find(a => a.id === e.assignedAccountId);
+
+        // Hard enforcement stop if any assigned account is disconnected, blocked, disabled, or unverified (NEVER hop accounts!)
+        if (!assignedAcct || !assignedAcct.ownerAuthorized || !assignedAcct.connected || !assignedAcct.verified || assignedAcct.disabled || assignedAcct.providerBlocked) {
+          const code = 'ACCOUNT_NOT_AVAILABLE_PAUSE_CAMPAIGN';
+          e.reason = code;
+          e.updatedAt = new Date(this.nowFn()).toISOString();
+          this.queue.stopped = true;
+          this.queue.stopReason = code;
+          this.queue.enforcementPaused = true;
+          this.queue.scheduledWait = false;
+          this.queue.nextPermittedExecutionAt = null;
+          this.queue.throttle = this.throttle.toJSON();
+          this._saveQueue();
+          this.pipeline._appendAudit({ type: 'GMAIL_CAMPAIGN_ENFORCEMENT_PAUSED', campaignId: this.queue.campaignId, accountId: e.assignedAccountId, reason: code });
+          return finalize({
+            ok: false,
+            statusCode: 409,
+            status: 'PAUSED',
+            campaignState: 'PAUSED_ENFORCEMENT',
+            enforcementPaused: true,
+            scheduledWait: false,
+            reason: code,
+            stopReason: code,
+            nextPermittedExecutionAt: null,
+            acceptedInThisRun,
+            koreanReason: `배정된 Gmail 계정 상태 제한(${code})으로 전체 캠페인이 즉시 일시 중지되었습니다 (타 계정 자동 우회 금지).`
+          });
+        }
+
+        const baseCaps = this.vault.getAccountRateCaps(assignedAcct);
+        const effCaps = this.throttle.getEffectiveCaps(baseCaps);
+        const perm = this.vault.getNextPermittedAtMs(assignedAcct, usageNow, effCaps);
+        if (!perm.permittedNow) {
+          const waitCode = perm.reason || 'ACCOUNT_CAP_REACHED_PAUSE_CAMPAIGN';
+          const canCheckOtherFixedAccounts = (
+            resolvedScheduleMode === 'DISTRIBUTED_MULTI_DAY' &&
+            this.queue.sendingMode === 'APPROVED_ACCOUNT_POOL' &&
+            waitCode !== 'DOMAIN_CAP_REACHED'
+          );
+          if (canCheckOtherFixedAccounts) {
+            // Keep recipient strictly assigned to its fixed account (NEVER reassign!), defer to next rolling window
+            deferredCount++;
+            if (perm.waitUntilMs !== null && (earliestDeferredWaitMs === null || perm.waitUntilMs < earliestDeferredWaitMs)) {
+              earliestDeferredWaitMs = perm.waitUntilMs;
+              earliestDeferredReason = waitCode;
+            }
+            continue;
+          }
+          // Immediate scheduled wait pause (domain cap, single account, or IMMEDIATE_STOP_ON_CAP)
+          e.reason = waitCode;
+          e.updatedAt = new Date(this.nowFn()).toISOString();
+          this.queue.stopped = true;
+          this.queue.stopReason = waitCode;
+          this.queue.scheduledWait = true;
+          this.queue.scheduledWaitReason = waitCode;
+          this.queue.enforcementPaused = false;
+          this.queue.nextPermittedExecutionAt = perm.waitUntilIso;
+          this.queue.throttle = this.throttle.toJSON();
+          const updatedPlan = this.getSchedulePlan();
+          this.queue.schedulePlan = {
+            estimatedDays: updatedPlan.estimatedDays,
+            requiresMultiDay: updatedPlan.requiresMultiDay,
+            daySchedule: updatedPlan.daySchedule
+          };
+          this._saveQueue();
+          this.pipeline._appendAudit({
+            type: 'GMAIL_CAMPAIGN_SCHEDULED_WAIT',
+            campaignId: this.queue.campaignId,
+            accountId: e.assignedAccountId,
+            reason: waitCode,
+            nextPermittedExecutionAt: perm.waitUntilIso
+          });
+          return finalize({
+            ok: false,
+            statusCode: 409,
+            status: 'PAUSED',
+            campaignState: 'SCHEDULED_WAIT',
+            scheduledWait: true,
+            enforcementPaused: false,
+            reason: waitCode,
+            stopReason: waitCode,
+            nextPermittedExecutionAt: perm.waitUntilIso,
+            acceptedInThisRun,
+            koreanReason: `보수적 안전 한도(${waitCode}) 도달로 전체 캠페인이 예약 대기(SCHEDULED_WAIT)로 전환되었습니다. 다음 허용 시각: ${perm.waitUntilIso || '확인 필요'} (타 계정·공급자 우회 금지).`
+          });
+        }
+
+        // 4. Persist intent BEFORE selectAccount / network POST
         e.status = 'SENDING';
         e.attempts = (e.attempts || 0) + 1;
-        e.updatedAt = new Date().toISOString();
+        e.updatedAt = new Date(this.nowFn()).toISOString();
         this._saveQueue();
         this.pipeline._appendAudit({
           type: 'GMAIL_SEND_ATTEMPT_STARTED',
@@ -943,11 +1340,7 @@ class GmailCampaignRunner {
           attempt: e.attempts
         });
 
-        // 4. Authoritative account & rolling-24h cap check via foundation selectAccount()
-        // NOTE: Uses the campaign's fixed sendingMode + pre-approved accountIds + recipientHash.
-        // If the assigned account hits cap/block/revocation, selectAccount throws and PAUSES THE ENTIRE CAMPAIGN!
-        const accountsWithUsage = this.vault.getInternalAccountsWithUsage();
-        const assignedAcct = accountsWithUsage.find(a => a.id === e.assignedAccountId);
+        // 5. Authoritative account & rolling-24h cap verification via foundation selectAccount()
         let selected;
         try {
           selected = selectAccount({
@@ -970,27 +1363,34 @@ class GmailCampaignRunner {
           const code = selErr instanceof GmailSendBlocked ? selErr.code : 'ACCOUNT_NOT_AVAILABLE_PAUSE_CAMPAIGN';
           // POST was never called -> revert SENDING -> PENDING and PAUSE ENTIRE CAMPAIGN
           e.status = 'PENDING';
+          e.attempts = Math.max(0, (e.attempts || 1) - 1);
           e.reason = code;
-          e.updatedAt = new Date().toISOString();
+          e.updatedAt = new Date(this.nowFn()).toISOString();
           this.queue.stopped = true;
           this.queue.stopReason = code;
+          this.queue.enforcementPaused = code === 'ACCOUNT_NOT_AVAILABLE_PAUSE_CAMPAIGN' || code === 'ACCOUNT_ASSIGNMENT_DRIFT_BLOCKED';
+          this.queue.scheduledWait = !this.queue.enforcementPaused;
+          this.queue.scheduledWaitReason = this.queue.scheduledWait ? code : null;
+          this.queue.nextPermittedExecutionAt = this.queue.scheduledWait ? perm.waitUntilIso : null;
+          this.queue.throttle = this.throttle.toJSON();
           this._saveQueue();
           this.pipeline._appendAudit({ type: 'GMAIL_CAMPAIGN_PAUSED', campaignId: this.queue.campaignId, accountId: e.assignedAccountId, reason: code });
-          const pausedRes = {
+          return finalize({
             ok: false,
             statusCode: 409,
             status: 'PAUSED',
+            campaignState: this.queue.enforcementPaused ? 'PAUSED_ENFORCEMENT' : 'SCHEDULED_WAIT',
+            scheduledWait: this.queue.scheduledWait,
+            enforcementPaused: this.queue.enforcementPaused,
             reason: code,
             stopReason: code,
+            nextPermittedExecutionAt: this.queue.nextPermittedExecutionAt,
             acceptedInThisRun,
-            koreanReason: `계정/도메인 일일 안전 한도 또는 계정 상태 제한(${code})으로 전체 캠페인이 안전 일시 중지되었습니다 (타 계정 자동 우회 금지).`,
-            summary: this.summarizeQueue()
-          };
-          this.lastRunResult = pausedRes;
-          return pausedRes;
+            koreanReason: `계정/도메인 안전 한도 또는 계정 상태 제한(${code})으로 전체 캠페인이 안전 일시 중지되었습니다 (타 계정 자동 우회 금지).`
+          });
         }
 
-        // 5. Issue RFC 8058 unsubscribe token & sync tokenHash BEFORE POST
+        // 6. Issue RFC 8058 unsubscribe token & sync tokenHash BEFORE POST
         const unsub = this.pipeline.issueRecipientUnsubscribeHeaders(e.email, this.queue.campaignId, publicBase);
         const tokReg = await this._syncUnsubTokenRemote({
           publicBase,
@@ -1002,32 +1402,31 @@ class GmailCampaignRunner {
         });
         if (!tokReg.ok) {
           e.status = 'PENDING';
+          e.attempts = Math.max(0, (e.attempts || 1) - 1);
           e.reason = tokReg.reason;
-          e.updatedAt = new Date().toISOString();
+          e.updatedAt = new Date(this.nowFn()).toISOString();
           this.queue.stopped = true;
           this.queue.stopReason = tokReg.reason;
           this._saveQueue();
-          const tokRes = {
+          return finalize({
             ok: false,
             statusCode: 502,
             status: 'PAUSED',
             reason: tokReg.reason,
             stopReason: tokReg.reason,
             acceptedInThisRun,
-            koreanReason: `수신거부 원클릭 토큰 원격 동기화 실패(${tokReg.reason})로 발송 전 안전 중단되었습니다.`,
-            summary: this.summarizeQueue()
-          };
-          this.lastRunResult = tokRes;
-          return tokRes;
+            koreanReason: `수신거부 원클릭 토큰 원격 동기화 실패(${tokReg.reason})로 발송 전 안전 중단되었습니다.`
+          });
         }
 
-        // 6. Build MIME via foundation rawGmailMime()
+        // 7. Build MIME via foundation rawGmailMime()
         const withFooter = injectUnsubscribeFooter({ html, text, unsubscribeUrl: unsub.url });
-        const withAddr = ensurePhysicalAddressInFooter({ ...withFooter, physicalAddress });
+        const withAddr = ensurePhysicalAddressInFooter({ ...withFooter, physicalAddress: effectivePhysicalAddress });
         let raw;
         try {
           raw = rawGmailMime({
             from: selected.from,
+            replyTo: effectiveReplyTo || undefined,
             to: e.email,
             verifiedFromAddresses: (assignedAcct && assignedAcct.verifiedSendAs) || [selected.from],
             displayName: String(displayName || '').trim() || (assignedAcct && assignedAcct.domain) || 'Sender',
@@ -1042,43 +1441,50 @@ class GmailCampaignRunner {
         } catch (mimeErr) {
           const code = mimeErr instanceof GmailSendBlocked ? mimeErr.code : 'INVALID_MIME';
           e.status = 'PENDING';
+          e.attempts = Math.max(0, (e.attempts || 1) - 1);
           e.reason = code;
           this.queue.stopped = true;
           this.queue.stopReason = code;
           this._saveQueue();
-          const mimeRes = { ok: false, statusCode: 400, status: 'PAUSED', reason: code, stopReason: code, acceptedInThisRun, summary: this.summarizeQueue() };
-          this.lastRunResult = mimeRes;
-          return mimeRes;
+          return finalize({ ok: false, statusCode: 400, status: 'PAUSED', reason: code, stopReason: code, acceptedInThisRun });
         }
 
-        // 7. Retrieve DPAPI access token (on revocation -> PAUSE ENTIRE CAMPAIGN, never switch accounts)
+        // 8. Retrieve DPAPI access token (on revocation -> PAUSE ENTIRE CAMPAIGN, never switch accounts)
         let accessToken;
         try {
           accessToken = await this.vault.getValidAccessToken(selected.accountId);
         } catch (authErr) {
           const code = authErr instanceof GmailSendBlocked ? authErr.code : 'GMAIL_AUTH_REVOKED';
           e.status = 'PENDING';
+          e.attempts = Math.max(0, (e.attempts || 1) - 1);
           e.reason = code;
-          e.updatedAt = new Date().toISOString();
+          e.updatedAt = new Date(this.nowFn()).toISOString();
+          this.throttle.observeSignals({ providerHttpStatus: 401 });
           this.queue.stopped = true;
           this.queue.stopReason = code;
+          this.queue.enforcementPaused = true;
+          this.queue.scheduledWait = false;
+          this.queue.nextPermittedExecutionAt = null;
+          this.queue.throttle = this.throttle.toJSON();
           this._saveQueue();
-          this.pipeline._appendAudit({ type: 'GMAIL_CAMPAIGN_PAUSED', campaignId: this.queue.campaignId, accountId: selected.accountId, reason: code });
-          const authRes = {
+          this.pipeline._appendAudit({ type: 'GMAIL_CAMPAIGN_ENFORCEMENT_PAUSED', campaignId: this.queue.campaignId, accountId: selected.accountId, reason: code });
+          return finalize({
             ok: false,
             statusCode: 401,
             status: 'PAUSED',
+            campaignState: 'PAUSED_ENFORCEMENT',
+            enforcementPaused: true,
+            scheduledWait: false,
             reason: code,
             stopReason: code,
+            nextPermittedExecutionAt: null,
             acceptedInThisRun,
-            koreanReason: `Gmail OAuth 인증 만료/취소(${code})로 전체 캠페인이 안전 일시 중지되었습니다. 계정을 재연결해 주세요 (타 계정 자동 우회 금지).`,
-            summary: this.summarizeQueue()
-          };
-          this.lastRunResult = authRes;
-          return authRes;
+            koreanReason: `Gmail OAuth 인증 만료/취소(${code})로 전체 캠페인이 안전 일시 중지되었습니다. 계정을 재연결해 주세요 (타 계정 자동 우회 금지).`
+          });
         }
 
-        // 8. POST to Gmail API via foundation sendViaGmailApi()
+        // 9. POST to Gmail API via foundation sendViaGmailApi() & observe latency (downward-only throttle)
+        const sendStartMs = Date.now();
         try {
           const sendRes = await sendViaGmailApi({
             fetchImpl: doGmailFetch,
@@ -1087,14 +1493,20 @@ class GmailCampaignRunner {
             approved: true,
             ...(doGmailFetch === globalThis.fetch && typeof AbortSignal?.timeout === 'function' ? { signal: AbortSignal.timeout(25000) } : {})
           });
+          const observedLatencyMs = (this.trustedTestMode && Number.isFinite(simulatedLatencyMs))
+            ? simulatedLatencyMs
+            : (Date.now() - sendStartMs);
+          this.throttle.observeLatency(observedLatencyMs);
+
           e.status = 'GMAIL_API_ACCEPTED';
           e.providerMessageId = sendRes.providerMessageId;
           e.threadId = sendRes.threadId;
           e.deliveryState = 'UNKNOWN';
           e.inboxState = 'UNKNOWN';
           e.reason = null;
-          e.updatedAt = new Date().toISOString();
+          e.updatedAt = new Date(this.nowFn()).toISOString();
           acceptedInThisRun++;
+          this.queue.throttle = this.throttle.toJSON();
           this._saveQueue();
 
           this.vault.recordQuotaEvent({
@@ -1114,18 +1526,24 @@ class GmailCampaignRunner {
             recipientHash: e.recipientHash,
             idempotencyKey: e.idempotencyKey,
             providerMessageId: sendRes.providerMessageId,
-            threadId: sendRes.threadId
+            threadId: sendRes.threadId,
+            throttleLevel: this.throttle.level
           });
         } catch (sendErr) {
           const code = sendErr instanceof GmailSendBlocked ? sendErr.code : 'GMAIL_UNKNOWN_RESULT_NO_AUTORETRY';
+          let enforcementStop = false;
           if (code === 'GMAIL_AUTH_REVOKED') {
             this.vault.markAccountBlocked(selected.accountId, code, { disconnect: true });
+            this.throttle.observeSignals({ providerHttpStatus: 401 });
             e.status = 'PENDING';
             e.reason = code;
+            enforcementStop = true;
           } else if (code === 'GMAIL_PROVIDER_LIMIT_OR_POLICY_PAUSE_ALL') {
             this.vault.markAccountBlocked(selected.accountId, code, { disconnect: false });
+            this.throttle.observeSignals({ providerHttpStatus: 429 });
             e.status = 'PENDING';
             e.reason = code;
+            enforcementStop = true;
           } else {
             // Timeout / network drop / 5xx -> result unknown; NEVER blind auto-retry!
             e.status = 'HALTED_RECONCILE_REQUIRED';
@@ -1139,53 +1557,96 @@ class GmailCampaignRunner {
               status: 'IN_FLIGHT_UNKNOWN'
             });
           }
-          e.updatedAt = new Date().toISOString();
+          e.updatedAt = new Date(this.nowFn()).toISOString();
           this.queue.stopped = true;
           this.queue.stopReason = code;
+          this.queue.enforcementPaused = enforcementStop;
+          this.queue.scheduledWait = false;
+          this.queue.scheduledWaitReason = null;
+          this.queue.nextPermittedExecutionAt = null;
+          this.queue.throttle = this.throttle.toJSON();
           this._saveQueue();
           this.pipeline._appendAudit({
-            type: 'GMAIL_CAMPAIGN_PAUSED',
+            type: enforcementStop ? 'GMAIL_CAMPAIGN_ENFORCEMENT_PAUSED' : 'GMAIL_CAMPAIGN_PAUSED',
             campaignId: this.queue.campaignId,
             accountId: selected.accountId,
             recipientHash: e.recipientHash,
             idempotencyKey: e.idempotencyKey,
             reason: code
           });
-          const haltRes = {
+          return finalize({
             ok: false,
             statusCode: code === 'GMAIL_AUTH_REVOKED' ? 401 : 409,
             status: 'PAUSED',
+            campaignState: enforcementStop ? 'PAUSED_ENFORCEMENT' : 'HALTED_RECONCILE_REQUIRED',
+            enforcementPaused: enforcementStop,
+            scheduledWait: false,
             reason: code,
             stopReason: code,
+            nextPermittedExecutionAt: null,
             acceptedInThisRun,
             koreanReason: code === 'GMAIL_UNKNOWN_RESULT_NO_AUTORETRY'
               ? 'Gmail API 응답 미확정(타임아웃/네트워크 오류)으로 중복 발송 방지를 위해 자동 재시도 없이 즉시 중지되었습니다 (HALTED_RECONCILE_REQUIRED).'
-              : `Gmail 공급자 제한/인증 오류(${code})가 감지되어 전체 캠페인이 즉시 일시 중지되었습니다 (타 계정 우회 금지).`,
-            summary: this.summarizeQueue()
-          };
-          this.lastRunResult = haltRes;
-          return haltRes;
+              : `Gmail 공급자 제한/인증 오류(${code})가 감지되어 전체 캠페인이 즉시 일시 중지되었습니다 (타 계정·공급자 우회 금지).`
+          });
         }
 
-        if (effectivePacingMs > 0 && !this.queue.stopped) {
-          await new Promise(r => setTimeout(r, effectivePacingMs));
+        const sleepMs = effectivePacingMs > 0 ? Math.max(effectivePacingMs, this.throttle.getEffectiveDelayMs()) : 0;
+        if (sleepMs > 0 && !this.queue.stopped) {
+          await new Promise(r => setTimeout(r, sleepMs));
         }
       }
 
+      // If distributed pool run deferred entries due to rolling window caps on their fixed accounts -> SCHEDULED_WAIT!
       const remaining = (this.queue.entries || []).filter(e => e.status === 'PENDING' || e.status === 'SENDING').length;
+      if (!this.queue.stopped && deferredCount > 0 && remaining > 0) {
+        const nextIso = earliestDeferredWaitMs !== null ? new Date(earliestDeferredWaitMs).toISOString() : null;
+        const waitCode = earliestDeferredReason || 'ACCOUNT_CAP_REACHED_PAUSE_CAMPAIGN';
+        this.queue.stopped = true;
+        this.queue.stopReason = waitCode;
+        this.queue.scheduledWait = true;
+        this.queue.scheduledWaitReason = waitCode;
+        this.queue.enforcementPaused = false;
+        this.queue.nextPermittedExecutionAt = nextIso;
+        this.queue.throttle = this.throttle.toJSON();
+        const updatedPlan = this.getSchedulePlan();
+        this.queue.schedulePlan = {
+          estimatedDays: updatedPlan.estimatedDays,
+          requiresMultiDay: updatedPlan.requiresMultiDay,
+          daySchedule: updatedPlan.daySchedule
+        };
+        this._saveQueue();
+        this.pipeline._appendAudit({
+          type: 'GMAIL_CAMPAIGN_SCHEDULED_WAIT',
+          campaignId: this.queue.campaignId,
+          reason: waitCode,
+          acceptedInThisRun,
+          remaining,
+          nextPermittedExecutionAt: nextIso
+        });
+        return finalize({
+          ok: false,
+          statusCode: 409,
+          status: 'PAUSED',
+          campaignState: 'SCHEDULED_WAIT',
+          scheduledWait: true,
+          enforcementPaused: false,
+          reason: waitCode,
+          stopReason: waitCode,
+          nextPermittedExecutionAt: nextIso,
+          acceptedInThisRun,
+          koreanReason: `이번 윈도우 배정량(${acceptedInThisRun}건)을 완료하고 잔여 ${remaining}건을 다음 허용 시각(${nextIso || '확인 필요'})으로 안전 분산 예약(SCHEDULED_WAIT)했습니다.`
+        });
+      }
+
       if (!this.queue.stopped && remaining === 0) {
-        this.queue.finishedAt = new Date().toISOString();
+        this.queue.finishedAt = new Date(this.nowFn()).toISOString();
+        this.queue.scheduledWait = false;
+        this.queue.scheduledWaitReason = null;
+        this.queue.nextPermittedExecutionAt = null;
+        this.queue.throttle = this.throttle.toJSON();
         this._saveQueue();
       }
-      const finalRes = {
-        ok: true,
-        statusCode: 200,
-        status: this.queue.stopped ? 'STOPPED' : 'COMPLETED',
-        stopReason: this.queue.stopReason || null,
-        acceptedInThisRun,
-        summary: this.summarizeQueue()
-      };
-      this.lastRunResult = finalRes;
       this.pipeline._appendAudit({
         type: 'GMAIL_QUEUE_RUN_COMPLETED',
         campaignId: this.queue.campaignId,
@@ -1193,7 +1654,15 @@ class GmailCampaignRunner {
         stopped: this.queue.stopped,
         stopReason: this.queue.stopReason || null
       });
-      return finalRes;
+      return finalize({
+        ok: true,
+        statusCode: 200,
+        status: this.queue.stopped ? 'STOPPED' : 'COMPLETED',
+        campaignState: this.queue.stopped ? 'PAUSED_OWNER' : 'COMPLETED',
+        stopReason: this.queue.stopReason || null,
+        nextPermittedExecutionAt: null,
+        acceptedInThisRun
+      });
     } finally {
       this._queueRunning = false;
     }
@@ -1201,10 +1670,34 @@ class GmailCampaignRunner {
 
   startGmailQueueBackground(opts = {}) {
     if (this._queueRunning) {
-      return { ok: false, statusCode: 409, status: 'BLOCKED', reason: 'GMAIL_QUEUE_ALREADY_RUNNING', summary: this.summarizeQueue() };
+      return { ok: false, statusCode: 409, status: 'BLOCKED', reason: 'GMAIL_QUEUE_ALREADY_RUNNING', summary: this.summarizeQueue(), dashboard: this.getTrueDashboard() };
     }
     if (opts.ownerExplicitApproval !== true) {
-      return { ok: false, statusCode: 400, status: 'BLOCKED', reason: 'OWNER_EXPLICIT_APPROVAL_REQUIRED', summary: this.summarizeQueue() };
+      return { ok: false, statusCode: 400, status: 'BLOCKED', reason: 'OWNER_EXPLICIT_APPROVAL_REQUIRED', summary: this.summarizeQueue(), dashboard: this.getTrueDashboard() };
+    }
+    if (this.hasActiveResendCampaign() && opts.providerSwitchConfirmed !== true) {
+      return {
+        ok: false,
+        statusCode: 409,
+        status: 'BLOCKED',
+        reason: 'PROVIDER_SWITCH_CONFIRMATION_REQUIRED',
+        koreanReason: '진행 중이거나 대기 중인 Resend 캠페인이 있습니다. Resend ↔ Gmail 공급자 전환은 명시적 운영자 확인 후에만 실행됩니다 (자동 전환 금지).',
+        summary: this.summarizeQueue(),
+        dashboard: this.getTrueDashboard()
+      };
+    }
+    if (this.queue.enforcementPaused === true) {
+      return {
+        ok: false,
+        statusCode: 409,
+        status: 'PAUSED',
+        campaignState: 'PAUSED_ENFORCEMENT',
+        enforcementPaused: true,
+        reason: this.queue.stopReason || 'PAUSED_ENFORCEMENT_REQUIRES_REMEDIATION',
+        nextPermittedExecutionAt: null,
+        summary: this.summarizeQueue(),
+        dashboard: this.getTrueDashboard()
+      };
     }
     const supIndexPre = this.buildCrossProviderSuppressionIndex();
     if (supIndexPre.stats.elevatedBounceWarning && opts.hygieneConfirmed !== true) {
@@ -1215,11 +1708,12 @@ class GmailCampaignRunner {
         reason: 'LIST_HYGIENE_REVIEW_REQUIRED',
         hygiene: supIndexPre.stats,
         koreanReason: '과거 발송 이력에서 높은 반송률이 감지되었습니다. 리스트 위생 점검 확인 체크박스 선택 후 실행하세요.',
-        summary: this.summarizeQueue()
+        summary: this.summarizeQueue(),
+        dashboard: this.getTrueDashboard()
       };
     }
     const p = this.runGmailQueue(opts).catch(err => {
-      this.lastRunResult = { ok: false, status: 'PAUSED', reason: err?.code || err?.message || 'GMAIL_BG_EXCEPTION', summary: this.summarizeQueue() };
+      this.lastRunResult = { ok: false, status: 'PAUSED', reason: err?.code || err?.message || 'GMAIL_BG_EXCEPTION', summary: this.summarizeQueue(), dashboard: this.getTrueDashboard() };
     });
     this._activeBgPromise = p;
     return {
@@ -1227,7 +1721,8 @@ class GmailCampaignRunner {
       statusCode: 202,
       status: 'STARTED',
       background: true,
-      summary: this.summarizeQueue()
+      summary: this.summarizeQueue(),
+      dashboard: this.getTrueDashboard()
     };
   }
 }

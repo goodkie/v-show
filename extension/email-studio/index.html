@@ -317,8 +317,22 @@
           <option value="APPROVED_ACCOUNT_POOL">사전 승인 복수 계정 고정 배분 (APPROVED_ACCOUNT_POOL — 2개 이상 · 한도 우회 금지)</option>
         </select>
       </div>
+      <div>
+        <label for="gmailScheduleMode">분산 발송 스케줄 모드</label>
+        <select id="gmailScheduleMode">
+          <option value="DISTRIBUTED_MULTI_DAY">다일 안전 분산 예약 (DISTRIBUTED_MULTI_DAY · 1분/1시간/24시간 한도 준수)</option>
+          <option value="IMMEDIATE_STOP_ON_CAP">한도 도달 시 즉시 중지 (IMMEDIATE_STOP_ON_CAP)</option>
+        </select>
+      </div>
+    </div>
+    <div class="inline" style="margin-top:6px;">
+      <div><label for="gmailReplyTo">Reply-To 주소 (선택 · 발신 도메인 정렬 권장)</label><input id="gmailReplyTo" type="email" maxlength="254" placeholder="예: reply@your-workspace-domain.com"></div>
       <div><label for="gmailPhysicalAddress">법적 물리적 주소 (푸터 필수 기재)</label><input id="gmailPhysicalAddress" maxlength="200" placeholder="예: 123 Main St, Suite 100, Seoul / Los Angeles"></div>
     </div>
+    <div class="actions" style="margin-top:6px;">
+      <button type="button" id="btnGmailHygieneCheck">🛡️ 발신 위생 · SPF/DMARC · Reply-To · 수신거부 점검</button>
+    </div>
+    <div id="gmailDeliverabilityHygieneBox" class="status-box status-idle" style="margin-top:6px;white-space:pre-wrap;">발신 위생 미점검: [🛡️ 발신 위생 · SPF/DMARC · Reply-To · 수신거부 점검]을 눌러 도메인 인증 및 헤더 정렬을 확인하세요 (수신함 배치/정지 면제는 보장하지 않음).</div>
   </div>
 
   <div style="margin:8px 0;padding:8px;border:1px solid rgba(37,99,235,0.35);border-radius:6px;background:#fff;">
@@ -333,14 +347,20 @@
   </div>
 
   <div style="margin:8px 0;padding:8px;border:1px solid #cbd5e1;border-radius:6px;background:#fff;">
-    <b>4) Gmail 캠페인 큐 사전 배정 · 실행 (교차 공급자 수신거부/반송 자동 제외)</b>
+    <b>4) Gmail 캠페인 큐 사전 배정 · 실행 (교차 공급자 수신거부/반송 자동 제외 · 하향 전용 스로틀)</b>
     <label style="display:flex;align-items:center;gap:6px;margin:6px 0;font-size:12px;"><input id="gmailHygieneConfirm" type="checkbox"> 과거 반송/수신거부 제외 및 수신자 리스트 위생 검토를 완료했으며, 기존 Resend 3,919 이력 목록을 자동 안전 목록으로 사용하지 않음을 확인합니다.</label>
+    <label style="display:flex;align-items:center;gap:6px;margin:6px 0;font-size:12px;"><input id="gmailProviderSwitchConfirm" type="checkbox"> Resend와 Gmail은 별도 공급자이며 자동 폴백 없이 명시적 운영자 확인으로만 전환됨을 확인합니다.</label>
     <div class="actions">
-      <button type="button" id="btnGmailPrepareQueue">📋 Gmail 큐 사전 배정 (발송 없음 · 교차 차단 필터)</button>
+      <button type="button" id="btnGmailPrepareQueue">📋 Gmail 큐 사전 배정 · 다일 일정 계산 (발송 없음)</button>
       <button type="button" class="primary" id="btnGmailProdSend">🚀 Gmail 캠페인 발송 시작</button>
       <button type="button" id="btnGmailProdStop">⏹️ Gmail 큐 즉시 중지</button>
     </div>
-    <div id="gmailQueueStatus" class="status-box status-idle" style="margin-top:6px;white-space:pre-wrap;">대기 중: 계정을 체크하고 [📋 Gmail 큐 사전 배정]을 눌러 교차 공급자 차단 및 계정별 배분 결과를 먼저 확인하세요.</div>
+    <div id="gmailQueueStatus" class="status-box status-idle" style="margin-top:6px;white-space:pre-wrap;">대기 중: 계정을 체크하고 [📋 Gmail 큐 사전 배정 · 다일 일정 계산]을 눌러 교차 공급자 차단 및 다일 배분 일정을 먼저 확인하세요.</div>
+  </div>
+
+  <div style="margin:8px 0;padding:8px;border:1px solid rgba(15,118,110,0.35);border-radius:6px;background:#f8fafc;">
+    <div class="send-header"><b>5) 📊 Gmail 관측 대시보드 (True Dashboard · 하향 전용 스로틀 · 다일 일정)</b><span class="badge-test" id="gmailDashboardStateBadge">IDLE</span></div>
+    <div id="gmailTrueDashboard" class="status-box status-idle" style="margin-top:6px;white-space:pre-wrap;">관측 대기 중: scheduled / attempted / GMAIL_API_ACCEPTED (≠ DELIVERED·INBOX) / verifiedDelivered(미제공) / bounced / suppressed / unknown / remaining / throttle / nextPermittedExecutionAt</div>
   </div>
 </div>
 </div>

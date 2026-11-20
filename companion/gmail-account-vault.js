@@ -39,12 +39,19 @@ const DEFAULT_CONSERVATIVE_CAPS = Object.freeze({
   workspace_paid: 200
 });
 
+const DEFAULT_RATE_CAPS = Object.freeze({
+  gmail_personal: Object.freeze({ perMinute: 2, perHour: 15, maxPerMinute: 5, maxPerHour: 60 }),
+  workspace_paid: Object.freeze({ perMinute: 4, perHour: 40, maxPerMinute: 10, maxPerHour: 150 })
+});
+
 const DEFAULT_DOMAIN_CAPS = Object.freeze({
   personal: 100,
   workspace: 250
 });
 
 const ROLLING_WINDOW_MS = 24 * 60 * 60 * 1000;
+const ROLLING_HOUR_MS = 60 * 60 * 1000;
+const ROLLING_MINUTE_MS = 60 * 1000;
 
 function maskEmail(email) {
   const s = String(email || '').trim().toLowerCase();
@@ -499,7 +506,7 @@ class GmailAccountVault {
    * Test-only helper for seeding a DPAPI/testbox-encrypted mock account without live Google OAuth.
    * Strictly rejected unless trustedTestMode === true.
    */
-  upsertMockAccountForTest({ email, type = null, cap24h = null, accessToken = 'TEST_ACCESS_TOKEN', refreshToken = 'TEST_REFRESH_TOKEN', verifiedSendAs = null, ownerAuthorized = true, connected = true, verified = true, disabled = false, providerBlocked = false }) {
+  upsertMockAccountForTest({ email, type = null, cap24h = null, capPerHour = null, capPerMinute = null, accessToken = 'TEST_ACCESS_TOKEN', refreshToken = 'TEST_REFRESH_TOKEN', verifiedSendAs = null, ownerAuthorized = true, connected = true, verified = true, disabled = false, providerBlocked = false }) {
     if (!this.trustedTestMode) {
       throw new GmailSendBlocked('TEST_ONLY_ACCOUNT_SEED_REJECTED');
     }
@@ -507,10 +514,13 @@ class GmailAccountVault {
     if (!norm) throw new GmailSendBlocked('INVALID_EMAIL');
     const resolvedType = type || inferAccountType(norm);
     const ceiling = PUBLISHED_CEILINGS[resolvedType] || 500;
+    const rateSpec = DEFAULT_RATE_CAPS[resolvedType] || DEFAULT_RATE_CAPS.gmail_personal;
     const resolvedCap = Number.isSafeInteger(cap24h) ? cap24h : (DEFAULT_CONSERVATIVE_CAPS[resolvedType] || 50);
     if (resolvedCap <= 0 || resolvedCap >= ceiling) {
       throw new GmailSendBlocked('ACCOUNT_LEDGER_OR_CONSERVATIVE_CAP_UNKNOWN');
     }
+    const resolvedCapPerHour = Number.isSafeInteger(capPerHour) && capPerHour > 0 ? Math.min(capPerHour, resolvedCap, rateSpec.maxPerHour) : Math.min(rateSpec.perHour, resolvedCap);
+    const resolvedCapPerMinute = Number.isSafeInteger(capPerMinute) && capPerMinute > 0 ? Math.min(capPerMinute, resolvedCapPerHour, rateSpec.maxPerMinute) : Math.min(rateSpec.perMinute, resolvedCapPerHour);
     const id = 'gm_' + crypto.createHash('sha256').update(norm).digest('hex').slice(0, 16);
     const nowIso = new Date(this.nowFn()).toISOString();
     const tokenRef = this._encryptSecret(JSON.stringify({
@@ -533,6 +543,8 @@ class GmailAccountVault {
       providerBlocked: Boolean(providerBlocked),
       blockReason: providerBlocked ? 'TEST_BLOCKED' : null,
       cap24h: resolvedCap,
+      capPerHour: resolvedCapPerHour,
+      capPerMinute: resolvedCapPerMinute,
       verifiedSendAs: Array.isArray(verifiedSendAs) && verifiedSendAs.length ? verifiedSendAs.map(normalizeEmail).filter(Boolean) : [norm],
       tokenScope: GMAIL_OAUTH_SCOPES.join(' '),
       hasRefreshToken: Boolean(refreshToken),
@@ -640,7 +652,7 @@ class GmailAccountVault {
     return true;
   }
 
-  updateAccountSettings({ accountId, cap24h = undefined, type = undefined, disabled = undefined, clearProviderBlock = false, domainCap24h = undefined } = {}) {
+  updateAccountSettings({ accountId, cap24h = undefined, capPerHour = undefined, capPerMinute = undefined, type = undefined, disabled = undefined, clearProviderBlock = false, domainCap24h = undefined } = {}) {
     const acct = this._vault.accounts.find(a => a.id === accountId);
     if (!acct) return { ok: false, statusCode: 404, reason: 'ACCOUNT_NOT_FOUND' };
 
@@ -651,6 +663,7 @@ class GmailAccountVault {
       acct.type = type;
     }
     const ceiling = PUBLISHED_CEILINGS[acct.type] || 500;
+    const rateSpec = DEFAULT_RATE_CAPS[acct.type] || DEFAULT_RATE_CAPS.gmail_personal;
     if (cap24h !== undefined) {
       const n = Number(cap24h);
       if (!Number.isSafeInteger(n) || n <= 0 || n >= ceiling) {
@@ -664,6 +677,32 @@ class GmailAccountVault {
       acct.cap24h = n;
     } else if (acct.cap24h >= ceiling) {
       acct.cap24h = DEFAULT_CONSERVATIVE_CAPS[acct.type] || 50;
+    }
+    if (capPerHour !== undefined) {
+      const nh = Number(capPerHour);
+      const maxH = Math.min(rateSpec.maxPerHour, acct.cap24h);
+      if (!Number.isSafeInteger(nh) || nh <= 0 || nh > maxH) {
+        return {
+          ok: false,
+          statusCode: 400,
+          reason: 'INVALID_HOURLY_CAP',
+          message: `시간당 상한은 1~${maxH} 사이의 양의 정수여야 합니다.`
+        };
+      }
+      acct.capPerHour = nh;
+    }
+    if (capPerMinute !== undefined) {
+      const nm = Number(capPerMinute);
+      const maxM = Math.min(rateSpec.maxPerMinute, acct.capPerHour || rateSpec.perHour);
+      if (!Number.isSafeInteger(nm) || nm <= 0 || nm > maxM) {
+        return {
+          ok: false,
+          statusCode: 400,
+          reason: 'INVALID_MINUTE_CAP',
+          message: `분당 상한은 1~${maxM} 사이의 양의 정수여야 합니다.`
+        };
+      }
+      acct.capPerMinute = nm;
     }
     if (disabled !== undefined) acct.disabled = Boolean(disabled);
     if (clearProviderBlock === true && acct.connected) {
@@ -736,28 +775,136 @@ class GmailAccountVault {
   }
 
   getRolling24hUsage() {
-    const cutoff = this.nowFn() - ROLLING_WINDOW_MS;
+    const nowMs = this.nowFn();
+    const cutoff24h = nowMs - ROLLING_WINDOW_MS;
+    const cutoff1h = nowMs - ROLLING_HOUR_MS;
+    const cutoff1m = nowMs - ROLLING_MINUTE_MS;
     const perAccount = {};
     const perDomain = {};
+    const perAccount1h = {};
+    const perAccount1m = {};
+    const perDomain1h = {};
+    const earliest24hAccount = {};
+    const earliest24hDomain = {};
+    const earliest1hAccount = {};
+    const earliest1mAccount = {};
     const countedKeys = new Set();
+
+    const empty = () => ({
+      nowMs,
+      perAccount,
+      perDomain,
+      perAccount1h,
+      perAccount1m,
+      perDomain1h,
+      earliest24hAccount,
+      earliest24hDomain,
+      earliest1hAccount,
+      earliest1mAccount,
+      windowHours: 24
+    });
+
     if (!fs.existsSync(this.quotaLedgerFile)) {
-      return { perAccount, perDomain, windowHours: 24 };
+      return empty();
     }
     const lines = fs.readFileSync(this.quotaLedgerFile, 'utf8').split('\n').filter(Boolean);
     for (const l of lines) {
       try {
         const e = JSON.parse(l);
-        if (!e || !Number.isFinite(e.ts) || e.ts < cutoff) continue;
-        // Count both accepted sends and uncertain in-flight timeouts conservatively against rolling 24h cap
+        if (!e || !Number.isFinite(e.ts) || e.ts < cutoff24h) continue;
+        // Count both accepted sends and uncertain in-flight timeouts conservatively against all rolling windows
         if (e.status !== 'GMAIL_API_ACCEPTED' && e.status !== 'IN_FLIGHT_UNKNOWN') continue;
         const dedup = e.idempotencyKey ? `${e.accountId}:${e.idempotencyKey}` : null;
         if (dedup && countedKeys.has(dedup)) continue;
         if (dedup) countedKeys.add(dedup);
-        if (e.accountId) perAccount[e.accountId] = (perAccount[e.accountId] || 0) + 1;
-        if (e.domain) perDomain[e.domain] = (perDomain[e.domain] || 0) + 1;
+        if (e.accountId) {
+          perAccount[e.accountId] = (perAccount[e.accountId] || 0) + 1;
+          if (!earliest24hAccount[e.accountId] || e.ts < earliest24hAccount[e.accountId]) {
+            earliest24hAccount[e.accountId] = e.ts;
+          }
+          if (e.ts >= cutoff1h) {
+            perAccount1h[e.accountId] = (perAccount1h[e.accountId] || 0) + 1;
+            if (!earliest1hAccount[e.accountId] || e.ts < earliest1hAccount[e.accountId]) {
+              earliest1hAccount[e.accountId] = e.ts;
+            }
+          }
+          if (e.ts >= cutoff1m) {
+            perAccount1m[e.accountId] = (perAccount1m[e.accountId] || 0) + 1;
+            if (!earliest1mAccount[e.accountId] || e.ts < earliest1mAccount[e.accountId]) {
+              earliest1mAccount[e.accountId] = e.ts;
+            }
+          }
+        }
+        if (e.domain) {
+          perDomain[e.domain] = (perDomain[e.domain] || 0) + 1;
+          if (!earliest24hDomain[e.domain] || e.ts < earliest24hDomain[e.domain]) {
+            earliest24hDomain[e.domain] = e.ts;
+          }
+          if (e.ts >= cutoff1h) {
+            perDomain1h[e.domain] = (perDomain1h[e.domain] || 0) + 1;
+          }
+        }
       } catch (_) {}
     }
-    return { perAccount, perDomain, windowHours: 24 };
+    return empty();
+  }
+
+  getAccountRateCaps(acct) {
+    const spec = DEFAULT_RATE_CAPS[(acct && acct.type) || 'gmail_personal'] || DEFAULT_RATE_CAPS.gmail_personal;
+    const cap24h = (acct && Number.isSafeInteger(acct.cap24h) && acct.cap24h > 0) ? acct.cap24h : DEFAULT_CONSERVATIVE_CAPS.gmail_personal;
+    const capPerHour = Math.min(
+      cap24h,
+      (acct && Number.isSafeInteger(acct.capPerHour) && acct.capPerHour > 0) ? acct.capPerHour : spec.perHour
+    );
+    const capPerMinute = Math.min(
+      capPerHour,
+      (acct && Number.isSafeInteger(acct.capPerMinute) && acct.capPerMinute > 0) ? acct.capPerMinute : spec.perMinute
+    );
+    return { capPerMinute, capPerHour, cap24h };
+  }
+
+  getNextPermittedAtMs(acct, usageOpt = null, overrides = {}) {
+    const usage = usageOpt || this.getRolling24hUsage();
+    const nowMs = usage.nowMs || this.nowFn();
+    const baseCaps = this.getAccountRateCaps(acct);
+    const eff1m = Math.max(1, Math.min(baseCaps.capPerMinute, Number.isSafeInteger(overrides.effectivePerMinute) ? overrides.effectivePerMinute : baseCaps.capPerMinute));
+    const eff1h = Math.max(1, Math.min(baseCaps.capPerHour, Number.isSafeInteger(overrides.effectivePerHour) ? overrides.effectivePerHour : baseCaps.capPerHour));
+    const eff24h = Math.max(1, Math.min(baseCaps.cap24h, Number.isSafeInteger(overrides.effectivePerDay) ? overrides.effectivePerDay : baseCaps.cap24h));
+    const domCap24h = this.getDomainCap24h(acct.domain, acct.type);
+
+    const sent24h = usage.perAccount[acct.id] || 0;
+    const sent1h = usage.perAccount1h[acct.id] || 0;
+    const sent1m = usage.perAccount1m[acct.id] || 0;
+    const domSent24h = usage.perDomain[acct.domain] || 0;
+
+    let waitUntil = 0;
+    let reason = null;
+    if (domSent24h >= domCap24h) {
+      const oldest = usage.earliest24hDomain[acct.domain] || nowMs;
+      waitUntil = Math.max(waitUntil, oldest + ROLLING_WINDOW_MS + 1000);
+      reason = 'DOMAIN_CAP_REACHED';
+    }
+    if (sent24h >= eff24h) {
+      const oldest = usage.earliest24hAccount[acct.id] || nowMs;
+      waitUntil = Math.max(waitUntil, oldest + ROLLING_WINDOW_MS + 1000);
+      reason = reason || 'ACCOUNT_CAP_REACHED_PAUSE_CAMPAIGN';
+    }
+    if (sent1h >= eff1h) {
+      const oldest = usage.earliest1hAccount[acct.id] || nowMs;
+      waitUntil = Math.max(waitUntil, oldest + ROLLING_HOUR_MS + 1000);
+      reason = reason || 'HOURLY_THROTTLE_CAP_REACHED';
+    }
+    if (sent1m >= eff1m) {
+      const oldest = usage.earliest1mAccount[acct.id] || nowMs;
+      waitUntil = Math.max(waitUntil, oldest + ROLLING_MINUTE_MS + 1000);
+      reason = reason || 'MINUTE_THROTTLE_CAP_REACHED';
+    }
+    return {
+      permittedNow: waitUntil <= nowMs,
+      waitUntilMs: waitUntil > nowMs ? waitUntil : null,
+      waitUntilIso: waitUntil > nowMs ? new Date(waitUntil).toISOString() : null,
+      reason
+    };
   }
 
   getDomainCap24h(domain, accountType = 'gmail_personal') {
@@ -778,26 +925,39 @@ class GmailAccountVault {
 
   getInternalAccountsWithUsage() {
     const usage = this.getRolling24hUsage();
-    return this._vault.accounts.map(a => ({
-      ...a,
-      sent24h: usage.perAccount[a.id] || 0,
-      domainSent24h: usage.perDomain[a.domain] || 0,
-      domainCap24h: this.getDomainCap24h(a.domain, a.type)
-    }));
+    return this._vault.accounts.map(a => {
+      const rates = this.getAccountRateCaps(a);
+      return {
+        ...a,
+        capPerMinute: rates.capPerMinute,
+        capPerHour: rates.capPerHour,
+        sent24h: usage.perAccount[a.id] || 0,
+        sent1h: usage.perAccount1h[a.id] || 0,
+        sent1m: usage.perAccount1m[a.id] || 0,
+        domainSent24h: usage.perDomain[a.domain] || 0,
+        domainCap24h: this.getDomainCap24h(a.domain, a.type)
+      };
+    });
   }
 
   _toSafeAccount(acct, usageOpt = null) {
     const usage = usageOpt || this.getRolling24hUsage();
+    const rates = this.getAccountRateCaps(acct);
     const sent24h = usage.perAccount[acct.id] || 0;
+    const sent1h = usage.perAccount1h[acct.id] || 0;
+    const sent1m = usage.perAccount1m[acct.id] || 0;
     const domainSent24h = usage.perDomain[acct.domain] || 0;
     const domainCap24h = this.getDomainCap24h(acct.domain, acct.type);
     const ceiling = PUBLISHED_CEILINGS[acct.type] || 500;
+    const perm = this.getNextPermittedAtMs(acct, usage);
     let status = 'CONNECTED';
     if (!acct.connected) status = acct.blockReason === 'DPAPI_REPROVISION_REQUIRED' ? 'NEEDS_RECONNECT_NEW_MACHINE' : (acct.blockReason === 'GMAIL_AUTH_REVOKED' ? 'REVOKED' : 'DISCONNECTED');
     else if (acct.providerBlocked) status = 'PROVIDER_BLOCKED';
     else if (acct.disabled) status = 'DISABLED';
     else if (sent24h >= acct.cap24h) status = 'ACCOUNT_CAP_REACHED';
     else if (domainSent24h >= domainCap24h) status = 'DOMAIN_CAP_REACHED';
+    else if (sent1h >= rates.capPerHour) status = 'HOURLY_CAP_WAIT';
+    else if (sent1m >= rates.capPerMinute) status = 'MINUTE_CAP_WAIT';
 
     return {
       id: acct.id,
@@ -813,10 +973,15 @@ class GmailAccountVault {
       blockReason: acct.blockReason || null,
       status,
       cap24h: acct.cap24h,
+      capPerHour: rates.capPerHour,
+      capPerMinute: rates.capPerMinute,
       sent24h,
+      sent1h,
+      sent1m,
       remaining24h: Math.max(0, acct.cap24h - sent24h),
       domainSent24h,
       domainCap24h,
+      nextPermittedAt: perm.waitUntilIso,
       verifiedSendAsMasked: (Array.isArray(acct.verifiedSendAs) ? acct.verifiedSendAs : []).map(maskEmail),
       hasRefreshToken: Boolean(acct.hasRefreshToken),
       tokenExpiresAt: acct.tokenExpiresAt || null,
@@ -838,7 +1003,11 @@ module.exports = {
   GMAIL_OAUTH_SCOPES,
   PUBLISHED_CEILINGS,
   DEFAULT_CONSERVATIVE_CAPS,
+  DEFAULT_RATE_CAPS,
   DEFAULT_DOMAIN_CAPS,
+  ROLLING_WINDOW_MS,
+  ROLLING_HOUR_MS,
+  ROLLING_MINUTE_MS,
   maskEmail,
   normalizeEmail,
   emailDomain

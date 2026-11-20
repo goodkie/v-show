@@ -76,6 +76,7 @@ function rawGmailMime(options) {
   const headers = [
     'From: ' + fromHeader(name, from),
     'To: <' + to + '>',
+    ...(options.replyTo ? ['Reply-To: <' + address(options.replyTo) + '>'] : []),
     'Subject: ' + subject,
     'MIME-Version: 1.0',
     'List-Unsubscribe: <' + unsub.href + '>',

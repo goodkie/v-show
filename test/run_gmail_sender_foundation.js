@@ -112,4 +112,9 @@ function baseOptions() {
     const r = require('node:child_process').spawnSync(process.execPath, [integrationTest], { stdio: 'inherit' });
     if (r.status !== 0) process.exitCode = r.status || 1;
   }
+  const safeEngineTest = require('node:path').join(__dirname, 'run_gmail_safe_delivery_engine.js');
+  if (require('node:fs').existsSync(safeEngineTest)) {
+    const r2 = require('node:child_process').spawnSync(process.execPath, [safeEngineTest], { stdio: 'inherit' });
+    if (r2.status !== 0) process.exitCode = r2.status || 1;
+  }
 })().catch(e => { console.error(e); process.exitCode = 1; });

@@ -4362,6 +4362,8 @@ const _handleMainMessageInner = (request, sender, sendResponse) => {
         case 'SAVE_UNSUBSCRIBE_CONFIG':
         case 'GET_EMAIL_SIDECAR_LOGS':
         case 'GET_GMAIL_STATUS':
+        case 'GET_GMAIL_DASHBOARD':
+        case 'CHECK_GMAIL_HYGIENE':
         case 'SAVE_GMAIL_OAUTH_CLIENT':
         case 'START_GMAIL_OAUTH':
         case 'UPDATE_GMAIL_ACCOUNT':
@@ -4433,7 +4435,7 @@ const _handleMainMessageInner = (request, sender, sendResponse) => {
                         });
                     };
                     let token = explicitToken || await pairTok(false);
-                    const isPost = request.action === 'SYNC_EMAIL_PRODUCTION_RECIPIENTS' || request.action === 'RUN_EMAIL_PRODUCTION_QUEUE' || request.action === 'STOP_EMAIL_PRODUCTION_QUEUE' || request.action === 'SEND_REAL_TEST_EMAIL' || request.action === 'RECONCILE_CAMPAIGN_RESEND' || request.action === 'PREVIEW_SECOND_WAVE' || request.action === 'START_SECOND_WAVE' || request.action === 'SAVE_GEMINI_COPY_API_KEY' || request.action === 'TEST_GEMINI_COPY_CONNECTION' || request.action === 'REQUEST_EMAIL_COPY_SUGGESTION' || request.action === 'VERIFY_RECIPIENT_DOMAINS_DNS' || request.action === 'SAVE_IMAGE_HOST_CONFIG' || request.action === 'UPLOAD_EMAIL_IMAGE' || request.action === 'SAVE_UNSUBSCRIBE_CONFIG' || request.action === 'SAVE_GMAIL_OAUTH_CLIENT' || request.action === 'START_GMAIL_OAUTH' || request.action === 'UPDATE_GMAIL_ACCOUNT' || request.action === 'DISCONNECT_GMAIL_ACCOUNT' || request.action === 'SEND_GMAIL_SELF_TEST' || request.action === 'PREPARE_GMAIL_QUEUE' || request.action === 'RUN_GMAIL_PRODUCTION_QUEUE' || request.action === 'STOP_GMAIL_PRODUCTION_QUEUE';
+                    const isPost = request.action === 'SYNC_EMAIL_PRODUCTION_RECIPIENTS' || request.action === 'RUN_EMAIL_PRODUCTION_QUEUE' || request.action === 'STOP_EMAIL_PRODUCTION_QUEUE' || request.action === 'SEND_REAL_TEST_EMAIL' || request.action === 'RECONCILE_CAMPAIGN_RESEND' || request.action === 'PREVIEW_SECOND_WAVE' || request.action === 'START_SECOND_WAVE' || request.action === 'SAVE_GEMINI_COPY_API_KEY' || request.action === 'TEST_GEMINI_COPY_CONNECTION' || request.action === 'REQUEST_EMAIL_COPY_SUGGESTION' || request.action === 'VERIFY_RECIPIENT_DOMAINS_DNS' || request.action === 'SAVE_IMAGE_HOST_CONFIG' || request.action === 'UPLOAD_EMAIL_IMAGE' || request.action === 'SAVE_UNSUBSCRIBE_CONFIG' || request.action === 'SAVE_GMAIL_OAUTH_CLIENT' || request.action === 'START_GMAIL_OAUTH' || request.action === 'UPDATE_GMAIL_ACCOUNT' || request.action === 'DISCONNECT_GMAIL_ACCOUNT' || request.action === 'SEND_GMAIL_SELF_TEST' || request.action === 'PREPARE_GMAIL_QUEUE' || request.action === 'RUN_GMAIL_PRODUCTION_QUEUE' || request.action === 'STOP_GMAIL_PRODUCTION_QUEUE' || request.action === 'CHECK_GMAIL_HYGIENE';
                     const cid = encodeURIComponent(String(request.campaignId || 'default'));
                     const cutoff = encodeURIComponent(String(request.cutoffHours ?? 24));
                     const logLimit = Math.max(10, Math.min(300, Number(request.limit || 150)));
@@ -4463,6 +4465,8 @@ const _handleMainMessageInner = (request, sender, sendResponse) => {
                         SAVE_UNSUBSCRIBE_CONFIG: '/email/unsubscribe/config',
                         GET_EMAIL_SIDECAR_LOGS: `/email/diagnostics/logs?limit=${logLimit}`,
                         GET_GMAIL_STATUS: '/email/gmail/status',
+                        GET_GMAIL_DASHBOARD: '/email/gmail/dashboard',
+                        CHECK_GMAIL_HYGIENE: '/email/gmail/hygiene/check',
                         SAVE_GMAIL_OAUTH_CLIENT: '/email/gmail/oauth/client-config',
                         START_GMAIL_OAUTH: '/email/gmail/oauth/start',
                         UPDATE_GMAIL_ACCOUNT: '/email/gmail/accounts/update',
