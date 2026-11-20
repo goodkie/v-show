@@ -587,11 +587,13 @@ if (typeof window !== 'undefined') {
 
 function callBg(msg, opts = {}) {
   const action = String(msg?.action || 'UNKNOWN');
-  const defaultTimeoutMs = action === 'SYNC_EMAIL_PRODUCTION_RECIPIENTS'
-    ? 50000
-    : ((action === 'SEND_REAL_TEST_EMAIL' || action === 'RUN_EMAIL_PRODUCTION_QUEUE')
-      ? 45000
-      : ((action === 'VERIFY_RECIPIENT_DOMAINS_DNS' || action === 'START_SECOND_WAVE' || action === 'RECONCILE_CAMPAIGN_RESEND' || action === 'UPLOAD_EMAIL_IMAGE') ? 30000 : 20000));
+  const defaultTimeoutMs = action === 'RECONCILE_CAMPAIGN_RESEND'
+    ? 95000
+    : (action === 'SYNC_EMAIL_PRODUCTION_RECIPIENTS'
+      ? 50000
+      : ((action === 'SEND_REAL_TEST_EMAIL' || action === 'RUN_EMAIL_PRODUCTION_QUEUE')
+        ? 45000
+        : ((action === 'VERIFY_RECIPIENT_DOMAINS_DNS' || action === 'START_SECOND_WAVE' || action === 'UPLOAD_EMAIL_IMAGE') ? 30000 : 20000)));
   const timeoutMs = Number.isFinite(opts.timeoutMs) ? opts.timeoutMs : defaultTimeoutMs;
   const startedAt = Date.now();
   const isNoisyPoll = action === 'GET_CAMPAIGN_PROGRESS' || action === 'GET_EMAIL_SIDECAR_LOGS';
@@ -2192,6 +2194,38 @@ function createBuiltinRecipientManager() {
   let activeSyncPromise = null;
   let activeSyncSig = null;
 
+  function getProdCampaignId() {
+    const raw = el('prodCampaignIdInput') ? String(el('prodCampaignIdInput').value || '').trim() : 'default';
+    return /^[A-Za-z0-9._-]{1,64}$/.test(raw) ? raw : 'default';
+  }
+  if (el('btnNewProdCampaignId')) {
+    el('btnNewProdCampaignId').onclick = async () => {
+      const now = new Date();
+      const pad = (n) => String(n).padStart(2, '0');
+      const nextId = `camp_${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
+      if (el('prodCampaignIdInput')) el('prodCampaignIdInput').value = nextId;
+      studioDebugLog('INFO', 'PROD', 'PROD_CAMPAIGN_ID_CREATED', { campaignId: nextId, recipientCount: recipients.length });
+      if (recipients.length) {
+        const res = await syncSidecarRecipients();
+        if (el('prodPreflightStatus')) {
+          el('prodPreflightStatus').className = res?.synced ? 'status-box status-success' : 'status-box status-blocked';
+          el('prodPreflightStatus').textContent = res?.synced
+            ? `🆕 새 캠페인 ID(${nextId})로 동기화 완료 — 과거 캠페인 발송 이력과 분리되어 현재 목록(${recipients.length}명) 중 수신거부 제외 대상에게 새로 발송할 수 있습니다.`
+            : `⚠️ 새 캠페인 ID(${nextId}) 동기화 실패: ${res?.error || 'SYNC_FAILED'}`;
+        }
+        refreshCampaignProgress();
+      }
+    };
+  }
+  if (el('prodCampaignIdInput')) {
+    el('prodCampaignIdInput').addEventListener('change', async () => {
+      const cid = getProdCampaignId();
+      if (el('prodCampaignIdInput').value.trim() !== cid) el('prodCampaignIdInput').value = cid;
+      if (recipients.length) await syncSidecarRecipients();
+      refreshCampaignProgress();
+    });
+  }
+
   function buildSyncPayloadAndSig() {
     const { sidecarPort, sidecarToken } = getSidecarConfig();
     let syncCsv = '';
@@ -2214,7 +2248,9 @@ function createBuiltinRecipientManager() {
     } catch (_) {
       syncCsv = el('recipientCsv') ? el('recipientCsv').value : '';
     }
+    const campaignId = getProdCampaignId();
     const payload = {
+      campaignId,
       csvText: syncCsv,
       optOutText: el('optOutList') ? el('optOutList').value : '',
       messageKind: messageKind(),
@@ -2225,6 +2261,7 @@ function createBuiltinRecipientManager() {
     };
     const sig = [
       sidecarPort,
+      campaignId,
       listLen,
       syncCsv.length,
       firstEmail,
@@ -2925,11 +2962,14 @@ function createBuiltinRecipientManager() {
           ? `🟢 QUEUE READY — ${qReadyCount} VERIFIED OPT-IN`
           : `⏸️ QUEUE NOT READY — ${qReadyCount > 0 ? qReadyCount : 0} QUEUED / ${consentedCount} DOCUMENTED OPT-IN`;
       }
+      const trackingNote = (rdc.openTracking !== null && rdc.openTracking !== undefined)
+        ? ` | OpenTracking=${rdc.openTracking ? 'ON' : 'OFF'}, ClickTracking=${rdc.clickTracking ? 'ON' : 'OFF'}`
+        : '';
       pBox.className = (d.externalDnsStatus === 'VERIFIED' && gateAction !== 'BLOCK') ? 'status-box status-success' : 'status-box status-blocked';
       pBox.textContent = [
-        `🔍 [운영 발송 점검 — PRODUCTION UNLOCKED · 큐 상태: ${(qReadyCount > 0 && gateAction !== 'BLOCK') ? 'QUEUE READY' : 'QUEUE NOT READY — 0 ELIGIBLE QUEUED OPT-IN RECIPIENTS'}]`,
-        `• 도메인/DNS (${d.domain || 'vivpr.pro'}): ${d.externalDnsStatus || 'BLOCKED_EXTERNAL_DNS'} (Resend=${rdc.registered ? rdc.status : 'UNREGISTERED'}, SPF=${dns.spf?.pass ? 'PASS' : 'FAIL'}, DKIM=${dns.dkim?.pass ? 'PASS' : 'FAIL'}, DMARC=${dns.dmarc?.pass ? 'PASS' : 'FAIL'})`,
-        `• NTFS 동의 원장: ${consentedCount}건 | 활성 큐 대기: ${qReadyCount}건 | 수신거부/반송 원장: ${qs.suppressedRecordsOnDisk || 0}건`,
+        `🔍 [운영 발송 점검 — PRODUCTION UNLOCKED · 캠페인: ${qs.campaignId || getProdCampaignId()} · 큐 상태: ${(qReadyCount > 0 && gateAction !== 'BLOCK') ? 'QUEUE READY' : ((Number(qs.counts?.ACCEPTED || 0) > 0 && qReadyCount === 0) ? 'COMPLETED' : 'QUEUE NOT READY — 0 ELIGIBLE QUEUED OPT-IN RECIPIENTS')}]`,
+        `• 도메인/DNS (${d.domain || 'vivpr.pro'}): ${d.externalDnsStatus || 'BLOCKED_EXTERNAL_DNS'} (Resend=${rdc.registered ? rdc.status : 'UNREGISTERED'}, SPF=${dns.spf?.pass ? 'PASS' : 'FAIL'}, DKIM=${dns.dkim?.pass ? 'PASS' : 'FAIL'}, DMARC=${dns.dmarc?.pass ? 'PASS' : 'FAIL'}${trackingNote})`,
+        `• NTFS 동의 원장: ${consentedCount}건 | 활성 큐 대기: ${qReadyCount}건 | 수신거부/반송 차단 원장: ${qs.suppressedRecordsOnDisk || 0}건 (수신거부 ${qs.unsubscribedRecordsOnDisk || 0}건)`,
         `• 공개 HTTPS 수신거부 & Svix 웹훅: ${d.publicUnsubscribeHttpsStatus || 'UNKNOWN'} / ${d.webhookEndpoint || 'WORKING'}`,
         ...(gateReasons.length ? [`• 현재 큐 차단 사유: ${gateReasons.join(', ')} (수집 CSV는 동의로 간주되지 않으며, 동의 확인 체크 + 가져오기 필요)`] : ['• 모든 기술·동의 게이트 통과 — 동의된 수신자에게 발송 가능']),
         ...(todo.length ? [`• 추가 필요 조치 (${todo.length}건):`, ...todo.map(x => `  - ${x}`)] : [])
@@ -3099,7 +3139,8 @@ function createBuiltinRecipientManager() {
     const sumBox = el('campaignMonitorSummary');
     const syncBadge = el('monitorSyncBadge');
     const { sidecarPort, sidecarToken } = getSidecarConfig();
-    const r = await callBg({ action: 'GET_CAMPAIGN_PROGRESS', sidecarPort, sidecarToken, campaignId: 'default' });
+    const campaignId = getProdCampaignId();
+    const r = await callBg({ action: 'GET_CAMPAIGN_PROGRESS', sidecarPort, sidecarToken, campaignId });
     if (!r || !r.ok || !r.data) {
       if (syncBadge) syncBadge.textContent = `연결 끊김 / 마지막 동기화: ${lastSyncDisplay}`;
       if (sumBox) sumBox.className = 'status-box status-blocked';
@@ -3138,6 +3179,19 @@ function createBuiltinRecipientManager() {
         }
       }
     }
+    // Keep top queue badges synchronized with live queue completion state (prevent stale QUEUE READY badge)
+    if (el('prodQueueBadge')) {
+      if (d.queueRunning) {
+        el('prodQueueBadge').textContent = `🚀 SENDING — 남은 대기 ${d.remainingToSubmit || 0}건 / 접수 ${d.apiAccepted || 0}건`;
+      } else if ((d.remainingToSubmit || 0) === 0 && (d.apiAccepted || 0) > 0) {
+        el('prodQueueBadge').textContent = `✅ COMPLETED — ${d.apiAccepted} SENT (잔여 0건)`;
+      } else if ((d.remainingToSubmit || 0) > 0) {
+        el('prodQueueBadge').textContent = `🟢 QUEUE READY — ${d.remainingToSubmit} VERIFIED OPT-IN`;
+      }
+    }
+    if (el('headerProdStateBadge') && !d.queueRunning && (d.remainingToSubmit || 0) === 0 && (d.apiAccepted || 0) > 0) {
+      el('headerProdStateBadge').textContent = `✅ 상용발송 완료 · 접수 ${d.apiAccepted}건 / 전달 ${d.delivered || 0}건`;
+    }
     lastSyncDisplay = d.lastSyncAt || d.updatedAt || new Date().toISOString();
     if (syncBadge) syncBadge.textContent = `동기화: ${d.syncStatus || 'OK'} (${lastSyncDisplay.slice(11, 19)}Z)`;
     if (el('progAcceptedBar')) el('progAcceptedBar').value = Math.min(100, Math.max(0, Number(d.acceptedPct || 0)));
@@ -3146,13 +3200,17 @@ function createBuiltinRecipientManager() {
     if (el('progDeliveredText')) el('progDeliveredText').textContent = `${d.delivered || 0} / ${d.target || 0} (${d.deliveredPct || 0}%)`;
     if (sumBox) {
       const errKeys = Object.entries(d.errorsSummary || {}).map(([k, v]) => `${k}: ${v}건`).join(', ');
-      sumBox.className = (d.failed > 0 || d.bounced > 0 || d.complained > 0) ? 'status-box status-blocked' : 'status-box status-success';
+      const supNote = d.providerSuppressed > 0 ? `, Resend차단=${d.providerSuppressed}` : '';
+      const globalUnsubNote = (typeof d.remoteUnsubscribedTotal === 'number' && d.remoteUnsubscribedTotal > (d.unsubscribed || 0))
+        ? ` / 전체누적 ${d.remoteUnsubscribedTotal}`
+        : '';
+      sumBox.className = (d.failed > 0 || d.bounced > 0 || d.complained > 0 || d.unsubscribed > 0) ? 'status-box status-blocked' : 'status-box status-success';
       sumBox.textContent = [
         `📌 캠페인: ${d.campaignId} | 배치: ${d.batchId} | 상태: ${d.stopped ? 'STOPPED/PAUSED' : (d.finishedAt ? 'FINISHED' : 'ACTIVE')}`,
         `• 대상(Target): ${d.target} | 미제출(Remaining): ${d.remainingToSubmit} | 발송중(In-Flight): ${d.inFlight}`,
         `• API 접수(ACCEPTED): ${d.apiAccepted} | 전달 대기(Pending): ${d.deliveryPending} | 전달 확인(DELIVERED): ${d.delivered}`,
         `• 오픈(Unique): ${d.openedUnique} | 클릭(Unique): ${d.clickedUnique} | 반송(Bounce): ${d.bounced} (Hard=${d.bouncedHard}, Soft=${d.bouncedSoft}) | 스팸신고: ${d.complained}`,
-        `• 실패(FAILED): ${d.failed} | 제외/수신거부: ${d.suppressed} (Unsub=${d.unsubscribed})`,
+        `• 실패(FAILED): ${d.failed} | 제외/차단: ${d.suppressed} (수신거부 Unsub=${d.unsubscribed}${globalUnsubNote}${supNote})`,
         ...(errKeys ? [`• 실패 사유: ${errKeys}`] : [])
       ].join('\n');
     }
@@ -3161,10 +3219,15 @@ function createBuiltinRecipientManager() {
   if (el('btnReconcileResendHistory')) {
     el('btnReconcileResendHistory').onclick = async () => {
       const sumBox = el('campaignMonitorSummary');
-      if (sumBox) { sumBox.className = 'status-box status-loading'; sumBox.textContent = '⏳ Resend API 이력 대조 중 (최대 25건)...'; }
+      const campaignId = getProdCampaignId();
+      if (sumBox) { sumBox.className = 'status-box status-loading'; sumBox.textContent = '⏳ Resend API 이력 대조 중 (최대 200건 · 완료까지 수 초 소요)...'; }
       const { sidecarPort, sidecarToken } = getSidecarConfig();
-      await callBg({ action: 'RECONCILE_CAMPAIGN_RESEND', sidecarPort, sidecarToken, payload: { campaignId: 'default', limit: 25 } });
+      const rec = await callBg({ action: 'RECONCILE_CAMPAIGN_RESEND', sidecarPort, sidecarToken, payload: { campaignId, limit: 200 } });
       await refreshCampaignProgress();
+      if (sumBox && rec?.ok && rec?.data) {
+        const rd = rec.data;
+        sumBox.textContent += `\n• 🔎 이력 대조 완료: 조회 ${rd.checked || 0}건 / 신규 갱신 ${rd.updated || 0}건 / 남은 미확정 대기 ${rd.remainingPending || 0}건`;
+      }
     };
   }
   if (el('btnToggleLivePoll')) {
@@ -3185,9 +3248,10 @@ function createBuiltinRecipientManager() {
       const box = el('secondWaveStatus');
       const cutoffHours = Number(el('secondWaveCutoffHours')?.value ?? 24);
       const { sidecarPort, sidecarToken } = getSidecarConfig();
+      const campaignId = getProdCampaignId();
       const [segR, prevR] = await Promise.all([
-        callBg({ action: 'GET_CAMPAIGN_SEGMENTS', sidecarPort, sidecarToken, campaignId: 'default', cutoffHours }),
-        callBg({ action: 'PREVIEW_SECOND_WAVE', sidecarPort, sidecarToken, payload: { parentCampaignId: 'default', cutoffHours } })
+        callBg({ action: 'GET_CAMPAIGN_SEGMENTS', sidecarPort, sidecarToken, campaignId, cutoffHours }),
+        callBg({ action: 'PREVIEW_SECOND_WAVE', sidecarPort, sidecarToken, payload: { parentCampaignId: campaignId, cutoffHours } })
       ]);
       if (!prevR?.ok || !prevR.data) {
         if (box) { box.className = 'status-box status-error'; box.textContent = `❌ 2차 발송 미리보기 실패: ${prevR?.error || '-'}`; }
@@ -3211,7 +3275,8 @@ function createBuiltinRecipientManager() {
       const box = el('secondWaveStatus');
       const cutoffHours = Number(el('secondWaveCutoffHours')?.value ?? 24);
       const { sidecarPort, sidecarToken } = getSidecarConfig();
-      const prevR = await callBg({ action: 'PREVIEW_SECOND_WAVE', sidecarPort, sidecarToken, payload: { parentCampaignId: 'default', cutoffHours } });
+      const campaignId = getProdCampaignId();
+      const prevR = await callBg({ action: 'PREVIEW_SECOND_WAVE', sidecarPort, sidecarToken, payload: { parentCampaignId: campaignId, cutoffHours } });
       const p = prevR?.data;
       if (!prevR?.ok || !p || p.eligibleCount <= 0) {
         if (box) { box.className = 'status-box status-blocked'; box.textContent = `🛑 2차 발송 불가: 적격 미오픈 수신자가 0명입니다 (반송/수신거부/전달미확인 제외됨).`; }
@@ -3231,7 +3296,7 @@ function createBuiltinRecipientManager() {
         sidecarPort,
         sidecarToken,
         payload: {
-          parentCampaignId: 'default',
+          parentCampaignId: campaignId,
           waveCampaignId: p.waveCampaignId,
           cutoffHours,
           subject,

@@ -4455,11 +4455,13 @@ const _handleMainMessageInner = (request, sender, sendResponse) => {
                         GET_EMAIL_SIDECAR_LOGS: `/email/diagnostics/logs?limit=${logLimit}`
                     };
                     const url = `http://127.0.0.1:${ctrlPort}${routeMap[request.action]}`;
-                    const timeoutMs = request.action === 'SYNC_EMAIL_PRODUCTION_RECIPIENTS'
-                        ? 45000
-                        : ((request.action === 'SEND_REAL_TEST_EMAIL' || request.action === 'RUN_EMAIL_PRODUCTION_QUEUE')
-                            ? 35000
-                            : ((request.action === 'VERIFY_RECIPIENT_DOMAINS_DNS' || request.action === 'RECONCILE_CAMPAIGN_RESEND' || request.action === 'START_SECOND_WAVE' || request.action === 'REQUEST_EMAIL_COPY_SUGGESTION' || request.action === 'UPLOAD_EMAIL_IMAGE') ? 25000 : 15000));
+                    const timeoutMs = request.action === 'RECONCILE_CAMPAIGN_RESEND'
+                        ? 90000
+                        : (request.action === 'SYNC_EMAIL_PRODUCTION_RECIPIENTS'
+                            ? 45000
+                            : ((request.action === 'SEND_REAL_TEST_EMAIL' || request.action === 'RUN_EMAIL_PRODUCTION_QUEUE')
+                                ? 35000
+                                : ((request.action === 'VERIFY_RECIPIENT_DOMAINS_DNS' || request.action === 'START_SECOND_WAVE' || request.action === 'REQUEST_EMAIL_COPY_SUGGESTION' || request.action === 'UPLOAD_EMAIL_IMAGE') ? 25000 : 15000)));
                     const doFetch = async (tok) => {
                         const ctrl = new AbortController();
                         const timer = setTimeout(() => ctrl.abort(), timeoutMs);

@@ -34,46 +34,94 @@ class CampaignAnalyticsEngine {
     this.lastSyncAt = null;
     this.lastProviderEvent = null;
     this.syncStatus = 'IDLE';
+    this._eventsFileSig = null;
+    this._eventsCache = [];
+    this._byEmailId = new Map();
+    this._byHash = new Map();
+    this._auditFileSig = null;
+    this._auditAcceptedIdMap = new Map();
+    this._supFileSig = null;
+    this._suppressedMapCache = {};
+    this._syncEventsInFlight = null;
     this.eventIds = this._loadEventIds();
+  }
+
+  _getFileSig(fp) {
+    try {
+      const st = fs.statSync(fp);
+      return `${st.ino || 0}:${st.size}:${st.mtimeMs}`;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  _indexSingleEvent(evt) {
+    if (!evt || typeof evt !== 'object') return;
+    if (evt.email_id) {
+      if (!this._byEmailId.has(evt.email_id)) this._byEmailId.set(evt.email_id, []);
+      this._byEmailId.get(evt.email_id).push(evt);
+    }
+    const hashes = Array.isArray(evt.recipient_hashes) ? evt.recipient_hashes : [];
+    for (const h of hashes) {
+      if (!h) continue;
+      if (!this._byHash.has(h)) this._byHash.set(h, []);
+      this._byHash.get(h).push(evt);
+    }
   }
 
   _loadEventIds() {
     const ids = new Set();
+    this._eventsCache = [];
+    this._byEmailId = new Map();
+    this._byHash = new Map();
     try {
       if (fs.existsSync(this.eventsFile)) {
         const lines = fs.readFileSync(this.eventsFile, 'utf8').split('\n').filter(Boolean);
         for (const l of lines) {
           try {
             const o = JSON.parse(l);
-            if (o && o.event_id) ids.add(String(o.event_id));
-            if (o && o.created_at) this.lastProviderEvent = o.created_at;
+            if (!o) continue;
+            if (o.event_id) ids.add(String(o.event_id));
+            if (o.created_at) this.lastProviderEvent = o.created_at;
+            this._eventsCache.push(o);
+            this._indexSingleEvent(o);
           } catch (_) {}
         }
+        this._eventsFileSig = this._getFileSig(this.eventsFile);
+      } else {
+        this._eventsFileSig = null;
       }
     } catch (_) {}
     return ids;
   }
 
+  _ensureEventsCache() {
+    const sig = this._getFileSig(this.eventsFile);
+    if (sig !== this._eventsFileSig) {
+      this.eventIds = this._loadEventIds();
+    }
+  }
+
   recordEvent(evt) {
+    this._ensureEventsCache();
     const eventId = String(evt?.event_id || '').trim();
     if (!eventId || this.eventIds.has(eventId)) return false;
     this.eventIds.add(eventId);
     fs.mkdirSync(this.stateDir, { recursive: true });
     fs.appendFileSync(this.eventsFile, JSON.stringify(evt) + '\n', { mode: 0o600 });
+    this._eventsCache.push(evt);
+    this._indexSingleEvent(evt);
+    this._eventsFileSig = this._getFileSig(this.eventsFile);
     if (evt.created_at) this.lastProviderEvent = evt.created_at;
     return true;
   }
 
   listEvents() {
-    if (!fs.existsSync(this.eventsFile)) return [];
-    const out = [];
-    for (const l of fs.readFileSync(this.eventsFile, 'utf8').split('\n').filter(Boolean)) {
-      try { out.push(JSON.parse(l)); } catch (_) {}
-    }
-    return out;
+    this._ensureEventsCache();
+    return this._eventsCache;
   }
 
-  async syncRemoteEvents({ baseUrl, syncToken, fetchImpl = null } = {}) {
+  async syncRemoteEvents({ baseUrl, syncToken, fetchImpl = null, timeoutMs = 8000 } = {}) {
     const targetBase = String(baseUrl || '').replace(/\/+$/, '');
     const tok = String(syncToken || '').trim();
     const doFetch = typeof fetchImpl === 'function' ? fetchImpl : globalThis.fetch;
@@ -81,28 +129,43 @@ class CampaignAnalyticsEngine {
       this.syncStatus = 'NOT_CONFIGURED';
       return { ok: false, reason: 'EVENT_SYNC_NOT_CONFIGURED', added: 0 };
     }
-    try {
-      const resp = await doFetch(`${targetBase}/api/sync/events?limit=2000`, {
-        method: 'GET',
-        headers: { 'Authorization': `Bearer ${tok}` }
-      });
-      if (!resp || !resp.ok) {
-        this.syncStatus = 'DISCONNECTED';
-        return { ok: false, reason: `EVENT_SYNC_HTTP_${resp ? resp.status : 'ERR'}`, added: 0 };
-      }
-      const data = await resp.json().catch(() => ({}));
-      const list = Array.isArray(data.events) ? data.events : [];
-      let added = 0;
-      for (const evt of list) {
-        if (this.recordEvent(evt)) added++;
-      }
-      this.lastSyncAt = new Date().toISOString();
-      this.syncStatus = 'OK';
-      return { ok: true, added, totalRemote: list.length, lastSyncAt: this.lastSyncAt };
-    } catch (err) {
-      this.syncStatus = 'DISCONNECTED';
-      return { ok: false, reason: err.message || 'EVENT_SYNC_ERROR', added: 0 };
+    if (this._syncEventsInFlight && typeof fetchImpl !== 'function') {
+      return this._syncEventsInFlight;
     }
+    const run = (async () => {
+      try {
+        const resp = await doFetch(`${targetBase}/api/sync/events?limit=2000`, {
+          method: 'GET',
+          headers: { 'Authorization': `Bearer ${tok}` },
+          ...(typeof fetchImpl !== 'function' && typeof AbortSignal?.timeout === 'function'
+            ? { signal: AbortSignal.timeout(Math.max(2000, Number(timeoutMs) || 8000)) }
+            : {})
+        });
+        if (!resp || !resp.ok) {
+          this.syncStatus = 'DISCONNECTED';
+          return { ok: false, reason: `EVENT_SYNC_HTTP_${resp ? resp.status : 'ERR'}`, added: 0 };
+        }
+        const data = await resp.json().catch(() => ({}));
+        const list = Array.isArray(data.events) ? data.events : [];
+        let added = 0;
+        for (const evt of list) {
+          if (this.recordEvent(evt)) added++;
+        }
+        this.lastSyncAt = new Date().toISOString();
+        this.syncStatus = 'OK';
+        return { ok: true, added, totalRemote: list.length, lastSyncAt: this.lastSyncAt };
+      } catch (err) {
+        this.syncStatus = 'DISCONNECTED';
+        return { ok: false, reason: err.message || 'EVENT_SYNC_ERROR', added: 0 };
+      }
+    })();
+    if (typeof fetchImpl !== 'function') {
+      this._syncEventsInFlight = run.finally(() => {
+        if (this._syncEventsInFlight === run) this._syncEventsInFlight = null;
+      });
+      return this._syncEventsInFlight;
+    }
+    return run;
   }
 
   _readJsonSafe(fp, fallback) {
@@ -112,27 +175,81 @@ class CampaignAnalyticsEngine {
     return fallback;
   }
 
-  _buildEventsIndexByEmailIdAndHash() {
-    const byEmailId = new Map();
-    const byHash = new Map();
-    for (const evt of this.listEvents()) {
-      if (evt.email_id) {
-        if (!byEmailId.has(evt.email_id)) byEmailId.set(evt.email_id, []);
-        byEmailId.get(evt.email_id).push(evt);
+  _loadSuppressedMap() {
+    const sig = this._getFileSig(this.suppressedHashesFile);
+    if (sig === this._supFileSig && this._suppressedMapCache) {
+      return this._suppressedMapCache;
+    }
+    const out = {};
+    const raw = this._readJsonSafe(this.suppressedHashesFile, null);
+    if (Array.isArray(raw)) {
+      for (const item of raw) {
+        const h = String(item || '').trim().toLowerCase();
+        if (h) out[h] = { reason: 'SUPPRESSED', suppressedAt: null, updatedAt: null };
       }
-      const hashes = Array.isArray(evt.recipient_hashes) ? evt.recipient_hashes : [];
-      for (const h of hashes) {
-        if (!byHash.has(h)) byHash.set(h, []);
-        byHash.get(h).push(evt);
+    } else if (raw && typeof raw === 'object') {
+      for (const [k, v] of Object.entries(raw)) {
+        const h = String(k || '').trim().toLowerCase();
+        if (!h) continue;
+        if (v && typeof v === 'object') {
+          out[h] = {
+            reason: String(v.reason || 'SUPPRESSED').trim().toUpperCase() || 'SUPPRESSED',
+            suppressedAt: v.suppressedAt || v.suppressed_at || null,
+            updatedAt: v.updatedAt || v.updated_at || null
+          };
+        } else {
+          out[h] = { reason: 'SUPPRESSED', suppressedAt: null, updatedAt: null };
+        }
       }
     }
-    return { byEmailId, byHash };
+    this._supFileSig = sig;
+    this._suppressedMapCache = out;
+    return out;
+  }
+
+  _loadAuditAcceptedIdMap() {
+    const sig = this._getFileSig(this.auditFile);
+    if (sig === this._auditFileSig && this._auditAcceptedIdMap) {
+      return this._auditAcceptedIdMap;
+    }
+    const map = new Map();
+    try {
+      if (fs.existsSync(this.auditFile)) {
+        const lines = fs.readFileSync(this.auditFile, 'utf8').split('\n').filter(Boolean);
+        for (const l of lines) {
+          try {
+            const ev = JSON.parse(l);
+            if (ev && ev.type === 'SEND_ATTEMPT_ACCEPTED' && ev.idempotencyKey && ev.providerMessageId && ev.providerMessageId !== 'prior_accepted') {
+              map.set(String(ev.idempotencyKey), String(ev.providerMessageId));
+            }
+          } catch (_) {}
+        }
+      }
+    } catch (_) {}
+    this._auditFileSig = sig;
+    this._auditAcceptedIdMap = map;
+    return map;
+  }
+
+  _resolveEntryMessageId(e, auditMap) {
+    const raw = e && e.providerMessageId ? String(e.providerMessageId).trim() : '';
+    if (raw && raw !== 'prior_accepted') return raw;
+    if (e && e.idempotencyKey && auditMap && auditMap.has(String(e.idempotencyKey))) {
+      return auditMap.get(String(e.idempotencyKey));
+    }
+    return null;
+  }
+
+  _buildEventsIndexByEmailIdAndHash() {
+    this._ensureEventsCache();
+    return { byEmailId: this._byEmailId, byHash: this._byHash };
   }
 
   getCampaignProgress(campaignId = 'default') {
     const q = this._readJsonSafe(this.queueFile, { campaignId: 'default', entries: [] });
     const entries = (q.campaignId === campaignId || campaignId === 'default') ? (Array.isArray(q.entries) ? q.entries : []) : [];
-    const suppressedMap = this._readJsonSafe(this.suppressedHashesFile, {});
+    const suppressedMap = this._loadSuppressedMap();
+    const auditMap = this._loadAuditAcceptedIdMap();
     const { byEmailId, byHash } = this._buildEventsIndexByEmailIdAndHash();
 
     const target = entries.length;
@@ -143,6 +260,8 @@ class CampaignAnalyticsEngine {
     let bouncedHard = 0;
     let bouncedSoft = 0;
     let complained = 0;
+    let providerSuppressed = 0;
+    let providerFailed = 0;
     let failed = 0;
     let suppressed = 0;
     let unsubscribed = 0;
@@ -153,14 +272,17 @@ class CampaignAnalyticsEngine {
 
     for (const e of entries) {
       const rh = sha256Hex(e.email);
-      const evts = e.providerMessageId && byEmailId.has(e.providerMessageId)
-        ? byEmailId.get(e.providerMessageId)
+      const resolvedId = this._resolveEntryMessageId(e, auditMap);
+      const evts = resolvedId && byEmailId.has(resolvedId)
+        ? byEmailId.get(resolvedId)
         : (byHash.get(rh) || []);
 
       const types = new Set(evts.map(x => x.type));
       const hasBounce = types.has('email.bounced');
       const hasComplaint = types.has('email.complained');
       const hasDelivered = types.has('email.delivered');
+      const hasProviderSuppressed = types.has('email.suppressed');
+      const hasProviderFailed = types.has('email.failed');
       const hasOpened = types.has('email.opened');
       const hasClicked = types.has('email.clicked');
       const supRec = suppressedMap[rh];
@@ -173,6 +295,7 @@ class CampaignAnalyticsEngine {
         errorsSummary[reason] = (errorsSummary[reason] || 0) + 1;
       } else if (e.status === 'SKIPPED_SUPPRESSED' || e.status === 'SKIPPED_NO_CONSENT' || e.status === 'BLOCKED_CONSENT_UNVERIFIED') {
         suppressed++;
+        if (supRec && supRec.reason === 'UNSUBSCRIBED') unsubscribed++;
       } else if (e.status === 'ACCEPTED' || e.status === 'DELIVERED') {
         apiAccepted++;
         if (hasComplaint) {
@@ -181,6 +304,12 @@ class CampaignAnalyticsEngine {
           const bEvt = evts.find(x => x.type === 'email.bounced');
           if (bEvt && bEvt.bounce_type === 'soft') bouncedSoft++;
           else bouncedHard++;
+        } else if (hasProviderSuppressed) {
+          providerSuppressed++;
+          suppressed++;
+        } else if (hasProviderFailed) {
+          providerFailed++;
+          failed++;
         } else if (hasDelivered || e.status === 'DELIVERED') {
           delivered++;
         }
@@ -192,7 +321,13 @@ class CampaignAnalyticsEngine {
       }
     }
 
-    const deliveryPending = Math.max(0, apiAccepted - delivered - bouncedHard - bouncedSoft - complained);
+    let remoteUnsubscribedTotal = 0;
+    const remoteSuppressedTotal = Object.keys(suppressedMap).length;
+    for (const rec of Object.values(suppressedMap)) {
+      if (rec && rec.reason === 'UNSUBSCRIBED') remoteUnsubscribedTotal++;
+    }
+
+    const deliveryPending = Math.max(0, apiAccepted - delivered - bouncedHard - bouncedSoft - complained - providerSuppressed - providerFailed);
     const acceptedPct = target > 0 ? Math.round((apiAccepted / target) * 1000) / 10 : 0;
     const deliveredPct = target > 0 ? Math.round((delivered / target) * 1000) / 10 : 0;
 
@@ -210,9 +345,13 @@ class CampaignAnalyticsEngine {
       bouncedHard,
       bouncedSoft,
       complained,
+      providerSuppressed,
+      providerFailed,
       failed,
       suppressed,
       unsubscribed,
+      remoteSuppressedTotal,
+      remoteUnsubscribedTotal,
       unknown,
       openedUnique,
       clickedUnique,
@@ -264,12 +403,14 @@ class CampaignAnalyticsEngine {
     const store = this._loadMasterList();
     const consent = this._readJsonSafe(this.consentFile, { records: {} });
     const q = this._readJsonSafe(this.queueFile, { campaignId: 'default', entries: [] });
-    const sup = this._readJsonSafe(this.suppressedHashesFile, {});
+    const sup = this._loadSuppressedMap();
+    const auditMap = this._loadAuditAcceptedIdMap();
     const { byEmailId, byHash } = this._buildEventsIndexByEmailIdAndHash();
 
     for (const cRec of Object.values(consent.records || {})) {
       const email = RM.normalizeEmail(cRec.email);
       if (!email) continue;
+      const rh = sha256Hex(email);
       const cur = store.records[email] || {
         email,
         name: cRec.name || '',
@@ -292,6 +433,10 @@ class CampaignAnalyticsEngine {
         lastEventAt: null
       };
       cur.attestationAt = cur.attestationAt || cRec.authorizationAt || null;
+      if (sup[rh]) {
+        cur.unsubscribed = sup[rh].reason === 'UNSUBSCRIBED' ? true : cur.unsubscribed;
+        cur.suppressionReason = sup[rh].reason || cur.suppressionReason;
+      }
       store.records[email] = cur;
     }
 
@@ -329,12 +474,17 @@ class CampaignAnalyticsEngine {
         cur.lastSentAt = e.updatedAt || cur.lastSentAt;
         cur.lastDeliveryStatus = cur.lastDeliveryStatus || 'ACCEPTED';
       }
-      const evts = e.providerMessageId && byEmailId.has(e.providerMessageId) ? byEmailId.get(e.providerMessageId) : (byHash.get(rh) || []);
+      const resolvedId = this._resolveEntryMessageId(e, auditMap);
+      const evts = resolvedId && byEmailId.has(resolvedId) ? byEmailId.get(resolvedId) : (byHash.get(rh) || []);
       for (const evt of evts) {
         cur.lastEventAt = evt.created_at || cur.lastEventAt;
         if (evt.type === 'email.delivered' && !cur.bounceType && !cur.complained) cur.lastDeliveryStatus = 'DELIVERED';
         if (evt.type === 'email.opened') cur.lastOpenedAt = evt.created_at || cur.lastOpenedAt;
         if (evt.type === 'email.clicked') cur.lastClickedAt = evt.created_at || cur.lastClickedAt;
+        if (evt.type === 'email.suppressed') {
+          cur.lastDeliveryStatus = 'SUPPRESSED';
+          cur.suppressionReason = cur.suppressionReason || 'PROVIDER_SUPPRESSED';
+        }
         if (evt.type === 'email.bounced') {
           cur.bounceType = evt.bounce_type || 'hard';
           cur.lastDeliveryStatus = 'BOUNCED';
@@ -403,7 +553,8 @@ class CampaignAnalyticsEngine {
   getCampaignSegments(campaignId = 'default', { cutoffHours = 24 } = {}) {
     const q = this._readJsonSafe(this.queueFile, { campaignId: 'default', entries: [] });
     const entries = (q.campaignId === campaignId || campaignId === 'default') ? (q.entries || []) : [];
-    const sup = this._readJsonSafe(this.suppressedHashesFile, {});
+    const sup = this._loadSuppressedMap();
+    const auditMap = this._loadAuditAcceptedIdMap();
     const { byEmailId, byHash } = this._buildEventsIndexByEmailIdAndHash();
     const cutoffMs = Number(cutoffHours) > 0 ? Date.now() - Number(cutoffHours) * 3600000 : Date.now();
 
@@ -414,23 +565,27 @@ class CampaignAnalyticsEngine {
 
     for (const e of entries) {
       const rh = sha256Hex(e.email);
-      const evts = e.providerMessageId && byEmailId.has(e.providerMessageId) ? byEmailId.get(e.providerMessageId) : (byHash.get(rh) || []);
+      const resolvedId = this._resolveEntryMessageId(e, auditMap);
+      const evts = resolvedId && byEmailId.has(resolvedId) ? byEmailId.get(resolvedId) : (byHash.get(rh) || []);
       const types = new Set(evts.map(x => x.type));
-      const isSup = Boolean(sup[rh]) || types.has('email.bounced') || types.has('email.complained');
+      const isSup = Boolean(sup[rh]) || types.has('email.bounced') || types.has('email.complained') || types.has('email.suppressed');
       if (e.status !== 'ACCEPTED' && e.status !== 'DELIVERED') {
         excluded.push({ masked: maskEmail(e.email), reason: e.status });
         continue;
       }
       if (isSup) {
-        excluded.push({ masked: maskEmail(e.email), reason: sup[rh]?.reason || (types.has('email.complained') ? 'COMPLAINED' : 'BOUNCED') });
+        excluded.push({
+          masked: maskEmail(e.email),
+          reason: sup[rh]?.reason || (types.has('email.complained') ? 'COMPLAINED' : (types.has('email.suppressed') ? 'PROVIDER_SUPPRESSED' : 'BOUNCED'))
+        });
         continue;
       }
       if (types.has('email.opened')) {
-        opened.push({ email: e.email, masked: maskEmail(e.email), providerMessageId: e.providerMessageId });
+        opened.push({ email: e.email, masked: maskEmail(e.email), providerMessageId: resolvedId || e.providerMessageId });
       } else if (types.has('email.delivered') || e.status === 'DELIVERED') {
         const sentMs = e.updatedAt ? Date.parse(e.updatedAt) : 0;
         if (!sentMs || sentMs <= cutoffMs || Number(cutoffHours) === 0) {
-          notConfirmedOpened.push({ email: e.email, masked: maskEmail(e.email), providerMessageId: e.providerMessageId });
+          notConfirmedOpened.push({ email: e.email, masked: maskEmail(e.email), providerMessageId: resolvedId || e.providerMessageId });
         } else {
           acceptedPendingDelivery.push({ masked: maskEmail(e.email), reason: 'WITHIN_CUTOFF_WINDOW' });
         }
@@ -484,7 +639,7 @@ class CampaignAnalyticsEngine {
     };
   }
 
-  async reconcileWithResendApi({ apiKey, campaignId = 'default', limit = 25, fetchImpl = null } = {}) {
+  async reconcileWithResendApi({ apiKey, campaignId = 'default', limit = 200, fetchImpl = null } = {}) {
     const key = String(apiKey || '').trim();
     const doFetch = typeof fetchImpl === 'function' ? fetchImpl : globalThis.fetch;
     if (!key || typeof doFetch !== 'function') {
@@ -492,52 +647,81 @@ class CampaignAnalyticsEngine {
     }
     const q = this._readJsonSafe(this.queueFile, { campaignId: 'default', entries: [] });
     const entries = (q.campaignId === campaignId || campaignId === 'default') ? (q.entries || []) : [];
-    const { byEmailId } = this._buildEventsIndexByEmailIdAndHash();
-    const maxCheck = Math.min(Math.max(Number(limit) || 25, 1), 100);
+    const auditMap = this._loadAuditAcceptedIdMap();
+    const { byEmailId, byHash } = this._buildEventsIndexByEmailIdAndHash();
+    const maxCheck = Math.min(Math.max(Number(limit) || 200, 1), 250);
     let checked = 0;
     let updated = 0;
+    let skippedNoUuid = 0;
+    let remainingPending = 0;
+    const updatedByType = {};
+    const evtMap = {
+      delivered: 'email.delivered',
+      bounced: 'email.bounced',
+      complained: 'email.complained',
+      opened: 'email.opened',
+      clicked: 'email.clicked',
+      delivery_delayed: 'email.delivery_delayed',
+      suppressed: 'email.suppressed',
+      failed: 'email.failed',
+      canceled: 'email.failed'
+    };
+    const isTerminal = (evts) => evts.some(x =>
+      x.type === 'email.delivered' ||
+      x.type === 'email.bounced' ||
+      x.type === 'email.complained' ||
+      x.type === 'email.suppressed' ||
+      x.type === 'email.failed'
+    );
+
     for (const e of entries) {
-      if (checked >= maxCheck) break;
-      if (e.status !== 'ACCEPTED' || !e.providerMessageId) continue;
-      const evts = byEmailId.get(e.providerMessageId) || [];
-      const hasTerminal = evts.some(x => x.type === 'email.delivered' || x.type === 'email.bounced' || x.type === 'email.complained');
-      if (hasTerminal) continue;
+      if (e.status !== 'ACCEPTED') continue;
+      const resolvedId = this._resolveEntryMessageId(e, auditMap);
+      const rh = sha256Hex(e.email);
+      const evts = resolvedId && byEmailId.has(resolvedId) ? byEmailId.get(resolvedId) : (byHash.get(rh) || []);
+      if (isTerminal(evts)) continue;
+      if (!resolvedId) {
+        skippedNoUuid++;
+        continue;
+      }
+      if (checked >= maxCheck) {
+        remainingPending++;
+        continue;
+      }
       checked++;
       try {
-        const resp = await doFetch(`https://api.resend.com/emails/${encodeURIComponent(e.providerMessageId)}`, {
+        const resp = await doFetch(`https://api.resend.com/emails/${encodeURIComponent(resolvedId)}`, {
           method: 'GET',
-          headers: { 'Authorization': `Bearer ${key}` }
+          headers: { 'Authorization': `Bearer ${key}` },
+          ...(typeof fetchImpl !== 'function' && typeof AbortSignal?.timeout === 'function'
+            ? { signal: AbortSignal.timeout(10000) }
+            : {})
         });
         if (!resp || !resp.ok) continue;
         const det = await resp.json().catch(() => ({}));
         const lastEvt = String(det.last_event || '').toLowerCase();
-        const evtMap = {
-          delivered: 'email.delivered',
-          bounced: 'email.bounced',
-          complained: 'email.complained',
-          opened: 'email.opened',
-          clicked: 'email.clicked',
-          delivery_delayed: 'email.delivery_delayed'
-        };
         const mappedType = evtMap[lastEvt];
         if (mappedType) {
           const added = this.recordEvent({
-            event_id: `reconcile:${e.providerMessageId}:${mappedType}`,
+            event_id: `reconcile:${resolvedId}:${mappedType}`,
             type: mappedType,
-            email_id: e.providerMessageId,
-            recipient_hashes: [sha256Hex(e.email)],
+            email_id: resolvedId,
+            recipient_hashes: [rh],
             created_at: det.created_at || new Date().toISOString(),
             source: 'RESEND_API_RECONCILE'
           });
-          if (added) updated++;
+          if (added) {
+            updated++;
+            updatedByType[mappedType] = (updatedByType[mappedType] || 0) + 1;
+          }
         }
       } catch (_) {}
       if (typeof fetchImpl !== 'function') {
-        await new Promise(r => setTimeout(r, 150));
+        await new Promise(r => setTimeout(r, 120));
       }
     }
     this.lastSyncAt = new Date().toISOString();
-    return { ok: true, checked, updated, lastSyncAt: this.lastSyncAt };
+    return { ok: true, checked, updated, updatedByType, remainingPending, skippedNoUuid, lastSyncAt: this.lastSyncAt };
   }
 }
 

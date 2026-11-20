@@ -141,6 +141,8 @@ async function verifyResendDomainConfig(options = {}) {
     region: detail.region || match.region || null,
     verified: Boolean(isVerified),
     status: detail.status || 'unknown',
+    openTracking: typeof detail.open_tracking === 'boolean' ? detail.open_tracking : null,
+    clickTracking: typeof detail.click_tracking === 'boolean' ? detail.click_tracking : null,
     existingVerifiedDomains,
     dkimSelectors,
     records: safeRecords
@@ -662,17 +664,52 @@ class EmailProductionPipeline {
   }
 
   _loadSuppressedHashes() {
+    this.suppressedRecords = {};
+    this._suppressedNeedsSchemaUpgrade = false;
+    const set = new Set();
     try {
       if (fs.existsSync(this.suppressedHashesFile)) {
-        const arr = JSON.parse(fs.readFileSync(this.suppressedHashesFile, 'utf8'));
-        if (Array.isArray(arr)) return new Set(arr.map(x => String(x || '').toLowerCase()).filter(Boolean));
+        const parsed = JSON.parse(fs.readFileSync(this.suppressedHashesFile, 'utf8'));
+        if (Array.isArray(parsed)) {
+          this._suppressedNeedsSchemaUpgrade = true;
+          for (const raw of parsed) {
+            const h = String(raw || '').trim().toLowerCase();
+            if (!h) continue;
+            set.add(h);
+            this.suppressedRecords[h] = { reason: 'SUPPRESSED', suppressedAt: null, updatedAt: null };
+          }
+        } else if (parsed && typeof parsed === 'object') {
+          for (const [k, v] of Object.entries(parsed)) {
+            const h = String(k || '').trim().toLowerCase();
+            if (!h) continue;
+            set.add(h);
+            if (v && typeof v === 'object') {
+              this.suppressedRecords[h] = {
+                reason: String(v.reason || 'SUPPRESSED').trim().toUpperCase() || 'SUPPRESSED',
+                suppressedAt: v.suppressedAt || v.suppressed_at || null,
+                updatedAt: v.updatedAt || v.updated_at || null
+              };
+            } else {
+              this.suppressedRecords[h] = { reason: 'SUPPRESSED', suppressedAt: null, updatedAt: null };
+            }
+          }
+        }
       }
     } catch (_) {}
-    return new Set();
+    return set;
   }
 
   _saveSuppressedHashes() {
-    writeProtectedSecretFile(this.suppressedHashesFile, JSON.stringify(Array.from(this.suppressedHashes), null, 2) + '\n');
+    if (!this.suppressedRecords || typeof this.suppressedRecords !== 'object') {
+      this.suppressedRecords = {};
+    }
+    for (const h of this.suppressedHashes) {
+      if (!this.suppressedRecords[h]) {
+        this.suppressedRecords[h] = { reason: 'SUPPRESSED', suppressedAt: null, updatedAt: null };
+      }
+    }
+    writeProtectedSecretFile(this.suppressedHashesFile, JSON.stringify(this.suppressedRecords, null, 2) + '\n');
+    this._suppressedNeedsSchemaUpgrade = false;
   }
 
   _isRecipientSuppressedWithSet(email, outboxSupSet) {
@@ -691,7 +728,7 @@ class EmailProductionPipeline {
     return this.suppressedHashes.has(h);
   }
 
-  async syncRemoteSuppressions({ baseUrl, syncToken, fetchImpl, skipQueueSave = false } = {}) {
+  async syncRemoteSuppressions({ baseUrl, syncToken, fetchImpl, skipQueueSave = false, timeoutMs = 10000 } = {}) {
     const targetBase = String(baseUrl || this.getUnsubscribePublicConfig().publicBaseUrl || '').replace(/\/+$/, '');
     const tok = String(syncToken || '').trim();
     if (!targetBase || !tok) {
@@ -705,28 +742,47 @@ class EmailProductionPipeline {
       const resp = await doFetch(`${targetBase}/api/sync/suppressions`, {
         method: 'GET',
         headers: { 'Authorization': `Bearer ${tok}` },
-        ...(typeof fetchImpl !== 'function' && typeof AbortSignal?.timeout === 'function' ? { signal: AbortSignal.timeout(15000) } : {})
+        ...(typeof fetchImpl !== 'function' && typeof AbortSignal?.timeout === 'function' ? { signal: AbortSignal.timeout(Math.max(2000, Number(timeoutMs) || 10000)) } : {})
       });
       if (!resp || !resp.ok) {
         return { ok: false, reason: `UNSUBSCRIBE_SYNC_HTTP_${resp ? resp.status : 'ERROR'}` };
       }
       const data = await resp.json();
       const list = Array.isArray(data && data.suppressions) ? data.suppressions : [];
+      if (!this.suppressedRecords || typeof this.suppressedRecords !== 'object') {
+        this.suppressedRecords = {};
+      }
       let added = 0;
+      let metadataUpdated = false;
       for (const row of list) {
         const rh = String((row && row.recipient_hash) || '').trim().toLowerCase();
-        if (rh && !this.suppressedHashes.has(rh)) {
+        if (!rh) continue;
+        const reason = String((row && row.reason) || 'SUPPRESSED').trim().toUpperCase() || 'SUPPRESSED';
+        const suppressedAt = (row && (row.suppressed_at || row.suppressedAt)) || null;
+        const updatedAt = (row && (row.updated_at || row.updatedAt)) || suppressedAt || null;
+        const prev = this.suppressedRecords[rh];
+        const isNew = !this.suppressedHashes.has(rh);
+        if (isNew) {
           this.suppressedHashes.add(rh);
           added++;
         }
+        const resolvedReason = (prev && prev.reason === 'UNSUBSCRIBED') ? 'UNSUBSCRIBED' : reason;
+        if (!prev || prev.reason !== resolvedReason || (suppressedAt && prev.suppressedAt !== suppressedAt) || (updatedAt && prev.updatedAt !== updatedAt)) {
+          this.suppressedRecords[rh] = {
+            reason: resolvedReason,
+            suppressedAt: suppressedAt || prev?.suppressedAt || null,
+            updatedAt: updatedAt || prev?.updatedAt || null
+          };
+          metadataUpdated = true;
+        }
       }
-      if (added > 0) {
+      if (added > 0 || metadataUpdated || this._suppressedNeedsSchemaUpgrade) {
         this._saveSuppressedHashes();
-        if (!skipQueueSave) {
+        if (added > 0 && !skipQueueSave) {
           this._syncQueueSuppression();
         }
       }
-      return { ok: true, syncedCount: list.length, addedCount: added };
+      return { ok: true, syncedCount: list.length, addedCount: added, metadataUpdated };
     } catch (err) {
       return { ok: false, reason: 'UNSUBSCRIBE_SYNC_NETWORK_ERROR', message: err.message };
     }
@@ -759,6 +815,9 @@ class EmailProductionPipeline {
     proofRef = '',
     campaignId = 'default'
   }) {
+    const rawCampaignId = String(campaignId || 'default').trim();
+    const safeCampaignId = /^[A-Za-z0-9._-]{1,64}$/.test(rawCampaignId) ? rawCampaignId : 'default';
+    campaignId = safeCampaignId;
     const normJurisdiction = String(jurisdiction || 'GLOBAL').trim().toUpperCase() || 'GLOBAL';
     const normSource = String(authorizationSource || 'owner_csv_consent_attestation').trim() || 'owner_csv_consent_attestation';
     const isScrapedSource = /(?:^|[-_.])(scraped|collected|purchased|email[-_]?collector|harvested)(?:$|[-_.])/i.test(normSource);
@@ -788,11 +847,20 @@ class EmailProductionPipeline {
       }
     }
     const outboxSupSet = typeof this.outbox.getSuppressedSet === 'function' ? this.outbox.getSuppressedSet() : null;
-    const alreadyAcceptedKeys = new Set(
-      this._readAuditEvents()
-        .filter(ev => ev && ev.type === 'SEND_ATTEMPT_ACCEPTED' && ev.idempotencyKey)
-        .map(ev => String(ev.idempotencyKey))
-    );
+    const alreadyAcceptedMap = new Map();
+    for (const ev of this._readAuditEvents()) {
+      if (ev && ev.type === 'SEND_ATTEMPT_ACCEPTED' && ev.idempotencyKey) {
+        const k = String(ev.idempotencyKey);
+        const msgId = ev.providerMessageId && ev.providerMessageId !== 'prior_accepted' ? String(ev.providerMessageId) : null;
+        const prev = alreadyAcceptedMap.get(k);
+        if (!prev || (msgId && !prev.providerMessageId)) {
+          alreadyAcceptedMap.set(k, {
+            providerMessageId: msgId || (prev && prev.providerMessageId) || null,
+            timestamp: ev.timestamp || (prev && prev.timestamp) || null
+          });
+        }
+      }
+    }
 
     const nowIso = new Date().toISOString();
     const authTime = authorizationAt ? String(authorizationAt) : nowIso;
@@ -805,8 +873,19 @@ class EmailProductionPipeline {
 
     for (const r of parsed.valid) {
       const idempotencyKey = 'prod_' + crypto.createHash('sha256').update(`${campaignId}:${r.email}`).digest('hex').slice(0, 32);
-      if (alreadyAcceptedKeys.has(idempotencyKey)) {
-        entries.push({ email: r.email, name: r.name, idempotencyKey, status: 'ACCEPTED', reason: 'ALREADY_SENT_IDEMPOTENT', attempts: 1, providerMessageId: 'prior_accepted', deliveryState: 'ACCEPTED', updatedAt: nowIso });
+      if (alreadyAcceptedMap.has(idempotencyKey)) {
+        const prior = alreadyAcceptedMap.get(idempotencyKey);
+        entries.push({
+          email: r.email,
+          name: r.name,
+          idempotencyKey,
+          status: 'ACCEPTED',
+          reason: 'ALREADY_SENT_IDEMPOTENT',
+          attempts: 1,
+          providerMessageId: (prior && prior.providerMessageId) || 'prior_accepted',
+          deliveryState: 'ACCEPTED',
+          updatedAt: (prior && prior.timestamp) || nowIso
+        });
         continue;
       }
       const isSup = RM.isSuppressed(r.email, manualSup) || (outboxSupSet ? this._isRecipientSuppressedWithSet(r.email, outboxSupSet) : this.isRecipientSuppressed(r.email));
@@ -926,6 +1005,16 @@ class EmailProductionPipeline {
       counts[e.status] = (counts[e.status] || 0) + 1;
       if (e.deliveryState === 'DELIVERED') counts.DELIVERED++;
     }
+    const localOutboxSuppressed = typeof this.outbox.getSuppressedCount === 'function'
+      ? this.outbox.getSuppressedCount()
+      : this.outbox.snapshot().suppressed.length;
+    const remoteSuppressed = this.suppressedHashes ? this.suppressedHashes.size : 0;
+    let unsubscribedRecordsOnDisk = 0;
+    if (this.suppressedRecords && typeof this.suppressedRecords === 'object') {
+      for (const rec of Object.values(this.suppressedRecords)) {
+        if (rec && rec.reason === 'UNSUBSCRIBED') unsubscribedRecordsOnDisk++;
+      }
+    }
     return {
       campaignId: this.queue.campaignId,
       messageKind: this.queue.messageKind,
@@ -934,9 +1023,10 @@ class EmailProductionPipeline {
       finishedAt: this.queue.finishedAt,
       counts,
       consentedRecordsOnDisk: this.consentLedger.count(),
-      suppressedRecordsOnDisk: typeof this.outbox.getSuppressedCount === 'function'
-        ? this.outbox.getSuppressedCount()
-        : this.outbox.snapshot().suppressed.length
+      suppressedRecordsOnDisk: localOutboxSuppressed + remoteSuppressed,
+      localOutboxSuppressedCount: localOutboxSuppressed,
+      remoteSuppressedCount: remoteSuppressed,
+      unsubscribedRecordsOnDisk
     };
   }
 

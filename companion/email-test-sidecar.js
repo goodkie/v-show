@@ -653,8 +653,23 @@ class EmailTestSidecar {
             const syncTokPath = path.join(this.stateDir, '.unsubscribe_sync_token');
             const syncTok = fs.existsSync(syncTokPath) ? fs.readFileSync(syncTokPath, 'utf8').trim() : '';
             if (publicBase && syncTok) {
-              await this.analytics.syncRemoteEvents({ baseUrl: publicBase, syncToken: syncTok }).catch(() => {});
-              await this.pipeline.syncRemoteSuppressions({ baseUrl: publicBase, syncToken: syncTok, skipQueueSave: Boolean(this.pipeline._queueRunning) }).catch(() => {});
+              if (!this._progressRemoteSyncInFlight) {
+                const syncTask = Promise.allSettled([
+                  this.analytics.syncRemoteEvents({ baseUrl: publicBase, syncToken: syncTok, timeoutMs: 6500 }),
+                  this.pipeline.syncRemoteSuppressions({ baseUrl: publicBase, syncToken: syncTok, skipQueueSave: Boolean(this.pipeline._queueRunning), timeoutMs: 6500 })
+                ]).finally(() => {
+                  this._lastProgressRemoteSyncCompletedAt = Date.now();
+                  if (this._progressRemoteSyncInFlight === syncTask) {
+                    this._progressRemoteSyncInFlight = null;
+                  }
+                });
+                this._progressRemoteSyncInFlight = syncTask;
+              }
+              const maxWaitMs = (forceSync || !this._lastProgressRemoteSyncCompletedAt) ? 4500 : 1800;
+              await Promise.race([
+                this._progressRemoteSyncInFlight,
+                new Promise(r => setTimeout(r, maxWaitMs))
+              ]);
             }
           }
           if (sub === 'progress') {
@@ -686,10 +701,18 @@ class EmailTestSidecar {
             try {
               const p = raw ? JSON.parse(raw) : {};
               const resolvedKey = this.resolveResendApiKey();
+              const recT0 = Date.now();
               const out = await this.analytics.reconcileWithResendApi({
                 apiKey: resolvedKey,
                 campaignId: p.campaignId || 'default',
-                limit: Number(p.limit || 25)
+                limit: Number(p.limit || 200)
+              });
+              this._recordDiag(out.ok ? 'INFO' : 'WARN', 'RECONCILE', 'RESEND_BACKFILL', {
+                checked: out.checked || 0,
+                updated: out.updated || 0,
+                remainingPending: out.remainingPending || 0,
+                updatedByType: out.updatedByType || null,
+                elapsedMs: Date.now() - recT0
               });
               res.writeHead(out.ok ? 200 : 503, { 'Content-Type': 'application/json' });
               res.end(JSON.stringify(out));
