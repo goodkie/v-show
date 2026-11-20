@@ -107,4 +107,9 @@ function baseOptions() {
   checks++;
 
   console.log('XPIDER Gmail sender foundation: ' + checks + '/' + checks + ' PASS; ZERO REAL SENDS');
+  const integrationTest = require('node:path').join(__dirname, 'run_gmail_v71_integration.js');
+  if (require('node:fs').existsSync(integrationTest)) {
+    const r = require('node:child_process').spawnSync(process.execPath, [integrationTest], { stdio: 'inherit' });
+    if (r.status !== 0) process.exitCode = r.status || 1;
+  }
 })().catch(e => { console.error(e); process.exitCode = 1; });

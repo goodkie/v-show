@@ -262,15 +262,87 @@
 <div id="realTestStatus" class="status-box status-idle" aria-live="polite">대기 중: 승인된 테스트 이메일 주소를 입력하고 동의 체크 후 '실제 테스트 이메일 보내기'를 누르세요.</div>
 </div>
 <div class="prod-send-box">
-<div class="prod-header"><h4>🚀 상용(운영) 발송 (Production Send)</h4><div style="display:flex;gap:6px;flex-wrap:wrap;"><span class="badge-test" id="prodGateBadge">✅ PRODUCTION UNLOCKED</span><span class="badge-test" id="prodQueueBadge">⏸️ QUEUE NOT READY — 0 DOCUMENTED OPT-IN RECIPIENTS</span></div></div>
-<p class="desc">vivpr.pro 도메인(SPF/DKIM/DMARC), HTTPS 원클릭 수신 거부(unsubscribe.vivpr.pro), HMAC 검증 및 Webhook이 활성화되어 있습니다. <b>수집/스크래핑된 CSV는 수신 동의로 간주되지 않으며</b>, 적법 발송 권한이 확인된 수신자에게만 발송됩니다 (Resend 계정 플랜의 일일/초당 발송 한도는 공급자 정책에 따라 자동 준수됨).</p>
-<div class="inline" style="align-items:end;margin:6px 0;">
+<div class="prod-header"><h4>🚀 상용(운영) 발송 (Production Send · Resend / Gmail)</h4><div style="display:flex;gap:6px;flex-wrap:wrap;"><span class="badge-test" id="prodGateBadge">✅ PRODUCTION UNLOCKED</span><span class="badge-test" id="prodQueueBadge">⏸️ QUEUE NOT READY — 0 DOCUMENTED OPT-IN RECIPIENTS</span></div></div>
+<div class="inline" style="align-items:end;margin:6px 0;padding:8px;background:rgba(15,23,42,0.04);border-radius:6px;">
+  <div>
+    <label for="emailProviderSelect"><b>발송 공급자 선택 (Email Delivery Provider)</b></label>
+    <select id="emailProviderSelect">
+      <option value="RESEND">Resend (vivpr.pro · 기존 운영 발송 유지)</option>
+      <option value="GMAIL">Gmail API (소유자 승인 OAuth PKCE · 단일/복수 계정)</option>
+    </select>
+  </div>
   <div><label for="prodCampaignIdInput">운영 캠페인 ID (기본 <code>default</code>=중복 발송 방지 · 새 메일 발송 시 ID 변경)</label><input id="prodCampaignIdInput" value="default" maxlength="64" placeholder="default 또는 camp_20261120_01"></div>
   <div class="actions"><button type="button" id="btnNewProdCampaignId" title="과거 발송 이력과 분리된 새 캠페인 ID를 생성합니다">🆕 새 캠페인 ID 생성</button></div>
 </div>
+<div id="resendProviderPanel">
+<p class="desc">vivpr.pro 도메인(SPF/DKIM/DMARC), HTTPS 원클릭 수신 거부(unsubscribe.vivpr.pro), HMAC 검증 및 Webhook이 활성화되어 있습니다. <b>수집/스크래핑된 CSV는 수신 동의로 간주되지 않으며</b>, 적법 발송 권한이 확인된 수신자에게만 발송됩니다 (Resend 계정 플랜의 일일/초당 발송 한도는 공급자 정책에 따라 자동 준수됨).</p>
 <label style="display:flex;align-items:center;gap:6px;margin:6px 0;font-size:12px;background:rgba(37,99,235,0.08);padding:6px 8px;border-radius:6px;"><input id="consentAttestProd" type="checkbox"> <b>이 수신리스트에 대한 적법한 발송 권한을 확인했습니다</b> (상단 수신자 목록 체크박스와 자동 동기화 · 수집/스크래핑/구매 목록은 체크해도 자동 제외)</label>
 <div class="actions"><button type="button" class="primary" id="btnProdSend" title="적법 발송 권한 확인 및 사전 점검 통과 후 즉시 발송">🚀 대량발송 시작</button><button type="button" id="btnProdStop">⏹️ 운영 큐 중지</button><button type="button" id="btnCheckProdPreflight">🔍 운영 DNS · 동의확인 · 수신거부 · 웹훅 점검</button></div>
 <div id="prodPreflightStatus" class="status-box status-idle" aria-live="polite">PRODUCTION UNLOCKED · QUEUE NOT READY — 0 DOCUMENTED OPT-IN RECIPIENTS: 수신자 CSV 입력 후 법적 수신 동의 확인 체크박스를 선택하고 "가져오기 · 중복 제거"를 누르면 큐가 준비됩니다.</div>
+</div>
+
+<div id="gmailProviderPanel" style="display:none;margin-top:8px;padding:10px;border:1px solid rgba(37,99,235,0.35);border-radius:8px;background:rgba(248,250,252,0.9);">
+  <div class="send-header"><h4>📧 Gmail API 발송 · OAuth PKCE 계정 관리 (V7.1)</h4><span class="badge-test" id="gmailProviderStatusBadge">OAUTH 미연결</span></div>
+  <div class="note" style="margin:6px 0;">
+    <b>중요 안내 (컴플라이언스 · Fail-Closed):</b>
+    Gmail API <code>200 OK</code>는 <b>GMAIL_API_ACCEPTED</b>(Google API 접수)만 의미하며 <b>전달(DELIVERED)·수신함 도착(INBOX)·열람(OPENED)이나 계정 정지 면제를 보장하지 않습니다</b>.
+    한도(개인 &lt;500/일, Workspace &lt;2000/일보다 엄격한 보수적 상한)·도메인 합산 24시간 상한·<code>403/429/401</code> 발생 시 <b>타 계정으로 자동 우회하지 않고 전체 캠페인이 즉시 일시 중지</b>됩니다.
+    토큰은 브라우저 저장소에 저장되지 않고 로컬 Windows DPAPI 보안 저장소에만 암호화 보관됩니다.
+  </div>
+  <div id="gmailHygieneBanner" class="status-box status-blocked" style="margin:6px 0;">⏳ 교차 공급자(Resend + Gmail + unsubscribe.vivpr.pro) 차단 목록 및 과거 반송 위생 상태 확인 중...</div>
+
+  <div style="margin:8px 0;padding:8px;border:1px solid #cbd5e1;border-radius:6px;background:#fff;">
+    <b>1) Google Cloud OAuth 2.0 Desktop Client 설정 (로컬 DPAPI 저장 · 최소 권한 <code>gmail.send</code>)</b>
+    <div class="inline" style="margin-top:6px;">
+      <div><label for="gmailOAuthClientId">Google OAuth Client ID</label><input id="gmailOAuthClientId" type="password" autocomplete="off" placeholder="...apps.googleusercontent.com"></div>
+      <div><label for="gmailOAuthClientSecret">Client Secret (선택 · Desktop 앱인 경우)</label><input id="gmailOAuthClientSecret" type="password" autocomplete="off" placeholder="선택 입력 (저장 즉시 초기화)"></div>
+    </div>
+    <label style="display:flex;align-items:center;gap:6px;margin:6px 0;font-size:12px;"><input id="gmailOAuthConsentCheck" type="checkbox"> OAuth 클라이언트 설정과 Refresh 토큰을 브라우저 저장소가 아닌 로컬 Windows DPAPI 보안 저장소(%LOCALAPPDATA%\XPIDER\Sidecar)에만 저장함에 동의합니다.</label>
+    <div class="actions">
+      <button type="button" id="btnSaveGmailOAuthClient">🔐 OAuth Client 로컬 저장</button>
+      <button type="button" class="primary" id="btnConnectGmailAccount">🔗 Gmail 계정 연결 (OAuth PKCE)</button>
+      <button type="button" id="btnRefreshGmailStatus">🔄 Gmail 계정 · 할당량 새로고침</button>
+    </div>
+    <div id="gmailOAuthStatus" class="status-box status-idle" style="margin-top:6px;">OAuth 상태 확인 중...</div>
+  </div>
+
+  <div style="margin:8px 0;padding:8px;border:1px solid #cbd5e1;border-radius:6px;background:#fff;">
+    <b>2) 연결된 Gmail 계정 목록 (마스킹 표시 · 토큰 비노출 · 롤링 24시간 상한)</b>
+    <div id="gmailAccountsList" class="status-box status-idle" style="margin-top:6px;">연결된 Gmail 계정이 없습니다. 위 [🔗 Gmail 계정 연결]로 소유자 승인 계정을 연결하세요.</div>
+    <div class="inline" style="margin-top:8px;">
+      <div>
+        <label for="gmailSendingMode">캠페인 계정 배정 모드</label>
+        <select id="gmailSendingMode">
+          <option value="SINGLE_ACCOUNT">단일 계정 (SINGLE_ACCOUNT — 선택 1개 계정)</option>
+          <option value="APPROVED_ACCOUNT_POOL">사전 승인 복수 계정 고정 배분 (APPROVED_ACCOUNT_POOL — 2개 이상 · 한도 우회 금지)</option>
+        </select>
+      </div>
+      <div><label for="gmailPhysicalAddress">법적 물리적 주소 (푸터 필수 기재)</label><input id="gmailPhysicalAddress" maxlength="200" placeholder="예: 123 Main St, Suite 100, Seoul / Los Angeles"></div>
+    </div>
+  </div>
+
+  <div style="margin:8px 0;padding:8px;border:1px solid rgba(37,99,235,0.35);border-radius:6px;background:#fff;">
+    <b>3) 승인된 단일 Gmail 계정 1통 셀프 테스트 (RFC 8058 원클릭 수신거부 포함)</b>
+    <div class="inline" style="margin-top:6px;">
+      <div><label for="gmailSelfTestAccountSelect">테스트 발송 Gmail 계정</label><select id="gmailSelfTestAccountSelect"><option value="">연결된 계정 선택</option></select></div>
+      <div><label for="gmailSelfTestRecipient">승인된 본인 테스트 수신자 (1개)</label><input id="gmailSelfTestRecipient" type="email" placeholder="예: owner-test@example.com"></div>
+    </div>
+    <label style="display:flex;align-items:center;gap:6px;margin:6px 0;font-size:12px;"><input id="gmailSelfTestConsent" type="checkbox"> 이 수신자는 본인이 관리하거나 Gmail 1통 셀프 테스트 수신을 명시적으로 승인한 주소임을 확인합니다.</label>
+    <div class="actions"><button type="button" class="primary" id="btnGmailSelfTestSend">📨 Gmail 1통 셀프 테스트 발송</button></div>
+    <div id="gmailSelfTestStatus" class="status-box status-idle" style="margin-top:6px;">대기 중: Gmail 계정 연결 후 본인 테스트 주소를 입력해 1통 검증하세요.</div>
+  </div>
+
+  <div style="margin:8px 0;padding:8px;border:1px solid #cbd5e1;border-radius:6px;background:#fff;">
+    <b>4) Gmail 캠페인 큐 사전 배정 · 실행 (교차 공급자 수신거부/반송 자동 제외)</b>
+    <label style="display:flex;align-items:center;gap:6px;margin:6px 0;font-size:12px;"><input id="gmailHygieneConfirm" type="checkbox"> 과거 반송/수신거부 제외 및 수신자 리스트 위생 검토를 완료했으며, 기존 Resend 3,919 이력 목록을 자동 안전 목록으로 사용하지 않음을 확인합니다.</label>
+    <div class="actions">
+      <button type="button" id="btnGmailPrepareQueue">📋 Gmail 큐 사전 배정 (발송 없음 · 교차 차단 필터)</button>
+      <button type="button" class="primary" id="btnGmailProdSend">🚀 Gmail 캠페인 발송 시작</button>
+      <button type="button" id="btnGmailProdStop">⏹️ Gmail 큐 즉시 중지</button>
+    </div>
+    <div id="gmailQueueStatus" class="status-box status-idle" style="margin-top:6px;white-space:pre-wrap;">대기 중: 계정을 체크하고 [📋 Gmail 큐 사전 배정]을 눌러 교차 공급자 차단 및 계정별 배분 결과를 먼저 확인하세요.</div>
+  </div>
+</div>
 </div>
 <div class="send-control-card" id="campaignMonitorCard" style="margin-top:10px;">
   <div class="send-header"><h4>📊 실시간 Resend 캠페인 모니터 · 오픈/미오픈 · 2차 발송 · 마스터 목록</h4><span class="badge-test" id="monitorSyncBadge">동기화 대기</span></div>

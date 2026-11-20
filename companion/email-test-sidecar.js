@@ -19,6 +19,8 @@ const { CampaignAnalyticsEngine } = require('./email-campaign-analytics');
 const { EmailImageHostManager } = require('./email-image-host');
 const { injectUnsubscribeFooter } = require('./email-unsubscribe-server');
 const { validateAndFormatSenderFrom, sanitizeReplyTo } = require('./vivpr-sender-identity');
+const { GmailAccountVault } = require('./gmail-account-vault');
+const { GmailCampaignRunner } = require('./gmail-campaign-runner');
 
 const DEFAULT_SIDECAR_PORT = 18990;
 const SIDECAR_BUILD_ID = 'V7.0.0-OWNER-BETA-TEST-SEND-SIDECAR-20261116-LOCKED17';
@@ -92,6 +94,21 @@ class EmailTestSidecar {
       stateDir: this.stateDir,
       trustedTestMode: this.trustedTestMode
     });
+    this.gmailVault = new GmailAccountVault({
+      stateDir: this.stateDir,
+      trustedTestMode: this.trustedTestMode,
+      fetchImpl: this.trustedTestMode ? options.gmailFetchImpl : null,
+      cryptoBox: this.trustedTestMode ? options.gmailCryptoBox : null
+    });
+    this.gmailRunner = new GmailCampaignRunner({
+      stateDir: this.stateDir,
+      pipeline: this.pipeline,
+      analytics: this.analytics,
+      vault: this.gmailVault,
+      trustedTestMode: this.trustedTestMode,
+      fetchImpl: this.trustedTestMode ? options.gmailFetchImpl : null,
+      syncFetchImpl: this.trustedTestMode ? options.gmailSyncFetchImpl : null
+    });
     this.diagLogs = [];
     this._diagSeq = 0;
     this._recordDiag('INFO', 'SIDECAR', 'SIDECAR_INIT', { port: this.port, buildId: SIDECAR_BUILD_ID, pid: process.pid });
@@ -104,6 +121,8 @@ class EmailTestSidecar {
       return val
         .replace(/re_[A-Za-z0-9_-]{8,}/g, 're_[REDACTED]')
         .replace(/AIza[A-Za-z0-9_-]{8,}/g, 'AIza[REDACTED]')
+        .replace(/ya29\.[A-Za-z0-9._-]{10,}/g, 'ya29.[REDACTED]')
+        .replace(/1\/\/[A-Za-z0-9._-]{10,}/g, '1//[REDACTED]')
         .replace(/gh[po]_[A-Za-z0-9_]{8,}/g, 'gh_[REDACTED]')
         .replace(/Bearer\s+[A-Za-z0-9._-]{10,}/gi, 'Bearer [REDACTED]')
         .replace(/([A-Za-z0-9._%+-]{1,2})[A-Za-z0-9._%+-]*@([A-Za-z0-9.-]+\.[A-Za-z]{2,})/g, '$1***@$2')
@@ -1192,6 +1211,104 @@ class EmailTestSidecar {
           return;
         }
 
+        if (pathname === '/email/gmail/status' && req.method === 'GET') {
+          const supIdx = this.gmailRunner.buildCrossProviderSuppressionIndex();
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({
+            ok: true,
+            provider: 'GMAIL',
+            oauthClient: this.gmailVault.getOAuthClientStatus(),
+            accounts: this.gmailVault.listAccountsSafe(),
+            usage24h: this.gmailVault.getRolling24hUsage(),
+            hygiene: supIdx.stats,
+            queueSummary: this.gmailRunner.summarizeQueue(),
+            lastRunResult: this.gmailRunner.lastRunResult || null,
+            complianceNotice: 'Gmail API 200 응답은 GMAIL_API_ACCEPTED만 의미하며 전달(DELIVERED)·수신함 도착(INBOX)·열람(OPENED)이나 계정 정지 면제를 보장하지 않습니다. 한도/차단 시 타 계정으로 자동 전환하지 않고 전체 캠페인이 일시 중지됩니다.'
+          }));
+          return;
+        }
+
+        if (pathname.startsWith('/email/gmail/') && req.method === 'POST') {
+          let raw = '';
+          let tooLarge = false;
+          req.on('data', c => { raw += c; if (raw.length > 10485760) { tooLarge = true; req.destroy(); } });
+          req.on('end', async () => {
+            if (tooLarge) return;
+            try {
+              const payload = raw ? JSON.parse(raw) : {};
+              if (pathname === '/email/gmail/oauth/client-config') {
+                const out = this.gmailVault.saveOAuthClientConfig(payload);
+                this._recordDiag(out.ok ? 'INFO' : 'WARN', 'GMAIL_OAUTH', 'CLIENT_CONFIG', { ok: out.ok, reason: out.reason || null });
+                res.writeHead(out.statusCode || (out.ok ? 200 : 400), { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify(out));
+                return;
+              }
+              if (pathname === '/email/gmail/oauth/start') {
+                const out = await this.gmailVault.startOAuthPkceFlow(payload);
+                this._recordDiag(out.ok ? 'INFO' : 'WARN', 'GMAIL_OAUTH', 'START_PKCE', { ok: out.ok, reason: out.reason || null });
+                res.writeHead(out.statusCode || (out.ok ? 200 : 400), { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify(out));
+                return;
+              }
+              if (pathname === '/email/gmail/accounts/update') {
+                const out = this.gmailVault.updateAccountSettings(payload);
+                this._recordDiag(out.ok ? 'INFO' : 'WARN', 'GMAIL_ACCT', 'UPDATE', { ok: out.ok, reason: out.reason || null });
+                res.writeHead(out.statusCode || (out.ok ? 200 : 400), { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify(out));
+                return;
+              }
+              if (pathname === '/email/gmail/accounts/disconnect') {
+                const out = await this.gmailVault.disconnectAccount(payload.accountId);
+                this._recordDiag(out.ok ? 'INFO' : 'WARN', 'GMAIL_ACCT', 'DISCONNECT', { ok: out.ok, reason: out.reason || null });
+                res.writeHead(out.statusCode || (out.ok ? 200 : 400), { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify(out));
+                return;
+              }
+              if (pathname === '/email/gmail/self-test-send') {
+                const out = await this.gmailRunner.sendGmailSelfTest({
+                  ...payload,
+                  ownerExplicitApproval: true
+                });
+                this._recordDiag(out.ok ? 'INFO' : 'WARN', 'GMAIL_SEND', 'SELF_TEST', { ok: out.ok, status: out.status, reason: out.reason || null });
+                res.writeHead(out.statusCode || (out.ok ? 200 : 409), { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify(out));
+                return;
+              }
+              if (pathname === '/email/gmail/queue/prepare') {
+                const out = this.gmailRunner.prepareGmailQueue(payload);
+                this._recordDiag(out.ok ? 'INFO' : 'WARN', 'GMAIL_QUEUE', 'PREPARE', { ok: out.ok, reason: out.reason || null, ready: out?.summary?.counts?.PENDING || 0 });
+                res.writeHead(out.statusCode || (out.ok ? 200 : 400), { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify(out));
+                return;
+              }
+              if (pathname === '/email/gmail/queue/run') {
+                const runArgs = { ...payload, ownerExplicitApproval: true };
+                const out = payload.background === true
+                  ? this.gmailRunner.startGmailQueueBackground(runArgs)
+                  : await this.gmailRunner.runGmailQueue(runArgs);
+                this._recordDiag(out.ok ? 'INFO' : 'WARN', 'GMAIL_QUEUE', out.status || 'RUN', { ok: out.ok, reason: out.reason || out.stopReason || null, acceptedInThisRun: out.acceptedInThisRun || 0 });
+                res.writeHead(out.statusCode || (out.ok ? 200 : 409), { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify(out));
+                return;
+              }
+              if (pathname === '/email/gmail/queue/stop') {
+                const summary = this.gmailRunner.stopQueue(payload.reason || 'OWNER_STOPPED');
+                this._recordDiag('INFO', 'GMAIL_QUEUE', 'STOPPED', { counts: summary.counts });
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ ok: true, status: 'STOPPED', summary }));
+                return;
+              }
+              res.writeHead(404, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ ok: false, error: 'GMAIL_ENDPOINT_NOT_FOUND' }));
+            } catch (err) {
+              this._recordDiag('ERROR', 'GMAIL', 'EXCEPTION', { error: err?.code || err?.message || 'UNKNOWN' });
+              res.writeHead(400, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ ok: false, status: 'BLOCKED', reason: err?.code || 'GMAIL_EXCEPTION', error: err?.message || 'GMAIL_EXCEPTION' }));
+            }
+          });
+          return;
+        }
+
         if (pathname === '/email/test-send/key' && req.method === 'POST') {
           let raw = '';
           let tooLarge = false;
@@ -1662,6 +1779,7 @@ class EmailTestSidecar {
 
   stop() {
     return new Promise(resolve => {
+      try { if (this.gmailVault) this.gmailVault.closeAllOAuthServers(); } catch (_) {}
       this._removePidFile();
       if (!this.server) return resolve();
       this.server.close(() => resolve());
