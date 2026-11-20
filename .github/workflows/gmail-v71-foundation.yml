@@ -1,0 +1,21 @@
+name: XPIDER Gmail V7.1 Foundation (No Sends)
+on:
+  pull_request:
+    paths:
+      - 'companion/gmail-sender-foundation.js'
+      - 'test/run_gmail_sender_foundation.js'
+      - '.github/workflows/gmail-v71-foundation.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  gmail-foundation-no-send:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Verify Gmail guard, MIME, provider error handling (mock only)
+        run: node test/run_gmail_sender_foundation.js
