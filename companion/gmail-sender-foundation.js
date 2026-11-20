@@ -134,7 +134,7 @@ function selectAccount({ accountIds, accounts, recipientHash, mode,
   const list = Array.isArray(accounts) ? accounts : [];
   const acct = list.find((a) => a && a.id === selectedId);
   if (!acct || acct.ownerAuthorized !== true || acct.connected !== true ||
-      acct.verified === false || acct.disabled === true || acct.providerBlocked === true) {
+      acct.verified !== true || acct.disabled === true || acct.providerBlocked === true) {
     throw new GmailSendBlocked('ACCOUNT_NOT_AVAILABLE_PAUSE_CAMPAIGN');
   }
   const publishedCeiling = acct.type === 'workspace_paid' ? 2000 : 500;
