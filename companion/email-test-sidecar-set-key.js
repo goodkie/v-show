@@ -42,7 +42,9 @@ function readSecretWindowsGui() {
   ].join(' ');
 
   try {
-    const out = execFileSync('powershell', ['-NoProfile', '-STA', '-Command', psScript], {
+    const sysRoot = process.env.SystemRoot || 'C:\\Windows';
+    const psFull = path.join(sysRoot, 'System32', 'WindowsPowerShell', 'v1.0', 'powershell.exe');
+    const out = execFileSync(fs.existsSync(psFull) ? psFull : 'powershell', ['-NoProfile', '-STA', '-Command', psScript], {
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'pipe']
     });
