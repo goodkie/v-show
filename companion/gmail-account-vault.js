@@ -16,6 +16,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const http = require('node:http');
 const crypto = require('node:crypto');
+const { execFileSync } = require('node:child_process');
 const winsec = require('./winsec');
 const { writeProtectedSecretFile, verifyWindowsDacl } = require('./email-test-sidecar-set-key');
 const { GmailSendBlocked } = require('./gmail-sender-foundation');
@@ -84,6 +85,20 @@ function base64Url(buf) {
   return Buffer.from(buf).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
+function timingSafeEqualStr(a, b) {
+  if (typeof a !== 'string' || typeof b !== 'string' || !a || !b) return false;
+  const ba = Buffer.from(a, 'utf8');
+  const bb = Buffer.from(b, 'utf8');
+  if (ba.length !== bb.length) return false;
+  return crypto.timingSafeEqual(ba, bb);
+}
+
+function ensureWindowsFileUserOnlyAcl(filePath) {
+  if (process.platform !== 'win32' || !process.env.USERNAME) return;
+  execFileSync('icacls', [filePath, '/inheritance:r', '/grant:r', `${process.env.USERNAME}:(R,W)`], { stdio: 'pipe' });
+  verifyWindowsDacl(filePath, process.env.USERNAME);
+}
+
 function decodeJwtPayloadUnverified(jwtStr) {
   try {
     const parts = String(jwtStr || '').split('.');
@@ -119,6 +134,7 @@ class GmailAccountVault {
 
     this._pendingOAuthSessions = new Map();
     this._activeOAuthServers = new Map();
+    this.lastAclError = null;
     this._vault = this._loadVault();
     this._domainCaps = this._loadDomainCaps();
   }
@@ -145,7 +161,12 @@ class GmailAccountVault {
   _readProtectedJson(filePath, fallback) {
     if (!fs.existsSync(filePath)) return fallback;
     if (!this.trustedTestMode && process.platform === 'win32' && process.env.USERNAME) {
-      try { verifyWindowsDacl(filePath, process.env.USERNAME); } catch (_) { return fallback; }
+      try {
+        verifyWindowsDacl(filePath, process.env.USERNAME);
+      } catch (aclErr) {
+        this.lastAclError = `ACL_VIOLATION:${path.basename(filePath)}:${aclErr.message}`;
+        return fallback;
+      }
     }
     try {
       return JSON.parse(fs.readFileSync(filePath, 'utf8'));
@@ -167,6 +188,9 @@ class GmailAccountVault {
   }
 
   _saveVault() {
+    if (this.lastAclError && this.lastAclError.includes(path.basename(this.vaultFile))) {
+      throw new GmailSendBlocked('VAULT_ACL_VIOLATION_FAIL_CLOSED');
+    }
     this._vault.updatedAt = new Date(this.nowFn()).toISOString();
     this._writeProtectedJson(this.vaultFile, this._vault);
   }
@@ -279,6 +303,12 @@ class GmailAccountVault {
           const errParam = u.searchParams.get('error');
           const reqState = u.searchParams.get('state') || '';
           const code = u.searchParams.get('code') || '';
+          // Strictly bind this ephemeral loopback listener to its own PKCE state (constant-time)
+          if (!timingSafeEqualStr(reqState, state)) {
+            res.writeHead(400, { 'Content-Type': 'text/html; charset=utf-8' });
+            res.end('<!doctype html><html><body style="font-family:system-ui;padding:32px;"><h2>❌ OAuth 상태 불일치 (OAUTH_STATE_MISMATCH)</h2><p>유효하지 않거나 만료된 요청입니다.</p></body></html>');
+            return;
+          }
           if (errParam) {
             this._cleanupOAuthSession(state);
             res.writeHead(400, { 'Content-Type': 'text/html; charset=utf-8' });
@@ -362,18 +392,21 @@ class GmailAccountVault {
   }
 
   async completeOAuthCallback({ state, code }) {
-    const sess = this._pendingOAuthSessions.get(String(state || ''));
+    const stateKey = String(state || '');
+    const sess = this._pendingOAuthSessions.get(stateKey);
+    // Atomically consume single-use PKCE state BEFORE any async I/O to eliminate TOCTOU replay race
+    this._pendingOAuthSessions.delete(stateKey);
     if (!sess || this.nowFn() > sess.expiresAt) {
-      this._cleanupOAuthSession(state);
+      this._cleanupOAuthSession(stateKey);
       return { ok: false, statusCode: 400, reason: 'OAUTH_STATE_INVALID_OR_EXPIRED' };
     }
     if (!code || typeof code !== 'string') {
-      this._cleanupOAuthSession(state);
+      this._cleanupOAuthSession(stateKey);
       return { ok: false, statusCode: 400, reason: 'OAUTH_CODE_MISSING' };
     }
     const client = this._loadOAuthClientInternal();
     if (!client) {
-      this._cleanupOAuthSession(state);
+      this._cleanupOAuthSession(stateKey);
       return { ok: false, statusCode: 409, reason: 'GMAIL_OAUTH_CLIENT_NOT_CONFIGURED' };
     }
 
@@ -413,9 +446,17 @@ class GmailAccountVault {
       let emailVerified = false;
       if (tokJson.id_token) {
         const claims = decodeJwtPayloadUnverified(tokJson.id_token);
-        if (claims && claims.email) {
-          verifiedEmail = normalizeEmail(claims.email);
-          emailVerified = claims.email_verified === true;
+        if (claims) {
+          if (claims.iss && claims.iss !== 'https://accounts.google.com' && claims.iss !== 'accounts.google.com') {
+            return { ok: false, statusCode: 403, reason: 'OAUTH_ID_TOKEN_CLAIMS_INVALID' };
+          }
+          if (claims.aud && claims.aud !== client.clientId) {
+            return { ok: false, statusCode: 403, reason: 'OAUTH_ID_TOKEN_CLAIMS_INVALID' };
+          }
+          if (claims.email) {
+            verifiedEmail = normalizeEmail(claims.email);
+            emailVerified = claims.email_verified === true;
+          }
         }
       }
       if (!verifiedEmail) {
@@ -770,7 +811,11 @@ class GmailAccountVault {
       status: String(status || 'GMAIL_API_ACCEPTED')
     };
     fs.mkdirSync(this.stateDir, { recursive: true });
+    const existed = fs.existsSync(this.quotaLedgerFile);
     fs.appendFileSync(this.quotaLedgerFile, JSON.stringify(entry) + '\n', { mode: 0o600 });
+    if (!existed && process.platform === 'win32' && process.env.USERNAME) {
+      ensureWindowsFileUserOnlyAcl(this.quotaLedgerFile);
+    }
     return entry;
   }
 
@@ -789,6 +834,7 @@ class GmailAccountVault {
     const earliest1hAccount = {};
     const earliest1mAccount = {};
     const countedKeys = new Set();
+    let corruptLineCount = 0;
 
     const empty = () => ({
       nowMs,
@@ -801,17 +847,22 @@ class GmailAccountVault {
       earliest24hDomain,
       earliest1hAccount,
       earliest1mAccount,
+      corruptLineCount,
       windowHours: 24
     });
 
     if (!fs.existsSync(this.quotaLedgerFile)) {
       return empty();
     }
-    const lines = fs.readFileSync(this.quotaLedgerFile, 'utf8').split('\n').filter(Boolean);
+    const lines = fs.readFileSync(this.quotaLedgerFile, 'utf8').split('\n').filter(l => l.trim().length > 0);
     for (const l of lines) {
       try {
         const e = JSON.parse(l);
-        if (!e || !Number.isFinite(e.ts) || e.ts < cutoff24h) continue;
+        if (!e || !Number.isFinite(e.ts)) {
+          corruptLineCount++;
+          continue;
+        }
+        if (e.ts < cutoff24h) continue;
         // Count both accepted sends and uncertain in-flight timeouts conservatively against all rolling windows
         if (e.status !== 'GMAIL_API_ACCEPTED' && e.status !== 'IN_FLIGHT_UNKNOWN') continue;
         const dedup = e.idempotencyKey ? `${e.accountId}:${e.idempotencyKey}` : null;
@@ -844,7 +895,9 @@ class GmailAccountVault {
             perDomain1h[e.domain] = (perDomain1h[e.domain] || 0) + 1;
           }
         }
-      } catch (_) {}
+      } catch (_) {
+        corruptLineCount++;
+      }
     }
     return empty();
   }

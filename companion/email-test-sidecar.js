@@ -25,7 +25,7 @@ const { GmailCampaignRunner } = require('./gmail-campaign-runner');
 const DEFAULT_SIDECAR_PORT = 18990;
 const SIDECAR_BUILD_ID = 'V7.0.0-OWNER-BETA-TEST-SEND-SIDECAR-20261116-LOCKED17';
 const SIDECAR_IMPLEMENTATION_HEAD = 'email-test-sidecar-20261116-locked17';
-const SIDECAR_API_CAPABILITIES = ['email-test-send', 'email-test-sidecar-v1', 'email-test-ledger-v1'];
+const SIDECAR_API_CAPABILITIES = ['email-test-send', 'email-test-sidecar-v1', 'email-test-ledger-v1', 'gmail-safe-delivery-v71'];
 const EXPOSED_RC3_6_TOKEN_SHA256 = '597a70b99c11c7f4d13a075204ac240bb08a7a1d6c08c78268328e0bb59daeda';
 const EXTENSION_ORIGIN_RE = /^chrome-extension:\/\/[a-p]{32}$/;
 
@@ -50,7 +50,10 @@ class EmailTestSidecar {
   constructor(options = {}) {
     this.trustedTestMode = Boolean(options.trustedTestMode === true);
     if (!this.trustedTestMode) {
-      const forbiddenKeys = ['apiKeyOverride', 'transportImpl', 'token', 'stateDir', 'tokenFile', 'pidFile', 'ledgerFile', 'localKeyFile', 'fsImpl'];
+      const forbiddenKeys = [
+        'apiKeyOverride', 'transportImpl', 'token', 'stateDir', 'tokenFile', 'pidFile', 'ledgerFile', 'localKeyFile', 'fsImpl',
+        'gmailFetchImpl', 'gmailSyncFetchImpl', 'gmailCryptoBox', 'gmailNowFn', 'gmailDnsResolver'
+      ];
       for (const k of forbiddenKeys) {
         if (options[k] !== undefined && options[k] !== null) {
           const err = new Error(`PACKAGED_MODE_TEST_INJECTION_REJECTED: option "${k}" is forbidden outside trustedTestMode`);

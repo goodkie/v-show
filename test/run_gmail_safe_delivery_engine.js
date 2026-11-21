@@ -15,6 +15,7 @@ const { AdaptiveThrottleController, assessDeliverabilityHygiene } = require('../
 const { EmailProductionPipeline } = require('../companion/email-production-pipeline');
 const { CampaignAnalyticsEngine, sha256Hex } = require('../companion/email-campaign-analytics');
 const { EmailTestSidecar } = require('../companion/email-test-sidecar');
+const { verifyWindowsDacl } = require('../companion/email-test-sidecar-set-key');
 
 function makeTestCryptoBox(salt = 'safe-engine-box') {
   return {
@@ -694,6 +695,150 @@ function makeRefreshVaultFetch(counterRef) {
       assert.ok(!studioJs.includes('동의원장'), 'Studio JS must preserve spacing invariant (동의 원장)');
       checks += 2;
       console.log('PASS 7: Sidecar /email/gmail/dashboard + /hygiene/check HTTP contracts & Email Studio UI controls verified');
+    }
+
+    // ===== 8. Independent RC2 Audit Hardening Regressions (PKCE Replay/State Isolation, id_token aud/iss, From Guard, Corrupt Quota Ledger, Packaged Injection Guard, NTFS ACL) =====
+    {
+      // (a) Packaged mode MUST reject Gmail test injection options fail-closed
+      assert.throws(() => new EmailTestSidecar({ trustedTestMode: false, gmailCryptoBox: box }), e => e.code === 'PACKAGED_MODE_TEST_INJECTION_REJECTED');
+      assert.throws(() => new EmailTestSidecar({ trustedTestMode: false, gmailFetchImpl: okSyncFetch }), e => e.code === 'PACKAGED_MODE_TEST_INJECTION_REJECTED');
+
+      // (b) Loopback PKCE callback rejects wrong state without destroying legitimate session, and rejects concurrent duplicate replay
+      const dirPkce = path.join(tmpRoot, 'audit_pkce_hardening');
+      const makeJwt = (payload) => `${Buffer.from('{"alg":"none"}').toString('base64url')}.${Buffer.from(JSON.stringify(payload)).toString('base64url')}.sig`;
+      let tokenHits = 0;
+      const pkceFetch = async (url, init) => {
+        if (String(url) === 'https://oauth2.googleapis.com/token') {
+          tokenHits++;
+          await new Promise(r => setTimeout(r, 25)); // simulate async token exchange window for TOCTOU replay check
+          const bodyStr = String(init.body || '');
+          if (bodyStr.includes('code=BAD_AUD')) {
+            return {
+              ok: true,
+              status: 200,
+              json: async () => ({
+                access_token: 'ya29.syn_badaud',
+                refresh_token: '1//syn_badaud',
+                scope: 'https://www.googleapis.com/auth/gmail.send openid email',
+                id_token: makeJwt({ iss: 'https://accounts.google.com', aud: 'WRONG-CLIENT.apps.googleusercontent.com', email: 'a@gmail.com', email_verified: true })
+              })
+            };
+          }
+          return {
+            ok: true,
+            status: 200,
+            json: async () => ({
+              access_token: 'ya29.syn_good',
+              refresh_token: '1//syn_good',
+              scope: 'https://www.googleapis.com/auth/gmail.send openid email',
+              id_token: makeJwt({ iss: 'https://accounts.google.com', aud: 'audit-client-123456.apps.googleusercontent.com', email: 'pkce_audit@gmail.com', email_verified: true })
+            })
+          };
+        }
+        return { ok: false, status: 404, json: async () => ({}) };
+      };
+      const vaultPkce = new GmailAccountVault({ stateDir: dirPkce, trustedTestMode: true, cryptoBox: box, fetchImpl: pkceFetch });
+      vaultPkce.saveOAuthClientConfig({ clientId: 'audit-client-123456.apps.googleusercontent.com', userConsentConfirmed: true });
+
+      const flow = await vaultPkce.startOAuthPkceFlow({ startLoopbackServer: true });
+      assert.equal(flow.ok, true);
+      try {
+        // Rogue request with wrong state must get 400 and leave legitimate session intact!
+        const rogueResp = await fetch(`${flow.redirectUri}?state=WRONG_STATE_ATTACK&error=access_denied`);
+        assert.equal(rogueResp.status, 400);
+        assert.ok(vaultPkce._pendingOAuthSessions.has(flow.state), 'Wrong-state request must NOT destroy legitimate pending OAuth session');
+
+        // Concurrent replay race with same legitimate state -> only 1 succeeds, 2nd rejected immediately!
+        const [cb1, cb2] = await Promise.all([
+          vaultPkce.completeOAuthCallback({ state: flow.state, code: 'VALID_CODE' }),
+          vaultPkce.completeOAuthCallback({ state: flow.state, code: 'VALID_CODE' })
+        ]);
+        const okResults = [cb1, cb2].filter(r => r.ok);
+        const rejResults = [cb1, cb2].filter(r => !r.ok);
+        assert.equal(okResults.length, 1, 'Exactly one callback may consume single-use PKCE state');
+        assert.equal(rejResults.length, 1);
+        assert.equal(rejResults[0].reason, 'OAUTH_STATE_INVALID_OR_EXPIRED');
+        assert.equal(tokenHits, 1, 'Token endpoint must be called at most once despite concurrent callback race');
+
+        // Mismatched id_token aud must be rejected fail-closed
+        const flowAud = await vaultPkce.startOAuthPkceFlow({ startLoopbackServer: false });
+        const badAudRes = await vaultPkce.completeOAuthCallback({ state: flowAud.state, code: 'BAD_AUD' });
+        assert.equal(badAudRes.ok, false);
+        assert.equal(badAudRes.reason, 'OAUTH_ID_TOKEN_CLAIMS_INVALID');
+      } finally {
+        vaultPkce.closeAllOAuthServers();
+      }
+
+      // (c) Malformed/injected fromAddress in sendGmailSelfTest MUST fail closed (never silently fall back to selected.from)
+      const dirFrom = path.join(tmpRoot, 'audit_from_and_corrupt');
+      const pipeFrom = new EmailProductionPipeline({ stateDir: dirFrom, trustedTestMode: true });
+      const vaultFrom = new GmailAccountVault({ stateDir: dirFrom, trustedTestMode: true, cryptoBox: box });
+      const acctFrom = vaultFrom.upsertMockAccountForTest({ email: 'verified_owner@gmail.com', cap24h: 20 });
+      const runnerFrom = new GmailCampaignRunner({ stateDir: dirFrom, pipeline: pipeFrom, vault: vaultFrom, trustedTestMode: true, syncFetchImpl: okSyncFetch });
+
+      const badFrom = await runnerFrom.sendGmailSelfTest({
+        accountId: acctFrom.id,
+        fromAddress: 'evil@gmail.com\r\nBcc: spy@example.test',
+        to: 'owner_rcpt@example.test',
+        subject: 'Bad From',
+        html: '<p>Hi</p>',
+        text: 'Hi',
+        recipientConsentConfirmed: true,
+        ownerExplicitApproval: true,
+        baseUrlOverride: 'https://unsubscribe.vivpr.pro',
+        syncTokenOverride: 'sync-tok-1234567890',
+        fetchImpl: async () => { throw new Error('MUST_NOT_SEND'); }
+      });
+      assert.equal(badFrom.ok, false);
+      assert.equal(badFrom.reason, 'INVALID_FROM_ADDRESS');
+
+      const spoofAlias = await runnerFrom.sendGmailSelfTest({
+        accountId: acctFrom.id,
+        fromAddress: 'unverified_alias@gmail.com',
+        to: 'owner_rcpt@example.test',
+        subject: 'Spoof Alias',
+        html: '<p>Hi</p>',
+        text: 'Hi',
+        recipientConsentConfirmed: true,
+        ownerExplicitApproval: true,
+        baseUrlOverride: 'https://unsubscribe.vivpr.pro',
+        syncTokenOverride: 'sync-tok-1234567890',
+        fetchImpl: async () => { throw new Error('MUST_NOT_SEND'); }
+      });
+      assert.equal(spoofAlias.ok, false);
+      assert.equal(spoofAlias.reason, 'UNVERIFIED_SEND_AS');
+
+      // (d) Corrupt line in .gmail_quota_ledger.jsonl -> detected & fail-closed blocks sends + NTFS ACL verification on Windows
+      vaultFrom.recordQuotaEvent({ accountId: acctFrom.id, domain: 'gmail.com', campaignId: 'c_acl', recipientHash: 'a'.repeat(64), idempotencyKey: 'k_acl_1', status: 'GMAIL_API_ACCEPTED' });
+      if (process.platform === 'win32' && process.env.USERNAME) {
+        assert.equal(verifyWindowsDacl(vaultPkce.oauthClientFile, process.env.USERNAME), true);
+        assert.equal(verifyWindowsDacl(vaultPkce.vaultFile, process.env.USERNAME), true);
+        assert.equal(verifyWindowsDacl(vaultFrom.quotaLedgerFile, process.env.USERNAME), true);
+      }
+      fs.appendFileSync(vaultFrom.quotaLedgerFile, '{CORRUPT_PARTIAL_CRASH_LINE\n');
+      assert.equal(vaultFrom.getRolling24hUsage().corruptLineCount, 1);
+      runnerFrom.prepareGmailQueue({
+        csvText: 'email,name\nu_corrupt@example.test,U',
+        campaignId: 'camp_corrupt',
+        sendingMode: 'SINGLE_ACCOUNT',
+        selectedAccountIds: [acctFrom.id],
+        consentAttested: true
+      });
+      const corruptBlocked = await runnerFrom.runGmailQueue({
+        subject: 'Corrupt Ledger Stop',
+        html: '<p>Hi</p>',
+        text: 'Hi',
+        ownerExplicitApproval: true,
+        hygieneConfirmed: true,
+        baseUrlOverride: 'https://unsubscribe.vivpr.pro',
+        syncTokenOverride: 'sync-tok-1234567890',
+        fetchImpl: async () => { throw new Error('MUST_NOT_SEND_ON_CORRUPT_QUOTA_LEDGER'); },
+        pacingMs: 0
+      });
+      assert.equal(corruptBlocked.ok, false);
+      assert.equal(corruptBlocked.reason, 'QUOTA_LEDGER_CORRUPT_RECONCILE_REQUIRED');
+      checks += 4;
+      console.log('PASS 8: Independent audit hardening (packaged injection guard, PKCE state isolation/replay, id_token aud/iss, From guard, corrupt ledger fail-closed & Windows NTFS ACL) verified');
     }
 
     console.log(`XPIDER V7.1 Gmail Safe Delivery Engine suite: ${checks}/${checks} PASS; ZERO REAL SENDS`);

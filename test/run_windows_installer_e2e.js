@@ -151,14 +151,114 @@ function runExe(args) {
     assert.ok(!fs.existsSync(path.join(stateB, '.email_consent_ledger.json')), 'ProfileB state must stay isolated from ProfileA');
     console.log('PASS 6: two-profile installation strictly isolated');
 
-    // 7. Silent uninstall with --retain-data removes App dir while preserving durable Sidecar data 100%
+    // 7. Native Host binary protocol auto-start using installed xpider_email_sidecar_host.bat (System32-only PATH, zero system Node!)
+    const nhBatPath = path.join(stateB, 'native_host', 'xpider_email_sidecar_host.bat');
+    const nhLocalAppData = path.join(sandbox, 'ProfileB_NH');
+    fs.mkdirSync(nhLocalAppData, { recursive: true });
+    const reqJson = Buffer.from(JSON.stringify({ action: 'GET_SIDECAR_TOKEN', port: 19997, ensureRunning: true }), 'utf8');
+    const reqFrame = Buffer.alloc(4 + reqJson.length);
+    reqFrame.writeUInt32LE(reqJson.length, 0);
+    reqJson.copy(reqFrame, 4);
+    const nhRun = spawnSync('cmd.exe', ['/c', nhBatPath], {
+      input: reqFrame,
+      env: {
+        SystemRoot: sysRoot,
+        USERNAME: process.env.USERNAME || 'user',
+        LOCALAPPDATA: nhLocalAppData,
+        XPIDER_DISABLE_WMI_LAUNCH: '1', // inherit sandbox LOCALAPPDATA cleanly while still exercising bundled runtime\node.exe detached spawn
+        PATH: `${sysRoot}\\System32;${sysRoot}`
+      },
+      timeout: 20000
+    });
+    assert.equal(nhRun.status, 0, `Native host exited ${nhRun.status}: ${nhRun.stderr?.toString()}`);
+    assert.ok(nhRun.stdout && nhRun.stdout.length > 4, 'Native host must return 4-byte framed JSON');
+    const respLen = nhRun.stdout.readUInt32LE(0);
+    const nhResp = JSON.parse(nhRun.stdout.subarray(4, 4 + respLen).toString('utf8'));
+    assert.equal(nhResp.ok, true, `Native host must pair token: ${JSON.stringify(nhResp)}`);
+    assert.ok(nhResp.token && nhResp.token.length >= 16);
+    assert.equal(nhResp.sidecarEnsure?.ensured, true);
+    assert.equal(nhResp.sidecarEnsure?.autoStarted, true);
+    try {
+      const h97 = await fetch('http://127.0.0.1:19997/health').then(r => r.json());
+      assert.equal(h97.status, 'OK');
+      assert.ok(Array.isArray(h97.apiCapabilities) && h97.apiCapabilities.includes('gmail-safe-delivery-v71'));
+      const d97 = await fetch('http://127.0.0.1:19997/email/gmail/dashboard', {
+        headers: { Authorization: `Bearer ${nhResp.token}` }
+      }).then(r => r.json());
+      assert.equal(d97.ok, true);
+      assert.equal(d97.dashboard.provider, 'GMAIL');
+      assert.equal(d97.dashboard.throttle.downwardOnly, true);
+    } finally {
+      if (nhResp.sidecarEnsure?.pid) {
+        try { process.kill(Number(nhResp.sidecarEnsure.pid)); } catch (_) {}
+        await new Promise(r => setTimeout(r, 400));
+      }
+    }
+    console.log('PASS 7: Native Host binary protocol auto-starts Sidecar 19997 with bundled runtime\\node.exe (zero system Node) & verifies /email/gmail/dashboard');
+
+    // 8. Silent uninstall with --retain-data removes App dir while preserving durable Sidecar data 100%
     runExe(['--silent', '--uninstall', '--retain-data', '--install-dir', appA, '--state-dir', stateA, '--skip-registry']);
     assert.ok(!fs.existsSync(appA), 'App directory must be cleanly removed on uninstall');
     assert.equal(fs.readFileSync(v7SentinelConsent, 'utf8'), consentPayload, 'Uninstall --retain-data must preserve consent ledger');
     assert.equal(fs.readFileSync(v7SentinelSup, 'utf8'), supPayload, 'Uninstall --retain-data must preserve suppression map');
-    console.log('PASS 7: uninstall with --retain-data removes App dir and preserves durable user data 100%');
+    console.log('PASS 8: uninstall with --retain-data removes App dir and preserves durable user data 100%');
 
-    console.log('ALL WINDOWS CLEAN-SANDBOX INSTALLER E2E TESTS PASSED (7/7; ZERO REAL SENDS)');
+    // 9. Portable ZIP clean extraction & zero-Node cold boot (auto-resolved alongside EXE or passed as argv[3])
+    const portableZip = process.argv[3]
+      ? path.resolve(process.argv[3])
+      : setupExe.replace(/_SETUP_([^.]+)\.exe$/i, '_PORTABLE_$1.zip');
+    let totalPassed = 8;
+    if (portableZip !== setupExe && fs.existsSync(portableZip)) {
+      const portDir = path.join(sandbox, 'PortableRun');
+      const portState = path.join(sandbox, 'PortableState');
+      fs.mkdirSync(portDir, { recursive: true });
+      fs.mkdirSync(portState, { recursive: true });
+      const psExe = path.join(sysRoot, 'System32', 'WindowsPowerShell', 'v1.0', 'powershell.exe');
+      const ex = spawnSync(psExe, ['-NoProfile', '-Command', `Expand-Archive -Path '${portableZip.replace(/'/g, "''")}' -DestinationPath '${portDir.replace(/'/g, "''")}' -Force`], { encoding: 'utf8', timeout: 60000 });
+      assert.equal(ex.status, 0, `Expand-Archive failed: ${ex.stderr}`);
+      const portNode = path.join(portDir, 'runtime', 'node.exe');
+      assert.ok(fs.existsSync(portNode), 'Portable ZIP must bundle runtime\\node.exe');
+      const portMf = JSON.parse(fs.readFileSync(path.join(portDir, 'extension', 'manifest.json'), 'utf8'));
+      assert.equal(portMf.key.length, 392, 'Portable ZIP must preserve pinned 392-char Extension ID key');
+      const portBoot = `
+        const { EmailTestSidecar } = require(${JSON.stringify(path.join(portDir, 'companion', 'email-test-sidecar.js'))});
+        const sc = new EmailTestSidecar({ stateDir: ${JSON.stringify(portState)}, port: 19998, trustedTestMode: true });
+        sc.start().then(() => console.log('PORTABLE_SIDECAR_READY'));
+      `;
+      const pProc = spawn(portNode, ['-e', portBoot], {
+        env: {
+          SystemRoot: sysRoot,
+          USERNAME: process.env.USERNAME || 'user',
+          LOCALAPPDATA: portState,
+          PATH: `${sysRoot}\\System32;${sysRoot}`
+        },
+        stdio: ['ignore', 'pipe', 'pipe']
+      });
+      try {
+        await new Promise((resolve, reject) => {
+          const t = setTimeout(() => reject(new Error('PORTABLE_SIDECAR_TIMEOUT')), 15000);
+          let out = '';
+          pProc.stdout.on('data', d => { out += d.toString(); if (out.includes('PORTABLE_SIDECAR_READY')) { clearTimeout(t); resolve(); } });
+          pProc.stderr.on('data', d => { out += d.toString(); });
+          pProc.once('exit', code => { clearTimeout(t); reject(new Error('Portable exit ' + code + ': ' + out)); });
+        });
+        const hp = await fetch('http://127.0.0.1:19998/health').then(r => r.json());
+        assert.equal(hp.status, 'OK');
+        assert.ok(hp.apiCapabilities.includes('gmail-safe-delivery-v71'));
+        const pTok = fs.readFileSync(path.join(portState, '.email_sidecar_token'), 'utf8').trim();
+        const dp = await fetch('http://127.0.0.1:19998/email/gmail/dashboard', { headers: { Authorization: `Bearer ${pTok}` } }).then(r => r.json());
+        assert.equal(dp.ok, true);
+        assert.equal(dp.dashboard.metrics.verifiedDelivered, null);
+      } finally {
+        const pExit = new Promise(resolve => pProc.once('exit', resolve));
+        try { pProc.kill(); } catch (_) {}
+        await pExit;
+      }
+      totalPassed = 9;
+      console.log('PASS 9: Portable ZIP clean extract + bundled runtime\\node.exe (zero system Node) cold boot + /email/gmail/dashboard PASS');
+    }
+
+    console.log(`ALL WINDOWS CLEAN-SANDBOX INSTALLER E2E TESTS PASSED (${totalPassed}/${totalPassed}; ZERO REAL SENDS)`);
   } finally {
     if (sidecarProc) { try { sidecarProc.kill(); } catch (_) {} }
     fs.rmSync(sandbox, { recursive: true, force: true });

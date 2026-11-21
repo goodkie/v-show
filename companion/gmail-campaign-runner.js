@@ -16,6 +16,7 @@ const path = require('node:path');
 const crypto = require('node:crypto');
 const { GmailSendBlocked, rawGmailMime, selectAccount, sendViaGmailApi } = require('./gmail-sender-foundation');
 const { injectUnsubscribeFooter } = require('./email-unsubscribe-server');
+const { writeProtectedSecretFile } = require('./email-test-sidecar-set-key');
 const { maskEmail, normalizeEmail } = require('./gmail-account-vault');
 const {
   AdaptiveThrottleController,
@@ -207,8 +208,13 @@ class GmailCampaignRunner {
 
   _writeQueueAtomic(qObj) {
     fs.mkdirSync(path.dirname(this.queueFile), { recursive: true });
+    const serialized = JSON.stringify(qObj, null, 2);
+    if (!this.trustedTestMode) {
+      writeProtectedSecretFile(this.queueFile, serialized);
+      return;
+    }
     const tmp = `${this.queueFile}.${process.pid}.${Date.now()}.${crypto.randomBytes(4).toString('hex')}.tmp`;
-    fs.writeFileSync(tmp, JSON.stringify(qObj, null, 2), { mode: 0o600 });
+    fs.writeFileSync(tmp, serialized, { mode: 0o600 });
     fs.renameSync(tmp, this.queueFile);
   }
 
@@ -846,12 +852,16 @@ class GmailCampaignRunner {
     }
 
     // 3. Validate account + rolling 1m/1h/24h per-account & domain caps via foundation selectAccount()
+    const usageSelf = this.vault.getRolling24hUsage();
+    if ((usageSelf.corruptLineCount || 0) > 0) {
+      return { ok: false, statusCode: 409, status: 'BLOCKED', reason: 'QUOTA_LEDGER_CORRUPT_RECONCILE_REQUIRED' };
+    }
     const accountsWithUsage = this.vault.getInternalAccountsWithUsage();
     const targetAcct = accountsWithUsage.find(a => a.id === accountId);
     if (!targetAcct) {
       return { ok: false, statusCode: 404, status: 'BLOCKED', reason: 'ACCOUNT_NOT_FOUND' };
     }
-    const permSelf = this.vault.getNextPermittedAtMs(targetAcct);
+    const permSelf = this.vault.getNextPermittedAtMs(targetAcct, usageSelf);
     if (!permSelf.permittedNow) {
       return {
         ok: false,
@@ -907,12 +917,20 @@ class GmailCampaignRunner {
 
     const withFooter = injectUnsubscribeFooter({ html, text, unsubscribeUrl: unsub.url });
     const withAddr = ensurePhysicalAddressInFooter({ ...withFooter, physicalAddress });
-    const resolvedFrom = fromAddress ? normalizeEmail(fromAddress) : selected.from;
+    let resolvedFrom = selected.from;
+    if (fromAddress !== null && fromAddress !== undefined && String(fromAddress).trim() !== '') {
+      const rawFrom = String(fromAddress);
+      const normFrom = normalizeEmail(rawFrom);
+      if (hasHeaderInjection(rawFrom) || !normFrom) {
+        return { ok: false, statusCode: 400, status: 'BLOCKED', reason: 'INVALID_FROM_ADDRESS' };
+      }
+      resolvedFrom = normFrom;
+    }
 
     let raw;
     try {
       raw = rawGmailMime({
-        from: resolvedFrom || selected.from,
+        from: resolvedFrom,
         replyTo: cleanReplyTo || undefined,
         to: normTo,
         verifiedFromAddresses: targetAcct.verifiedSendAs || [targetAcct.email],
@@ -1069,6 +1087,20 @@ class GmailCampaignRunner {
         reason: 'HALTED_RECONCILE_REQUIRED_NO_BLIND_RESUME',
         nextPermittedExecutionAt: null,
         koreanReason: '미확정(타임아웃/중단) 발송 항목(HALTED_RECONCILE_REQUIRED)이 존재합니다. 중복 발송 방지를 위해 대조 전 자동 재개를 차단합니다.',
+        summary: this.summarizeQueue(),
+        dashboard: this.getTrueDashboard()
+      };
+    }
+    const usagePreCheck = this.vault.getRolling24hUsage();
+    if ((usagePreCheck.corruptLineCount || 0) > 0) {
+      return {
+        ok: false,
+        statusCode: 409,
+        status: 'PAUSED',
+        campaignState: 'HALTED_RECONCILE_REQUIRED',
+        reason: 'QUOTA_LEDGER_CORRUPT_RECONCILE_REQUIRED',
+        nextPermittedExecutionAt: null,
+        koreanReason: `할당량 원장(.gmail_quota_ledger.jsonl)에 손상된 줄(${usagePreCheck.corruptLineCount}건)이 감지되어 Fail-Closed 차단되었습니다.`,
         summary: this.summarizeQueue(),
         dashboard: this.getTrueDashboard()
       };
