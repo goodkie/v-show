@@ -17,6 +17,12 @@ const { execFileSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
+function resolveWindowsPowerShell() {
+  const sysRoot = process.env.SystemRoot || 'C:\\Windows';
+  const full = path.join(sysRoot, 'System32', 'WindowsPowerShell', 'v1.0', 'powershell.exe');
+  return fs.existsSync(full) ? full : 'powershell.exe';
+}
+
 const memoryCache = new Map();
 
 /**
@@ -46,7 +52,7 @@ function encrypt(plaintext) {
         [Convert]::ToBase64String($enc)
       `;
       const b64 = Buffer.from(script, 'utf16le').toString('base64');
-      const out = execFileSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-EncodedCommand', b64], { encoding: 'utf8' });
+      const out = execFileSync(resolveWindowsPowerShell(), ['-NoProfile', '-NonInteractive', '-EncodedCommand', b64], { encoding: 'utf8' });
       const rawCipher = out.trim().split(/\r?\n/).pop().trim();
       if (rawCipher && rawCipher.length > 10) {
         const result = `dpapi:${rawCipher}`;
@@ -98,7 +104,7 @@ function decrypt(cipherRef) {
           [Convert]::ToBase64String($dec)
         `;
         const b64 = Buffer.from(script, 'utf16le').toString('base64');
-        const out = execFileSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-EncodedCommand', b64], { encoding: 'utf8' });
+        const out = execFileSync(resolveWindowsPowerShell(), ['-NoProfile', '-NonInteractive', '-EncodedCommand', b64], { encoding: 'utf8' });
         const decB64 = out.trim().split(/\r?\n/).pop().trim();
         const plain = Buffer.from(decB64, 'base64').toString('utf8');
         memoryCache.set(cipherRef, plain);
