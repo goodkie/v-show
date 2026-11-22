@@ -20,6 +20,7 @@ const deliverabilityPolicy = require('./email-deliverability-v2-policy');
 const { writeProtectedSecretFile, verifyWindowsDacl } = require('./email-test-sidecar-set-key');
 const RM = require('../extension/email-studio/recipient-manager');
 const { validateAndFormatSenderFrom, sanitizeReplyTo } = require('./vivpr-sender-identity');
+const { optimizeAndScoreEmailMessage } = require('./gmail-deliverability-optimizer');
 
 const DOMAIN = 'vivpr.pro';
 const GEMINI_API_BASE = 'https://generativelanguage.googleapis.com/v1beta';
@@ -1119,7 +1120,7 @@ class EmailProductionPipeline {
     return this.summarizeQueue();
   }
 
-  async _validateRunQueueGates({ mode = 'DRY_RUN', baseUrl = 'http://127.0.0.1:18990', hasResendKey = false, apiKey = null, ownerExplicitApproval = false, publicUnsubscribeHttpsVerified = false, syncToken = null, syncFetchImpl = null, senderDisplayName = '', senderName = '', company = '', brand = '', replyTo = '' } = {}) {
+  async _validateRunQueueGates({ mode = 'DRY_RUN', baseUrl = 'http://127.0.0.1:18990', hasResendKey = false, apiKey = null, ownerExplicitApproval = false, publicUnsubscribeHttpsVerified = false, syncToken = null, syncFetchImpl = null, senderDisplayName = '', senderName = '', company = '', brand = '', replyTo = '', subject = '', html = '', text = '', physicalAddress = '', autoSpamPrevention = false, autoAlignReplyTo = false, preferLightweightHtml = false, blockHighRiskSpam = false } = {}) {
     const fromCheck = validateAndFormatSenderFrom({
       displayName: senderDisplayName,
       fallbackBusinessNames: [senderName, company, brand],
@@ -1146,6 +1147,42 @@ class EmailProductionPipeline {
           reason: rtCheck.reason,
           blockingReasons: [rtCheck.reason],
           koreanReason: '회신 이메일(Reply-To) 형식이 유효하지 않거나 헤더 인젝션 문자가 감지되어 안전 차단되었습니다.',
+          summary: this.summarizeQueue()
+        };
+      }
+    }
+    if (autoSpamPrevention === true && blockHighRiskSpam === true && mode !== 'DRY_RUN') {
+      const spamGate = optimizeAndScoreEmailMessage({
+        provider: 'RESEND',
+        from: `noreply@${DOMAIN}`,
+        displayName: fromCheck.displayName,
+        replyTo: replyTo || '',
+        subject,
+        html,
+        text,
+        physicalAddress: physicalAddress || '',
+        publicUnsubBase: baseUrl,
+        autoOptimize: true,
+        autoAlignReplyTo: Boolean(autoAlignReplyTo),
+        preferLightweightHtml: Boolean(preferLightweightHtml)
+      });
+      if (spamGate.grade === 'HIGH_RISK') {
+        return {
+          ok: false,
+          status: 'BLOCKED',
+          mode,
+          reason: 'HIGH_SPAM_RISK_BLOCKED',
+          blockingReasons: ['HIGH_SPAM_RISK_BLOCKED'],
+          spamOptimization: {
+            provider: 'RESEND',
+            riskScore: spamGate.riskScore,
+            grade: spamGate.grade,
+            autoFixesApplied: spamGate.autoFixesApplied,
+            signals: spamGate.signals,
+            recommendations: spamGate.recommendations,
+            honestDisclaimer: spamGate.honestDisclaimer
+          },
+          koreanReason: `Resend 자동 스팸 위험도 점검에서 고위험(점수 ${spamGate.riskScore}/100)이 감지되어 발송 전 안전 차단되었습니다. 스팸 체크리스트 패널에서 위험 요인을 수정한 뒤 다시 시도하세요.`,
           summary: this.summarizeQueue()
         };
       }
@@ -1292,15 +1329,65 @@ class EmailProductionPipeline {
     };
   }
 
-  async _runQueueLoop({ mode = 'DRY_RUN', senderDisplayName = '', senderName = '', company = '', brand = '', replyTo = '', subject = '', html = '', text = '', baseUrl = 'http://127.0.0.1:18990', maxAttempts = 2, hasResendKey = false, apiKey = null, ownerExplicitApproval = false, publicUnsubscribeHttpsVerified = false, syncToken = null, syncFetchImpl = null } = {}) {
+  async _runQueueLoop({ mode = 'DRY_RUN', senderDisplayName = '', senderName = '', company = '', brand = '', replyTo = '', subject = '', html = '', text = '', physicalAddress = '', autoSpamPrevention = false, autoAlignReplyTo = false, preferLightweightHtml = false, baseUrl = 'http://127.0.0.1:18990', maxAttempts = 2, hasResendKey = false, apiKey = null, ownerExplicitApproval = false, publicUnsubscribeHttpsVerified = false, syncToken = null, syncFetchImpl = null } = {}) {
     const senderFromRes = validateAndFormatSenderFrom({
       displayName: senderDisplayName,
       fallbackBusinessNames: [senderName, company, brand],
       verifiedEmail: `noreply@${DOMAIN}`
     });
-    const resolvedFromHeader = senderFromRes.ok ? senderFromRes.from : `${DOMAIN} <noreply@${DOMAIN}>`;
+    let resolvedFromHeader = senderFromRes.ok ? senderFromRes.from : `${DOMAIN} <noreply@${DOMAIN}>`;
     const replyToRes = sanitizeReplyTo(replyTo);
-    const resolvedReplyTo = replyToRes.ok ? replyToRes.replyTo : null;
+    let resolvedReplyTo = replyToRes.ok ? replyToRes.replyTo : null;
+    let effectiveSubject = subject;
+    let effectiveHtml = html;
+    let effectiveText = text;
+    let appliedSpamOpt = null;
+    if (autoSpamPrevention === true) {
+      const resOpt = optimizeAndScoreEmailMessage({
+        provider: 'RESEND',
+        from: `noreply@${DOMAIN}`,
+        displayName: senderFromRes.ok ? senderFromRes.displayName : DOMAIN,
+        replyTo: resolvedReplyTo || '',
+        subject,
+        html,
+        text,
+        physicalAddress: physicalAddress || '',
+        publicUnsubBase: baseUrl,
+        autoOptimize: true,
+        autoAlignReplyTo: Boolean(autoAlignReplyTo),
+        preferLightweightHtml: Boolean(preferLightweightHtml)
+      });
+      if (resOpt.optimized.displayName) {
+        const optFromRes = validateAndFormatSenderFrom({
+          displayName: resOpt.optimized.displayName,
+          fallbackBusinessNames: [DOMAIN],
+          verifiedEmail: `noreply@${DOMAIN}`
+        });
+        if (optFromRes.ok) resolvedFromHeader = optFromRes.from;
+      }
+      resolvedReplyTo = resOpt.optimized.replyTo || null;
+      effectiveSubject = resOpt.optimized.subject || subject;
+      effectiveHtml = resOpt.optimized.html || html;
+      effectiveText = resOpt.optimized.text || text;
+      const cleanAddr = String(physicalAddress || '').trim();
+      if (cleanAddr.length >= 6) {
+        if (!effectiveHtml.includes(cleanAddr)) {
+          const escAddr = cleanAddr.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+          effectiveHtml = `${effectiveHtml}\n<p style="font-size:11px;color:#64748b;margin-top:12px;">${escAddr}</p>`;
+        }
+        if (!effectiveText.includes(cleanAddr)) {
+          effectiveText = `${effectiveText}\n\n${cleanAddr}`;
+        }
+      }
+      appliedSpamOpt = {
+        provider: 'RESEND',
+        riskScore: resOpt.riskScore,
+        grade: resOpt.grade,
+        autoFixesApplied: resOpt.autoFixesApplied,
+        signals: resOpt.signals,
+        honestDisclaimer: resOpt.honestDisclaimer
+      };
+    }
     this.queue.stopped = false;
     this.queue.stopReason = null;
     this.queue.startedAt = this.queue.startedAt || new Date().toISOString();
@@ -1362,13 +1449,13 @@ class EmailProductionPipeline {
       }
 
       if (mode === 'ISOLATED_PROVIDER_TEST' && typeof this.providerTransport === 'function') {
-        const rendered = injectUnsubscribeFooter({ html, text, unsubscribeUrl: unsub.url });
+        const rendered = injectUnsubscribeFooter({ html: effectiveHtml, text: effectiveText, unsubscribeUrl: unsub.url });
         this._appendAudit({ type: 'SEND_ATTEMPT_STARTED', idempotencyKey: e.idempotencyKey, email: e.email, attempt: e.attempts });
         try {
           const res = await this.providerTransport({
             from: resolvedFromHeader,
             to: e.email,
-            subject,
+            subject: effectiveSubject,
             html: rendered.html,
             text: rendered.text,
             ...(resolvedReplyTo ? { reply_to: resolvedReplyTo } : {}),
@@ -1490,7 +1577,7 @@ class EmailProductionPipeline {
           this._saveQueue();
           continue;
         }
-        const rendered = injectUnsubscribeFooter({ html, text, unsubscribeUrl: unsub.url });
+        const rendered = injectUnsubscribeFooter({ html: effectiveHtml, text: effectiveText, unsubscribeUrl: unsub.url });
         this._appendAudit({ type: 'SEND_ATTEMPT_STARTED', idempotencyKey: e.idempotencyKey, email: e.email, attempt: e.attempts, mode: 'LIVE_PRODUCTION' });
         const resendBackoffsMs = isLiveNetwork ? [1200, 3000, 6000] : [0, 0, 0];
         let sendHandled = false;
@@ -1507,7 +1594,7 @@ class EmailProductionPipeline {
               body: JSON.stringify({
                 from: resolvedFromHeader,
                 to: [e.email],
-                subject,
+                subject: effectiveSubject,
                 html: rendered.html,
                 text: rendered.text,
                 ...(resolvedReplyTo ? { reply_to: resolvedReplyTo } : {}),
@@ -1598,6 +1685,7 @@ class EmailProductionPipeline {
       mode,
       stopReason: this.queue.stopReason || null,
       sentInThisRun,
+      ...(appliedSpamOpt ? { spamOptimization: appliedSpamOpt } : {}),
       timestamp: new Date().toISOString(),
       summary: this.summarizeQueue()
     };

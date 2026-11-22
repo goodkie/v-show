@@ -12,7 +12,7 @@ const { GmailAccountVault } = require('../companion/gmail-account-vault');
 const { GmailCampaignRunner } = require('../companion/gmail-campaign-runner');
 const { GmailSendBlocked, rawGmailMime } = require('../companion/gmail-sender-foundation');
 const { AdaptiveThrottleController, assessDeliverabilityHygiene } = require('../companion/gmail-safe-delivery-engine');
-const { optimizeAndScoreGmailMessage } = require('../companion/gmail-deliverability-optimizer');
+const { optimizeAndScoreGmailMessage, optimizeAndScoreEmailMessage } = require('../companion/gmail-deliverability-optimizer');
 const { EmailProductionPipeline } = require('../companion/email-production-pipeline');
 const { CampaignAnalyticsEngine, sha256Hex } = require('../companion/email-campaign-analytics');
 const { EmailTestSidecar } = require('../companion/email-test-sidecar');
@@ -949,6 +949,152 @@ function makeRefreshVaultFetch(counterRef) {
       assert.ok(jsNow.includes('OPTIMIZE_GMAIL_DELIVERABILITY') && jsNow.includes('getGmailSpamOptFlags'));
       checks += 4;
       console.log('PASS 9: Automatic deliverability & spam-risk optimizer, RFC 2047 folding, Date header, HIGH_SPAM_RISK_BLOCKED & Sidecar/UI wiring verified');
+    }
+
+    // ===== 10. Unified Dual-Provider (Gmail + Resend) Anti-Spam Checklist, Auto/Semi-Auto Engine & Resend Gate =====
+    {
+      // (a) Dual-provider structured checklist (AUTO / SEMI_AUTO / MANUAL_GUIDE) for RESEND and GMAIL
+      const resOpt = optimizeAndScoreEmailMessage({
+        provider: 'RESEND',
+        from: 'noreply@vivpr.pro',
+        displayName: 'vivpr.pro',
+        replyTo: 'support@other-brand.example',
+        subject: 'RESEND SERVICE UPDATE!!!',
+        preheader: '서비스 안내 요약입니다.',
+        html: '<div><img src="https://vivpr.pro/images/news.jpg"><img src="https://cdn.example.test/ok.png"><script>x()</script><p>안녕하세요. 정상 서비스 안내 본문입니다. 충분히 자연스럽고 구체적인 안내 문장을 작성했습니다.</p></div>',
+        text: '안녕하세요. 정상 서비스 안내 본문입니다. 충분히 자연스럽고 구체적인 안내 문장을 작성했습니다.',
+        physicalAddress: '100 Synthetic Way, Suite 200, Seoul',
+        autoOptimize: true,
+        autoAlignReplyTo: true,
+        preferLightweightHtml: false
+      });
+      assert.equal(resOpt.ok, true);
+      assert.equal(resOpt.provider, 'RESEND');
+      assert.equal(resOpt.optimized.displayName, 'vivpr.pro', 'Resend vivpr.pro displayName matches sender domain and stays intact');
+      assert.equal(resOpt.optimized.replyTo, '', 'Mismatched external Reply-To auto-aligned when autoAlignReplyTo=true');
+      assert.ok(!resOpt.optimized.html.includes('news.jpg') && !resOpt.optimized.html.includes('<script'));
+      assert.match(resOpt.optimized.html, /<img alt=""[^>]*ok\.png/, 'Missing img alt auto-filled');
+      assert.ok(Array.isArray(resOpt.checklist) && resOpt.checklist.length >= 14);
+      assert.ok(resOpt.checklist.some(i => i.mode === 'AUTO') && resOpt.checklist.some(i => i.mode === 'SEMI_AUTO') && resOpt.checklist.some(i => i.mode === 'MANUAL_GUIDE'));
+      assert.ok(resOpt.checklistSummary.autoTotal >= 7 && resOpt.checklistSummary.semiAutoTotal >= 5 && resOpt.checklistSummary.manualTotal === 4);
+
+      // (b) Resend EmailProductionPipeline.runQueue with autoSpamPrevention=true (clean auto-fix + HIGH_SPAM_RISK_BLOCKED)
+      const dirRes = path.join(tmpRoot, 'resend_spam_opt');
+      const sentPayloads = [];
+      const pipeRes = new EmailProductionPipeline({
+        stateDir: dirRes,
+        trustedTestMode: true,
+        providerTransport: async (msg) => {
+          sentPayloads.push(msg);
+          return { ok: true, providerMessageId: 'mock_resend_opt_1' };
+        }
+      });
+      pipeRes.importAndPersistRecipients({
+        csvText: 'email,name\nok1@example.test,OK1',
+        messageKind: 'marketing',
+        consentAttested: true,
+        lawfulBasis: 'EXPLICIT_OPT_IN',
+        campaignId: 'camp_resend_opt'
+      });
+
+      // High-risk spam content MUST fail-closed BEFORE calling providerTransport!
+      const blockedResend = await pipeRes.runQueue({
+        mode: 'ISOLATED_PROVIDER_TEST',
+        subject: 'Re: 100% 보장 무료 증정 긴급 클릭',
+        html: '<p>지금 당장 클릭 https://bit.ly/spam</p>',
+        text: '지금 당장 클릭 https://bit.ly/spam',
+        autoSpamPrevention: true,
+        blockHighRiskSpam: true,
+        baseUrl: 'https://unsubscribe.vivpr.pro'
+      });
+      assert.equal(blockedResend.ok, false);
+      assert.equal(blockedResend.reason, 'HIGH_SPAM_RISK_BLOCKED');
+      assert.equal(sentPayloads.length, 0, 'HIGH_SPAM_RISK_BLOCKED must dispatch 0 Resend emails');
+
+      // Clean content with fixable issues auto-sanitizes & sends with RFC 8058 unsubscribe + physical address intact
+      const okResend = await pipeRes.runQueue({
+        mode: 'ISOLATED_PROVIDER_TEST',
+        senderDisplayName: 'Acme Studio',
+        replyTo: 'info@external-other.example',
+        subject: 'ACME STUDIO UPDATE!!!',
+        html: '<p><img src="https://vivpr.pro/images/news.jpg"><script>bad()</script>안녕하세요. 요청하신 서비스 일정 안내를 전달드립니다. 궁금하신 점은 언제든 회신해 주세요.</p>',
+        text: '안녕하세요. 요청하신 서비스 일정 안내를 전달드립니다. 궁금하신 점은 언제든 회신해 주세요.',
+        physicalAddress: '100 Synthetic Way, Suite 200, Seoul',
+        autoSpamPrevention: true,
+        autoAlignReplyTo: true,
+        blockHighRiskSpam: true,
+        baseUrl: 'https://unsubscribe.vivpr.pro'
+      });
+      assert.equal(okResend.ok, true);
+      assert.equal(sentPayloads.length, 1);
+      assert.equal(sentPayloads[0].subject, 'Acme studio update!');
+      assert.equal(sentPayloads[0].reply_to, undefined, 'Mismatched Reply-To omitted on Resend when autoAlignReplyTo=true');
+      assert.ok(!sentPayloads[0].html.includes('news.jpg') && !sentPayloads[0].html.includes('<script'));
+      assert.ok(sentPayloads[0].html.includes('100 Synthetic Way, Suite 200, Seoul'), 'Physical address footer preserved');
+      assert.ok(sentPayloads[0].headers['List-Unsubscribe-Post'] === 'List-Unsubscribe=One-Click');
+
+      // (c) Sidecar POST /email/deliverability/optimize (RESEND + GMAIL) & POST /email/production/real-test-send HIGH_SPAM_RISK_BLOCKED
+      const scDualPort = 19300 + (process.pid % 2500);
+      const scDualDir = path.join(tmpRoot, 'sidecar_dual_opt');
+      const scDual = new EmailTestSidecar({ port: scDualPort, stateDir: scDualDir, trustedTestMode: true, gmailCryptoBox: box });
+      await scDual.start();
+      try {
+        const tok = fs.readFileSync(path.join(scDualDir, '.email_sidecar_token'), 'utf8').trim();
+        const unauthOpt = await fetch(`http://127.0.0.1:${scDual.port}/email/deliverability/optimize`, { method: 'POST' });
+        assert.equal(unauthOpt.status, 401);
+
+        const dualRes = await fetch(`http://127.0.0.1:${scDual.port}/email/deliverability/optimize`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${tok}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            provider: 'RESEND',
+            displayName: 'Acme Corp',
+            subject: '서비스 안내입니다!!!',
+            preheader: '안내 요약',
+            html: '<p>안녕하세요. 요청하신 서비스 상세 일정 안내를 보내드립니다. 편하게 회신해 주세요.</p>',
+            text: '안녕하세요. 요청하신 서비스 상세 일정 안내를 보내드립니다. 편하게 회신해 주세요.',
+            physicalAddress: '100 Synthetic Way, Suite 200'
+          })
+        });
+        assert.equal(dualRes.status, 200);
+        const dualJson = await dualRes.json();
+        assert.equal(dualJson.ok, true);
+        assert.equal(dualJson.provider, 'RESEND');
+        assert.ok(Array.isArray(dualJson.optimization.checklist) && dualJson.optimization.checklist.length >= 14);
+
+        // Real-test-send high-risk spam must fail-closed with 409 HIGH_SPAM_RISK_BLOCKED (0 outbound calls)
+        const rtBlocked = await fetch(`http://127.0.0.1:${scDual.port}/email/production/real-test-send`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${tok}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            recipient: 'owner-check@example.test',
+            ownerTestConsentConfirmed: true,
+            subject: 'Re: 100% 보장 무료 증정 긴급 클릭',
+            html: '<p>지금 당장 클릭 https://bit.ly/blocked</p>',
+            text: '지금 당장 클릭 https://bit.ly/blocked',
+            autoSpamPrevention: true,
+            blockHighRiskSpam: true
+          })
+        });
+        assert.equal(rtBlocked.status, 409);
+        const rtJson = await rtBlocked.json();
+        assert.equal(rtJson.ok, false);
+        assert.equal(rtJson.reason, 'HIGH_SPAM_RISK_BLOCKED');
+      } finally {
+        await scDual.stop();
+      }
+
+      // (d) Studio HTML/JS & Background unified checklist controls contract check
+      const htmlNow = fs.readFileSync(path.join(__dirname, '..', 'extension', 'email-studio', 'index.html'), 'utf8');
+      const jsNow = fs.readFileSync(path.join(__dirname, '..', 'extension', 'email-studio', 'email-template-studio.js'), 'utf8');
+      const bgNow = fs.readFileSync(path.join(__dirname, '..', 'extension', 'background.js'), 'utf8');
+      assert.ok(htmlNow.includes('id="antiSpamChecklistSection"') && htmlNow.includes('id="btnRunAntiSpamChecklist"') && htmlNow.includes('id="btnApplyAutoAntiSpamFixes"') && htmlNow.includes('id="btnSemiAutoCopyAndDraftFix"'));
+      assert.ok(htmlNow.includes('id="spamOptApplyGmail"') && htmlNow.includes('id="spamOptApplyResend"') && htmlNow.includes('id="spamChecklistProvider"'));
+      assert.ok(jsNow.includes('OPTIMIZE_EMAIL_DELIVERABILITY') && jsNow.includes('getUnifiedSpamOptFlags') && jsNow.includes('runAntiSpamChecklist') && jsNow.includes('applyAutoAntiSpamFixesToEditor'));
+      assert.ok(bgNow.includes('OPTIMIZE_EMAIL_DELIVERABILITY') && bgNow.includes('/email/deliverability/optimize'));
+      assert.ok(!/\blogStudioDiag\b/.test(jsNow), 'Must never regress logStudioDiag typo');
+      checks += 4;
+      console.log('PASS 10: Unified Gmail+Resend anti-spam auto/semi-auto checklist engine, Resend HIGH_SPAM_RISK_BLOCKED gate & Studio UI wiring verified');
     }
 
     console.log(`XPIDER V7.1 Gmail Safe Delivery Engine suite: ${checks}/${checks} PASS; ZERO REAL SENDS`);

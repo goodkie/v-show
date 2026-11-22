@@ -1251,6 +1251,43 @@ setTimeout(() => {
   } catch (_) {}
 }, 60);
 
+let xpiderOpenSemiAutoProposal = null;
+let xpiderRefreshAntiSpamChecklist = null;
+
+function getUnifiedSpamOptFlags(provider = 'GMAIL') {
+  const isResend = String(provider || 'GMAIL').toUpperCase() === 'RESEND';
+  const applyGmail = el('spamOptApplyGmail')
+    ? Boolean(el('spamOptApplyGmail').checked)
+    : (!el('gmailAutoSpamOpt') || Boolean(el('gmailAutoSpamOpt').checked));
+  const applyResend = el('spamOptApplyResend')
+    ? Boolean(el('spamOptApplyResend').checked)
+    : true;
+  const alignReplyTo = el('spamOptAutoAlignReplyTo')
+    ? Boolean(el('spamOptAutoAlignReplyTo').checked)
+    : (!el('gmailAutoAlignReplyTo') || Boolean(el('gmailAutoAlignReplyTo').checked));
+  const lightGmail = el('spamOptLightweightGmail')
+    ? Boolean(el('spamOptLightweightGmail').checked)
+    : (!el('gmailLightweightHtml') || Boolean(el('gmailLightweightHtml').checked));
+  const lightResend = el('spamOptLightweightResend')
+    ? Boolean(el('spamOptLightweightResend').checked)
+    : false;
+  const blockHigh = el('spamOptBlockHighRisk')
+    ? Boolean(el('spamOptBlockHighRisk').checked)
+    : Boolean(el('gmailBlockHighRiskSpam') && el('gmailBlockHighRiskSpam').checked);
+  return {
+    autoSpamPrevention: isResend ? applyResend : applyGmail,
+    autoAlignReplyTo: alignReplyTo,
+    preferLightweightHtml: isResend ? lightResend : lightGmail,
+    blockHighRiskSpam: blockHigh
+  };
+}
+
+function getEffectivePhysicalAddress(v) {
+  const gAddr = el('gmailPhysicalAddress') ? String(el('gmailPhysicalAddress').value || '').trim() : '';
+  const rAddr = (v && typeof v.address === 'string' ? v.address.trim() : '') || (el('address') ? String(el('address').value || '').trim() : '');
+  return rAddr || gAddr;
+}
+
 if (el('btnRealTestSend')) {
   el('btnRealTestSend').onclick = async () => {
     const box = el('realTestStatus');
@@ -1277,6 +1314,7 @@ if (el('btnRealTestSend')) {
     if (box) { box.className = 'status-box status-loading'; box.textContent = `⏳ 실제 Resend API(vivpr.pro)로 테스트 메일 1통 발송 중... (${rec} / From: ${fp.from})`; }
     try {
       const { sidecarPort, sidecarToken } = getSidecarConfig();
+      const resendSpamFlags = getUnifiedSpamOptFlags('RESEND');
       const r = await callBg({
         action: 'SEND_REAL_TEST_EMAIL',
         sidecarPort,
@@ -1285,13 +1323,17 @@ if (el('btnRealTestSend')) {
           recipient: rec,
           ownerTestConsentConfirmed: true,
           subject,
+          preheader: v.preheader || '',
+          link: v.link || '',
           senderDisplayName: v.senderDisplayName || '',
           senderName: v.company,
           company: v.company || '',
           brand: v.brand || '',
           replyTo: v.reply || '',
+          physicalAddress: getEffectivePhysicalAddress(v),
           html: htmlFor(v),
           text: textFor(v),
+          ...resendSpamFlags,
           idempotencyKey
         }
       }, { timeoutMs: 45000 });
@@ -1309,11 +1351,13 @@ if (el('btnRealTestSend')) {
           debugTrace: r?.debugTrace || null
         });
         if (box) {
-          box.className = 'status-box status-error';
+          box.className = reason === 'HIGH_SPAM_RISK_BLOCKED' ? 'status-box status-blocked' : 'status-box status-error';
           box.textContent = [
             `❌ 실제 테스트 발송 실패 (HTTP ${r?.httpStatus || '-'} · ${elapsedTxt}): ${reason}${detailTxt}`,
             ...(timingTxt ? [`•${timingTxt}`] : []),
-            `• 조치: 하단 [🛠️ 실시간 상세 디버그 로그]에서 [📋 디버그 로그 복사]를 눌러 원인을 확인하거나 전달해 주세요.`
+            ...(reason === 'HIGH_SPAM_RISK_BLOCKED'
+              ? ['• 조치: 좌측 [🛡️ 통합 스팸방지 자동·반자동 적용 & 체크리스트]에서 고위험 원인을 교정한 뒤 다시 발송하세요.']
+              : ['• 조치: 하단 [🛠️ 실시간 상세 디버그 로그]에서 [📋 디버그 로그 복사]를 눌러 원인을 확인하거나 전달해 주세요.'])
           ].join('\n');
         }
         return;
@@ -1328,9 +1372,12 @@ if (el('btnRealTestSend')) {
       if (box) {
         box.className = 'status-box status-success';
         const totalMs = r.data.stepTimings?.totalMs ?? r.clientElapsedMs;
+        const opt = r.data.spamOptimization;
+        const optLine = opt ? `• 자동 스팸 방지(Resend): ${opt.grade} (${opt.riskScore}/100 · 자동 보정 ${opt.autoFixesApplied?.length || 0}건 적용)` : null;
         box.textContent = [
           `✅ 실제 테스트 발송 접수됨 (상태: ${r.data.deliveryState || 'ACCEPTED'}${totalMs ? ` · ${totalMs}ms` : ''})`,
           `• 발신자(From): ${r.data.fromHeader || fp.from}${r.data.replyTo ? ` | Reply-To: ${r.data.replyTo}` : ''}`,
+          ...(optLine ? [optLine] : []),
           `• Provider Message ID: ${r.data.providerMessageId}`,
           `• 수신자: ${r.data.maskedRecipient} | Idempotency-Key: ${r.data.idempotencyKey}`,
           `• 안내: ${r.data.note}`
@@ -1559,29 +1606,72 @@ function createBuiltinRecipientManager() {
   function cleanLocalText(str, isSubject) {
     let s = String(str || '');
     if (isSubject) s = s.replace(/^(?:\s*(?:re|fwd|fw|회신|전달)\s*:\s*)+/i, '');
-    return s
+    s = s
       .replace(/!{2,}/g, '.')
       .replace(/\?{2,}/g, '?')
+      .replace(/\${2,}/g, '$')
       .replace(/100%\s*(보장|확정)/gi, '안내')
       .replace(/무조건\s*무료/gi, '무료 안내')
-      .replace(/확정\s*수익/gi, '서비스 안내')
-      .replace(/당첨\s*보장/gi, '이벤트 안내')
-      .replace(/guaranteed\s*profit/gi, 'service update')
+      .replace(/무료\s*증정/gi, '혜택 안내')
+      .replace(/긴급\s*클릭/gi, '내용 확인')
+      .replace(/지금\s*당장/gi, '편하신 시간에')
+      .replace(/초특가|한정\s*특가/gi, '프로모션 안내')
+      .replace(/당첨\s*(안내|보장)/gi, '이벤트 안내')
+      .replace(/최저가\s*보장/gi, '가격 안내')
+      .replace(/(수익|확정)\s*(보장|수익)/gi, '서비스 안내')
+      .replace(/선착순\s*마감/gi, '일정 안내')
+      .replace(/\bfree\s+money\b/gi, 'special offer')
+      .replace(/\bguaranteed\s+(income|profit)\b/gi, 'service update')
+      .replace(/\bact\s+now\b/gi, 'learn more')
+      .replace(/\bclick\s+here\s+now\b/gi, 'view details')
+      .replace(/\b100%\s+free\b/gi, 'complimentary')
+      .replace(/\bclaim\s+your\s+prize\b/gi, 'view event details')
+      .replace(/\burgent\s+response\b/gi, 'follow-up')
       .replace(/안\s+녕하세요/g, '안녕하세요')
       .replace(/되요/g, '돼요')
       .replace(/할께요/g, '할게요')
       .replace(/뵙겠읍니다/g, '뵙겠습니다')
       .replace(/[ \t]{2,}/g, ' ')
       .trim();
+    if (isSubject) {
+      const ascii = s.replace(/[^A-Za-z]/g, '');
+      const upper = s.replace(/[^A-Z]/g, '');
+      if (ascii.length >= 12 && (upper.length / ascii.length) >= 0.85) {
+        s = s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
+      }
+    }
+    return s;
   }
 
-  function computeLocalProposal(v) {
+  function computeLocalProposal(v, { includeNaturalDraftFallback = false } = {}) {
     const proposed = {
       subject: cleanLocalText(v.subject, true),
       preheader: cleanLocalText(v.preheader, false),
       heading: cleanLocalText(v.heading, false),
       body: String(v.body || '').split(/\n/).map(l => cleanLocalText(l, false)).join('\n').replace(/\n{3,}/g, '\n\n').trim()
     };
+    if (includeNaturalDraftFallback) {
+      const brandLabel = String(v.senderDisplayName || v.company || '').replace(/\.[a-z]{2,}$/i, '').trim();
+      const subjLow = proposed.subject.toLowerCase();
+      if (!proposed.subject || subjLow === 'vivpr.pro 서비스 안내' || subjLow === '[xpider gmail self-test]') {
+        proposed.subject = brandLabel && brandLabel.toLowerCase() !== 'vivpr'
+          ? `[${brandLabel}] 주요 일정 및 이용 안내드립니다`
+          : '요청하신 주요 일정 및 서비스 이용 안내드립니다';
+      }
+      if (!proposed.preheader) {
+        proposed.preheader = '요청하신 안내 내용과 문의 방법을 정리해 전달드립니다.';
+      }
+      const isDefaultSampleBody = /요청하신 서비스에 대한 안내입니다\.\s*자세한 내용은 아래 링크에서 확인하실 수 있습니다\./.test(proposed.body);
+      if (proposed.body.length < 45 || isDefaultSampleBody) {
+        proposed.body = [
+          '안녕하세요. 요청하신 서비스 일정과 주요 안내 사항을 정리해 보내드립니다.',
+          '',
+          '세부 내용 확인이나 추가 상담이 필요하시면 이 메일에 편하게 회신해 주시면 담당자가 신속히 안내해 드리겠습니다.',
+          '',
+          '항상 관심 가져 주셔서 감사합니다.'
+        ].join('\n');
+      }
+    }
     const diffs = [];
     for (const [field, label] of [['subject', '제목'], ['preheader', '미리보기 문구'], ['heading', '본문 제목'], ['body', '본문']]) {
       if (String(v[field] || '') !== proposed[field]) {
@@ -1590,6 +1680,21 @@ function createBuiltinRecipientManager() {
     }
     return { originalDraft: { subject: v.subject, preheader: v.preheader, heading: v.heading, body: v.body }, proposedDraft: proposed, diffs };
   }
+
+  xpiderOpenSemiAutoProposal = (mode = 'COPY') => {
+    const v = values();
+    const isNat = mode === 'NATURAL_DRAFT' || mode === 'COMBINED';
+    const prop = computeLocalProposal(v, { includeNaturalDraftFallback: isNat });
+    const label = mode === 'NATURAL_DRAFT'
+      ? '반자동 자연스러운 초안 교정 제안'
+      : (mode === 'COMBINED' ? '반자동 스팸 문구·초안 통합 교정 제안' : '규칙 기반 스팸 문구 교정 제안');
+    showProposalDiff(label, prop);
+    if (diffPanel() && diffPanel().style.display !== 'none' && typeof diffPanel().scrollIntoView === 'function') {
+      diffPanel().scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    } else if (qaBox() && typeof qaBox().scrollIntoView === 'function') {
+      qaBox().scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  };
 
   function showProposalDiff(modeLabel, proposal) {
     pendingProposal = proposal.proposedDraft;
@@ -1754,9 +1859,10 @@ function createBuiltinRecipientManager() {
       pendingProposal = null;
       if (diffPanel()) diffPanel().style.display = 'none';
       render();
+      if (typeof xpiderRefreshAntiSpamChecklist === 'function') xpiderRefreshAntiSpamChecklist();
       if (qaBox()) {
         qaBox().className = 'status-box status-success';
-        qaBox().textContent = '✅ 교정 제안이 편집창에 반영되었습니다. 발송 전 미리보기와 내용을 다시 확인하세요.';
+        qaBox().textContent = '✅ 교정 제안이 편집창에 반영되었습니다. 발송 전 미리보기와 체크리스트 상태를 확인하세요.';
       }
     };
   }
@@ -3084,6 +3190,7 @@ function createBuiltinRecipientManager() {
         ].join('\n');
       };
 
+      const resendSpamFlags = getUnifiedSpamOptFlags('RESEND');
       const r = await callBg({
         action: 'RUN_EMAIL_PRODUCTION_QUEUE',
         sidecarPort,
@@ -3097,8 +3204,10 @@ function createBuiltinRecipientManager() {
           company: v.company || '',
           brand: v.brand || '',
           replyTo: v.reply || '',
+          physicalAddress: getEffectivePhysicalAddress(v),
           html: htmlFor(v),
-          text: textFor(v)
+          text: textFor(v),
+          ...resendSpamFlags
         }
       });
       if (!r || !r.data) {
@@ -3300,6 +3409,7 @@ function createBuiltinRecipientManager() {
       if (typeof window.confirm === 'function') {
         if (!window.confirm(`미오픈 적격 수신자 ${p.eligibleCount}명에게 2차 발송(${p.waveCampaignId})을 시작할까요?\n(반송·스팸신고·수신거부 대상은 이미 제외되었습니다.)`)) return;
       }
+      const resendSpamFlags = getUnifiedSpamOptFlags('RESEND');
       const r = await callBg({
         action: 'START_SECOND_WAVE',
         sidecarPort,
@@ -3314,8 +3424,10 @@ function createBuiltinRecipientManager() {
           company: v.company || '',
           brand: v.brand || '',
           replyTo: v.reply || '',
+          physicalAddress: getEffectivePhysicalAddress(v),
           html: htmlFor(v),
           text: textFor(v),
+          ...resendSpamFlags,
           messageKind: messageKind(),
           ownerConfirmed: true
         }
@@ -3432,6 +3544,7 @@ function createBuiltinRecipientManager() {
     if (el('resendProviderPanel')) el('resendProviderPanel').style.display = prov === 'GMAIL' ? 'none' : '';
     if (el('gmailProviderPanel')) el('gmailProviderPanel').style.display = prov === 'GMAIL' ? '' : 'none';
     if (prov === 'GMAIL') refreshGmailStatus();
+    if (fromUserChange && typeof xpiderRefreshAntiSpamChecklist === 'function') xpiderRefreshAntiSpamChecklist();
   }
   if (el('emailProviderSelect')) {
     el('emailProviderSelect').addEventListener('change', () => syncProviderPanelVisibility(true));
@@ -3679,13 +3792,401 @@ function createBuiltinRecipientManager() {
     };
   }
   function getGmailSpamOptFlags() {
+    return getUnifiedSpamOptFlags('GMAIL');
+  }
+
+  // ===== Unified Anti-Spam Auto/Semi-Auto Checklist Controller (Gmail + Resend) =====
+  const MANUAL_CHECKS_STORAGE_KEY = 'xpider_anti_spam_manual_checks_v1';
+  let manualChecklistState = {};
+  let lastUnifiedOptimization = null;
+
+  function loadManualChecklistState() {
+    try {
+      if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+        chrome.storage.local.get([MANUAL_CHECKS_STORAGE_KEY], (res) => {
+          if (res && res[MANUAL_CHECKS_STORAGE_KEY] && typeof res[MANUAL_CHECKS_STORAGE_KEY] === 'object') {
+            manualChecklistState = { ...res[MANUAL_CHECKS_STORAGE_KEY] };
+            if (lastUnifiedOptimization) renderUnifiedAntiSpamChecklist(lastUnifiedOptimization);
+          }
+        });
+      } else if (typeof localStorage !== 'undefined') {
+        const raw = localStorage.getItem(MANUAL_CHECKS_STORAGE_KEY);
+        if (raw) manualChecklistState = JSON.parse(raw) || {};
+      }
+    } catch (_) {}
+  }
+
+  function saveManualChecklistState() {
+    try {
+      if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+        chrome.storage.local.set({ [MANUAL_CHECKS_STORAGE_KEY]: manualChecklistState });
+      } else if (typeof localStorage !== 'undefined') {
+        localStorage.setItem(MANUAL_CHECKS_STORAGE_KEY, JSON.stringify(manualChecklistState));
+      }
+    } catch (_) {}
+  }
+
+  function bindTwoWayCheckboxSync(idA, idB) {
+    const a = el(idA);
+    const b = el(idB);
+    if (!a || !b) return;
+    a.addEventListener('change', () => { b.checked = a.checked; updateActiveProviderNote(); });
+    b.addEventListener('change', () => { a.checked = b.checked; updateActiveProviderNote(); });
+  }
+  bindTwoWayCheckboxSync('spamOptApplyGmail', 'gmailAutoSpamOpt');
+  bindTwoWayCheckboxSync('spamOptAutoAlignReplyTo', 'gmailAutoAlignReplyTo');
+  bindTwoWayCheckboxSync('spamOptLightweightGmail', 'gmailLightweightHtml');
+  bindTwoWayCheckboxSync('spamOptBlockHighRisk', 'gmailBlockHighRiskSpam');
+
+  function updateActiveProviderNote() {
+    const noteEl = el('spamChecklistActiveProviderNote');
+    if (!noteEl) return;
+    const gOn = !el('spamOptApplyGmail') || el('spamOptApplyGmail').checked;
+    const rOn = !el('spamOptApplyResend') || el('spamOptApplyResend').checked;
+    noteEl.textContent = `적용 대상: Gmail ${gOn ? '✅ 자동적용' : '⏸️ 해제'} · Resend ${rOn ? '✅ 자동적용' : '⏸️ 해제'} (RFC 8058 원클릭 수신거부·물리적 주소 항상 유지)`;
+  }
+  if (el('spamOptApplyResend')) el('spamOptApplyResend').addEventListener('change', updateActiveProviderNote);
+  updateActiveProviderNote();
+  loadManualChecklistState();
+
+  function resolveChecklistTargetProvider() {
+    const mode = el('spamChecklistProvider') ? el('spamChecklistProvider').value : 'AUTO';
+    if (mode === 'GMAIL' || mode === 'RESEND') return mode;
+    const activeProv = el('emailProviderSelect') ? el('emailProviderSelect').value : 'RESEND';
+    return activeProv === 'GMAIL' ? 'GMAIL' : 'RESEND';
+  }
+
+  function buildOfflineFallbackOptimization(provider, v) {
+    const isGmail = provider === 'GMAIL';
+    const subj = String(v.subject || '').trim();
+    const bodyTxt = String(v.body || '').trim();
+    const addr = getEffectivePhysicalAddress(v);
+    const rt = isGmail
+      ? (el('gmailReplyTo') ? el('gmailReplyTo').value.trim() : '')
+      : String(v.reply || '').trim();
+    const hasShortener = /https?:\/\/(?:www\.)?(?:bit\.ly|tinyurl\.com|t\.co|me2\.do|han\.gl)\//i.test(`${v.link || ''}\n${bodyTxt}`);
+    const hasSpamPhrase = /(100%\s*(?:보장|확정)|무료\s*증정|긴급\s*클릭|지금\s*당장|초특가|한정\s*특가|free\s+money|act\s+now|100%\s+free)/i.test(`${subj}\n${bodyTxt}`);
+    const checklist = [
+      { id: 'DISPLAY_NAME_ALIGNMENT', mode: 'AUTO', status: isGmail && /\.[a-z]{2,}$/i.test(v.senderDisplayName || v.company || '') ? 'AUTO_FIXED' : 'PASS', title: '발신자 표시 이름 도메인 정합성', detail: isGmail ? '개인 Gmail 발송 시 타 도메인 표시 이름을 자동 보정합니다.' : 'Resend 발송 표시 이름 정합성을 점검합니다.' },
+      { id: 'REPLY_TO_ALIGNMENT', mode: 'AUTO', status: rt ? 'AUTO_FIXED' : 'PASS', title: 'Reply-To 발신 도메인 정렬', detail: rt ? `Reply-To(${rt}) 도메인 불일치 시 발송 전 자동 정렬합니다.` : '외부 도메인 Reply-To 불일치가 없습니다.' },
+      { id: 'SPAM_PHRASE_COPY_CLEANUP', mode: 'SEMI_AUTO', status: hasSpamPhrase ? 'ACTION_REQUIRED' : 'PASS', title: '스팸 유도 문구 · 거짓 Re:/Fwd: 문구 교정', detail: hasSpamPhrase ? '고위험 스팸 유도 문구가 감지되었습니다.' : '고위험 스팸 유도 문구가 감지되지 않았습니다.', semiAutoAction: 'OPEN_COPY_DIFF' },
+      { id: 'BODY_AND_PREHEADER_NATURALNESS', mode: 'SEMI_AUTO', status: bodyTxt.length < 45 ? 'ACTION_REQUIRED' : 'PASS', title: '자연스러운 본문 길이(45자+) · 기본 샘플 교체 · 미리보기 문구', detail: `현재 본문 ${bodyTxt.length}자`, semiAutoAction: 'OPEN_NATURAL_DRAFT_DIFF' },
+      { id: 'LINK_HYGIENE_AND_SHORTENER', mode: 'SEMI_AUTO', status: hasShortener ? 'ACTION_REQUIRED' : 'PASS', title: '링크 위생 (단축 URL 금지 · HTTPS 전용)', detail: hasShortener ? '단축 URL이 감지되었습니다.' : '단축 URL 없음.', semiAutoAction: 'CLEAN_DEFAULT_LINK_OR_FOCUS' },
+      { id: 'PHYSICAL_ADDRESS_FOOTER', mode: 'SEMI_AUTO', status: addr.length >= 6 ? 'PASS' : 'ACTION_REQUIRED', title: '법적 물리적 사업장 주소 기재', detail: addr.length >= 6 ? '물리적 주소 입력됨.' : '물리적 주소가 비어 있습니다.', semiAutoAction: 'SYNC_OR_FOCUS_ADDRESS' },
+      { id: 'PROVIDER_AUTH_AND_HYGIENE', mode: 'SEMI_AUTO', status: 'WARN', title: isGmail ? 'Gmail 발신 위생 · SPF/DMARC 점검' : 'Resend(vivpr.pro) DNS · 수신거부 점검', detail: '공급자 사전 점검을 실행해 최신 상태를 확인하세요.', semiAutoAction: 'RUN_PROVIDER_HYGIENE' },
+      { id: 'MANUAL_NOT_SPAM_TRAIN', mode: 'MANUAL_GUIDE', status: 'MANUAL_PENDING', title: '[수동] 스팸함에 들어간 초기 테스트 메일 [스팸 아님(Not spam)] 표시 & 1회 회신', detail: '수신함 평판 학습에 도움이 됩니다.' },
+      { id: 'MANUAL_WORKSPACE_OR_RESEND', mode: 'MANUAL_GUIDE', status: 'MANUAL_PENDING', title: '[수동] 대량/공지 발송 시 Google Workspace 맞춤 도메인 또는 인증된 Resend(vivpr.pro) 우선 사용', detail: '개인 @gmail.com은 소량·사전 승인 수신자 전용으로 운영하세요.' },
+      { id: 'MANUAL_UNSUB_ROUNDTRIP', mode: 'MANUAL_GUIDE', status: 'MANUAL_PENDING', title: '[수동] 수신거부 링크 1회 클릭 → 동일 주소 재발송 차단 확인', detail: '교차 차단 원장 정상 동작을 확인합니다.' },
+      { id: 'MANUAL_ROTATE_EXPOSED_CREDS', mode: 'MANUAL_GUIDE', status: 'MANUAL_PENDING', title: '[수동] 외부·스크린샷에 노출된 API 키 / OAuth 시크릿 교체 확인', detail: '노출 이력이 있는 자격증명은 콘솔에서 재발급하세요.' }
+    ];
+    const score = (hasShortener ? 30 : 0) + (hasSpamPhrase ? 15 : 0) + (bodyTxt.length < 45 ? 15 : 0) + (addr.length < 6 ? 10 : 0) + (isGmail ? 15 : 0);
+    const grade = score >= 55 ? 'HIGH_RISK' : (score >= 25 ? 'MEDIUM_RISK' : 'LOW_RISK');
     return {
-      autoSpamPrevention: !el('gmailAutoSpamOpt') || Boolean(el('gmailAutoSpamOpt').checked),
-      autoAlignReplyTo: !el('gmailAutoAlignReplyTo') || Boolean(el('gmailAutoAlignReplyTo').checked),
-      preferLightweightHtml: !el('gmailLightweightHtml') || Boolean(el('gmailLightweightHtml').checked),
-      blockHighRiskSpam: Boolean(el('gmailBlockHighRiskSpam') && el('gmailBlockHighRiskSpam').checked)
+      ok: true,
+      provider,
+      riskScore: Math.min(100, score),
+      grade,
+      autoOptimizeApplied: true,
+      autoFixesApplied: [],
+      signals: [],
+      recommendations: ['Sidecar 오프라인 상태 — 로컬 규칙 기준으로 점검했습니다.'],
+      checklist,
+      honestDisclaimer: '자동·반자동 스팸 방지 최적화는 정당한 위생 기능이며, 100% 기본 받은편지함 배치나 계정 정지 면제를 보장하지 않습니다.'
     };
   }
+
+  function semiAutoButtonLabel(actionId) {
+    switch (actionId) {
+      case 'OPEN_COPY_DIFF': return '🛠️ 문구 교정 제안 보기';
+      case 'OPEN_NATURAL_DRAFT_DIFF': return '✏️ 자연스러운 초안 제안';
+      case 'CLEAN_DEFAULT_LINK_OR_FOCUS': return '🔗 기본 링크 정리/이동';
+      case 'SYNC_OR_FOCUS_ADDRESS': return '📍 주소 동기화/입력 이동';
+      case 'RUN_PROVIDER_HYGIENE': return '🛡️ 공급자 DNS·위생 점검';
+      case 'APPLY_AUTO_FIXES': return '⚡ 자동 보정 적용';
+      default: return '🛠️ 조치 실행';
+    }
+  }
+
+  async function handleSemiAutoChecklistAction(actionId, provider) {
+    if (actionId === 'OPEN_COPY_DIFF') {
+      if (typeof xpiderOpenSemiAutoProposal === 'function') xpiderOpenSemiAutoProposal('COPY');
+      return;
+    }
+    if (actionId === 'OPEN_NATURAL_DRAFT_DIFF') {
+      if (typeof xpiderOpenSemiAutoProposal === 'function') xpiderOpenSemiAutoProposal('NATURAL_DRAFT');
+      return;
+    }
+    if (actionId === 'APPLY_AUTO_FIXES') {
+      await applyAutoAntiSpamFixesToEditor();
+      return;
+    }
+    if (actionId === 'CLEAN_DEFAULT_LINK_OR_FOCUS') {
+      const linkEl = el('link');
+      if (provider === 'GMAIL' && linkEl && /^https?:\/\/(?:www\.)?vivpr\.pro\/?$/i.test(String(linkEl.value || '').trim())) {
+        linkEl.value = '';
+        render();
+        await runAntiSpamChecklist();
+        if (el('antiSpamChecklistSummary')) {
+          el('antiSpamChecklistSummary').textContent = '✅ 개인 Gmail 발송과 충돌하던 기본 샘플 링크(https://vivpr.pro)를 비웠습니다.\n' + el('antiSpamChecklistSummary').textContent;
+        }
+        return;
+      }
+      if (linkEl) {
+        linkEl.focus();
+        if (typeof linkEl.scrollIntoView === 'function') linkEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      return;
+    }
+    if (actionId === 'SYNC_OR_FOCUS_ADDRESS') {
+      const rAddrEl = el('address');
+      const gAddrEl = el('gmailPhysicalAddress');
+      const rVal = rAddrEl ? String(rAddrEl.value || '').trim() : '';
+      const gVal = gAddrEl ? String(gAddrEl.value || '').trim() : '';
+      if (rVal && gAddrEl && !gVal) {
+        gAddrEl.value = rVal;
+        await runAntiSpamChecklist();
+        return;
+      }
+      if (gVal && rAddrEl && !rVal) {
+        rAddrEl.value = gVal;
+        render();
+        await runAntiSpamChecklist();
+        return;
+      }
+      const target = provider === 'GMAIL' && gAddrEl && el('gmailProviderPanel')?.style.display !== 'none' ? gAddrEl : (rAddrEl || gAddrEl);
+      if (target) {
+        target.focus();
+        if (typeof target.scrollIntoView === 'function') target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      return;
+    }
+    if (actionId === 'RUN_PROVIDER_HYGIENE') {
+      if (provider === 'GMAIL' && el('btnGmailHygieneCheck')) {
+        el('btnGmailHygieneCheck').click();
+        if (el('gmailDeliverabilityHygieneBox') && typeof el('gmailDeliverabilityHygieneBox').scrollIntoView === 'function') {
+          el('gmailDeliverabilityHygieneBox').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      } else if (el('btnCheckProdPreflight')) {
+        el('btnCheckProdPreflight').click();
+        if (el('prodPreflightStatus') && typeof el('prodPreflightStatus').scrollIntoView === 'function') {
+          el('prodPreflightStatus').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }
+    }
+  }
+
+  async function applyAutoAntiSpamFixesToEditor() {
+    const provider = resolveChecklistTargetProvider();
+    const opt = await runAntiSpamChecklist();
+    if (!opt) return;
+    const appliedNotes = [];
+    const subjEl = el('subject');
+    if (subjEl && opt.optimized?.subject && subjEl.value.trim() !== opt.optimized.subject) {
+      subjEl.value = opt.optimized.subject;
+      appliedNotes.push(`제목 정리 → "${opt.optimized.subject}"`);
+    }
+    const dispEl = el('senderDisplayName');
+    const compEl = el('company');
+    const curDisp = (dispEl && dispEl.value.trim()) || (compEl && compEl.value.trim()) || '';
+    if (opt.optimized?.displayName && curDisp && curDisp !== opt.optimized.displayName && (opt.autoFixesApplied || []).some(f => f.code === 'AUTO_FIX_DISPLAY_NAME_DOMAIN_MISMATCH')) {
+      if (dispEl) {
+        dispEl.value = opt.optimized.displayName;
+        appliedNotes.push(`표시 이름 안전 보정 → "${opt.optimized.displayName}"`);
+      }
+    }
+    const imgEl = el('image');
+    if (imgEl && /^https?:\/\/(?:www\.)?vivpr\.pro\/images\/news\.jpg$/i.test(String(imgEl.value || '').trim())) {
+      imgEl.value = '';
+      appliedNotes.push('존재하지 않는 기본 샘플 이미지 URL 제거');
+    }
+    const rAddrEl = el('address');
+    const gAddrEl = el('gmailPhysicalAddress');
+    if (rAddrEl && gAddrEl) {
+      const rv = rAddrEl.value.trim();
+      const gv = gAddrEl.value.trim();
+      if (rv && !gv) { gAddrEl.value = rv; appliedNotes.push('Resend 사업장 주소를 Gmail 물리적 주소로 동기화'); }
+      else if (gv && !rv) { rAddrEl.value = gv; appliedNotes.push('Gmail 물리적 주소를 Resend 사업장 주소로 동기화'); }
+    }
+    if (provider === 'GMAIL' && el('link') && /^https?:\/\/(?:www\.)?vivpr\.pro\/?$/i.test(String(el('link').value || '').trim())) {
+      el('link').value = '';
+      appliedNotes.push('개인 Gmail 충돌 기본 링크(https://vivpr.pro) 정리');
+    }
+    render();
+    const afterOpt = await runAntiSpamChecklist();
+    const sumBox = el('antiSpamChecklistSummary');
+    if (sumBox) {
+      const header = appliedNotes.length
+        ? `⚡ [자동 항목 편집창 반영 완료 — ${appliedNotes.length}건]: ${appliedNotes.join(' · ')}`
+        : 'ℹ️ 편집창에서 즉시 변경할 자동 항목이 없습니다 (Reply-To 정렬·경량 HTML·RFC 2047·Date 헤더는 발송 시점에 자동 적용됩니다).';
+      sumBox.textContent = `${header}\n${sumBox.textContent}`;
+    }
+    return afterOpt;
+  }
+
+  function renderUnifiedAntiSpamChecklist(opt) {
+    if (!opt) return;
+    lastUnifiedOptimization = opt;
+    const provider = opt.provider || resolveChecklistTargetProvider();
+    const badge = el('spamChecklistScoreBadge');
+    const sumBox = el('antiSpamChecklistSummary');
+    const listEl = el('antiSpamChecklistList');
+    const items = Array.isArray(opt.checklist) ? opt.checklist : [];
+
+    const gradeEmoji = opt.grade === 'HIGH_RISK' ? '🔴' : (opt.grade === 'MEDIUM_RISK' ? '🟡' : '🟢');
+    if (badge) {
+      badge.textContent = `${gradeEmoji} ${provider} · ${opt.grade} (${opt.riskScore}/100)`;
+    }
+
+    const autoItems = items.filter(i => i.mode === 'AUTO');
+    const semiItems = items.filter(i => i.mode === 'SEMI_AUTO');
+    const manualItems = items.filter(i => i.mode === 'MANUAL_GUIDE');
+    const autoDone = autoItems.filter(i => i.status === 'PASS' || i.status === 'AUTO_FIXED').length;
+    const autoFixedCnt = autoItems.filter(i => i.status === 'AUTO_FIXED').length;
+    const semiNeedCnt = semiItems.filter(i => i.status === 'ACTION_REQUIRED' || i.status === 'WARN').length;
+    const manualDoneCnt = manualItems.filter(i => Boolean(manualChecklistState[i.id])).length;
+
+    if (sumBox) {
+      sumBox.className = opt.grade === 'HIGH_RISK' ? 'status-box status-error' : (opt.grade === 'MEDIUM_RISK' || semiNeedCnt > 0 ? 'status-box status-blocked' : 'status-box status-success');
+      const lines = [
+        `${gradeEmoji} [${provider} 기준 통합 스팸 위험도 진단] 등급: ${opt.grade} (점수 ${opt.riskScore}/100)`,
+        `• 자동(AUTO): ${autoDone}/${autoItems.length} 준비됨 (발송 시 자동보정 ${autoFixedCnt}건) | 반자동(SEMI-AUTO): ${semiNeedCnt === 0 ? '모두 양호' : `조치 권장 ${semiNeedCnt}건`} | 수동 체크: ${manualDoneCnt}/${manualItems.length} 완료`
+      ];
+      if (Array.isArray(opt.recommendations) && opt.recommendations.length > 0) {
+        lines.push(`• 핵심 권장: ${opt.recommendations[0]}`);
+      }
+      lines.push(`• 고지: ${opt.honestDisclaimer || ''}`);
+      sumBox.textContent = lines.join('\n');
+    }
+
+    if (!listEl) return;
+    listEl.textContent = '';
+
+    for (const item of items) {
+      const row = document.createElement('div');
+      const isManual = item.mode === 'MANUAL_GUIDE';
+      const isManualChecked = isManual && Boolean(manualChecklistState[item.id]);
+      const isGood = item.status === 'PASS' || item.status === 'AUTO_FIXED' || isManualChecked;
+      const borderCol = isGood ? '#86efac' : (item.status === 'ACTION_REQUIRED' ? '#fca5a5' : '#fde68a');
+      const bgCol = isGood ? '#f0fdf4' : (item.status === 'ACTION_REQUIRED' ? '#fef2f2' : '#fffbeb');
+      row.style.cssText = `display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:8px;padding:6px 8px;border:1px solid ${borderCol};border-radius:6px;background:${bgCol};font-size:12px;`;
+
+      const left = document.createElement('div');
+      left.style.cssText = 'flex:1;min-width:220px;';
+
+      const modeTag = item.mode === 'AUTO' ? '[자동]' : (item.mode === 'SEMI_AUTO' ? '[반자동]' : '[수동]');
+      const statusIcon = isManual
+        ? (isManualChecked ? '✅ 완료' : '☐ 확인 대기')
+        : (item.status === 'PASS' ? '✅ 통과' : (item.status === 'AUTO_FIXED' ? '⚡ 발송시 자동보정' : (item.status === 'ACTION_REQUIRED' ? '🛠️ 조치 필요' : '⚠️ 권장')));
+
+      if (isManual) {
+        const lbl = document.createElement('label');
+        lbl.style.cssText = 'display:flex;align-items:flex-start;gap:6px;cursor:pointer;font-weight:600;';
+        const cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.checked = isManualChecked;
+        cb.onchange = () => {
+          manualChecklistState[item.id] = cb.checked;
+          saveManualChecklistState();
+          renderUnifiedAntiSpamChecklist(opt);
+        };
+        const titleSpan = document.createElement('span');
+        titleSpan.textContent = `${modeTag} ${item.title} — ${statusIcon}`;
+        lbl.appendChild(cb);
+        lbl.appendChild(titleSpan);
+        left.appendChild(lbl);
+      } else {
+        const titleDiv = document.createElement('div');
+        titleDiv.style.fontWeight = '600';
+        titleDiv.textContent = `${modeTag} ${item.title} — ${statusIcon}`;
+        left.appendChild(titleDiv);
+      }
+
+      const detailDiv = document.createElement('div');
+      detailDiv.style.cssText = 'color:#334155;margin-top:2px;font-size:11px;';
+      detailDiv.textContent = item.detail || '';
+      left.appendChild(detailDiv);
+      row.appendChild(left);
+
+      if (item.mode === 'SEMI_AUTO' && item.semiAutoAction && (item.status === 'ACTION_REQUIRED' || item.status === 'WARN')) {
+        const actBtn = document.createElement('button');
+        actBtn.type = 'button';
+        actBtn.style.cssText = 'padding:4px 8px;font-size:11px;white-space:nowrap;';
+        actBtn.textContent = semiAutoButtonLabel(item.semiAutoAction);
+        actBtn.onclick = () => { handleSemiAutoChecklistAction(item.semiAutoAction, provider); };
+        row.appendChild(actBtn);
+      } else if (item.mode === 'AUTO' && item.status === 'ACTION_REQUIRED' && item.semiAutoAction) {
+        const fixBtn = document.createElement('button');
+        fixBtn.type = 'button';
+        fixBtn.style.cssText = 'padding:4px 8px;font-size:11px;white-space:nowrap;';
+        fixBtn.textContent = semiAutoButtonLabel(item.semiAutoAction);
+        fixBtn.onclick = () => { handleSemiAutoChecklistAction(item.semiAutoAction, provider); };
+        row.appendChild(fixBtn);
+      }
+
+      listEl.appendChild(row);
+    }
+  }
+
+  async function runAntiSpamChecklist() {
+    const provider = resolveChecklistTargetProvider();
+    const sumBox = el('antiSpamChecklistSummary');
+    if (sumBox) {
+      sumBox.className = 'status-box status-loading';
+      sumBox.textContent = `⏳ [${provider} 기준] 자동·반자동 스팸 위험도 및 체크리스트 전체 진단 중...`;
+    }
+    const v = values();
+    const flags = getUnifiedSpamOptFlags(provider);
+    const { sidecarPort, sidecarToken } = getSidecarConfig();
+    const selSelf = el('gmailSelfTestAccountSelect') ? el('gmailSelfTestAccountSelect').value : '';
+    const replyToVal = provider === 'GMAIL'
+      ? (el('gmailReplyTo') ? el('gmailReplyTo').value.trim() : '')
+      : String(v.reply || '').trim();
+    const r = await callBg({
+      action: 'OPTIMIZE_EMAIL_DELIVERABILITY',
+      sidecarPort,
+      sidecarToken,
+      payload: {
+        provider,
+        accountId: provider === 'GMAIL' ? (selSelf || null) : null,
+        selectedAccountIds: provider === 'GMAIL' ? Array.from(selectedGmailAccountIds) : [],
+        displayName: v.senderDisplayName || v.company || v.brand || '',
+        replyTo: replyToVal,
+        subject: (v.subject || '').trim(),
+        preheader: v.preheader || '',
+        html: htmlFor(v),
+        text: textFor(v),
+        link: v.link || '',
+        physicalAddress: getEffectivePhysicalAddress(v),
+        autoOptimize: flags.autoSpamPrevention,
+        autoAlignReplyTo: flags.autoAlignReplyTo,
+        preferLightweightHtml: flags.preferLightweightHtml
+      }
+    });
+    const opt = (r?.ok && r.data?.optimization)
+      ? r.data.optimization
+      : buildOfflineFallbackOptimization(provider, v);
+    renderUnifiedAntiSpamChecklist(opt);
+    if (provider === 'GMAIL') renderGmailSpamOptimization(opt);
+    return opt;
+  }
+
+  xpiderRefreshAntiSpamChecklist = runAntiSpamChecklist;
+
+  if (el('btnRunAntiSpamChecklist')) {
+    el('btnRunAntiSpamChecklist').onclick = () => { runAntiSpamChecklist(); };
+  }
+  if (el('btnApplyAutoAntiSpamFixes')) {
+    el('btnApplyAutoAntiSpamFixes').onclick = () => { applyAutoAntiSpamFixesToEditor(); };
+  }
+  if (el('btnSemiAutoCopyAndDraftFix')) {
+    el('btnSemiAutoCopyAndDraftFix').onclick = () => {
+      if (typeof xpiderOpenSemiAutoProposal === 'function') xpiderOpenSemiAutoProposal('COMBINED');
+    };
+  }
+  if (el('spamChecklistProvider')) {
+    el('spamChecklistProvider').addEventListener('change', () => { runAntiSpamChecklist(); });
+  }
+
   function renderGmailSpamOptimization(opt) {
     const box = el('gmailSpamOptStatus');
     if (!box || !opt) return;
@@ -3723,9 +4224,11 @@ function createBuiltinRecipientManager() {
           displayName: v.senderDisplayName || v.company || v.brand || '',
           replyTo: el('gmailReplyTo') ? el('gmailReplyTo').value.trim() : '',
           subject: (v.subject || '').trim() || '[XPIDER Gmail Self-Test]',
+          preheader: v.preheader || '',
           html: htmlFor(v),
           text: textFor(v),
-          physicalAddress: el('gmailPhysicalAddress') ? el('gmailPhysicalAddress').value.trim() : '',
+          link: v.link || '',
+          physicalAddress: getEffectivePhysicalAddress(v),
           autoOptimize: flags.autoSpamPrevention,
           autoAlignReplyTo: flags.autoAlignReplyTo,
           preferLightweightHtml: flags.preferLightweightHtml
@@ -3733,6 +4236,7 @@ function createBuiltinRecipientManager() {
       });
       if (r?.ok && r.data?.optimization) {
         renderGmailSpamOptimization(r.data.optimization);
+        renderUnifiedAntiSpamChecklist(r.data.optimization);
       } else if (box) {
         box.className = 'status-box status-error';
         box.textContent = `❌ 스팸 위험도 진단 실패: ${r?.error || r?.data?.reason || 'SIDECAR_ERROR'}`;
@@ -3812,7 +4316,7 @@ function createBuiltinRecipientManager() {
           subject: (v.subject || '').trim() || '[XPIDER Gmail Self-Test]',
           html: htmlFor(v),
           text: textFor(v),
-          physicalAddress: el('gmailPhysicalAddress') ? el('gmailPhysicalAddress').value.trim() : '',
+          physicalAddress: getEffectivePhysicalAddress(v),
           ...spamFlags,
           recipientConsentConfirmed: true
         }
@@ -3895,7 +4399,7 @@ function createBuiltinRecipientManager() {
           html: htmlFor(v),
           text: textFor(v),
           replyTo: el('gmailReplyTo') ? el('gmailReplyTo').value.trim() : '',
-          physicalAddress: el('gmailPhysicalAddress') ? el('gmailPhysicalAddress').value.trim() : '',
+          physicalAddress: getEffectivePhysicalAddress(v),
           scheduleMode,
           ...spamFlags,
           hygieneConfirmed,
@@ -3916,4 +4420,7 @@ function createBuiltinRecipientManager() {
     };
   }
   restore();
+  try {
+    renderUnifiedAntiSpamChecklist(buildOfflineFallbackOptimization(resolveChecklistTargetProvider(), values()));
+  } catch (_) {}
 })();

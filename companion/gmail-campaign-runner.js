@@ -214,8 +214,10 @@ class GmailCampaignRunner {
     displayName = '',
     replyTo = '',
     subject = '',
+    preheader = '',
     html = '',
     text = '',
+    link = '',
     physicalAddress = '',
     autoOptimize = true,
     autoAlignReplyTo = true,
@@ -231,14 +233,23 @@ class GmailCampaignRunner {
     }
     const resolvedFrom = fromAddress ? (normalizeEmail(fromAddress) || '') : (targetAcct ? targetAcct.email : '');
     const supIndex = this.buildCrossProviderSuppressionIndex();
+    const unsubCfg = this.pipeline && typeof this.pipeline.getUnsubscribePublicConfig === 'function'
+      ? this.pipeline.getUnsubscribePublicConfig()
+      : null;
+    const publicBase = String(unsubCfg?.publicBaseUrl || 'https://unsubscribe.vivpr.pro').trim();
     return optimizeAndScoreGmailMessage({
       from: resolvedFrom,
       displayName,
       replyTo,
       subject,
+      preheader,
       html,
       text,
+      link,
       physicalAddress,
+      publicUnsubBase: publicBase,
+      suppressedCount: Number(supIndex?.stats?.mergedHashSuppressedCount || 0),
+      hygieneChecked: Boolean(this.lastHygieneReport),
       historicalBounceRatePct: Number(supIndex?.stats?.historicalBounceRatePct || 0),
       autoOptimize: autoOptimize !== false,
       autoAlignReplyTo: autoAlignReplyTo !== false,

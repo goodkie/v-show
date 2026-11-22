@@ -133,6 +133,44 @@
 <div id="copyDiffContent" style="white-space:pre-wrap;font-size:12px;"></div>
 <div class="actions" style="margin-top:8px;"><button type="button" class="primary" id="btnApproveCopySuggestion">✅ 제안 수락 (편집창에 반영)</button><button type="button" id="btnRejectCopySuggestion">❌ 제안 거절 (원문 유지)</button></div>
 </div>
+<div id="antiSpamChecklistSection" style="margin-top:12px;padding:10px;border:1px solid rgba(22,163,74,0.4);border-radius:8px;background:rgba(240,253,244,0.55);">
+  <div class="send-header">
+    <h4 style="margin:0;">🛡️ 통합 스팸방지 자동·반자동 적용 &amp; 체크리스트 (Gmail · Resend 공용)</h4>
+    <span class="badge-test" id="spamChecklistScoreBadge">스팸 위험도: 미진단</span>
+  </div>
+  <div class="note" style="margin:6px 0;">
+    <b>발송 시 자동 적용(AUTO)</b> + <b>1클릭 반자동 교정(SEMI-AUTO)</b> + <b>운영자 수동 체크리스트(MANUAL)</b>를 Gmail과 Resend 발송 모두에 일관 적용합니다.
+    (정당한 발신 위생 최적화이며, 100% 기본 받은편지함 배치나 계정 정지 면제를 보장하지 않습니다.)
+  </div>
+  <div class="inline" style="margin:6px 0;">
+    <div>
+      <label for="spamChecklistProvider">체크리스트 진단 기준 공급자</label>
+      <select id="spamChecklistProvider">
+        <option value="AUTO">현재 선택된 발송 공급자 자동 기준</option>
+        <option value="GMAIL">Gmail API 기준 (개인 @gmail.com / Workspace)</option>
+        <option value="RESEND">Resend 기준 (인증 도메인 vivpr.pro)</option>
+      </select>
+    </div>
+    <div style="display:flex;flex-direction:column;justify-content:flex-end;">
+      <div class="note" id="spamChecklistActiveProviderNote" style="margin:0;">적용 대상: Gmail ✅ · Resend ✅ (RFC 8058 원클릭 수신거부·물리적 주소 항상 유지)</div>
+    </div>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:4px;margin:6px 0;padding:6px 8px;border:1px solid #cbd5e1;border-radius:6px;background:#fff;font-size:12px;">
+    <label style="display:flex;align-items:center;gap:6px;"><input id="spamOptApplyGmail" type="checkbox" checked> <b>Gmail 발송 시 자동 스팸 방지 적용</b> (타 도메인 표시이름 보정 · Reply-To 정렬 · 경량 HTML · RFC 2047 · Date 헤더)</label>
+    <label style="display:flex;align-items:center;gap:6px;"><input id="spamOptApplyResend" type="checkbox" checked> <b>Resend 발송 시 자동 스팸 방지 적용</b> (위험 태그/깨진 샘플 이미지 제거 · 제목 위생 · 텍스트/HTML 1:1 동기화 · 물리적 주소 보강)</label>
+    <label style="display:flex;align-items:center;gap:6px;"><input id="spamOptAutoAlignReplyTo" type="checkbox" checked> 발신 도메인과 다른 외부 <code>Reply-To</code> 자동 정렬 (불일치 헤더 자동 생략 — Gmail 기본 권장, 외부 회신 필요 시 해제)</label>
+    <label style="display:flex;align-items:center;gap:6px;"><input id="spamOptLightweightGmail" type="checkbox" checked> 개인 <code>@gmail.com</code> 발송 시 무거운 마케팅 HTML → <b>자연형 경량 HTML</b> 자동 변환</label>
+    <label style="display:flex;align-items:center;gap:6px;"><input id="spamOptLightweightResend" type="checkbox"> [선택] Resend 발송 시에도 자연형 경량 HTML 사용 (체크 해제 시 뉴스레터 HTML 디자인 유지)</label>
+    <label style="display:flex;align-items:center;gap:6px;"><input id="spamOptBlockHighRisk" type="checkbox" checked> 스팸 위험도 <b>HIGH_RISK (55점 이상)</b> 판정 시 Gmail · Resend 발송 전 자동 차단</label>
+  </div>
+  <div class="actions" style="margin-top:6px;">
+    <button type="button" class="primary" id="btnRunAntiSpamChecklist">🔍 통합 스팸 위험도 · 체크리스트 진단</button>
+    <button type="button" id="btnApplyAutoAntiSpamFixes">⚡ 자동 항목 일괄 적용 (편집창 반영)</button>
+    <button type="button" id="btnSemiAutoCopyAndDraftFix">🛠️ 반자동 스팸 문구·초안 교정 제안</button>
+  </div>
+  <div id="antiSpamChecklistSummary" class="status-box status-idle" aria-live="polite" style="margin-top:6px;white-space:pre-wrap;">대기 중: [🔍 통합 스팸 위험도 · 체크리스트 진단]을 누르면 자동(AUTO) / 반자동(SEMI-AUTO) / 수동(MANUAL) 항목별 상태와 1클릭 조치 버튼이 표시됩니다.</div>
+  <div id="antiSpamChecklistList" style="margin-top:6px;display:flex;flex-direction:column;gap:4px;"></div>
+</div>
 </div>
 </section>
 <section class="panel" aria-label="템플릿 미리보기">

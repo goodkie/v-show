@@ -21,6 +21,7 @@ const { injectUnsubscribeFooter } = require('./email-unsubscribe-server');
 const { validateAndFormatSenderFrom, sanitizeReplyTo } = require('./vivpr-sender-identity');
 const { GmailAccountVault } = require('./gmail-account-vault');
 const { GmailCampaignRunner } = require('./gmail-campaign-runner');
+const { optimizeAndScoreEmailMessage } = require('./gmail-deliverability-optimizer');
 
 const DEFAULT_SIDECAR_PORT = 18990;
 const SIDECAR_BUILD_ID = 'V7.0.0-OWNER-BETA-TEST-SEND-SIDECAR-20261116-LOCKED17';
@@ -830,6 +831,11 @@ class EmailTestSidecar {
                 replyTo: p.replyTo || '',
                 html: String(p.html || ''),
                 text: String(p.text || ''),
+                physicalAddress: String(p.physicalAddress || ''),
+                autoSpamPrevention: p.autoSpamPrevention === true,
+                autoAlignReplyTo: p.autoAlignReplyTo === true,
+                preferLightweightHtml: p.preferLightweightHtml === true,
+                blockHighRiskSpam: p.blockHighRiskSpam === true,
                 baseUrl: publicUnsubBase,
                 hasResendKey: Boolean(resolvedKey),
                 apiKey: (!this.trustedTestMode && resolvedKey) ? resolvedKey : (p.apiKey || null),
@@ -943,6 +949,77 @@ class EmailTestSidecar {
                 res.end(JSON.stringify({ ok: false, status: 'BLOCKED', reason: replyRes.reason }));
                 return;
               }
+              let effectiveFromRes = fromRes;
+              let effectiveReplyTo = replyRes.replyTo || '';
+              let optSubjectIn = String(payload.subject || `${fromRes.displayName} · Test Email`).trim().slice(0, 200);
+              let optHtmlIn = String(payload.html || `<p>${fromRes.displayName} Real Test Verification</p>`);
+              let optTextIn = String(payload.text || `${fromRes.displayName} Real Test Verification`);
+              let realTestSpamOpt = null;
+              if (payload.autoSpamPrevention === true) {
+                const unsubCfgPre = this.pipeline.getUnsubscribePublicConfig();
+                const supPre = this.gmailRunner.buildCrossProviderSuppressionIndex();
+                const resOpt = optimizeAndScoreEmailMessage({
+                  provider: 'RESEND',
+                  from: 'noreply@vivpr.pro',
+                  displayName: fromRes.displayName,
+                  replyTo: effectiveReplyTo,
+                  subject: optSubjectIn,
+                  preheader: String(payload.preheader || ''),
+                  html: optHtmlIn,
+                  text: optTextIn,
+                  link: String(payload.link || ''),
+                  physicalAddress: String(payload.physicalAddress || ''),
+                  publicUnsubBase: String(unsubCfgPre?.publicBaseUrl || 'https://unsubscribe.vivpr.pro'),
+                  suppressedCount: Number(supPre?.stats?.mergedHashSuppressedCount || 0),
+                  historicalBounceRatePct: Number(supPre?.stats?.historicalBounceRatePct || 0),
+                  autoOptimize: true,
+                  autoAlignReplyTo: payload.autoAlignReplyTo === true,
+                  preferLightweightHtml: payload.preferLightweightHtml === true
+                });
+                realTestSpamOpt = {
+                  provider: 'RESEND',
+                  riskScore: resOpt.riskScore,
+                  grade: resOpt.grade,
+                  autoFixesApplied: resOpt.autoFixesApplied,
+                  signals: resOpt.signals,
+                  recommendations: resOpt.recommendations,
+                  honestDisclaimer: resOpt.honestDisclaimer
+                };
+                if (payload.blockHighRiskSpam === true && resOpt.grade === 'HIGH_RISK') {
+                  this._recordDiag('WARN', 'REAL_TEST', 'BLOCKED_HIGH_SPAM_RISK', { riskScore: resOpt.riskScore });
+                  res.writeHead(409, { 'Content-Type': 'application/json' });
+                  res.end(JSON.stringify({
+                    ok: false,
+                    status: 'BLOCKED',
+                    reason: 'HIGH_SPAM_RISK_BLOCKED',
+                    spamOptimization: realTestSpamOpt,
+                    detail: `스팸 위험도 ${resOpt.riskScore}/100 (HIGH_RISK) 감지 — 체크리스트에서 위험 항목을 조정한 뒤 다시 시도하세요.`
+                  }));
+                  return;
+                }
+                if (resOpt.optimized.displayName) {
+                  const reFrom = validateAndFormatSenderFrom({
+                    displayName: resOpt.optimized.displayName,
+                    fallbackBusinessNames: ['vivpr.pro'],
+                    verifiedEmail: 'noreply@vivpr.pro'
+                  });
+                  if (reFrom.ok) effectiveFromRes = reFrom;
+                }
+                effectiveReplyTo = resOpt.optimized.replyTo || '';
+                optSubjectIn = (resOpt.optimized.subject || optSubjectIn).slice(0, 200);
+                optHtmlIn = resOpt.optimized.html || optHtmlIn;
+                optTextIn = resOpt.optimized.text || optTextIn;
+                const cleanAddr = String(payload.physicalAddress || '').trim();
+                if (cleanAddr.length >= 6) {
+                  if (!optHtmlIn.includes(cleanAddr)) {
+                    const escAddr = cleanAddr.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                    optHtmlIn = `${optHtmlIn}\n<p style="font-size:11px;color:#64748b;margin-top:12px;">${escAddr}</p>`;
+                  }
+                  if (!optTextIn.includes(cleanAddr)) {
+                    optTextIn = `${optTextIn}\n\n${cleanAddr}`;
+                  }
+                }
+              }
               const resolvedKey = this.resolveResendApiKey();
               if (!resolvedKey) {
                 res.writeHead(503, { 'Content-Type': 'application/json' });
@@ -1054,14 +1131,14 @@ class EmailTestSidecar {
               }
 
               const idempotencyKey = String(payload.idempotencyKey || `xpider_realtest_${Date.now()}_${crypto.randomBytes(6).toString('hex')}`).slice(0, 128);
-              const subject = String(payload.subject || `${fromRes.displayName} · Test Email`).trim().slice(0, 200);
-              const rawHtml = String(payload.html || `<p>${fromRes.displayName} Real Test Verification</p>`);
-              const rawText = String(payload.text || `${fromRes.displayName} Real Test Verification`);
+              const subject = optSubjectIn;
+              const rawHtml = optHtmlIn;
+              const rawText = optTextIn;
               const unsubFooterHtml = `<hr style="border:none;border-top:1px solid #ddd;margin:20px 0;" /><p style="font-size:12px;color:#555;">To unsubscribe: <a href="${unsub.url}">Unsubscribe</a></p>`;
               const finalHtml = rawHtml.includes(unsub.url) ? rawHtml : `${rawHtml}\n${unsubFooterHtml}`;
               const finalText = rawText.includes(unsub.url) ? rawText : `${rawText}\n\nUnsubscribe: ${unsub.url}`;
 
-              this.pipeline._appendAudit({ type: 'REAL_TEST_SEND_STARTED', campaignId, idempotencyKey, fromDisplayName: fromRes.displayName });
+              this.pipeline._appendAudit({ type: 'REAL_TEST_SEND_STARTED', campaignId, idempotencyKey, fromDisplayName: effectiveFromRes.displayName });
               const resendT0 = Date.now();
               let sendResp = null;
               try {
@@ -1073,12 +1150,12 @@ class EmailTestSidecar {
                     'Idempotency-Key': idempotencyKey
                   },
                   body: JSON.stringify({
-                    from: fromRes.from,
+                    from: effectiveFromRes.from,
                     to: [recipient],
                     subject,
                     html: finalHtml,
                     text: finalText,
-                    ...(replyRes.replyTo ? { reply_to: replyRes.replyTo } : {}),
+                    ...(effectiveReplyTo ? { reply_to: effectiveReplyTo } : {}),
                     headers: unsub.headers
                   }),
                   ...(typeof AbortSignal?.timeout === 'function' ? { signal: AbortSignal.timeout(20000) } : {})
@@ -1105,8 +1182,8 @@ class EmailTestSidecar {
                 res.end(JSON.stringify({ ok: false, status: 'FAILED', reason: sendBody.message || `RESEND_HTTP_${sendResp.status}`, stepTimings }));
                 return;
               }
-              this.pipeline._appendAudit({ type: 'REAL_TEST_SEND_ACCEPTED', campaignId, idempotencyKey, providerMessageId: sendBody.id, fromDisplayName: fromRes.displayName });
-              this._recordDiag('INFO', 'REAL_TEST', 'ACCEPTED', { providerMessageId: sendBody.id, fromDisplayName: fromRes.displayName, hasReplyTo: Boolean(replyRes.replyTo), stepTimings });
+              this.pipeline._appendAudit({ type: 'REAL_TEST_SEND_ACCEPTED', campaignId, idempotencyKey, providerMessageId: sendBody.id, fromDisplayName: effectiveFromRes.displayName });
+              this._recordDiag('INFO', 'REAL_TEST', 'ACCEPTED', { providerMessageId: sendBody.id, fromDisplayName: effectiveFromRes.displayName, hasReplyTo: Boolean(effectiveReplyTo), stepTimings });
               res.writeHead(200, { 'Content-Type': 'application/json' });
               res.end(JSON.stringify({
                 ok: true,
@@ -1114,10 +1191,11 @@ class EmailTestSidecar {
                 deliveryState: 'ACCEPTED',
                 providerMessageId: sendBody.id,
                 idempotencyKey,
-                fromHeader: fromRes.from,
-                senderDisplayName: fromRes.displayName,
-                replyTo: replyRes.replyTo || null,
+                fromHeader: effectiveFromRes.from,
+                senderDisplayName: effectiveFromRes.displayName,
+                replyTo: effectiveReplyTo || null,
                 maskedRecipient,
+                ...(realTestSpamOpt ? { spamOptimization: realTestSpamOpt } : {}),
                 stepTimings,
                 note: 'ACCEPTED는 Resend 서버 접수 상태이며, 실제 수신함 도착(DELIVERED) 여부는 상태 조회로 확인하세요.'
               }));
@@ -1209,6 +1287,56 @@ class EmailTestSidecar {
                 error: msg,
                 timestamp: new Date().toISOString()
               }));
+            }
+          });
+          return;
+        }
+
+        if (pathname === '/email/deliverability/optimize' && req.method === 'POST') {
+          let raw = '';
+          let tooLarge = false;
+          req.on('data', c => { raw += c; if (raw.length > 2097152) { tooLarge = true; req.destroy(); } });
+          req.on('end', () => {
+            if (tooLarge) return;
+            try {
+              const payload = raw ? JSON.parse(raw) : {};
+              const provider = String(payload.provider || 'RESEND').toUpperCase() === 'GMAIL' ? 'GMAIL' : 'RESEND';
+              let optimization;
+              if (provider === 'GMAIL') {
+                optimization = this.gmailRunner.previewDeliverabilityOptimization(payload);
+              } else {
+                const unsubCfg = this.pipeline.getUnsubscribePublicConfig();
+                const supIdx = this.gmailRunner.buildCrossProviderSuppressionIndex();
+                optimization = optimizeAndScoreEmailMessage({
+                  provider: 'RESEND',
+                  from: 'noreply@vivpr.pro',
+                  displayName: String(payload.displayName || payload.senderDisplayName || payload.company || payload.brand || 'vivpr.pro'),
+                  replyTo: String(payload.replyTo || ''),
+                  subject: String(payload.subject || ''),
+                  preheader: String(payload.preheader || ''),
+                  html: String(payload.html || ''),
+                  text: String(payload.text || ''),
+                  link: String(payload.link || ''),
+                  physicalAddress: String(payload.physicalAddress || ''),
+                  publicUnsubBase: String(unsubCfg?.publicBaseUrl || 'https://unsubscribe.vivpr.pro'),
+                  suppressedCount: Number(supIdx?.stats?.mergedHashSuppressedCount || 0),
+                  historicalBounceRatePct: Number(supIdx?.stats?.historicalBounceRatePct || 0),
+                  hygieneChecked: Boolean(this.pipeline?.lastPreflightAt),
+                  autoOptimize: payload.autoOptimize !== false,
+                  autoAlignReplyTo: payload.autoAlignReplyTo === true,
+                  preferLightweightHtml: payload.preferLightweightHtml === true
+                });
+              }
+              this._recordDiag('INFO', 'EMAIL_SPAM_OPT', `${provider}_${optimization.grade || 'CHECKED'}`, {
+                provider,
+                riskScore: optimization.riskScore,
+                autoFixes: optimization.autoFixesApplied?.length || 0
+              });
+              res.writeHead(200, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ ok: true, provider, optimization }));
+            } catch (err) {
+              res.writeHead(400, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ ok: false, error: err?.message || 'DELIVERABILITY_OPTIMIZE_EXCEPTION' }));
             }
           });
           return;
@@ -1318,7 +1446,7 @@ class EmailTestSidecar {
                 const optimization = this.gmailRunner.previewDeliverabilityOptimization(payload);
                 this._recordDiag('INFO', 'GMAIL_SPAM_OPT', optimization.grade || 'CHECKED', { riskScore: optimization.riskScore, autoFixes: optimization.autoFixesApplied.length });
                 res.writeHead(200, { 'Content-Type': 'application/json' });
-                res.end(JSON.stringify({ ok: true, optimization }));
+                res.end(JSON.stringify({ ok: true, provider: 'GMAIL', optimization }));
                 return;
               }
               if (pathname === '/email/gmail/queue/stop') {
