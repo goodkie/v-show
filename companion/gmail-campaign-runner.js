@@ -25,6 +25,7 @@ const {
   buildTrueDashboard,
   hasHeaderInjection
 } = require('./gmail-safe-delivery-engine');
+const { optimizeAndScoreGmailMessage } = require('./gmail-deliverability-optimizer');
 const RM = require('../extension/email-studio/recipient-manager');
 
 const PUBLIC_UNSUB_HOST = 'unsubscribe.vivpr.pro';
@@ -203,6 +204,45 @@ class GmailCampaignRunner {
       deliverabilityHygiene: this.lastHygieneReport,
       queueRunning: queueRunning !== undefined ? Boolean(queueRunning) : this._queueRunning,
       lastRunResult: this.lastRunResult
+    });
+  }
+
+  previewDeliverabilityOptimization({
+    accountId = null,
+    selectedAccountIds = [],
+    fromAddress = null,
+    displayName = '',
+    replyTo = '',
+    subject = '',
+    html = '',
+    text = '',
+    physicalAddress = '',
+    autoOptimize = true,
+    autoAlignReplyTo = true,
+    preferLightweightHtml = true
+  } = {}) {
+    const accountsWithUsage = this.vault.getInternalAccountsWithUsage();
+    let targetAcct = accountId ? accountsWithUsage.find(a => a.id === accountId) : null;
+    if (!targetAcct && Array.isArray(selectedAccountIds) && selectedAccountIds.length > 0) {
+      targetAcct = accountsWithUsage.find(a => selectedAccountIds.includes(a.id)) || null;
+    }
+    if (!targetAcct && accountsWithUsage.length > 0) {
+      targetAcct = accountsWithUsage.find(a => a.connected && !a.disabled && !a.providerBlocked) || accountsWithUsage[0];
+    }
+    const resolvedFrom = fromAddress ? (normalizeEmail(fromAddress) || '') : (targetAcct ? targetAcct.email : '');
+    const supIndex = this.buildCrossProviderSuppressionIndex();
+    return optimizeAndScoreGmailMessage({
+      from: resolvedFrom,
+      displayName,
+      replyTo,
+      subject,
+      html,
+      text,
+      physicalAddress,
+      historicalBounceRatePct: Number(supIndex?.stats?.historicalBounceRatePct || 0),
+      autoOptimize: autoOptimize !== false,
+      autoAlignReplyTo: autoAlignReplyTo !== false,
+      preferLightweightHtml: preferLightweightHtml !== false
     });
   }
 
@@ -793,6 +833,10 @@ class GmailCampaignRunner {
     html = '',
     text = '',
     physicalAddress = '',
+    autoSpamPrevention = true,
+    autoAlignReplyTo = true,
+    preferLightweightHtml = true,
+    blockHighRiskSpam = false,
     recipientConsentConfirmed = false,
     ownerExplicitApproval = false,
     baseUrlOverride = null,
@@ -915,8 +959,6 @@ class GmailCampaignRunner {
       idempotencyKey
     });
 
-    const withFooter = injectUnsubscribeFooter({ html, text, unsubscribeUrl: unsub.url });
-    const withAddr = ensurePhysicalAddressInFooter({ ...withFooter, physicalAddress });
     let resolvedFrom = selected.from;
     if (fromAddress !== null && fromAddress !== undefined && String(fromAddress).trim() !== '') {
       const rawFrom = String(fromAddress);
@@ -927,15 +969,54 @@ class GmailCampaignRunner {
       resolvedFrom = normFrom;
     }
 
+    // Automatic Deliverability & Spam-Risk Optimization (legitimate hygiene only; keeps RFC 8058 unsubscribe intact)
+    const spamOpt = optimizeAndScoreGmailMessage({
+      from: resolvedFrom,
+      displayName: String(displayName || '').trim() || targetAcct.domain,
+      replyTo: cleanReplyTo || '',
+      subject,
+      html,
+      text,
+      physicalAddress,
+      historicalBounceRatePct: Number(supIndex?.stats?.historicalBounceRatePct || 0),
+      autoOptimize: autoSpamPrevention !== false,
+      autoAlignReplyTo: autoAlignReplyTo !== false,
+      preferLightweightHtml: preferLightweightHtml !== false
+    });
+    if (blockHighRiskSpam === true && spamOpt.grade === 'HIGH_RISK') {
+      return {
+        ok: false,
+        statusCode: 409,
+        status: 'BLOCKED',
+        reason: 'HIGH_SPAM_RISK_BLOCKED',
+        spamOptimization: {
+          riskScore: spamOpt.riskScore,
+          grade: spamOpt.grade,
+          autoFixesApplied: spamOpt.autoFixesApplied,
+          signals: spamOpt.signals,
+          recommendations: spamOpt.recommendations,
+          honestDisclaimer: spamOpt.honestDisclaimer
+        }
+      };
+    }
+    const finalHtmlIn = spamOpt.optimized.html || html;
+    const finalTextIn = spamOpt.optimized.text || text;
+    const finalSubject = spamOpt.optimized.subject || subject;
+    const finalDisplayName = spamOpt.optimized.displayName || String(displayName || '').trim() || targetAcct.domain;
+    const finalReplyTo = spamOpt.optimized.replyTo || '';
+
+    const withFooter = injectUnsubscribeFooter({ html: finalHtmlIn, text: finalTextIn, unsubscribeUrl: unsub.url });
+    const withAddr = ensurePhysicalAddressInFooter({ ...withFooter, physicalAddress });
+
     let raw;
     try {
       raw = rawGmailMime({
         from: resolvedFrom,
-        replyTo: cleanReplyTo || undefined,
+        replyTo: finalReplyTo || undefined,
         to: normTo,
         verifiedFromAddresses: targetAcct.verifiedSendAs || [targetAcct.email],
-        displayName: String(displayName || '').trim() || targetAcct.domain,
-        subject,
+        displayName: finalDisplayName,
+        subject: finalSubject,
         html: withAddr.html,
         text: withAddr.text,
         unsubscribeUrl: unsub.url,
@@ -993,6 +1074,14 @@ class GmailCampaignRunner {
         accountId: selected.accountId,
         maskedFrom: maskEmail(resolvedFrom || selected.from),
         maskedTo: maskEmail(normTo),
+        spamOptimization: {
+          riskScore: spamOpt.riskScore,
+          grade: spamOpt.grade,
+          autoFixesApplied: spamOpt.autoFixesApplied,
+          signals: spamOpt.signals,
+          recommendations: spamOpt.recommendations,
+          honestDisclaimer: spamOpt.honestDisclaimer
+        },
         note: 'Gmail API 접수 완료(GMAIL_API_ACCEPTED). 전달(DELIVERED)·수신함 도착(INBOX)·열람(OPENED)은 독립 검증 전까지 미확인(UNKNOWN)입니다.'
       };
     } catch (err) {
@@ -1032,6 +1121,10 @@ class GmailCampaignRunner {
     replyTo = undefined,
     physicalAddress = undefined,
     scheduleMode = undefined,
+    autoSpamPrevention = true,
+    autoAlignReplyTo = true,
+    preferLightweightHtml = true,
+    blockHighRiskSpam = false,
     ownerExplicitApproval = false,
     hygieneConfirmed = false,
     providerSwitchConfirmed = false,
@@ -1451,18 +1544,61 @@ class GmailCampaignRunner {
           });
         }
 
-        // 7. Build MIME via foundation rawGmailMime()
-        const withFooter = injectUnsubscribeFooter({ html, text, unsubscribeUrl: unsub.url });
+        // 7. Automatic Deliverability & Spam-Risk Optimization + MIME via foundation rawGmailMime()
+        const qSpamOpt = optimizeAndScoreGmailMessage({
+          from: selected.from,
+          displayName: String(displayName || '').trim() || (assignedAcct && assignedAcct.domain) || 'Sender',
+          replyTo: effectiveReplyTo || '',
+          subject,
+          html,
+          text,
+          physicalAddress: effectivePhysicalAddress,
+          historicalBounceRatePct: Number(supIndex?.stats?.historicalBounceRatePct || 0),
+          autoOptimize: autoSpamPrevention !== false,
+          autoAlignReplyTo: autoAlignReplyTo !== false,
+          preferLightweightHtml: preferLightweightHtml !== false
+        });
+        if (blockHighRiskSpam === true && qSpamOpt.grade === 'HIGH_RISK') {
+          e.status = 'PENDING';
+          e.attempts = Math.max(0, (e.attempts || 1) - 1);
+          e.reason = 'HIGH_SPAM_RISK_BLOCKED';
+          this.queue.stopped = true;
+          this.queue.stopReason = 'HIGH_SPAM_RISK_BLOCKED';
+          this._saveQueue();
+          return finalize({
+            ok: false,
+            statusCode: 409,
+            status: 'PAUSED',
+            reason: 'HIGH_SPAM_RISK_BLOCKED',
+            stopReason: 'HIGH_SPAM_RISK_BLOCKED',
+            spamOptimization: {
+              riskScore: qSpamOpt.riskScore,
+              grade: qSpamOpt.grade,
+              autoFixesApplied: qSpamOpt.autoFixesApplied,
+              signals: qSpamOpt.signals,
+              recommendations: qSpamOpt.recommendations
+            },
+            acceptedInThisRun,
+            koreanReason: `자동 스팸 위험도 점검에서 고위험(점수 ${qSpamOpt.riskScore}/100)이 감지되어 발송 전 안전 차단되었습니다.`
+          });
+        }
+        const optHtml = qSpamOpt.optimized.html || html;
+        const optText = qSpamOpt.optimized.text || text;
+        const optSubject = qSpamOpt.optimized.subject || subject;
+        const optDisplayName = qSpamOpt.optimized.displayName || String(displayName || '').trim() || (assignedAcct && assignedAcct.domain) || 'Sender';
+        const optReplyTo = qSpamOpt.optimized.replyTo || '';
+
+        const withFooter = injectUnsubscribeFooter({ html: optHtml, text: optText, unsubscribeUrl: unsub.url });
         const withAddr = ensurePhysicalAddressInFooter({ ...withFooter, physicalAddress: effectivePhysicalAddress });
         let raw;
         try {
           raw = rawGmailMime({
             from: selected.from,
-            replyTo: effectiveReplyTo || undefined,
+            replyTo: optReplyTo || undefined,
             to: e.email,
             verifiedFromAddresses: (assignedAcct && assignedAcct.verifiedSendAs) || [selected.from],
-            displayName: String(displayName || '').trim() || (assignedAcct && assignedAcct.domain) || 'Sender',
-            subject,
+            displayName: optDisplayName,
+            subject: optSubject,
             html: withAddr.html,
             text: withAddr.text,
             unsubscribeUrl: unsub.url,

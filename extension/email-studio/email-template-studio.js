@@ -3678,6 +3678,67 @@ function createBuiltinRecipientManager() {
       }
     };
   }
+  function getGmailSpamOptFlags() {
+    return {
+      autoSpamPrevention: !el('gmailAutoSpamOpt') || Boolean(el('gmailAutoSpamOpt').checked),
+      autoAlignReplyTo: !el('gmailAutoAlignReplyTo') || Boolean(el('gmailAutoAlignReplyTo').checked),
+      preferLightweightHtml: !el('gmailLightweightHtml') || Boolean(el('gmailLightweightHtml').checked),
+      blockHighRiskSpam: Boolean(el('gmailBlockHighRiskSpam') && el('gmailBlockHighRiskSpam').checked)
+    };
+  }
+  function renderGmailSpamOptimization(opt) {
+    const box = el('gmailSpamOptStatus');
+    if (!box || !opt) return;
+    box.className = opt.grade === 'HIGH_RISK' ? 'status-box status-error' : (opt.grade === 'MEDIUM_RISK' ? 'status-box status-blocked' : 'status-box status-success');
+    const lines = [
+      `🧪 자동 스팸 위험도 진단: ${opt.grade} (위험 점수 ${opt.riskScore}/100 · 자동 보정 ${opt.autoFixesApplied?.length || 0}건 적용됨)`
+    ];
+    for (const fx of (opt.autoFixesApplied || [])) {
+      lines.push(`  ✅ [자동 보정] ${fx.detail}`);
+    }
+    for (const sg of (opt.signals || [])) {
+      lines.push(`  ⚠️ [${sg.severity} +${sg.points}] ${sg.message}`);
+    }
+    for (const rec of (opt.recommendations || [])) {
+      lines.push(`  💡 [권장] ${rec}`);
+    }
+    lines.push(`• 고지: ${opt.honestDisclaimer || ''}`);
+    box.textContent = lines.join('\n');
+  }
+  if (el('btnGmailSpamOptimizePreview')) {
+    el('btnGmailSpamOptimizePreview').onclick = async () => {
+      const box = el('gmailSpamOptStatus');
+      if (box) { box.className = 'status-box status-loading'; box.textContent = '⏳ 자동 스팸 위험도 진단 및 보정 미리보기 계산 중...'; }
+      const v = values();
+      const flags = getGmailSpamOptFlags();
+      const { sidecarPort, sidecarToken } = getSidecarConfig();
+      const selSelf = el('gmailSelfTestAccountSelect') ? el('gmailSelfTestAccountSelect').value : '';
+      const r = await callBg({
+        action: 'OPTIMIZE_GMAIL_DELIVERABILITY',
+        sidecarPort,
+        sidecarToken,
+        payload: {
+          accountId: selSelf || null,
+          selectedAccountIds: Array.from(selectedGmailAccountIds),
+          displayName: v.senderDisplayName || v.company || v.brand || '',
+          replyTo: el('gmailReplyTo') ? el('gmailReplyTo').value.trim() : '',
+          subject: (v.subject || '').trim() || '[XPIDER Gmail Self-Test]',
+          html: htmlFor(v),
+          text: textFor(v),
+          physicalAddress: el('gmailPhysicalAddress') ? el('gmailPhysicalAddress').value.trim() : '',
+          autoOptimize: flags.autoSpamPrevention,
+          autoAlignReplyTo: flags.autoAlignReplyTo,
+          preferLightweightHtml: flags.preferLightweightHtml
+        }
+      });
+      if (r?.ok && r.data?.optimization) {
+        renderGmailSpamOptimization(r.data.optimization);
+      } else if (box) {
+        box.className = 'status-box status-error';
+        box.textContent = `❌ 스팸 위험도 진단 실패: ${r?.error || r?.data?.reason || 'SIDECAR_ERROR'}`;
+      }
+    };
+  }
   if (el('btnSaveGmailOAuthClient')) {
     el('btnSaveGmailOAuthClient').onclick = async () => {
       const cidEl = el('gmailOAuthClientId');
@@ -3736,7 +3797,8 @@ function createBuiltinRecipientManager() {
       if (!accountId) { if (box) { box.className = 'status-box status-blocked'; box.textContent = '⚠️ 먼저 연결된 Gmail 계정을 선택하세요.'; } return; }
       if (!to || !consentOk) { if (box) { box.className = 'status-box status-blocked'; box.textContent = '⚠️ 승인된 본인 테스트 수신자 주소와 동의 체크박스를 확인하세요.'; } return; }
       const v = values();
-      if (box) { box.className = 'status-box status-loading'; box.textContent = '⏳ Gmail API 1통 셀프 테스트 발송 중 (RFC 8058 수신거부 토큰 동기화 포함)...'; }
+      const spamFlags = getGmailSpamOptFlags();
+      if (box) { box.className = 'status-box status-loading'; box.textContent = '⏳ Gmail API 1통 셀프 테스트 발송 중 (자동 스팸 방지 최적화 + RFC 8058 수신거부 동기화 포함)...'; }
       const { sidecarPort, sidecarToken } = getSidecarConfig();
       const r = await callBg({
         action: 'SEND_GMAIL_SELF_TEST',
@@ -3751,13 +3813,19 @@ function createBuiltinRecipientManager() {
           html: htmlFor(v),
           text: textFor(v),
           physicalAddress: el('gmailPhysicalAddress') ? el('gmailPhysicalAddress').value.trim() : '',
+          ...spamFlags,
           recipientConsentConfirmed: true
         }
       });
+      if (r?.data?.spamOptimization) {
+        renderGmailSpamOptimization(r.data.spamOptimization);
+      }
       if (box) {
         if (r?.ok && r.data?.ok) {
+          const opt = r.data.spamOptimization;
+          const optLine = opt ? `\n• 자동 스팸 방지: ${opt.grade} (${opt.riskScore}/100 · 자동 보정 ${opt.autoFixesApplied?.length || 0}건 적용)` : '';
           box.className = 'status-box status-success';
-          box.textContent = `✅ GMAIL_API_ACCEPTED (id=${r.data.providerMessageId}) | 발신: ${r.data.maskedFrom} → 수신: ${r.data.maskedTo}\n• delivery=${r.data.delivery} | inbox=${r.data.inbox} (${r.data.note || ''})`;
+          box.textContent = `✅ GMAIL_API_ACCEPTED (id=${r.data.providerMessageId}) | 발신: ${r.data.maskedFrom} → 수신: ${r.data.maskedTo}${optLine}\n• delivery=${r.data.delivery} | inbox=${r.data.inbox} (${r.data.note || ''})`;
         } else {
           box.className = 'status-box status-error';
           box.textContent = `❌ Gmail 셀프 테스트 차단/실패: ${r?.data?.reason || r?.error || '-'}`;
@@ -3813,8 +3881,9 @@ function createBuiltinRecipientManager() {
       const hygieneConfirmed = Boolean(el('gmailHygieneConfirm') && el('gmailHygieneConfirm').checked);
       const providerSwitchConfirmed = Boolean(operatorConfirmedProviderSwitch || (el('gmailProviderSwitchConfirm') && el('gmailProviderSwitchConfirm').checked));
       const scheduleMode = el('gmailScheduleMode') ? el('gmailScheduleMode').value : 'DISTRIBUTED_MULTI_DAY';
+      const spamFlags = getGmailSpamOptFlags();
       const { sidecarPort, sidecarToken } = getSidecarConfig();
-      if (box) { box.className = 'status-box status-loading'; box.textContent = '⏳ Gmail 캠페인 백그라운드 발송 시작 요청 중 (한도 도달 시 예약 대기, 정책/인증 오류 시 즉시 중지)...'; }
+      if (box) { box.className = 'status-box status-loading'; box.textContent = '⏳ Gmail 캠페인 백그라운드 발송 시작 요청 중 (자동 스팸 방지 + 한도 예약 대기)...'; }
       const r = await callBg({
         action: 'RUN_GMAIL_PRODUCTION_QUEUE',
         sidecarPort,
@@ -3828,6 +3897,7 @@ function createBuiltinRecipientManager() {
           replyTo: el('gmailReplyTo') ? el('gmailReplyTo').value.trim() : '',
           physicalAddress: el('gmailPhysicalAddress') ? el('gmailPhysicalAddress').value.trim() : '',
           scheduleMode,
+          ...spamFlags,
           hygieneConfirmed,
           providerSwitchConfirmed
         }

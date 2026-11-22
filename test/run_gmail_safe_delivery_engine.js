@@ -12,6 +12,7 @@ const { GmailAccountVault } = require('../companion/gmail-account-vault');
 const { GmailCampaignRunner } = require('../companion/gmail-campaign-runner');
 const { GmailSendBlocked, rawGmailMime } = require('../companion/gmail-sender-foundation');
 const { AdaptiveThrottleController, assessDeliverabilityHygiene } = require('../companion/gmail-safe-delivery-engine');
+const { optimizeAndScoreGmailMessage } = require('../companion/gmail-deliverability-optimizer');
 const { EmailProductionPipeline } = require('../companion/email-production-pipeline');
 const { CampaignAnalyticsEngine, sha256Hex } = require('../companion/email-campaign-analytics');
 const { EmailTestSidecar } = require('../companion/email-test-sidecar');
@@ -841,6 +842,113 @@ function makeRefreshVaultFetch(counterRef) {
       assert.equal(corruptBlocked.reason, 'QUOTA_LEDGER_CORRUPT_RECONCILE_REQUIRED');
       checks += 4;
       console.log('PASS 8: Independent audit hardening (packaged injection guard, PKCE state isolation/replay, id_token aud/iss, From guard, corrupt ledger fail-closed & Windows NTFS ACL) verified');
+    }
+
+    // ===== 9. Automatic Deliverability & Spam-Risk Optimizer + RFC 2047 Folding + Date Header + Sidecar Endpoint =====
+    {
+      // (a) RFC 2047 multi-line UTF-8 folding for long Korean subjects & RFC 5322 Date header
+      const longKrSubject = '신규 예약 안내 및 고객 감사 이벤트 상세 공지 안내 메일입니다';
+      const foldedRaw = rawGmailMime({
+        from: 'owner@gmail.com',
+        to: 'rcpt@example.test',
+        verifiedFromAddresses: ['owner@gmail.com'],
+        displayName: 'Example Sender',
+        subject: longKrSubject,
+        text: '안녕하세요. 테스트 안내입니다.',
+        html: '<p>안녕하세요. 테스트 안내입니다.</p>',
+        unsubscribeUrl: 'https://unsubscribe.vivpr.pro/unsubscribe/tok_fold',
+        campaignAuthorized: true,
+        recipientEligible: true,
+        ledgerIntentPersisted: true
+      });
+      const foldedDecoded = Buffer.from(foldedRaw, 'base64url').toString('utf8');
+      assert.match(foldedDecoded, /^Date: [A-Z][a-z]{2}, /m, 'MIME must include valid RFC 5322 Date header');
+      assert.match(foldedDecoded, /Subject: =\?UTF-8\?B\?[A-Za-z0-9+/=]+\?=\r\n =\?UTF-8\?B\?[A-Za-z0-9+/=]+\?=/, 'Long UTF-8 subject must fold cleanly per RFC 2047');
+
+      // (b) Auto-fix foreign-domain displayName ("vivpr.pro"), mismatched Reply-To, placeholder image, shouting subject & heavy marketing HTML on @gmail.com
+      const optRes = optimizeAndScoreGmailMessage({
+        from: 'owner_test@gmail.com',
+        displayName: 'vivpr.pro',
+        replyTo: 'info@other-brand.example',
+        subject: 'EXAMPLE BRAND UPDATE!!!',
+        html: '<table style="background-color:#eee;border-radius:8px;"><tr><td><img src="https://vivpr.pro/images/news.jpg"><script>alert(1)</script><p>안녕하세요. 요청하신 서비스 안내와 상세 일정 정보를 전달드립니다. 궁금하신 점은 편하게 회신해 주세요.</p></td></tr></table>',
+        text: '안녕하세요. 요청하신 서비스 안내와 상세 일정 정보를 전달드립니다. 궁금하신 점은 편하게 회신해 주세요.',
+        physicalAddress: '100 Synthetic Way, Suite 200, Seoul',
+        autoOptimize: true,
+        autoAlignReplyTo: true,
+        preferLightweightHtml: true
+      });
+      assert.equal(optRes.ok, true);
+      const fixCodes = optRes.autoFixesApplied.map(f => f.code);
+      assert.ok(fixCodes.includes('AUTO_FIX_DISPLAY_NAME_DOMAIN_MISMATCH'), 'Must sanitize foreign domain displayName');
+      assert.ok(!/vivpr\.pro/i.test(optRes.optimized.displayName));
+      assert.ok(fixCodes.includes('AUTO_ALIGN_REPLY_TO_OMITTED_MISMATCH'), 'Must auto-align/omit mismatched external Reply-To');
+      assert.equal(optRes.optimized.replyTo, '');
+      assert.ok(fixCodes.includes('AUTO_FIX_SUBJECT_HYGIENE'), 'Must collapse shouting/excessive punctuation');
+      assert.ok(fixCodes.includes('AUTO_REMOVED_UNSAFE_HTML_TAGS'));
+      assert.ok(fixCodes.includes('AUTO_REMOVED_PLACEHOLDER_IMAGE'));
+      assert.ok(fixCodes.includes('AUTO_CONVERTED_LIGHTWEIGHT_NATURAL_HTML'));
+      assert.ok(!optRes.optimized.html.includes('<table') && !optRes.optimized.html.includes('news.jpg') && !optRes.optimized.html.includes('<script'));
+      assert.ok(optRes.riskScore < 55, 'After legitimate auto-optimization, clean body should not be HIGH_RISK');
+      assert.ok(optRes.honestDisclaimer.includes('보장하지 않습니다'));
+
+      // (c) High-risk spammy content (URL shortener + spam phrases + short boilerplate) -> HIGH_RISK & blocked when blockHighRiskSpam=true
+      const dirSpam = path.join(tmpRoot, 'spam_opt_block');
+      const pipeSpam = new EmailProductionPipeline({ stateDir: dirSpam, trustedTestMode: true });
+      const vaultSpam = new GmailAccountVault({ stateDir: dirSpam, trustedTestMode: true, cryptoBox: box });
+      const acctSpam = vaultSpam.upsertMockAccountForTest({ email: 'clean_sender@gmail.com', cap24h: 20 });
+      const runnerSpam = new GmailCampaignRunner({ stateDir: dirSpam, pipeline: pipeSpam, vault: vaultSpam, trustedTestMode: true, syncFetchImpl: okSyncFetch });
+
+      const blockedHigh = await runnerSpam.sendGmailSelfTest({
+        accountId: acctSpam.id,
+        to: 'owner_rcpt@example.test',
+        subject: 'Re: 100% 보장 무료 증정 긴급 클릭',
+        html: '<p>지금 당장 클릭 https://bit.ly/evil</p>',
+        text: '지금 당장 클릭 https://bit.ly/evil',
+        autoSpamPrevention: true,
+        blockHighRiskSpam: true,
+        recipientConsentConfirmed: true,
+        ownerExplicitApproval: true,
+        baseUrlOverride: 'https://unsubscribe.vivpr.pro',
+        syncTokenOverride: 'sync-tok-1234567890',
+        fetchImpl: async () => { throw new Error('MUST_NOT_SEND_HIGH_SPAM_RISK'); }
+      });
+      assert.equal(blockedHigh.ok, false);
+      assert.equal(blockedHigh.reason, 'HIGH_SPAM_RISK_BLOCKED');
+      assert.equal(blockedHigh.spamOptimization.grade, 'HIGH_RISK');
+
+      // (d) Sidecar POST /email/gmail/deliverability/optimize + Studio HTML/JS controls verified
+      const scPort = 19250 + (process.pid % 3000);
+      const scOpt = new EmailTestSidecar({ port: scPort, stateDir: path.join(tmpRoot, 'sidecar_opt'), trustedTestMode: true, gmailCryptoBox: box });
+      await scOpt.start();
+      try {
+        const tok = fs.readFileSync(path.join(tmpRoot, 'sidecar_opt', '.email_sidecar_token'), 'utf8').trim();
+        scOpt.gmailVault.upsertMockAccountForTest({ email: 'opt_acct@gmail.com', cap24h: 30 });
+        const oResp = await fetch(`http://127.0.0.1:${scOpt.port}/email/gmail/deliverability/optimize`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${tok}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            displayName: 'vivpr.pro',
+            replyTo: 'info@other-brand.example',
+            subject: '테스트 안내입니다!!!',
+            html: '<p>안녕하세요. 테스트 안내 본문입니다. 충분히 긴 자연스러운 문장을 작성합니다.</p>',
+            text: '안녕하세요. 테스트 안내 본문입니다. 충분히 긴 자연스러운 문장을 작성합니다.',
+            physicalAddress: '100 Synthetic Way, Suite 200'
+          })
+        });
+        assert.equal(oResp.status, 200);
+        const oJson = await oResp.json();
+        assert.equal(oJson.ok, true);
+        assert.ok(oJson.optimization.autoFixesApplied.length >= 2);
+      } finally {
+        await scOpt.stop();
+      }
+      const htmlNow = fs.readFileSync(path.join(__dirname, '..', 'extension', 'email-studio', 'index.html'), 'utf8');
+      const jsNow = fs.readFileSync(path.join(__dirname, '..', 'extension', 'email-studio', 'email-template-studio.js'), 'utf8');
+      assert.ok(htmlNow.includes('id="gmailAutoSpamOpt"') && htmlNow.includes('id="btnGmailSpamOptimizePreview"'));
+      assert.ok(jsNow.includes('OPTIMIZE_GMAIL_DELIVERABILITY') && jsNow.includes('getGmailSpamOptFlags'));
+      checks += 4;
+      console.log('PASS 9: Automatic deliverability & spam-risk optimizer, RFC 2047 folding, Date header, HIGH_SPAM_RISK_BLOCKED & Sidecar/UI wiring verified');
     }
 
     console.log(`XPIDER V7.1 Gmail Safe Delivery Engine suite: ${checks}/${checks} PASS; ZERO REAL SENDS`);

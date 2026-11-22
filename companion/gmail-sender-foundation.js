@@ -37,7 +37,25 @@ function address(value) {
 function encodeWord(input) {
   const value = textHeader(input, 'HEADER');
   if (/^[\x20-\x7e]+$/u.test(value)) return value;
-  return '=?UTF-8?B?' + Buffer.from(value, 'utf8').toString('base64') + '?=';
+  // RFC 2047 compliant UTF-8 Base64 folding: each encoded-word <= 75 chars (<= 42 UTF-8 bytes payload)
+  const chunks = [];
+  let cur = '';
+  let curBytes = 0;
+  for (const ch of value) {
+    const chBytes = Buffer.byteLength(ch, 'utf8');
+    if (cur && curBytes + chBytes > 42) {
+      chunks.push('=?UTF-8?B?' + Buffer.from(cur, 'utf8').toString('base64') + '?=');
+      cur = ch;
+      curBytes = chBytes;
+    } else {
+      cur += ch;
+      curBytes += chBytes;
+    }
+  }
+  if (cur) {
+    chunks.push('=?UTF-8?B?' + Buffer.from(cur, 'utf8').toString('base64') + '?=');
+  }
+  return chunks.join('\r\n ');
 }
 
 function fromHeader(displayName, email) {
@@ -74,6 +92,7 @@ function rawGmailMime(options) {
   }
   const boundary = 'xpider_' + crypto.randomBytes(14).toString('hex');
   const headers = [
+    'Date: ' + new Date().toUTCString(),
     'From: ' + fromHeader(name, from),
     'To: <' + to + '>',
     ...(options.replyTo ? ['Reply-To: <' + address(options.replyTo) + '>'] : []),

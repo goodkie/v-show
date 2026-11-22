@@ -1314,6 +1314,13 @@ class EmailTestSidecar {
                 res.end(JSON.stringify({ ok: true, hygiene: report, dashboard: this.gmailRunner.getTrueDashboard() }));
                 return;
               }
+              if (pathname === '/email/gmail/deliverability/optimize') {
+                const optimization = this.gmailRunner.previewDeliverabilityOptimization(payload);
+                this._recordDiag('INFO', 'GMAIL_SPAM_OPT', optimization.grade || 'CHECKED', { riskScore: optimization.riskScore, autoFixes: optimization.autoFixesApplied.length });
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ ok: true, optimization }));
+                return;
+              }
               if (pathname === '/email/gmail/queue/stop') {
                 const summary = this.gmailRunner.stopQueue(payload.reason || 'OWNER_STOPPED');
                 this._recordDiag('INFO', 'GMAIL_QUEUE', 'STOPPED', { counts: summary.counts });
