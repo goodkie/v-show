@@ -12,7 +12,7 @@ const { GmailAccountVault, GMAIL_OAUTH_SCOPES } = require('../companion/gmail-ac
 const { GmailCampaignRunner } = require('../companion/gmail-campaign-runner');
 const { GmailSendBlocked, rawGmailMime } = require('../companion/gmail-sender-foundation');
 const { AdaptiveThrottleController, assessDeliverabilityHygiene } = require('../companion/gmail-safe-delivery-engine');
-const { optimizeAndScoreGmailMessage, optimizeAndScoreEmailMessage, buildGmailSpamSearchHelper } = require('../companion/gmail-deliverability-optimizer');
+const { optimizeAndScoreGmailMessage, optimizeAndScoreEmailMessage, buildGmailSpamSearchHelper, buildMultiAccountGmailSpamHelpers } = require('../companion/gmail-deliverability-optimizer');
 const { EmailProductionPipeline } = require('../companion/email-production-pipeline');
 const { CampaignAnalyticsEngine, sha256Hex } = require('../companion/email-campaign-analytics');
 const { EmailTestSidecar } = require('../companion/email-test-sidecar');
@@ -1149,6 +1149,41 @@ function makeRefreshVaultFetch(counterRef) {
       assert.ok(jsNow.includes('openLastTestEmailInGmailSpam') && jsNow.includes('OPEN_GMAIL_SPAM_NOT_SPAM_HELPER') && jsNow.includes('buildStudioGmailSpamHelper'));
       checks += 4;
       console.log('PASS 11: Policy-safe semi-auto Gmail Spam Not-Spam helper, zero OAuth scope creep & Studio UI hooks verified');
+    }
+
+    // ===== 12. Multi-Account Gmail Spam Folder Quick-Launcher (Policy-Safe, Deduplicated, Capped) =====
+    {
+      const multi = buildMultiAccountGmailSpamHelpers({
+        provider: 'RESEND',
+        subject: '서비스 일정 안내',
+        maxAccounts: 3,
+        accounts: [
+          { email: 'InboxOne@example.test', label: '메인' },
+          'inboxone@example.test', // duplicate -> deduplicated
+          'bad-email',             // invalid -> skipped
+          'ma***@gmail.com',       // masked -> skipped
+          { email: 'inbox2@example.test', label: '보조1' },
+          { email: 'inbox3@example.test', label: '보조2' },
+          { email: 'inbox4@example.test', label: '초과' } // capped at 3
+        ]
+      });
+      assert.equal(multi.ok, true);
+      assert.equal(multi.count, 3);
+      assert.equal(multi.skippedInvalid, 2);
+      assert.equal(multi.items[0].email, 'inboxone@example.test');
+      assert.equal(multi.items[0].label, '메인');
+      assert.equal(multi.items[0].spamFolderUrl, 'https://mail.google.com/mail/?authuser=inboxone%40example.test#spam');
+      assert.ok(multi.items[0].searchUrl.startsWith('https://mail.google.com/mail/?authuser=inboxone%40example.test#search/'));
+      assert.ok(multi.items[0].query.includes('in:spam') && multi.items[0].query.includes('from:vivpr.pro'));
+      assert.equal(multi.items[2].email, 'inbox3@example.test');
+      assert.ok(multi.policyNote.includes('gmail.modify'));
+
+      const htmlNow = fs.readFileSync(path.join(__dirname, '..', 'extension', 'email-studio', 'index.html'), 'utf8');
+      const jsNow = fs.readFileSync(path.join(__dirname, '..', 'extension', 'email-studio', 'email-template-studio.js'), 'utf8');
+      assert.ok(htmlNow.includes('id="spamReviewAccountInput"') && htmlNow.includes('id="btnAddSpamReviewAccount"') && htmlNow.includes('id="btnSyncTestRecipientToReviewList"') && htmlNow.includes('id="spamReviewAccountsList"') && htmlNow.includes('id="btnOpenSelectedSpamSearch"') && htmlNow.includes('id="btnOpenSelectedSpamFolders"'));
+      assert.ok(jsNow.includes('parseAndAddSpamReviewAccounts') && jsNow.includes('openMultiAccountSpamTabs') && jsNow.includes('renderSpamReviewAccountsList') && jsNow.includes('xpider_spam_review_accounts_v1'));
+      checks += 2;
+      console.log('PASS 12: Multi-account Gmail Spam folder quick-launcher helper, deduplication/cap & Studio UI controls verified');
     }
 
     console.log(`XPIDER V7.1 Gmail Safe Delivery Engine suite: ${checks}/${checks} PASS; ZERO REAL SENDS`);

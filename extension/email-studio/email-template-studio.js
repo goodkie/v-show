@@ -3955,8 +3955,49 @@ function createBuiltinRecipientManager() {
   }
 
   let lastSpamHelperPayload = null;
+  const SPAM_REVIEW_ACCOUNTS_STORAGE_KEY = 'xpider_spam_review_accounts_v1';
+  const MAX_SPAM_REVIEW_ACCOUNTS = 20;
+  const MAX_BATCH_SPAM_TABS = 10;
+  let spamReviewAccounts = [];
 
-  function buildStudioGmailSpamHelper(preferredProvider = null) {
+  function saveSpamReviewAccounts() {
+    try {
+      if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+        chrome.storage.local.set({ [SPAM_REVIEW_ACCOUNTS_STORAGE_KEY]: spamReviewAccounts });
+      } else if (typeof localStorage !== 'undefined') {
+        localStorage.setItem(SPAM_REVIEW_ACCOUNTS_STORAGE_KEY, JSON.stringify(spamReviewAccounts));
+      }
+    } catch (_) {}
+  }
+
+  function loadSpamReviewAccounts() {
+    const applyLoaded = (arr) => {
+      if (!Array.isArray(arr)) return;
+      spamReviewAccounts = arr
+        .filter(a => a && typeof a.email === 'string' && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(a.email.trim()))
+        .slice(0, MAX_SPAM_REVIEW_ACCOUNTS)
+        .map(a => ({
+          email: a.email.trim().toLowerCase(),
+          label: String(a.label || '').trim().slice(0, 40),
+          selected: a.selected !== false,
+          addedAt: a.addedAt || new Date().toISOString()
+        }));
+      renderSpamReviewAccountsList();
+    };
+    try {
+      if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+        chrome.storage.local.get([SPAM_REVIEW_ACCOUNTS_STORAGE_KEY], (res) => {
+          applyLoaded(res && res[SPAM_REVIEW_ACCOUNTS_STORAGE_KEY]);
+        });
+      } else if (typeof localStorage !== 'undefined') {
+        const raw = localStorage.getItem(SPAM_REVIEW_ACCOUNTS_STORAGE_KEY);
+        if (raw) applyLoaded(JSON.parse(raw));
+      }
+    } catch (_) {}
+    renderSpamReviewAccountsList();
+  }
+
+  function buildStudioGmailSpamHelper(preferredProvider = null, recipientOverride = '') {
     const prov = preferredProvider || (lastSentSelfTestMeta && lastSentSelfTestMeta.provider) || resolveChecklistTargetProvider();
     const isResend = String(prov || 'GMAIL').toUpperCase() === 'RESEND';
     const v = values();
@@ -3964,9 +4005,10 @@ function createBuiltinRecipientManager() {
       ? (el('realTestRecipient') ? el('realTestRecipient').value.trim() : '')
       : (el('gmailSelfTestRecipient') ? el('gmailSelfTestRecipient').value.trim() : '');
     const fallbackRec = (el('gmailSelfTestRecipient') ? el('gmailSelfTestRecipient').value.trim() : '')
-      || (el('realTestRecipient') ? el('realTestRecipient').value.trim() : '');
+      || (el('realTestRecipient') ? el('realTestRecipient').value.trim() : '')
+      || (spamReviewAccounts.find(a => a.selected)?.email || spamReviewAccounts[0]?.email || '');
     const metaMatches = lastSentSelfTestMeta && (!preferredProvider || lastSentSelfTestMeta.provider === prov);
-    const recipient = (metaMatches && lastSentSelfTestMeta.recipient) || inputRec || fallbackRec || '';
+    const recipient = String(recipientOverride || '').trim() || (metaMatches && lastSentSelfTestMeta.recipient) || inputRec || fallbackRec || '';
     const subjectRaw = (metaMatches && lastSentSelfTestMeta.subject) || (v.subject || '').trim() || '';
     const cleanSubject = subjectRaw.replace(/[\r\n\0"]+/g, ' ').replace(/\s{2,}/g, ' ').trim().slice(0, 80);
 
@@ -3999,8 +4041,8 @@ function createBuiltinRecipientManager() {
     }
   }
 
-  function openLastTestEmailInGmailSpam(preferredProvider = null, { bareSpamOnly = false } = {}) {
-    const info = buildStudioGmailSpamHelper(preferredProvider);
+  function openLastTestEmailInGmailSpam(preferredProvider = null, { bareSpamOnly = false, recipientOverride = '' } = {}) {
+    const info = buildStudioGmailSpamHelper(preferredProvider, recipientOverride);
     lastSpamHelperPayload = info;
     const targetUrl = bareSpamOnly ? info.spamFolderUrl : info.searchUrl;
     openExternalOfficialTab(targetUrl);
@@ -4013,7 +4055,7 @@ function createBuiltinRecipientManager() {
       guideText.textContent = [
         `📬 [공식 Gmail 스팸함 열기 완료 — ${info.provider}${info.recipient ? ` · 수신함 ${info.recipient}` : ''}]`,
         `• 자동 적용된 스팸 검색어: ${info.query}`,
-        `1) 열린 Gmail 스팸함 검색 결과에서 방금 보낸 테스트 메일을 클릭해 엽니다.`,
+        `1) 열린 Gmail 스팸함${bareSpamOnly ? '' : ' 검색 결과'}에서 방금 보낸 테스트 메일을 클릭해 엽니다.`,
         `2) 상단의 [스팸 아님 보고 / Not spam] 버튼을 본인이 직접 1회 클릭합니다 (선택: 받은편지함에서 1회 회신).`,
         `3) 완료 후 아래 [✅ [스팸 아님] 클릭 완료 표시] 버튼을 누르면 체크리스트에 저장됩니다.`,
         `• 정책 안내: Google 정책 준수 및 최소 권한(gmail.send) 유지를 위해 XPIDER는 Gmail 받은편지함 DOM을 자동 조작하거나 gmail.modify 권한을 요구하지 않습니다.`
@@ -4025,6 +4067,149 @@ function createBuiltinRecipientManager() {
     studioDebugLog('INFO', 'DELIVERABILITY', 'OPEN_GMAIL_SPAM_HELPER', { provider: info.provider, hasRecipient: Boolean(info.recipient), bareSpamOnly: Boolean(bareSpamOnly) });
   }
 
+  function parseAndAddSpamReviewAccounts(rawInput, labelText = '') {
+    const tokens = String(rawInput || '')
+      .split(/[\s,;]+/)
+      .map(t => t.replace(/[\r\n\0]+/g, '').trim().toLowerCase())
+      .filter(Boolean);
+    const cleanLabel = String(labelText || '').replace(/[\r\n\0]+/g, ' ').trim().slice(0, 40);
+    let added = 0;
+    let skipped = 0;
+    const existing = new Set(spamReviewAccounts.map(a => a.email));
+
+    for (const email of tokens) {
+      if (spamReviewAccounts.length >= MAX_SPAM_REVIEW_ACCOUNTS) {
+        skipped++;
+        continue;
+      }
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.includes('*') || existing.has(email)) {
+        skipped++;
+        continue;
+      }
+      existing.add(email);
+      spamReviewAccounts.push({
+        email,
+        label: tokens.length === 1 ? cleanLabel : '',
+        selected: true,
+        addedAt: new Date().toISOString()
+      });
+      added++;
+    }
+    if (added > 0) saveSpamReviewAccounts();
+    renderSpamReviewAccountsList();
+    const guideText = el('gmailSpamHelperText');
+    if (guideText) {
+      guideText.textContent = added > 0
+        ? `✅ 테스트 Gmail 계정 ${added}개가 로컬 목록에 등록되었습니다 (총 ${spamReviewAccounts.length}개${skipped ? ` · 중복/무효/상한 제외 ${skipped}건` : ''}). 각 행의 [📂 스팸함 열기] 또는 [🔍 선택 계정 일괄 열기]를 바로 사용하세요.`
+        : `⚠️ 새로 등록할 유효한 이메일 주소가 없습니다 (형식 오류·중복 또는 최대 ${MAX_SPAM_REVIEW_ACCOUNTS}개 상한).`;
+    }
+    return { added, skipped, total: spamReviewAccounts.length };
+  }
+
+  function openMultiAccountSpamTabs({ bareSpamOnly = false, preferredProvider = null } = {}) {
+    const targets = spamReviewAccounts.filter(a => a.selected).slice(0, MAX_BATCH_SPAM_TABS);
+    const guideText = el('gmailSpamHelperText');
+    if (targets.length === 0) {
+      if (guideText) {
+        guideText.textContent = '⚠️ 먼저 테스트 Gmail 계정을 1개 이상 등록하고 체크박스를 선택하세요 (또는 [📥 현재 테스트 수신자 자동 추가]를 누르세요).';
+      }
+      return;
+    }
+    if (targets.length > 1 && typeof window !== 'undefined' && typeof window.confirm === 'function') {
+      const ok = window.confirm(`선택한 ${targets.length}개의 Gmail 계정 스팸함 탭을 한 번에 열까요?\n(1회 최대 ${MAX_BATCH_SPAM_TABS}개 · 열린 각 탭에서 본인이 직접 [스팸 아님]을 클릭합니다.)`);
+      if (!ok) return;
+    }
+    let lastInfo = null;
+    for (const acct of targets) {
+      const info = buildStudioGmailSpamHelper(preferredProvider, acct.email);
+      lastInfo = info;
+      openExternalOfficialTab(bareSpamOnly ? info.spamFolderUrl : info.searchUrl);
+    }
+    if (lastInfo) lastSpamHelperPayload = lastInfo;
+    if (guideText) {
+      guideText.textContent = [
+        `📬 [복수 Gmail 스팸함 ${targets.length}개 탭 열기 완료 (${bareSpamOnly ? '스팸함 폴더 전체' : '직전 테스트 메일 검색'})]`,
+        `• 대상 계정: ${targets.map(a => a.label ? `${a.label}(${a.email})` : a.email).join(', ')}`,
+        `• 각 탭에서 테스트 메일을 열어 본인이 직접 [스팸 아님(Not spam)]을 클릭한 뒤 [✅ [스팸 아님] 클릭 완료 표시]를 눌러 주세요.`
+      ].join('\n');
+    }
+    studioDebugLog('INFO', 'DELIVERABILITY', 'OPEN_MULTI_GMAIL_SPAM_TABS', { count: targets.length, bareSpamOnly: Boolean(bareSpamOnly) });
+  }
+
+  function renderSpamReviewAccountsList() {
+    const container = el('spamReviewAccountsList');
+    const badge = el('spamReviewAccountsCountBadge');
+    if (badge) {
+      const selCount = spamReviewAccounts.filter(a => a.selected).length;
+      badge.textContent = `등록 계정: ${spamReviewAccounts.length}개 (선택 ${selCount}개)`;
+    }
+    if (!container) return;
+    container.textContent = '';
+
+    if (spamReviewAccounts.length === 0) {
+      const emptyNote = document.createElement('div');
+      emptyNote.className = 'note';
+      emptyNote.textContent = '등록된 테스트 Gmail 계정이 없습니다. 위 입력란에 본인 Gmail 주소를 1개 또는 여러 개(쉼표 구분) 입력하고 [➕ Gmail 계정 등록]을 누르세요.';
+      container.appendChild(emptyNote);
+      return;
+    }
+
+    for (const acct of spamReviewAccounts) {
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px;padding:5px 8px;border:1px solid #cbd5e1;border-radius:6px;background:#fff;font-size:12px;';
+
+      const left = document.createElement('label');
+      left.style.cssText = 'display:flex;align-items:center;gap:6px;cursor:pointer;flex:1;min-width:180px;';
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.checked = acct.selected !== false;
+      cb.onchange = () => {
+        acct.selected = cb.checked;
+        saveSpamReviewAccounts();
+        renderSpamReviewAccountsList();
+      };
+      const nameSpan = document.createElement('span');
+      nameSpan.textContent = acct.label ? `[${acct.label}] ${acct.email}` : acct.email;
+      left.appendChild(cb);
+      left.appendChild(nameSpan);
+
+      const right = document.createElement('div');
+      right.style.cssText = 'display:flex;gap:4px;flex-wrap:wrap;';
+
+      const searchBtn = document.createElement('button');
+      searchBtn.type = 'button';
+      searchBtn.style.cssText = 'padding:3px 7px;font-size:11px;';
+      searchBtn.textContent = '🔍 직전 메일 검색';
+      searchBtn.onclick = () => { openLastTestEmailInGmailSpam(null, { bareSpamOnly: false, recipientOverride: acct.email }); };
+
+      const spamBtn = document.createElement('button');
+      spamBtn.type = 'button';
+      spamBtn.style.cssText = 'padding:3px 7px;font-size:11px;';
+      spamBtn.textContent = '📂 스팸함 열기';
+      spamBtn.onclick = () => { openLastTestEmailInGmailSpam(null, { bareSpamOnly: true, recipientOverride: acct.email }); };
+
+      const delBtn = document.createElement('button');
+      delBtn.type = 'button';
+      delBtn.style.cssText = 'padding:3px 6px;font-size:11px;';
+      delBtn.title = '목록에서 제거';
+      delBtn.textContent = '🗑️';
+      delBtn.onclick = () => {
+        spamReviewAccounts = spamReviewAccounts.filter(a => a.email !== acct.email);
+        saveSpamReviewAccounts();
+        renderSpamReviewAccountsList();
+      };
+
+      right.appendChild(searchBtn);
+      right.appendChild(spamBtn);
+      right.appendChild(delBtn);
+
+      row.appendChild(left);
+      row.appendChild(right);
+      container.appendChild(row);
+    }
+  }
+
+  loadSpamReviewAccounts();
   xpiderOpenGmailSpamHelper = openLastTestEmailInGmailSpam;
 
   async function handleSemiAutoChecklistAction(actionId, provider) {
@@ -4336,6 +4521,33 @@ function createBuiltinRecipientManager() {
   if (el('btnOpenGmailSpamHelper')) {
     el('btnOpenGmailSpamHelper').onclick = () => { openLastTestEmailInGmailSpam(); };
   }
+  if (el('btnAddSpamReviewAccount')) {
+    el('btnAddSpamReviewAccount').onclick = () => {
+      const inp = el('spamReviewAccountInput');
+      const lbl = el('spamReviewAccountLabel');
+      const res = parseAndAddSpamReviewAccounts(inp ? inp.value : '', lbl ? lbl.value : '');
+      if (res.added > 0) {
+        if (inp) inp.value = '';
+        if (lbl) lbl.value = '';
+      }
+    };
+  }
+  if (el('btnSyncTestRecipientToReviewList')) {
+    el('btnSyncTestRecipientToReviewList').onclick = () => {
+      const candidates = [
+        el('gmailSelfTestRecipient') ? el('gmailSelfTestRecipient').value.trim() : '',
+        el('realTestRecipient') ? el('realTestRecipient').value.trim() : '',
+        lastSentSelfTestMeta?.recipient || ''
+      ].filter(Boolean);
+      parseAndAddSpamReviewAccounts(candidates.join(', '));
+    };
+  }
+  if (el('btnOpenSelectedSpamSearch')) {
+    el('btnOpenSelectedSpamSearch').onclick = () => { openMultiAccountSpamTabs({ bareSpamOnly: false }); };
+  }
+  if (el('btnOpenSelectedSpamFolders')) {
+    el('btnOpenSelectedSpamFolders').onclick = () => { openMultiAccountSpamTabs({ bareSpamOnly: true }); };
+  }
   if (el('btnOpenRealTestInSpam')) {
     el('btnOpenRealTestInSpam').onclick = () => { openLastTestEmailInGmailSpam('RESEND'); };
   }
@@ -4367,7 +4579,7 @@ function createBuiltinRecipientManager() {
       if (lastUnifiedOptimization) renderUnifiedAntiSpamChecklist(lastUnifiedOptimization);
       const guideText = el('gmailSpamHelperText');
       if (guideText) {
-        guideText.textContent = '✅ [스팸 아님(Not spam)] 처리 완료로 체크리스트에 저장되었습니다. 이제 RC7 자동 스팸 방지 최적화로 1통 재테스트해 보세요.';
+        guideText.textContent = '✅ [스팸 아님(Not spam)] 처리 완료로 체크리스트에 저장되었습니다. 이제 자동 스팸 방지 최적화로 1통 재테스트해 보세요.';
       }
     };
   }

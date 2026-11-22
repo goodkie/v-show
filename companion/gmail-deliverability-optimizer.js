@@ -872,6 +872,55 @@ function buildGmailSpamSearchHelper({ recipient = '', from = '', subject = '', p
   };
 }
 
+function buildMultiAccountGmailSpamHelpers({ accounts = [], subject = '', provider = 'GMAIL', maxAccounts = 20 } = {}) {
+  const cap = Math.max(1, Math.min(20, Number(maxAccounts) || 20));
+  const rawList = Array.isArray(accounts) ? accounts : [];
+  const seen = new Set();
+  const items = [];
+  let skippedInvalid = 0;
+
+  for (const entry of rawList) {
+    if (items.length >= cap) break;
+    const rawEmail = typeof entry === 'string' ? entry : (entry && entry.email);
+    const rawLabel = (entry && typeof entry === 'object' && entry.label) ? String(entry.label) : '';
+    const cleanedStr = String(rawEmail || '').replace(/[\r\n\0]+/g, '').trim();
+    if (!cleanedStr || cleanedStr.includes('*')) {
+      skippedInvalid++;
+      continue;
+    }
+    const norm = normalizeEmail(cleanedStr);
+    if (!norm || seen.has(norm)) {
+      if (!norm) skippedInvalid++;
+      continue;
+    }
+    seen.add(norm);
+    const helper = buildGmailSpamSearchHelper({
+      recipient: norm,
+      from: '',
+      subject,
+      provider
+    });
+    items.push({
+      email: norm,
+      label: rawLabel.replace(/[\r\n\0]+/g, ' ').trim().slice(0, 40),
+      provider: helper.provider,
+      query: helper.query,
+      searchUrl: helper.searchUrl,
+      spamFolderUrl: helper.spamFolderUrl,
+      authUserBound: helper.authUserBound
+    });
+  }
+
+  return {
+    ok: true,
+    count: items.length,
+    skippedInvalid,
+    maxAccounts: cap,
+    items,
+    policyNote: '등록된 복수 Gmail 테스트 계정별 공식 스팸함(?authuser=<계정>#spam 또는 #search/in:spam)을 열어 본인이 직접 [스팸 아님]을 클릭하도록 돕습니다. 자동 클릭 봇·gmail.modify 권한을 사용하지 않습니다.'
+  };
+}
+
 function optimizeAndScoreGmailMessage(opts = {}) {
   return optimizeAndScoreEmailMessage({ provider: 'GMAIL', ...opts });
 }
@@ -880,6 +929,7 @@ module.exports = {
   optimizeAndScoreEmailMessage,
   optimizeAndScoreGmailMessage,
   buildGmailSpamSearchHelper,
+  buildMultiAccountGmailSpamHelpers,
   softenSpamPhrasesInCopy,
   deriveSafeDisplayName,
   buildLightweightNaturalHtml,

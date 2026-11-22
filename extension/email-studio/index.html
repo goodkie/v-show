@@ -169,11 +169,26 @@
     <button type="button" id="btnSemiAutoCopyAndDraftFix">🛠️ 반자동 스팸 문구·초안 교정 제안</button>
     <button type="button" id="btnOpenGmailSpamHelper">📬 스팸함에서 직전 테스트 메일 열기 (스팸 아님 안내)</button>
   </div>
-  <div id="gmailSpamHelperGuide" class="status-box status-idle" style="display:none;margin-top:6px;">
-    <div id="gmailSpamHelperText" style="white-space:pre-wrap;font-size:12px;"></div>
+  <div id="gmailSpamHelperGuide" class="status-box status-idle" style="margin-top:8px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;margin-bottom:4px;">
+      <b>📬 복수 Gmail 계정 스팸함 빠른 열기 · [스팸 아님(Not spam)] 도우미</b>
+      <span class="badge-test" id="spamReviewAccountsCountBadge">등록 계정: 0개</span>
+    </div>
+    <div id="gmailSpamHelperText" style="white-space:pre-wrap;font-size:12px;">본인이 사용하는 여러 Gmail/Workspace 계정을 등록해 두면 계정별 스팸함(?authuser=계정#spam) 또는 직전 테스트 메일 검색을 1클릭으로 바로 열 수 있습니다 (최소 권한 gmail.send 유지 · 자동 클릭 봇 미사용).</div>
+    <div class="inline" style="margin-top:6px;">
+      <div><label for="spamReviewAccountInput">Gmail / Workspace 테스트 계정 추가 (쉼표·줄바꿈으로 복수 입력 가능 · 최대 20개)</label><input id="spamReviewAccountInput" placeholder="예: test1@gmail.com, test2@gmail.com"></div>
+      <div><label for="spamReviewAccountLabel">별칭 (선택 · 단일 추가 시)</label><input id="spamReviewAccountLabel" maxlength="40" placeholder="예: 메인 수신함 / 보조1"></div>
+    </div>
+    <div class="actions" style="margin-top:6px;">
+      <button type="button" class="primary" id="btnAddSpamReviewAccount">➕ Gmail 계정 등록</button>
+      <button type="button" id="btnSyncTestRecipientToReviewList">📥 현재 테스트 수신자 자동 추가</button>
+      <button type="button" id="btnOpenSelectedSpamSearch">🔍 선택 계정 직전 메일 검색 일괄 열기</button>
+      <button type="button" id="btnOpenSelectedSpamFolders">📂 선택 계정 스팸함 일괄 열기</button>
+    </div>
+    <div id="spamReviewAccountsList" style="margin-top:6px;display:flex;flex-direction:column;gap:4px;"></div>
     <div class="actions" style="margin-top:6px;">
       <button type="button" id="btnCopySpamQuery">📋 스팸 검색어 복사</button>
-      <button type="button" id="btnOpenBareSpamFolder">📂 스팸함 전체 바로 열기</button>
+      <button type="button" id="btnOpenBareSpamFolder">📂 기본 스팸함 바로 열기</button>
       <button type="button" class="primary" id="btnMarkNotSpamDone">✅ [스팸 아님] 클릭 완료 표시</button>
     </div>
   </div>
