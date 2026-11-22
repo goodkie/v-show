@@ -167,6 +167,15 @@
     <button type="button" class="primary" id="btnRunAntiSpamChecklist">🔍 통합 스팸 위험도 · 체크리스트 진단</button>
     <button type="button" id="btnApplyAutoAntiSpamFixes">⚡ 자동 항목 일괄 적용 (편집창 반영)</button>
     <button type="button" id="btnSemiAutoCopyAndDraftFix">🛠️ 반자동 스팸 문구·초안 교정 제안</button>
+    <button type="button" id="btnOpenGmailSpamHelper">📬 스팸함에서 직전 테스트 메일 열기 (스팸 아님 안내)</button>
+  </div>
+  <div id="gmailSpamHelperGuide" class="status-box status-idle" style="display:none;margin-top:6px;">
+    <div id="gmailSpamHelperText" style="white-space:pre-wrap;font-size:12px;"></div>
+    <div class="actions" style="margin-top:6px;">
+      <button type="button" id="btnCopySpamQuery">📋 스팸 검색어 복사</button>
+      <button type="button" id="btnOpenBareSpamFolder">📂 스팸함 전체 바로 열기</button>
+      <button type="button" class="primary" id="btnMarkNotSpamDone">✅ [스팸 아님] 클릭 완료 표시</button>
+    </div>
   </div>
   <div id="antiSpamChecklistSummary" class="status-box status-idle" aria-live="polite" style="margin-top:6px;white-space:pre-wrap;">대기 중: [🔍 통합 스팸 위험도 · 체크리스트 진단]을 누르면 자동(AUTO) / 반자동(SEMI-AUTO) / 수동(MANUAL) 항목별 상태와 1클릭 조치 버튼이 표시됩니다.</div>
   <div id="antiSpamChecklistList" style="margin-top:6px;display:flex;flex-direction:column;gap:4px;"></div>
@@ -296,7 +305,7 @@
 <p class="desc">위 시뮬레이터와 별개로, <b>실제 수신함</b>으로 테스트 메일 1통을 발송합니다 (동의 원장 기록 · HTTPS 수신거부 헤더 · Idempotency-Key 적용).</p>
 <div class="form-row"><label for="realTestRecipient">승인된 테스트 수신자 이메일 (1개)</label><input id="realTestRecipient" type="email" placeholder="예: studioberryinfo@gmail.com"></div>
 <label style="display:flex;align-items:center;gap:6px;margin:6px 0;font-size:12px;"><input id="realTestConsentCheck" type="checkbox"> 이 수신자는 본인이 관리하거나 테스트 메일 1통 수신을 명시적으로 승인한 주소임을 확인합니다.</label>
-<div class="actions"><button type="button" class="primary" id="btnRealTestSend">🚀 실제 테스트 이메일 보내기</button><button type="button" id="btnCheckRealTestStatus">🔄 최근 발송 상태 조회 (ACCEPTED vs DELIVERED)</button></div>
+<div class="actions"><button type="button" class="primary" id="btnRealTestSend">🚀 실제 테스트 이메일 보내기</button><button type="button" id="btnCheckRealTestStatus">🔄 최근 발송 상태 조회 (ACCEPTED vs DELIVERED)</button><button type="button" id="btnOpenRealTestInSpam">📬 스팸함에서 테스트 메일 열기 (스팸 아님 안내)</button></div>
 <div id="realTestStatus" class="status-box status-idle" aria-live="polite">대기 중: 승인된 테스트 이메일 주소를 입력하고 동의 체크 후 '실제 테스트 이메일 보내기'를 누르세요.</div>
 </div>
 <div class="prod-send-box">
@@ -392,7 +401,7 @@
       <div><label for="gmailSelfTestRecipient">승인된 본인 테스트 수신자 (1개)</label><input id="gmailSelfTestRecipient" type="email" placeholder="예: owner-test@example.com"></div>
     </div>
     <label style="display:flex;align-items:center;gap:6px;margin:6px 0;font-size:12px;"><input id="gmailSelfTestConsent" type="checkbox"> 이 수신자는 본인이 관리하거나 Gmail 1통 셀프 테스트 수신을 명시적으로 승인한 주소임을 확인합니다.</label>
-    <div class="actions"><button type="button" class="primary" id="btnGmailSelfTestSend">📨 Gmail 1통 셀프 테스트 발송</button></div>
+    <div class="actions"><button type="button" class="primary" id="btnGmailSelfTestSend">📨 Gmail 1통 셀프 테스트 발송</button><button type="button" id="btnOpenGmailSelfTestInSpam">📬 스팸함에서 직전 테스트 메일 열기 (스팸 아님 안내)</button></div>
     <div id="gmailSelfTestStatus" class="status-box status-idle" style="margin-top:6px;">대기 중: Gmail 계정 연결 후 본인 테스트 주소를 입력해 1통 검증하세요.</div>
   </div>
 

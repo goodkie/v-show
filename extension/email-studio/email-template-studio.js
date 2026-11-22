@@ -1253,6 +1253,44 @@ setTimeout(() => {
 
 let xpiderOpenSemiAutoProposal = null;
 let xpiderRefreshAntiSpamChecklist = null;
+let xpiderOpenGmailSpamHelper = null;
+const LAST_SELF_TEST_META_KEY = 'xpider_last_self_test_meta_v1';
+let lastSentSelfTestMeta = null;
+
+function saveLastSentSelfTestMeta(meta) {
+  if (!meta || typeof meta !== 'object') return;
+  lastSentSelfTestMeta = {
+    provider: meta.provider === 'RESEND' ? 'RESEND' : 'GMAIL',
+    recipient: String(meta.recipient || '').trim().slice(0, 254),
+    subject: String(meta.subject || '').trim().slice(0, 160),
+    fromDomain: String(meta.fromDomain || '').trim().slice(0, 120),
+    providerMessageId: String(meta.providerMessageId || '').trim().slice(0, 128),
+    sentAt: meta.sentAt || new Date().toISOString()
+  };
+  try {
+    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+      chrome.storage.local.set({ [LAST_SELF_TEST_META_KEY]: lastSentSelfTestMeta });
+    } else if (typeof localStorage !== 'undefined') {
+      localStorage.setItem(LAST_SELF_TEST_META_KEY, JSON.stringify(lastSentSelfTestMeta));
+    }
+  } catch (_) {}
+}
+
+function loadLastSentSelfTestMeta() {
+  try {
+    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+      chrome.storage.local.get([LAST_SELF_TEST_META_KEY], (res) => {
+        if (res && res[LAST_SELF_TEST_META_KEY] && typeof res[LAST_SELF_TEST_META_KEY] === 'object') {
+          lastSentSelfTestMeta = res[LAST_SELF_TEST_META_KEY];
+        }
+      });
+    } else if (typeof localStorage !== 'undefined') {
+      const raw = localStorage.getItem(LAST_SELF_TEST_META_KEY);
+      if (raw) lastSentSelfTestMeta = JSON.parse(raw) || null;
+    }
+  } catch (_) {}
+}
+loadLastSentSelfTestMeta();
 
 function getUnifiedSpamOptFlags(provider = 'GMAIL') {
   const isResend = String(provider || 'GMAIL').toUpperCase() === 'RESEND';
@@ -1363,6 +1401,14 @@ if (el('btnRealTestSend')) {
         return;
       }
       lastRealTestMsgId = r.data.providerMessageId;
+      saveLastSentSelfTestMeta({
+        provider: 'RESEND',
+        recipient: rec,
+        subject,
+        fromDomain: 'vivpr.pro',
+        providerMessageId: r.data.providerMessageId,
+        sentAt: new Date().toISOString()
+      });
       studioDebugLog('INFO', 'SEND', 'REAL_TEST_ACCEPTED', {
         providerMessageId: r.data.providerMessageId,
         fromHeader: r.data.fromHeader || fp.from,
@@ -3874,7 +3920,7 @@ function createBuiltinRecipientManager() {
       { id: 'LINK_HYGIENE_AND_SHORTENER', mode: 'SEMI_AUTO', status: hasShortener ? 'ACTION_REQUIRED' : 'PASS', title: '링크 위생 (단축 URL 금지 · HTTPS 전용)', detail: hasShortener ? '단축 URL이 감지되었습니다.' : '단축 URL 없음.', semiAutoAction: 'CLEAN_DEFAULT_LINK_OR_FOCUS' },
       { id: 'PHYSICAL_ADDRESS_FOOTER', mode: 'SEMI_AUTO', status: addr.length >= 6 ? 'PASS' : 'ACTION_REQUIRED', title: '법적 물리적 사업장 주소 기재', detail: addr.length >= 6 ? '물리적 주소 입력됨.' : '물리적 주소가 비어 있습니다.', semiAutoAction: 'SYNC_OR_FOCUS_ADDRESS' },
       { id: 'PROVIDER_AUTH_AND_HYGIENE', mode: 'SEMI_AUTO', status: 'WARN', title: isGmail ? 'Gmail 발신 위생 · SPF/DMARC 점검' : 'Resend(vivpr.pro) DNS · 수신거부 점검', detail: '공급자 사전 점검을 실행해 최신 상태를 확인하세요.', semiAutoAction: 'RUN_PROVIDER_HYGIENE' },
-      { id: 'MANUAL_NOT_SPAM_TRAIN', mode: 'MANUAL_GUIDE', status: 'MANUAL_PENDING', title: '[수동] 스팸함에 들어간 초기 테스트 메일 [스팸 아님(Not spam)] 표시 & 1회 회신', detail: '수신함 평판 학습에 도움이 됩니다.' },
+      { id: 'MANUAL_NOT_SPAM_TRAIN', mode: 'MANUAL_GUIDE', status: 'MANUAL_PENDING', title: '[반자동 안내] 스팸함에 들어간 직전 테스트 메일 바로 열기 → [스팸 아님(Not spam)] 1회 클릭', detail: '공식 Gmail 스팸함 검색 결과로 바로 이동해 본인이 직접 [스팸 아님]을 1회 클릭할 수 있습니다 (자동 클릭 봇 미사용 · 최소 권한 gmail.send 유지).', semiAutoAction: 'OPEN_GMAIL_SPAM_NOT_SPAM_HELPER' },
       { id: 'MANUAL_WORKSPACE_OR_RESEND', mode: 'MANUAL_GUIDE', status: 'MANUAL_PENDING', title: '[수동] 대량/공지 발송 시 Google Workspace 맞춤 도메인 또는 인증된 Resend(vivpr.pro) 우선 사용', detail: '개인 @gmail.com은 소량·사전 승인 수신자 전용으로 운영하세요.' },
       { id: 'MANUAL_UNSUB_ROUNDTRIP', mode: 'MANUAL_GUIDE', status: 'MANUAL_PENDING', title: '[수동] 수신거부 링크 1회 클릭 → 동일 주소 재발송 차단 확인', detail: '교차 차단 원장 정상 동작을 확인합니다.' },
       { id: 'MANUAL_ROTATE_EXPOSED_CREDS', mode: 'MANUAL_GUIDE', status: 'MANUAL_PENDING', title: '[수동] 외부·스크린샷에 노출된 API 키 / OAuth 시크릿 교체 확인', detail: '노출 이력이 있는 자격증명은 콘솔에서 재발급하세요.' }
@@ -3903,11 +3949,89 @@ function createBuiltinRecipientManager() {
       case 'SYNC_OR_FOCUS_ADDRESS': return '📍 주소 동기화/입력 이동';
       case 'RUN_PROVIDER_HYGIENE': return '🛡️ 공급자 DNS·위생 점검';
       case 'APPLY_AUTO_FIXES': return '⚡ 자동 보정 적용';
+      case 'OPEN_GMAIL_SPAM_NOT_SPAM_HELPER': return '📬 스팸함에서 바로 열기';
       default: return '🛠️ 조치 실행';
     }
   }
 
+  let lastSpamHelperPayload = null;
+
+  function buildStudioGmailSpamHelper(preferredProvider = null) {
+    const prov = preferredProvider || (lastSentSelfTestMeta && lastSentSelfTestMeta.provider) || resolveChecklistTargetProvider();
+    const isResend = String(prov || 'GMAIL').toUpperCase() === 'RESEND';
+    const v = values();
+    const inputRec = isResend
+      ? (el('realTestRecipient') ? el('realTestRecipient').value.trim() : '')
+      : (el('gmailSelfTestRecipient') ? el('gmailSelfTestRecipient').value.trim() : '');
+    const fallbackRec = (el('gmailSelfTestRecipient') ? el('gmailSelfTestRecipient').value.trim() : '')
+      || (el('realTestRecipient') ? el('realTestRecipient').value.trim() : '');
+    const metaMatches = lastSentSelfTestMeta && (!preferredProvider || lastSentSelfTestMeta.provider === prov);
+    const recipient = (metaMatches && lastSentSelfTestMeta.recipient) || inputRec || fallbackRec || '';
+    const subjectRaw = (metaMatches && lastSentSelfTestMeta.subject) || (v.subject || '').trim() || '';
+    const cleanSubject = subjectRaw.replace(/[\r\n\0"]+/g, ' ').replace(/\s{2,}/g, ' ').trim().slice(0, 80);
+
+    const terms = ['in:spam'];
+    if (isResend) terms.push('from:vivpr.pro');
+    if (cleanSubject) terms.push(`subject:"${cleanSubject}"`);
+    const query = terms.join(' ');
+    const validRec = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipient) ? recipient : '';
+    const basePath = validRec
+      ? `https://mail.google.com/mail/?authuser=${encodeURIComponent(validRec)}`
+      : 'https://mail.google.com/mail/u/0/';
+    return {
+      provider: isResend ? 'RESEND' : 'GMAIL',
+      recipient: validRec,
+      subject: cleanSubject,
+      query,
+      searchUrl: `${basePath}#search/${encodeURIComponent(query)}`,
+      spamFolderUrl: `${basePath}#spam`,
+      sentAt: metaMatches ? lastSentSelfTestMeta.sentAt : null,
+      providerMessageId: metaMatches ? lastSentSelfTestMeta.providerMessageId : null
+    };
+  }
+
+  function openExternalOfficialTab(url) {
+    if (!/^https:\/\/mail\.google\.com\/mail\//i.test(String(url || ''))) return;
+    if (typeof chrome !== 'undefined' && chrome.tabs && typeof chrome.tabs.create === 'function') {
+      chrome.tabs.create({ url });
+    } else {
+      window.open(url, '_blank', 'noopener');
+    }
+  }
+
+  function openLastTestEmailInGmailSpam(preferredProvider = null, { bareSpamOnly = false } = {}) {
+    const info = buildStudioGmailSpamHelper(preferredProvider);
+    lastSpamHelperPayload = info;
+    const targetUrl = bareSpamOnly ? info.spamFolderUrl : info.searchUrl;
+    openExternalOfficialTab(targetUrl);
+
+    const guideBox = el('gmailSpamHelperGuide');
+    const guideText = el('gmailSpamHelperText');
+    if (guideBox && guideText) {
+      guideBox.style.display = 'block';
+      guideBox.className = 'status-box status-success';
+      guideText.textContent = [
+        `📬 [공식 Gmail 스팸함 열기 완료 — ${info.provider}${info.recipient ? ` · 수신함 ${info.recipient}` : ''}]`,
+        `• 자동 적용된 스팸 검색어: ${info.query}`,
+        `1) 열린 Gmail 스팸함 검색 결과에서 방금 보낸 테스트 메일을 클릭해 엽니다.`,
+        `2) 상단의 [스팸 아님 보고 / Not spam] 버튼을 본인이 직접 1회 클릭합니다 (선택: 받은편지함에서 1회 회신).`,
+        `3) 완료 후 아래 [✅ [스팸 아님] 클릭 완료 표시] 버튼을 누르면 체크리스트에 저장됩니다.`,
+        `• 정책 안내: Google 정책 준수 및 최소 권한(gmail.send) 유지를 위해 XPIDER는 Gmail 받은편지함 DOM을 자동 조작하거나 gmail.modify 권한을 요구하지 않습니다.`
+      ].join('\n');
+      if (typeof guideBox.scrollIntoView === 'function') {
+        guideBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }
+    studioDebugLog('INFO', 'DELIVERABILITY', 'OPEN_GMAIL_SPAM_HELPER', { provider: info.provider, hasRecipient: Boolean(info.recipient), bareSpamOnly: Boolean(bareSpamOnly) });
+  }
+
+  xpiderOpenGmailSpamHelper = openLastTestEmailInGmailSpam;
+
   async function handleSemiAutoChecklistAction(actionId, provider) {
+    if (actionId === 'OPEN_GMAIL_SPAM_NOT_SPAM_HELPER') {
+      openLastTestEmailInGmailSpam(provider);
+      return;
+    }
     if (actionId === 'OPEN_COPY_DIFF') {
       if (typeof xpiderOpenSemiAutoProposal === 'function') xpiderOpenSemiAutoProposal('COPY');
       return;
@@ -4121,6 +4245,29 @@ function createBuiltinRecipientManager() {
         fixBtn.textContent = semiAutoButtonLabel(item.semiAutoAction);
         fixBtn.onclick = () => { handleSemiAutoChecklistAction(item.semiAutoAction, provider); };
         row.appendChild(fixBtn);
+      } else if (item.mode === 'MANUAL_GUIDE' && item.semiAutoAction === 'OPEN_GMAIL_SPAM_NOT_SPAM_HELPER') {
+        const btnWrap = document.createElement('div');
+        btnWrap.style.cssText = 'display:flex;gap:4px;flex-wrap:wrap;';
+        const openBtn = document.createElement('button');
+        openBtn.type = 'button';
+        openBtn.style.cssText = 'padding:4px 8px;font-size:11px;white-space:nowrap;';
+        openBtn.textContent = '📬 스팸함에서 바로 열기';
+        openBtn.onclick = () => { openLastTestEmailInGmailSpam(provider); };
+        const copyBtn = document.createElement('button');
+        copyBtn.type = 'button';
+        copyBtn.style.cssText = 'padding:4px 8px;font-size:11px;white-space:nowrap;';
+        copyBtn.textContent = '📋 검색어 복사';
+        copyBtn.onclick = async () => {
+          const info = buildStudioGmailSpamHelper(provider);
+          try {
+            if (navigator.clipboard && navigator.clipboard.writeText) await navigator.clipboard.writeText(info.query);
+          } catch (_) {}
+          copyBtn.textContent = '✅ 복사됨';
+          setTimeout(() => { copyBtn.textContent = '📋 검색어 복사'; }, 1500);
+        };
+        btnWrap.appendChild(openBtn);
+        btnWrap.appendChild(copyBtn);
+        row.appendChild(btnWrap);
       }
 
       listEl.appendChild(row);
@@ -4185,6 +4332,44 @@ function createBuiltinRecipientManager() {
   }
   if (el('spamChecklistProvider')) {
     el('spamChecklistProvider').addEventListener('change', () => { runAntiSpamChecklist(); });
+  }
+  if (el('btnOpenGmailSpamHelper')) {
+    el('btnOpenGmailSpamHelper').onclick = () => { openLastTestEmailInGmailSpam(); };
+  }
+  if (el('btnOpenRealTestInSpam')) {
+    el('btnOpenRealTestInSpam').onclick = () => { openLastTestEmailInGmailSpam('RESEND'); };
+  }
+  if (el('btnOpenGmailSelfTestInSpam')) {
+    el('btnOpenGmailSelfTestInSpam').onclick = () => { openLastTestEmailInGmailSpam('GMAIL'); };
+  }
+  if (el('btnCopySpamQuery')) {
+    el('btnCopySpamQuery').onclick = async () => {
+      const info = lastSpamHelperPayload || buildStudioGmailSpamHelper();
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) await navigator.clipboard.writeText(info.query);
+      } catch (_) {}
+      const btn = el('btnCopySpamQuery');
+      if (btn) {
+        btn.textContent = '✅ 검색어 복사 완료';
+        setTimeout(() => { btn.textContent = '📋 스팸 검색어 복사'; }, 1500);
+      }
+    };
+  }
+  if (el('btnOpenBareSpamFolder')) {
+    el('btnOpenBareSpamFolder').onclick = () => {
+      openLastTestEmailInGmailSpam(lastSpamHelperPayload?.provider || null, { bareSpamOnly: true });
+    };
+  }
+  if (el('btnMarkNotSpamDone')) {
+    el('btnMarkNotSpamDone').onclick = () => {
+      manualChecklistState.MANUAL_NOT_SPAM_TRAIN = true;
+      saveManualChecklistState();
+      if (lastUnifiedOptimization) renderUnifiedAntiSpamChecklist(lastUnifiedOptimization);
+      const guideText = el('gmailSpamHelperText');
+      if (guideText) {
+        guideText.textContent = '✅ [스팸 아님(Not spam)] 처리 완료로 체크리스트에 저장되었습니다. 이제 RC7 자동 스팸 방지 최적화로 1통 재테스트해 보세요.';
+      }
+    };
   }
 
   function renderGmailSpamOptimization(opt) {
@@ -4326,10 +4511,18 @@ function createBuiltinRecipientManager() {
       }
       if (box) {
         if (r?.ok && r.data?.ok) {
+          saveLastSentSelfTestMeta({
+            provider: 'GMAIL',
+            recipient: to,
+            subject: (v.subject || '').trim() || '[XPIDER Gmail Self-Test]',
+            fromDomain: 'gmail.com',
+            providerMessageId: r.data.providerMessageId,
+            sentAt: new Date().toISOString()
+          });
           const opt = r.data.spamOptimization;
           const optLine = opt ? `\n• 자동 스팸 방지: ${opt.grade} (${opt.riskScore}/100 · 자동 보정 ${opt.autoFixesApplied?.length || 0}건 적용)` : '';
           box.className = 'status-box status-success';
-          box.textContent = `✅ GMAIL_API_ACCEPTED (id=${r.data.providerMessageId}) | 발신: ${r.data.maskedFrom} → 수신: ${r.data.maskedTo}${optLine}\n• delivery=${r.data.delivery} | inbox=${r.data.inbox} (${r.data.note || ''})`;
+          box.textContent = `✅ GMAIL_API_ACCEPTED (id=${r.data.providerMessageId}) | 발신: ${r.data.maskedFrom} → 수신: ${r.data.maskedTo}${optLine}\n• delivery=${r.data.delivery} | inbox=${r.data.inbox} (${r.data.note || ''})\n• 스팸함에 들어갔다면 위 [📬 스팸함에서 직전 테스트 메일 열기 (스팸 아님 안내)] 버튼으로 바로 열어 [스팸 아님]을 클릭하세요.`;
         } else {
           box.className = 'status-box status-error';
           box.textContent = `❌ Gmail 셀프 테스트 차단/실패: ${r?.data?.reason || r?.error || '-'}`;

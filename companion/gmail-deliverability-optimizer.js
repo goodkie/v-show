@@ -753,16 +753,23 @@ function optimizeAndScoreEmailMessage({
     semiAutoAction: 'RUN_PROVIDER_HYGIENE'
   });
 
-  // 14. [MANUAL_GUIDE] Operational Best-Practice Checklist (4 user-checkable items)
+  // 14. [MANUAL_GUIDE] Operational Best-Practice Checklist (4 user-checkable items; Not-Spam includes 1-click official Gmail Spam deep-link helper)
+  const spamReviewHelper = buildGmailSpamSearchHelper({
+    provider: normProvider,
+    from: normFrom,
+    subject: outSubject
+  });
   checklist.push(
     {
       id: 'MANUAL_NOT_SPAM_TRAIN',
       category: 'OPERATIONAL',
       mode: 'MANUAL_GUIDE',
       status: 'MANUAL_PENDING',
-      title: '[수동] 스팸함에 들어간 초기 테스트 메일 [스팸 아님(Not spam)] 표시 & 1회 회신',
-      detail: '초기 발신 계정의 수신함 평판 학습을 위해 테스트 수신함에서 스팸 아님 표시를 권장합니다.',
-      providers: ['GMAIL', 'RESEND']
+      title: '[반자동 안내] 스팸함에 들어간 직전 테스트 메일 바로 열기 → [스팸 아님(Not spam)] 1회 클릭',
+      detail: '버튼을 누르면 방금 보낸 테스트 메일이 검색된 공식 Gmail 스팸함이 바로 열립니다. Google 정책 준수(최소 권한 gmail.send 유지 · 자동 클릭 봇 미사용)를 위해 열린 메일에서 본인이 직접 [스팸 아님]을 1회 클릭하세요.',
+      providers: ['GMAIL', 'RESEND'],
+      semiAutoAction: 'OPEN_GMAIL_SPAM_NOT_SPAM_HELPER',
+      helper: spamReviewHelper
     },
     {
       id: 'MANUAL_WORKSPACE_OR_RESEND',
@@ -818,6 +825,7 @@ function optimizeAndScoreEmailMessage({
     recommendations,
     checklist,
     checklistSummary,
+    spamReviewHelper,
     optimized: {
       displayName: outDisplayName,
       replyTo: outReplyTo,
@@ -829,6 +837,40 @@ function optimizeAndScoreEmailMessage({
   };
 }
 
+function buildGmailSpamSearchHelper({ recipient = '', from = '', subject = '', provider = 'GMAIL' } = {}) {
+  const normProvider = String(provider || 'GMAIL').toUpperCase() === 'RESEND' ? 'RESEND' : 'GMAIL';
+  const cleanRecipient = normalizeEmail(String(recipient || '').replace(/[\r\n\0]+/g, '').trim()) || '';
+  const cleanFromRaw = String(from || '').replace(/[\r\n\0]+/g, '').trim();
+  const cleanFrom = (!cleanFromRaw.includes('*') && normalizeEmail(cleanFromRaw)) || '';
+  const cleanSubject = String(subject || '').replace(/[\r\n\0"]+/g, ' ').replace(/\s{2,}/g, ' ').trim().slice(0, 80);
+
+  const terms = ['in:spam'];
+  if (normProvider === 'RESEND') {
+    terms.push('from:vivpr.pro');
+  } else if (cleanFrom) {
+    terms.push(`from:${cleanFrom}`);
+  }
+  if (cleanSubject) {
+    terms.push(`subject:"${cleanSubject}"`);
+  }
+  const query = terms.join(' ');
+  const basePath = cleanRecipient
+    ? `https://mail.google.com/mail/?authuser=${encodeURIComponent(cleanRecipient)}`
+    : 'https://mail.google.com/mail/u/0/';
+  const searchUrl = `${basePath}#search/${encodeURIComponent(query)}`;
+  const spamFolderUrl = `${basePath}#spam`;
+
+  return {
+    ok: true,
+    provider: normProvider,
+    query,
+    searchUrl,
+    spamFolderUrl,
+    authUserBound: Boolean(cleanRecipient),
+    policyNote: 'Google 정책 준수 및 최소 권한(gmail.send) 유지: XPIDER는 Gmail 받은편지함 DOM을 자동 클릭하거나 gmail.modify 권한을 요구하지 않습니다. 공식 Gmail 스팸함 검색 결과로 바로 이동해 본인이 직접 [스팸 아님(Not spam)]을 1회 클릭하도록 지원합니다.'
+  };
+}
+
 function optimizeAndScoreGmailMessage(opts = {}) {
   return optimizeAndScoreEmailMessage({ provider: 'GMAIL', ...opts });
 }
@@ -836,6 +878,7 @@ function optimizeAndScoreGmailMessage(opts = {}) {
 module.exports = {
   optimizeAndScoreEmailMessage,
   optimizeAndScoreGmailMessage,
+  buildGmailSpamSearchHelper,
   softenSpamPhrasesInCopy,
   deriveSafeDisplayName,
   buildLightweightNaturalHtml,

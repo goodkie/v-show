@@ -8,11 +8,11 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
-const { GmailAccountVault } = require('../companion/gmail-account-vault');
+const { GmailAccountVault, GMAIL_OAUTH_SCOPES } = require('../companion/gmail-account-vault');
 const { GmailCampaignRunner } = require('../companion/gmail-campaign-runner');
 const { GmailSendBlocked, rawGmailMime } = require('../companion/gmail-sender-foundation');
 const { AdaptiveThrottleController, assessDeliverabilityHygiene } = require('../companion/gmail-safe-delivery-engine');
-const { optimizeAndScoreGmailMessage, optimizeAndScoreEmailMessage } = require('../companion/gmail-deliverability-optimizer');
+const { optimizeAndScoreGmailMessage, optimizeAndScoreEmailMessage, buildGmailSpamSearchHelper } = require('../companion/gmail-deliverability-optimizer');
 const { EmailProductionPipeline } = require('../companion/email-production-pipeline');
 const { CampaignAnalyticsEngine, sha256Hex } = require('../companion/email-campaign-analytics');
 const { EmailTestSidecar } = require('../companion/email-test-sidecar');
@@ -1095,6 +1095,59 @@ function makeRefreshVaultFetch(counterRef) {
       assert.ok(!/\blogStudioDiag\b/.test(jsNow), 'Must never regress logStudioDiag typo');
       checks += 4;
       console.log('PASS 10: Unified Gmail+Resend anti-spam auto/semi-auto checklist engine, Resend HIGH_SPAM_RISK_BLOCKED gate & Studio UI wiring verified');
+    }
+
+    // ===== 11. Policy-Safe Semi-Auto "Open Last Test Email in Gmail Spam & Not-Spam Guide" Helper =====
+    {
+      // (a) Official Gmail Spam search URL builder (authuser binding, query sanitization, masked sender skipped)
+      const hGmail = buildGmailSpamSearchHelper({
+        provider: 'GMAIL',
+        recipient: 'owner-inbox@example.test',
+        from: 'sender@gmail.com',
+        subject: '테스트 "안내" 메일\r\nBcc:evil'
+      });
+      assert.equal(hGmail.ok, true);
+      assert.equal(hGmail.authUserBound, true);
+      assert.ok(hGmail.searchUrl.startsWith('https://mail.google.com/mail/?authuser=owner-inbox%40example.test#search/'));
+      assert.ok(hGmail.spamFolderUrl === 'https://mail.google.com/mail/?authuser=owner-inbox%40example.test#spam');
+      assert.ok(hGmail.query.includes('in:spam') && hGmail.query.includes('from:sender@gmail.com') && !hGmail.query.includes('\r') && !hGmail.query.includes('\n'));
+      assert.ok(hGmail.policyNote.includes('gmail.send') && hGmail.policyNote.includes('gmail.modify'));
+
+      const hResend = buildGmailSpamSearchHelper({
+        provider: 'RESEND',
+        recipient: '',
+        from: 'se***@gmail.com',
+        subject: '서비스 일정 안내'
+      });
+      assert.equal(hResend.authUserBound, false);
+      assert.ok(hResend.searchUrl.startsWith('https://mail.google.com/mail/u/0/#search/'));
+      assert.ok(hResend.query.includes('from:vivpr.pro') && !hResend.query.includes('***'));
+
+      // (b) Checklist item MANUAL_NOT_SPAM_TRAIN exposes semiAutoAction + spamReviewHelper
+      const optWithHelper = optimizeAndScoreEmailMessage({
+        provider: 'GMAIL',
+        from: 'owner@gmail.com',
+        subject: '정상 테스트 안내',
+        html: '<p>안녕하세요. 정상 안내 본문입니다. 충분히 자연스러운 문장으로 작성했습니다.</p>',
+        text: '안녕하세요. 정상 안내 본문입니다. 충분히 자연스러운 문장으로 작성했습니다.',
+        physicalAddress: '100 Synthetic Way, Suite 200'
+      });
+      assert.ok(optWithHelper.spamReviewHelper && optWithHelper.spamReviewHelper.searchUrl.startsWith('https://mail.google.com/mail/'));
+      const notSpamItem = optWithHelper.checklist.find(i => i.id === 'MANUAL_NOT_SPAM_TRAIN');
+      assert.ok(notSpamItem && notSpamItem.semiAutoAction === 'OPEN_GMAIL_SPAM_NOT_SPAM_HELPER');
+
+      // (c) Zero OAuth scope creep & zero mail.google.com host permission / DOM bot injection
+      const manifestSrc = fs.readFileSync(path.join(__dirname, '..', 'extension', 'manifest.json'), 'utf8');
+      assert.deepEqual(GMAIL_OAUTH_SCOPES, ['https://www.googleapis.com/auth/gmail.send', 'openid', 'email'], 'OAuth scope must strictly remain minimal gmail.send');
+      assert.ok(!/mail\.google\.com/i.test(manifestSrc), 'Extension manifest must NOT request mail.google.com host permission');
+
+      // (d) Studio HTML/JS controls for 1-click Gmail Spam Not-Spam Helper present
+      const htmlNow = fs.readFileSync(path.join(__dirname, '..', 'extension', 'email-studio', 'index.html'), 'utf8');
+      const jsNow = fs.readFileSync(path.join(__dirname, '..', 'extension', 'email-studio', 'email-template-studio.js'), 'utf8');
+      assert.ok(htmlNow.includes('id="btnOpenGmailSpamHelper"') && htmlNow.includes('id="gmailSpamHelperGuide"') && htmlNow.includes('id="btnOpenRealTestInSpam"') && htmlNow.includes('id="btnOpenGmailSelfTestInSpam"') && htmlNow.includes('id="btnMarkNotSpamDone"'));
+      assert.ok(jsNow.includes('openLastTestEmailInGmailSpam') && jsNow.includes('OPEN_GMAIL_SPAM_NOT_SPAM_HELPER') && jsNow.includes('buildStudioGmailSpamHelper'));
+      checks += 4;
+      console.log('PASS 11: Policy-safe semi-auto Gmail Spam Not-Spam helper, zero OAuth scope creep & Studio UI hooks verified');
     }
 
     console.log(`XPIDER V7.1 Gmail Safe Delivery Engine suite: ${checks}/${checks} PASS; ZERO REAL SENDS`);
