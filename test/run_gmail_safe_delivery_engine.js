@@ -1123,16 +1123,17 @@ function makeRefreshVaultFetch(counterRef) {
       assert.ok(hResend.searchUrl.startsWith('https://mail.google.com/mail/u/0/#search/'));
       assert.ok(hResend.query.includes('from:vivpr.pro') && !hResend.query.includes('***'));
 
-      // (b) Checklist item MANUAL_NOT_SPAM_TRAIN exposes semiAutoAction + spamReviewHelper
+      // (b) Checklist item MANUAL_NOT_SPAM_TRAIN exposes semiAutoAction + spamReviewHelper (and NEVER leaks raw personal Gmail address)
       const optWithHelper = optimizeAndScoreEmailMessage({
         provider: 'GMAIL',
-        from: 'owner@gmail.com',
+        from: 'secret-owner-addr@gmail.com',
         subject: '정상 테스트 안내',
         html: '<p>안녕하세요. 정상 안내 본문입니다. 충분히 자연스러운 문장으로 작성했습니다.</p>',
         text: '안녕하세요. 정상 안내 본문입니다. 충분히 자연스러운 문장으로 작성했습니다.',
         physicalAddress: '100 Synthetic Way, Suite 200'
       });
       assert.ok(optWithHelper.spamReviewHelper && optWithHelper.spamReviewHelper.searchUrl.startsWith('https://mail.google.com/mail/'));
+      assert.ok(!JSON.stringify(optWithHelper).includes('secret-owner-addr@gmail.com'), 'Optimizer response must NEVER leak unmasked personal Gmail address');
       const notSpamItem = optWithHelper.checklist.find(i => i.id === 'MANUAL_NOT_SPAM_TRAIN');
       assert.ok(notSpamItem && notSpamItem.semiAutoAction === 'OPEN_GMAIL_SPAM_NOT_SPAM_HELPER');
 

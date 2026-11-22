@@ -754,9 +754,10 @@ function optimizeAndScoreEmailMessage({
   });
 
   // 14. [MANUAL_GUIDE] Operational Best-Practice Checklist (4 user-checkable items; Not-Spam includes 1-click official Gmail Spam deep-link helper)
+  // Privacy invariant: NEVER echo unmasked personal Gmail account address in Sidecar HTTP JSON response!
   const spamReviewHelper = buildGmailSpamSearchHelper({
     provider: normProvider,
-    from: normFrom,
+    from: normProvider === 'RESEND' ? 'noreply@vivpr.pro' : '',
     subject: outSubject
   });
   checklist.push(
