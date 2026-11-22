@@ -692,6 +692,8 @@ function makeRefreshVaultFetch(counterRef) {
       assert.ok(studioHtml.includes('id="gmailProviderSwitchConfirm"'), 'Studio HTML must include explicit provider switch confirmation');
       assert.ok(studioJs.includes('renderGmailTrueDashboard'), 'Studio JS must render True Dashboard');
       assert.ok(studioJs.includes('CHECK_GMAIL_HYGIENE'), 'Studio JS must call CHECK_GMAIL_HYGIENE');
+      assert.ok(!studioJs.includes('logStudioDiag'), 'Studio JS must NOT call undefined logStudioDiag (must use studioDebugLog)');
+      assert.ok(studioJs.includes("studioDebugLog('INFO', 'PROVIDER', 'EXPLICIT_SWITCH_CONFIRMED'"), 'Provider switch must log via studioDebugLog');
       assert.ok(!studioJs.includes('동의원장'), 'Studio JS must preserve spacing invariant (동의 원장)');
       checks += 2;
       console.log('PASS 7: Sidecar /email/gmail/dashboard + /hygiene/check HTTP contracts & Email Studio UI controls verified');

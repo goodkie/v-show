@@ -1226,12 +1226,19 @@ setTimeout(() => {
       if (r && r.ok && r.data) {
         const qs = r.data.queueSummary || {};
         const qReady = Number(qs.counts?.PENDING || 0);
+        const qAccepted = Number(qs.counts?.ACCEPTED || 0);
         const consented = Number(qs.consentedRecordsOnDisk || 0);
         const hBadge = el('headerProdStateBadge');
         if (hBadge) {
-          hBadge.textContent = (qReady > 0 && r.data.deliverabilityGate?.action !== 'BLOCK')
-            ? `✅ 상용발송 잠금 해제 · 발송 가능 ${qReady}건`
-            : `✅ 상용발송 잠금 해제 · 발송대상/자격 확인 필요 (발송 가능 ${qReady}건 / 권한기록 ${consented}건)`;
+          if (qReady > 0 && r.data.deliverabilityGate?.action !== 'BLOCK') {
+            hBadge.textContent = `✅ 상용발송 잠금 해제 · 발송 가능 ${qReady}건`;
+          } else if (qAccepted > 0 && qReady === 0) {
+            if (!String(hBadge.textContent || '').includes('상용발송 완료')) {
+              hBadge.textContent = `✅ 상용발송 완료 · 접수 ${qAccepted}건`;
+            }
+          } else {
+            hBadge.textContent = `✅ 상용발송 잠금 해제 · 발송대상/자격 확인 필요 (발송 가능 ${qReady}건 / 권한기록 ${consented}건)`;
+          }
         }
         const qBadge = el('prodQueueBadge');
         if (qBadge) {
@@ -3419,7 +3426,7 @@ function createBuiltinRecipientManager() {
       }
       operatorConfirmedProviderSwitch = true;
       if (el('gmailProviderSwitchConfirm')) el('gmailProviderSwitchConfirm').checked = true;
-      logStudioDiag('INFO', 'PROVIDER', 'EXPLICIT_SWITCH_CONFIRMED', { from: lastSelectedProvider, to: prov });
+      studioDebugLog('INFO', 'PROVIDER', 'EXPLICIT_SWITCH_CONFIRMED', { from: lastSelectedProvider, to: prov });
     }
     lastSelectedProvider = prov;
     if (el('resendProviderPanel')) el('resendProviderPanel').style.display = prov === 'GMAIL' ? 'none' : '';
