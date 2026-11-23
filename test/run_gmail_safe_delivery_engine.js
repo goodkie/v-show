@@ -12,7 +12,8 @@ const { GmailAccountVault, GMAIL_OAUTH_SCOPES } = require('../companion/gmail-ac
 const { GmailCampaignRunner } = require('../companion/gmail-campaign-runner');
 const { GmailSendBlocked, rawGmailMime, encodeQuotedPrintable, foldAsciiHeader } = require('../companion/gmail-sender-foundation');
 const { AdaptiveThrottleController, assessDeliverabilityHygiene } = require('../companion/gmail-safe-delivery-engine');
-const { optimizeAndScoreGmailMessage, optimizeAndScoreEmailMessage, buildGmailSpamSearchHelper, buildMultiAccountGmailSpamHelpers, buildGmailNativeComposeUrl, buildGmailNativeCleanHtml, stripHiddenPreheaderDivs, isOfficialGmailWebUrl } = require('../companion/gmail-deliverability-optimizer');
+const { optimizeAndScoreGmailMessage, optimizeAndScoreEmailMessage, buildGmailSpamSearchHelper, buildMultiAccountGmailSpamHelpers, buildGmailNativeComposeUrl, buildGmailNativeCleanHtml, buildLightweightNaturalHtml, stripHtmlToPlain, decodeHtmlEntities, softenSpamPhrasesInCopy, countEmojiPictographs, countAllCapsLines, stripHiddenPreheaderDivs, isOfficialGmailWebUrl } = require('../companion/gmail-deliverability-optimizer');
+const { injectUnsubscribeFooter, isPrimarilyEnglishContent } = require('../companion/email-unsubscribe-server');
 const { embedHtmlImagesAsCid } = require('../companion/gmail-inline-image-embedder');
 const { EmailProductionPipeline } = require('../companion/email-production-pipeline');
 const { CampaignAnalyticsEngine, sha256Hex } = require('../companion/email-campaign-analytics');
@@ -1455,6 +1456,140 @@ function makeRefreshVaultFetch(counterRef) {
       assert.ok(jsRc11.includes('ctaLinkUrl') && jsRc11.includes('embedInlineImages') && jsRc11.includes('btnOpenGmailNativeCompose'));
       checks += 4;
       console.log('PASS 14: RC11 Gmail Native MIME (quoted-printable, RFC 5322 +0000, multipart/related CID, clickable image link, clean <div dir="ltr">, valid </body> footer & official compose helper) verified');
+    }
+
+    // ===== PASS 15: RC12 Show-Original Root-Cause Fixes (HTML Entity Double-Escape, Trailing ) Auto-Link, Lightweight Image Preservation, Language-Matched Footers, Promo/Emoji/ALL-CAPS/Local-Part Signals) =====
+    {
+      // (a) HTML entity decoding & trailing-punctuation URL auto-link fix (zero literal can&#39;t or broken href="https://.../)")
+      assert.equal(decodeHtmlEntities('We can&#39;t wait &mdash; &ldquo;welcome&rdquo; &amp; enjoy!'), 'We can\'t wait — “welcome” & enjoy!');
+      const plainDecoded = stripHtmlToPlain('<p>We can&#39;t wait to welcome you &mdash; visit <a href="https://acme.example/">Acme Portal</a>.</p>');
+      assert.ok(plainDecoded.includes("can't"), 'stripHtmlToPlain must decode &#39; cleanly');
+      assert.ok(!plainDecoded.includes('&#39;') && !plainDecoded.includes('&amp;#39;'), 'No raw HTML entities left in text/plain');
+      assert.ok(plainDecoded.includes('Acme Portal (https://acme.example/)'));
+
+      const lightHtmlFixed = buildLightweightNaturalHtml("We can&#39;t wait! Visit Acme Portal (https://acme.example/). Also check [https://acme.example/book]!");
+      assert.ok(!lightHtmlFixed.includes('&#39;') && !lightHtmlFixed.includes('&amp;#39;'), 'Lightweight HTML must never double-escape &#39; into &amp;#39;');
+      assert.ok(lightHtmlFixed.includes("can't"), 'Apostrophe must remain clean human text');
+      assert.ok(lightHtmlFixed.includes('<a href="https://acme.example/" style="color:#1a73e8;text-decoration:underline;">https://acme.example/</a>).'), 'Trailing ). MUST stay outside href');
+      assert.ok(lightHtmlFixed.includes('<a href="https://acme.example/book" style="color:#1a73e8;text-decoration:underline;">https://acme.example/book</a>]!'), 'Trailing ]! MUST stay outside href');
+      assert.ok(!lightHtmlFixed.includes('href="https://acme.example/)"'), 'Broken trailing-paren href regression prevented');
+
+      // (b) preferLightweightHtml=true MUST preserve real user <a><img></a> and allow multipart/related inline CID embedding!
+      const tinyPng12 = Buffer.from('89504e470d0a1a0a0000000d49484452000000010000000108060000001f15c4890000000a49444154789c63000100000500010d0a2db40000000049454e44ae426082', 'hex');
+      const mockImgFetch12 = async () => ({ ok: true, status: 200, arrayBuffer: async () => tinyPng12 });
+      const engPromoTableHtml = '<!doctype html><html><body><div style="display:none">Hidden preview</div><table role="presentation" width="600" style="background:#f3f5f8"><tr><td><a href="https://acme.example/book"><img src="https://raw.githubusercontent.com/acme/assets/main/banner.png" alt="Banner"></a><p>We can&#39;t wait to welcome you to our updated location this season. Visit our booking page for details.</p></td></tr></table></body></html>';
+      const lightImgOpt = optimizeAndScoreGmailMessage({
+        from: 'owner@gmail.com',
+        displayName: 'Acme Studio',
+        subject: 'Updated Location Details',
+        html: engPromoTableHtml,
+        text: "We can't wait to welcome you to our updated location this season. Visit our booking page for details.",
+        physicalAddress: '200 Native Way, Synthetic City, ZZ 00000',
+        preferLightweightHtml: true,
+        embedInlineImages: true,
+        autoOptimize: true
+      });
+      assert.equal(lightImgOpt.ok, true);
+      assert.ok(lightImgOpt.optimized.html.includes('<img '), 'preferLightweightHtml=true must NEVER strip real user <img> tags');
+      assert.ok(lightImgOpt.optimized.html.includes('href="https://acme.example/book"'), 'Clickable image link must stay intact');
+      assert.ok(!lightImgOpt.optimized.html.includes('<table') && !lightImgOpt.optimized.html.includes('display:none'));
+
+      // (c) Language-matched unsubscribe & physical address footers (English email -> English footer & Address:; Korean -> Korean footer)
+      assert.equal(isPrimarilyEnglishContent('Hello everyone, we are pleased to share our schedule update for this week.', ''), true);
+      assert.equal(isPrimarilyEnglishContent('안녕하세요. 이번 주 일정 안내를 드립니다.', ''), false);
+      const krFooter = injectUnsubscribeFooter({
+        html: '<div dir="ltr"><p>안녕하세요. 이번 주 예약 일정 안내입니다.</p></div>',
+        text: '안녕하세요. 이번 주 예약 일정 안내입니다.',
+        unsubscribeUrl: 'https://unsubscribe.vivpr.pro/unsubscribe/tok_kr_12'
+      });
+      assert.ok(krFooter.html.includes('구독 취소(수신 거부)') && krFooter.text.includes('구독 취소(수신 거부)'));
+
+      const dirRc12 = path.join(tmpRoot, 'rc12_lang_and_cid');
+      const pipeRc12 = new EmailProductionPipeline({ stateDir: dirRc12, trustedTestMode: true });
+      const vaultRc12 = new GmailAccountVault({ stateDir: dirRc12, trustedTestMode: true, cryptoBox: box });
+      vaultRc12.upsertMockAccountForTest({ email: 'rc12@gmail.com', cap24h: 20 });
+      const acctRc12 = vaultRc12.listAccountsSafe()[0];
+      let capturedRc12Mime = '';
+      const mockGmailRc12 = async (url, init) => {
+        capturedRc12Mime = Buffer.from(JSON.parse(init.body).raw, 'base64url').toString('utf8');
+        return { ok: true, status: 200, json: async () => ({ id: 'gm_rc12_1', threadId: 'thr_rc12_1' }) };
+      };
+      const runnerRc12 = new GmailCampaignRunner({ stateDir: dirRc12, pipeline: pipeRc12, vault: vaultRc12, trustedTestMode: true, syncFetchImpl: okSyncFetch });
+      const selfRc12 = await runnerRc12.sendGmailSelfTest({
+        accountId: acctRc12.id,
+        to: 'rc12-target@example.test',
+        displayName: 'Acme Studio',
+        subject: 'Acme Studio: New Location Details',
+        html: engPromoTableHtml,
+        text: "We can't wait to welcome you to our updated location this season. Visit our booking page for details.",
+        physicalAddress: '200 Native Way, Synthetic City, ZZ 00000',
+        preferLightweightHtml: true,
+        embedInlineImages: true,
+        ownerApprovedBrand: true,
+        recipientConsentConfirmed: true,
+        ownerExplicitApproval: true,
+        baseUrlOverride: 'https://unsubscribe.vivpr.pro',
+        syncTokenOverride: 'tok_rc12_sync_1234567890',
+        fetchImpl: mockGmailRc12,
+        syncFetchImpl: okSyncFetch,
+        imageFetchImpl: mockImgFetch12
+      });
+      const decodeQpUtf8 = (raw) => {
+        const unfolded = String(raw || '').replace(/=\r?\n/g, '');
+        const bytes = [];
+        for (let i = 0; i < unfolded.length; i++) {
+          if (unfolded[i] === '=' && /^[0-9A-Fa-f]{2}$/.test(unfolded.slice(i + 1, i + 3))) {
+            bytes.push(parseInt(unfolded.slice(i + 1, i + 3), 16));
+            i += 2;
+          } else {
+            const b = Buffer.from(unfolded[i], 'utf8');
+            for (const x of b) bytes.push(x);
+          }
+        }
+        return Buffer.from(bytes).toString('utf8');
+      };
+      const decodedRc12Mime = decodeQpUtf8(capturedRc12Mime);
+      assert.equal(selfRc12.ok, true);
+      assert.equal(selfRc12.mimeHygiene.inlineImagesEmbedded, 1, 'Inline CID MUST embed even when preferLightweightHtml=true');
+      assert.match(capturedRc12Mime, /Content-Type: multipart\/related; boundary="r_[a-f0-9]{32}"/);
+      assert.ok(!decodedRc12Mime.includes('raw.githubusercontent.com'), 'raw.githubusercontent.com eliminated from MIME');
+      assert.ok(decodedRc12Mime.includes('unsubscribe here') && decodedRc12Mime.includes('Unsubscribe: https://unsubscribe.vivpr.pro/unsubscribe/'), 'English email must get English unsubscribe footer');
+      assert.ok(decodedRc12Mime.includes('Address: 200 Native Way, Synthetic City, ZZ 00000'), 'English email must get English Address: label');
+      assert.ok(!/[가-힣]/.test(decodedRc12Mime), 'English email MIME must not leak Korean footer text');
+
+      // (d) New RC12 anti-spam signals (Emoji bursts, ALL-CAPS shouting lines, Promo % OFF density, Consumer local-part domain mismatch) & copy softening
+      const noisyPromoBody = [
+        '🎉✨🎄🎁📸🔥 GRAND REOPENING HOLIDAY SPECIAL!',
+        'NEW LOCATION AND NEW LOOK FOR THE SEASON!',
+        '20% OFF ALL PACKAGES THIS MONTH!',
+        'NOW BOOKING FOR EARLY SESSIONS!',
+        'RESERVE YOUR SESSION TODAY!',
+        'Visit us at https://acme.plus/ to see more!'
+      ].join('\n');
+      const rc12Risk = optimizeAndScoreGmailMessage({
+        from: 'other-example.com@gmail.com',
+        displayName: 'acme.plus',
+        subject: 'Acme Plus: Holiday Special!',
+        html: `<p>${noisyPromoBody.replace(/\n/g, '<br>')}</p>`,
+        text: noisyPromoBody,
+        physicalAddress: '200 Native Way, Synthetic City, ZZ 00000',
+        autoOptimize: true
+      });
+      const rc12Codes = rc12Risk.signals.map(s => s.code);
+      assert.ok(rc12Codes.includes('EXCESSIVE_EMOJI_BURST_RISK'), 'Must detect >=5 emoji bursts');
+      assert.ok(rc12Codes.includes('ALL_CAPS_SHOUTING_LINES_RISK'), 'Must detect >=3 ALL-CAPS shouting lines');
+      assert.ok(rc12Codes.includes('PROMOTIONAL_DISCOUNT_DENSITY_RISK'), 'Must detect heavy promo % OFF / urgency / ! bursts');
+      assert.ok(rc12Codes.includes('SENDER_LOCALPART_DOMAIN_MISMATCH_RISK'), 'Must detect consumer @gmail.com local-part brand domain mismatch');
+      const promoChecklistItem = rc12Risk.checklist.find(c => c.id === 'PROMO_STYLE_EMOJI_CAPS_HYGIENE');
+      assert.ok(promoChecklistItem && promoChecklistItem.status === 'ACTION_REQUIRED');
+
+      const softenedPromo = softenSpamPhrasesInCopy(noisyPromoBody, false);
+      assert.equal(countAllCapsLines(softenedPromo), 0, 'Copy softener must de-shout ALL-CAPS lines');
+      assert.ok(countEmojiPictographs(softenedPromo) <= 1, 'Copy softener must trim excessive emoji bursts');
+      assert.ok(/20% savings/i.test(softenedPromo) && /Booking open/i.test(softenedPromo));
+      assert.ok(softenedPromo.includes('https://acme.plus/'), 'URLs must remain intact during copy softening');
+      checks += 4;
+      console.log('PASS 15: RC12 Show-Original root-cause fixes (entity decode, trailing ) link, lightweight image/CID preservation, EN/KR footer language match, promo/emoji/ALL-CAPS/local-part signals) verified');
     }
 
     console.log(`XPIDER V7.1 Gmail Safe Delivery Engine suite: ${checks}/${checks} PASS; ZERO REAL SENDS`);

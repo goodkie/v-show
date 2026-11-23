@@ -51,13 +51,38 @@ function hasHeaderControlInjection(str) {
   return /[\r\n\u0000-\u001f\u007f]/.test(String(str || ''));
 }
 
+function decodeHtmlEntities(str) {
+  return String(str || '')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&#x([0-9a-f]+);/gi, (_, hex) => {
+      const cp = parseInt(hex, 16);
+      return Number.isFinite(cp) && cp > 0 && cp <= 0x10ffff ? String.fromCodePoint(cp) : '';
+    })
+    .replace(/&#(\d+);/g, (_, dec) => {
+      const cp = parseInt(dec, 10);
+      return Number.isFinite(cp) && cp > 0 && cp <= 0x10ffff ? String.fromCodePoint(cp) : '';
+    })
+    .replace(/&apos;/gi, "'")
+    .replace(/&quot;/gi, '"')
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .replace(/&mdash;/gi, '—')
+    .replace(/&ndash;/gi, '–')
+    .replace(/&rsquo;/gi, '’')
+    .replace(/&lsquo;/gi, '‘')
+    .replace(/&rdquo;/gi, '”')
+    .replace(/&ldquo;/gi, '“')
+    .replace(/&amp;/gi, '&');
+}
+
 function stripHtmlToPlain(html) {
   let s = String(html || '')
     .replace(/<style[\s\S]*?<\/style>/gi, ' ')
-    .replace(/<script[\s\S]*?<\/script>/gi, ' ');
+    .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+    .replace(/<div\b[^>]*style\s*=\s*["'][^"']*display\s*:\s*none[^"']*["'][^>]*>[\s\S]*?<\/div>/gi, '');
   // Preserve ALL explicit links as "label (url)" so real links never silently vanish
   s = s.replace(/<a\b[^>]*href=["'](https?:\/\/[^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi, (_, href, inner) => {
-    const label = String(inner || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+    const label = decodeHtmlEntities(String(inner || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim());
     const cleanHref = String(href || '').trim();
     if (!label || label.toLowerCase() === cleanHref.toLowerCase()) return cleanHref;
     return `${label} (${cleanHref})`;
@@ -67,18 +92,15 @@ function stripHtmlToPlain(html) {
     const cleanSrc = String(src || '').trim();
     if (DEFAULT_PLACEHOLDER_IMAGES.includes(cleanSrc.toLowerCase())) return '';
     const altMatch = fullTag.match(/\balt=["']([^"']*)["']/i);
-    const alt = altMatch ? altMatch[1].trim() : '';
-    return alt ? `[${alt}: ${cleanSrc}]` : `[이미지: ${cleanSrc}]`;
+    const alt = altMatch ? decodeHtmlEntities(altMatch[1].trim()) : '';
+    return alt ? `[${alt}: ${cleanSrc}]` : `[Image: ${cleanSrc}]`;
   });
-  return s
+  s = s
     .replace(/<br\s*\/?>/gi, '\n')
-    .replace(/<\/(p|div|li|h[1-6]|tr)>/gi, '\n')
-    .replace(/<[^>]+>/g, ' ')
-    .replace(/&nbsp;/gi, ' ')
-    .replace(/&amp;/gi, '&')
-    .replace(/&lt;/gi, '<')
-    .replace(/&gt;/gi, '>')
-    .replace(/&quot;/gi, '"')
+    .replace(/<\/(p|h[1-6])>/gi, '\n\n')
+    .replace(/<\/(div|li|tr)>/gi, '\n')
+    .replace(/<[^>]+>/g, ' ');
+  return decodeHtmlEntities(s)
     .replace(/[ \t]+\n/g, '\n')
     .replace(/\n{3,}/g, '\n\n')
     .trim();
@@ -221,7 +243,9 @@ function buildGmailNativeCleanHtml(rawHtml, plainFallback = '') {
 }
 
 function buildLightweightNaturalHtml(plainText) {
-  const lines = String(plainText || '').replace(/\r\n/g, '\n').split('\n');
+  // RC12 FIX: Decode any residual HTML entities before escaping (prevents literal can&#39;t -> &amp;#39;)
+  // and exclude trailing punctuation like ) ] } . , ; ! ? from auto-linked URLs (prevents href="https://.../)")!
+  const lines = decodeHtmlEntities(String(plainText || '')).replace(/\r\n/g, '\n').split('\n');
   const paras = [];
   let buf = [];
   for (const line of lines) {
@@ -232,15 +256,15 @@ function buildLightweightNaturalHtml(plainText) {
       }
     } else {
       const linked = escapeHtml(line.trim()).replace(
-        /(https?:\/\/[^\s<]+)/gi,
-        '<a href="$1" style="color:#1a73e8;text-decoration:underline;">$1</a>'
+        /(https?:\/\/[^\s<>"')\]}]+?)([.,;:!?)\]}]*)(?=\s|$|<|&gt;|&quot;)/gi,
+        (_, rawUrl, trailing) => `<a href="${rawUrl}" style="color:#1a73e8;text-decoration:underline;">${rawUrl}</a>${trailing}`
       );
       buf.push(linked);
     }
   }
   if (buf.length) paras.push(buf.join('<br>'));
   const inner = paras.map(p => `<p style="margin:0 0 12px 0;">${p}</p>`).join('\n');
-  return `<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;font-size:14px;line-height:1.65;color:#202124;">\n${inner}\n</div>`;
+  return `<div dir="ltr" style="font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.6;color:#222222;">\n${inner}\n</div>`;
 }
 
 function cleanSubjectHygiene(subject) {
@@ -271,11 +295,62 @@ function cleanSubjectHygiene(subject) {
   return { value: s, fixed: s !== orig, reasons };
 }
 
+function countEmojiPictographs(str) {
+  const m = String(str || '').match(/\p{Extended_Pictographic}/gu);
+  return m ? m.length : 0;
+}
+
+function countAllCapsLines(str) {
+  const lines = String(str || '').replace(/\r\n/g, '\n').split('\n');
+  let count = 0;
+  for (const rawLine of lines) {
+    const line = rawLine.trim();
+    if (!line || /https?:\/\//i.test(line)) continue;
+    const asciiLetters = line.replace(/[^A-Za-z]/g, '');
+    const upperLetters = line.replace(/[^A-Z]/g, '');
+    if (asciiLetters.length >= 10 && (upperLetters.length / asciiLetters.length) >= 0.8) {
+      count++;
+    }
+  }
+  return count;
+}
+
 function softenSpamPhrasesInCopy(str, isSubject = false) {
-  let s = String(str || '');
+  let s = decodeHtmlEntities(String(str || ''));
   if (isSubject) {
     s = s.replace(/^(?:\s*(?:re|fwd|fw|회신|전달)\s*:\s*)+/i, '');
   }
+  // Tone down ALL-CAPS shouting lines to clean sentence case (skip URL lines)
+  s = s.replace(/\r\n/g, '\n').split('\n').map(rawLine => {
+    const line = rawLine;
+    if (!line.trim() || /https?:\/\//i.test(line)) return line;
+    const asciiLetters = line.replace(/[^A-Za-z]/g, '');
+    const upperLetters = line.replace(/[^A-Z]/g, '');
+    if (asciiLetters.length >= 10 && (upperLetters.length / asciiLetters.length) >= 0.8) {
+      const lowered = line.toLowerCase();
+      return lowered.replace(/[a-z]/, ch => ch.toUpperCase());
+    }
+    return line;
+  }).join('\n');
+
+  // Trim excessive emoji bursts (keep at most 1 when >= 5 emojis are detected)
+  if (countEmojiPictographs(s) >= 5) {
+    let kept = 0;
+    s = s.replace(/\p{Extended_Pictographic}(?:\uFE0E|\uFE0F)?(?:\u200D\p{Extended_Pictographic}(?:\uFE0E|\uFE0F)?)*/gu, (match) => {
+      kept++;
+      return kept <= 1 ? match : '';
+    });
+  }
+
+  // Calm excessive exclamation marks when >= 6 appear in body copy
+  if ((s.match(/!/g) || []).length >= 6) {
+    let exSeen = 0;
+    s = s.replace(/!/g, () => {
+      exSeen++;
+      return exSeen <= 2 ? '!' : '.';
+    });
+  }
+
   return s
     .replace(/!{2,}/g, '.')
     .replace(/\?{2,}/g, '?')
@@ -297,11 +372,17 @@ function softenSpamPhrasesInCopy(str, isSubject = false) {
     .replace(/\b100%\s+free\b/gi, 'complimentary')
     .replace(/\bclaim\s+your\s+prize\b/gi, 'view event details')
     .replace(/\burgent\s+response\b/gi, 'follow-up')
+    .replace(/\bgrand\s+reopening\s+holiday\s+special\b/gi, 'Grand Reopening Update')
+    .replace(/\bnow\s+booking\b/gi, 'Booking open')
+    .replace(/\bbook\s+now\b/gi, 'Book online')
+    .replace(/\breserve\s+([^\n.!?]{1,40})\s+today\b/gi, 'Reserve $1')
+    .replace(/\b(\d{1,2})%\s*off\b/gi, '$1% savings')
     .replace(/안\s+녕하세요/g, '안녕하세요')
     .replace(/되요/g, '돼요')
     .replace(/할께요/g, '할게요')
     .replace(/뵙겠읍니다/g, '뵙겠습니다')
     .replace(/[ \t]{2,}/g, ' ')
+    .replace(/[ \t]+\n/g, '\n')
     .trim();
 }
 
@@ -611,15 +692,24 @@ function optimizeAndScoreEmailMessage({
 
   let convertedLightweight = false;
   let appliedNativeCleanHtml = false;
+  const hasRealImgTag = /<img\b/i.test(outHtml);
   if (autoOptimize && effectiveLightweight && (isConsumerGmail || normProvider === 'RESEND') && isHeavyTemplateHtml && effectivePlain.length > 0) {
-    // Preserve custom non-placeholder HTTPS images & explicit links inside lightweight conversion (never silently drop them!)
-    const sourcePlainForLight = plainFromHtml.length > 0 ? plainFromHtml : effectivePlain;
-    outHtml = buildLightweightNaturalHtml(sourcePlainForLight);
-    outText = sourcePlainForLight;
+    // RC12 FIX: If the template has real user images (e.g. clickable <a><img></a>), use buildGmailNativeCleanHtml
+    // so images and clickable links are NEVER wiped out by lightweight mode while still removing heavy <table> chrome & hidden 1px divs!
+    if (hasRealImgTag) {
+      outHtml = buildGmailNativeCleanHtml(outHtml, effectivePlain);
+      appliedNativeCleanHtml = true;
+    } else {
+      const sourcePlainForLight = plainFromHtml.length > 0 ? plainFromHtml : effectivePlain;
+      outHtml = buildLightweightNaturalHtml(sourcePlainForLight);
+      outText = sourcePlainForLight;
+    }
     convertedLightweight = true;
     autoFixesApplied.push({
       code: 'AUTO_CONVERTED_LIGHTWEIGHT_NATURAL_HTML',
-      detail: '운영자가 명시 선택한 경량 자연형 HTML 변환을 적용했습니다 (사용자 링크·이미지 참조·수신거부·물리적 주소 보존; Primary 배치는 보장하지 않음).'
+      detail: hasRealImgTag
+        ? '운영자가 선택한 경량 자연형 HTML 변환을 적용하며 사용자 이미지·클릭 링크·수신거부·물리적 주소를 100% 보존했습니다.'
+        : '운영자가 명시 선택한 경량 자연형 HTML 변환을 적용했습니다 (사용자 링크·수신거부·물리적 주소 보존; Primary 배치는 보장하지 않음).'
     });
   } else if (autoOptimize && normProvider === 'GMAIL' && normMimeMode === 'GMAIL_NATIVE_HTML' && outHtml.trim()) {
     const cleanedNative = buildGmailNativeCleanHtml(outHtml, effectivePlain);
@@ -783,6 +873,80 @@ function optimizeAndScoreEmailMessage({
     detail: matchedPhrases.length > 0
       ? `${matchedPhrases.join(', ')} 감지 — [반자동 문구 교정] 버튼으로 원문 대비 완화 제안을 확인 후 수락할 수 있습니다.`
       : '고위험 스팸 유도 문구 및 거짓 회신 접두어가 감지되지 않았습니다.',
+    providers: ['GMAIL', 'RESEND'],
+    semiAutoAction: 'OPEN_COPY_DIFF'
+  });
+
+  // 9b. [SEMI_AUTO] RC12 Excessive Emoji Burst, ALL-CAPS Shouting Lines, Heavy Promo Discount Density & Local-Part Domain Mismatch
+  const bodyForStyle = outText || finalVisibleHtmlText;
+  const emojiCount = countEmojiPictographs(combinedText);
+  const allCapsLineCount = countAllCapsLines(bodyForStyle);
+  const hasPercentOff = /\b\d{1,2}%\s*off\b/i.test(combinedText);
+  const promoMatches = combinedText.match(/\b(grand\s+reopening|holiday\s+special|now\s+booking|book\s+now|limited[- ]time\s+offer|reserve\b[^.\n]{0,40}\btoday|don['’]t\s+miss\s+out|special\s+offer|flash\s+sale)\b/gi) || [];
+  const exclamationCount = (combinedText.match(/!/g) || []).length;
+  const promoDensityTriggered = promoMatches.length >= 2 || (hasPercentOff && promoMatches.length >= 1) || exclamationCount >= 6;
+
+  if (emojiCount >= 5) {
+    signals.push({
+      code: 'EXCESSIVE_EMOJI_BURST_RISK',
+      points: 15,
+      severity: 'MEDIUM',
+      message: `본문·제목에 이모지가 ${emojiCount}개 포함되어 있습니다. 과도한 이모지(5개 이상)는 Gmail 프로모션/스팸 분류의 강한 유발 요인입니다(0~2개 이내 권장).`
+    });
+    recommendations.push('이모지를 0~2개 이내로 줄여 자연스러운 일반 안내 메일 형식을 유지하세요.');
+  }
+  if (allCapsLineCount >= 3) {
+    signals.push({
+      code: 'ALL_CAPS_SHOUTING_LINES_RISK',
+      points: 18,
+      severity: 'MEDIUM',
+      message: `영문 전체 대문자 강조 줄이 ${allCapsLineCount}줄 감지되었습니다. 연속 대문자 광고 스타일은 Gmail 스팸 감점 요인입니다(일반 문장 대소문자 권장).`
+    });
+    recommendations.push('영문 전체 대문자(ALL-CAPS) 줄을 일반 문장 대소문자로 완화하세요.');
+  }
+  if (promoDensityTriggered) {
+    signals.push({
+      code: 'PROMOTIONAL_DISCOUNT_DENSITY_RISK',
+      points: 15,
+      severity: 'MEDIUM',
+      message: `강한 할인·긴급 프로모션 표현(${hasPercentOff ? '% OFF 포함 · ' : ''}프로모션 패턴 ${promoMatches.length}건 · 느낌표 ${exclamationCount}개)이 밀집되어 있습니다.`
+    });
+    recommendations.push('개인 @gmail.com 발송에서는 과도한 할인·예약 촉구·느낌표 남발을 줄이고 차분한 안내 톤으로 작성하세요.');
+  }
+
+  // Detect consumer @gmail.com sender local-part domain mismatch (e.g. "otherbrand.com@gmail.com" with displayName/links for "brandB.plus")
+  if (isConsumerGmail && normFrom.includes('@')) {
+    const localPart = normFrom.split('@')[0].toLowerCase();
+    const localDomMatches = localPart.match(DOMAIN_LIKE_RE) || [];
+    if (localDomMatches.length > 0) {
+      const localBrandDom = localDomMatches[0].toLowerCase();
+      const dnDoms = (outDisplayName.match(DOMAIN_LIKE_RE) || []).map(d => d.toLowerCase());
+      const bodyUrlHosts = extractUrls(`${outHtml}\n${outText}\n${cleanLink}`).hosts
+        .filter(h => h !== 'unsubscribe.vivpr.pro' && h !== 'raw.githubusercontent.com');
+      const otherBrandTokens = Array.from(new Set([...dnDoms, ...bodyUrlHosts]))
+        .filter(d => d !== localBrandDom && !d.endsWith(`.${localBrandDom}`));
+      if (otherBrandTokens.length > 0) {
+        signals.push({
+          code: 'SENDER_LOCALPART_DOMAIN_MISMATCH_RISK',
+          points: 12,
+          severity: 'MEDIUM',
+          message: `발신 Gmail 앞부분(${localBrandDom})과 표시 이름/본문 도메인(${otherBrandTokens.slice(0, 2).join(', ')})이 서로 다른 브랜드 도메인입니다. 다중 도메인 불일치는 스팸 오탐을 높입니다.`
+        });
+        recommendations.push('발신 계정 도메인(예: Google Workspace 맞춤 도메인)과 표시 이름·웹사이트 도메인을 일치시키면 받은편지함 도달률이 크게 개선됩니다.');
+      }
+    }
+  }
+
+  const promoStyleNeedsAction = emojiCount >= 5 || allCapsLineCount >= 3 || promoDensityTriggered;
+  checklist.push({
+    id: 'PROMO_STYLE_EMOJI_CAPS_HYGIENE',
+    category: 'COPY_HYGIENE',
+    mode: 'SEMI_AUTO',
+    status: promoStyleNeedsAction ? 'ACTION_REQUIRED' : 'PASS',
+    title: '이모지 과다(5개+) · 영문 ALL-CAPS · 할인/느낌표 밀집 점검',
+    detail: promoStyleNeedsAction
+      ? `이모지 ${emojiCount}개 · 대문자 강조 줄 ${allCapsLineCount}줄 · 느낌표 ${exclamationCount}개 — [반자동 문구 교정]으로 차분한 일반 안내 톤으로 완화할 수 있습니다.`
+      : `이모지(${emojiCount}개)·대문자 줄(${allCapsLineCount}줄)·느낌표(${exclamationCount}개) 밀집도 양호.`,
     providers: ['GMAIL', 'RESEND'],
     semiAutoAction: 'OPEN_COPY_DIFF'
   });
@@ -1160,5 +1324,8 @@ module.exports = {
   buildLightweightNaturalHtml,
   cleanSubjectHygiene,
   stripHtmlToPlain,
+  decodeHtmlEntities,
+  countEmojiPictographs,
+  countAllCapsLines,
   HONEST_OPTIMIZER_DISCLAIMER
 };

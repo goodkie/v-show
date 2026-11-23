@@ -46,10 +46,13 @@ function ensurePhysicalAddressInFooter({ html = '', text = '', physicalAddress =
   const hasAddrText = text.toLowerCase().includes(addr.toLowerCase());
   const hasAddrHtml = html.toLowerCase().includes(addr.toLowerCase());
   const safeAddrHtml = addr.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-  const addrTag = `<p style="font-size:11px;color:#64748b;margin-top:8px;">발신자 주소: ${safeAddrHtml}</p>`;
+  const sampleLang = `${text}\n${html.replace(/<[^>]+>/g, ' ')}`;
+  const isEnglish = !/[가-힣]/.test(sampleLang) && (sampleLang.match(/[A-Za-z]/g) || []).length >= 20;
+  const addrLabel = isEnglish ? 'Address' : '발신자 주소';
+  const addrTag = `<p style="font-size:11px;color:#64748b;margin-top:8px;">${addrLabel}: ${safeAddrHtml}</p>`;
   let nextHtml = html;
   if (!hasAddrHtml && nextHtml) {
-    // RC11 FIX: Insert cleanly INSIDE </body> (never trailing after </html>, which triggers HTML-structure spam heuristics!)
+    // RC11/RC12 FIX: Insert cleanly INSIDE </body> or <div dir="ltr"> (never trailing after </html>!)
     if (/<\/body>/i.test(nextHtml)) {
       nextHtml = nextHtml.replace(/<\/body>/i, `${addrTag}\n</body>`);
     } else if (/<\/div>\s*$/i.test(nextHtml) && /^<div\s+dir="ltr"/i.test(nextHtml.trim())) {
@@ -59,7 +62,7 @@ function ensurePhysicalAddressInFooter({ html = '', text = '', physicalAddress =
     }
   }
   return {
-    text: hasAddrText ? text : `${text.trimEnd()}\n\n발신자 주소: ${addr}`,
+    text: hasAddrText ? text : `${text.trimEnd()}\n\n${addrLabel}: ${addr}`,
     html: nextHtml
   };
 }
