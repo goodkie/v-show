@@ -22,6 +22,7 @@ const { validateAndFormatSenderFrom, sanitizeReplyTo } = require('./vivpr-sender
 const { GmailAccountVault } = require('./gmail-account-vault');
 const { GmailCampaignRunner } = require('./gmail-campaign-runner');
 const { optimizeAndScoreEmailMessage } = require('./gmail-deliverability-optimizer');
+const { EmailCampaignStore } = require('./email-campaign-store');
 
 const DEFAULT_SIDECAR_PORT = 18990;
 const SIDECAR_BUILD_ID = 'V7.0.0-OWNER-BETA-TEST-SEND-SIDECAR-20261116-LOCKED17';
@@ -112,6 +113,10 @@ class EmailTestSidecar {
       trustedTestMode: this.trustedTestMode,
       fetchImpl: this.trustedTestMode ? options.gmailFetchImpl : null,
       syncFetchImpl: this.trustedTestMode ? options.gmailSyncFetchImpl : null
+    });
+    this.campaignStore = new EmailCampaignStore({
+      stateDir: this.stateDir,
+      trustedTestMode: this.trustedTestMode
     });
     this.diagLogs = [];
     this._diagSeq = 0;
@@ -656,6 +661,34 @@ class EmailTestSidecar {
             } catch (err) {
               res.writeHead(400, { 'Content-Type': 'application/json' });
               res.end(JSON.stringify({ ok: false, status: 'ERROR', reason: 'INVALID_JSON', message: err.message }));
+            }
+          });
+          return;
+        }
+
+        if (pathname === '/email/campaigns/saved' && req.method === 'GET') {
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify(this.campaignStore.listCampaigns()));
+          return;
+        }
+
+        if ((pathname === '/email/campaigns/saved/save' || pathname === '/email/campaigns/saved/delete') && req.method === 'POST') {
+          let raw = '';
+          let tooLarge = false;
+          req.on('data', c => { raw += c; if (raw.length > 2097152) { tooLarge = true; req.destroy(); } });
+          req.on('end', () => {
+            if (tooLarge) return;
+            try {
+              const payload = raw ? JSON.parse(raw) : {};
+              const out = pathname === '/email/campaigns/saved/save'
+                ? this.campaignStore.saveCampaign(payload)
+                : this.campaignStore.deleteCampaign(payload.id);
+              this._recordDiag(out.ok ? 'INFO' : 'WARN', 'CAMPAIGN_STORE', pathname.endsWith('/save') ? 'SAVE' : 'DELETE', { ok: out.ok, count: out.count || 0, reason: out.reason || null });
+              res.writeHead(out.statusCode || (out.ok ? 200 : 400), { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify(out));
+            } catch (err) {
+              res.writeHead(400, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ ok: false, reason: err?.message || 'CAMPAIGN_STORE_EXCEPTION' }));
             }
           });
           return;
@@ -1372,6 +1405,7 @@ class EmailTestSidecar {
             hygiene: supIdx.stats,
             queueSummary: this.gmailRunner.summarizeQueue(),
             dashboard: this.gmailRunner.getTrueDashboard(),
+            domainConfig: this.gmailRunner.getGmailDomainConfig(),
             activeResendCampaign: this.gmailRunner.hasActiveResendCampaign(),
             lastRunResult: this.gmailRunner.lastRunResult || null,
             complianceNotice: 'Gmail API 200 응답은 GMAIL_API_ACCEPTED만 의미하며 전달(DELIVERED)·수신함 도착(INBOX)·열람(OPENED)이나 계정 정지 면제를 보장하지 않습니다. 한도/차단 시 타 계정으로 자동 전환하지 않고 전체 캠페인이 일시 중지됩니다.'
@@ -1386,6 +1420,15 @@ class EmailTestSidecar {
             provider: 'GMAIL',
             dashboard: this.gmailRunner.getTrueDashboard(),
             activeResendCampaign: this.gmailRunner.hasActiveResendCampaign()
+          }));
+          return;
+        }
+
+        if (pathname === '/email/gmail/domain-config' && req.method === 'GET') {
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({
+            ok: true,
+            config: this.gmailRunner.getGmailDomainConfig()
           }));
           return;
         }
@@ -1465,6 +1508,20 @@ class EmailTestSidecar {
                 this._recordDiag('INFO', 'GMAIL_SPAM_OPT', optimization.grade || 'CHECKED', { riskScore: optimization.riskScore, autoFixes: optimization.autoFixesApplied.length });
                 res.writeHead(200, { 'Content-Type': 'application/json' });
                 res.end(JSON.stringify({ ok: true, provider: 'GMAIL', optimization }));
+                return;
+              }
+              if (pathname === '/email/gmail/domain-config') {
+                const out = this.gmailRunner.saveGmailDomainConfig(payload);
+                this._recordDiag(out.ok ? 'INFO' : 'WARN', 'GMAIL_DOMAIN', 'SAVE_CONFIG', { ok: out.ok, brandDomain: out?.config?.brandDomain || null, reason: out.reason || null });
+                res.writeHead(out.statusCode || (out.ok ? 200 : 400), { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify(out));
+                return;
+              }
+              if (pathname === '/email/gmail/domain-config/check') {
+                const report = await this.gmailRunner.checkGmailDomainAlignment(payload);
+                this._recordDiag('INFO', 'GMAIL_DOMAIN', 'CHECK_ALIGNMENT', { brandDomain: report.brandDomain, dmarc: report.dmarc?.status, unsubHealth: report.unsubscribeHealth?.status });
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ ok: true, alignment: report }));
                 return;
               }
               if (pathname === '/email/gmail/queue/stop') {

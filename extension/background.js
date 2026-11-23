@@ -4373,7 +4373,13 @@ const _handleMainMessageInner = (request, sender, sendResponse) => {
         case 'SEND_GMAIL_SELF_TEST':
         case 'PREPARE_GMAIL_QUEUE':
         case 'RUN_GMAIL_PRODUCTION_QUEUE':
-        case 'STOP_GMAIL_PRODUCTION_QUEUE': {
+        case 'STOP_GMAIL_PRODUCTION_QUEUE':
+        case 'GET_GMAIL_DOMAIN_CONFIG':
+        case 'SAVE_GMAIL_DOMAIN_CONFIG':
+        case 'CHECK_GMAIL_DOMAIN_ALIGNMENT':
+        case 'LIST_SAVED_CAMPAIGNS':
+        case 'SAVE_FULL_CAMPAIGN':
+        case 'DELETE_SAVED_CAMPAIGN': {
             (async () => {
                 const bgT0 = Date.now();
                 const reqPort = Number(request.sidecarPort);
@@ -4437,7 +4443,7 @@ const _handleMainMessageInner = (request, sender, sendResponse) => {
                         });
                     };
                     let token = explicitToken || await pairTok(false);
-                    const isPost = request.action === 'SYNC_EMAIL_PRODUCTION_RECIPIENTS' || request.action === 'RUN_EMAIL_PRODUCTION_QUEUE' || request.action === 'STOP_EMAIL_PRODUCTION_QUEUE' || request.action === 'SEND_REAL_TEST_EMAIL' || request.action === 'RECONCILE_CAMPAIGN_RESEND' || request.action === 'PREVIEW_SECOND_WAVE' || request.action === 'START_SECOND_WAVE' || request.action === 'SAVE_GEMINI_COPY_API_KEY' || request.action === 'TEST_GEMINI_COPY_CONNECTION' || request.action === 'REQUEST_EMAIL_COPY_SUGGESTION' || request.action === 'VERIFY_RECIPIENT_DOMAINS_DNS' || request.action === 'SAVE_IMAGE_HOST_CONFIG' || request.action === 'UPLOAD_EMAIL_IMAGE' || request.action === 'SAVE_UNSUBSCRIBE_CONFIG' || request.action === 'SAVE_GMAIL_OAUTH_CLIENT' || request.action === 'START_GMAIL_OAUTH' || request.action === 'UPDATE_GMAIL_ACCOUNT' || request.action === 'DISCONNECT_GMAIL_ACCOUNT' || request.action === 'SEND_GMAIL_SELF_TEST' || request.action === 'PREPARE_GMAIL_QUEUE' || request.action === 'RUN_GMAIL_PRODUCTION_QUEUE' || request.action === 'STOP_GMAIL_PRODUCTION_QUEUE' || request.action === 'CHECK_GMAIL_HYGIENE' || request.action === 'OPTIMIZE_GMAIL_DELIVERABILITY' || request.action === 'OPTIMIZE_EMAIL_DELIVERABILITY';
+                    const isPost = request.action === 'SYNC_EMAIL_PRODUCTION_RECIPIENTS' || request.action === 'RUN_EMAIL_PRODUCTION_QUEUE' || request.action === 'STOP_EMAIL_PRODUCTION_QUEUE' || request.action === 'SEND_REAL_TEST_EMAIL' || request.action === 'RECONCILE_CAMPAIGN_RESEND' || request.action === 'PREVIEW_SECOND_WAVE' || request.action === 'START_SECOND_WAVE' || request.action === 'SAVE_GEMINI_COPY_API_KEY' || request.action === 'TEST_GEMINI_COPY_CONNECTION' || request.action === 'REQUEST_EMAIL_COPY_SUGGESTION' || request.action === 'VERIFY_RECIPIENT_DOMAINS_DNS' || request.action === 'SAVE_IMAGE_HOST_CONFIG' || request.action === 'UPLOAD_EMAIL_IMAGE' || request.action === 'SAVE_UNSUBSCRIBE_CONFIG' || request.action === 'SAVE_GMAIL_OAUTH_CLIENT' || request.action === 'START_GMAIL_OAUTH' || request.action === 'UPDATE_GMAIL_ACCOUNT' || request.action === 'DISCONNECT_GMAIL_ACCOUNT' || request.action === 'SEND_GMAIL_SELF_TEST' || request.action === 'PREPARE_GMAIL_QUEUE' || request.action === 'RUN_GMAIL_PRODUCTION_QUEUE' || request.action === 'STOP_GMAIL_PRODUCTION_QUEUE' || request.action === 'CHECK_GMAIL_HYGIENE' || request.action === 'OPTIMIZE_GMAIL_DELIVERABILITY' || request.action === 'OPTIMIZE_EMAIL_DELIVERABILITY' || request.action === 'SAVE_GMAIL_DOMAIN_CONFIG' || request.action === 'CHECK_GMAIL_DOMAIN_ALIGNMENT' || request.action === 'SAVE_FULL_CAMPAIGN' || request.action === 'DELETE_SAVED_CAMPAIGN';
                     const cid = encodeURIComponent(String(request.campaignId || 'default'));
                     const cutoff = encodeURIComponent(String(request.cutoffHours ?? 24));
                     const logLimit = Math.max(10, Math.min(300, Number(request.limit || 150)));
@@ -4478,7 +4484,13 @@ const _handleMainMessageInner = (request, sender, sendResponse) => {
                         SEND_GMAIL_SELF_TEST: '/email/gmail/self-test-send',
                         PREPARE_GMAIL_QUEUE: '/email/gmail/queue/prepare',
                         RUN_GMAIL_PRODUCTION_QUEUE: '/email/gmail/queue/run',
-                        STOP_GMAIL_PRODUCTION_QUEUE: '/email/gmail/queue/stop'
+                        STOP_GMAIL_PRODUCTION_QUEUE: '/email/gmail/queue/stop',
+                        GET_GMAIL_DOMAIN_CONFIG: '/email/gmail/domain-config',
+                        SAVE_GMAIL_DOMAIN_CONFIG: '/email/gmail/domain-config',
+                        CHECK_GMAIL_DOMAIN_ALIGNMENT: '/email/gmail/domain-config/check',
+                        LIST_SAVED_CAMPAIGNS: '/email/campaigns/saved',
+                        SAVE_FULL_CAMPAIGN: '/email/campaigns/saved/save',
+                        DELETE_SAVED_CAMPAIGN: '/email/campaigns/saved/delete'
                     };
                     const url = `http://127.0.0.1:${ctrlPort}${routeMap[request.action]}`;
                     const timeoutMs = request.action === 'RECONCILE_CAMPAIGN_RESEND'

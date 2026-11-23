@@ -372,7 +372,11 @@ function softenSpamPhrasesInCopy(str, isSubject = false) {
     .replace(/\b100%\s+free\b/gi, 'complimentary')
     .replace(/\bclaim\s+your\s+prize\b/gi, 'view event details')
     .replace(/\burgent\s+response\b/gi, 'follow-up')
-    .replace(/\bgrand\s+reopening\s+holiday\s+special\b/gi, 'Grand Reopening Update')
+    .replace(/\bgrand\s+reopening\s+holiday\s+special\b/gi, 'New location holiday update')
+    .replace(/\bgrand\s+reopening\b/gi, 'New location opening')
+    .replace(/\bholiday\s+special\b/gi, 'Holiday update')
+    .replace(/\blimited[- ]time\s+offer\b/gi, 'seasonal note')
+    .replace(/\bflash\s+sale\b/gi, 'seasonal update')
     .replace(/\bnow\s+booking\b/gi, 'Booking open')
     .replace(/\bbook\s+now\b/gi, 'Book online')
     .replace(/\breserve\s+([^\n.!?]{1,40})\s+today\b/gi, 'Reserve $1')
@@ -384,6 +388,70 @@ function softenSpamPhrasesInCopy(str, isSubject = false) {
     .replace(/[ \t]{2,}/g, ' ')
     .replace(/[ \t]+\n/g, '\n')
     .trim();
+}
+
+function extractFirstCleanImageBlock(rawHtml) {
+  const src = String(rawHtml || '');
+  const linkedMatch = src.match(/<a\b[^>]*href=["'](https?:\/\/[^"']+)["'][^>]*>\s*<img\b[^>]*src=["'](https:\/\/[^"']+)["'][^>]*>\s*<\/a>/i);
+  if (linkedMatch) {
+    const imgUrl = linkedMatch[2].trim();
+    if (!DEFAULT_PLACEHOLDER_IMAGES.includes(imgUrl.toLowerCase())) {
+      return linkedMatch[0];
+    }
+  }
+  const bareMatch = src.match(/<img\b[^>]*src=["'](https:\/\/[^"']+)["'][^>]*>/i);
+  if (bareMatch) {
+    const imgUrl = bareMatch[1].trim();
+    if (!DEFAULT_PLACEHOLDER_IMAGES.includes(imgUrl.toLowerCase())) {
+      return bareMatch[0];
+    }
+  }
+  return '';
+}
+
+function transformPromoCopyToTextBasedEmail({ subject = '', html = '', text = '', keepInlineImage = true } = {}) {
+  const rawSubject = String(subject || '').trim();
+  const softenedSubjectBase = softenSpamPhrasesInCopy(rawSubject, true)
+    .replace(/\p{Extended_Pictographic}(?:\uFE0E|\uFE0F)?(?:\u200D\p{Extended_Pictographic}(?:\uFE0E|\uFE0F)?)*/gu, '')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+  const cleanSubj = cleanSubjectHygiene(softenedSubjectBase || rawSubject).value;
+
+  const imgBlock = keepInlineImage ? extractFirstCleanImageBlock(html) : '';
+  const sourcePlain = String(text || '').trim() || stripHtmlToPlain(html);
+  // Strip raw [Image: https://...] placeholder lines before converting to clean conversational prose
+  const proseInput = sourcePlain
+    .replace(/^\[[^\]]*https?:\/\/[^\]]+\]\s*$/gim, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+
+  let calmedText = softenSpamPhrasesInCopy(proseInput, false);
+  // In Gmail promo->text conversion, remove remaining decorative emoji clusters completely for plain conversational tone
+  if (countEmojiPictographs(calmedText) > 0) {
+    calmedText = calmedText
+      .replace(/\p{Extended_Pictographic}(?:\uFE0E|\uFE0F)?(?:\u200D\p{Extended_Pictographic}(?:\uFE0E|\uFE0F)?)*/gu, '')
+      .replace(/[ \t]{2,}/g, ' ')
+      .replace(/^[ \t]+/gm, '')
+      .replace(/\n{3,}/g, '\n\n')
+      .trim();
+  }
+
+  let textBasedHtml = buildLightweightNaturalHtml(calmedText);
+  if (imgBlock) {
+    const imgParagraph = `<p style="margin:12px 0;">${imgBlock}</p>`;
+    if (/<\/div>\s*$/i.test(textBasedHtml)) {
+      textBasedHtml = textBasedHtml.replace(/<\/div>\s*$/i, `${imgParagraph}\n</div>`);
+    } else {
+      textBasedHtml += `\n${imgParagraph}`;
+    }
+  }
+
+  return {
+    subject: cleanSubj,
+    text: calmedText,
+    html: textBasedHtml,
+    preservedInlineImage: Boolean(imgBlock)
+  };
 }
 
 function optimizeAndScoreEmailMessage({
@@ -407,6 +475,7 @@ function optimizeAndScoreEmailMessage({
   authorizedReplyTo = false,
   preferLightweightHtml = false,
   embedInlineImages = true,
+  autoCalmPromoToTextStyle = false,
   mimeContentMode = 'MULTIPART_HTML'
 } = {}) {
   // Fail-closed header injection rejection (NEVER silently allow CR/LF/NUL injection in From / DisplayName / Reply-To)
@@ -877,14 +946,56 @@ function optimizeAndScoreEmailMessage({
     semiAutoAction: 'OPEN_COPY_DIFF'
   });
 
-  // 9b. [SEMI_AUTO] RC12 Excessive Emoji Burst, ALL-CAPS Shouting Lines, Heavy Promo Discount Density & Local-Part Domain Mismatch
-  const bodyForStyle = outText || finalVisibleHtmlText;
-  const emojiCount = countEmojiPictographs(combinedText);
-  const allCapsLineCount = countAllCapsLines(bodyForStyle);
-  const hasPercentOff = /\b\d{1,2}%\s*off\b/i.test(combinedText);
-  const promoMatches = combinedText.match(/\b(grand\s+reopening|holiday\s+special|now\s+booking|book\s+now|limited[- ]time\s+offer|reserve\b[^.\n]{0,40}\btoday|don['’]t\s+miss\s+out|special\s+offer|flash\s+sale)\b/gi) || [];
-  const exclamationCount = (combinedText.match(/!/g) || []).length;
-  const promoDensityTriggered = promoMatches.length >= 2 || (hasPercentOff && promoMatches.length >= 1) || exclamationCount >= 6;
+  // 9b. [AUTO / SEMI_AUTO] RC12/RC13 Excessive Emoji Burst, ALL-CAPS Shouting Lines, Heavy Promo Discount Density & Local-Part Domain Mismatch
+  let activeUnsubHost = 'unsubscribe.vivpr.pro';
+  try {
+    const u = new URL(String(publicUnsubBase || '').trim());
+    if (u.hostname) activeUnsubHost = u.hostname.toLowerCase();
+  } catch (_) {}
+
+  const evaluatePromoStyle = (subjStr, bodyStr) => {
+    const combo = `${subjStr}\n${bodyStr}`;
+    const emojis = countEmojiPictographs(combo);
+    const capsLines = countAllCapsLines(bodyStr);
+    const hasPct = /\b\d{1,2}%\s*off\b/i.test(combo);
+    const matches = combo.match(/\b(grand\s+reopening|holiday\s+special|now\s+booking|book\s+now|limited[- ]time\s+offer|reserve\b[^.\n]{0,40}\btoday|don['’]t\s+miss\s+out|special\s+offer|flash\s+sale)\b/gi) || [];
+    const excls = (combo.match(/!/g) || []).length;
+    const densityHit = matches.length >= 2 || (hasPct && matches.length >= 1) || excls >= 6;
+    return { emojis, capsLines, hasPct, matches, excls, densityHit };
+  };
+
+  let promoStyle = evaluatePromoStyle(outSubject, outText || finalVisibleHtmlText);
+  let autoCalmedPromoToText = false;
+  if (
+    normProvider === 'GMAIL' &&
+    autoOptimize &&
+    autoCalmPromoToTextStyle === true &&
+    (promoStyle.emojis >= 5 || promoStyle.capsLines >= 3 || promoStyle.densityHit)
+  ) {
+    const beforeSummary = `이모지 ${promoStyle.emojis}개 · 대문자 줄 ${promoStyle.capsLines}줄 · 느낌표 ${promoStyle.excls}개`;
+    const calmed = transformPromoCopyToTextBasedEmail({
+      subject: outSubject,
+      html: outHtml,
+      text: outText || finalVisibleHtmlText,
+      keepInlineImage: effectiveEmbedInlineCid && normMimeMode !== 'PLAIN_TEXT_ONLY'
+    });
+    outSubject = calmed.subject;
+    outText = calmed.text;
+    outHtml = calmed.html;
+    autoCalmedPromoToText = true;
+    promoStyle = evaluatePromoStyle(outSubject, outText);
+    autoFixesApplied.push({
+      code: 'AUTO_CALMED_PROMO_TO_TEXT_STRUCTURE',
+      detail: `강한 프로모션 본문 패턴(${beforeSummary})을 감지하여 Gmail 친화적 텍스트 기반 이메일 구조(<div dir="ltr">, 이모지 ${promoStyle.emojis}개 · 대문자 줄 ${promoStyle.capsLines}줄${calmed.preservedInlineImage ? ' · 인라인 이미지 링크 보존' : ''})로 자동 변환했습니다.`
+    });
+  }
+
+  const emojiCount = promoStyle.emojis;
+  const allCapsLineCount = promoStyle.capsLines;
+  const hasPercentOff = promoStyle.hasPct;
+  const promoMatches = promoStyle.matches;
+  const exclamationCount = promoStyle.excls;
+  const promoDensityTriggered = promoStyle.densityHit;
 
   if (emojiCount >= 5) {
     signals.push({
@@ -922,7 +1033,7 @@ function optimizeAndScoreEmailMessage({
       const localBrandDom = localDomMatches[0].toLowerCase();
       const dnDoms = (outDisplayName.match(DOMAIN_LIKE_RE) || []).map(d => d.toLowerCase());
       const bodyUrlHosts = extractUrls(`${outHtml}\n${outText}\n${cleanLink}`).hosts
-        .filter(h => h !== 'unsubscribe.vivpr.pro' && h !== 'raw.githubusercontent.com');
+        .filter(h => h !== activeUnsubHost && h !== 'unsubscribe.vivpr.pro' && h !== 'raw.githubusercontent.com');
       const otherBrandTokens = Array.from(new Set([...dnDoms, ...bodyUrlHosts]))
         .filter(d => d !== localBrandDom && !d.endsWith(`.${localBrandDom}`));
       if (otherBrandTokens.length > 0) {
@@ -941,14 +1052,16 @@ function optimizeAndScoreEmailMessage({
   checklist.push({
     id: 'PROMO_STYLE_EMOJI_CAPS_HYGIENE',
     category: 'COPY_HYGIENE',
-    mode: 'SEMI_AUTO',
-    status: promoStyleNeedsAction ? 'ACTION_REQUIRED' : 'PASS',
-    title: '이모지 과다(5개+) · 영문 ALL-CAPS · 할인/느낌표 밀집 점검',
-    detail: promoStyleNeedsAction
-      ? `이모지 ${emojiCount}개 · 대문자 강조 줄 ${allCapsLineCount}줄 · 느낌표 ${exclamationCount}개 — [반자동 문구 교정]으로 차분한 일반 안내 톤으로 완화할 수 있습니다.`
-      : `이모지(${emojiCount}개)·대문자 줄(${allCapsLineCount}줄)·느낌표(${exclamationCount}개) 밀집도 양호.`,
+    mode: autoCalmedPromoToText ? 'AUTO' : 'SEMI_AUTO',
+    status: autoCalmedPromoToText ? 'AUTO_FIXED' : (promoStyleNeedsAction ? 'ACTION_REQUIRED' : 'PASS'),
+    title: '이모지 과다(5개+) · 영문 ALL-CAPS · 할인/느낌표 밀집 점검 (자동 텍스트형 전환)',
+    detail: autoCalmedPromoToText
+      ? `강한 프로모션 본문 패턴을 차분한 텍스트 기반 이메일 구조로 자동 전환했습니다 (현재 이모지 ${emojiCount}개 · 대문자 줄 ${allCapsLineCount}줄).`
+      : (promoStyleNeedsAction
+        ? `이모지 ${emojiCount}개 · 대문자 강조 줄 ${allCapsLineCount}줄 · 느낌표 ${exclamationCount}개 — Gmail 자동 텍스트형 전환 옵션을 켜거나 [반자동 문구 교정]을 사용하세요.`
+        : `이모지(${emojiCount}개)·대문자 줄(${allCapsLineCount}줄)·느낌표(${exclamationCount}개) 밀집도 양호.`),
     providers: ['GMAIL', 'RESEND'],
-    semiAutoAction: 'OPEN_COPY_DIFF'
+    ...(autoCalmedPromoToText ? { autoFixCode: 'AUTO_CALMED_PROMO_TO_TEXT_STRUCTURE' } : { semiAutoAction: 'OPEN_COPY_DIFF' })
   });
 
   // 10. [SEMI_AUTO] Body Length, Default Boilerplate & Preheader Naturalness
@@ -1006,7 +1119,7 @@ function optimizeAndScoreEmailMessage({
     });
     recommendations.push('http:// 링크를 https://로 교체하세요.');
   }
-  const nonUnsubHosts = urlInfo.hosts.filter(h => h !== 'unsubscribe.vivpr.pro');
+  const nonUnsubHosts = urlInfo.hosts.filter(h => h !== activeUnsubHost && h !== 'unsubscribe.vivpr.pro');
   if (nonUnsubHosts.length >= 3) {
     const pts = nonUnsubHosts.length >= 5 ? 25 : 15;
     signals.push({
@@ -1074,7 +1187,7 @@ function optimizeAndScoreEmailMessage({
       code: 'CONSUMER_GMAIL_STRUCTURAL_LIMIT',
       points: 15,
       severity: 'LOW',
-      message: '개인 @gmail.com 계정은 맞춤 도메인 SPF/DKIM/DMARC 정렬이 불가하며, RFC 8058 수신거부 호스트(unsubscribe.vivpr.pro)와 도메인이 달라 초기 스팸 오탐 가능성이 남습니다.'
+      message: `개인 @gmail.com 계정은 맞춤 도메인 SPF/DKIM/DMARC 정렬이 불가하며, RFC 8058 수신거부 호스트(${activeUnsubHost})와 도메인이 달라 초기 스팸 오탐 가능성이 남습니다.`
     });
     recommendations.push('가장 높은 받은편지함 도달률을 위해서는 Google Workspace 맞춤 도메인 계정(SPF/DKIM/DMARC 일치) 또는 이미 인증된 Resend(vivpr.pro) 사용을 권장합니다.');
     recommendations.push('최초 본인 테스트 메일이 스팸함에 들어간 경우, 수신함에서 [스팸 아님(Not spam)]을 한 번 표시하면 Google 평판 학습에 도움이 됩니다.');
@@ -1327,5 +1440,6 @@ module.exports = {
   decodeHtmlEntities,
   countEmojiPictographs,
   countAllCapsLines,
+  transformPromoCopyToTextBasedEmail,
   HONEST_OPTIMIZER_DISCLAIMER
 };

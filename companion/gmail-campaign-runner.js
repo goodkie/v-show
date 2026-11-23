@@ -14,16 +14,18 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
+const dns = require('node:dns').promises;
 const { GmailSendBlocked, rawGmailMime, selectAccount, sendViaGmailApi } = require('./gmail-sender-foundation');
 const { injectUnsubscribeFooter } = require('./email-unsubscribe-server');
-const { writeProtectedSecretFile } = require('./email-test-sidecar-set-key');
+const { writeProtectedSecretFile, verifyWindowsDacl } = require('./email-test-sidecar-set-key');
 const { maskEmail, normalizeEmail } = require('./gmail-account-vault');
 const {
   AdaptiveThrottleController,
   buildDistributedSchedulePlan,
   assessDeliverabilityHygiene,
   buildTrueDashboard,
-  hasHeaderInjection
+  hasHeaderInjection,
+  isValidPublicHttpsUnsubscribeBase
 } = require('./gmail-safe-delivery-engine');
 const { optimizeAndScoreGmailMessage } = require('./gmail-deliverability-optimizer');
 const { embedHtmlImagesAsCid } = require('./gmail-inline-image-embedder');
@@ -85,6 +87,7 @@ class GmailCampaignRunner {
     this.dnsResolver = (this.trustedTestMode && typeof dnsResolver === 'function') ? dnsResolver : null;
 
     this.queueFile = path.join(this.stateDir, '.email_gmail_queue.json');
+    this.domainConfigFile = path.join(this.stateDir, '.gmail_domain_config.json');
     this._queueRunning = false;
     this._activeBgPromise = null;
     this.lastRunResult = null;
@@ -242,6 +245,7 @@ class GmailCampaignRunner {
     authorizedReplyTo = false,
     preferLightweightHtml = false,
     embedInlineImages = true,
+    autoCalmPromoToTextStyle = false,
     mimeContentMode = 'MULTIPART_HTML'
   } = {}) {
     const accountsWithUsage = this.vault.getInternalAccountsWithUsage();
@@ -254,10 +258,8 @@ class GmailCampaignRunner {
     }
     const resolvedFrom = fromAddress ? (normalizeEmail(fromAddress) || '') : (targetAcct ? targetAcct.email : '');
     const supIndex = this.buildCrossProviderSuppressionIndex();
-    const unsubCfg = this.pipeline && typeof this.pipeline.getUnsubscribePublicConfig === 'function'
-      ? this.pipeline.getUnsubscribePublicConfig()
-      : null;
-    const publicBase = String(unsubCfg?.publicBaseUrl || 'https://unsubscribe.vivpr.pro').trim();
+    const unsubInfo = this._resolvePublicUnsubConfig();
+    const publicBase = unsubInfo.publicBase || 'https://unsubscribe.vivpr.pro';
     return optimizeAndScoreGmailMessage({
       from: resolvedFrom,
       displayName,
@@ -278,6 +280,7 @@ class GmailCampaignRunner {
       authorizedReplyTo: authorizedReplyTo === true,
       preferLightweightHtml: preferLightweightHtml === true,
       embedInlineImages: embedInlineImages !== false,
+      autoCalmPromoToTextStyle: autoCalmPromoToTextStyle === true,
       mimeContentMode
     });
   }
@@ -821,17 +824,255 @@ class GmailCampaignRunner {
     return this.summarizeQueue();
   }
 
+  getGmailDomainConfig() {
+    const empty = {
+      ok: true,
+      configured: false,
+      brandDomain: '',
+      unsubscribeBaseUrl: '',
+      defaultDisplayName: '',
+      defaultReplyTo: '',
+      defaultWebsiteUrl: '',
+      fallbackToDefaultIfDnsPending: true,
+      updatedAt: null
+    };
+    if (!fs.existsSync(this.domainConfigFile)) return empty;
+    if (!this.trustedTestMode && process.platform === 'win32' && process.env.USERNAME) {
+      try { verifyWindowsDacl(this.domainConfigFile, process.env.USERNAME); } catch (_) { return empty; }
+    }
+    try {
+      const parsed = JSON.parse(fs.readFileSync(this.domainConfigFile, 'utf8')) || {};
+      const brandDomain = String(parsed.brandDomain || '').trim().toLowerCase();
+      const unsubscribeBaseUrl = String(parsed.unsubscribeBaseUrl || '').trim().replace(/\/+$/, '');
+      const validUnsub = unsubscribeBaseUrl && isValidPublicHttpsUnsubscribeBase(unsubscribeBaseUrl) ? unsubscribeBaseUrl : '';
+      return {
+        ok: true,
+        configured: Boolean(brandDomain || validUnsub),
+        brandDomain,
+        unsubscribeBaseUrl: validUnsub,
+        defaultDisplayName: String(parsed.defaultDisplayName || '').trim(),
+        defaultReplyTo: String(parsed.defaultReplyTo || '').trim(),
+        defaultWebsiteUrl: String(parsed.defaultWebsiteUrl || '').trim(),
+        fallbackToDefaultIfDnsPending: parsed.fallbackToDefaultIfDnsPending !== false,
+        updatedAt: parsed.updatedAt || null
+      };
+    } catch (_) {
+      return empty;
+    }
+  }
+
+  saveGmailDomainConfig(payload = {}) {
+    const rawDomain = String(payload.brandDomain || '').trim().toLowerCase().replace(/^https?:\/\//, '').replace(/\/.*$/, '');
+    if (rawDomain && !/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)+$/.test(rawDomain)) {
+      return { ok: false, statusCode: 400, reason: 'INVALID_BRAND_DOMAIN', message: '유효한 브랜드 도메인 형식을 입력하세요 (예: brand.example).' };
+    }
+    let cleanUnsub = String(payload.unsubscribeBaseUrl || '').trim().replace(/\/+$/, '');
+    if (!cleanUnsub && rawDomain && payload.autoDeriveUnsubscribeHost === true) {
+      cleanUnsub = `https://unsubscribe.${rawDomain}`;
+    }
+    if (cleanUnsub && !isValidPublicHttpsUnsubscribeBase(cleanUnsub)) {
+      return { ok: false, statusCode: 400, reason: 'INVALID_GMAIL_UNSUBSCRIBE_BASE_URL', message: '수신거부 기본 URL은 공개 https:// 주소여야 합니다 (로컬/사설 IP 불가).' };
+    }
+    const defaultDisplayName = String(payload.defaultDisplayName || '').trim();
+    const defaultReplyTo = String(payload.defaultReplyTo || '').trim();
+    const defaultWebsiteUrl = String(payload.defaultWebsiteUrl || '').trim();
+    if (hasHeaderInjection(defaultDisplayName) || hasHeaderInjection(defaultReplyTo) || hasHeaderInjection(defaultWebsiteUrl)) {
+      return { ok: false, statusCode: 400, reason: 'INVALID_HEADER_INJECTION', message: '제어 문자(CR/LF)가 포함될 수 없습니다.' };
+    }
+    if (defaultReplyTo && !normalizeEmail(defaultReplyTo)) {
+      return { ok: false, statusCode: 400, reason: 'INVALID_REPLY_TO', message: '유효한 Reply-To 이메일 주소를 입력하세요.' };
+    }
+    if (defaultWebsiteUrl) {
+      try {
+        const wu = new URL(defaultWebsiteUrl);
+        if (wu.protocol !== 'https:') throw new Error('HTTPS_ONLY');
+      } catch (_) {
+        return { ok: false, statusCode: 400, reason: 'INVALID_WEBSITE_URL', message: '브랜드 웹사이트 URL은 https:// 형식이어야 합니다.' };
+      }
+    }
+    const record = {
+      brandDomain: rawDomain,
+      unsubscribeBaseUrl: cleanUnsub,
+      defaultDisplayName: defaultDisplayName.slice(0, 78),
+      defaultReplyTo,
+      defaultWebsiteUrl,
+      fallbackToDefaultIfDnsPending: payload.fallbackToDefaultIfDnsPending !== false,
+      updatedAt: new Date().toISOString()
+    };
+    fs.mkdirSync(path.dirname(this.domainConfigFile), { recursive: true });
+    const serialized = JSON.stringify(record, null, 2) + '\n';
+    if (!this.trustedTestMode) {
+      writeProtectedSecretFile(this.domainConfigFile, serialized);
+    } else {
+      fs.writeFileSync(this.domainConfigFile, serialized, { mode: 0o600 });
+    }
+    this.pipeline._appendAudit({
+      type: 'GMAIL_DOMAIN_CONFIG_SAVED',
+      brandDomain: rawDomain || null,
+      unsubscribeBaseUrl: cleanUnsub || null,
+      fallbackToDefaultIfDnsPending: record.fallbackToDefaultIfDnsPending
+    });
+    return { ok: true, statusCode: 200, config: this.getGmailDomainConfig() };
+  }
+
+  async checkGmailDomainAlignment({ brandDomain = '', unsubscribeBaseUrl = '', dnsResolver = null, fetchImpl = null } = {}) {
+    const saved = this.getGmailDomainConfig();
+    const dom = String(brandDomain || saved.brandDomain || '').trim().toLowerCase().replace(/^https?:\/\//, '').replace(/\/.*$/, '');
+    const unsubBase = String(unsubscribeBaseUrl || saved.unsubscribeBaseUrl || (dom ? `https://unsubscribe.${dom}` : '')).trim().replace(/\/+$/, '');
+    const resolveTxt = async (host) => {
+      if (typeof dnsResolver === 'function') return await dnsResolver(host, 'TXT');
+      try {
+        const rows = await dns.resolveTxt(host);
+        return rows.map(r => (Array.isArray(r) ? r.join('') : String(r)));
+      } catch (e) {
+        return { error: e?.code || e?.message || 'DNS_ERROR' };
+      }
+    };
+    const resolveCname = async (host) => {
+      if (typeof dnsResolver === 'function') return await dnsResolver(host, 'CNAME');
+      try {
+        return await dns.resolveCname(host);
+      } catch (e) {
+        return { error: e?.code || e?.message || 'DNS_ERROR' };
+      }
+    };
+
+    const result = {
+      ok: true,
+      brandDomain: dom || null,
+      unsubscribeBaseUrl: unsubBase || null,
+      spf: { status: 'NOT_CHECKED', record: null, includesGoogle: false },
+      dmarc: { status: 'NOT_CHECKED', record: null, policy: null },
+      dkimGoogle: { status: 'NOT_CHECKED' },
+      unsubscribeDns: { status: 'NOT_CHECKED', host: null, cname: [] },
+      unsubscribeHealth: { status: 'NOT_CHECKED', reachable: false, httpStatus: null },
+      recommendedRecords: []
+    };
+
+    if (dom) {
+      const spfRes = await resolveTxt(dom);
+      if (Array.isArray(spfRes)) {
+        const spfTxt = spfRes.find(r => /^v=spf1\b/i.test(String(r || '').trim())) || null;
+        result.spf = {
+          status: !spfTxt ? 'MISSING' : (/include:_spf\.google\.com/i.test(spfTxt) ? 'PASS_GOOGLE_INCLUDED' : 'PRESENT_NO_GOOGLE_INCLUDE'),
+          record: spfTxt,
+          includesGoogle: Boolean(spfTxt && /include:_spf\.google\.com/i.test(spfTxt))
+        };
+      } else {
+        result.spf = { status: 'DNS_ERROR', record: null, includesGoogle: false, error: spfRes?.error || 'ERR' };
+      }
+
+      const dmarcRes = await resolveTxt(`_dmarc.${dom}`);
+      if (Array.isArray(dmarcRes)) {
+        const dmarcTxt = dmarcRes.find(r => /^v=DMARC1\b/i.test(String(r || '').trim())) || null;
+        const polMatch = dmarcTxt ? dmarcTxt.match(/\bp=([a-z]+)/i) : null;
+        const policy = polMatch ? polMatch[1].toLowerCase() : null;
+        result.dmarc = {
+          status: !dmarcTxt ? 'MISSING' : (policy === 'reject' || policy === 'quarantine' ? 'PASS' : 'PASS_MONITOR_NONE'),
+          record: dmarcTxt,
+          policy
+        };
+      } else {
+        result.dmarc = { status: 'MISSING', record: null, policy: null, error: dmarcRes?.error || 'ENOTFOUND' };
+      }
+      if (result.dmarc.status === 'MISSING') {
+        result.recommendedRecords.push({
+          type: 'TXT',
+          host: `_dmarc.${dom}`,
+          value: `v=DMARC1; p=none; rua=mailto:dmarc@${dom}; adkim=r; aspf=r; pct=100`
+        });
+      }
+
+      const dkimRes = await resolveTxt(`google._domainkey.${dom}`);
+      result.dkimGoogle = {
+        status: Array.isArray(dkimRes) && dkimRes.some(r => /v=DKIM1|p=[A-Za-z0-9+/=]{16,}/i.test(String(r || '')))
+          ? 'PASS'
+          : 'NOT_FOUND_OR_CUSTOM_SELECTOR'
+      };
+    }
+
+    if (unsubBase && isValidPublicHttpsUnsubscribeBase(unsubBase)) {
+      const host = new URL(unsubBase).hostname.toLowerCase();
+      const cn = await resolveCname(host);
+      result.unsubscribeDns = {
+        status: Array.isArray(cn) && cn.length > 0 ? 'RESOLVED' : 'MISSING_CNAME',
+        host,
+        cname: Array.isArray(cn) ? cn : [],
+        ...(cn && !Array.isArray(cn) ? { error: cn.error } : {})
+      };
+      const doFetch = typeof fetchImpl === 'function' ? fetchImpl : this.syncFetchImpl;
+      try {
+        const resp = await doFetch(`${unsubBase}/health`, {
+          method: 'GET',
+          ...(doFetch === globalThis.fetch && typeof AbortSignal?.timeout === 'function' ? { signal: AbortSignal.timeout(8000) } : {})
+        });
+        let body = null;
+        try { body = await resp.json(); } catch (_) {}
+        const healthy = Boolean(resp && resp.ok && body && body.ok === true && body.service === 'xpider-unsubscribe');
+        result.unsubscribeHealth = {
+          status: healthy ? 'LIVE_READY' : `UNEXPECTED_HTTP_${resp ? resp.status : 'ERR'}`,
+          reachable: healthy,
+          httpStatus: resp ? resp.status : null,
+          suppressionCount: typeof body?.suppressionCount === 'number' ? body.suppressionCount : null
+        };
+      } catch (err) {
+        result.unsubscribeHealth = {
+          status: 'DNS_OR_TLS_PENDING',
+          reachable: false,
+          httpStatus: null,
+          error: err?.message || 'FETCH_ERROR'
+        };
+      }
+    }
+
+    return result;
+  }
+
   _resolvePublicUnsubConfig() {
     const unsubCfg = this.pipeline.getUnsubscribePublicConfig();
-    const publicBase = String(unsubCfg?.publicBaseUrl || '').trim().replace(/\/+$/, '');
-    let hostOk = false;
-    try {
-      const u = new URL(publicBase);
-      hostOk = u.protocol === 'https:' && u.hostname.toLowerCase() === PUBLIC_UNSUB_HOST;
-    } catch (_) {}
+    const defaultPublicBase = String(unsubCfg?.publicBaseUrl || '').trim().replace(/\/+$/, '');
+    const domainCfg = this.getGmailDomainConfig();
+    const customBase = domainCfg.unsubscribeBaseUrl && isValidPublicHttpsUnsubscribeBase(domainCfg.unsubscribeBaseUrl)
+      ? domainCfg.unsubscribeBaseUrl
+      : '';
+    const publicBase = customBase || defaultPublicBase;
+    const hostOk = isValidPublicHttpsUnsubscribeBase(publicBase);
     const syncTokenPath = path.join(this.stateDir, '.unsubscribe_sync_token');
     const syncToken = fs.existsSync(syncTokenPath) ? fs.readFileSync(syncTokenPath, 'utf8').trim() : '';
-    return { publicBase, hostOk, syncToken };
+    return {
+      publicBase,
+      defaultPublicBase,
+      customUnsubscribeActive: Boolean(customBase),
+      fallbackToDefaultIfDnsPending: domainCfg.fallbackToDefaultIfDnsPending !== false,
+      hostOk,
+      syncToken
+    };
+  }
+
+  async _syncSuppressionsWithFallback({ publicBase, defaultPublicBase = '', fallbackToDefaultIfDnsPending = true, syncToken, doSyncFetch }) {
+    const first = await this.pipeline.syncRemoteSuppressions({ baseUrl: publicBase, syncToken, fetchImpl: doSyncFetch, skipQueueSave: true });
+    if (first.ok) {
+      return { ok: true, activePublicBase: publicBase, fallbackUsed: false };
+    }
+    if (
+      fallbackToDefaultIfDnsPending &&
+      defaultPublicBase &&
+      defaultPublicBase !== publicBase &&
+      isValidPublicHttpsUnsubscribeBase(defaultPublicBase)
+    ) {
+      const fb = await this.pipeline.syncRemoteSuppressions({ baseUrl: defaultPublicBase, syncToken, fetchImpl: doSyncFetch, skipQueueSave: true });
+      if (fb.ok) {
+        return {
+          ok: true,
+          activePublicBase: defaultPublicBase,
+          fallbackUsed: true,
+          requestedBase: publicBase,
+          reason: 'CUSTOM_UNSUB_DNS_PENDING_SAFE_FALLBACK',
+          primaryError: first.reason || 'UNREACHABLE'
+        };
+      }
+    }
+    return { ok: false, reason: first.reason || 'UNSUBSCRIBE_SYNC_UNAVAILABLE', activePublicBase: publicBase, fallbackUsed: false };
   }
 
   async _syncUnsubTokenRemote({ publicBase, syncToken, tokenHash, recipientHash, campaignId, fetchImpl }) {
@@ -875,6 +1116,7 @@ class GmailCampaignRunner {
     authorizedReplyTo = false,
     preferLightweightHtml = false,
     embedInlineImages = true,
+    autoCalmPromoToTextStyle = false,
     mimeContentMode = 'MULTIPART_HTML',
     transferEncoding = undefined,
     blockHighRiskSpam = false,
@@ -901,13 +1143,9 @@ class GmailCampaignRunner {
       cleanReplyTo = normalizeEmail(replyTo);
     }
     const unsubInfo = this._resolvePublicUnsubConfig();
-    const publicBase = (this.trustedTestMode && baseUrlOverride) ? String(baseUrlOverride).replace(/\/+$/, '') : unsubInfo.publicBase;
+    const requestedPublicBase = (this.trustedTestMode && baseUrlOverride) ? String(baseUrlOverride).replace(/\/+$/, '') : unsubInfo.publicBase;
     const syncToken = (this.trustedTestMode && syncTokenOverride) ? String(syncTokenOverride) : unsubInfo.syncToken;
-    let hostOk = false;
-    try {
-      const u = new URL(publicBase);
-      hostOk = u.protocol === 'https:' && u.hostname.toLowerCase() === PUBLIC_UNSUB_HOST;
-    } catch (_) {}
+    const hostOk = isValidPublicHttpsUnsubscribeBase(requestedPublicBase);
     if (!hostOk || !syncToken) {
       return { ok: false, statusCode: 409, status: 'BLOCKED', reason: 'PUBLIC_HTTPS_UNSUBSCRIBE_REQUIRED' };
     }
@@ -915,11 +1153,18 @@ class GmailCampaignRunner {
     const doSyncFetch = typeof syncFetchImpl === 'function' ? syncFetchImpl : this.syncFetchImpl;
     const doGmailFetch = typeof fetchImpl === 'function' ? fetchImpl : this.fetchImpl;
 
-    // 1. Sync remote suppressions & check cross-provider suppression
-    const supSync = await this.pipeline.syncRemoteSuppressions({ baseUrl: publicBase, syncToken, fetchImpl: doSyncFetch, skipQueueSave: true });
+    // 1. Sync remote suppressions & check cross-provider suppression (supports custom brand unsubscribe host with safe DNS-pending fallback)
+    const supSync = await this._syncSuppressionsWithFallback({
+      publicBase: requestedPublicBase,
+      defaultPublicBase: unsubInfo.defaultPublicBase,
+      fallbackToDefaultIfDnsPending: unsubInfo.fallbackToDefaultIfDnsPending,
+      syncToken,
+      doSyncFetch
+    });
     if (!supSync.ok) {
       return { ok: false, statusCode: 503, status: 'BLOCKED', reason: 'UNSUBSCRIBE_SYNC_UNAVAILABLE', detail: supSync.reason };
     }
+    const publicBase = supSync.activePublicBase;
     const supIndex = this.buildCrossProviderSuppressionIndex();
     const supCheck = this._checkCrossProviderSuppression(normTo, [], supIndex);
     if (supCheck.suppressed) {
@@ -1020,6 +1265,7 @@ class GmailCampaignRunner {
       html,
       text,
       physicalAddress,
+      publicUnsubBase: publicBase,
       historicalBounceRatePct: Number(supIndex?.stats?.historicalBounceRatePct || 0),
       autoOptimize: autoSpamPrevention !== false,
       autoAlignReplyTo: autoAlignReplyTo === true,
@@ -1027,6 +1273,7 @@ class GmailCampaignRunner {
       authorizedReplyTo: authorizedReplyTo === true,
       preferLightweightHtml: preferLightweightHtml === true,
       embedInlineImages: embedInlineImages !== false,
+      autoCalmPromoToTextStyle: autoCalmPromoToTextStyle === true,
       mimeContentMode
     });
     if (spamOpt.blocked && spamOpt.reason === 'INVALID_HEADER_INJECTION') {
@@ -1081,6 +1328,7 @@ class GmailCampaignRunner {
         text: withAddr.text,
         inlineImages: cidRes.inlineImages,
         unsubscribeUrl: unsub.url,
+        verifiedUnsubscribeHosts: [new URL(publicBase).hostname.toLowerCase()],
         mimeContentMode: normMode === 'PLAIN_TEXT_ONLY' ? 'PLAIN_TEXT_ONLY' : 'MULTIPART_HTML',
         transferEncoding: transferEncoding || 'quoted-printable',
         campaignAuthorized: true,
@@ -1138,6 +1386,10 @@ class GmailCampaignRunner {
         accountId: selected.accountId,
         maskedFrom: maskEmail(resolvedFrom || selected.from),
         maskedTo: maskEmail(normTo),
+        unsubscribeBaseUsed: publicBase,
+        unsubscribeDomainFallback: supSync.fallbackUsed
+          ? { requestedBase: supSync.requestedBase, activeBase: publicBase, reason: supSync.reason }
+          : null,
         mimeContentMode: normMode === 'PLAIN_TEXT_ONLY' ? 'PLAIN_TEXT_ONLY' : (normMode === 'GMAIL_NATIVE_HTML' ? 'GMAIL_NATIVE_HTML' : 'MULTIPART_HTML'),
         mimeHygiene: {
           transferEncoding: String(transferEncoding || 'quoted-printable').toLowerCase() === 'base64' ? 'base64' : 'quoted-printable',
@@ -1199,6 +1451,7 @@ class GmailCampaignRunner {
     authorizedReplyTo = false,
     preferLightweightHtml = false,
     embedInlineImages = true,
+    autoCalmPromoToTextStyle = false,
     mimeContentMode = 'MULTIPART_HTML',
     transferEncoding = undefined,
     blockHighRiskSpam = false,
@@ -1307,13 +1560,9 @@ class GmailCampaignRunner {
     }
 
     const unsubInfo = this._resolvePublicUnsubConfig();
-    const publicBase = (this.trustedTestMode && baseUrlOverride) ? String(baseUrlOverride).replace(/\/+$/, '') : unsubInfo.publicBase;
+    const requestedPublicBase = (this.trustedTestMode && baseUrlOverride) ? String(baseUrlOverride).replace(/\/+$/, '') : unsubInfo.publicBase;
     const syncToken = (this.trustedTestMode && syncTokenOverride) ? String(syncTokenOverride) : unsubInfo.syncToken;
-    let hostOk = false;
-    try {
-      const u = new URL(publicBase);
-      hostOk = u.protocol === 'https:' && u.hostname.toLowerCase() === PUBLIC_UNSUB_HOST;
-    } catch (_) {}
+    const hostOk = isValidPublicHttpsUnsubscribeBase(requestedPublicBase);
     if (!hostOk || !syncToken) {
       return { ok: false, statusCode: 409, status: 'BLOCKED', reason: 'PUBLIC_HTTPS_UNSUBSCRIBE_REQUIRED', summary: this.summarizeQueue(), dashboard: this.getTrueDashboard() };
     }
@@ -1349,11 +1598,18 @@ class GmailCampaignRunner {
       return done;
     };
     try {
-      // Pre-send remote suppression sync (fail closed if unreachable)
-      const supSync = await this.pipeline.syncRemoteSuppressions({ baseUrl: publicBase, syncToken, fetchImpl: doSyncFetch, skipQueueSave: true });
+      // Pre-send remote suppression sync (supports custom brand unsubscribe host with safe DNS-pending fallback)
+      const supSync = await this._syncSuppressionsWithFallback({
+        publicBase: requestedPublicBase,
+        defaultPublicBase: unsubInfo.defaultPublicBase,
+        fallbackToDefaultIfDnsPending: unsubInfo.fallbackToDefaultIfDnsPending,
+        syncToken,
+        doSyncFetch
+      });
       if (!supSync.ok) {
         return finalize({ ok: false, statusCode: 503, status: 'BLOCKED', reason: 'UNSUBSCRIBE_SYNC_UNAVAILABLE', detail: supSync.reason });
       }
+      const publicBase = supSync.activePublicBase;
       const supIndex = this.buildCrossProviderSuppressionIndex();
 
       // Evaluate live negative delivery signals (complaints, abnormal bounce, abuse warning) BEFORE sending
@@ -1631,6 +1887,7 @@ class GmailCampaignRunner {
           html,
           text,
           physicalAddress: effectivePhysicalAddress,
+          publicUnsubBase: publicBase,
           historicalBounceRatePct: Number(supIndex?.stats?.historicalBounceRatePct || 0),
           autoOptimize: autoSpamPrevention !== false,
           autoAlignReplyTo: autoAlignReplyTo === true,
@@ -1638,6 +1895,7 @@ class GmailCampaignRunner {
           authorizedReplyTo: authorizedReplyTo === true,
           preferLightweightHtml: preferLightweightHtml === true,
           embedInlineImages: embedInlineImages !== false,
+          autoCalmPromoToTextStyle: autoCalmPromoToTextStyle === true,
           mimeContentMode
         });
         if (qSpamOpt.blocked && qSpamOpt.reason === 'INVALID_HEADER_INJECTION') {
@@ -1704,6 +1962,7 @@ class GmailCampaignRunner {
             text: withAddr.text,
             inlineImages: qCidRes.inlineImages,
             unsubscribeUrl: unsub.url,
+            verifiedUnsubscribeHosts: [new URL(publicBase).hostname.toLowerCase()],
             mimeContentMode: qNormMode === 'PLAIN_TEXT_ONLY' ? 'PLAIN_TEXT_ONLY' : 'MULTIPART_HTML',
             transferEncoding: transferEncoding || 'quoted-printable',
             campaignAuthorized: true,

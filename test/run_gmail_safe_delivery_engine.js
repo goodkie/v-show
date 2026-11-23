@@ -11,8 +11,9 @@ const path = require('node:path');
 const { GmailAccountVault, GMAIL_OAUTH_SCOPES } = require('../companion/gmail-account-vault');
 const { GmailCampaignRunner } = require('../companion/gmail-campaign-runner');
 const { GmailSendBlocked, rawGmailMime, encodeQuotedPrintable, foldAsciiHeader } = require('../companion/gmail-sender-foundation');
-const { AdaptiveThrottleController, assessDeliverabilityHygiene } = require('../companion/gmail-safe-delivery-engine');
-const { optimizeAndScoreGmailMessage, optimizeAndScoreEmailMessage, buildGmailSpamSearchHelper, buildMultiAccountGmailSpamHelpers, buildGmailNativeComposeUrl, buildGmailNativeCleanHtml, buildLightweightNaturalHtml, stripHtmlToPlain, decodeHtmlEntities, softenSpamPhrasesInCopy, countEmojiPictographs, countAllCapsLines, stripHiddenPreheaderDivs, isOfficialGmailWebUrl } = require('../companion/gmail-deliverability-optimizer');
+const { AdaptiveThrottleController, assessDeliverabilityHygiene, isValidPublicHttpsUnsubscribeBase } = require('../companion/gmail-safe-delivery-engine');
+const { optimizeAndScoreGmailMessage, optimizeAndScoreEmailMessage, buildGmailSpamSearchHelper, buildMultiAccountGmailSpamHelpers, buildGmailNativeComposeUrl, buildGmailNativeCleanHtml, buildLightweightNaturalHtml, stripHtmlToPlain, decodeHtmlEntities, softenSpamPhrasesInCopy, countEmojiPictographs, countAllCapsLines, transformPromoCopyToTextBasedEmail, stripHiddenPreheaderDivs, isOfficialGmailWebUrl } = require('../companion/gmail-deliverability-optimizer');
+const { EmailCampaignStore, sanitizeCampaignSnapshot } = require('../companion/email-campaign-store');
 const { injectUnsubscribeFooter, isPrimarilyEnglishContent } = require('../companion/email-unsubscribe-server');
 const { embedHtmlImagesAsCid } = require('../companion/gmail-inline-image-embedder');
 const { EmailProductionPipeline } = require('../companion/email-production-pipeline');
@@ -1590,6 +1591,246 @@ function makeRefreshVaultFetch(counterRef) {
       assert.ok(softenedPromo.includes('https://acme.plus/'), 'URLs must remain intact during copy softening');
       checks += 4;
       console.log('PASS 15: RC12 Show-Original root-cause fixes (entity decode, trailing ) link, lightweight image/CID preservation, EN/KR footer language match, promo/emoji/ALL-CAPS/local-part signals) verified');
+    }
+
+    // ===== PASS 16: RC13 Gmail Domain/Unsubscribe Unification, Auto Promo-to-Text Conversion & Full Campaign Save/Load Store =====
+    {
+      // (a) Public HTTPS custom unsubscribe URL validation (supports custom brand domain, blocks private/http/creds)
+      assert.equal(isValidPublicHttpsUnsubscribeBase('https://unsubscribe.acme.plus'), true);
+      assert.equal(isValidPublicHttpsUnsubscribeBase('https://unsubscribe.vivpr.pro'), true);
+      assert.equal(isValidPublicHttpsUnsubscribeBase('http://unsubscribe.acme.plus'), false);
+      assert.equal(isValidPublicHttpsUnsubscribeBase('https://127.0.0.1:18990'), false);
+      assert.equal(isValidPublicHttpsUnsubscribeBase('https://localhost/unsub'), false);
+      assert.equal(isValidPublicHttpsUnsubscribeBase('https://10.0.0.5'), false);
+      assert.equal(isValidPublicHttpsUnsubscribeBase('https://user:pass@unsubscribe.acme.plus'), false);
+
+      // (b) Gmail Domain Config save, alignment check, custom unsubscribe live send + DNS-pending safe fallback + strict fail-closed
+      const dirRc13 = path.join(tmpRoot, 'rc13_domain_promo_store');
+      const pipeRc13 = new EmailProductionPipeline({ stateDir: dirRc13, trustedTestMode: true });
+      pipeRc13.saveUnsubscribePublicConfig({ publicBaseUrl: 'https://unsubscribe.vivpr.pro' });
+      fs.writeFileSync(path.join(dirRc13, '.unsubscribe_sync_token'), 'tok_rc13_sync_1234567890\n', { mode: 0o600 });
+      const vaultRc13 = new GmailAccountVault({ stateDir: dirRc13, trustedTestMode: true, cryptoBox: box });
+      vaultRc13.upsertMockAccountForTest({ email: 'hello@acme.plus', cap24h: 30, type: 'workspace_paid' });
+      const acctRc13 = vaultRc13.listAccountsSafe()[0];
+      const runnerRc13 = new GmailCampaignRunner({ stateDir: dirRc13, pipeline: pipeRc13, vault: vaultRc13, trustedTestMode: true, syncFetchImpl: okSyncFetch });
+
+      const badDomain = runnerRc13.saveGmailDomainConfig({ brandDomain: 'acme.plus', unsubscribeBaseUrl: 'http://insecure.acme.plus' });
+      assert.equal(badDomain.ok, false);
+      assert.equal(badDomain.reason, 'INVALID_GMAIL_UNSUBSCRIBE_BASE_URL');
+
+      const savedDom = runnerRc13.saveGmailDomainConfig({
+        brandDomain: 'acme.plus',
+        unsubscribeBaseUrl: 'https://unsubscribe.acme.plus',
+        defaultDisplayName: 'Acme Plus',
+        defaultWebsiteUrl: 'https://acme.plus',
+        fallbackToDefaultIfDnsPending: true
+      });
+      assert.equal(savedDom.ok, true);
+      assert.equal(savedDom.config.brandDomain, 'acme.plus');
+      assert.equal(savedDom.config.unsubscribeBaseUrl, 'https://unsubscribe.acme.plus');
+
+      const alignCheck = await runnerRc13.checkGmailDomainAlignment({
+        dnsResolver: async (host, rr) => {
+          if (host === 'acme.plus' && rr === 'TXT') return ['v=spf1 include:_spf.google.com ~all'];
+          if (host === '_dmarc.acme.plus' && rr === 'TXT') return { error: 'ENOTFOUND' };
+          if (host === 'unsubscribe.acme.plus' && rr === 'CNAME') return ['target.up.railway.app'];
+          return { error: 'ENOTFOUND' };
+        },
+        fetchImpl: async (url) => {
+          if (String(url) === 'https://unsubscribe.acme.plus/health') {
+            return { ok: true, status: 200, json: async () => ({ ok: true, service: 'xpider-unsubscribe', suppressionCount: 42 }) };
+          }
+          return { ok: false, status: 404, json: async () => ({}) };
+        }
+      });
+      assert.equal(alignCheck.spf.status, 'PASS_GOOGLE_INCLUDED');
+      assert.equal(alignCheck.dmarc.status, 'MISSING');
+      assert.ok(alignCheck.recommendedRecords.some(r => r.host === '_dmarc.acme.plus' && r.value.includes('v=DMARC1')));
+      assert.equal(alignCheck.unsubscribeDns.status, 'RESOLVED');
+      assert.equal(alignCheck.unsubscribeHealth.status, 'LIVE_READY');
+
+      // Live send uses custom domain https://unsubscribe.acme.plus when reachable
+      let capturedCustomMime = '';
+      const selfCustom = await runnerRc13.sendGmailSelfTest({
+        accountId: acctRc13.id,
+        to: 'rc13-live@example.test',
+        displayName: 'Acme Plus',
+        subject: 'Acme Plus Update',
+        html: '<p>We are happy to share our seasonal schedule update with you. Reply anytime with questions.</p>',
+        text: 'We are happy to share our seasonal schedule update with you. Reply anytime with questions.',
+        physicalAddress: '200 Native Way, Synthetic City, ZZ 00000',
+        recipientConsentConfirmed: true,
+        ownerExplicitApproval: true,
+        fetchImpl: async (u, init) => {
+          capturedCustomMime = Buffer.from(JSON.parse(init.body).raw, 'base64url').toString('utf8');
+          return { ok: true, status: 200, json: async () => ({ id: 'gm_rc13_custom', threadId: 'thr_rc13_1' }) };
+        },
+        syncFetchImpl: async (u) => {
+          if (String(u).startsWith('https://unsubscribe.acme.plus/')) {
+            return { ok: true, status: 200, json: async () => ({ ok: true, suppressions: [], recorded: true }) };
+          }
+          throw new Error('UNEXPECTED_HOST:' + u);
+        }
+      });
+      assert.equal(selfCustom.ok, true);
+      assert.equal(selfCustom.unsubscribeBaseUsed, 'https://unsubscribe.acme.plus');
+      assert.equal(selfCustom.unsubscribeDomainFallback, null);
+      assert.ok(capturedCustomMime.includes('List-Unsubscribe: <https://unsubscribe.acme.plus/unsubscribe/'));
+
+      // DNS-pending fallback: when custom host throws ENOTFOUND & fallback=true -> uses default host with explicit notice!
+      const selfFallback = await runnerRc13.sendGmailSelfTest({
+        accountId: acctRc13.id,
+        to: 'rc13-fb@example.test',
+        displayName: 'Acme Plus',
+        subject: 'Acme Plus Fallback Check',
+        html: '<p>We are happy to share our seasonal schedule update with you. Reply anytime with questions.</p>',
+        text: 'We are happy to share our seasonal schedule update with you. Reply anytime with questions.',
+        physicalAddress: '200 Native Way, Synthetic City, ZZ 00000',
+        recipientConsentConfirmed: true,
+        ownerExplicitApproval: true,
+        fetchImpl: async () => ({ ok: true, status: 200, json: async () => ({ id: 'gm_rc13_fb', threadId: 'thr_rc13_2' }) }),
+        syncFetchImpl: async (u) => {
+          if (String(u).startsWith('https://unsubscribe.acme.plus/')) throw new Error('ENOTFOUND');
+          return { ok: true, status: 200, json: async () => ({ ok: true, suppressions: [], recorded: true }) };
+        }
+      });
+      assert.equal(selfFallback.ok, true);
+      assert.equal(selfFallback.unsubscribeBaseUsed, 'https://unsubscribe.vivpr.pro');
+      assert.equal(selfFallback.unsubscribeDomainFallback.reason, 'CUSTOM_UNSUB_DNS_PENDING_SAFE_FALLBACK');
+
+      // Strict mode (fallbackToDefaultIfDnsPending=false) fails closed when custom DNS pending
+      runnerRc13.saveGmailDomainConfig({
+        brandDomain: 'acme.plus',
+        unsubscribeBaseUrl: 'https://unsubscribe.acme.plus',
+        fallbackToDefaultIfDnsPending: false
+      });
+      const selfStrictBlock = await runnerRc13.sendGmailSelfTest({
+        accountId: acctRc13.id,
+        to: 'rc13-strict@example.test',
+        displayName: 'Acme Plus',
+        subject: 'Strict Check',
+        html: '<p>Schedule update body text with enough natural content for verification.</p>',
+        text: 'Schedule update body text with enough natural content for verification.',
+        physicalAddress: '200 Native Way, Synthetic City, ZZ 00000',
+        recipientConsentConfirmed: true,
+        ownerExplicitApproval: true,
+        fetchImpl: async () => { throw new Error('MUST_NOT_SEND'); },
+        syncFetchImpl: async () => { throw new Error('ENOTFOUND'); }
+      });
+      assert.equal(selfStrictBlock.ok, false);
+      assert.equal(selfStrictBlock.reason, 'UNSUBSCRIBE_SYNC_UNAVAILABLE');
+
+      // (c) Automatic Promo-to-Text-Based Email Structure Conversion on Gmail Method (clears emoji + ALL-CAPS + promo density signals!)
+      const heavyPromoText = [
+        '🎉✨🎄🎁📸🔥🌟💫🎊🎈🎀❄️🎅⛄🎉 GRAND REOPENING HOLIDAY SPECIAL!',
+        'NEW LOCATION AND NEW LOOK FOR THE HOLIDAY SEASON!',
+        '20% OFF ALL PORTRAIT PACKAGES THIS MONTH!',
+        'NOW BOOKING FOR EARLY DECEMBER SESSIONS!',
+        'LIMITED TIME OFFER FOR RETURNING FAMILIES!',
+        'RESERVE YOUR SESSION TODAY!',
+        'Learn more at https://acme.plus/book!'
+      ].join('\n');
+      const heavyPromoHtml = `<table role="presentation" width="600" style="background:#f3f5f8"><tr><td><a href="https://acme.plus/book"><img src="https://raw.githubusercontent.com/acme/assets/main/hero.png" alt="Hero"></a><p>${heavyPromoText.replace(/\n/g, '<br>')}</p></td></tr></table>`;
+
+      const promoWithoutAuto = optimizeAndScoreGmailMessage({
+        from: 'hello@acme.plus',
+        displayName: 'Acme Plus',
+        subject: '🎉 GRAND REOPENING HOLIDAY SPECIAL!!!',
+        html: heavyPromoHtml,
+        text: heavyPromoText,
+        physicalAddress: '200 Native Way, Synthetic City, ZZ 00000',
+        publicUnsubBase: 'https://unsubscribe.acme.plus',
+        autoCalmPromoToTextStyle: false
+      });
+      const promoWithAuto = optimizeAndScoreGmailMessage({
+        from: 'hello@acme.plus',
+        displayName: 'Acme Plus',
+        subject: '🎉 GRAND REOPENING HOLIDAY SPECIAL!!!',
+        html: heavyPromoHtml,
+        text: heavyPromoText,
+        physicalAddress: '200 Native Way, Synthetic City, ZZ 00000',
+        publicUnsubBase: 'https://unsubscribe.acme.plus',
+        embedInlineImages: true,
+        autoCalmPromoToTextStyle: true
+      });
+      assert.ok(promoWithAuto.autoFixesApplied.some(f => f.code === 'AUTO_CALMED_PROMO_TO_TEXT_STRUCTURE'), 'Must apply automatic promo-to-text structure conversion');
+      assert.ok(promoWithAuto.riskScore < promoWithoutAuto.riskScore - 30, 'Auto promo-to-text conversion must substantially lower spam risk score');
+      assert.equal(countAllCapsLines(promoWithAuto.optimized.text), 0, 'Zero ALL-CAPS shouting lines remaining');
+      assert.equal(countEmojiPictographs(promoWithAuto.optimized.text), 0, 'Zero decorative emoji bursts remaining');
+      assert.ok(!promoWithAuto.signals.some(s => s.code === 'EXCESSIVE_EMOJI_BURST_RISK' || s.code === 'ALL_CAPS_SHOUTING_LINES_RISK' || s.code === 'PROMOTIONAL_DISCOUNT_DENSITY_RISK'));
+      assert.ok(promoWithAuto.optimized.html.startsWith('<div dir="ltr"') && !promoWithAuto.optimized.html.includes('<table'), 'Converted HTML must be clean text-based <div dir="ltr"> without promo tables');
+      assert.ok(promoWithAuto.optimized.html.includes('href="https://acme.plus/book"') && promoWithAuto.optimized.html.includes('<img '), 'User clickable link & image preserved for inline CID');
+      const autoCalmItem = promoWithAuto.checklist.find(c => c.id === 'PROMO_STYLE_EMOJI_CAPS_HYGIENE');
+      assert.ok(autoCalmItem && autoCalmItem.mode === 'AUTO' && autoCalmItem.status === 'AUTO_FIXED');
+
+      // (d) Full Campaign Store (save/load/delete + secret/approval stripping) + Sidecar HTTP endpoints + Studio UI contracts
+      const store = new EmailCampaignStore({ stateDir: dirRc13, trustedTestMode: true });
+      const savedCamp = store.saveCampaign({
+        id: 'camp_holiday_2026',
+        name: 'Holiday Reopening Campaign',
+        provider: 'GMAIL',
+        campaignId: 'camp_hol_1',
+        apiKey: 're_SHOULD_BE_STRIPPED_12345678',
+        refreshToken: '1//SHOULD_BE_STRIPPED_TOKEN',
+        consentAttest: true,
+        ownerExplicitApproval: true,
+        template: { subject: 'Holiday Update', body: 'Clean text body', link: 'https://acme.plus' },
+        recipients: { recipientCsv: 'email,name\na@example.test,Alice' },
+        deliverability: { spamOptAutoCalmPromo: true, emailMimeContentMode: 'GMAIL_NATIVE_HTML' },
+        gmail: { sendingMode: 'SINGLE_ACCOUNT', replyTo: 'hello@acme.plus' }
+      });
+      assert.equal(savedCamp.ok, true);
+      const serializedSaved = JSON.stringify(savedCamp.campaign);
+      assert.ok(!serializedSaved.includes('re_SHOULD_BE_STRIPPED') && !serializedSaved.includes('1//SHOULD_BE_STRIPPED') && !serializedSaved.includes('consentAttest') && !serializedSaved.includes('ownerExplicitApproval'), 'Secrets and human approval flags MUST be stripped from saved campaigns');
+      assert.equal(store.listCampaigns().count, 1);
+      assert.equal(store.listCampaigns().campaigns[0].template.subject, 'Holiday Update');
+      assert.equal(store.deleteCampaign('camp_holiday_2026').deleted, true);
+      assert.equal(store.listCampaigns().count, 0);
+
+      // Sidecar HTTP contracts for /email/campaigns/saved* and /email/gmail/domain-config*
+      const sc13Port = 19350 + (process.pid % 2200);
+      const sc13Dir = path.join(tmpRoot, 'sidecar_rc13');
+      const sc13 = new EmailTestSidecar({ port: sc13Port, stateDir: sc13Dir, trustedTestMode: true, gmailCryptoBox: box });
+      await sc13.start();
+      try {
+        const tok13 = fs.readFileSync(path.join(sc13Dir, '.email_sidecar_token'), 'utf8').trim();
+        assert.equal((await fetch(`http://127.0.0.1:${sc13.port}/email/campaigns/saved`)).status, 401);
+        assert.equal((await fetch(`http://127.0.0.1:${sc13.port}/email/gmail/domain-config`)).status, 401);
+
+        const svRes = await fetch(`http://127.0.0.1:${sc13.port}/email/campaigns/saved/save`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${tok13}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: 'camp_http_1', name: 'HTTP Saved', provider: 'GMAIL', template: { subject: 'S1', body: 'B1' } })
+        });
+        assert.equal(svRes.status, 200);
+        const listRes = await (await fetch(`http://127.0.0.1:${sc13.port}/email/campaigns/saved`, { headers: { Authorization: `Bearer ${tok13}` } })).json();
+        assert.equal(listRes.ok, true);
+        assert.equal(listRes.count, 1);
+
+        const domSv = await fetch(`http://127.0.0.1:${sc13.port}/email/gmail/domain-config`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${tok13}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ brandDomain: 'acme.plus', unsubscribeBaseUrl: 'https://unsubscribe.acme.plus', defaultDisplayName: 'Acme Plus' })
+        });
+        assert.equal(domSv.status, 200);
+        const domGet = await (await fetch(`http://127.0.0.1:${sc13.port}/email/gmail/domain-config`, { headers: { Authorization: `Bearer ${tok13}` } })).json();
+        assert.equal(domGet.config.brandDomain, 'acme.plus');
+        assert.equal(domGet.config.unsubscribeBaseUrl, 'https://unsubscribe.acme.plus');
+      } finally {
+        await sc13.stop();
+      }
+
+      // Studio UI & background.js RC13 wiring + banned term guard
+      const htmlRc13 = fs.readFileSync(path.join(__dirname, '..', 'extension', 'email-studio', 'index.html'), 'utf8');
+      const jsRc13 = fs.readFileSync(path.join(__dirname, '..', 'extension', 'email-studio', 'email-template-studio.js'), 'utf8');
+      const bgRc13 = fs.readFileSync(path.join(__dirname, '..', 'extension', 'background.js'), 'utf8');
+      assert.ok(htmlRc13.includes('id="fullCampaignManagerBox"') && htmlRc13.includes('id="btnSaveFullCampaign"') && htmlRc13.includes('id="btnLoadFullCampaign"') && htmlRc13.includes('id="btnExportFullCampaignJson"') && htmlRc13.includes('id="btnImportFullCampaignJson"'));
+      assert.ok(htmlRc13.includes('id="spamOptAutoCalmPromo"') && htmlRc13.includes('id="gmailAutoCalmPromo"') && htmlRc13.includes('id="gmailDomainUnifyBox"') && htmlRc13.includes('id="btnSaveGmailDomainConfig"') && htmlRc13.includes('id="btnCheckGmailDomainAlignment"'));
+      assert.ok(jsRc13.includes('collectFullCampaignSnapshot') && jsRc13.includes('applyFullCampaignSnapshot') && jsRc13.includes('autoCalmPromoToTextStyle') && jsRc13.includes('SAVE_GMAIL_DOMAIN_CONFIG') && jsRc13.includes('SAVE_FULL_CAMPAIGN'));
+      assert.ok(bgRc13.includes('LIST_SAVED_CAMPAIGNS') && bgRc13.includes('SAVE_FULL_CAMPAIGN') && bgRc13.includes('SAVE_GMAIL_DOMAIN_CONFIG') && bgRc13.includes('CHECK_GMAIL_DOMAIN_ALIGNMENT'));
+      assert.ok(!htmlRc13.includes('동의원장') && !jsRc13.includes('동의원장'));
+      checks += 4;
+      console.log('PASS 16: RC13 Gmail domain/unsubscribe unification, automatic promo-to-text structure conversion & full campaign save/load store verified');
     }
 
     console.log(`XPIDER V7.1 Gmail Safe Delivery Engine suite: ${checks}/${checks} PASS; ZERO REAL SENDS`);

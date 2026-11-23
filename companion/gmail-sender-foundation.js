@@ -165,8 +165,14 @@ function rawGmailMime(options) {
     throw new GmailSendBlocked('RECIPIENT_OR_LEDGER_BLOCKED');
   }
   const unsub = new URL(textHeader(options.unsubscribeUrl, 'UNSUBSCRIBE_URL'));
+  const extraAllowedUnsub = Array.isArray(options.verifiedUnsubscribeHosts)
+    ? options.verifiedUnsubscribeHosts
+      .map(h => String(h || '').trim().toLowerCase())
+      .filter(h => /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)+$/.test(h) && h !== 'localhost' && !h.endsWith('.local'))
+    : [];
+  const allowedUnsubHosts = Array.from(new Set(['unsubscribe.vivpr.pro', ...extraAllowedUnsub]));
   if (unsub.protocol !== 'https:' || unsub.username || unsub.password ||
-      !['unsubscribe.vivpr.pro'].includes(unsub.hostname.toLowerCase())) {
+      !allowedUnsubHosts.includes(unsub.hostname.toLowerCase())) {
     throw new GmailSendBlocked('UNSUBSCRIBE_URL_NOT_VERIFIED');
   }
   const subject = encodeWord(options.subject, { foldAscii: true });

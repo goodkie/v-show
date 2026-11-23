@@ -37,6 +37,21 @@ const DEFAULT_THROTTLE_CONFIG = Object.freeze({
 });
 
 const PUBLIC_UNSUB_HOST = 'unsubscribe.vivpr.pro';
+
+function isValidPublicHttpsUnsubscribeBase(rawUrl) {
+  try {
+    const u = new URL(String(rawUrl || '').trim());
+    if (u.protocol !== 'https:') return false;
+    if (u.username || u.password) return false;
+    const h = String(u.hostname || '').toLowerCase();
+    if (!h || !/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)+$/.test(h)) return false;
+    if (h === 'localhost' || h === '127.0.0.1' || h === '::1' || h.endsWith('.local') || h.endsWith('.internal')) return false;
+    if (/^(?:10\.|127\.|192\.168\.|169\.254\.|172\.(?:1[6-9]|2\d|3[01])\.)/.test(h)) return false;
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
 const HONEST_DELIVERY_DISCLAIMER =
   'GMAIL_API_ACCEPTED != DELIVERED / INBOX / OPENED. Gmail API 200 OK는 Google API 접수만 의미하며 독립적인 전달·수신함 도착 증명이나 계정 정지 면제를 보장하지 않습니다.';
 
@@ -570,15 +585,16 @@ async function assessDeliverabilityHygiene({
   }
 
   // RFC 8058 One-Click Unsubscribe & Physical Address check
-  let unsubHostOk = false;
-  try {
-    const u = new URL(String(publicUnsubBase || '').trim());
-    unsubHostOk = u.protocol === 'https:' && u.hostname.toLowerCase() === PUBLIC_UNSUB_HOST;
-  } catch (_) {}
+  const cleanPublicUnsubBase = String(publicUnsubBase || '').trim();
+  const unsubHostOk = isValidPublicHttpsUnsubscribeBase(cleanPublicUnsubBase);
+  let resolvedUnsubHost = PUBLIC_UNSUB_HOST;
+  if (unsubHostOk) {
+    try { resolvedUnsubHost = new URL(cleanPublicUnsubBase).hostname.toLowerCase(); } catch (_) {}
+  }
   if (!unsubHostOk) {
     blockers.push({
       code: 'PUBLIC_HTTPS_UNSUBSCRIBE_REQUIRED',
-      message: `RFC 8058 One-Click 수신거부 공개 HTTPS 엔드포인트(https://${PUBLIC_UNSUB_HOST})가 구성되어 있지 않습니다.`
+      message: `RFC 8058 One-Click 수신거부 공개 HTTPS 엔드포인트(예: https://${PUBLIC_UNSUB_HOST} 또는 본인 도메인 수신거부 HTTPS URL)가 구성되어 있지 않습니다.`
     });
   }
 
@@ -619,7 +635,7 @@ async function assessDeliverabilityHygiene({
     unsubscribeCheck: {
       rfc8058OneClick: unsubHostOk,
       visibleFooterLinkEnforced: true,
-      host: unsubHostOk ? PUBLIC_UNSUB_HOST : null
+      host: unsubHostOk ? resolvedUnsubHost : null
     },
     physicalAddressPresent: hasPhysicalAddress,
     crossProviderSuppressionMerged: true,
@@ -760,5 +776,6 @@ module.exports = {
   buildDistributedSchedulePlan,
   assessDeliverabilityHygiene,
   buildTrueDashboard,
-  hasHeaderInjection
+  hasHeaderInjection,
+  isValidPublicHttpsUnsubscribeBase
 };
