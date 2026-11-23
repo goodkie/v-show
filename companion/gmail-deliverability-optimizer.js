@@ -19,6 +19,7 @@
  * - NEVER claims guaranteed Primary Inbox placement or account suspension immunity.
  */
 const { emailDomain, normalizeEmail } = require('./gmail-account-vault');
+const { isHighRiskImageHost } = require('./gmail-inline-image-embedder');
 
 const URL_SHORTENER_HOSTS = new Set([
   'bit.ly', 'tinyurl.com', 't.co', 'goo.gl', 'ow.ly', 'is.gd', 'buff.ly',
@@ -188,6 +189,37 @@ function deriveSafeDisplayName(rawDisplayName, fromEmail, provider = 'GMAIL', { 
   };
 }
 
+function stripHiddenPreheaderDivs(html) {
+  const orig = String(html || '');
+  const cleaned = orig.replace(
+    /<div\b[^>]*style\s*=\s*["'][^"']*display\s*:\s*none[^"']*["'][^>]*>[\s\S]*?<\/div>/gi,
+    ''
+  );
+  return { html: cleaned, removed: cleaned !== orig };
+}
+
+function buildGmailNativeCleanHtml(rawHtml, plainFallback = '') {
+  const src = String(rawHtml || '').trim();
+  if (!src) return buildLightweightNaturalHtml(plainFallback);
+  let inner = src
+    .replace(/<!doctype[^>]*>/gi, '')
+    .replace(/<head\b[^>]*>[\s\S]*?<\/head>/gi, '')
+    .replace(/<\/?(?:html|body)\b[^>]*>/gi, '');
+  inner = stripHiddenPreheaderDivs(inner).html;
+
+  // Unwrap presentation/newsletter outer layout tables while preserving ALL <img>, <a>, <a><img></a>, headings, text & footers
+  const hasPresentationTable = /<table\b[^>]*(?:role\s*=\s*["']?presentation["']?|background\s*:\s*#f3f5f8|width\s*=\s*["']?600["']?)[^>]*>/i.test(inner);
+  if (hasPresentationTable) {
+    inner = inner
+      .replace(/<\/?(?:table|thead|tbody|tfoot|tr|td|th)\b[^>]*>/gi, '\n')
+      .replace(/\n{3,}/g, '\n\n');
+  }
+  inner = inner.trim();
+  if (!inner) return buildLightweightNaturalHtml(plainFallback);
+  if (/^<div\s+dir="ltr"/i.test(inner)) return inner;
+  return `<div dir="ltr" style="font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.6;color:#222222;">\n${inner}\n</div>`;
+}
+
 function buildLightweightNaturalHtml(plainText) {
   const lines = String(plainText || '').replace(/\r\n/g, '\n').split('\n');
   const paras = [];
@@ -293,6 +325,7 @@ function optimizeAndScoreEmailMessage({
   ownerApprovedBrand = false,
   authorizedReplyTo = false,
   preferLightweightHtml = false,
+  embedInlineImages = true,
   mimeContentMode = 'MULTIPART_HTML'
 } = {}) {
   // Fail-closed header injection rejection (NEVER silently allow CR/LF/NUL injection in From / DisplayName / Reply-To)
@@ -320,11 +353,14 @@ function optimizeAndScoreEmailMessage({
   const normFrom = normalizeEmail(from || defaultFrom) || defaultFrom;
   const senderDom = emailDomain(normFrom) || (normProvider === 'RESEND' ? 'vivpr.pro' : '');
   const isConsumerGmail = normProvider === 'GMAIL' && (senderDom === 'gmail.com' || senderDom === 'googlemail.com');
-  // RC10: Existing templates, HTML images & links MUST NOT silently disappear -> lightweight conversion is explicit opt-in only!
+  // RC10/RC11: Existing templates, HTML images & links MUST NOT silently disappear -> lightweight plain-reconstruct is opt-in,
+  // while GMAIL_NATIVE_HTML strips only hidden 1px divs and grey 600px marketing table wrappers while preserving ALL images & links!
   const effectiveLightweight = preferLightweightHtml === true;
-  const normMimeMode = String(mimeContentMode || 'MULTIPART_HTML').toUpperCase() === 'PLAIN_TEXT_ONLY'
+  const rawModeUpper = String(mimeContentMode || 'MULTIPART_HTML').toUpperCase();
+  const normMimeMode = rawModeUpper === 'PLAIN_TEXT_ONLY'
     ? 'PLAIN_TEXT_ONLY'
-    : 'MULTIPART_HTML';
+    : (rawModeUpper === 'GMAIL_NATIVE_HTML' ? 'GMAIL_NATIVE_HTML' : 'MULTIPART_HTML');
+  const effectiveEmbedInlineCid = normProvider === 'GMAIL' && normMimeMode !== 'PLAIN_TEXT_ONLY' && embedInlineImages !== false;
 
   let outDisplayName = String(displayName || '').trim();
   let outReplyTo = String(replyTo || '').trim();
@@ -559,12 +595,22 @@ function optimizeAndScoreEmailMessage({
     providers: ['GMAIL', 'RESEND']
   });
 
-  // 5. [AUTO] Explicit Opt-In Lightweight Natural HTML Conversion & 102KB Gmail Clipping Guard
-  // RC10: Existing templates, HTML images & links are preserved intact unless user explicitly enables preferLightweightHtml or PLAIN_TEXT_ONLY!
+  // 5. [AUTO] RC11 Gmail Native Clean HTML (<div dir="ltr">, zero hidden 1px div, preserves ALL images & clickable links!) + Inline CID + 102KB Guard
   const plainFromHtml = stripHtmlToPlain(outHtml);
   let effectivePlain = outText.trim() || plainFromHtml;
   const isHeavyTemplateHtml = /<table\b|background-color\s*:|border-radius\s*:/i.test(outHtml) || outHtml.length > Math.max(1200, effectivePlain.length * 4);
+  const hadHiddenPreheader = /<div\b[^>]*style\s*=\s*["'][^"']*display\s*:\s*none[^"']*["'][^>]*>/i.test(outHtml);
+  const imgHosts = [];
+  for (const m of outHtml.matchAll(/<img\b[^>]*\bsrc\s*=\s*["'](https:\/\/[^"']+)["']/gi)) {
+    try {
+      const h = new URL(m[1]).hostname.toLowerCase();
+      if (h && !imgHosts.includes(h)) imgHosts.push(h);
+    } catch (_) {}
+  }
+  const highRiskImgHosts = imgHosts.filter(isHighRiskImageHost);
+
   let convertedLightweight = false;
+  let appliedNativeCleanHtml = false;
   if (autoOptimize && effectiveLightweight && (isConsumerGmail || normProvider === 'RESEND') && isHeavyTemplateHtml && effectivePlain.length > 0) {
     // Preserve custom non-placeholder HTTPS images & explicit links inside lightweight conversion (never silently drop them!)
     const sourcePlainForLight = plainFromHtml.length > 0 ? plainFromHtml : effectivePlain;
@@ -575,14 +621,65 @@ function optimizeAndScoreEmailMessage({
       code: 'AUTO_CONVERTED_LIGHTWEIGHT_NATURAL_HTML',
       detail: '운영자가 명시 선택한 경량 자연형 HTML 변환을 적용했습니다 (사용자 링크·이미지 참조·수신거부·물리적 주소 보존; Primary 배치는 보장하지 않음).'
     });
+  } else if (autoOptimize && normProvider === 'GMAIL' && normMimeMode === 'GMAIL_NATIVE_HTML' && outHtml.trim()) {
+    const cleanedNative = buildGmailNativeCleanHtml(outHtml, effectivePlain);
+    if (cleanedNative !== outHtml) {
+      outHtml = cleanedNative;
+      appliedNativeCleanHtml = true;
+      autoFixesApplied.push({
+        code: 'AUTO_APPLIED_GMAIL_NATIVE_CLEAN_HTML',
+        detail: 'Gmail 네이티브 클린 HTML(<div dir="ltr">)을 적용했습니다: 숨김 1px 프리헤더와 600px 뉴스레터 외곽 테이블을 제거하고 이미지·클릭 링크·본문·수신거부·주소를 100% 보존합니다.'
+      });
+    }
   } else if (isConsumerGmail && isHeavyTemplateHtml && normMimeMode !== 'PLAIN_TEXT_ONLY') {
+    if (hadHiddenPreheader && autoOptimize && normProvider === 'GMAIL') {
+      const sp = stripHiddenPreheaderDivs(outHtml);
+      if (sp.removed) {
+        outHtml = sp.html;
+        autoFixesApplied.push({
+          code: 'AUTO_STRIPPED_HIDDEN_PREHEADER',
+          detail: '스팸 필터 감점 요인인 숨김 1px 프리헤더(display:none) div를 자동 제거했습니다.'
+        });
+      }
+    }
     signals.push({
       code: 'HEAVY_PROMOTIONAL_HTML_ON_PERSONAL_GMAIL',
       points: 10,
       severity: 'LOW',
-      message: '참고(가설): 개인 @gmail.com에서 복잡한 테이블/배경 HTML은 Promotions로 분류될 수 있습니다. 기존 템플릿·이미지·링크는 무단 삭제하지 않고 보존합니다.'
+      message: '참고(가설): 개인 @gmail.com에서 복잡한 테이블/배경 HTML은 Promotions/Spam 감점 요인이 될 수 있습니다. [Gmail 네이티브 클린 HTML] 모드를 권장합니다.'
     });
   }
+
+  if (highRiskImgHosts.length > 0) {
+    if (effectiveEmbedInlineCid) {
+      autoFixesApplied.push({
+        code: 'AUTO_INLINE_CID_IMAGE_EMBED_READY',
+        detail: `외부 이미지 호스트(${highRiskImgHosts.join(', ')})를 발송 시 Gmail 네이티브 인라인 첨부(RFC 2387 multipart/related CID)로 자동 내장하여 외부 도메인 스팸 감점을 제거합니다 (클릭 링크 유지).`
+      });
+    } else if (normProvider === 'GMAIL' && normMimeMode !== 'PLAIN_TEXT_ONLY') {
+      signals.push({
+        code: 'THIRD_PARTY_RAW_IMAGE_HOST_RISK',
+        points: 15,
+        severity: 'MEDIUM',
+        message: `외부 원시 이미지 호스트(${highRiskImgHosts.join(', ')}) 링크가 Gmail 본문에 직접 포함되어 있습니다. 인라인 이미지(CID) 내장을 켜면 제3자 이미지 호스트 감점을 제거할 수 있습니다.`
+      });
+      recommendations.push('Gmail 발송 시 [인라인 이미지(CID) 자동 내장]을 활성화하여 raw.githubusercontent.com 등 외부 이미지 호스트 노출을 제거하세요.');
+    }
+  }
+
+  checklist.push({
+    id: 'GMAIL_NATIVE_INLINE_CID_AND_QP',
+    category: 'CONTENT_HTML',
+    mode: 'AUTO',
+    status: (effectiveEmbedInlineCid && imgHosts.length > 0) || appliedNativeCleanHtml ? 'AUTO_FIXED' : (highRiskImgHosts.length > 0 && !effectiveEmbedInlineCid ? 'ACTION_REQUIRED' : 'PASS'),
+    title: 'Gmail 네이티브 인라인 이미지(CID) · quoted-printable · 숨김 1px 제거',
+    detail: normProvider === 'GMAIL'
+      ? (effectiveEmbedInlineCid
+        ? `발송 시 text/plain·text/html을 RFC 2045 quoted-printable로 인코딩하고 외부 이미지(${imgHosts.length}개 호스트)를 multipart/related CID 인라인 첨부로 내장합니다 (클릭 링크 100% 보존).`
+        : '인라인 이미지(CID) 내장이 비활성화되어 외부 이미지 URL이 그대로 전송됩니다.')
+      : 'Resend API는 자체 표준 HTTPS 이미지 및 UTF-8 전송 경로를 사용합니다.',
+    providers: ['GMAIL', 'RESEND']
+  });
 
   const htmlByteSize = Buffer.byteLength(outHtml, 'utf8');
   const htmlClipRisk = htmlByteSize > 95000;
@@ -1023,6 +1120,27 @@ function buildMultiAccountGmailSpamHelpers({ accounts = [], subject = '', provid
   };
 }
 
+function buildGmailNativeComposeUrl({ from = '', to = '', subject = '', body = '' } = {}) {
+  const cleanFromRaw = String(from || '').replace(/[\r\n\0]+/g, '').trim();
+  const cleanFrom = (!cleanFromRaw.includes('*') && normalizeEmail(cleanFromRaw)) || '';
+  const cleanTo = normalizeEmail(String(to || '').replace(/[\r\n\0]+/g, '').trim()) || '';
+  const cleanSubj = String(subject || '').replace(/[\r\n\0]+/g, ' ').trim().slice(0, 160);
+  const cleanBody = String(body || '').replace(/\r\n/g, '\n').replace(/\0/g, '').trim().slice(0, 1500);
+  const u = new URL('https://mail.google.com/mail/');
+  u.searchParams.set('view', 'cm');
+  u.searchParams.set('fs', '1');
+  if (cleanFrom) u.searchParams.set('authuser', cleanFrom);
+  if (cleanTo) u.searchParams.set('to', cleanTo);
+  if (cleanSubj) u.searchParams.set('su', cleanSubj);
+  if (cleanBody) u.searchParams.set('body', cleanBody);
+  const href = u.href;
+  return {
+    ok: isOfficialGmailWebUrl(href),
+    composeUrl: isOfficialGmailWebUrl(href) ? href : 'https://mail.google.com/mail/?view=cm&fs=1',
+    policyNote: 'Google 공식 Gmail 웹 작성창 URL(mail.google.com/mail/?view=cm)만 열어 본인이 직접 검토·발송합니다 (DOM 스크래핑·자동 클릭 봇·추가 OAuth 권한 없음).'
+  };
+}
+
 function optimizeAndScoreGmailMessage(opts = {}) {
   return optimizeAndScoreEmailMessage({ provider: 'GMAIL', ...opts });
 }
@@ -1032,6 +1150,9 @@ module.exports = {
   optimizeAndScoreGmailMessage,
   buildGmailSpamSearchHelper,
   buildMultiAccountGmailSpamHelpers,
+  buildGmailNativeComposeUrl,
+  buildGmailNativeCleanHtml,
+  stripHiddenPreheaderDivs,
   isOfficialGmailWebUrl,
   hasHeaderControlInjection,
   softenSpamPhrasesInCopy,

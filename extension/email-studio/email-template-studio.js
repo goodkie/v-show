@@ -36,7 +36,11 @@ function htmlFor(v,preview=false){
  const blobAttr=(preview && localPic && previewFileUrl) ? ' data-local-blob="'+esc(previewFileUrl)+'"' : '';
  let img='';
  if(pic){
-  img='<img src="'+esc(pic)+'"'+blobAttr+' alt="'+esc(v.alt)+'" width="560" style="display:block;max-width:100%;width:100%;height:auto;border-radius:8px;margin:0 0 24px">';
+  const imgTag='<img src="'+esc(pic)+'"'+blobAttr+' alt="'+esc(v.alt)+'" width="560" style="display:block;max-width:100%;width:100%;height:auto;border-radius:8px;border:0;margin:0 0 24px">';
+  const ctaLinkUrl=url(v.link);
+  img=ctaLinkUrl
+   ? '<a href="'+esc(ctaLinkUrl)+'" target="_blank" rel="noopener noreferrer" style="display:block;text-decoration:none;border:0;">'+imgTag+'</a>'
+   : imgTag;
  }else if(preview && v.image){
   const msg=httpsPic
    ? '🔒 외부 HTTPS 이미지 미리보기 차단됨 (개인정보 보호 기본값 · 위 "외부 HTTPS 이미지 미리보기 로딩 허용" 체크 시 표시)'
@@ -1316,15 +1320,20 @@ function getUnifiedSpamOptFlags(provider = 'GMAIL') {
   const blockHigh = el('spamOptBlockHighRisk')
     ? Boolean(el('spamOptBlockHighRisk').checked)
     : Boolean(el('gmailBlockHighRiskSpam') && el('gmailBlockHighRiskSpam').checked);
-  const mimeContentMode = el('emailMimeContentMode') && el('emailMimeContentMode').value === 'PLAIN_TEXT_ONLY'
+  const embedInlineImages = el('spamOptEmbedInlineCid')
+    ? Boolean(el('spamOptEmbedInlineCid').checked)
+    : (!el('gmailEmbedInlineCid') || Boolean(el('gmailEmbedInlineCid').checked));
+  const rawMimeMode = el('emailMimeContentMode') ? String(el('emailMimeContentMode').value || '').toUpperCase() : 'GMAIL_NATIVE_HTML';
+  const mimeContentMode = rawMimeMode === 'PLAIN_TEXT_ONLY'
     ? 'PLAIN_TEXT_ONLY'
-    : 'MULTIPART_HTML';
+    : (rawMimeMode === 'GMAIL_NATIVE_HTML' ? 'GMAIL_NATIVE_HTML' : 'MULTIPART_HTML');
   return {
     autoSpamPrevention: isResend ? applyResend : applyGmail,
     ownerApprovedBrand,
     authorizedReplyTo: ownerApprovedBrand && !alignReplyTo,
     autoAlignReplyTo: alignReplyTo,
     preferLightweightHtml: isResend ? lightResend : lightGmail,
+    embedInlineImages: isResend ? false : embedInlineImages,
     mimeContentMode,
     blockHighRiskSpam: blockHigh
   };
@@ -3891,6 +3900,7 @@ function createBuiltinRecipientManager() {
     b.addEventListener('change', () => { a.checked = b.checked; updateActiveProviderNote(); });
   }
   bindTwoWayCheckboxSync('spamOptApplyGmail', 'gmailAutoSpamOpt');
+  bindTwoWayCheckboxSync('spamOptEmbedInlineCid', 'gmailEmbedInlineCid');
   bindTwoWayCheckboxSync('spamOptAutoAlignReplyTo', 'gmailAutoAlignReplyTo');
   bindTwoWayCheckboxSync('spamOptLightweightGmail', 'gmailLightweightHtml');
   bindTwoWayCheckboxSync('spamOptBlockHighRisk', 'gmailBlockHighRiskSpam');
@@ -4589,6 +4599,32 @@ function createBuiltinRecipientManager() {
   if (el('btnOpenGmailSelfTestInSpam')) {
     el('btnOpenGmailSelfTestInSpam').onclick = () => { openLastTestEmailInGmailSpam('GMAIL'); };
   }
+  if (el('btnOpenGmailNativeCompose')) {
+    el('btnOpenGmailNativeCompose').onclick = () => {
+      const v = values();
+      const to = el('gmailSelfTestRecipient') ? el('gmailSelfTestRecipient').value.trim() : '';
+      const subj = (v.subject || '').trim();
+      const bodyTxt = textFor(v).replace(/https?:\/\/[^\s"'<>]+\/unsubscribe\/preview-sample-only[^\n]*/gi, '').trim().slice(0, 1500);
+      const u = new URL('https://mail.google.com/mail/');
+      u.searchParams.set('view', 'cm');
+      u.searchParams.set('fs', '1');
+      if (to && /^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/.test(to)) u.searchParams.set('to', to);
+      if (subj) u.searchParams.set('su', subj.slice(0, 160));
+      if (bodyTxt) u.searchParams.set('body', bodyTxt);
+      const targetUrl = u.href;
+      if (!isOfficialGmailTabUrl(targetUrl)) return;
+      if (typeof chrome !== 'undefined' && chrome.tabs && typeof chrome.tabs.create === 'function') {
+        chrome.tabs.create({ url: targetUrl });
+      } else {
+        window.open(targetUrl, '_blank', 'noopener,noreferrer');
+      }
+      const box = el('gmailSelfTestStatus');
+      if (box) {
+        box.className = 'status-box status-idle';
+        box.textContent = '✉️ Google 공식 Gmail 웹 작성창을 열었습니다. 본인이 직접 검토·발송할 수 있습니다 (DOM 스크래핑·자동 클릭 봇 미사용).';
+      }
+    };
+  }
   if (el('btnCopySpamQuery')) {
     el('btnCopySpamQuery').onclick = async () => {
       const info = lastSpamHelperPayload || buildStudioGmailSpamHelper();
@@ -4770,9 +4806,11 @@ function createBuiltinRecipientManager() {
             sentAt: new Date().toISOString()
           });
           const opt = r.data.spamOptimization;
+          const mh = r.data.mimeHygiene;
           const optLine = opt ? `\n• 자동 스팸 방지: ${opt.grade} (${opt.riskScore}/100 · 자동 보정 ${opt.autoFixesApplied?.length || 0}건 적용)` : '';
+          const mhLine = mh ? `\n• 네이티브 MIME: ${r.data.mimeContentMode || 'GMAIL_NATIVE_HTML'} · ${mh.transferEncoding || 'quoted-printable'} · 인라인 이미지(CID) ${mh.inlineImagesEmbedded || 0}건 내장${(mh.replacedImageHosts && mh.replacedImageHosts.length) ? ` (외부 호스트 제거: ${mh.replacedImageHosts.join(', ')})` : ''}` : '';
           box.className = 'status-box status-success';
-          box.textContent = `✅ GMAIL_API_ACCEPTED (id=${r.data.providerMessageId}) | 발신: ${r.data.maskedFrom} → 수신: ${r.data.maskedTo}${optLine}\n• delivery=${r.data.delivery || 'UNKNOWN'} | inbox=${r.data.inbox || 'UNKNOWN'} | primary=${r.data.primary || 'UNKNOWN'} (${r.data.note || ''})\n• 스팸함에 들어갔다면 위 [📬 스팸함에서 직전 테스트 메일 열기 (스팸 아님 안내)] 버튼으로 바로 열어 [스팸 아님]을 클릭하세요.`;
+          box.textContent = `✅ GMAIL_API_ACCEPTED (id=${r.data.providerMessageId}) | 발신: ${r.data.maskedFrom} → 수신: ${r.data.maskedTo}${optLine}${mhLine}\n• delivery=${r.data.delivery || 'UNKNOWN'} | inbox=${r.data.inbox || 'UNKNOWN'} | primary=${r.data.primary || 'UNKNOWN'} (${r.data.note || ''})\n• 스팸함에 들어갔다면 위 [📬 스팸함에서 직전 테스트 메일 열기 (스팸 아님 안내)] 버튼으로 바로 열어 [스팸 아님]을 클릭하세요.`;
         } else {
           box.className = 'status-box status-error';
           box.textContent = `❌ Gmail 셀프 테스트 차단/실패: ${r?.data?.reason || r?.error || '-'}`;

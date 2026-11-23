@@ -158,6 +158,7 @@
   <div style="display:flex;flex-direction:column;gap:4px;margin:6px 0;padding:6px 8px;border:1px solid #cbd5e1;border-radius:6px;background:#fff;font-size:12px;">
     <label style="display:flex;align-items:center;gap:6px;"><input id="spamOptApplyGmail" type="checkbox" checked> <b>Gmail 발송 시 자동 위생 점검 적용</b> (기본 잔여 표시이름 정리 · 깨진 샘플 이미지/위험 태그 제거 · 제목 위생 · 표준 RFC 2047/2045 MIME · 고위험 차단)</label>
     <label style="display:flex;align-items:center;gap:6px;"><input id="spamOptApplyResend" type="checkbox" checked> <b>Resend 발송 시 자동 위생 점검 적용</b> (위험 태그/깨진 샘플 이미지 제거 · 제목 위생 · 텍스트/HTML 1:1 동기화 · 물리적 주소 보강)</label>
+    <label style="display:flex;align-items:center;gap:6px;"><input id="spamOptEmbedInlineCid" type="checkbox" checked> <b>Gmail 네이티브 인라인 이미지(CID) 자동 내장</b> (<code>raw.githubusercontent.com</code> 등 외부 이미지 호스트 노출을 제거하고 <code>multipart/related</code>로 내장 · 이미지 클릭 링크 100% 유지)</label>
     <label style="display:flex;align-items:center;gap:6px;"><input id="spamOptOwnerApprovedBrand" type="checkbox" checked> <b>입력한 발신자 상호명 및 Reply-To는 소유자가 승인한 정상 브랜드/회신 채널임</b> (무단 자동 변경·삭제 금지)</label>
     <label style="display:flex;align-items:center;gap:6px;"><input id="spamOptAutoAlignReplyTo" type="checkbox"> [선택] 발신 도메인과 다른 외부 <code>Reply-To</code> 자동 생략 (기본 해제 — 의도된 회신 채널 보존)</label>
     <label style="display:flex;align-items:center;gap:6px;"><input id="spamOptLightweightGmail" type="checkbox"> [선택] 개인 <code>@gmail.com</code> 발송 시 경량 자연형 HTML로 변환 (기본 해제 — 기존 HTML 템플릿·이미지·링크 보존)</label>
@@ -166,7 +167,8 @@
     <div style="margin-top:4px;">
       <label for="emailMimeContentMode"><b>Gmail 발송 MIME 콘텐츠 형식 (명시적 선택 · Primary 강제 비보장)</b></label>
       <select id="emailMimeContentMode">
-        <option value="MULTIPART_HTML">표준 HTML + 일반 텍스트 (기본 · 기존 템플릿·이미지·링크 보존)</option>
+        <option value="GMAIL_NATIVE_HTML" selected>Gmail 네이티브 클린 HTML + 인라인 이미지(CID) (권장 · 숨김 1px/뉴스레터 테이블 제거 · quoted-printable · 이미지·링크 100% 보존)</option>
+        <option value="MULTIPART_HTML">표준 HTML + 일반 텍스트 (원본 뉴스레터 테이블 유지 · quoted-printable · 인라인 CID)</option>
         <option value="PLAIN_TEXT_ONLY">순수 텍스트 전용 (text/plain · quoted-printable · RFC 8058 수신거부/물리적 주소 유지)</option>
       </select>
     </div>
@@ -407,7 +409,8 @@
 
     <div style="margin-top:8px;padding:8px;border:1px solid rgba(22,163,74,0.35);border-radius:6px;background:rgba(240,253,244,0.65);">
       <b>✨ 자동 스팸 방지 · 발신 품질 보호 (Auto Anti-Spam Optimizer · 기본 활성)</b>
-      <label style="display:flex;align-items:center;gap:6px;margin:4px 0;font-size:12px;"><input id="gmailAutoSpamOpt" type="checkbox" checked> <b>자동 위생 최적화 활성화</b> (기본 잔여 표시이름 정리 · 깨진 샘플 이미지/위험 태그 제거 · 제목 위생 · 표준 RFC 2047/2045 MIME · 정상 상호명/템플릿 보존)</label>
+      <label style="display:flex;align-items:center;gap:6px;margin:4px 0;font-size:12px;"><input id="gmailAutoSpamOpt" type="checkbox" checked> <b>자동 위생 최적화 활성화</b> (네이티브 클린 HTML · quoted-printable · 기본 잔여 표시이름 정리 · 깨진 샘플 이미지/위험 태그 제거 · 제목 위생)</label>
+      <label style="display:flex;align-items:center;gap:6px;margin:4px 0;font-size:12px;"><input id="gmailEmbedInlineCid" type="checkbox" checked> <b>Gmail 네이티브 인라인 이미지(CID) 자동 내장</b> (<code>raw.githubusercontent.com</code> 등 외부 이미지 호스트 대신 본문 내장 · 클릭 링크 유지)</label>
       <label style="display:flex;align-items:center;gap:6px;margin:4px 0;font-size:12px;"><input id="gmailAutoAlignReplyTo" type="checkbox"> [선택] 발신 도메인과 다른 외부 <code>Reply-To</code> 자동 생략 (기본 해제 — 승인된 회신 채널 보존)</label>
       <label style="display:flex;align-items:center;gap:6px;margin:4px 0;font-size:12px;"><input id="gmailLightweightHtml" type="checkbox"> [선택] 개인 <code>@gmail.com</code> 발송 시 경량 자연형 HTML로 변환 (기본 해제 — 기존 HTML 템플릿·이미지·링크 보존)</label>
       <label style="display:flex;align-items:center;gap:6px;margin:4px 0;font-size:12px;"><input id="gmailBlockHighRiskSpam" type="checkbox" checked> 스팸 위험도 <b>HIGH_RISK (55점 이상)</b> 판정 시 발송 전 자동 차단</label>
@@ -425,7 +428,7 @@
       <div><label for="gmailSelfTestRecipient">승인된 본인 테스트 수신자 (1개)</label><input id="gmailSelfTestRecipient" type="email" placeholder="예: owner-test@example.com"></div>
     </div>
     <label style="display:flex;align-items:center;gap:6px;margin:6px 0;font-size:12px;"><input id="gmailSelfTestConsent" type="checkbox"> 이 수신자는 본인이 관리하거나 Gmail 1통 셀프 테스트 수신을 명시적으로 승인한 주소임을 확인합니다.</label>
-    <div class="actions"><button type="button" class="primary" id="btnGmailSelfTestSend">📨 Gmail 1통 셀프 테스트 발송</button><button type="button" id="btnOpenGmailSelfTestInSpam">📬 스팸함에서 직전 테스트 메일 열기 (스팸 아님 안내)</button></div>
+    <div class="actions"><button type="button" class="primary" id="btnGmailSelfTestSend">📨 Gmail 1통 셀프 테스트 발송</button><button type="button" id="btnOpenGmailNativeCompose">✉️ Gmail 웹 작성창에서 직접 보내기 (1:1 네이티브)</button><button type="button" id="btnOpenGmailSelfTestInSpam">📬 스팸함에서 직전 테스트 메일 열기 (스팸 아님 안내)</button></div>
     <div id="gmailSelfTestStatus" class="status-box status-idle" style="margin-top:6px;">대기 중: Gmail 계정 연결 후 본인 테스트 주소를 입력해 1통 검증하세요.</div>
   </div>
 

@@ -12,7 +12,8 @@ const { GmailAccountVault, GMAIL_OAUTH_SCOPES } = require('../companion/gmail-ac
 const { GmailCampaignRunner } = require('../companion/gmail-campaign-runner');
 const { GmailSendBlocked, rawGmailMime, encodeQuotedPrintable, foldAsciiHeader } = require('../companion/gmail-sender-foundation');
 const { AdaptiveThrottleController, assessDeliverabilityHygiene } = require('../companion/gmail-safe-delivery-engine');
-const { optimizeAndScoreGmailMessage, optimizeAndScoreEmailMessage, buildGmailSpamSearchHelper, buildMultiAccountGmailSpamHelpers, isOfficialGmailWebUrl } = require('../companion/gmail-deliverability-optimizer');
+const { optimizeAndScoreGmailMessage, optimizeAndScoreEmailMessage, buildGmailSpamSearchHelper, buildMultiAccountGmailSpamHelpers, buildGmailNativeComposeUrl, buildGmailNativeCleanHtml, stripHiddenPreheaderDivs, isOfficialGmailWebUrl } = require('../companion/gmail-deliverability-optimizer');
+const { embedHtmlImagesAsCid } = require('../companion/gmail-inline-image-embedder');
 const { EmailProductionPipeline } = require('../companion/email-production-pipeline');
 const { CampaignAnalyticsEngine, sha256Hex } = require('../companion/email-campaign-analytics');
 const { EmailTestSidecar } = require('../companion/email-test-sidecar');
@@ -1320,6 +1321,140 @@ function makeRefreshVaultFetch(counterRef) {
       assert.ok(jsNow.includes('isOfficialGmailTabUrl') && jsNow.includes('PRODUCTION_CSV_NOT_ALLOWED_IN_TEST_MAILBOXES') && jsNow.includes('OWNER_OBSERVED_INBOX_PROMOTIONS'));
       checks += 4;
       console.log('PASS 13: RC10 genuine brand/Reply-To preservation, neutral MIME + quoted-printable/plain-text mode, official URL & metric semantics verified');
+    }
+
+    // ===== PASS 14: RC11 Gmail Native MIME Architecture (quoted-printable default, RFC 5322 +0000 Date, multipart/related Inline CID, Clickable Image Link Preservation, Clean <div dir="ltr"> HTML, Valid </body> Address Injection, Native Compose URL) =====
+    {
+      // (a) Default MULTIPART_HTML now uses quoted-printable (eliminates MIME_BASE64_TEXT) & RFC 5322 +0000 Date (no obsolete GMT)
+      const qpMulti = Buffer.from(rawGmailMime({
+        from: 'owner@gmail.com',
+        to: 'rcpt@example.test',
+        verifiedFromAddresses: ['owner@gmail.com'],
+        displayName: 'Acme Studio',
+        subject: 'RC11 Native QP Check',
+        html: '<div dir="ltr"><p>Hello = World</p></div>',
+        text: 'Hello = World',
+        unsubscribeUrl: 'https://unsubscribe.vivpr.pro/unsubscribe/tok_rc11_qp',
+        campaignAuthorized: true,
+        recipientEligible: true,
+        ledgerIntentPersisted: true
+      }), 'base64url').toString('utf8');
+      assert.match(qpMulti, /Date: [^\r\n]+\+0000\r\n/);
+      assert.ok(!/Date: [^\r\n]+GMT\r\n/.test(qpMulti), 'Must use RFC 5322 +0000 timezone instead of obsolete GMT');
+      assert.match(qpMulti, /Content-Type: text\/plain; charset=utf-8\r\nContent-Transfer-Encoding: quoted-printable/);
+      assert.match(qpMulti, /Content-Type: text\/html; charset=utf-8\r\nContent-Transfer-Encoding: quoted-printable/);
+      assert.ok(!qpMulti.includes('Content-Transfer-Encoding: base64'), 'Text/HTML must NOT default to base64');
+
+      // (b) Inline CID embedder: converts high-risk raw.githubusercontent.com image -> multipart/related CID while preserving <a href="..."> wrapper!
+      // Minimal valid 1x1 PNG bytes
+      const tinyPng = Buffer.from('89504e470d0a1a0a0000000d49484452000000010000000108060000001f15c4890000000a49444154789c63000100000500010d0a2db40000000049454e44ae426082', 'hex');
+      const mockImgFetch = async (urlStr) => {
+        if (String(urlStr).includes('bad-svg')) {
+          return { ok: true, status: 200, arrayBuffer: async () => Buffer.from('<svg><script>alert(1)</script></svg>', 'utf8') };
+        }
+        return { ok: true, status: 200, arrayBuffer: async () => tinyPng };
+      };
+      const rawPromoHtml = '<!doctype html><html><head><meta charset="utf-8"></head><body style="background:#f3f5f8"><div style="display:none;font-size:1px;max-height:0;overflow:hidden">Hidden Preheader</div><table role="presentation" width="100%" style="background:#f3f5f8"><tr><td><table role="presentation" width="600" style="background:#fff"><tr><td><h1>Welcome</h1><a href="https://acme-brand.example/offer" target="_blank"><img src="https://raw.githubusercontent.com/acme/assets/main/hero.png" alt="Hero"></a><p>Real message body here.</p></td></tr></table></td></tr></table></body></html>';
+
+      const nativeHtml = buildGmailNativeCleanHtml(rawPromoHtml);
+      assert.ok(nativeHtml.startsWith('<div dir="ltr"'), 'Gmail Native Clean HTML must use native <div dir="ltr"> container');
+      assert.ok(!nativeHtml.includes('display:none'), 'Hidden 1px preheader div must be stripped');
+      assert.ok(!nativeHtml.includes('<table'), 'Outer presentation newsletter table chrome must be removed');
+      assert.ok(nativeHtml.includes('href="https://acme-brand.example/offer"'), 'Clickable image link <a href> MUST be preserved');
+      assert.ok(nativeHtml.includes('raw.githubusercontent.com/acme/assets/main/hero.png'), 'Image tag MUST be preserved before CID embedding');
+
+      const cidEmbed = await embedHtmlImagesAsCid(nativeHtml, { fetchImpl: mockImgFetch, trustedTestMode: true });
+      assert.equal(cidEmbed.embeddedCount, 1);
+      assert.deepEqual(cidEmbed.replacedHosts, ['raw.githubusercontent.com']);
+      assert.ok(!cidEmbed.html.includes('raw.githubusercontent.com'), 'raw.githubusercontent.com URL must be eliminated from sent HTML');
+      assert.ok(cidEmbed.html.includes('href="https://acme-brand.example/offer"'), 'Clickable <a href> around CID image MUST remain intact');
+      assert.match(cidEmbed.html, /<img\b[^>]*src="cid:ii_[a-f0-9]{14}"/);
+
+      // SVG disguised as image must be rejected fail-closed (fallback leaves original URL, 0 CID embedded)
+      const svgRes = await embedHtmlImagesAsCid('<img src="https://example.test/bad-svg.png">', { fetchImpl: mockImgFetch, trustedTestMode: true });
+      assert.equal(svgRes.embeddedCount, 0);
+      assert.equal(svgRes.failedCount, 1);
+      assert.ok(svgRes.failedReasons.includes('INVALID_IMAGE_SIGNATURE'));
+
+      // (c) End-to-end Gmail self-test with GMAIL_NATIVE_HTML + inline CID + physical address inside closing tag (zero trailing tags outside </html>!)
+      const dirRc11 = path.join(tmpRoot, 'rc11_native_mime');
+      const pipeRc11 = new EmailProductionPipeline({ stateDir: dirRc11, trustedTestMode: true });
+      const vaultRc11 = new GmailAccountVault({ stateDir: dirRc11, trustedTestMode: true, cryptoBox: box });
+      vaultRc11.upsertMockAccountForTest({ email: 'rc11@gmail.com', cap24h: 20 });
+      const acctRc11 = vaultRc11.listAccountsSafe()[0];
+      let capturedRc11Mime = '';
+      const mockGmailRc11 = async (url, init) => {
+        const body = JSON.parse(init.body);
+        capturedRc11Mime = Buffer.from(body.raw, 'base64url').toString('utf8');
+        return { ok: true, status: 200, json: async () => ({ id: 'gm_rc11_1', threadId: 'thr_rc11_1' }) };
+      };
+      const runnerRc11 = new GmailCampaignRunner({ stateDir: dirRc11, pipeline: pipeRc11, vault: vaultRc11, trustedTestMode: true, syncFetchImpl: okSyncFetch });
+      const selfRc11 = await runnerRc11.sendGmailSelfTest({
+        accountId: acctRc11.id,
+        to: 'rc11-target@example.test',
+        displayName: 'Acme Studio',
+        subject: 'RC11 Native Inline CID Test',
+        html: rawPromoHtml,
+        text: 'Welcome. Real message body here.',
+        physicalAddress: '200 Native Way, Synthetic City, ZZ 00000',
+        mimeContentMode: 'GMAIL_NATIVE_HTML',
+        embedInlineImages: true,
+        ownerApprovedBrand: true,
+        recipientConsentConfirmed: true,
+        ownerExplicitApproval: true,
+        baseUrlOverride: 'https://unsubscribe.vivpr.pro',
+        syncTokenOverride: 'tok_rc11_sync_1234567890',
+        fetchImpl: mockGmailRc11,
+        syncFetchImpl: okSyncFetch,
+        imageFetchImpl: mockImgFetch
+      });
+      assert.equal(selfRc11.ok, true);
+      assert.equal(selfRc11.mimeContentMode, 'GMAIL_NATIVE_HTML');
+      assert.equal(selfRc11.mimeHygiene.transferEncoding, 'quoted-printable');
+      assert.equal(selfRc11.mimeHygiene.inlineImagesEmbedded, 1);
+      assert.deepEqual(selfRc11.mimeHygiene.replacedImageHosts, ['raw.githubusercontent.com']);
+      assert.match(capturedRc11Mime, /Content-Type: multipart\/related; boundary="r_[a-f0-9]{32}"/);
+      assert.match(capturedRc11Mime, /Content-Type: multipart\/alternative; boundary="b_[a-f0-9]{32}"/);
+      assert.match(capturedRc11Mime, /Content-Type: image\/png; name="hero\.png"/);
+      assert.match(capturedRc11Mime, /Content-ID: <ii_[a-f0-9]{14}>/);
+      assert.match(capturedRc11Mime, /Content-Disposition: inline; filename="hero\.png"/);
+      assert.match(capturedRc11Mime, /List-Unsubscribe-Post: List-Unsubscribe=One-Click/);
+      assert.ok(!capturedRc11Mime.includes('raw.githubusercontent.com'), 'Sent Gmail MIME must not reference raw.githubusercontent.com');
+      assert.ok(!/<\/html>\s*<p/i.test(capturedRc11Mime), 'Physical address must NEVER trail after </html>');
+
+      // (d) Optimizer detects THIRD_PARTY_RAW_IMAGE_HOST_RISK when CID is off & AUTO_FIXED when CID is on; Native Compose URL strictly official
+      const optOff = optimizeAndScoreGmailMessage({
+        from: 'rc11@gmail.com',
+        displayName: 'Acme Studio',
+        subject: 'Image Host Test',
+        html: '<p>Hi</p><img src="https://raw.githubusercontent.com/a/b/main/c.jpg" alt="c">',
+        text: 'Hi',
+        embedInlineImages: false,
+        mimeContentMode: 'MULTIPART_HTML'
+      });
+      assert.ok(optOff.signals.some(s => s.code === 'THIRD_PARTY_RAW_IMAGE_HOST_RISK'));
+      const optOn = optimizeAndScoreGmailMessage({
+        from: 'rc11@gmail.com',
+        displayName: 'Acme Studio',
+        subject: 'Image Host Test',
+        html: rawPromoHtml,
+        text: 'Hi',
+        embedInlineImages: true,
+        mimeContentMode: 'GMAIL_NATIVE_HTML'
+      });
+      assert.ok(optOn.autoFixesApplied.some(f => f.code === 'AUTO_INLINE_CID_IMAGE_EMBED_READY'));
+      assert.ok(optOn.autoFixesApplied.some(f => f.code === 'AUTO_APPLIED_GMAIL_NATIVE_CLEAN_HTML'));
+      const composeInfo = buildGmailNativeComposeUrl({ from: 'rc11@gmail.com', to: 'target@example.test', subject: 'Hi', body: 'Hello' });
+      assert.equal(composeInfo.ok, true);
+      assert.equal(isOfficialGmailWebUrl(composeInfo.composeUrl), true);
+      assert.ok(composeInfo.composeUrl.includes('view=cm'));
+
+      const htmlRc11 = fs.readFileSync(path.join(__dirname, '..', 'extension', 'email-studio', 'index.html'), 'utf8');
+      const jsRc11 = fs.readFileSync(path.join(__dirname, '..', 'extension', 'email-studio', 'email-template-studio.js'), 'utf8');
+      assert.ok(htmlRc11.includes('value="GMAIL_NATIVE_HTML"') && htmlRc11.includes('id="spamOptEmbedInlineCid"') && htmlRc11.includes('id="btnOpenGmailNativeCompose"'));
+      assert.ok(jsRc11.includes('ctaLinkUrl') && jsRc11.includes('embedInlineImages') && jsRc11.includes('btnOpenGmailNativeCompose'));
+      checks += 4;
+      console.log('PASS 14: RC11 Gmail Native MIME (quoted-printable, RFC 5322 +0000, multipart/related CID, clickable image link, clean <div dir="ltr">, valid </body> footer & official compose helper) verified');
     }
 
     console.log(`XPIDER V7.1 Gmail Safe Delivery Engine suite: ${checks}/${checks} PASS; ZERO REAL SENDS`);

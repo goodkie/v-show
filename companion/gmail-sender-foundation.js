@@ -121,6 +121,40 @@ function encodeQuotedPrintable(value) {
   return outLines.join('\r\n');
 }
 
+function formatRfc5322Date(dateObj = new Date()) {
+  return dateObj.toUTCString().replace(/GMT$/, '+0000');
+}
+
+function validateInlineImages(rawList) {
+  if (!Array.isArray(rawList) || rawList.length === 0) return [];
+  const allowedMimes = new Set(['image/png', 'image/jpeg', 'image/gif', 'image/webp']);
+  const out = [];
+  let totalBytes = 0;
+  for (const item of rawList) {
+    if (!item || typeof item !== 'object') throw new GmailSendBlocked('INVALID_INLINE_IMAGE');
+    const cid = textHeader(String(item.cid || ''), 'INLINE_IMAGE_CID');
+    if (!/^[A-Za-z0-9._-]{3,64}$/u.test(cid)) throw new GmailSendBlocked('INVALID_INLINE_IMAGE_CID');
+    const contentType = textHeader(String(item.contentType || ''), 'INLINE_IMAGE_TYPE').toLowerCase();
+    if (!allowedMimes.has(contentType)) throw new GmailSendBlocked('INVALID_INLINE_IMAGE_TYPE');
+    const filename = textHeader(String(item.filename || `${cid}.jpg`), 'INLINE_IMAGE_FILENAME')
+      .replace(/["\\;]/g, '_')
+      .slice(0, 64);
+    const dataBase64 = String(item.dataBase64 || '').replace(/\s+/g, '');
+    if (!dataBase64 || !/^[A-Za-z0-9+/=]+$/u.test(dataBase64)) throw new GmailSendBlocked('INVALID_INLINE_IMAGE_DATA');
+    const rawBuf = Buffer.from(dataBase64, 'base64');
+    if (rawBuf.length === 0 || rawBuf.length > 2 * 1024 * 1024) throw new GmailSendBlocked('INLINE_IMAGE_TOO_LARGE');
+    totalBytes += rawBuf.length;
+    if (totalBytes > 4 * 1024 * 1024) throw new GmailSendBlocked('INLINE_IMAGES_TOTAL_TOO_LARGE');
+    out.push({
+      cid,
+      contentType,
+      filename,
+      wrappedBase64: dataBase64.replace(/.{1,76}/g, '$&\r\n').trimEnd()
+    });
+  }
+  return out;
+}
+
 function rawGmailMime(options) {
   const from = address(options.from);
   const to = address(options.to);
@@ -142,17 +176,20 @@ function rawGmailMime(options) {
   const mimeMode = String(options.mimeContentMode || 'MULTIPART_HTML').toUpperCase() === 'PLAIN_TEXT_ONLY'
     ? 'PLAIN_TEXT_ONLY'
     : 'MULTIPART_HTML';
-  const transferEnc = String(options.transferEncoding || (mimeMode === 'PLAIN_TEXT_ONLY' ? 'quoted-printable' : 'base64')).toLowerCase() === 'quoted-printable'
-    ? 'quoted-printable'
-    : 'base64';
+  // RC11: Default to RFC 2045 quoted-printable for ALL text/plain and text/html parts (matching native Gmail Web
+  // and eliminating MIME_BASE64_TEXT spam heuristics); base64 remains selectable explicitly and used for binary inline images.
+  const transferEnc = String(options.transferEncoding || 'quoted-printable').toLowerCase() === 'base64'
+    ? 'base64'
+    : 'quoted-printable';
   const encodeBody = transferEnc === 'quoted-printable' ? encodeQuotedPrintable : base64Lines;
+  const rfcDate = formatRfc5322Date();
 
   if (mimeMode === 'PLAIN_TEXT_ONLY') {
     if (!plain.trim() || /[\r\n]/u.test(unsub.href) || !plain.includes(unsub.href)) {
       throw new GmailSendBlocked('MISSING_BODY_OR_UNSUBSCRIBE');
     }
     const headers = [
-      'Date: ' + new Date().toUTCString(),
+      'Date: ' + rfcDate,
       'From: ' + fromHeader(name, from),
       'To: <' + to + '>',
       ...(options.replyTo ? ['Reply-To: <' + address(options.replyTo) + '>'] : []),
@@ -170,9 +207,60 @@ function rawGmailMime(options) {
   if (!html.trim() || !plain.trim() || /[\r\n]/u.test(unsub.href)) {
     throw new GmailSendBlocked('MISSING_BODY_OR_UNSUBSCRIBE');
   }
-  const boundary = 'b_' + crypto.randomBytes(16).toString('hex');
+  const inlineImages = validateInlineImages(options.inlineImages);
+  const altBoundary = 'b_' + crypto.randomBytes(16).toString('hex');
+  const altParts = [
+    '--' + altBoundary,
+    'Content-Type: text/plain; charset=utf-8',
+    'Content-Transfer-Encoding: ' + transferEnc,
+    '',
+    encodeBody(plain),
+    '--' + altBoundary,
+    'Content-Type: text/html; charset=utf-8',
+    'Content-Transfer-Encoding: ' + transferEnc,
+    '',
+    encodeBody(html),
+    '--' + altBoundary + '--',
+    ''
+  ];
+
+  if (inlineImages.length > 0) {
+    const relBoundary = 'r_' + crypto.randomBytes(16).toString('hex');
+    const headers = [
+      'Date: ' + rfcDate,
+      'From: ' + fromHeader(name, from),
+      'To: <' + to + '>',
+      ...(options.replyTo ? ['Reply-To: <' + address(options.replyTo) + '>'] : []),
+      'Subject: ' + subject,
+      'MIME-Version: 1.0',
+      'List-Unsubscribe: <' + unsub.href + '>',
+      'List-Unsubscribe-Post: List-Unsubscribe=One-Click',
+      'Content-Type: multipart/related; boundary="' + relBoundary + '"'
+    ];
+    const relBody = [
+      '--' + relBoundary,
+      'Content-Type: multipart/alternative; boundary="' + altBoundary + '"',
+      '',
+      ...altParts
+    ];
+    for (const img of inlineImages) {
+      relBody.push(
+        '--' + relBoundary,
+        `Content-Type: ${img.contentType}; name="${img.filename}"`,
+        'Content-Transfer-Encoding: base64',
+        `Content-ID: <${img.cid}>`,
+        `Content-Disposition: inline; filename="${img.filename}"`,
+        '',
+        img.wrappedBase64
+      );
+    }
+    relBody.push('--' + relBoundary + '--', '');
+    return Buffer.from(headers.join('\r\n') + '\r\n\r\n' + relBody.join('\r\n'), 'utf8')
+      .toString('base64url');
+  }
+
   const headers = [
-    'Date: ' + new Date().toUTCString(),
+    'Date: ' + rfcDate,
     'From: ' + fromHeader(name, from),
     'To: <' + to + '>',
     ...(options.replyTo ? ['Reply-To: <' + address(options.replyTo) + '>'] : []),
@@ -180,23 +268,9 @@ function rawGmailMime(options) {
     'MIME-Version: 1.0',
     'List-Unsubscribe: <' + unsub.href + '>',
     'List-Unsubscribe-Post: List-Unsubscribe=One-Click',
-    'Content-Type: multipart/alternative; boundary="' + boundary + '"'
+    'Content-Type: multipart/alternative; boundary="' + altBoundary + '"'
   ];
-  const body = [
-    '--' + boundary,
-    'Content-Type: text/plain; charset=utf-8',
-    'Content-Transfer-Encoding: ' + transferEnc,
-    '',
-    encodeBody(plain),
-    '--' + boundary,
-    'Content-Type: text/html; charset=utf-8',
-    'Content-Transfer-Encoding: ' + transferEnc,
-    '',
-    encodeBody(html),
-    '--' + boundary + '--',
-    ''
-  ];
-  return Buffer.from(headers.join('\r\n') + '\r\n\r\n' + body.join('\r\n'), 'utf8')
+  return Buffer.from(headers.join('\r\n') + '\r\n\r\n' + altParts.join('\r\n'), 'utf8')
     .toString('base64url');
 }
 

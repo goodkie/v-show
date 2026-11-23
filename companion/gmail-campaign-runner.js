@@ -26,6 +26,7 @@ const {
   hasHeaderInjection
 } = require('./gmail-safe-delivery-engine');
 const { optimizeAndScoreGmailMessage } = require('./gmail-deliverability-optimizer');
+const { embedHtmlImagesAsCid } = require('./gmail-inline-image-embedder');
 const RM = require('../extension/email-studio/recipient-manager');
 
 const PUBLIC_UNSUB_HOST = 'unsubscribe.vivpr.pro';
@@ -45,9 +46,21 @@ function ensurePhysicalAddressInFooter({ html = '', text = '', physicalAddress =
   const hasAddrText = text.toLowerCase().includes(addr.toLowerCase());
   const hasAddrHtml = html.toLowerCase().includes(addr.toLowerCase());
   const safeAddrHtml = addr.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const addrTag = `<p style="font-size:11px;color:#64748b;margin-top:8px;">발신자 주소: ${safeAddrHtml}</p>`;
+  let nextHtml = html;
+  if (!hasAddrHtml && nextHtml) {
+    // RC11 FIX: Insert cleanly INSIDE </body> (never trailing after </html>, which triggers HTML-structure spam heuristics!)
+    if (/<\/body>/i.test(nextHtml)) {
+      nextHtml = nextHtml.replace(/<\/body>/i, `${addrTag}\n</body>`);
+    } else if (/<\/div>\s*$/i.test(nextHtml) && /^<div\s+dir="ltr"/i.test(nextHtml.trim())) {
+      nextHtml = nextHtml.replace(/<\/div>\s*$/i, `${addrTag}\n</div>`);
+    } else {
+      nextHtml = `${nextHtml}\n${addrTag}`;
+    }
+  }
   return {
     text: hasAddrText ? text : `${text.trimEnd()}\n\n발신자 주소: ${addr}`,
-    html: hasAddrHtml ? html : `${html}\n<p style="font-size:11px;color:#64748b;margin-top:8px;">발신자 주소: ${safeAddrHtml}</p>`
+    html: nextHtml
   };
 }
 
@@ -73,6 +86,7 @@ class GmailCampaignRunner {
     this._activeBgPromise = null;
     this.lastRunResult = null;
     this.lastHygieneReport = null;
+    this._inlineImageCache = new Map();
     this.queue = this._loadQueue();
     this.throttle = AdaptiveThrottleController.fromJSON(this.queue.throttle || null, this.nowFn);
   }
@@ -224,6 +238,7 @@ class GmailCampaignRunner {
     ownerApprovedBrand = false,
     authorizedReplyTo = false,
     preferLightweightHtml = false,
+    embedInlineImages = true,
     mimeContentMode = 'MULTIPART_HTML'
   } = {}) {
     const accountsWithUsage = this.vault.getInternalAccountsWithUsage();
@@ -259,6 +274,7 @@ class GmailCampaignRunner {
       ownerApprovedBrand: ownerApprovedBrand === true,
       authorizedReplyTo: authorizedReplyTo === true,
       preferLightweightHtml: preferLightweightHtml === true,
+      embedInlineImages: embedInlineImages !== false,
       mimeContentMode
     });
   }
@@ -855,6 +871,7 @@ class GmailCampaignRunner {
     ownerApprovedBrand = false,
     authorizedReplyTo = false,
     preferLightweightHtml = false,
+    embedInlineImages = true,
     mimeContentMode = 'MULTIPART_HTML',
     transferEncoding = undefined,
     blockHighRiskSpam = false,
@@ -863,7 +880,8 @@ class GmailCampaignRunner {
     baseUrlOverride = null,
     syncTokenOverride = null,
     fetchImpl = null,
-    syncFetchImpl = null
+    syncFetchImpl = null,
+    imageFetchImpl = null
   } = {}) {
     if (ownerExplicitApproval !== true || recipientConsentConfirmed !== true) {
       return { ok: false, statusCode: 400, status: 'BLOCKED', reason: 'EXPLICIT_CONSENT_AND_APPROVAL_REQUIRED' };
@@ -1005,6 +1023,7 @@ class GmailCampaignRunner {
       ownerApprovedBrand: ownerApprovedBrand === true,
       authorizedReplyTo: authorizedReplyTo === true,
       preferLightweightHtml: preferLightweightHtml === true,
+      embedInlineImages: embedInlineImages !== false,
       mimeContentMode
     });
     if (spamOpt.blocked && spamOpt.reason === 'INVALID_HEADER_INJECTION') {
@@ -1035,6 +1054,17 @@ class GmailCampaignRunner {
     const withFooter = injectUnsubscribeFooter({ html: finalHtmlIn, text: finalTextIn, unsubscribeUrl: unsub.url });
     const withAddr = ensurePhysicalAddressInFooter({ ...withFooter, physicalAddress });
 
+    const normMode = String(mimeContentMode || 'MULTIPART_HTML').toUpperCase();
+    const shouldEmbedCid = normMode !== 'PLAIN_TEXT_ONLY' && embedInlineImages !== false;
+    let cidRes = { html: withAddr.html, inlineImages: [], embeddedCount: 0, replacedHosts: [], failedCount: 0, failedReasons: [], totalInlineBytes: 0 };
+    if (shouldEmbedCid && withAddr.html && /<img\b/i.test(withAddr.html)) {
+      cidRes = await embedHtmlImagesAsCid(withAddr.html, {
+        fetchImpl: typeof imageFetchImpl === 'function' ? imageFetchImpl : (this.trustedTestMode ? null : globalThis.fetch),
+        trustedTestMode: this.trustedTestMode,
+        cache: this._inlineImageCache
+      });
+    }
+
     let raw;
     try {
       raw = rawGmailMime({
@@ -1044,11 +1074,12 @@ class GmailCampaignRunner {
         verifiedFromAddresses: targetAcct.verifiedSendAs || [targetAcct.email],
         displayName: finalDisplayName,
         subject: finalSubject,
-        html: withAddr.html,
+        html: cidRes.html,
         text: withAddr.text,
+        inlineImages: cidRes.inlineImages,
         unsubscribeUrl: unsub.url,
-        mimeContentMode,
-        transferEncoding,
+        mimeContentMode: normMode === 'PLAIN_TEXT_ONLY' ? 'PLAIN_TEXT_ONLY' : 'MULTIPART_HTML',
+        transferEncoding: transferEncoding || 'quoted-printable',
         campaignAuthorized: true,
         recipientEligible: true,
         ledgerIntentPersisted: true
@@ -1104,7 +1135,14 @@ class GmailCampaignRunner {
         accountId: selected.accountId,
         maskedFrom: maskEmail(resolvedFrom || selected.from),
         maskedTo: maskEmail(normTo),
-        mimeContentMode: String(mimeContentMode || 'MULTIPART_HTML').toUpperCase() === 'PLAIN_TEXT_ONLY' ? 'PLAIN_TEXT_ONLY' : 'MULTIPART_HTML',
+        mimeContentMode: normMode === 'PLAIN_TEXT_ONLY' ? 'PLAIN_TEXT_ONLY' : (normMode === 'GMAIL_NATIVE_HTML' ? 'GMAIL_NATIVE_HTML' : 'MULTIPART_HTML'),
+        mimeHygiene: {
+          transferEncoding: String(transferEncoding || 'quoted-printable').toLowerCase() === 'base64' ? 'base64' : 'quoted-printable',
+          inlineImagesEmbedded: cidRes.embeddedCount,
+          replacedImageHosts: cidRes.replacedHosts,
+          inlineImageBytes: cidRes.totalInlineBytes,
+          inlineImageFallbackCount: cidRes.failedCount
+        },
         spamOptimization: {
           riskScore: spamOpt.riskScore,
           grade: spamOpt.grade,
@@ -1157,6 +1195,7 @@ class GmailCampaignRunner {
     ownerApprovedBrand = false,
     authorizedReplyTo = false,
     preferLightweightHtml = false,
+    embedInlineImages = true,
     mimeContentMode = 'MULTIPART_HTML',
     transferEncoding = undefined,
     blockHighRiskSpam = false,
@@ -1173,6 +1212,7 @@ class GmailCampaignRunner {
     syncTokenOverride = null,
     fetchImpl = null,
     syncFetchImpl = null,
+    imageFetchImpl = null,
     pacingMs = null
   } = {}) {
     if (this._queueRunning) {
@@ -1594,6 +1634,7 @@ class GmailCampaignRunner {
           ownerApprovedBrand: ownerApprovedBrand === true,
           authorizedReplyTo: authorizedReplyTo === true,
           preferLightweightHtml: preferLightweightHtml === true,
+          embedInlineImages: embedInlineImages !== false,
           mimeContentMode
         });
         if (qSpamOpt.blocked && qSpamOpt.reason === 'INVALID_HEADER_INJECTION') {
@@ -1637,6 +1678,16 @@ class GmailCampaignRunner {
 
         const withFooter = injectUnsubscribeFooter({ html: optHtml, text: optText, unsubscribeUrl: unsub.url });
         const withAddr = ensurePhysicalAddressInFooter({ ...withFooter, physicalAddress: effectivePhysicalAddress });
+        const qNormMode = String(mimeContentMode || 'MULTIPART_HTML').toUpperCase();
+        const qShouldEmbedCid = qNormMode !== 'PLAIN_TEXT_ONLY' && embedInlineImages !== false;
+        let qCidRes = { html: withAddr.html, inlineImages: [], embeddedCount: 0, replacedHosts: [] };
+        if (qShouldEmbedCid && withAddr.html && /<img\b/i.test(withAddr.html)) {
+          qCidRes = await embedHtmlImagesAsCid(withAddr.html, {
+            fetchImpl: typeof imageFetchImpl === 'function' ? imageFetchImpl : (this.trustedTestMode ? null : globalThis.fetch),
+            trustedTestMode: this.trustedTestMode,
+            cache: this._inlineImageCache
+          });
+        }
         let raw;
         try {
           raw = rawGmailMime({
@@ -1646,11 +1697,12 @@ class GmailCampaignRunner {
             verifiedFromAddresses: (assignedAcct && assignedAcct.verifiedSendAs) || [selected.from],
             displayName: optDisplayName,
             subject: optSubject,
-            html: withAddr.html,
+            html: qCidRes.html,
             text: withAddr.text,
+            inlineImages: qCidRes.inlineImages,
             unsubscribeUrl: unsub.url,
-            mimeContentMode,
-            transferEncoding,
+            mimeContentMode: qNormMode === 'PLAIN_TEXT_ONLY' ? 'PLAIN_TEXT_ONLY' : 'MULTIPART_HTML',
+            transferEncoding: transferEncoding || 'quoted-printable',
             campaignAuthorized: true,
             recipientEligible: true,
             ledgerIntentPersisted: true

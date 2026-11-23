@@ -465,5 +465,6 @@ class EmailImageHostManager {
 module.exports = {
   MAX_IMAGE_BYTES,
   detectImageSignature,
+  assertPublicHttpsTarget,
   EmailImageHostManager
 };

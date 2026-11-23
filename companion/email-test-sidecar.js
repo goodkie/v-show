@@ -1336,6 +1336,7 @@ class EmailTestSidecar {
                   ownerApprovedBrand: payload.ownerApprovedBrand === true,
                   authorizedReplyTo: payload.authorizedReplyTo === true,
                   preferLightweightHtml: payload.preferLightweightHtml === true,
+                  embedInlineImages: payload.embedInlineImages !== false,
                   mimeContentMode: payload.mimeContentMode || 'MULTIPART_HTML'
                 });
               }
