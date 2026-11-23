@@ -1120,7 +1120,7 @@ class EmailProductionPipeline {
     return this.summarizeQueue();
   }
 
-  async _validateRunQueueGates({ mode = 'DRY_RUN', baseUrl = 'http://127.0.0.1:18990', hasResendKey = false, apiKey = null, ownerExplicitApproval = false, publicUnsubscribeHttpsVerified = false, syncToken = null, syncFetchImpl = null, senderDisplayName = '', senderName = '', company = '', brand = '', replyTo = '', subject = '', html = '', text = '', physicalAddress = '', autoSpamPrevention = false, autoAlignReplyTo = false, preferLightweightHtml = false, blockHighRiskSpam = false } = {}) {
+  async _validateRunQueueGates({ mode = 'DRY_RUN', baseUrl = 'http://127.0.0.1:18990', hasResendKey = false, apiKey = null, ownerExplicitApproval = false, publicUnsubscribeHttpsVerified = false, syncToken = null, syncFetchImpl = null, senderDisplayName = '', senderName = '', company = '', brand = '', replyTo = '', subject = '', html = '', text = '', physicalAddress = '', autoSpamPrevention = false, autoAlignReplyTo = false, ownerApprovedBrand = false, authorizedReplyTo = false, preferLightweightHtml = false, blockHighRiskSpam = false } = {}) {
     const fromCheck = validateAndFormatSenderFrom({
       displayName: senderDisplayName,
       fallbackBusinessNames: [senderName, company, brand],
@@ -1164,6 +1164,8 @@ class EmailProductionPipeline {
         publicUnsubBase: baseUrl,
         autoOptimize: true,
         autoAlignReplyTo: Boolean(autoAlignReplyTo),
+        ownerApprovedBrand: Boolean(ownerApprovedBrand),
+        authorizedReplyTo: Boolean(authorizedReplyTo),
         preferLightweightHtml: Boolean(preferLightweightHtml)
       });
       if (spamGate.grade === 'HIGH_RISK') {
@@ -1329,7 +1331,7 @@ class EmailProductionPipeline {
     };
   }
 
-  async _runQueueLoop({ mode = 'DRY_RUN', senderDisplayName = '', senderName = '', company = '', brand = '', replyTo = '', subject = '', html = '', text = '', physicalAddress = '', autoSpamPrevention = false, autoAlignReplyTo = false, preferLightweightHtml = false, baseUrl = 'http://127.0.0.1:18990', maxAttempts = 2, hasResendKey = false, apiKey = null, ownerExplicitApproval = false, publicUnsubscribeHttpsVerified = false, syncToken = null, syncFetchImpl = null } = {}) {
+  async _runQueueLoop({ mode = 'DRY_RUN', senderDisplayName = '', senderName = '', company = '', brand = '', replyTo = '', subject = '', html = '', text = '', physicalAddress = '', autoSpamPrevention = false, autoAlignReplyTo = false, ownerApprovedBrand = false, authorizedReplyTo = false, preferLightweightHtml = false, baseUrl = 'http://127.0.0.1:18990', maxAttempts = 2, hasResendKey = false, apiKey = null, ownerExplicitApproval = false, publicUnsubscribeHttpsVerified = false, syncToken = null, syncFetchImpl = null } = {}) {
     const senderFromRes = validateAndFormatSenderFrom({
       displayName: senderDisplayName,
       fallbackBusinessNames: [senderName, company, brand],
@@ -1355,6 +1357,8 @@ class EmailProductionPipeline {
         publicUnsubBase: baseUrl,
         autoOptimize: true,
         autoAlignReplyTo: Boolean(autoAlignReplyTo),
+        ownerApprovedBrand: Boolean(ownerApprovedBrand),
+        authorizedReplyTo: Boolean(authorizedReplyTo),
         preferLightweightHtml: Boolean(preferLightweightHtml)
       });
       if (resOpt.optimized.displayName) {

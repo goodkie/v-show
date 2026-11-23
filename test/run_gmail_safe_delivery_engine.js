@@ -10,9 +10,9 @@ const os = require('node:os');
 const path = require('node:path');
 const { GmailAccountVault, GMAIL_OAUTH_SCOPES } = require('../companion/gmail-account-vault');
 const { GmailCampaignRunner } = require('../companion/gmail-campaign-runner');
-const { GmailSendBlocked, rawGmailMime } = require('../companion/gmail-sender-foundation');
+const { GmailSendBlocked, rawGmailMime, encodeQuotedPrintable, foldAsciiHeader } = require('../companion/gmail-sender-foundation');
 const { AdaptiveThrottleController, assessDeliverabilityHygiene } = require('../companion/gmail-safe-delivery-engine');
-const { optimizeAndScoreGmailMessage, optimizeAndScoreEmailMessage, buildGmailSpamSearchHelper, buildMultiAccountGmailSpamHelpers } = require('../companion/gmail-deliverability-optimizer');
+const { optimizeAndScoreGmailMessage, optimizeAndScoreEmailMessage, buildGmailSpamSearchHelper, buildMultiAccountGmailSpamHelpers, isOfficialGmailWebUrl } = require('../companion/gmail-deliverability-optimizer');
 const { EmailProductionPipeline } = require('../companion/email-production-pipeline');
 const { CampaignAnalyticsEngine, sha256Hex } = require('../companion/email-campaign-analytics');
 const { EmailTestSidecar } = require('../companion/email-test-sidecar');
@@ -1184,6 +1184,142 @@ function makeRefreshVaultFetch(counterRef) {
       assert.ok(jsNow.includes('parseAndAddSpamReviewAccounts') && jsNow.includes('openMultiAccountSpamTabs') && jsNow.includes('renderSpamReviewAccountsList') && jsNow.includes('xpider_spam_review_accounts_v1'));
       checks += 2;
       console.log('PASS 12: Multi-account Gmail Spam folder quick-launcher helper, deduplication/cap & Studio UI controls verified');
+    }
+
+    // ===== 13. RC10 Narrow Fixes (Directive #7093262370): Genuine Brand/Reply-To Preservation, MIME Hygiene, Privacy/URL & Metric Semantics =====
+    {
+      // (a) Protect genuine brand name & intentional cross-domain Reply-To (NO silent mutation!) + reject malicious CRLF injection
+      const legitBrand = optimizeAndScoreEmailMessage({
+        provider: 'GMAIL',
+        from: 'owner@gmail.com',
+        displayName: 'Acme.plus Studio',
+        replyTo: 'support@acme.example',
+        subject: '정상 서비스 안내',
+        html: '<table style="background-color:#fafafa;"><tr><td><img src="https://cdn.example.test/hero.png" alt="Hero"><a href="https://acme.example/info">상세 보기</a><p>안녕하세요. 요청하신 서비스 일정과 문의 안내를 보내드립니다. 편하게 회신해 주세요.</p></td></tr></table>',
+        text: '안녕하세요. 요청하신 서비스 일정과 문의 안내를 보내드립니다. 편하게 회신해 주세요.',
+        physicalAddress: '100 Synthetic Way, Suite 200, Seoul',
+        autoOptimize: true
+      });
+      assert.equal(legitBrand.ok, true);
+      assert.equal(legitBrand.optimized.displayName, 'Acme.plus Studio', 'Genuine brand name with TLD must NOT be silently rewritten');
+      assert.equal(legitBrand.optimized.replyTo, 'support@acme.example', 'Intentional cross-domain Reply-To must NOT be silently dropped by default');
+      assert.ok(legitBrand.optimized.html.includes('<table') && legitBrand.optimized.html.includes('https://cdn.example.test/hero.png') && legitBrand.optimized.html.includes('https://acme.example/info'), 'Existing template, custom HTTPS image & links must NOT silently disappear by default');
+      assert.ok(legitBrand.signals.some(s => s.code === 'DISPLAY_NAME_FOREIGN_DOMAIN_CONFIRM_REQUIRED'), 'Unapproved foreign-domain brand must warn transparently rather than silently mutating');
+
+      const approvedBrand = optimizeAndScoreEmailMessage({
+        provider: 'GMAIL',
+        from: 'owner@gmail.com',
+        displayName: 'Acme.plus Studio',
+        replyTo: 'support@acme.example',
+        subject: '정상 서비스 안내',
+        html: '<p>안녕하세요. 요청하신 서비스 일정과 문의 안내를 보내드립니다. 편하게 회신해 주세요.</p>',
+        text: '안녕하세요. 요청하신 서비스 일정과 문의 안내를 보내드립니다. 편하게 회신해 주세요.',
+        physicalAddress: '100 Synthetic Way, Suite 200, Seoul',
+        ownerApprovedBrand: true,
+        authorizedReplyTo: true
+      });
+      assert.equal(approvedBrand.optimized.displayName, 'Acme.plus Studio');
+      assert.equal(approvedBrand.optimized.replyTo, 'support@acme.example');
+      assert.ok(!approvedBrand.signals.some(s => s.code === 'DISPLAY_NAME_FOREIGN_DOMAIN_CONFIRM_REQUIRED'));
+      assert.ok(!approvedBrand.signals.some(s => s.code === 'REPLY_TO_DOMAIN_MISMATCH'));
+
+      // Malicious CRLF header injection MUST fail-closed (NEVER silently pass!)
+      const maliciousCrlf = optimizeAndScoreEmailMessage({
+        provider: 'GMAIL',
+        from: 'owner@gmail.com',
+        displayName: 'Evil\r\nBcc: victim@example.test',
+        subject: 'Test',
+        html: '<p>Hello world</p>',
+        text: 'Hello world'
+      });
+      assert.equal(maliciousCrlf.ok, false);
+      assert.equal(maliciousCrlf.blocked, true);
+      assert.equal(maliciousCrlf.reason, 'INVALID_HEADER_INJECTION');
+
+      // (b) MIME standards hygiene: neutral boundary (no xpider_), ASCII folding, explicit PLAIN_TEXT_ONLY + quoted-printable preserving RFC 8058
+      const longAsciiSubj = 'Quarterly Service Maintenance Schedule And Support Contact Information Overview For Authorized Subscribers';
+      assert.ok(foldAsciiHeader(longAsciiSubj, 76).includes('\r\n '), 'Long ASCII subject must fold cleanly');
+      const qpSample = encodeQuotedPrintable('Hello = World! 안녕하세요 trailing ');
+      assert.ok(qpSample.includes('=3D') && qpSample.endsWith('=20'), 'Quoted-printable must escape = and trailing space per RFC 2045');
+
+      const neutralMulti = Buffer.from(rawGmailMime({
+        from: 'owner@gmail.com',
+        to: 'rcpt@example.test',
+        verifiedFromAddresses: ['owner@gmail.com'],
+        displayName: 'Acme.plus Studio',
+        subject: longAsciiSubj,
+        html: '<p>Hello world</p>',
+        text: 'Hello world',
+        unsubscribeUrl: 'https://unsubscribe.vivpr.pro/unsubscribe/tok_rc10_m',
+        campaignAuthorized: true,
+        recipientEligible: true,
+        ledgerIntentPersisted: true
+      }), 'base64url').toString('utf8');
+      assert.ok(!neutralMulti.includes('boundary="xpider_'), 'MIME boundary must be implementation-neutral');
+      assert.match(neutralMulti, /boundary="b_[a-f0-9]{32}"/);
+      assert.match(neutralMulti, /Subject: .+\r\n /);
+
+      const plainOnlyUrl = 'https://unsubscribe.vivpr.pro/unsubscribe/tok_rc10_p';
+      const plainOnlyMime = Buffer.from(rawGmailMime({
+        from: 'owner@gmail.com',
+        to: 'rcpt@example.test',
+        verifiedFromAddresses: ['owner@gmail.com'],
+        displayName: 'Acme.plus Studio',
+        subject: '순수 텍스트 모드 테스트',
+        html: '',
+        text: `안녕하세요. 순수 텍스트 안내입니다.\n\n수신거부: ${plainOnlyUrl}\n발신자 주소: 100 Synthetic Way`,
+        unsubscribeUrl: plainOnlyUrl,
+        mimeContentMode: 'PLAIN_TEXT_ONLY',
+        campaignAuthorized: true,
+        recipientEligible: true,
+        ledgerIntentPersisted: true
+      }), 'base64url').toString('utf8');
+      assert.match(plainOnlyMime, /Content-Type: text\/plain; charset=utf-8/);
+      assert.match(plainOnlyMime, /Content-Transfer-Encoding: quoted-printable/);
+      assert.match(plainOnlyMime, /List-Unsubscribe-Post: List-Unsubscribe=One-Click/);
+      assert.ok(!plainOnlyMime.includes('multipart/alternative'));
+      assert.throws(() => rawGmailMime({
+        from: 'owner@gmail.com',
+        to: 'rcpt@example.test',
+        verifiedFromAddresses: ['owner@gmail.com'],
+        displayName: 'Acme',
+        subject: 'Missing unsub in plain',
+        html: '',
+        text: 'No unsubscribe URL included here',
+        unsubscribeUrl: plainOnlyUrl,
+        mimeContentMode: 'PLAIN_TEXT_ONLY',
+        campaignAuthorized: true,
+        recipientEligible: true,
+        ledgerIntentPersisted: true
+      }), e => e instanceof GmailSendBlocked && e.code === 'MISSING_BODY_OR_UNSUBSCRIBE');
+
+      // (c) Privacy/URL audit: ONLY official https://mail.google.com/mail/ URLs accepted; spoofed domains rejected
+      assert.equal(isOfficialGmailWebUrl('https://mail.google.com/mail/?authuser=a%40example.test#spam'), true);
+      assert.equal(isOfficialGmailWebUrl('https://mail.google.com.evil.test/mail/#spam'), false);
+      assert.equal(isOfficialGmailWebUrl('http://mail.google.com/mail/#spam'), false);
+      assert.equal(isOfficialGmailWebUrl('javascript:alert(1)'), false);
+      assert.equal(isOfficialGmailWebUrl('https://user:pass@mail.google.com/mail/#spam'), false);
+
+      // (d) Metric semantics & Studio UI defaults (no silent Reply-To drop / no silent HTML drop / test-mailbox attestation)
+      const dirSem = path.join(tmpRoot, 'rc10_semantics');
+      const pipeSem = new EmailProductionPipeline({ stateDir: dirSem, trustedTestMode: true });
+      const vaultSem = new GmailAccountVault({ stateDir: dirSem, trustedTestMode: true, cryptoBox: box });
+      vaultSem.upsertMockAccountForTest({ email: 'sem@gmail.com', cap24h: 20 });
+      const runnerSem = new GmailCampaignRunner({ stateDir: dirSem, pipeline: pipeSem, vault: vaultSem, trustedTestMode: true, syncFetchImpl: okSyncFetch });
+      const dashSem = runnerSem.getTrueDashboard();
+      assert.equal(dashSem.metrics.verifiedPrimary, null);
+      assert.equal(dashSem.metrics.verifiedPrimaryStatus, 'UNAVAILABLE_FOR_GMAIL_API');
+      assert.ok(dashSem.metricSemantics && dashSem.metricSemantics.ownerObservedCategories.includes('OWNER_OBSERVED_INBOX_PROMOTIONS'));
+      assert.ok(dashSem.metricSemantics.ownerObservedCategories.includes('PRIMARY_UNKNOWN'));
+
+      const htmlNow = fs.readFileSync(path.join(__dirname, '..', 'extension', 'email-studio', 'index.html'), 'utf8');
+      const jsNow = fs.readFileSync(path.join(__dirname, '..', 'extension', 'email-studio', 'email-template-studio.js'), 'utf8');
+      assert.ok(htmlNow.includes('id="spamOptOwnerApprovedBrand"') && htmlNow.includes('id="emailMimeContentMode"') && htmlNow.includes('id="spamReviewOwnMailboxConfirm"'));
+      assert.ok(!/<input id="spamOptAutoAlignReplyTo"[^>]*checked/i.test(htmlNow), 'Reply-To auto-drop must NOT be checked by default');
+      assert.ok(!/<input id="spamOptLightweightGmail"[^>]*checked/i.test(htmlNow), 'Lightweight HTML rewrite must NOT be checked by default');
+      assert.ok(jsNow.includes('isOfficialGmailTabUrl') && jsNow.includes('PRODUCTION_CSV_NOT_ALLOWED_IN_TEST_MAILBOXES') && jsNow.includes('OWNER_OBSERVED_INBOX_PROMOTIONS'));
+      checks += 4;
+      console.log('PASS 13: RC10 genuine brand/Reply-To preservation, neutral MIME + quoted-printable/plain-text mode, official URL & metric semantics verified');
     }
 
     console.log(`XPIDER V7.1 Gmail Safe Delivery Engine suite: ${checks}/${checks} PASS; ZERO REAL SENDS`);

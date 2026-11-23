@@ -34,9 +34,30 @@ function address(value) {
   return v.toLowerCase();
 }
 
-function encodeWord(input) {
+function foldAsciiHeader(value, maxLen = 76) {
+  if (value.length <= maxLen) return value;
+  const words = value.split(' ');
+  const lines = [];
+  let cur = '';
+  for (const w of words) {
+    if (!cur) {
+      cur = w;
+    } else if (cur.length + 1 + w.length <= maxLen) {
+      cur += ' ' + w;
+    } else {
+      lines.push(cur);
+      cur = w;
+    }
+  }
+  if (cur) lines.push(cur);
+  return lines.join('\r\n ');
+}
+
+function encodeWord(input, { foldAscii = false } = {}) {
   const value = textHeader(input, 'HEADER');
-  if (/^[\x20-\x7e]+$/u.test(value)) return value;
+  if (/^[\x20-\x7e]+$/u.test(value)) {
+    return foldAscii ? foldAsciiHeader(value, 76) : value;
+  }
   // RFC 2047 compliant UTF-8 Base64 folding: each encoded-word <= 75 chars (<= 42 UTF-8 bytes payload)
   const chunks = [];
   let cur = '';
@@ -59,14 +80,45 @@ function encodeWord(input) {
 }
 
 function fromHeader(displayName, email) {
-  const safe = encodeWord(displayName);
-  return (/^[\x20-\x7e]+$/u.test(displayName)
+  const trimmed = textHeader(displayName, 'DISPLAY_NAME');
+  const safe = encodeWord(trimmed);
+  return (/^[\x20-\x7e]+$/u.test(trimmed)
     ? '"' + safe.replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"'
     : safe) + ' <' + address(email) + '>';
 }
 
 function base64Lines(value) {
   return Buffer.from(value, 'utf8').toString('base64').replace(/.{1,76}/g, '$&\r\n').trimEnd();
+}
+
+function encodeQuotedPrintable(value) {
+  const normalized = String(value || '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  const rawLines = normalized.split('\n');
+  const outLines = [];
+  for (const line of rawLines) {
+    const bytes = Buffer.from(line, 'utf8');
+    let cur = '';
+    for (let i = 0; i < bytes.length; i++) {
+      const b = bytes[i];
+      const isLast = i === bytes.length - 1;
+      let token;
+      if ((b >= 33 && b <= 60) || (b >= 62 && b <= 126)) {
+        token = String.fromCharCode(b);
+      } else if ((b === 32 || b === 9) && !isLast) {
+        token = String.fromCharCode(b);
+      } else {
+        token = '=' + b.toString(16).toUpperCase().padStart(2, '0');
+      }
+      if (cur.length + token.length > 75) {
+        outLines.push(cur + '=');
+        cur = token;
+      } else {
+        cur += token;
+      }
+    }
+    outLines.push(cur);
+  }
+  return outLines.join('\r\n');
 }
 
 function rawGmailMime(options) {
@@ -83,14 +135,42 @@ function rawGmailMime(options) {
       !['unsubscribe.vivpr.pro'].includes(unsub.hostname.toLowerCase())) {
     throw new GmailSendBlocked('UNSUBSCRIBE_URL_NOT_VERIFIED');
   }
-  const subject = encodeWord(options.subject);
+  const subject = encodeWord(options.subject, { foldAscii: true });
   const name = textHeader(options.displayName, 'DISPLAY_NAME');
   const html = typeof options.html === 'string' ? options.html : '';
   const plain = typeof options.text === 'string' ? options.text : '';
+  const mimeMode = String(options.mimeContentMode || 'MULTIPART_HTML').toUpperCase() === 'PLAIN_TEXT_ONLY'
+    ? 'PLAIN_TEXT_ONLY'
+    : 'MULTIPART_HTML';
+  const transferEnc = String(options.transferEncoding || (mimeMode === 'PLAIN_TEXT_ONLY' ? 'quoted-printable' : 'base64')).toLowerCase() === 'quoted-printable'
+    ? 'quoted-printable'
+    : 'base64';
+  const encodeBody = transferEnc === 'quoted-printable' ? encodeQuotedPrintable : base64Lines;
+
+  if (mimeMode === 'PLAIN_TEXT_ONLY') {
+    if (!plain.trim() || /[\r\n]/u.test(unsub.href) || !plain.includes(unsub.href)) {
+      throw new GmailSendBlocked('MISSING_BODY_OR_UNSUBSCRIBE');
+    }
+    const headers = [
+      'Date: ' + new Date().toUTCString(),
+      'From: ' + fromHeader(name, from),
+      'To: <' + to + '>',
+      ...(options.replyTo ? ['Reply-To: <' + address(options.replyTo) + '>'] : []),
+      'Subject: ' + subject,
+      'MIME-Version: 1.0',
+      'List-Unsubscribe: <' + unsub.href + '>',
+      'List-Unsubscribe-Post: List-Unsubscribe=One-Click',
+      'Content-Type: text/plain; charset=utf-8',
+      'Content-Transfer-Encoding: ' + transferEnc
+    ];
+    return Buffer.from(headers.join('\r\n') + '\r\n\r\n' + encodeBody(plain) + '\r\n', 'utf8')
+      .toString('base64url');
+  }
+
   if (!html.trim() || !plain.trim() || /[\r\n]/u.test(unsub.href)) {
     throw new GmailSendBlocked('MISSING_BODY_OR_UNSUBSCRIBE');
   }
-  const boundary = 'xpider_' + crypto.randomBytes(14).toString('hex');
+  const boundary = 'b_' + crypto.randomBytes(16).toString('hex');
   const headers = [
     'Date: ' + new Date().toUTCString(),
     'From: ' + fromHeader(name, from),
@@ -105,14 +185,14 @@ function rawGmailMime(options) {
   const body = [
     '--' + boundary,
     'Content-Type: text/plain; charset=utf-8',
-    'Content-Transfer-Encoding: base64',
+    'Content-Transfer-Encoding: ' + transferEnc,
     '',
-    base64Lines(plain),
+    encodeBody(plain),
     '--' + boundary,
     'Content-Type: text/html; charset=utf-8',
-    'Content-Transfer-Encoding: base64',
+    'Content-Transfer-Encoding: ' + transferEnc,
     '',
-    base64Lines(html),
+    encodeBody(html),
     '--' + boundary + '--',
     ''
   ];
@@ -200,4 +280,4 @@ async function sendViaGmailApi({ fetchImpl, accessToken, raw, approved, signal }
     threadId: payload.threadId || null, delivery: 'UNKNOWN', inbox: 'UNKNOWN' };
 }
 
-module.exports = { GmailSendBlocked, rawGmailMime, selectAccount, sendViaGmailApi };
+module.exports = { GmailSendBlocked, rawGmailMime, selectAccount, sendViaGmailApi, encodeQuotedPrintable, foldAsciiHeader };

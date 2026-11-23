@@ -156,12 +156,20 @@
     </div>
   </div>
   <div style="display:flex;flex-direction:column;gap:4px;margin:6px 0;padding:6px 8px;border:1px solid #cbd5e1;border-radius:6px;background:#fff;font-size:12px;">
-    <label style="display:flex;align-items:center;gap:6px;"><input id="spamOptApplyGmail" type="checkbox" checked> <b>Gmail 발송 시 자동 스팸 방지 적용</b> (타 도메인 표시이름 보정 · Reply-To 정렬 · 경량 HTML · RFC 2047 · Date 헤더)</label>
-    <label style="display:flex;align-items:center;gap:6px;"><input id="spamOptApplyResend" type="checkbox" checked> <b>Resend 발송 시 자동 스팸 방지 적용</b> (위험 태그/깨진 샘플 이미지 제거 · 제목 위생 · 텍스트/HTML 1:1 동기화 · 물리적 주소 보강)</label>
-    <label style="display:flex;align-items:center;gap:6px;"><input id="spamOptAutoAlignReplyTo" type="checkbox" checked> 발신 도메인과 다른 외부 <code>Reply-To</code> 자동 정렬 (불일치 헤더 자동 생략 — Gmail 기본 권장, 외부 회신 필요 시 해제)</label>
-    <label style="display:flex;align-items:center;gap:6px;"><input id="spamOptLightweightGmail" type="checkbox" checked> 개인 <code>@gmail.com</code> 발송 시 무거운 마케팅 HTML → <b>자연형 경량 HTML</b> 자동 변환</label>
-    <label style="display:flex;align-items:center;gap:6px;"><input id="spamOptLightweightResend" type="checkbox"> [선택] Resend 발송 시에도 자연형 경량 HTML 사용 (체크 해제 시 뉴스레터 HTML 디자인 유지)</label>
+    <label style="display:flex;align-items:center;gap:6px;"><input id="spamOptApplyGmail" type="checkbox" checked> <b>Gmail 발송 시 자동 위생 점검 적용</b> (기본 잔여 표시이름 정리 · 깨진 샘플 이미지/위험 태그 제거 · 제목 위생 · 표준 RFC 2047/2045 MIME · 고위험 차단)</label>
+    <label style="display:flex;align-items:center;gap:6px;"><input id="spamOptApplyResend" type="checkbox" checked> <b>Resend 발송 시 자동 위생 점검 적용</b> (위험 태그/깨진 샘플 이미지 제거 · 제목 위생 · 텍스트/HTML 1:1 동기화 · 물리적 주소 보강)</label>
+    <label style="display:flex;align-items:center;gap:6px;"><input id="spamOptOwnerApprovedBrand" type="checkbox" checked> <b>입력한 발신자 상호명 및 Reply-To는 소유자가 승인한 정상 브랜드/회신 채널임</b> (무단 자동 변경·삭제 금지)</label>
+    <label style="display:flex;align-items:center;gap:6px;"><input id="spamOptAutoAlignReplyTo" type="checkbox"> [선택] 발신 도메인과 다른 외부 <code>Reply-To</code> 자동 생략 (기본 해제 — 의도된 회신 채널 보존)</label>
+    <label style="display:flex;align-items:center;gap:6px;"><input id="spamOptLightweightGmail" type="checkbox"> [선택] 개인 <code>@gmail.com</code> 발송 시 경량 자연형 HTML로 변환 (기본 해제 — 기존 HTML 템플릿·이미지·링크 보존)</label>
+    <label style="display:flex;align-items:center;gap:6px;"><input id="spamOptLightweightResend" type="checkbox"> [선택] Resend 발송 시에도 경량 자연형 HTML 사용 (체크 해제 시 뉴스레터 HTML 디자인 유지)</label>
     <label style="display:flex;align-items:center;gap:6px;"><input id="spamOptBlockHighRisk" type="checkbox" checked> 스팸 위험도 <b>HIGH_RISK (55점 이상)</b> 판정 시 Gmail · Resend 발송 전 자동 차단</label>
+    <div style="margin-top:4px;">
+      <label for="emailMimeContentMode"><b>Gmail 발송 MIME 콘텐츠 형식 (명시적 선택 · Primary 강제 비보장)</b></label>
+      <select id="emailMimeContentMode">
+        <option value="MULTIPART_HTML">표준 HTML + 일반 텍스트 (기본 · 기존 템플릿·이미지·링크 보존)</option>
+        <option value="PLAIN_TEXT_ONLY">순수 텍스트 전용 (text/plain · quoted-printable · RFC 8058 수신거부/물리적 주소 유지)</option>
+      </select>
+    </div>
   </div>
   <div class="actions" style="margin-top:6px;">
     <button type="button" class="primary" id="btnRunAntiSpamChecklist">🔍 통합 스팸 위험도 · 체크리스트 진단</button>
@@ -176,9 +184,10 @@
     </div>
     <div id="gmailSpamHelperText" style="white-space:pre-wrap;font-size:12px;">본인이 사용하는 여러 Gmail/Workspace 계정을 등록해 두면 계정별 스팸함(?authuser=계정#spam) 또는 직전 테스트 메일 검색을 1클릭으로 바로 열 수 있습니다 (최소 권한 gmail.send 유지 · 자동 클릭 봇 미사용).</div>
     <div class="inline" style="margin-top:6px;">
-      <div><label for="spamReviewAccountInput">Gmail / Workspace 테스트 계정 추가 (쉼표·줄바꿈으로 복수 입력 가능 · 최대 20개)</label><input id="spamReviewAccountInput" placeholder="예: test1@gmail.com, test2@gmail.com"></div>
+      <div><label for="spamReviewAccountInput">Gmail / Workspace 테스트 계정 추가 (쉼표·줄바꿈 입력 · 로컬 테스트함 전용, 최대 20개)</label><input id="spamReviewAccountInput" placeholder="예: test1@gmail.com, test2@gmail.com"></div>
       <div><label for="spamReviewAccountLabel">별칭 (선택 · 단일 추가 시)</label><input id="spamReviewAccountLabel" maxlength="40" placeholder="예: 메인 수신함 / 보조1"></div>
     </div>
+    <label style="display:flex;align-items:center;gap:6px;margin:6px 0;font-size:12px;"><input id="spamReviewOwnMailboxConfirm" type="checkbox"> 등록하는 주소는 운영 수신자 CSV가 아닌 <b>본인 소유의 로컬 테스트 Gmail 수신함</b>임을 확인합니다.</label>
     <div class="actions" style="margin-top:6px;">
       <button type="button" class="primary" id="btnAddSpamReviewAccount">➕ Gmail 계정 등록</button>
       <button type="button" id="btnSyncTestRecipientToReviewList">📥 현재 테스트 수신자 자동 추가</button>
@@ -398,9 +407,9 @@
 
     <div style="margin-top:8px;padding:8px;border:1px solid rgba(22,163,74,0.35);border-radius:6px;background:rgba(240,253,244,0.65);">
       <b>✨ 자동 스팸 방지 · 발신 품질 보호 (Auto Anti-Spam Optimizer · 기본 활성)</b>
-      <label style="display:flex;align-items:center;gap:6px;margin:4px 0;font-size:12px;"><input id="gmailAutoSpamOpt" type="checkbox" checked> <b>자동 스팸 방지 최적화 활성화</b> (타 도메인 표시이름 사칭 보정 · 깨진 샘플 이미지/위험 태그 제거 · 제목 문장부호 정리 · RFC 2047 헤더 접기 · 텍스트/HTML 1:1 동기화)</label>
-      <label style="display:flex;align-items:center;gap:6px;margin:4px 0;font-size:12px;"><input id="gmailAutoAlignReplyTo" type="checkbox" checked> 발신 도메인과 다른 외부 <code>Reply-To</code> 자동 정렬 (불일치 헤더 자동 생략)</label>
-      <label style="display:flex;align-items:center;gap:6px;margin:4px 0;font-size:12px;"><input id="gmailLightweightHtml" type="checkbox" checked> 개인 <code>@gmail.com</code> 발송 시 무거운 마케팅 템플릿을 <b>자연형 경량 HTML</b>로 자동 변환 (수신거부 링크·물리적 주소는 유지)</label>
+      <label style="display:flex;align-items:center;gap:6px;margin:4px 0;font-size:12px;"><input id="gmailAutoSpamOpt" type="checkbox" checked> <b>자동 위생 최적화 활성화</b> (기본 잔여 표시이름 정리 · 깨진 샘플 이미지/위험 태그 제거 · 제목 위생 · 표준 RFC 2047/2045 MIME · 정상 상호명/템플릿 보존)</label>
+      <label style="display:flex;align-items:center;gap:6px;margin:4px 0;font-size:12px;"><input id="gmailAutoAlignReplyTo" type="checkbox"> [선택] 발신 도메인과 다른 외부 <code>Reply-To</code> 자동 생략 (기본 해제 — 승인된 회신 채널 보존)</label>
+      <label style="display:flex;align-items:center;gap:6px;margin:4px 0;font-size:12px;"><input id="gmailLightweightHtml" type="checkbox"> [선택] 개인 <code>@gmail.com</code> 발송 시 경량 자연형 HTML로 변환 (기본 해제 — 기존 HTML 템플릿·이미지·링크 보존)</label>
       <label style="display:flex;align-items:center;gap:6px;margin:4px 0;font-size:12px;"><input id="gmailBlockHighRiskSpam" type="checkbox" checked> 스팸 위험도 <b>HIGH_RISK (55점 이상)</b> 판정 시 발송 전 자동 차단</label>
       <div class="actions" style="margin-top:6px;">
         <button type="button" id="btnGmailSpamOptimizePreview">🧪 자동 스팸 위험도 진단 · 최적화 미리보기 (발송 없음)</button>

@@ -220,8 +220,11 @@ class GmailCampaignRunner {
     link = '',
     physicalAddress = '',
     autoOptimize = true,
-    autoAlignReplyTo = true,
-    preferLightweightHtml = true
+    autoAlignReplyTo = false,
+    ownerApprovedBrand = false,
+    authorizedReplyTo = false,
+    preferLightweightHtml = false,
+    mimeContentMode = 'MULTIPART_HTML'
   } = {}) {
     const accountsWithUsage = this.vault.getInternalAccountsWithUsage();
     let targetAcct = accountId ? accountsWithUsage.find(a => a.id === accountId) : null;
@@ -252,8 +255,11 @@ class GmailCampaignRunner {
       hygieneChecked: Boolean(this.lastHygieneReport),
       historicalBounceRatePct: Number(supIndex?.stats?.historicalBounceRatePct || 0),
       autoOptimize: autoOptimize !== false,
-      autoAlignReplyTo: autoAlignReplyTo !== false,
-      preferLightweightHtml: preferLightweightHtml !== false
+      autoAlignReplyTo: autoAlignReplyTo === true,
+      ownerApprovedBrand: ownerApprovedBrand === true,
+      authorizedReplyTo: authorizedReplyTo === true,
+      preferLightweightHtml: preferLightweightHtml === true,
+      mimeContentMode
     });
   }
 
@@ -845,8 +851,12 @@ class GmailCampaignRunner {
     text = '',
     physicalAddress = '',
     autoSpamPrevention = true,
-    autoAlignReplyTo = true,
-    preferLightweightHtml = true,
+    autoAlignReplyTo = false,
+    ownerApprovedBrand = false,
+    authorizedReplyTo = false,
+    preferLightweightHtml = false,
+    mimeContentMode = 'MULTIPART_HTML',
+    transferEncoding = undefined,
     blockHighRiskSpam = false,
     recipientConsentConfirmed = false,
     ownerExplicitApproval = false,
@@ -980,7 +990,7 @@ class GmailCampaignRunner {
       resolvedFrom = normFrom;
     }
 
-    // Automatic Deliverability & Spam-Risk Optimization (legitimate hygiene only; keeps RFC 8058 unsubscribe intact)
+    // Automatic Deliverability & Spam-Risk Optimization (RC10: preserves genuine brand names, authorized Reply-To & existing HTML templates by default!)
     const spamOpt = optimizeAndScoreGmailMessage({
       from: resolvedFrom,
       displayName: String(displayName || '').trim() || targetAcct.domain,
@@ -991,9 +1001,15 @@ class GmailCampaignRunner {
       physicalAddress,
       historicalBounceRatePct: Number(supIndex?.stats?.historicalBounceRatePct || 0),
       autoOptimize: autoSpamPrevention !== false,
-      autoAlignReplyTo: autoAlignReplyTo !== false,
-      preferLightweightHtml: preferLightweightHtml !== false
+      autoAlignReplyTo: autoAlignReplyTo === true,
+      ownerApprovedBrand: ownerApprovedBrand === true,
+      authorizedReplyTo: authorizedReplyTo === true,
+      preferLightweightHtml: preferLightweightHtml === true,
+      mimeContentMode
     });
+    if (spamOpt.blocked && spamOpt.reason === 'INVALID_HEADER_INJECTION') {
+      return { ok: false, statusCode: 400, status: 'BLOCKED', reason: 'INVALID_HEADER_INJECTION' };
+    }
     if (blockHighRiskSpam === true && spamOpt.grade === 'HIGH_RISK') {
       return {
         ok: false,
@@ -1031,6 +1047,8 @@ class GmailCampaignRunner {
         html: withAddr.html,
         text: withAddr.text,
         unsubscribeUrl: unsub.url,
+        mimeContentMode,
+        transferEncoding,
         campaignAuthorized: true,
         recipientEligible: true,
         ledgerIntentPersisted: true
@@ -1080,11 +1098,13 @@ class GmailCampaignRunner {
         status: 'GMAIL_API_ACCEPTED',
         delivery: 'UNKNOWN',
         inbox: 'UNKNOWN',
+        primary: 'UNKNOWN',
         providerMessageId: sendRes.providerMessageId,
         threadId: sendRes.threadId,
         accountId: selected.accountId,
         maskedFrom: maskEmail(resolvedFrom || selected.from),
         maskedTo: maskEmail(normTo),
+        mimeContentMode: String(mimeContentMode || 'MULTIPART_HTML').toUpperCase() === 'PLAIN_TEXT_ONLY' ? 'PLAIN_TEXT_ONLY' : 'MULTIPART_HTML',
         spamOptimization: {
           riskScore: spamOpt.riskScore,
           grade: spamOpt.grade,
@@ -1093,7 +1113,7 @@ class GmailCampaignRunner {
           recommendations: spamOpt.recommendations,
           honestDisclaimer: spamOpt.honestDisclaimer
         },
-        note: 'Gmail API 접수 완료(GMAIL_API_ACCEPTED). 전달(DELIVERED)·수신함 도착(INBOX)·열람(OPENED)은 독립 검증 전까지 미확인(UNKNOWN)입니다.'
+        note: 'Gmail API 접수 완료(GMAIL_API_ACCEPTED). 전달(DELIVERY_UNKNOWN)·수신함/프로모션/기본함(PRIMARY_UNKNOWN)·열람(OPENED)은 독립 검증 전까지 미확인(UNKNOWN)입니다.'
       };
     } catch (err) {
       const code = err instanceof GmailSendBlocked ? err.code : 'GMAIL_UNKNOWN_RESULT_NO_AUTORETRY';
@@ -1133,8 +1153,12 @@ class GmailCampaignRunner {
     physicalAddress = undefined,
     scheduleMode = undefined,
     autoSpamPrevention = true,
-    autoAlignReplyTo = true,
-    preferLightweightHtml = true,
+    autoAlignReplyTo = false,
+    ownerApprovedBrand = false,
+    authorizedReplyTo = false,
+    preferLightweightHtml = false,
+    mimeContentMode = 'MULTIPART_HTML',
+    transferEncoding = undefined,
     blockHighRiskSpam = false,
     ownerExplicitApproval = false,
     hygieneConfirmed = false,
@@ -1566,9 +1590,21 @@ class GmailCampaignRunner {
           physicalAddress: effectivePhysicalAddress,
           historicalBounceRatePct: Number(supIndex?.stats?.historicalBounceRatePct || 0),
           autoOptimize: autoSpamPrevention !== false,
-          autoAlignReplyTo: autoAlignReplyTo !== false,
-          preferLightweightHtml: preferLightweightHtml !== false
+          autoAlignReplyTo: autoAlignReplyTo === true,
+          ownerApprovedBrand: ownerApprovedBrand === true,
+          authorizedReplyTo: authorizedReplyTo === true,
+          preferLightweightHtml: preferLightweightHtml === true,
+          mimeContentMode
         });
+        if (qSpamOpt.blocked && qSpamOpt.reason === 'INVALID_HEADER_INJECTION') {
+          e.status = 'PENDING';
+          e.attempts = Math.max(0, (e.attempts || 1) - 1);
+          e.reason = 'INVALID_HEADER_INJECTION';
+          this.queue.stopped = true;
+          this.queue.stopReason = 'INVALID_HEADER_INJECTION';
+          this._saveQueue();
+          return finalize({ ok: false, statusCode: 400, status: 'PAUSED', reason: 'INVALID_HEADER_INJECTION', stopReason: 'INVALID_HEADER_INJECTION', acceptedInThisRun });
+        }
         if (blockHighRiskSpam === true && qSpamOpt.grade === 'HIGH_RISK') {
           e.status = 'PENDING';
           e.attempts = Math.max(0, (e.attempts || 1) - 1);
@@ -1613,6 +1649,8 @@ class GmailCampaignRunner {
             html: withAddr.html,
             text: withAddr.text,
             unsubscribeUrl: unsub.url,
+            mimeContentMode,
+            transferEncoding,
             campaignAuthorized: true,
             recipientEligible: true,
             ledgerIntentPersisted: true

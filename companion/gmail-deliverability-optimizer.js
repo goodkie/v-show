@@ -44,21 +44,30 @@ const DEFAULT_BOILERPLATE_SUBJECTS = new Set([
 ]);
 
 const HONEST_OPTIMIZER_DISCLAIMER =
-  '자동·반자동 스팸 방지 최적화는 스팸 오탐의 기술적 원인(도메인 불일치·깨진 이미지·과도한 마케팅 HTML·스팸 문구 등)을 줄이는 정당한 위생 기능이며, 100% 받은편지함(Primary) 배치나 계정 정지 면제를 보장하지 않습니다.';
+  '자동·반자동 발신 위생 점검은 표준 MIME·콘텐츠 위생 가설에 기반한 참고 기능이며, Gmail 카테고리 분류(Primary vs Promotions)는 독점 알고리즘이므로 기본 받은편지함(Primary) 배치·프로모션 회피·전달 완료·계정 정지 면제를 보장하지 않습니다.';
 
-function stripHtmlToPlain(html, { dropDefaultVivprCta = false } = {}) {
+function hasHeaderControlInjection(str) {
+  return /[\r\n\u0000-\u001f\u007f]/.test(String(str || ''));
+}
+
+function stripHtmlToPlain(html) {
   let s = String(html || '')
     .replace(/<style[\s\S]*?<\/style>/gi, ' ')
     .replace(/<script[\s\S]*?<\/script>/gi, ' ');
-  // Preserve real explicit links as "label (url)" unless it's the default placeholder vivpr.pro CTA
+  // Preserve ALL explicit links as "label (url)" so real links never silently vanish
   s = s.replace(/<a\b[^>]*href=["'](https?:\/\/[^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi, (_, href, inner) => {
     const label = String(inner || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
     const cleanHref = String(href || '').trim();
-    if (dropDefaultVivprCta && /^https?:\/\/(?:www\.)?vivpr\.pro(?:\/.*)?$/i.test(cleanHref)) {
-      return label;
-    }
     if (!label || label.toLowerCase() === cleanHref.toLowerCase()) return cleanHref;
     return `${label} (${cleanHref})`;
+  });
+  // Preserve real custom HTTPS image references cleanly (never silently discard custom user images in text/plain)
+  s = s.replace(/<img\b[^>]*src=["'](https?:\/\/[^"']+)["'][^>]*>/gi, (fullTag, src) => {
+    const cleanSrc = String(src || '').trim();
+    if (DEFAULT_PLACEHOLDER_IMAGES.includes(cleanSrc.toLowerCase())) return '';
+    const altMatch = fullTag.match(/\balt=["']([^"']*)["']/i);
+    const alt = altMatch ? altMatch[1].trim() : '';
+    return alt ? `[${alt}: ${cleanSrc}]` : `[이미지: ${cleanSrc}]`;
   });
   return s
     .replace(/<br\s*\/?>/gi, '\n')
@@ -105,47 +114,77 @@ function extractUrls(str) {
   };
 }
 
-function deriveSafeDisplayName(rawDisplayName, fromEmail, provider = 'GMAIL') {
+function deriveSafeDisplayName(rawDisplayName, fromEmail, provider = 'GMAIL', { ownerApprovedBrand = false, allowRewriteNonDefault = false } = {}) {
+  const rawStr = String(rawDisplayName || '');
+  if (hasHeaderControlInjection(rawStr)) {
+    return { value: '', fixed: false, hasInjection: true, foreignDomains: [], isDefaultCarryover: false, needsConfirmation: false };
+  }
   const senderDom = emailDomain(fromEmail);
-  const trimmed = String(rawDisplayName || '').replace(/[\r\n\0]+/g, ' ').trim();
+  const trimmed = rawStr.trim();
   const isConsumer = senderDom === 'gmail.com' || senderDom === 'googlemail.com';
   const isResend = String(provider || 'GMAIL').toUpperCase() === 'RESEND';
 
   const domMatches = trimmed.match(DOMAIN_LIKE_RE) || [];
   const foreignDomains = domMatches.filter(d => d.toLowerCase() !== senderDom);
   const isBareGmailDomainName = isConsumer && /^(gmail|googlemail)\.com$/i.test(trimmed);
+  const isDefaultVivprCarryover = isConsumer && /^vivpr\.pro$/i.test(trimmed);
+  const isDefaultCarryover = isBareGmailDomainName || isDefaultVivprCarryover;
 
-  if (foreignDomains.length === 0 && trimmed && !isBareGmailDomainName) {
-    return { value: trimmed, fixed: false, foreignDomains: [] };
+  if (!trimmed) {
+    if (isResend && senderDom) {
+      return { value: senderDom, fixed: false, hasInjection: false, foreignDomains: [], isDefaultCarryover: false, needsConfirmation: false };
+    }
+    const local = String(fromEmail || '').split('@')[0] || 'Sender';
+    const niceLocal = local.replace(/[._-]+/g, ' ').trim();
+    const fallback = niceLocal ? niceLocal.charAt(0).toUpperCase() + niceLocal.slice(1) : 'Sender';
+    return { value: fallback, fixed: false, hasInjection: false, foreignDomains: [], isDefaultCarryover: false, needsConfirmation: false };
   }
 
-  // Strip foreign domain TLD suffixes cleanly (e.g. "vivpr.pro" -> "Vivpr", "ACME-BRAND.COM" -> "ACME-BRAND")
-  let cleaned = isBareGmailDomainName ? '' : trimmed;
+  if (foreignDomains.length === 0 && !isBareGmailDomainName) {
+    return { value: trimmed, fixed: false, hasInjection: false, foreignDomains: [], isDefaultCarryover: false, needsConfirmation: false };
+  }
+
+  // RC10: Only auto-rewrite unedited default Resend placeholder ("vivpr.pro") or bare "gmail.com" on consumer @gmail.com.
+  // Genuine owner-entered company/brand names (e.g. "Acme.io", "Brand.plus") are NEVER silently rewritten unless explicitly requested.
+  if (isDefaultCarryover) {
+    const local = String(fromEmail || '').split('@')[0] || 'Sender';
+    const niceLocal = local.replace(/[._-]+/g, ' ').trim();
+    const safeLabel = niceLocal ? niceLocal.charAt(0).toUpperCase() + niceLocal.slice(1) : 'Sender';
+    return {
+      value: safeLabel,
+      fixed: safeLabel !== trimmed,
+      hasInjection: false,
+      foreignDomains: isBareGmailDomainName ? [trimmed] : foreignDomains,
+      isDefaultCarryover: true,
+      needsConfirmation: false
+    };
+  }
+
+  if (ownerApprovedBrand === true || allowRewriteNonDefault !== true) {
+    return {
+      value: trimmed,
+      fixed: false,
+      hasInjection: false,
+      foreignDomains,
+      isDefaultCarryover: false,
+      needsConfirmation: ownerApprovedBrand !== true
+    };
+  }
+
+  // Explicit opt-in non-default rewrite only
+  let cleaned = trimmed;
   for (const fd of foreignDomains) {
     const base = fd.split('.')[0];
-    // On consumer Gmail, never impersonate default Resend domain "vivpr.pro"
-    if (isConsumer && fd.toLowerCase() === 'vivpr.pro' && trimmed.toLowerCase() === 'vivpr.pro') {
-      const local = String(fromEmail || '').split('@')[0] || 'Sender';
-      const niceLocal = local.replace(/[._-]+/g, ' ').trim();
-      cleaned = niceLocal ? niceLocal.charAt(0).toUpperCase() + niceLocal.slice(1) : 'Sender';
-      break;
-    }
     cleaned = cleaned.replace(new RegExp(fd.replace(/\./g, '\\.'), 'gi'), base);
   }
-  cleaned = cleaned.replace(/\s{2,}/g, ' ').trim();
-  if (!cleaned) {
-    if (isResend && senderDom) {
-      cleaned = senderDom;
-    } else {
-      const local = String(fromEmail || '').split('@')[0] || 'Sender';
-      const niceLocal = local.replace(/[._-]+/g, ' ').trim();
-      cleaned = niceLocal ? niceLocal.charAt(0).toUpperCase() + niceLocal.slice(1) : 'Sender';
-    }
-  }
+  cleaned = cleaned.replace(/\s{2,}/g, ' ').trim() || trimmed;
   return {
     value: cleaned,
     fixed: cleaned !== trimmed,
-    foreignDomains: isBareGmailDomainName ? [trimmed] : foreignDomains
+    hasInjection: false,
+    foreignDomains,
+    isDefaultCarryover: false,
+    needsConfirmation: false
   };
 }
 
@@ -250,17 +289,42 @@ function optimizeAndScoreEmailMessage({
   suppressedCount = 0,
   hygieneChecked = false,
   autoOptimize = true,
-  autoAlignReplyTo = true,
-  preferLightweightHtml = undefined
+  autoAlignReplyTo = false,
+  ownerApprovedBrand = false,
+  authorizedReplyTo = false,
+  preferLightweightHtml = false,
+  mimeContentMode = 'MULTIPART_HTML'
 } = {}) {
+  // Fail-closed header injection rejection (NEVER silently allow CR/LF/NUL injection in From / DisplayName / Reply-To)
+  if (hasHeaderControlInjection(from) || hasHeaderControlInjection(displayName) || hasHeaderControlInjection(replyTo)) {
+    return {
+      ok: false,
+      blocked: true,
+      reason: 'INVALID_HEADER_INJECTION',
+      provider: String(provider || 'GMAIL').toUpperCase() === 'RESEND' ? 'RESEND' : 'GMAIL',
+      riskScore: 100,
+      grade: 'HIGH_RISK',
+      autoOptimizeApplied: false,
+      autoFixesApplied: [],
+      signals: [{ code: 'INVALID_HEADER_INJECTION', points: 100, severity: 'HIGH', message: '발신자/표시이름/Reply-To 헤더에 CR/LF 또는 제어 문자가 감지되어 안전 차단되었습니다.' }],
+      recommendations: ['제어 문자가 없는 정상 발신자 이름과 이메일 주소만 입력하세요.'],
+      checklist: [],
+      checklistSummary: { total: 0, autoTotal: 0, autoPassed: 0, autoFixed: 0, semiAutoTotal: 0, semiAutoActionNeeded: 0, manualTotal: 0 },
+      optimized: { displayName: '', replyTo: '', subject: '', html: '', text: '' },
+      honestDisclaimer: HONEST_OPTIMIZER_DISCLAIMER
+    };
+  }
+
   const normProvider = String(provider || 'GMAIL').toUpperCase() === 'RESEND' ? 'RESEND' : 'GMAIL';
   const defaultFrom = normProvider === 'RESEND' ? 'noreply@vivpr.pro' : '';
   const normFrom = normalizeEmail(from || defaultFrom) || defaultFrom;
   const senderDom = emailDomain(normFrom) || (normProvider === 'RESEND' ? 'vivpr.pro' : '');
   const isConsumerGmail = normProvider === 'GMAIL' && (senderDom === 'gmail.com' || senderDom === 'googlemail.com');
-  const effectiveLightweight = preferLightweightHtml !== undefined
-    ? Boolean(preferLightweightHtml)
-    : (normProvider === 'GMAIL');
+  // RC10: Existing templates, HTML images & links MUST NOT silently disappear -> lightweight conversion is explicit opt-in only!
+  const effectiveLightweight = preferLightweightHtml === true;
+  const normMimeMode = String(mimeContentMode || 'MULTIPART_HTML').toUpperCase() === 'PLAIN_TEXT_ONLY'
+    ? 'PLAIN_TEXT_ONLY'
+    : 'MULTIPART_HTML';
 
   let outDisplayName = String(displayName || '').trim();
   let outReplyTo = String(replyTo || '').trim();
@@ -275,13 +339,14 @@ function optimizeAndScoreEmailMessage({
   const recommendations = [];
   const checklist = [];
 
-  // 1. [AUTO] Display-Name Foreign-Domain Spoofing Check & Auto-Fix
-  const dnCheck = deriveSafeDisplayName(outDisplayName, normFrom, normProvider);
-  if (dnCheck.foreignDomains.length > 0) {
+  // 1. [AUTO / SEMI_AUTO] Display-Name Protection: auto-fix ONLY unedited default carryover ("vivpr.pro" / "gmail.com" on consumer Gmail);
+  // preserve genuine owner-entered company/brand names and warn for confirmation instead of silent mutation!
+  const dnCheck = deriveSafeDisplayName(outDisplayName, normFrom, normProvider, { ownerApprovedBrand: ownerApprovedBrand === true });
+  if (dnCheck.isDefaultCarryover) {
     if (autoOptimize) {
       autoFixesApplied.push({
         code: 'AUTO_FIX_DISPLAY_NAME_DOMAIN_MISMATCH',
-        detail: `발신 표시 이름의 타 도메인("${outDisplayName}")을 스팸 오탐 방지용 안전 표시 이름("${dnCheck.value}")으로 자동 보정했습니다.`
+        detail: `개인 @gmail.com에 남아 있던 기본 샘플/제공자 표시 이름("${outDisplayName}")을 안전 표시 이름("${dnCheck.value}")으로 자동 보정했습니다.`
       });
       outDisplayName = dnCheck.value;
       checklist.push({
@@ -289,65 +354,87 @@ function optimizeAndScoreEmailMessage({
         category: 'HEADER_AUTH',
         mode: 'AUTO',
         status: 'AUTO_FIXED',
-        title: '발신자 표시 이름 도메인 정합성',
-        detail: `발신 도메인(${senderDom || normProvider})과 충돌하는 타 도메인 표시 이름을 "${outDisplayName}"(으)로 자동 보정합니다.`,
+        title: '발신자 표시 이름 정합성 (정상 상호명 보존)',
+        detail: `기본 잔여 표시 이름을 "${outDisplayName}"(으)로 자동 보정합니다 (소유자 입력 상호명은 무단 변경하지 않음).`,
         providers: ['GMAIL', 'RESEND'],
         autoFixCode: 'AUTO_FIX_DISPLAY_NAME_DOMAIN_MISMATCH'
       });
     } else {
       signals.push({
-        code: 'DISPLAY_NAME_FOREIGN_DOMAIN_SPOOF_RISK',
-        points: 25,
-        severity: 'HIGH',
-        message: `발신 표시 이름("${outDisplayName}")에 발신 도메인(${senderDom})과 다른 도메인(${dnCheck.foreignDomains.join(', ')})이 포함되어 사칭/스팸 필터 위험이 매우 높습니다.`
+        code: 'DISPLAY_NAME_DEFAULT_CARRYOVER_RISK',
+        points: 20,
+        severity: 'MEDIUM',
+        message: `개인 @gmail.com 발신 표시 이름에 기본 잔여 도메인("${outDisplayName}")이 남아 있습니다.`
       });
       checklist.push({
         id: 'DISPLAY_NAME_ALIGNMENT',
         category: 'HEADER_AUTH',
         mode: 'AUTO',
         status: 'ACTION_REQUIRED',
-        title: '발신자 표시 이름 도메인 정합성',
-        detail: `표시 이름("${outDisplayName}")에 타 도메인(${dnCheck.foreignDomains.join(', ')}) 포함 — 자동 보정 활성화를 권장합니다.`,
+        title: '발신자 표시 이름 정합성 (정상 상호명 보존)',
+        detail: `기본 잔여 표시 이름("${outDisplayName}") — 자동 보정 또는 실제 상호명 입력을 권장합니다.`,
         providers: ['GMAIL', 'RESEND'],
         semiAutoAction: 'APPLY_AUTO_FIXES'
       });
     }
+  } else if (dnCheck.needsConfirmation && dnCheck.foreignDomains.length > 0) {
+    // Preserve genuine brand name intact; present transparent confirmation warning rather than silent mutation!
+    signals.push({
+      code: 'DISPLAY_NAME_FOREIGN_DOMAIN_CONFIRM_REQUIRED',
+      points: 10,
+      severity: 'LOW',
+      message: `표시 이름("${outDisplayName}")에 발신 도메인(${senderDom})과 다른 도메인 표기(${dnCheck.foreignDomains.join(', ')})가 있습니다. 소유자가 승인한 실제 상호명이라면 그대로 유지됩니다(무단 변경 안 함).`
+    });
+    checklist.push({
+      id: 'DISPLAY_NAME_ALIGNMENT',
+      category: 'HEADER_AUTH',
+      mode: 'SEMI_AUTO',
+      status: 'WARN',
+      title: '발신자 표시 이름 정합성 (정상 상호명 보존)',
+      detail: `입력된 상호명("${outDisplayName}")을 무단 변경하지 않고 보존합니다. 실제 승인된 브랜드명인지 확인하세요.`,
+      providers: ['GMAIL', 'RESEND']
+    });
   } else {
     checklist.push({
       id: 'DISPLAY_NAME_ALIGNMENT',
       category: 'HEADER_AUTH',
       mode: 'AUTO',
       status: 'PASS',
-      title: '발신자 표시 이름 도메인 정합성',
-      detail: `표시 이름("${outDisplayName || senderDom || '기본값'}")이 발신 도메인(${senderDom || normProvider})과 충돌하지 않습니다.`,
+      title: '발신자 표시 이름 정합성 (정상 상호명 보존)',
+      detail: ownerApprovedBrand && dnCheck.foreignDomains.length > 0
+        ? `소유자 승인 상호명("${outDisplayName}")을 원본 그대로 보존합니다.`
+        : `표시 이름("${outDisplayName || senderDom || '기본값'}")이 안전하게 보존됩니다.`,
       providers: ['GMAIL', 'RESEND']
     });
   }
 
-  // 2. [AUTO] Reply-To Alignment Check & Auto-Alignment
+  // 2. [AUTO / PRESERVE] Reply-To Alignment: PRESERVE authorized/entered Reply-To by default; omit ONLY on explicit opt-in autoAlignReplyTo=true!
   let replyToStatus = 'PASS';
-  let replyToDetail = outReplyTo ? `Reply-To(${outReplyTo})가 발신 도메인(${senderDom})과 정렬되어 있습니다.` : '외부 도메인 Reply-To 불일치가 없습니다.';
+  let replyToDetail = outReplyTo ? `Reply-To(${outReplyTo})가 발신 도메인(${senderDom})과 정렬되어 보존됩니다.` : '별도 외부 Reply-To가 지정되지 않았습니다.';
   if (outReplyTo) {
     const rtNorm = normalizeEmail(outReplyTo);
     const rtDom = rtNorm ? emailDomain(rtNorm) : '';
     if (rtDom && senderDom && rtDom !== senderDom) {
-      if (autoOptimize && autoAlignReplyTo) {
+      if (autoOptimize && autoAlignReplyTo === true && authorizedReplyTo !== true) {
         autoFixesApplied.push({
           code: 'AUTO_ALIGN_REPLY_TO_OMITTED_MISMATCH',
-          detail: `발신 도메인(${senderDom})과 불일치하는 외부 Reply-To(${rtDom}) 헤더를 자동 생략하여 발신자 정렬을 맞췄습니다.`
+          detail: `운영자 명시 선택에 따라 발신 도메인(${senderDom})과 다른 외부 Reply-To(${rtDom}) 헤더를 생략했습니다.`
         });
         outReplyTo = '';
         replyToStatus = 'AUTO_FIXED';
-        replyToDetail = `발신 도메인(${senderDom})과 다른 외부 Reply-To(${rtDom})를 발송 시 자동 생략하여 정렬합니다.`;
+        replyToDetail = `명시적 자동 정렬 선택에 따라 외부 Reply-To(${rtDom})를 생략합니다.`;
+      } else if (authorizedReplyTo === true) {
+        replyToStatus = 'PASS';
+        replyToDetail = `소유자 승인 회신 주소(${rtNorm})를 무단 삭제하지 않고 원본 그대로 보존합니다.`;
       } else {
         signals.push({
           code: 'REPLY_TO_DOMAIN_MISMATCH',
-          points: normProvider === 'GMAIL' ? 20 : 12,
-          severity: 'MEDIUM',
-          message: `Reply-To 도메인(${rtDom})이 발신 도메인(${senderDom})과 달라 스팸 점수가 상승합니다.`
+          points: normProvider === 'GMAIL' ? 12 : 8,
+          severity: 'LOW',
+          message: `Reply-To 도메인(${rtDom})이 발신 도메인(${senderDom})과 다릅니다. 정상 회신 채널이라면 그대로 유지되며, 자동 생략하지 않습니다.`
         });
         replyToStatus = 'WARN';
-        replyToDetail = `외부 Reply-To(${rtDom})와 발신 도메인(${senderDom}) 불일치 — 자동 정렬 옵션을 켜거나 동일 도메인 주소를 권장합니다.`;
+        replyToDetail = `외부 Reply-To(${rtNorm})가 그대로 보존됩니다 — 소유자 승인 회신 채널인지 확인하세요 (원할 때만 선택 옵션으로 생략 가능).`;
       }
     }
   }
@@ -356,7 +443,7 @@ function optimizeAndScoreEmailMessage({
     category: 'HEADER_AUTH',
     mode: 'AUTO',
     status: replyToStatus,
-    title: 'Reply-To 발신 도메인 정렬',
+    title: 'Reply-To 회신 채널 보존 및 도메인 정렬 확인',
     detail: replyToDetail,
     providers: ['GMAIL', 'RESEND']
   });
@@ -472,27 +559,28 @@ function optimizeAndScoreEmailMessage({
     providers: ['GMAIL', 'RESEND']
   });
 
-  // 5. [AUTO] Lightweight Natural HTML Conversion & 102KB Gmail Clipping Guard
-  const plainFromHtml = stripHtmlToPlain(outHtml, { dropDefaultVivprCta: isConsumerGmail && autoOptimize });
+  // 5. [AUTO] Explicit Opt-In Lightweight Natural HTML Conversion & 102KB Gmail Clipping Guard
+  // RC10: Existing templates, HTML images & links are preserved intact unless user explicitly enables preferLightweightHtml or PLAIN_TEXT_ONLY!
+  const plainFromHtml = stripHtmlToPlain(outHtml);
   let effectivePlain = outText.trim() || plainFromHtml;
   const isHeavyTemplateHtml = /<table\b|background-color\s*:|border-radius\s*:/i.test(outHtml) || outHtml.length > Math.max(1200, effectivePlain.length * 4);
   let convertedLightweight = false;
   if (autoOptimize && effectiveLightweight && (isConsumerGmail || normProvider === 'RESEND') && isHeavyTemplateHtml && effectivePlain.length > 0) {
-    outHtml = buildLightweightNaturalHtml(effectivePlain);
-    outText = effectivePlain;
+    // Preserve custom non-placeholder HTTPS images & explicit links inside lightweight conversion (never silently drop them!)
+    const sourcePlainForLight = plainFromHtml.length > 0 ? plainFromHtml : effectivePlain;
+    outHtml = buildLightweightNaturalHtml(sourcePlainForLight);
+    outText = sourcePlainForLight;
     convertedLightweight = true;
     autoFixesApplied.push({
       code: 'AUTO_CONVERTED_LIGHTWEIGHT_NATURAL_HTML',
-      detail: normProvider === 'GMAIL'
-        ? '개인 @gmail.com 계정의 프로모션/스팸 분류를 줄이기 위해 무거운 마케팅 템플릿 HTML을 자연형 경량 HTML(텍스트·HTML 1:1 일치)로 자동 변환했습니다.'
-        : 'Resend 발송용 무거운 템플릿 HTML을 자연형 경량 HTML(텍스트·HTML 1:1 일치)로 자동 변환했습니다.'
+      detail: '운영자가 명시 선택한 경량 자연형 HTML 변환을 적용했습니다 (사용자 링크·이미지 참조·수신거부·물리적 주소 보존; Primary 배치는 보장하지 않음).'
     });
-  } else if (isConsumerGmail && isHeavyTemplateHtml) {
+  } else if (isConsumerGmail && isHeavyTemplateHtml && normMimeMode !== 'PLAIN_TEXT_ONLY') {
     signals.push({
       code: 'HEAVY_PROMOTIONAL_HTML_ON_PERSONAL_GMAIL',
-      points: 15,
-      severity: 'MEDIUM',
-      message: '개인 @gmail.com 계정에서 무거운 마케팅 버튼/박스 HTML을 전송하면 스팸·프로모션 분류 확률이 높아집니다.'
+      points: 10,
+      severity: 'LOW',
+      message: '참고(가설): 개인 @gmail.com에서 복잡한 테이블/배경 HTML은 Promotions로 분류될 수 있습니다. 기존 템플릿·이미지·링크는 무단 삭제하지 않고 보존합니다.'
     });
   }
 
@@ -552,15 +640,15 @@ function optimizeAndScoreEmailMessage({
     providers: ['GMAIL', 'RESEND']
   });
 
-  // 7. [AUTO] RFC 2047 UTF-8 Folding + RFC 5322 Date Header
+  // 7. [AUTO] RFC 2047/2045 MIME Standards Hygiene (Neutral Boundary, Folding, Date, User-Selectable Plain-Text / Quoted-Printable)
   checklist.push({
     id: 'RFC2047_AND_DATE_HEADER',
     category: 'HEADER_AUTH',
     mode: 'AUTO',
     status: 'PASS',
-    title: normProvider === 'GMAIL' ? 'RFC 2047 한글 제목 멀티라인 인코딩 & Date 헤더' : 'Resend 표준 UTF-8 헤더 & 멱등성 키',
+    title: normProvider === 'GMAIL' ? 'RFC 2047/2045 표준 MIME 위생 (중립 경계 · Date · 콘텐츠 모드)' : 'Resend 표준 UTF-8 헤더 & 멱등성 키',
     detail: normProvider === 'GMAIL'
-      ? '긴 한글 제목 42바이트 RFC 2047 자동 분할 및 RFC 5322 Date 헤더가 MIME 생성 시 자동 적용됩니다.'
+      ? `표준 중립 MIME 경계, RFC 2047 UTF-8/ASCII 제목 폴딩, RFC 5322 Date 헤더 적용 (모드: ${normMimeMode} · Primary 강제 보장 아님).`
       : 'Resend API 표준 UTF-8 헤더, Idempotency-Key 및 인증된 noreply@vivpr.pro 발신 주소가 자동 적용됩니다.',
     providers: ['GMAIL', 'RESEND']
   });
@@ -872,6 +960,15 @@ function buildGmailSpamSearchHelper({ recipient = '', from = '', subject = '', p
   };
 }
 
+function isOfficialGmailWebUrl(rawUrl) {
+  try {
+    const u = new URL(String(rawUrl || ''));
+    return u.protocol === 'https:' && u.hostname === 'mail.google.com' && u.pathname.startsWith('/mail/') && !u.username && !u.password;
+  } catch (_) {
+    return false;
+  }
+}
+
 function buildMultiAccountGmailSpamHelpers({ accounts = [], subject = '', provider = 'GMAIL', maxAccounts = 20 } = {}) {
   const cap = Math.max(1, Math.min(20, Number(maxAccounts) || 20));
   const rawList = Array.isArray(accounts) ? accounts : [];
@@ -900,6 +997,10 @@ function buildMultiAccountGmailSpamHelpers({ accounts = [], subject = '', provid
       subject,
       provider
     });
+    if (!isOfficialGmailWebUrl(helper.searchUrl) || !isOfficialGmailWebUrl(helper.spamFolderUrl)) {
+      skippedInvalid++;
+      continue;
+    }
     items.push({
       email: norm,
       label: rawLabel.replace(/[\r\n\0]+/g, ' ').trim().slice(0, 40),
@@ -916,8 +1017,9 @@ function buildMultiAccountGmailSpamHelpers({ accounts = [], subject = '', provid
     count: items.length,
     skippedInvalid,
     maxAccounts: cap,
+    ownerTestMailboxesOnly: true,
     items,
-    policyNote: '등록된 복수 Gmail 테스트 계정별 공식 스팸함(?authuser=<계정>#spam 또는 #search/in:spam)을 열어 본인이 직접 [스팸 아님]을 클릭하도록 돕습니다. 자동 클릭 봇·gmail.modify 권한을 사용하지 않습니다.'
+    policyNote: '로컬에 승인 등록된 본인 테스트 Gmail 수신함 전용입니다(운영 수신자 CSV 등록 금지). 공식 https://mail.google.com/mail/ URL만 열며, 복수 탭 열기 시 사용자 확인이 필요하고 gmail.modify·수신함 읽기 권한을 사용하지 않습니다.'
   };
 }
 
@@ -930,6 +1032,8 @@ module.exports = {
   optimizeAndScoreGmailMessage,
   buildGmailSpamSearchHelper,
   buildMultiAccountGmailSpamHelpers,
+  isOfficialGmailWebUrl,
+  hasHeaderControlInjection,
   softenSpamPhrasesInCopy,
   deriveSafeDisplayName,
   buildLightweightNaturalHtml,

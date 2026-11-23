@@ -715,6 +715,8 @@ function buildTrueDashboard({
       verifiedDeliveredStatus: 'UNAVAILABLE_FOR_GMAIL_API',
       verifiedInbox: null,
       verifiedInboxStatus: 'UNAVAILABLE_FOR_GMAIL_API',
+      verifiedPrimary: null,
+      verifiedPrimaryStatus: 'UNAVAILABLE_FOR_GMAIL_API',
       bounced: queueObservedBounced,
       historicalCrossProviderBounced: Number(supIndex?.stats?.historicalBounced || 0),
       complained: queueObservedComplained,
@@ -740,6 +742,12 @@ function buildTrueDashboard({
     perAccount: schedulePlan ? schedulePlan.perAccountPlan : (vault ? vault.listAccountsSafe() : []),
     deliverabilityHygiene: deliverabilityHygiene || null,
     lastRunStatus: lastRunResult ? lastRunResult.status : null,
+    metricSemantics: {
+      gmailApiAccepted: 'GMAIL_API_ACCEPTED (Google API HTTP 200 접수만 의미 · 전달/수신함/Primary 추론 금지)',
+      delivery: 'DELIVERY_UNKNOWN (Gmail API는 최종 전달 확인 미제공)',
+      primaryPlacement: 'PRIMARY_UNKNOWN (타 수신자 기본 받은편지함 배치 미검증 · 1~2회 본인 테스트로 일반화 금지)',
+      ownerObservedCategories: ['OWNER_OBSERVED_INBOX_PROMOTIONS', 'OWNER_OBSERVED_SPAM', 'BOUNCED', 'DELIVERY_UNKNOWN', 'PRIMARY_UNKNOWN']
+    },
     honestDeliveryDisclaimer: HONEST_DELIVERY_DISCLAIMER
   };
 }

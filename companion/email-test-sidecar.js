@@ -834,6 +834,8 @@ class EmailTestSidecar {
                 physicalAddress: String(p.physicalAddress || ''),
                 autoSpamPrevention: p.autoSpamPrevention === true,
                 autoAlignReplyTo: p.autoAlignReplyTo === true,
+                ownerApprovedBrand: p.ownerApprovedBrand === true,
+                authorizedReplyTo: p.authorizedReplyTo === true,
                 preferLightweightHtml: p.preferLightweightHtml === true,
                 blockHighRiskSpam: p.blockHighRiskSpam === true,
                 baseUrl: publicUnsubBase,
@@ -974,8 +976,15 @@ class EmailTestSidecar {
                   historicalBounceRatePct: Number(supPre?.stats?.historicalBounceRatePct || 0),
                   autoOptimize: true,
                   autoAlignReplyTo: payload.autoAlignReplyTo === true,
+                  ownerApprovedBrand: payload.ownerApprovedBrand === true,
+                  authorizedReplyTo: payload.authorizedReplyTo === true,
                   preferLightweightHtml: payload.preferLightweightHtml === true
                 });
+                if (resOpt.blocked && resOpt.reason === 'INVALID_HEADER_INJECTION') {
+                  res.writeHead(400, { 'Content-Type': 'application/json' });
+                  res.end(JSON.stringify({ ok: false, status: 'BLOCKED', reason: 'INVALID_HEADER_INJECTION' }));
+                  return;
+                }
                 realTestSpamOpt = {
                   provider: 'RESEND',
                   riskScore: resOpt.riskScore,
@@ -1324,8 +1333,16 @@ class EmailTestSidecar {
                   hygieneChecked: Boolean(this.pipeline?.lastPreflightAt),
                   autoOptimize: payload.autoOptimize !== false,
                   autoAlignReplyTo: payload.autoAlignReplyTo === true,
-                  preferLightweightHtml: payload.preferLightweightHtml === true
+                  ownerApprovedBrand: payload.ownerApprovedBrand === true,
+                  authorizedReplyTo: payload.authorizedReplyTo === true,
+                  preferLightweightHtml: payload.preferLightweightHtml === true,
+                  mimeContentMode: payload.mimeContentMode || 'MULTIPART_HTML'
                 });
+              }
+              if (optimization && optimization.blocked && optimization.reason === 'INVALID_HEADER_INJECTION') {
+                res.writeHead(400, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ ok: false, status: 'BLOCKED', reason: 'INVALID_HEADER_INJECTION' }));
+                return;
               }
               this._recordDiag('INFO', 'EMAIL_SPAM_OPT', `${provider}_${optimization.grade || 'CHECKED'}`, {
                 provider,
