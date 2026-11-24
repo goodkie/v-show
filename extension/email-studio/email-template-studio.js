@@ -4067,7 +4067,16 @@ function createBuiltinRecipientManager() {
   function isOfficialGmailTabUrl(rawUrl) {
     try {
       const u = new URL(String(rawUrl || ''));
-      return u.protocol === 'https:' && u.hostname === 'mail.google.com' && u.pathname.startsWith('/mail/') && !u.username && !u.password;
+      if (u.protocol !== 'https:' || u.username || u.password) return false;
+      if (u.hostname === 'mail.google.com' && u.pathname.startsWith('/mail/')) return true;
+      if (u.hostname === 'accounts.google.com' && u.pathname === '/AccountChooser') {
+        const svc = u.searchParams.get('service');
+        const cont = u.searchParams.get('continue');
+        if (svc !== 'mail' || !cont) return false;
+        const cu = new URL(cont);
+        return cu.protocol === 'https:' && cu.hostname === 'mail.google.com' && cu.pathname.startsWith('/mail/') && !cu.username && !cu.password;
+      }
+      return false;
     } catch (_) {
       return false;
     }
@@ -5619,13 +5628,54 @@ function createBuiltinRecipientManager() {
             updateWebComposeRecipientSummaryUI();
           };
           const stageLabel = a.warmupStage === 'ESTABLISHED' ? '숙성' : (a.warmupStage === 'WARMING' ? '안정화' : '워밍업');
+          const slotTag = Number.isInteger(a.chromeSlotIndex) ? `u/${a.chromeSlotIndex}` : '자동전환';
           const stateStr = a.cooldownUntilIso
             ? `🛑 보호쿨다운(~${a.cooldownUntilIso.slice(11, 16)}Z)`
             : (a.permittedNow ? '✅ 준비됨' : `⏳ ${a.waitReason || '대기'}`);
           const info = document.createElement('span');
-          info.textContent = `${a.label ? `[${a.label}] ` : ''}${a.email} (${a.type === 'workspace_paid' ? 'Workspace' : '개인'}·${stageLabel}) · 1분 ${a.sent1m}/${a.capPerMinute} · 1시간 ${a.sent1h}/${a.capPerHour} · 24h ${a.sent24h}/${a.cap24h} · 간격 ${a.minSpacingSec}초 · ${stateStr}`;
+          info.textContent = `${a.label ? `[${a.label}] ` : ''}${a.email} (${a.type === 'workspace_paid' ? 'Workspace' : '개인'}·${stageLabel}·${slotTag}) · 1분 ${a.sent1m}/${a.capPerMinute} · 1시간 ${a.sent1h}/${a.capPerHour} · 24h ${a.sent24h}/${a.cap24h} · 간격 ${a.minSpacingSec}초 · ${stateStr}`;
           left.appendChild(cb);
           left.appendChild(info);
+
+          const rightCtrl = document.createElement('div');
+          rightCtrl.style.cssText = 'display:flex;align-items:center;gap:4px;flex-wrap:wrap;';
+
+          const slotSel = document.createElement('select');
+          slotSel.style.cssText = 'width:auto;padding:2px 4px;font-size:11px;';
+          slotSel.title = 'Chrome 멀티로그인 슬롯 번호 (비우면 Google AccountChooser 자동 전환)';
+          const autoOpt = document.createElement('option');
+          autoOpt.value = '';
+          autoOpt.textContent = '자동전환';
+          slotSel.appendChild(autoOpt);
+          for (let si = 0; si <= 10; si++) {
+            const opt = document.createElement('option');
+            opt.value = String(si);
+            opt.textContent = `u/${si}`;
+            slotSel.appendChild(opt);
+          }
+          slotSel.value = Number.isInteger(a.chromeSlotIndex) ? String(a.chromeSlotIndex) : '';
+          slotSel.onchange = async () => {
+            const { sidecarPort, sidecarToken } = getSidecarConfig();
+            const nextSlot = slotSel.value === '' ? null : Number(slotSel.value);
+            await callBg({
+              action: 'SAVE_GMAIL_WEB_COMPOSE_ACCOUNT',
+              sidecarPort,
+              sidecarToken,
+              payload: { email: a.email, label: a.label, warmupStage: a.warmupStage, chromeSlotIndex: nextSlot, active: a.active }
+            });
+            refreshGmailWebComposeStatus();
+          };
+          rightCtrl.appendChild(slotSel);
+
+          if (a.accountCheckUrl && isOfficialGmailTabUrl(a.accountCheckUrl)) {
+            const chkBtn = document.createElement('button');
+            chkBtn.type = 'button';
+            chkBtn.style.cssText = 'padding:2px 7px;font-size:11px;';
+            chkBtn.textContent = '🔍 계정 확인';
+            chkBtn.title = '이 계정이 현재 Chrome 프로필에 로그인되어 있는지 열고 /mail/u/N/ 슬롯 번호 확인';
+            chkBtn.onclick = () => openExternalOfficialTab(a.accountCheckUrl, { active: true });
+            rightCtrl.appendChild(chkBtn);
+          }
 
           const delBtn = document.createElement('button');
           delBtn.type = 'button';
@@ -5637,9 +5687,10 @@ function createBuiltinRecipientManager() {
             await callBg({ action: 'DELETE_GMAIL_WEB_COMPOSE_ACCOUNT', sidecarPort, sidecarToken, payload: { accountId: a.id } });
             refreshGmailWebComposeStatus();
           };
+          rightCtrl.appendChild(delBtn);
 
           row.appendChild(left);
-          row.appendChild(delBtn);
+          row.appendChild(rightCtrl);
           acctBox.appendChild(row);
         }
       }
@@ -5746,6 +5797,7 @@ function createBuiltinRecipientManager() {
       const emailEl = el('webComposeAccountEmail');
       const labelEl = el('webComposeAccountLabel');
       const stageEl = el('webComposeWarmupStage');
+      const slotEl = el('webComposeChromeSlot');
       const email = emailEl ? emailEl.value.trim() : '';
       const qBox = el('webComposeQueueStatus');
       if (!email) {
@@ -5753,6 +5805,7 @@ function createBuiltinRecipientManager() {
         return;
       }
       const { sidecarPort, sidecarToken } = getSidecarConfig();
+      const rawSlot = slotEl ? slotEl.value : '';
       const r = await callBg({
         action: 'SAVE_GMAIL_WEB_COMPOSE_ACCOUNT',
         sidecarPort,
@@ -5761,6 +5814,7 @@ function createBuiltinRecipientManager() {
           email,
           label: labelEl ? labelEl.value.trim() : '',
           warmupStage: stageEl ? stageEl.value : 'NEW_WARMUP',
+          chromeSlotIndex: rawSlot === '' ? null : Number(rawSlot),
           active: true
         }
       });

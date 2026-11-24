@@ -1334,10 +1334,27 @@ function buildGmailSpamSearchHelper({ recipient = '', from = '', subject = '', p
   };
 }
 
-function isOfficialGmailWebUrl(rawUrl) {
+function isOfficialGmailMailUrl(rawUrl) {
   try {
     const u = new URL(String(rawUrl || ''));
     return u.protocol === 'https:' && u.hostname === 'mail.google.com' && u.pathname.startsWith('/mail/') && !u.username && !u.password;
+  } catch (_) {
+    return false;
+  }
+}
+
+function isOfficialGmailWebUrl(rawUrl) {
+  try {
+    const u = new URL(String(rawUrl || ''));
+    if (u.protocol !== 'https:' || u.username || u.password) return false;
+    if (u.hostname === 'mail.google.com' && u.pathname.startsWith('/mail/')) return true;
+    // Allow official Google AccountChooser ONLY when service=mail AND continue strictly targets https://mail.google.com/mail/ (zero open-redirect)
+    if (u.hostname === 'accounts.google.com' && u.pathname === '/AccountChooser') {
+      const svc = u.searchParams.get('service');
+      const cont = u.searchParams.get('continue');
+      return svc === 'mail' && Boolean(cont) && isOfficialGmailMailUrl(cont);
+    }
+    return false;
   } catch (_) {
     return false;
   }

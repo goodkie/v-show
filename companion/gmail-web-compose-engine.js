@@ -123,29 +123,79 @@ function computeHumanizedDelayMs({
   return { delayMs: sec * 1000, delaySec: sec, isRestBreak: false };
 }
 
-function buildOfficialWebComposeUrl({ authUserEmail = '', to = '', subject = '', body = '' } = {}) {
+function parseChromeSlotIndex(raw) {
+  if (raw === null || raw === undefined || raw === '') return null;
+  const n = Number(raw);
+  if (!Number.isInteger(n) || n < 0 || n > 20) return null;
+  return n;
+}
+
+function buildOfficialAccountCheckUrl(email = '', chromeSlotIndex = null) {
+  const cleanFrom = normalizeEmail(String(email || '').replace(/[\r\n\0]+/g, '').trim());
+  if (!cleanFrom) return 'https://mail.google.com/mail/';
+  const slot = parseChromeSlotIndex(chromeSlotIndex);
+  if (slot !== null) {
+    return `https://mail.google.com/mail/u/${slot}/?authuser=${encodeURIComponent(cleanFrom)}`;
+  }
+  const inner = `https://mail.google.com/mail/u/${encodeURIComponent(cleanFrom)}/?authuser=${encodeURIComponent(cleanFrom)}`;
+  const ac = new URL('https://accounts.google.com/AccountChooser');
+  ac.searchParams.set('service', 'mail');
+  ac.searchParams.set('Email', cleanFrom);
+  ac.searchParams.set('continue', inner);
+  return ac.href;
+}
+
+function buildOfficialWebComposeUrl({ authUserEmail = '', to = '', subject = '', body = '', chromeSlotIndex = null } = {}) {
   const cleanFrom = normalizeEmail(String(authUserEmail || '').replace(/[\r\n\0]+/g, '').trim());
   const cleanTo = normalizeEmail(String(to || '').replace(/[\r\n\0]+/g, '').trim());
   if (!cleanFrom || !cleanTo) {
     throw new Error('INVALID_COMPOSE_EMAIL_ADDRESS');
   }
+  const slot = parseChromeSlotIndex(chromeSlotIndex);
+  const bodyCap = slot !== null ? MAX_COMPOSE_BODY_CHARS : Math.min(MAX_COMPOSE_BODY_CHARS, 1150);
   const cleanSubj = decodeHtmlEntities(String(subject || '')).replace(/[\r\n\0]+/g, ' ').trim().slice(0, 160);
-  const cleanBody = decodeHtmlEntities(String(body || '')).replace(/\r\n/g, '\n').replace(/\0/g, '').trim().slice(0, MAX_COMPOSE_BODY_CHARS);
-  const u = new URL('https://mail.google.com/mail/');
-  u.searchParams.set('view', 'cm');
-  u.searchParams.set('fs', '1');
-  u.searchParams.set('authuser', cleanFrom);
-  u.searchParams.set('to', cleanTo);
-  if (cleanSubj) u.searchParams.set('su', cleanSubj);
-  if (cleanBody) u.searchParams.set('body', cleanBody);
-  const href = u.href;
+  const cleanBody = decodeHtmlEntities(String(body || '')).replace(/\r\n/g, '\n').replace(/\0/g, '').trim().slice(0, bodyCap);
+
+  let href = '';
+  let routingMode = 'ACCOUNT_CHOOSER_AUTO';
+  if (slot !== null) {
+    // Explicit Chrome multi-login slot (/mail/u/N/) — zero hop, targets exact logged-in slot!
+    const u = new URL(`https://mail.google.com/mail/u/${slot}/`);
+    u.searchParams.set('view', 'cm');
+    u.searchParams.set('fs', '1');
+    u.searchParams.set('authuser', cleanFrom);
+    u.searchParams.set('to', cleanTo);
+    if (cleanSubj) u.searchParams.set('su', cleanSubj);
+    if (cleanBody) u.searchParams.set('body', cleanBody);
+    href = u.href;
+    routingMode = `EXPLICIT_SLOT_U_${slot}`;
+  } else {
+    // Default AUTO: Google strips ?authuser= on root /mail/?view=cm and falls back to u/0!
+    // Routing via official AccountChooser?service=mail&Email=<from>&continue=/mail/u/<from>/?view=cm
+    // deterministically switches to the exact assigned account (or prompts sign-in if not logged in, preventing wrong-account sends).
+    const inner = new URL(`https://mail.google.com/mail/u/${encodeURIComponent(cleanFrom)}/`);
+    inner.searchParams.set('view', 'cm');
+    inner.searchParams.set('fs', '1');
+    inner.searchParams.set('authuser', cleanFrom);
+    inner.searchParams.set('to', cleanTo);
+    if (cleanSubj) inner.searchParams.set('su', cleanSubj);
+    if (cleanBody) inner.searchParams.set('body', cleanBody);
+
+    const ac = new URL('https://accounts.google.com/AccountChooser');
+    ac.searchParams.set('service', 'mail');
+    ac.searchParams.set('Email', cleanFrom);
+    ac.searchParams.set('continue', inner.href);
+    href = ac.href;
+  }
   if (!isOfficialGmailWebUrl(href)) {
     throw new Error('NON_OFFICIAL_GMAIL_URL_BLOCKED');
   }
   return {
     composeUrl: href,
+    routingMode,
+    chromeSlotIndex: slot,
     urlLength: href.length,
-    bodyTruncated: String(body || '').trim().length > MAX_COMPOSE_BODY_CHARS
+    bodyTruncated: String(body || '').trim().length > bodyCap
   };
 }
 
@@ -239,6 +289,7 @@ class GmailWebComposeEngine {
     const warmupStage = resolveWarmupStage(payload.warmupStage);
     const caps = clampAccountCaps(type, warmupStage, payload);
     const domain = emailDomain(normEmail);
+    const chromeSlotIndex = payload.chromeSlotIndex !== undefined ? parseChromeSlotIndex(payload.chromeSlotIndex) : undefined;
     const nowIso = new Date(this.nowFn()).toISOString();
 
     const existing = this.state.accounts.find(a => a.email === normEmail);
@@ -251,6 +302,7 @@ class GmailWebComposeEngine {
       existing.cap24h = caps.cap24h;
       existing.minSpacingSec = caps.minSpacingSec;
       existing.domainCap24h = caps.domainCap24h;
+      if (chromeSlotIndex !== undefined) existing.chromeSlotIndex = chromeSlotIndex;
       if (typeof payload.active === 'boolean') existing.active = payload.active;
       if (payload.clearCooldown === true) {
         existing.cooldownUntilMs = null;
@@ -269,6 +321,7 @@ class GmailWebComposeEngine {
         label,
         type,
         warmupStage,
+        chromeSlotIndex: chromeSlotIndex !== undefined ? chromeSlotIndex : null,
         capPerMinute: caps.capPerMinute,
         capPerHour: caps.capPerHour,
         cap24h: caps.cap24h,
@@ -400,6 +453,8 @@ class GmailWebComposeEngine {
         label: a.label || '',
         type: a.type,
         warmupStage: a.warmupStage,
+        chromeSlotIndex: parseChromeSlotIndex(a.chromeSlotIndex),
+        accountCheckUrl: buildOfficialAccountCheckUrl(a.email, a.chromeSlotIndex),
         active: Boolean(a.active),
         capPerMinute: a.capPerMinute,
         capPerHour: a.capPerHour,
@@ -736,7 +791,8 @@ class GmailWebComposeEngine {
         authUserEmail: acct.email,
         to: entry.email,
         subject: finalSubject,
-        body: finalBody
+        body: finalBody,
+        chromeSlotIndex: acct.chromeSlotIndex
       });
 
       const nowMs = this.nowFn();
@@ -973,6 +1029,8 @@ class GmailWebComposeEngine {
 module.exports = {
   GmailWebComposeEngine,
   buildOfficialWebComposeUrl,
+  buildOfficialAccountCheckUrl,
+  parseChromeSlotIndex,
   computeHumanizedDelayMs,
   isWithinSendingWindow,
   WARMUP_PRESETS,
