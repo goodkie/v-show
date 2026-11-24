@@ -2001,8 +2001,64 @@ function makeRefreshVaultFetch(counterRef) {
       assert.ok(htmlRc14.includes('id="webComposeConsentCheck"') && htmlRc14.includes('id="webComposeQuickRecipient"') && htmlRc14.includes('id="webComposeRecipientSummary"') && htmlRc14.includes('id="webComposeProxyWarning"') && htmlRc14.includes('id="btnReleaseChromeProxyForGmail"') && htmlRc14.includes('id="btnStartWebComposePacer"') && htmlRc14.includes('id="webComposeLiveListBody"') && htmlRc14.includes('id="webComposeAccountGauges"') && htmlRc14.includes('id="webComposeChromeSlot"') && htmlRc14.includes('id="btnDeleteSelectedRecipients"') && htmlRc14.includes('id="btnClearAllRecipients"') && htmlRc14.includes('id="btnResetWebComposeHistory"'));
       assert.ok(jsRc14.includes('webComposeAccountsInitialized') && jsRc14.includes('prepareWebComposeQueueAction') && jsRc14.includes('resolveWebComposeRecipientSource') && jsRc14.includes("'webComposeConsentCheck'") && jsRc14.includes('refreshChromeProxyWarningForGmail') && jsRc14.includes('RELEASE_CHROME_PROXY_FOR_GMAIL_WEB') && jsRc14.includes('REVERT_TO_PENDING') && jsRc14.includes('renderWebComposeLiveMonitor') && jsRc14.includes('renderWebComposeAccountGauges') && jsRc14.includes('webComposePacerTick') && jsRc14.includes('openedComposeTabMap') && jsRc14.includes('chromeSlotIndex') && jsRc14.includes('accounts.google.com') && jsRc14.includes('deleteRecipientsFromWorkCenter') && jsRc14.includes('RESET_GMAIL_WEB_COMPOSE_HISTORY') && jsRc14.includes('REMOVE_GMAIL_WEB_COMPOSE_ITEM'));
       assert.ok(bgRc14.includes('GET_CHROME_PROXY_STATUS') && bgRc14.includes('RELEASE_CHROME_PROXY_FOR_GMAIL_WEB') && bgRc14.includes('AUTOFORM_CAMPAIGN_RUNNING') && bgRc14.includes('REMOVE_GMAIL_WEB_COMPOSE_ITEM') && bgRc14.includes('RESET_GMAIL_WEB_COMPOSE_HISTORY'));
-      checks += 11;
-      console.log('PASS 17: RC14-RC20 multi-account Gmail Native Web Compose engine (AccountChooser + explicit /mail/u/N slot, <=1850B guard, list delete, master history reset preserving suppressions, live 1s countdown ticker, randomized human pacer & zero DOM scraping) verified');
+
+      // RC21: Verify customEditedPlainText verbatim preservation (with CR/LF sanitization & legal footer preserved) + Gmail Auto-Text & HTML Visual/Source Live Preview Editor contracts
+      const editedBatch = await wcEngine.issueNextComposeBatch({
+        subject: 'Owner Direct Edited Subject!\r\nInjected',
+        html: '<p>Ignored heavy newsletter HTML when operator directly edited plain text</p>'.repeat(40),
+        text: 'Hello {{name}},\nThis is my exact directly-edited Gmail campaign note with 20% OFF kept intentionally.',
+        displayName: 'Acme Studio',
+        physicalAddress: '100 Synthetic Way',
+        maxBatch: 1,
+        autoCalmPromoToTextStyle: false,
+        customEditedPlainText: true,
+        includeSignedUnsubscribeUrl: true,
+        syncFetchImpl: okSyncFetch
+      });
+      assert.equal(editedBatch.ok, true);
+      assert.equal(editedBatch.issued.length, 1);
+      assert.equal(editedBatch.issued[0].customEditedPlainText, true);
+      assert.equal(editedBatch.issued[0].subject, 'Owner Direct Edited Subject! Injected');
+      assert.ok(!/[\r\n]/.test(editedBatch.issued[0].subject), 'CR/LF control characters must be stripped from subject');
+      assert.ok(editedBatch.issued[0].bodyPreview.includes('Hello R1,'), '{{name}} merge must still work on custom edited text');
+      assert.ok(editedBatch.issued[0].bodyPreview.includes('20% OFF kept intentionally'), 'Operator direct edits must NOT be clobbered by optimizer or HTML lenRatio');
+      assert.ok(editedBatch.issued[0].bodyPreview.includes('100 Synthetic Way'), 'Physical address footer must still be appended');
+      assert.ok(Buffer.byteLength(editedBatch.issued[0].composeUrl, 'utf8') <= 1850, 'Edited compose URL must still stay <= 1850 bytes');
+
+      const cssRc21 = fs.readFileSync(path.join(__dirname, '..', 'extension', 'email-studio', 'email-template-studio.css'), 'utf8');
+      assert.ok(/<iframe[^>]*id="preview"[^>]*sandbox=""/i.test(htmlRc14), '#preview iframe must strictly keep empty sandbox=""');
+      assert.ok(!/<style\b/i.test(htmlRc14) && !/<script(?![^>]*src=)[^>]*>/i.test(htmlRc14), 'Zero inline <style> or <script> tags in index.html');
+      assert.ok(!/api\.resend\.com|sendOne\s*\(|fetch\s*\(|XMLHttpRequest/.test(jsRc14), 'Studio JS must keep zero outbound network API calls');
+      assert.ok(
+        htmlRc14.includes('id="btnPreviewModeHtml"') &&
+        htmlRc14.includes('id="btnPreviewModeHtmlEdit"') &&
+        htmlRc14.includes('id="btnPreviewModeGmailText"') &&
+        htmlRc14.includes('id="htmlPreviewVisualEditor"') &&
+        htmlRc14.includes('id="htmlPreviewSourceEditor"') &&
+        htmlRc14.includes('id="btnResetHtmlPreviewEdit"') &&
+        htmlRc14.includes('id="gmailTextPreviewSubject"') &&
+        htmlRc14.includes('id="gmailTextPreviewBody"') &&
+        htmlRc14.includes('id="btnResetGmailTextPreview"') &&
+        htmlRc14.includes('id="btnSyncGmailTextToLeftEditor"') &&
+        htmlRc14.includes('id="gmailTextComplianceFooterPreview"'),
+        'All RC21 Gmail auto-text & HTML direct preview edit DOM elements must exist'
+      );
+      assert.ok(
+        jsRc14.includes('computeGmailAutoTextDraft') &&
+        jsRc14.includes('sanitizeHtmlForVisualEditor') &&
+        jsRc14.includes('serializeVisualEditorHtml') &&
+        jsRc14.includes("setPreviewMode('GMAIL_TEXT')") &&
+        jsRc14.includes('customEditedPlainText') &&
+        jsRc14.includes('getEffectiveSubjectForProvider') &&
+        jsRc14.includes('getEffectiveTextForProvider') &&
+        jsRc14.includes('getEffectiveHtmlForProvider') &&
+        cssRc21.includes('.html-visual-canvas') &&
+        cssRc21.includes('.gmail-text-body-textarea'),
+        'All RC21 preview auto-switch, sanitization, and send-override hooks must be wired'
+      );
+
+      checks += 14;
+      console.log('PASS 17: RC14-RC21 multi-account Gmail Native Web Compose, list delete, master history reset, live 1s countdown ticker, Gmail auto-text live preview & Text/HTML direct preview editors verified');
     }
 
     console.log(`XPIDER V7.1 Gmail Safe Delivery Engine suite: ${checks}/${checks} PASS; ZERO REAL SENDS`);

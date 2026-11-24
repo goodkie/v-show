@@ -229,6 +229,7 @@ function render(){
     : `<span style="color:#b91c1c;">⚠️ ${esc(fp.from)}</span>`;
   }
   if(el('preview'))el('preview').srcdoc=htmlFor(v,true);
+  if(typeof syncLivePreviewEditorsFromSource==='function')syncLivePreviewEditorsFromSource(v);
   updateImageDiagnostics(v);
   const checks=audit(v);const list=el('checkList');
   if(list){
@@ -472,10 +473,760 @@ if (el('sidecarPort')) {
 }
 setTimeout(() => { try { refreshImageHostStatus(); refreshUnsubscribeStatus(); } catch (_) {} }, 50);
 if(el('exportHtml'))el('exportHtml').onclick=()=>{const v=values();if(previewFileUrl&&!url(v.image))alert('로컬 이미지는 이메일에 포함되지 않습니다. 공개 HTTPS 이미지 URL을 먼저 입력하세요.');download('xpider-vivpr-template.html','text/html;charset=utf-8',htmlFor(v))};
-if(el('exportText'))el('exportText').onclick=()=>download('xpider-vivpr-template.txt','text/plain;charset=utf-8',textFor(values()));
+if(el('exportText'))el('exportText').onclick=()=>{const v=values();const prov=el('emailProviderSelect')?el('emailProviderSelect').value:'RESEND';download('xpider-vivpr-template.txt','text/plain;charset=utf-8',getEffectiveTextForProvider(v,prov));};
 if(el('exportJson'))el('exportJson').onclick=()=>download('xpider-vivpr-template.json','application/json',JSON.stringify({version:1,template:values(),note:'No secrets, recipient list or API keys'},null,2));
-if(el('desktop'))el('desktop').onclick=()=>{if(el('preview'))el('preview').style.width='100%'};
-if(el('mobile'))el('mobile').onclick=()=>{if(el('preview'))el('preview').style.width='min(360px,100%)'};
+if(el('desktop'))el('desktop').onclick=()=>{if(el('preview'))el('preview').style.width='100%';if(el('htmlPreviewEditPane'))el('htmlPreviewEditPane').style.width='100%';if(el('gmailTextPreviewPane'))el('gmailTextPreviewPane').style.width='100%';};
+if(el('mobile'))el('mobile').onclick=()=>{if(el('preview'))el('preview').style.width='min(360px,100%)';if(el('htmlPreviewEditPane'))el('htmlPreviewEditPane').style.width='min(360px,100%)';if(el('gmailTextPreviewPane'))el('gmailTextPreviewPane').style.width='min(360px,100%)';};
+
+// ===== RC21: Gmail Auto-Text Live Preview & Direct Preview Editing (Text + HTML Visual/Source) =====
+const previewEditorState = {
+  activeMode: 'HTML', // 'HTML' | 'HTML_EDIT' | 'GMAIL_TEXT'
+  htmlEditSubMode: 'VISUAL', // 'VISUAL' | 'SOURCE'
+  gmailTextCustomEdited: false,
+  customTextSubject: '',
+  customTextBody: '',
+  lastAutoTextSubject: '',
+  lastAutoTextBody: '',
+  lastAutoCalmedTriggered: false,
+  lastAutoCalmedSummary: '',
+  leftChangedWhileTextEdited: false,
+  htmlPreviewCustomEdited: false,
+  suppressEditorResync: false
+};
+
+function decodeHtmlEntitiesClient(str) {
+  return String(str || '')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&#x([0-9a-f]+);/gi, (_, hex) => {
+      const cp = parseInt(hex, 16);
+      return Number.isFinite(cp) && cp > 0 && cp <= 0x10ffff ? String.fromCodePoint(cp) : '';
+    })
+    .replace(/&#(\d+);/g, (_, dec) => {
+      const cp = parseInt(dec, 10);
+      return Number.isFinite(cp) && cp > 0 && cp <= 0x10ffff ? String.fromCodePoint(cp) : '';
+    })
+    .replace(/&apos;/gi, "'")
+    .replace(/&quot;/gi, '"')
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .replace(/&mdash;/gi, '—')
+    .replace(/&ndash;/gi, '–')
+    .replace(/&rsquo;/gi, '’')
+    .replace(/&lsquo;/gi, '‘')
+    .replace(/&rdquo;/gi, '”')
+    .replace(/&ldquo;/gi, '“')
+    .replace(/&amp;/gi, '&');
+}
+
+function stripHtmlToPlainClient(html) {
+  let s = String(html || '')
+    .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+    .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+    .replace(/<div\b[^>]*style\s*=\s*["'][^"']*display\s*:\s*none[^"']*["'][^>]*>[\s\S]*?<\/div>/gi, '');
+  s = s.replace(/<a\b[^>]*href=["'](https?:\/\/[^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi, (_, href, inner) => {
+    const label = decodeHtmlEntitiesClient(String(inner || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim());
+    const cleanHref = String(href || '').trim();
+    if (!label || label.toLowerCase() === cleanHref.toLowerCase()) return cleanHref;
+    return `${label} (${cleanHref})`;
+  });
+  s = s.replace(/<img\b[^>]*>/gi, '');
+  s = s
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/(p|h[1-6])>/gi, '\n\n')
+    .replace(/<\/(div|li|tr)>/gi, '\n')
+    .replace(/<[^>]+>/g, ' ');
+  return decodeHtmlEntitiesClient(s)
+    .replace(/[ \t]+\n/g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
+function countEmojiPictographsClient(str) {
+  try {
+    const m = String(str || '').match(/\p{Extended_Pictographic}/gu);
+    return m ? m.length : 0;
+  } catch (_) {
+    return 0;
+  }
+}
+
+function stripEmojiPictographsClient(str) {
+  try {
+    return String(str || '').replace(/\p{Extended_Pictographic}(?:\uFE0E|\uFE0F)?(?:\u200D\p{Extended_Pictographic}(?:\uFE0E|\uFE0F)?)*/gu, '');
+  } catch (_) {
+    return String(str || '');
+  }
+}
+
+function countAllCapsLinesClient(str) {
+  const lines = String(str || '').replace(/\r\n/g, '\n').split('\n');
+  let count = 0;
+  for (const rawLine of lines) {
+    const line = rawLine.trim();
+    if (!line || /https?:\/\//i.test(line)) continue;
+    const asciiLetters = line.replace(/[^A-Za-z]/g, '');
+    const upperLetters = line.replace(/[^A-Z]/g, '');
+    if (asciiLetters.length >= 10 && (upperLetters.length / asciiLetters.length) >= 0.8) count++;
+  }
+  return count;
+}
+
+function cleanSubjectHygieneClient(subject) {
+  let s = String(subject || '').replace(/[\r\n\0]+/g, ' ').trim();
+  if (!s) return s;
+  s = s.replace(/!{2,}/g, '!').replace(/\?{2,}/g, '?').replace(/\${2,}/g, '$').replace(/\s{2,}/g, ' ').trim();
+  const asciiLetters = s.replace(/[^A-Za-z]/g, '');
+  const upperLetters = s.replace(/[^A-Z]/g, '');
+  if (asciiLetters.length >= 12 && (upperLetters.length / asciiLetters.length) >= 0.85) {
+    s = s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
+  }
+  return s;
+}
+
+function softenSpamPhrasesClient(str, isSubject = false) {
+  let s = decodeHtmlEntitiesClient(String(str || ''));
+  if (isSubject) s = s.replace(/^(?:\s*(?:re|fwd|fw|회신|전달)\s*:\s*)+/i, '');
+  s = s.replace(/\r\n/g, '\n').split('\n').map(line => {
+    if (!line.trim() || /https?:\/\//i.test(line)) return line;
+    const asciiLetters = line.replace(/[^A-Za-z]/g, '');
+    const upperLetters = line.replace(/[^A-Z]/g, '');
+    if (asciiLetters.length >= 10 && (upperLetters.length / asciiLetters.length) >= 0.8) {
+      return line.toLowerCase().replace(/[a-z]/, ch => ch.toUpperCase());
+    }
+    return line;
+  }).join('\n');
+  if (countEmojiPictographsClient(s) >= 5) {
+    let kept = 0;
+    try {
+      s = s.replace(/\p{Extended_Pictographic}(?:\uFE0E|\uFE0F)?(?:\u200D\p{Extended_Pictographic}(?:\uFE0E|\uFE0F)?)*/gu, m => {
+        kept++;
+        return kept <= 1 ? m : '';
+      });
+    } catch (_) {}
+  }
+  if ((s.match(/!/g) || []).length >= 6) {
+    let exSeen = 0;
+    s = s.replace(/!/g, () => {
+      exSeen++;
+      return exSeen <= 2 ? '!' : '.';
+    });
+  }
+  return s
+    .replace(/!{2,}/g, '.')
+    .replace(/\?{2,}/g, '?')
+    .replace(/\${2,}/g, '$')
+    .replace(/100%\s*(보장|확정)/gi, '안내')
+    .replace(/무조건\s*무료/gi, '무료 안내')
+    .replace(/무료\s*증정/gi, '혜택 안내')
+    .replace(/긴급\s*클릭/gi, '내용 확인')
+    .replace(/지금\s*당장/gi, '편하신 시간에')
+    .replace(/초특가|한정\s*특가/gi, '프로모션 안내')
+    .replace(/당첨\s*(안내|보장)/gi, '이벤트 안내')
+    .replace(/최저가\s*보장/gi, '가격 안내')
+    .replace(/(수익|확정)\s*(보장|수익)/gi, '서비스 안내')
+    .replace(/선착순\s*마감/gi, '일정 안내')
+    .replace(/\bfree\s+money\b/gi, 'special offer')
+    .replace(/\bguaranteed\s+(income|profit)\b/gi, 'service update')
+    .replace(/\bact\s+now\b/gi, 'learn more')
+    .replace(/\bclick\s+here\s+now\b/gi, 'view details')
+    .replace(/\b100%\s+free\b/gi, 'complimentary')
+    .replace(/\bclaim\s+your\s+prize\b/gi, 'view event details')
+    .replace(/\burgent\s+response\b/gi, 'follow-up')
+    .replace(/\bgrand\s+reopening\s+holiday\s+special\b/gi, 'New location holiday update')
+    .replace(/\bgrand\s+reopening\b/gi, 'New location opening')
+    .replace(/\bholiday\s+special\b/gi, 'Holiday update')
+    .replace(/\blimited[- ]time\s+offer\b/gi, 'seasonal note')
+    .replace(/\bflash\s+sale\b/gi, 'seasonal update')
+    .replace(/\bnow\s+booking\b/gi, 'Booking open')
+    .replace(/\bbook\s+now\b/gi, 'Book online')
+    .replace(/\breserve\s+([^\n.!?]{1,40})\s+today\b/gi, 'Reserve $1')
+    .replace(/\b(\d{1,2})%\s*off\b/gi, '$1% savings')
+    .replace(/안\s+녕하세요/g, '안녕하세요')
+    .replace(/되요/g, '돼요')
+    .replace(/할께요/g, '할게요')
+    .replace(/뵙겠읍니다/g, '뵙겠습니다')
+    .replace(/[ \t]{2,}/g, ' ')
+    .replace(/[ \t]+\n/g, '\n')
+    .trim();
+}
+
+function buildCleanNaturalHtmlFromPlainText(plainText) {
+  const lines = decodeHtmlEntitiesClient(String(plainText || '')).replace(/\r\n/g, '\n').split('\n');
+  const paras = [];
+  let buf = [];
+  for (const line of lines) {
+    if (!line.trim()) {
+      if (buf.length) { paras.push(buf.join('<br>')); buf = []; }
+    } else {
+      const linked = esc(line.trim()).replace(
+        /(https?:\/\/[^\s<>"')\]}]+?)([.,;:!?)\]}]*)(?=\s|$|<|&gt;|&quot;)/gi,
+        (_, rawUrl, trailing) => `<a href="${rawUrl}" style="color:#1a73e8;text-decoration:underline;">${rawUrl}</a>${trailing}`
+      );
+      buf.push(linked);
+    }
+  }
+  if (buf.length) paras.push(buf.join('<br>'));
+  const inner = paras.map(p => `<p style="margin:0 0 12px 0;">${p}</p>`).join('\n');
+  return `<div dir="ltr" style="font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.6;color:#222222;">\n${inner}\n</div>`;
+}
+
+function computeGmailAutoTextDraft(v) {
+  const autoCalmEnabled = !el('spamOptAutoCalmPromo') || Boolean(el('spamOptAutoCalmPromo').checked);
+  const rawSubject = String(v.subject || '').trim();
+  const rawBaseText = importedHtmlLayout
+    ? stripHtmlToPlainClient(importedHtmlLayout)
+    : textFor(v);
+  const cleanedSourceText = String(rawBaseText || '')
+    .replace(/^구독\s*취소\s*:.*preview-sample-only[^\n]*$/gim, '')
+    .replace(/https?:\/\/[^\s"'<>]+\/unsubscribe\/preview-sample-only[^\n]*/gi, '')
+    .replace(/^\[[^\]]*https?:\/\/[^\]]+\]\s*$/gim, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+
+  const combo = `${rawSubject}\n${cleanedSourceText}`;
+  const emojis = countEmojiPictographsClient(combo);
+  const capsLines = countAllCapsLinesClient(cleanedSourceText);
+  const hasPct = /\b\d{1,2}%\s*off\b/i.test(combo);
+  const matches = combo.match(/\b(grand\s+reopening|holiday\s+special|now\s+booking|book\s+now|limited[- ]time\s+offer|reserve\b[^.\n]{0,40}\btoday|don['’]t\s+miss\s+out|special\s+offer|flash\s+sale)\b/gi) || [];
+  const excls = (combo.match(/!/g) || []).length;
+  const densityHit = matches.length >= 2 || (hasPct && matches.length >= 1) || excls >= 6;
+  const shouldCalm = autoCalmEnabled && (emojis >= 5 || capsLines >= 3 || densityHit);
+
+  if (shouldCalm) {
+    const softenedSubj = stripEmojiPictographsClient(softenSpamPhrasesClient(rawSubject, true)).replace(/\s{2,}/g, ' ').trim();
+    const outSubject = cleanSubjectHygieneClient(softenedSubj || rawSubject);
+    let calmedText = softenSpamPhrasesClient(cleanedSourceText, false);
+    if (countEmojiPictographsClient(calmedText) > 0) {
+      calmedText = stripEmojiPictographsClient(calmedText)
+        .replace(/[ \t]{2,}/g, ' ')
+        .replace(/^[ \t]+/gm, '')
+        .replace(/\n{3,}/g, '\n\n')
+        .trim();
+    }
+    return {
+      subject: outSubject,
+      text: calmedText,
+      autoCalmedTriggered: true,
+      summary: `강한 프로모션 패턴 감지(이모지 ${emojis}개 · 대문자 줄 ${capsLines}줄 · 느낌표 ${excls}개) → 차분한 텍스트 기반 이메일로 자동 변환됨`
+    };
+  }
+  return {
+    subject: cleanSubjectHygieneClient(rawSubject),
+    text: cleanedSourceText,
+    autoCalmedTriggered: false,
+    summary: autoCalmEnabled
+      ? 'Gmail 텍스트 기반 캠페인 구조로 정리됨 (강한 프로모션 패턴 미감지 — 원문 톤 유지)'
+      : '자동 프로모션 완화 옵션 해제됨 — 기본 텍스트 기반 캠페인 표시'
+  };
+}
+
+function sanitizeVisualCssStyle(styleStr) {
+  const s = String(styleStr || '');
+  if (!s || /expression\s*\(|javascript\s*:|vbscript\s*:|url\s*\(\s*['"]?\s*(?:javascript|data\s*:\s*text\/html)/i.test(s)) return '';
+  return s.replace(/position\s*:\s*fixed/gi, 'position:relative').slice(0, 600);
+}
+
+function sanitizeHtmlForVisualEditor(rawHtml, allowRemoteImages) {
+  const storeApi = typeof window !== 'undefined' ? window.XpiderStudioStorage : null;
+  let base = String(rawHtml || '');
+  if (storeApi && typeof storeApi.sanitizeImportedHtmlFragment === 'function') {
+    base = storeApi.sanitizeImportedHtmlFragment(base).sanitizedHtml;
+  }
+  const bodyMatch = base.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+  const inner = bodyMatch ? bodyMatch[1] : base;
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(`<div>${inner}</div>`, 'text/html');
+  const root = doc.body.firstElementChild || doc.body;
+  const ALLOWED_TAGS = new Set(['DIV', 'P', 'BR', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'SPAN', 'B', 'STRONG', 'I', 'EM', 'U', 'S', 'A', 'IMG', 'UL', 'OL', 'LI', 'HR', 'BLOCKQUOTE', 'TABLE', 'TBODY', 'THEAD', 'TFOOT', 'TR', 'TD', 'TH']);
+
+  const cleanNode = (node) => {
+    if (!node) return null;
+    if (node.nodeType === 3) return document.createTextNode(node.nodeValue || '');
+    if (node.nodeType !== 1) return null;
+    const tag = node.tagName.toUpperCase();
+    if (tag === 'SCRIPT' || tag === 'STYLE' || tag === 'IFRAME' || tag === 'OBJECT' || tag === 'EMBED' || tag === 'FORM' || tag === 'SVG' || tag === 'MATH' || tag === 'META' || tag === 'LINK') {
+      return null;
+    }
+    const rawStyle = node.getAttribute('style') || '';
+    if (tag === 'DIV' && /display\s*:\s*none/i.test(rawStyle) && /font-size\s*:\s*1px/i.test(rawStyle)) {
+      return null;
+    }
+    if (!ALLOWED_TAGS.has(tag)) {
+      const frag = document.createDocumentFragment();
+      for (const ch of Array.from(node.childNodes)) {
+        const cleaned = cleanNode(ch);
+        if (cleaned) frag.appendChild(cleaned);
+      }
+      return frag;
+    }
+    if (tag === 'IMG') {
+      const src = (node.getAttribute('src') || node.getAttribute('data-xpider-blocked-src') || '').trim();
+      const alt = (node.getAttribute('alt') || '').trim();
+      const isLocal = /^data:image\/(png|jpeg|jpg|webp|gif);/i.test(src) || /^blob:/i.test(src);
+      const isHttps = /^https:\/\//i.test(src);
+      if (!isLocal && !isHttps) return null;
+      if (isHttps && !allowRemoteImages) {
+        const chip = document.createElement('span');
+        chip.className = 'blocked-img-chip';
+        chip.setAttribute('contenteditable', 'false');
+        chip.setAttribute('data-xpider-blocked-img', '1');
+        chip.setAttribute('data-xpider-blocked-src', src);
+        chip.setAttribute('data-xpider-blocked-alt', alt);
+        if (node.getAttribute('width')) chip.setAttribute('data-xpider-blocked-width', node.getAttribute('width'));
+        if (rawStyle) chip.setAttribute('data-xpider-blocked-style', sanitizeVisualCssStyle(rawStyle));
+        chip.textContent = `🖼️ [외부 이미지 보존됨${alt ? `: ${alt}` : ''}] (편집 저장 시 원래 HTTPS URL 유지)`;
+        return chip;
+      }
+      const imgEl = document.createElement('img');
+      imgEl.setAttribute('src', src);
+      if (alt) imgEl.setAttribute('alt', alt);
+      if (node.getAttribute('width')) imgEl.setAttribute('width', String(node.getAttribute('width')).replace(/[^0-9%px]/g, ''));
+      const safeSt = sanitizeVisualCssStyle(rawStyle) || 'display:block;max-width:100%;height:auto;border-radius:8px;margin:0 0 18px;';
+      imgEl.setAttribute('style', safeSt);
+      return imgEl;
+    }
+
+    const outEl = document.createElement(tag.toLowerCase());
+    const safeStyle = sanitizeVisualCssStyle(rawStyle);
+    if (safeStyle) outEl.setAttribute('style', safeStyle);
+    if (tag === 'A') {
+      const href = (node.getAttribute('href') || '').trim();
+      if (/^https:\/\//i.test(href) || /^mailto:/i.test(href)) {
+        outEl.setAttribute('href', href);
+        outEl.setAttribute('target', '_blank');
+        outEl.setAttribute('rel', 'noopener noreferrer');
+      } else {
+        outEl.setAttribute('href', '#');
+      }
+    } else if (tag === 'TABLE' || tag === 'TD' || tag === 'TH') {
+      for (const attr of ['role', 'width', 'align', 'cellpadding', 'cellspacing']) {
+        const av = node.getAttribute(attr);
+        if (av && /^[A-Za-z0-9%._-]+$/.test(av)) outEl.setAttribute(attr, av);
+      }
+    }
+    for (const ch of Array.from(node.childNodes)) {
+      const cleaned = cleanNode(ch);
+      if (cleaned) outEl.appendChild(cleaned);
+    }
+    return outEl;
+  };
+
+  const frag = document.createDocumentFragment();
+  for (const ch of Array.from(root.childNodes)) {
+    const cleaned = cleanNode(ch);
+    if (cleaned) frag.appendChild(cleaned);
+  }
+  return frag;
+}
+
+function serializeVisualEditorHtml(container) {
+  if (!container) return '';
+  const clone = container.cloneNode(true);
+  const blockedChips = clone.querySelectorAll('[data-xpider-blocked-img="1"]');
+  for (const chip of Array.from(blockedChips)) {
+    const origSrc = chip.getAttribute('data-xpider-blocked-src') || '';
+    if (/^https:\/\//i.test(origSrc)) {
+      const img = document.createElement('img');
+      img.setAttribute('src', origSrc);
+      const alt = chip.getAttribute('data-xpider-blocked-alt') || '';
+      if (alt) img.setAttribute('alt', alt);
+      const w = chip.getAttribute('data-xpider-blocked-width') || '560';
+      if (w) img.setAttribute('width', w);
+      img.setAttribute('style', chip.getAttribute('data-xpider-blocked-style') || 'display:block;max-width:100%;width:100%;height:auto;border-radius:8px;border:0;margin:0 0 24px');
+      chip.replaceWith(img);
+    } else {
+      chip.remove();
+    }
+  }
+  const storeApi = typeof window !== 'undefined' ? window.XpiderStudioStorage : null;
+  const rawOut = clone.innerHTML.trim();
+  return storeApi && typeof storeApi.sanitizeImportedHtmlFragment === 'function'
+    ? storeApi.sanitizeImportedHtmlFragment(rawOut).sanitizedHtml
+    : rawOut;
+}
+
+function updatePreviewEditActiveStrip() {
+  const strip = el('previewEditActiveStrip');
+  if (!strip) return;
+  const parts = [];
+  if (previewEditorState.gmailTextCustomEdited) {
+    parts.push('📝 Gmail 텍스트 직접 편집 적용 중');
+  }
+  if (previewEditorState.htmlPreviewCustomEdited && importedHtmlLayout) {
+    parts.push('✏️ HTML 미리보기 직접 편집 적용 중');
+  }
+  if (parts.length === 0) {
+    strip.className = 'preview-edit-strip';
+    strip.textContent = '';
+    return;
+  }
+  strip.className = 'preview-edit-strip visible';
+  strip.textContent = `✅ ${parts.join(' · ')} — 발송 시 미리보기에서 수정한 내용이 반영됩니다.`;
+}
+
+function updateGmailTextPreviewMeta() {
+  const subjEl = el('gmailTextPreviewSubject');
+  const bodyEl = el('gmailTextPreviewBody');
+  const badge = el('gmailTextPreviewBadge');
+  const meta = el('gmailTextLengthMeta');
+  const note = el('gmailTextConversionNote');
+  const footerBox = el('gmailTextComplianceFooterPreview');
+  const subj = subjEl ? subjEl.value : '';
+  const body = bodyEl ? bodyEl.value : '';
+  const encodedApprox = encodeURIComponent(subj).length + encodeURIComponent(body).length;
+  const fitFlag = encodedApprox <= 1550 ? '웹 작성창 URL 한도 여유 ✅' : '본문 길이 큼 (URL 자동 요약 시 [📋 본문 복사]로 Ctrl+V 가능)';
+  if (meta) meta.textContent = `제목 ${subj.length}자 · 본문 ${body.length}자 · ${fitFlag}`;
+  if (badge) {
+    badge.className = previewEditorState.gmailTextCustomEdited ? 'preview-badge-edited' : 'preview-badge-auto';
+    badge.textContent = previewEditorState.gmailTextCustomEdited
+      ? '✏️ 사용자 직접 편집 적용 중'
+      : (previewEditorState.lastAutoCalmedTriggered ? '✨ Gmail 프로모션 → 텍스트형 자동 변환됨' : '📝 Gmail 텍스트 기반 캠페인');
+  }
+  if (note) {
+    if (previewEditorState.gmailTextCustomEdited) {
+      note.textContent = previewEditorState.leftChangedWhileTextEdited
+        ? '✏️ 직접 편집한 Gmail 제목·본문이 잠금 보호되고 있습니다 (좌측 에디터가 변경되었지만 직접 수정본을 덮어쓰지 않았습니다 · 다시 자동 변환하려면 [🔄 자동 변환 원본으로 복원] 클릭).'
+        : '✏️ 직접 편집 적용 중: Gmail 웹 작성창 열기 및 Gmail API 발송 시 아래 수정된 제목과 본문이 그대로 발송됩니다.';
+    } else {
+      note.textContent = `✨ ${previewEditorState.lastAutoCalmedSummary || 'Gmail 발송용 텍스트 기반 캠페인이 실시간 표시됩니다.'} — 아래 입력창에서 바로 문구를 수정할 수 있습니다.`;
+    }
+  }
+  if (footerBox) {
+    const v = values();
+    const gAddr = (el('gmailPhysicalAddress') && el('gmailPhysicalAddress').value.trim()) || v.address || '';
+    const useSigned = !el('webComposeIncludeSignedUnsub') || Boolean(el('webComposeIncludeSignedUnsub').checked);
+    const unsubHost = (el('gmailCustomUnsubBaseInput') && el('gmailCustomUnsubBaseInput').value.trim()) || autoUnsubBaseUrl || 'https://unsubscribe.vivpr.pro';
+    const lines = ['📌 발송 시 자동 부착되는 법적 푸터 (수정 불가):'];
+    lines.push(gAddr ? `• 발신자 물리적 주소: ${gAddr}` : '• 발신자 물리적 주소: (미입력 — 좌측 사업자 주소 또는 Gmail 물리적 주소 입력 권장)');
+    lines.push(useSigned ? `• 수신거부: ${unsubHost.replace(/\/+$/, '')}/unsubscribe/{수신자별_서명토큰}` : '• 수신거부: 회신("수신거부" / "unsubscribe") 안내 문구 자동 부착');
+    footerBox.textContent = lines.join('\n');
+  }
+  updatePreviewEditActiveStrip();
+}
+
+function refreshGmailTextPreviewFromSource(v, sidecarOpt = null) {
+  const autoDraft = computeGmailAutoTextDraft(v || values());
+  let nextSubj = autoDraft.subject;
+  let nextText = autoDraft.text;
+  let calmed = autoDraft.autoCalmedTriggered;
+  let summary = autoDraft.summary;
+
+  if (sidecarOpt && sidecarOpt.provider === 'GMAIL' && sidecarOpt.optimized) {
+    const autoCalmFx = (sidecarOpt.autoFixesApplied || []).find(f => f.code === 'AUTO_CALMED_PROMO_TO_TEXT_STRUCTURE');
+    if (autoCalmFx) {
+      if (sidecarOpt.optimized.subject) nextSubj = String(sidecarOpt.optimized.subject).trim();
+      if (sidecarOpt.optimized.text) {
+        nextText = String(sidecarOpt.optimized.text)
+          .replace(/^구독\s*취소\s*:.*preview-sample-only[^\n]*$/gim, '')
+          .replace(/https?:\/\/[^\s"'<>]+\/unsubscribe\/preview-sample-only[^\n]*/gi, '')
+          .trim();
+      }
+      calmed = true;
+      summary = autoCalmFx.detail || summary;
+    }
+  }
+
+  const autoChanged = nextSubj !== previewEditorState.lastAutoTextSubject || nextText !== previewEditorState.lastAutoTextBody;
+  previewEditorState.lastAutoTextSubject = nextSubj;
+  previewEditorState.lastAutoTextBody = nextText;
+  previewEditorState.lastAutoCalmedTriggered = calmed;
+  previewEditorState.lastAutoCalmedSummary = summary;
+
+  if (!previewEditorState.gmailTextCustomEdited) {
+    if (el('gmailTextPreviewSubject') && el('gmailTextPreviewSubject').value !== nextSubj) {
+      el('gmailTextPreviewSubject').value = nextSubj;
+    }
+    if (el('gmailTextPreviewBody') && el('gmailTextPreviewBody').value !== nextText) {
+      el('gmailTextPreviewBody').value = nextText;
+    }
+    previewEditorState.leftChangedWhileTextEdited = false;
+  } else if (autoChanged) {
+    previewEditorState.leftChangedWhileTextEdited = true;
+  }
+  updateGmailTextPreviewMeta();
+}
+
+function syncHtmlEditorFromSource(v) {
+  const visEl = el('htmlPreviewVisualEditor');
+  const srcEl = el('htmlPreviewSourceEditor');
+  const allowRemote = Boolean(el('loadRemoteImages') && el('loadRemoteImages').checked);
+  const fullHtml = htmlFor(v || values(), true);
+  if (visEl) {
+    visEl.replaceChildren(sanitizeHtmlForVisualEditor(fullHtml, allowRemote));
+  }
+  if (srcEl) {
+    const bodyMatch = htmlFor(v || values(), false).match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+    const bodyInner = bodyMatch ? bodyMatch[1].replace(/<div\b[^>]*style\s*=\s*["'][^"']*display\s*:\s*none[^"']*["'][^>]*>[\s\S]*?<\/div>/gi, '').trim() : htmlFor(v || values(), false);
+    srcEl.value = importedHtmlLayout || bodyInner;
+  }
+  const badge = el('htmlPreviewEditBadge');
+  if (badge) {
+    badge.className = previewEditorState.htmlPreviewCustomEdited && importedHtmlLayout ? 'preview-badge-edited' : 'preview-badge-auto';
+    badge.textContent = previewEditorState.htmlPreviewCustomEdited && importedHtmlLayout
+      ? '✏️ HTML 직접 편집 적용 중'
+      : '🎨 HTML 직접 편집 (클릭해 수정)';
+  }
+  updatePreviewEditActiveStrip();
+}
+
+function syncLivePreviewEditorsFromSource(v) {
+  if (previewEditorState.suppressEditorResync) return;
+  refreshGmailTextPreviewFromSource(v);
+  if (previewEditorState.activeMode === 'HTML_EDIT') {
+    syncHtmlEditorFromSource(v);
+  } else {
+    updatePreviewEditActiveStrip();
+  }
+}
+
+function setHtmlEditSubMode(subMode) {
+  const next = subMode === 'SOURCE' ? 'SOURCE' : 'VISUAL';
+  previewEditorState.htmlEditSubMode = next;
+  const isSrc = next === 'SOURCE';
+  if (el('htmlPreviewVisualEditor')) el('htmlPreviewVisualEditor').style.display = isSrc ? 'none' : 'block';
+  if (el('htmlVisualToolbar')) el('htmlVisualToolbar').style.display = isSrc ? 'none' : 'flex';
+  if (el('htmlPreviewSourceEditor')) el('htmlPreviewSourceEditor').style.display = isSrc ? 'block' : 'none';
+  if (el('btnHtmlEditVisual')) el('btnHtmlEditVisual').className = isSrc ? 'preview-tab-btn' : 'preview-tab-btn active';
+  if (el('btnHtmlEditSource')) el('btnHtmlEditSource').className = isSrc ? 'preview-tab-btn active' : 'preview-tab-btn';
+  syncHtmlEditorFromSource(values());
+}
+
+function setPreviewMode(mode) {
+  const norm = (mode === 'HTML_EDIT' || mode === 'GMAIL_TEXT') ? mode : 'HTML';
+  previewEditorState.activeMode = norm;
+  const map = {
+    HTML: el('btnPreviewModeHtml'),
+    HTML_EDIT: el('btnPreviewModeHtmlEdit'),
+    GMAIL_TEXT: el('btnPreviewModeGmailText')
+  };
+  for (const [k, btn] of Object.entries(map)) {
+    if (btn) btn.className = k === norm ? 'preview-tab-btn active' : 'preview-tab-btn';
+  }
+  if (el('preview')) el('preview').style.display = norm === 'HTML' ? 'block' : 'none';
+  if (el('htmlPreviewEditPane')) el('htmlPreviewEditPane').style.display = norm === 'HTML_EDIT' ? 'block' : 'none';
+  if (el('gmailTextPreviewPane')) el('gmailTextPreviewPane').style.display = norm === 'GMAIL_TEXT' ? 'block' : 'none';
+
+  const v = values();
+  if (norm === 'HTML_EDIT') {
+    syncHtmlEditorFromSource(v);
+  } else if (norm === 'GMAIL_TEXT') {
+    refreshGmailTextPreviewFromSource(v);
+  }
+  updatePreviewEditActiveStrip();
+}
+
+function getEffectiveSubjectForProvider(v, provider = 'RESEND') {
+  const isGmail = String(provider || '').toUpperCase() === 'GMAIL';
+  if (isGmail && previewEditorState.gmailTextCustomEdited && previewEditorState.customTextSubject.trim()) {
+    return previewEditorState.customTextSubject.trim();
+  }
+  return String((v || values()).subject || '').trim();
+}
+
+function getEffectiveTextForProvider(v, provider = 'RESEND') {
+  const isGmail = String(provider || '').toUpperCase() === 'GMAIL';
+  if (isGmail && previewEditorState.gmailTextCustomEdited) {
+    return previewEditorState.customTextBody;
+  }
+  if (isGmail && previewEditorState.lastAutoTextBody && (!el('spamOptAutoCalmPromo') || el('spamOptAutoCalmPromo').checked)) {
+    return previewEditorState.lastAutoTextBody;
+  }
+  return textFor(v || values());
+}
+
+function getEffectiveHtmlForProvider(v, provider = 'RESEND') {
+  const isGmail = String(provider || '').toUpperCase() === 'GMAIL';
+  if (isGmail && previewEditorState.gmailTextCustomEdited && previewEditorState.customTextBody.trim()) {
+    return buildCleanNaturalHtmlFromPlainText(previewEditorState.customTextBody);
+  }
+  return htmlFor(v || values());
+}
+
+function applyHtmlPreviewDirectEdit(sanitizedHtmlFrag, sourceTag) {
+  importedHtmlLayout = sanitizedHtmlFrag;
+  previewEditorState.htmlPreviewCustomEdited = true;
+  studioDirty = true;
+  updateHtmlLayoutBanner();
+  const v = values();
+  previewEditorState.suppressEditorResync = true;
+  try {
+    if (el('preview')) el('preview').srcdoc = htmlFor(v, true);
+    refreshGmailTextPreviewFromSource(v);
+    if (sourceTag === 'VISUAL' && el('htmlPreviewSourceEditor')) {
+      el('htmlPreviewSourceEditor').value = importedHtmlLayout;
+    } else if (sourceTag === 'SOURCE' && el('htmlPreviewVisualEditor')) {
+      const allowRemote = Boolean(el('loadRemoteImages') && el('loadRemoteImages').checked);
+      el('htmlPreviewVisualEditor').replaceChildren(sanitizeHtmlForVisualEditor(htmlFor(v, true), allowRemote));
+    }
+    const badge = el('htmlPreviewEditBadge');
+    if (badge) {
+      badge.className = 'preview-badge-edited';
+      badge.textContent = '✏️ HTML 직접 편집 적용 중';
+    }
+    const meta = el('htmlPreviewEditMeta');
+    if (meta) meta.textContent = `✅ HTML 직접 수정 반영됨 (${importedHtmlLayout.length}자 · 발송 및 미리보기에 즉시 적용)`;
+    updatePreviewEditActiveStrip();
+  } finally {
+    previewEditorState.suppressEditorResync = false;
+  }
+}
+
+if (el('btnPreviewModeHtml')) el('btnPreviewModeHtml').onclick = () => setPreviewMode('HTML');
+if (el('btnPreviewModeHtmlEdit')) el('btnPreviewModeHtmlEdit').onclick = () => setPreviewMode('HTML_EDIT');
+if (el('btnPreviewModeGmailText')) el('btnPreviewModeGmailText').onclick = () => setPreviewMode('GMAIL_TEXT');
+if (el('btnSwitchToHtmlFromText')) el('btnSwitchToHtmlFromText').onclick = () => setPreviewMode('HTML');
+if (el('btnHtmlEditVisual')) el('btnHtmlEditVisual').onclick = () => setHtmlEditSubMode('VISUAL');
+if (el('btnHtmlEditSource')) el('btnHtmlEditSource').onclick = () => setHtmlEditSubMode('SOURCE');
+if (el('btnSyncHtmlEditToPreview')) el('btnSyncHtmlEditToPreview').onclick = () => setPreviewMode('HTML');
+
+if (el('htmlVisualToolbar')) {
+  el('htmlVisualToolbar').addEventListener('click', (ev) => {
+    const btn = ev.target && ev.target.closest ? ev.target.closest('button[data-html-cmd]') : null;
+    if (!btn) return;
+    const cmd = btn.getAttribute('data-html-cmd');
+    const visEl = el('htmlPreviewVisualEditor');
+    if (!cmd || !visEl) return;
+    visEl.focus();
+    try {
+      if (typeof document.execCommand === 'function') document.execCommand(cmd, false, null);
+    } catch (_) {}
+    applyHtmlPreviewDirectEdit(serializeVisualEditorHtml(visEl), 'VISUAL');
+  });
+}
+
+if (el('btnHtmlInsertLink')) {
+  el('btnHtmlInsertLink').onclick = () => {
+    const visEl = el('htmlPreviewVisualEditor');
+    if (!visEl) return;
+    const hrefRaw = typeof window.prompt === 'function' ? window.prompt('삽입할 HTTPS 링크 주소를 입력하세요 (https://...)', 'https://') : '';
+    const safeHref = url(String(hrefRaw || '').trim());
+    if (!safeHref) {
+      if (el('htmlPreviewEditMeta')) el('htmlPreviewEditMeta').textContent = '⚠️ https:// 로 시작하는 유효한 링크만 삽입할 수 있습니다.';
+      return;
+    }
+    visEl.focus();
+    try {
+      if (typeof document.execCommand === 'function') document.execCommand('createLink', false, safeHref);
+    } catch (_) {}
+    applyHtmlPreviewDirectEdit(serializeVisualEditorHtml(visEl), 'VISUAL');
+  };
+}
+
+let htmlVisualEditTimer = null;
+if (el('htmlPreviewVisualEditor')) {
+  el('htmlPreviewVisualEditor').addEventListener('input', () => {
+    if (htmlVisualEditTimer) clearTimeout(htmlVisualEditTimer);
+    htmlVisualEditTimer = setTimeout(() => {
+      const visEl = el('htmlPreviewVisualEditor');
+      if (!visEl) return;
+      applyHtmlPreviewDirectEdit(serializeVisualEditorHtml(visEl), 'VISUAL');
+    }, 120);
+  });
+}
+
+let htmlSourceEditTimer = null;
+if (el('htmlPreviewSourceEditor')) {
+  el('htmlPreviewSourceEditor').addEventListener('input', () => {
+    if (htmlSourceEditTimer) clearTimeout(htmlSourceEditTimer);
+    htmlSourceEditTimer = setTimeout(() => {
+      const srcEl = el('htmlPreviewSourceEditor');
+      if (!srcEl) return;
+      const storeApi = typeof window !== 'undefined' ? window.XpiderStudioStorage : null;
+      const cleaned = storeApi && typeof storeApi.sanitizeImportedHtmlFragment === 'function'
+        ? storeApi.sanitizeImportedHtmlFragment(srcEl.value).sanitizedHtml
+        : srcEl.value;
+      applyHtmlPreviewDirectEdit(cleaned, 'SOURCE');
+    }, 180);
+  });
+}
+
+if (el('btnResetHtmlPreviewEdit')) {
+  el('btnResetHtmlPreviewEdit').onclick = () => {
+    importedHtmlLayout = '';
+    previewEditorState.htmlPreviewCustomEdited = false;
+    updateHtmlLayoutBanner();
+    render();
+    if (el('htmlPreviewEditMeta')) el('htmlPreviewEditMeta').textContent = '🔄 좌측 기본 에디터 HTML 구조로 복원되었습니다.';
+  };
+}
+
+if (el('btnSyncHtmlEditTextToLeft')) {
+  el('btnSyncHtmlEditTextToLeft').onclick = () => {
+    const plain = stripHtmlToPlainClient(importedHtmlLayout || htmlFor(values(), false))
+      .replace(/^구독\s*취소\s*:.*$/gim, '')
+      .trim();
+    if (plain && el('body')) {
+      el('body').value = plain;
+      studioDirty = true;
+      render();
+      if (el('htmlPreviewEditMeta')) el('htmlPreviewEditMeta').textContent = '⬅️ HTML 미리보기에서 추출한 텍스트를 좌측 본문 입력창에 반영했습니다.';
+    }
+  };
+}
+
+if (el('gmailTextPreviewSubject')) {
+  el('gmailTextPreviewSubject').addEventListener('input', () => {
+    previewEditorState.gmailTextCustomEdited = true;
+    previewEditorState.customTextSubject = el('gmailTextPreviewSubject').value;
+    if (!previewEditorState.customTextBody && el('gmailTextPreviewBody')) {
+      previewEditorState.customTextBody = el('gmailTextPreviewBody').value;
+    }
+    previewEditorState.leftChangedWhileTextEdited = false;
+    studioDirty = true;
+    updateGmailTextPreviewMeta();
+  });
+}
+
+if (el('gmailTextPreviewBody')) {
+  el('gmailTextPreviewBody').addEventListener('input', () => {
+    previewEditorState.gmailTextCustomEdited = true;
+    previewEditorState.customTextBody = el('gmailTextPreviewBody').value;
+    if (!previewEditorState.customTextSubject && el('gmailTextPreviewSubject')) {
+      previewEditorState.customTextSubject = el('gmailTextPreviewSubject').value;
+    }
+    previewEditorState.leftChangedWhileTextEdited = false;
+    studioDirty = true;
+    updateGmailTextPreviewMeta();
+  });
+}
+
+if (el('btnResetGmailTextPreview')) {
+  el('btnResetGmailTextPreview').onclick = () => {
+    previewEditorState.gmailTextCustomEdited = false;
+    previewEditorState.customTextSubject = '';
+    previewEditorState.customTextBody = '';
+    previewEditorState.leftChangedWhileTextEdited = false;
+    refreshGmailTextPreviewFromSource(values());
+  };
+}
+
+if (el('btnSyncGmailTextToLeftEditor')) {
+  el('btnSyncGmailTextToLeftEditor').onclick = () => {
+    const s = el('gmailTextPreviewSubject') ? el('gmailTextPreviewSubject').value.trim() : '';
+    const b = el('gmailTextPreviewBody') ? el('gmailTextPreviewBody').value.trim() : '';
+    if (s && el('subject')) el('subject').value = s;
+    if (b && el('body')) el('body').value = b;
+    studioDirty = true;
+    render();
+    if (el('gmailTextConversionNote')) {
+      el('gmailTextConversionNote').textContent = '⬅️ 현재 Gmail 텍스트 미리보기의 제목과 본문을 좌측 기본 에디터에 반영했습니다.';
+    }
+  };
+}
+
+if (el('btnCopyGmailTextPreview')) {
+  el('btnCopyGmailTextPreview').onclick = async () => {
+    const b = el('gmailTextPreviewBody') ? el('gmailTextPreviewBody').value : '';
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) await navigator.clipboard.writeText(b);
+      if (el('btnCopyGmailTextPreview')) {
+        el('btnCopyGmailTextPreview').textContent = '✅ 복사됨';
+        setTimeout(() => { if (el('btnCopyGmailTextPreview')) el('btnCopyGmailTextPreview').textContent = '📋 텍스트 본문 복사'; }, 1500);
+      }
+    } catch (_) {}
+  };
+}
+
 render();
 
 // === Real-Time Detailed Debug Logger (Copy / Save for Debugging, Auto-Redacted) ===
@@ -958,6 +1709,13 @@ function applyStudioFieldValues(d) {
     el('senderDisplayName').value = (biz && biz.toLowerCase() !== 'vivpr.pro') ? biz : '';
   }
   importedHtmlLayout = typeof d.importedHtml === 'string' ? d.importedHtml : '';
+  if (typeof previewEditorState === 'object') {
+    previewEditorState.htmlPreviewCustomEdited = Boolean(importedHtmlLayout);
+    previewEditorState.gmailTextCustomEdited = false;
+    previewEditorState.customTextSubject = '';
+    previewEditorState.customTextBody = '';
+    previewEditorState.leftChangedWhileTextEdited = false;
+  }
   updateHtmlLayoutBanner();
   studioDirty = false;
   render();
@@ -1173,6 +1931,7 @@ if (el('btnImportHtml') && el('importHtmlFile')) {
 if (el('btnClearImportedHtml')) {
   el('btnClearImportedHtml').onclick = () => {
     importedHtmlLayout = '';
+    if (typeof previewEditorState === 'object') previewEditorState.htmlPreviewCustomEdited = false;
     updateHtmlLayoutBanner();
     render();
     setDraftStatus('status-idle', '📝 일반 텍스트 에디터 모드로 전환되었습니다.');
@@ -3707,6 +4466,10 @@ function createBuiltinRecipientManager() {
     if (prov === 'GMAIL') {
       refreshGmailStatus();
       if (typeof syncGmailDispatchModeUI === 'function') syncGmailDispatchModeUI();
+      // RC21: Automatically switch live preview to Gmail auto-converted text-based campaign editor!
+      if (typeof setPreviewMode === 'function') setPreviewMode('GMAIL_TEXT');
+    } else {
+      if (typeof setPreviewMode === 'function') setPreviewMode('HTML');
     }
     if (fromUserChange && typeof xpiderRefreshAntiSpamChecklist === 'function') xpiderRefreshAntiSpamChecklist();
   }
@@ -4004,6 +4767,12 @@ function createBuiltinRecipientManager() {
   bindTwoWayCheckboxSync('spamOptApplyGmail', 'gmailAutoSpamOpt');
   bindTwoWayCheckboxSync('spamOptEmbedInlineCid', 'gmailEmbedInlineCid');
   bindTwoWayCheckboxSync('spamOptAutoCalmPromo', 'gmailAutoCalmPromo');
+  for (const calmId of ['spamOptAutoCalmPromo', 'gmailAutoCalmPromo', 'webComposeIncludeSignedUnsub']) {
+    if (el(calmId)) el(calmId).addEventListener('change', () => { if (typeof refreshGmailTextPreviewFromSource === 'function') refreshGmailTextPreviewFromSource(values()); });
+  }
+  for (const addrId of ['gmailPhysicalAddress', 'gmailCustomUnsubBaseInput']) {
+    if (el(addrId)) el(addrId).addEventListener('input', () => { if (typeof updateGmailTextPreviewMeta === 'function') updateGmailTextPreviewMeta(); });
+  }
   bindTwoWayCheckboxSync('spamOptAutoAlignReplyTo', 'gmailAutoAlignReplyTo');
   bindTwoWayCheckboxSync('spamOptLightweightGmail', 'gmailLightweightHtml');
   bindTwoWayCheckboxSync('spamOptBlockHighRisk', 'gmailBlockHighRiskSpam');
@@ -4508,6 +5277,9 @@ function createBuiltinRecipientManager() {
     if (!opt) return;
     lastUnifiedOptimization = opt;
     const provider = opt.provider || resolveChecklistTargetProvider();
+    if (provider === 'GMAIL' && typeof refreshGmailTextPreviewFromSource === 'function') {
+      refreshGmailTextPreviewFromSource(values(), opt);
+    }
     const badge = el('spamChecklistScoreBadge');
     const sumBox = el('antiSpamChecklistSummary');
     const listEl = el('antiSpamChecklistList');
@@ -4735,8 +5507,8 @@ function createBuiltinRecipientManager() {
     el('btnOpenGmailNativeCompose').onclick = () => {
       const v = values();
       const to = el('gmailSelfTestRecipient') ? el('gmailSelfTestRecipient').value.trim() : '';
-      const subj = (v.subject || '').trim();
-      const bodyTxt = textFor(v).replace(/https?:\/\/[^\s"'<>]+\/unsubscribe\/preview-sample-only[^\n]*/gi, '').trim().slice(0, 1500);
+      const subj = getEffectiveSubjectForProvider(v, 'GMAIL');
+      const bodyTxt = getEffectiveTextForProvider(v, 'GMAIL').replace(/https?:\/\/[^\s"'<>]+\/unsubscribe\/preview-sample-only[^\n]*/gi, '').trim().slice(0, 1500);
       const u = new URL('https://mail.google.com/mail/');
       u.searchParams.set('view', 'cm');
       u.searchParams.set('fs', '1');
@@ -4907,6 +5679,10 @@ function createBuiltinRecipientManager() {
       if (!to || !consentOk) { if (box) { box.className = 'status-box status-blocked'; box.textContent = '⚠️ 승인된 본인 테스트 수신자 주소와 동의 체크박스를 확인하세요.'; } return; }
       const v = values();
       const spamFlags = getGmailSpamOptFlags();
+      const gmailSubj = getEffectiveSubjectForProvider(v, 'GMAIL') || '[XPIDER Gmail Self-Test]';
+      const gmailHtml = getEffectiveHtmlForProvider(v, 'GMAIL');
+      const gmailText = getEffectiveTextForProvider(v, 'GMAIL');
+      const customTextEdited = Boolean(previewEditorState.gmailTextCustomEdited);
       if (box) { box.className = 'status-box status-loading'; box.textContent = '⏳ Gmail API 1통 셀프 테스트 발송 중 (자동 스팸 방지 최적화 + RFC 8058 수신거부 동기화 포함)...'; }
       const { sidecarPort, sidecarToken } = getSidecarConfig();
       const r = await callBg({
@@ -4918,11 +5694,12 @@ function createBuiltinRecipientManager() {
           to,
           replyTo: el('gmailReplyTo') ? el('gmailReplyTo').value.trim() : '',
           displayName: v.senderDisplayName || v.company || v.brand || '',
-          subject: (v.subject || '').trim() || '[XPIDER Gmail Self-Test]',
-          html: htmlFor(v),
-          text: textFor(v),
+          subject: gmailSubj,
+          html: gmailHtml,
+          text: gmailText,
           physicalAddress: getEffectivePhysicalAddress(v),
           ...spamFlags,
+          autoCalmPromoToTextStyle: customTextEdited ? false : spamFlags.autoCalmPromoToTextStyle,
           recipientConsentConfirmed: true
         }
       });
@@ -4998,12 +5775,13 @@ function createBuiltinRecipientManager() {
     el('btnGmailProdSend').onclick = async () => {
       const box = el('gmailQueueStatus');
       const v = values();
-      const subjectVal = (v.subject || '').trim();
+      const subjectVal = getEffectiveSubjectForProvider(v, 'GMAIL');
       if (!subjectVal) { if (box) { box.className = 'status-box status-blocked'; box.textContent = '⚠️ 이메일 제목을 입력하세요.'; } return; }
       const hygieneConfirmed = Boolean(el('gmailHygieneConfirm') && el('gmailHygieneConfirm').checked);
       const providerSwitchConfirmed = Boolean(operatorConfirmedProviderSwitch || (el('gmailProviderSwitchConfirm') && el('gmailProviderSwitchConfirm').checked));
       const scheduleMode = el('gmailScheduleMode') ? el('gmailScheduleMode').value : 'DISTRIBUTED_MULTI_DAY';
       const spamFlags = getGmailSpamOptFlags();
+      const customTextEdited = Boolean(previewEditorState.gmailTextCustomEdited);
       const { sidecarPort, sidecarToken } = getSidecarConfig();
       if (box) { box.className = 'status-box status-loading'; box.textContent = '⏳ Gmail 캠페인 백그라운드 발송 시작 요청 중 (자동 스팸 방지 + 한도 예약 대기)...'; }
       const r = await callBg({
@@ -5014,12 +5792,13 @@ function createBuiltinRecipientManager() {
           background: true,
           subject: subjectVal,
           displayName: v.senderDisplayName || v.company || v.brand || '',
-          html: htmlFor(v),
-          text: textFor(v),
+          html: getEffectiveHtmlForProvider(v, 'GMAIL'),
+          text: getEffectiveTextForProvider(v, 'GMAIL'),
           replyTo: el('gmailReplyTo') ? el('gmailReplyTo').value.trim() : '',
           physicalAddress: getEffectivePhysicalAddress(v),
           scheduleMode,
           ...spamFlags,
+          autoCalmPromoToTextStyle: customTextEdited ? false : spamFlags.autoCalmPromoToTextStyle,
           hygieneConfirmed,
           providerSwitchConfirmed
         }
@@ -5230,7 +6009,13 @@ function createBuiltinRecipientManager() {
       template: {
         ...v,
         importedHtmlLayout: importedHtmlLayout || '',
-        loadRemoteImages: Boolean(el('loadRemoteImages') && el('loadRemoteImages').checked)
+        loadRemoteImages: Boolean(el('loadRemoteImages') && el('loadRemoteImages').checked),
+        previewEdits: {
+          gmailTextCustomEdited: Boolean(previewEditorState.gmailTextCustomEdited),
+          customTextSubject: previewEditorState.gmailTextCustomEdited ? previewEditorState.customTextSubject : '',
+          customTextBody: previewEditorState.gmailTextCustomEdited ? previewEditorState.customTextBody : '',
+          htmlPreviewCustomEdited: Boolean(previewEditorState.htmlPreviewCustomEdited && importedHtmlLayout)
+        }
       },
       recipients: {
         recipientCsv: el('recipientCsv') ? el('recipientCsv').value : '',
@@ -5315,6 +6100,16 @@ function createBuiltinRecipientManager() {
     importedHtmlLayout = typeof t.importedHtmlLayout === 'string' ? t.importedHtmlLayout : '';
     if (el('htmlLayoutBanner')) el('htmlLayoutBanner').style.display = importedHtmlLayout ? '' : 'none';
     if (el('loadRemoteImages')) el('loadRemoteImages').checked = Boolean(t.loadRemoteImages);
+    const pe = t.previewEdits && typeof t.previewEdits === 'object' ? t.previewEdits : null;
+    previewEditorState.htmlPreviewCustomEdited = Boolean(pe ? pe.htmlPreviewCustomEdited && importedHtmlLayout : importedHtmlLayout);
+    previewEditorState.gmailTextCustomEdited = Boolean(pe && pe.gmailTextCustomEdited);
+    previewEditorState.customTextSubject = (pe && pe.gmailTextCustomEdited && typeof pe.customTextSubject === 'string') ? pe.customTextSubject : '';
+    previewEditorState.customTextBody = (pe && pe.gmailTextCustomEdited && typeof pe.customTextBody === 'string') ? pe.customTextBody : '';
+    previewEditorState.leftChangedWhileTextEdited = false;
+    if (previewEditorState.gmailTextCustomEdited) {
+      if (el('gmailTextPreviewSubject')) el('gmailTextPreviewSubject').value = previewEditorState.customTextSubject;
+      if (el('gmailTextPreviewBody')) el('gmailTextPreviewBody').value = previewEditorState.customTextBody;
+    }
 
     const rec = snap.recipients || {};
     if (el('recipientCsv') && typeof rec.recipientCsv === 'string') el('recipientCsv').value = rec.recipientCsv;
@@ -6014,9 +6809,10 @@ function createBuiltinRecipientManager() {
       }
 
       const v = values();
-      const subj = (v.subject || '').trim();
+      const customTextEdited = Boolean(previewEditorState.gmailTextCustomEdited);
+      const subj = getEffectiveSubjectForProvider(v, 'GMAIL');
       if (!subj) {
-        if (qBox) { qBox.className = 'status-box status-blocked'; qBox.textContent = '⚠️ 먼저 좌측 에디터에서 이메일 제목(Subject)을 입력해 주세요.'; }
+        if (qBox) { qBox.className = 'status-box status-blocked'; qBox.textContent = '⚠️ 먼저 좌측 에디터 또는 Gmail 텍스트 미리보기에서 이메일 제목(Subject)을 입력해 주세요.'; }
         if (el('subject')) el('subject').focus();
         return { ok: false, reason: 'SUBJECT_REQUIRED' };
       }
@@ -6031,12 +6827,13 @@ function createBuiltinRecipientManager() {
         sidecarToken,
         payload: {
           subject: subj,
-          html: htmlFor(v),
-          text: textFor(v),
+          html: getEffectiveHtmlForProvider(v, 'GMAIL'),
+          text: getEffectiveTextForProvider(v, 'GMAIL'),
           displayName: v.senderDisplayName || v.company || v.brand || '',
           physicalAddress: getEffectivePhysicalAddress(v),
           maxBatch: batchSize,
-          autoCalmPromoToTextStyle: spamFlags.autoCalmPromoToTextStyle !== false,
+          autoCalmPromoToTextStyle: customTextEdited ? false : (spamFlags.autoCalmPromoToTextStyle !== false),
+          customEditedPlainText: customTextEdited,
           includeSignedUnsubscribeUrl
         }
       });
@@ -6114,8 +6911,8 @@ function createBuiltinRecipientManager() {
   if (el('btnCopyRichHtmlForGmailCompose')) {
     el('btnCopyRichHtmlForGmailCompose').onclick = async () => {
       const v = values();
-      const htmlStr = htmlFor(v);
-      const plainStr = textFor(v);
+      const htmlStr = getEffectiveHtmlForProvider(v, 'GMAIL');
+      const plainStr = getEffectiveTextForProvider(v, 'GMAIL');
       const qBox = el('webComposeQueueStatus');
       try {
         if (navigator.clipboard && typeof navigator.clipboard.write === 'function' && typeof ClipboardItem === 'function') {

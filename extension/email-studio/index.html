@@ -230,8 +230,58 @@
 </div>
 </section>
 <section class="panel" aria-label="템플릿 미리보기">
-<div class="preview-head"><h2>실시간 미리보기</h2><div class="inline"><button type="button" id="desktop">데스크톱</button><button type="button" id="mobile">모바일</button></div></div>
+<div class="preview-head"><h2>실시간 미리보기 · 직접 편집</h2><div class="inline"><button type="button" id="desktop">데스크톱</button><button type="button" id="mobile">모바일</button></div></div>
+<div class="preview-tabs" role="tablist" aria-label="미리보기 모드 선택">
+  <button type="button" class="preview-tab-btn active" id="btnPreviewModeHtml" data-preview-mode="HTML">👁️ HTML 미리보기</button>
+  <button type="button" class="preview-tab-btn" id="btnPreviewModeHtmlEdit" data-preview-mode="HTML_EDIT">✏️ HTML 직접 편집</button>
+  <button type="button" class="preview-tab-btn" id="btnPreviewModeGmailText" data-preview-mode="GMAIL_TEXT">📝 Gmail 텍스트 미리보기·편집</button>
+</div>
+<div id="previewEditActiveStrip" class="preview-edit-strip" aria-live="polite"></div>
 <iframe id="preview" title="이메일 내용 미리보기" sandbox=""></iframe>
+<div id="htmlPreviewEditPane" class="preview-editor-pane" style="display:none;">
+  <div class="preview-editor-bar">
+    <span id="htmlPreviewEditBadge" class="preview-badge-auto">🎨 HTML 직접 편집</span>
+    <div style="display:flex;gap:5px;flex-wrap:wrap;">
+      <button type="button" class="preview-tab-btn active" id="btnHtmlEditVisual">🎨 시각적 편집</button>
+      <button type="button" class="preview-tab-btn" id="btnHtmlEditSource">&lt;/&gt; HTML 소스</button>
+      <button type="button" class="preview-tab-btn" id="btnResetHtmlPreviewEdit">🔄 기본 에디터 HTML 복원</button>
+    </div>
+  </div>
+  <div id="htmlVisualToolbar" class="preview-toolbar" aria-label="HTML 서식 도구모음">
+    <button type="button" data-html-cmd="bold" title="굵게"><b>B</b></button>
+    <button type="button" data-html-cmd="italic" title="기울임"><i>I</i></button>
+    <button type="button" data-html-cmd="underline" title="밑줄"><u>U</u></button>
+    <button type="button" data-html-cmd="insertUnorderedList" title="글머리 기호">• 목록</button>
+    <button type="button" id="btnHtmlInsertLink" title="HTTPS 링크 삽입">🔗 링크</button>
+    <button type="button" data-html-cmd="removeFormat" title="선택 서식 지우기">🧹 서식 지우기</button>
+    <span class="preview-meta-text" id="htmlPreviewEditMeta">미리보기 본문을 클릭해 직접 수정하면 HTML 발송·미리보기에 즉시 반영됩니다.</span>
+  </div>
+  <div id="htmlPreviewVisualEditor" class="html-visual-canvas" contenteditable="true" spellcheck="true" aria-label="HTML 미리보기 직접 편집 영역"></div>
+  <textarea id="htmlPreviewSourceEditor" class="html-source-textarea" style="display:none;" aria-label="HTML 소스 직접 편집"></textarea>
+  <div class="preview-pane-actions">
+    <button type="button" class="primary" id="btnSyncHtmlEditToPreview">👁️ 수정된 HTML 미리보기 확인</button>
+    <button type="button" id="btnSyncHtmlEditTextToLeft">⬅️ 추출 텍스트를 좌측 본문에 반영</button>
+  </div>
+  <div class="note" style="margin-top:6px;">보안 보호: 스크립트(<code>&lt;script&gt;</code>)·이벤트 핸들러·위험 태그는 자동 차단됩니다. 외부 HTTPS 이미지 미리보기 허용이 꺼져 있으면 편집 중에도 외부 이미지 요청이 차단됩니다.</div>
+</div>
+<div id="gmailTextPreviewPane" class="preview-editor-pane" style="display:none;">
+  <div class="preview-editor-bar">
+    <span id="gmailTextPreviewBadge" class="preview-badge-auto">✨ Gmail 자동 텍스트 변환</span>
+    <span id="gmailTextLengthMeta" class="preview-meta-text">제목 0자 · 본문 0자</span>
+  </div>
+  <div id="gmailTextConversionNote" class="note" style="margin:0 0 8px;">Gmail 발송 공급자를 선택하면 프로모션 패턴이 차분한 텍스트 기반 이메일로 자동 변환되어 여기 표시됩니다. 아래 제목·본문을 직접 수정하면 Gmail 발송 시 수정된 내용이 그대로 사용됩니다.</div>
+  <label for="gmailTextPreviewSubject" style="margin-top:4px;">Gmail 발송 제목 (직접 편집 가능)</label>
+  <input id="gmailTextPreviewSubject" class="gmail-text-subject-input" maxlength="160" placeholder="Gmail 발송 제목">
+  <label for="gmailTextPreviewBody" style="margin-top:4px;">Gmail 텍스트 기반 캠페인 본문 (직접 편집 가능)</label>
+  <textarea id="gmailTextPreviewBody" class="gmail-text-body-textarea" rows="16" placeholder="Gmail 텍스트 기반 캠페인 본문"></textarea>
+  <div id="gmailTextComplianceFooterPreview" class="gmail-text-footer-box">📌 발송 시 자동 부착 푸터(수정 불가 · 법규 준수): 발신자 물리적 주소 및 수신자별 고유 HTTPS 수신거부 링크(또는 회신 수신거부 안내)가 발송 시점에 하단에 자동 추가됩니다.</div>
+  <div class="preview-pane-actions">
+    <button type="button" id="btnResetGmailTextPreview">🔄 자동 변환 원본으로 복원</button>
+    <button type="button" id="btnSyncGmailTextToLeftEditor">⬅️ 좌측 기본 에디터에 반영</button>
+    <button type="button" id="btnCopyGmailTextPreview">📋 텍스트 본문 복사</button>
+    <button type="button" id="btnSwitchToHtmlFromText">👁️ HTML 미리보기 보기</button>
+  </div>
+</div>
 <div class="note" id="summary">이 템플릿은 미리보기용입니다. 실제 메일 발송은 진행하지 않습니다.</div>
 
 <div class="send-control-card" id="recipientCard" aria-label="수신자 관리 및 발송 검토">

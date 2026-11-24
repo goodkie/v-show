@@ -644,6 +644,7 @@ class GmailWebComposeEngine {
     physicalAddress = undefined,
     maxBatch = 1,
     autoCalmPromoToTextStyle = true,
+    customEditedPlainText = false,
     includeSignedUnsubscribeUrl = undefined,
     syncFetchImpl = null
   } = {}) {
@@ -743,23 +744,32 @@ class GmailWebComposeEngine {
         continue;
       }
 
-      // Run RC13 Auto Promo-to-Text Calm Transform so even pasted promo copy becomes clean Inbox-friendly prose
-      const opt = optimizeAndScoreGmailMessage({
-        from: acct.email,
-        displayName: String(displayName || '').trim() || acct.label || acct.domain,
-        subject,
-        html,
-        text,
-        physicalAddress: effectiveAddr,
-        publicUnsubBase: activePublicBase,
-        autoOptimize: true,
-        embedInlineImages: false,
-        autoCalmPromoToTextStyle: autoCalmPromoToTextStyle !== false,
-        mimeContentMode: 'PLAIN_TEXT_ONLY'
-      });
-
-      const finalSubject = opt.optimized?.subject || String(subject || '').trim();
-      let finalBody = String(opt.optimized?.text || text || '').trim();
+      // RC21: If operator explicitly edited the Gmail text preview directly in Email Studio,
+      // preserve their edited subject & body verbatim (still sanitizing control chars & appending legal footer/unsub).
+      let opt = null;
+      let finalSubject = '';
+      let finalBody = '';
+      if (customEditedPlainText === true) {
+        finalSubject = String(subject || '').replace(/[\r\n\u0000-\u001f\u007f]+/g, ' ').trim();
+        finalBody = String(text || '').replace(/\r\n/g, '\n').replace(/\u0000/g, '').trim();
+      } else {
+        // Run RC13 Auto Promo-to-Text Calm Transform so even pasted promo copy becomes clean Inbox-friendly prose
+        opt = optimizeAndScoreGmailMessage({
+          from: acct.email,
+          displayName: String(displayName || '').trim() || acct.label || acct.domain,
+          subject,
+          html,
+          text,
+          physicalAddress: effectiveAddr,
+          publicUnsubBase: activePublicBase,
+          autoOptimize: true,
+          embedInlineImages: false,
+          autoCalmPromoToTextStyle: autoCalmPromoToTextStyle !== false,
+          mimeContentMode: 'PLAIN_TEXT_ONLY'
+        });
+        finalSubject = opt.optimized?.subject || String(subject || '').trim();
+        finalBody = String(opt.optimized?.text || text || '').trim();
+      }
       if (entry.name && /\{\{\s*name\s*\}\}/i.test(finalBody)) {
         finalBody = finalBody.replace(/\{\{\s*name\s*\}\}/gi, entry.name);
       }
@@ -831,7 +841,8 @@ class GmailWebComposeEngine {
         composeUrl: compose.composeUrl,
         bodyTruncated: compose.bodyTruncated,
         unsubscribeUrlUsed: unsubUrlUsed,
-        autoCalmedPromo: (opt.autoFixesApplied || []).some(f => f.code === 'AUTO_CALMED_PROMO_TO_TEXT_STRUCTURE')
+        customEditedPlainText: customEditedPlainText === true,
+        autoCalmedPromo: Boolean(opt && (opt.autoFixesApplied || []).some(f => f.code === 'AUTO_CALMED_PROMO_TO_TEXT_STRUCTURE'))
       });
     }
 
