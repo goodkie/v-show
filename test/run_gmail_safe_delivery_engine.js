@@ -1949,12 +1949,24 @@ function makeRefreshVaultFetch(counterRef) {
       assert.ok(!/mail\.google\.com/i.test(mfRc14), 'Manifest MUST still have zero mail.google.com host permission (no DOM scraping)');
       const bannedTermRc14 = ['동의', '원장'].join('');
       assert.ok(!htmlRc14.includes(bannedTermRc14) && !jsRc14.includes(bannedTermRc14));
-      // RC15/RC16 UX, broken proxy detection/release & reopen/revert regression guards
-      assert.ok(htmlRc14.includes('id="webComposeConsentCheck"') && htmlRc14.includes('id="webComposeQuickRecipient"') && htmlRc14.includes('id="webComposeRecipientSummary"') && htmlRc14.includes('id="webComposeProxyWarning"') && htmlRc14.includes('id="btnReleaseChromeProxyForGmail"'));
-      assert.ok(jsRc14.includes('webComposeAccountsInitialized') && jsRc14.includes('prepareWebComposeQueueAction') && jsRc14.includes('resolveWebComposeRecipientSource') && jsRc14.includes("'webComposeConsentCheck'") && jsRc14.includes('refreshChromeProxyWarningForGmail') && jsRc14.includes('RELEASE_CHROME_PROXY_FOR_GMAIL_WEB') && jsRc14.includes('REVERT_TO_PENDING'));
+      // RC15/RC16/RC17 UX, broken proxy detection/release, reopen/revert, live list monitor & randomized human pacer guards
+      const { computeHumanizedDelayMs, isWithinSendingWindow } = require('../companion/gmail-web-compose-engine');
+      const dNorm = computeHumanizedDelayMs({ minSec: 60, maxSec: 180, sentSinceBreak: 2, breakEvery: 6, breakMin: 6, rng: () => 0.5 });
+      assert.equal(dNorm.isRestBreak, false);
+      assert.equal(dNorm.delaySec, 120);
+      const dBreak = computeHumanizedDelayMs({ minSec: 60, maxSec: 180, sentSinceBreak: 6, breakEvery: 6, breakMin: 6, rng: () => 0.5 });
+      assert.equal(dBreak.isRestBreak, true);
+      assert.ok(dBreak.delaySec >= 300, 'Natural rest break must insert multi-minute pause');
+      const dFloor = computeHumanizedDelayMs({ minSec: 1, maxSec: 5, sentSinceBreak: 1, rng: () => 0 });
+      assert.ok(dFloor.delaySec >= 30, 'Human pacing delay must enforce >=30s anti-ban floor');
+      assert.equal(isWithinSendingWindow(new Date('2026-11-23T14:00:00'), 9, 19), true);
+      assert.equal(isWithinSendingWindow(new Date('2026-11-23T02:00:00'), 9, 19), false);
+      assert.ok(Array.isArray(b1.status.queue.entriesPreview) && b1.status.queue.entriesPreview.length === b1.status.queue.counts.total && b1.status.queue.entriesPreview.length >= 4, 'getStatus must expose full entriesPreview for real-time list monitor');
+      assert.ok(htmlRc14.includes('id="webComposeConsentCheck"') && htmlRc14.includes('id="webComposeQuickRecipient"') && htmlRc14.includes('id="webComposeRecipientSummary"') && htmlRc14.includes('id="webComposeProxyWarning"') && htmlRc14.includes('id="btnReleaseChromeProxyForGmail"') && htmlRc14.includes('id="btnStartWebComposePacer"') && htmlRc14.includes('id="webComposeLiveListBody"') && htmlRc14.includes('id="webComposeAccountGauges"'));
+      assert.ok(jsRc14.includes('webComposeAccountsInitialized') && jsRc14.includes('prepareWebComposeQueueAction') && jsRc14.includes('resolveWebComposeRecipientSource') && jsRc14.includes("'webComposeConsentCheck'") && jsRc14.includes('refreshChromeProxyWarningForGmail') && jsRc14.includes('RELEASE_CHROME_PROXY_FOR_GMAIL_WEB') && jsRc14.includes('REVERT_TO_PENDING') && jsRc14.includes('renderWebComposeLiveMonitor') && jsRc14.includes('webComposePacerTick') && jsRc14.includes('openedComposeTabMap'));
       assert.ok(bgRc14.includes('GET_CHROME_PROXY_STATUS') && bgRc14.includes('RELEASE_CHROME_PROXY_FOR_GMAIL_WEB') && bgRc14.includes('AUTOFORM_CAMPAIGN_RUNNING'));
-      checks += 6;
-      console.log('PASS 17: RC14/RC15/RC16 multi-account Gmail Native Web Compose default engine (warmup caps, fixed assignment, zero hopping, pacing guard, auto-prepare 1-click flow, broken-proxy detector/release, reopen/revert & zero DOM scraping) verified');
+      checks += 8;
+      console.log('PASS 17: RC14-RC17 multi-account Gmail Native Web Compose engine (warmup caps, fixed assignment, zero hopping, pacing guard, broken-proxy guard, reopen/revert, live list monitor, randomized human pacer & zero DOM scraping) verified');
     }
 
     console.log(`XPIDER V7.1 Gmail Safe Delivery Engine suite: ${checks}/${checks} PASS; ZERO REAL SENDS`);

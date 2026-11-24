@@ -92,6 +92,37 @@ function clampAccountCaps(type, warmupStage, overrides = {}) {
   return { capPerMinute, capPerHour, cap24h, minSpacingSec, domainCap24h: ceil.domainCap24h };
 }
 
+function isWithinSendingWindow(dateObj = new Date(), startHour = 9, endHour = 19) {
+  const s = Math.max(0, Math.min(23, Math.floor(Number(startHour))));
+  const e = Math.max(1, Math.min(24, Math.floor(Number(endHour))));
+  const h = dateObj.getHours();
+  if (s < e) return h >= s && h < e;
+  return h >= s || h < e;
+}
+
+function computeHumanizedDelayMs({
+  minSec = 60,
+  maxSec = 180,
+  sentSinceBreak = 0,
+  breakEvery = 6,
+  breakMin = 6,
+  rng = Math.random
+} = {}) {
+  const safeMin = Math.max(30, Math.min(3600, Math.floor(Number(minSec) || 60)));
+  const safeMax = Math.max(safeMin + 5, Math.min(7200, Math.floor(Number(maxSec) || 180)));
+  const safeBreakEvery = Math.max(3, Math.min(50, Math.floor(Number(breakEvery) || 6)));
+  const safeBreakMin = Math.max(2, Math.min(60, Math.floor(Number(breakMin) || 6)));
+  // Triangular human-like distribution (average of 2 uniform samples) avoids robotic fixed intervals
+  const u = (Number(rng()) + Number(rng())) / 2;
+  const clampedU = Math.max(0, Math.min(1, Number.isFinite(u) ? u : 0.5));
+  if (sentSinceBreak > 0 && sentSinceBreak % safeBreakEvery === 0) {
+    const breakSec = Math.round((safeBreakMin * 60) * (0.8 + clampedU * 0.5));
+    return { delayMs: breakSec * 1000, delaySec: breakSec, isRestBreak: true };
+  }
+  const sec = Math.round(safeMin + clampedU * (safeMax - safeMin));
+  return { delayMs: sec * 1000, delaySec: sec, isRestBreak: false };
+}
+
 function buildOfficialWebComposeUrl({ authUserEmail = '', to = '', subject = '', body = '' } = {}) {
   const cleanFrom = normalizeEmail(String(authUserEmail || '').replace(/[\r\n\0]+/g, '').trim());
   const cleanTo = normalizeEmail(String(to || '').replace(/[\r\n\0]+/g, '').trim());
@@ -876,6 +907,19 @@ class GmailWebComposeEngine {
 
     const totalDailyCapacity = accounts.filter(a => a.active && !a.cooldownUntilIso).reduce((s, a) => s + (a.cap24h || 0), 0);
     const totalRemainingToday = accounts.filter(a => a.active && !a.cooldownUntilIso).reduce((s, a) => s + Math.max(0, (a.cap24h || 0) - (a.sent24h || 0)), 0);
+    let nextGlobalPermittedAt = null;
+    for (const [aid, rem] of Object.entries(pendingByAcct)) {
+      if (rem <= 0) continue;
+      const acct = accounts.find(a => a.id === aid);
+      if (!acct || !acct.active) continue;
+      if (acct.permittedNow) {
+        nextGlobalPermittedAt = new Date(this.nowFn()).toISOString();
+        break;
+      }
+      if (acct.nextPermittedAt && (!nextGlobalPermittedAt || acct.nextPermittedAt < nextGlobalPermittedAt)) {
+        nextGlobalPermittedAt = acct.nextPermittedAt;
+      }
+    }
     const openedItems = entries.filter(e => e.status === 'COMPOSE_OPENED').map(e => ({
       entryId: e.id,
       toMasked: e.maskedEmail,
@@ -883,6 +927,20 @@ class GmailWebComposeEngine {
       accountId: e.assignedAccountId,
       openedAt: e.openedAt,
       composeUrl: (e.lastComposeUrl && isOfficialGmailWebUrl(e.lastComposeUrl)) ? e.lastComposeUrl : null
+    }));
+    const entriesPreview = entries.slice(0, 500).map((e, idx) => ({
+      index: idx + 1,
+      entryId: e.id,
+      toMasked: e.maskedEmail,
+      name: e.name || '',
+      fromAccountMasked: e.assignedAccountMasked || '-',
+      accountId: e.assignedAccountId || null,
+      status: e.status,
+      reason: e.reason || null,
+      openedAt: e.openedAt || null,
+      confirmedAt: e.confirmedAt || null,
+      updatedAt: e.updatedAt || null,
+      composeUrl: (e.status === 'COMPOSE_OPENED' && e.lastComposeUrl && isOfficialGmailWebUrl(e.lastComposeUrl)) ? e.lastComposeUrl : null
     }));
 
     return {
@@ -900,7 +958,10 @@ class GmailWebComposeEngine {
         estimatedDays,
         totalDailyCapacity,
         totalRemainingToday,
+        nextGlobalPermittedAt,
         openedAwaitingConfirm: openedItems,
+        entriesTotal: entries.length,
+        entriesPreview,
         preparedAt: this.state.queue.preparedAt,
         updatedAt: this.state.queue.updatedAt
       },
@@ -912,6 +973,8 @@ class GmailWebComposeEngine {
 module.exports = {
   GmailWebComposeEngine,
   buildOfficialWebComposeUrl,
+  computeHumanizedDelayMs,
+  isWithinSendingWindow,
   WARMUP_PRESETS,
   HARD_SAFETY_CEILINGS,
   HONEST_WEB_COMPOSE_DISCLAIMER

@@ -458,6 +458,77 @@
       <div id="webComposeQueueStatus" class="status-box status-idle" style="margin-top:6px;white-space:pre-wrap;">대기 중: 수신자(위 CSV 또는 빠른 수신자 입력)와 [필수] 적법 발송 권한 체크 후 파란색 [✉️ 2단계: Gmail 작성창 열기]를 누르세요.</div>
       <div id="webComposeAwaitingList" style="margin-top:6px;display:flex;flex-direction:column;gap:4px;"></div>
     </div>
+
+    <div style="margin:8px 0;padding:8px;border:1px solid rgba(15,118,110,0.4);border-radius:6px;background:#f0fdfa;">
+      <b>3) ⏱️ 사람 패턴 랜덤 인터벌 · 자동 휴식 · 일일 한도 페이싱 스케줄러 (계정 정지 방지)</b>
+      <div class="note" style="margin-top:4px;">
+        <b>계정 보호 정책:</b> Gmail 웹 내부 <code>Send</code> 버튼 자동 클릭(DOM 주입)은 Google BotGuard(<code>isTrusted=false</code>) 탐지로 계정 일괄 정지 위험이 커 <b>의도적으로 배제</b>했습니다.
+        대신 XPIDER가 <b>랜덤 간격 · 자연 휴식 · 주간 시간대 · 계정별 1분/1시간/24시간 워밍업 상한</b>을 자동 관리해 작성창을 열어드리며, 대표님은 열린 Gmail 탭에서 <b><code>Ctrl+Enter</code>(발송) → <code>Ctrl+W</code>(닫기)</b>만 누르시면 다음 랜덤 타이머가 자동 진행됩니다.
+      </div>
+      <div class="inline" style="margin-top:6px;">
+        <div><label for="webComposePacerMinSec">최소 랜덤 간격 (초 · 30초 이상)</label><input id="webComposePacerMinSec" type="number" min="30" max="600" value="60"></div>
+        <div><label for="webComposePacerMaxSec">최대 랜덤 간격 (초)</label><input id="webComposePacerMaxSec" type="number" min="45" max="900" value="180"></div>
+      </div>
+      <div class="inline" style="margin-top:6px;">
+        <div><label for="webComposePacerBreakEvery">자연 휴식 주기 (N통마다 휴식)</label><input id="webComposePacerBreakEvery" type="number" min="3" max="30" value="6"></div>
+        <div><label for="webComposePacerBreakMin">휴식 시간 (분 · ±25% 랜덤)</label><input id="webComposePacerBreakMin" type="number" min="2" max="45" value="6"></div>
+      </div>
+      <div class="inline" style="margin-top:6px;">
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:12px;">
+          <label style="display:flex;align-items:center;gap:5px;"><input id="webComposePacerWindowEnabled" type="checkbox" checked> 주간 발송 시간대만 진행</label>
+          <input id="webComposePacerStartHour" type="number" min="0" max="23" value="9" style="width:54px;">시 ~
+          <input id="webComposePacerEndHour" type="number" min="1" max="24" value="19" style="width:54px;">시
+        </div>
+        <div style="display:flex;align-items:center;">
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;"><input id="webComposePacerAutoOnTabClose" type="checkbox" checked> Gmail 탭 닫힘(<code>Ctrl+Enter</code>→<code>Ctrl+W</code>) 감지 시 완료 기록 후 다음 랜덤 대기 자동 시작</label>
+        </div>
+      </div>
+      <div class="actions" style="margin-top:6px;">
+        <button type="button" class="primary" id="btnStartWebComposePacer">▶️ 랜덤 인터벌 자동 페이싱 시작</button>
+        <button type="button" id="btnStopWebComposePacer">⏸️ 자동 페이싱 일시중지</button>
+      </div>
+      <div id="webComposePacerStatus" class="status-box status-idle" style="margin-top:6px;white-space:pre-wrap;">페이싱 대기 중: [▶️ 랜덤 인터벌 자동 페이싱 시작]을 누르면 사람 패턴 랜덤 간격·일일 한도에 맞춰 1건씩 Gmail 작성창을 자동으로 열어드립니다.</div>
+    </div>
+
+    <div style="margin:8px 0;padding:8px;border:1px solid #cbd5e1;border-radius:6px;background:#fff;">
+      <div class="send-header">
+        <b>4) 📊 실시간 전체 리스트 발송 상태 · 계정별 일일 한도 모니터</b>
+        <span class="badge-test" id="webComposeLiveMonitorHeader">전체 0건</span>
+      </div>
+      <div id="webComposeAccountGauges" style="margin-top:6px;display:flex;flex-direction:column;gap:4px;"></div>
+      <div class="inline" style="margin-top:6px;">
+        <div>
+          <label for="webComposeListFilter">리스트 상태 필터</label>
+          <select id="webComposeListFilter">
+            <option value="ALL" selected>전체 보기</option>
+            <option value="PENDING">⏳ 발송 대기 (PENDING)</option>
+            <option value="COMPOSE_OPENED">✉️ 작성창 열림 (확인 대기)</option>
+            <option value="OPERATOR_CONFIRMED_SENT">✅ 발송 완료 (운영자 확인)</option>
+            <option value="SKIPPED">⏭️ 건너뜀 / 🚫 차단·기발송 제외</option>
+          </select>
+        </div>
+        <div style="display:flex;align-items:flex-end;">
+          <button type="button" id="btnRefreshWebComposeMonitor">🔄 실시간 상태 새로고침</button>
+        </div>
+      </div>
+      <div style="margin-top:6px;max-height:260px;overflow:auto;border:1px solid #e2e8f0;border-radius:6px;">
+        <table style="width:100%;border-collapse:collapse;font-size:12px;">
+          <thead>
+            <tr style="background:#f1f5f9;text-align:left;position:sticky;top:0;">
+              <th style="padding:5px 6px;border-bottom:1px solid #cbd5e1;">#</th>
+              <th style="padding:5px 6px;border-bottom:1px solid #cbd5e1;">수신자</th>
+              <th style="padding:5px 6px;border-bottom:1px solid #cbd5e1;">배정 발신 계정</th>
+              <th style="padding:5px 6px;border-bottom:1px solid #cbd5e1;">상태</th>
+              <th style="padding:5px 6px;border-bottom:1px solid #cbd5e1;">시각</th>
+              <th style="padding:5px 6px;border-bottom:1px solid #cbd5e1;">조작</th>
+            </tr>
+          </thead>
+          <tbody id="webComposeLiveListBody">
+            <tr><td colspan="6" style="padding:8px;color:#64748b;text-align:center;">큐를 배정하면 전체 수신자별 발송 상태가 실시간으로 표시됩니다.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
   </div>
 
   <div id="gmailApiOAuthSubPanel" style="display:none;">
