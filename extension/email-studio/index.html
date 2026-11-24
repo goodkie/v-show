@@ -376,7 +376,75 @@
 </div>
 
 <div id="gmailProviderPanel" style="display:none;margin-top:8px;padding:10px;border:1px solid rgba(37,99,235,0.35);border-radius:8px;background:rgba(248,250,252,0.9);">
-  <div class="send-header"><h4>📧 Gmail API 발송 · OAuth PKCE 계정 관리 (V7.1)</h4><span class="badge-test" id="gmailProviderStatusBadge">OAUTH 미연결</span></div>
+  <div class="send-header"><h4>📧 Gmail 발송 센터 (기본: 웹 작성창 다계정 직접 발송 · 선택: OAuth API)</h4><span class="badge-test" id="gmailProviderStatusBadge">웹 작성창 기본 활성</span></div>
+  <div style="margin:6px 0;padding:8px;border:1px solid rgba(22,163,74,0.45);border-radius:6px;background:rgba(240,253,244,0.75);">
+    <label for="gmailDispatchMode"><b>Gmail 발송 수단 선택 (Dispatch Method · 기본값: 웹 작성창 다계정 직접 발송)</b></label>
+    <select id="gmailDispatchMode">
+      <option value="GMAIL_WEB_COMPOSE_ASSISTED" selected>✉️ Gmail 웹 작성창 다계정 직접 발송 (기본 · 권장 · 인박스 검증됨 · OAuth 미검증 스팸 회피 · 다계정 안전 분산)</option>
+      <option value="GMAIL_API_OAUTH">⚙️ Gmail API OAuth 자동 발송 (Google Workspace 맞춤 도메인 / 검증된 OAuth 앱용)</option>
+    </select>
+    <div class="note" style="margin-top:4px;">
+      <b>정책 준수 · 계정 보호 원칙:</b> 웹 작성창 모드는 Google 공식 <code>mail.google.com/mail/?view=cm&amp;authuser=계정</code> 창만 열며 DOM 스크래핑·자동 클릭 봇을 사용하지 않습니다.
+      수신자별 고정 계정 배정(한도 우회 전환 금지), 워밍업 단계별 보수적 1분/1시간/24시간 상한, 발송 간격 쿨다운, 교차 차단 원장으로 계정 정지 위험을 낮춥니다 (100% 인박스·정지 면제 보장 아님).
+    </div>
+  </div>
+
+  <div id="gmailWebComposePanel" style="margin:8px 0;padding:10px;border:1px solid rgba(22,163,74,0.45);border-radius:8px;background:#fff;">
+    <div class="send-header">
+      <b>✉️ [기본] Gmail 웹 작성창 다계정 안전 캠페인 발송기</b>
+      <span class="badge-test" id="webComposePoolBadge">등록 계정: 0개</span>
+    </div>
+    <div style="margin:8px 0;padding:8px;border:1px solid #cbd5e1;border-radius:6px;background:#f8fafc;">
+      <b>1) 본인 소유 구글 발신 계정 다중 등록 (Chrome에 로그인된 Gmail / Workspace 계정 · 워밍업 보호)</b>
+      <div class="inline" style="margin-top:6px;">
+        <div><label for="webComposeAccountEmail">본인 소유 Gmail / Workspace 이메일</label><input id="webComposeAccountEmail" type="email" maxlength="254" placeholder="예: sender1@gmail.com 또는 info@brand.example"></div>
+        <div><label for="webComposeAccountLabel">별칭 (선택)</label><input id="webComposeAccountLabel" maxlength="40" placeholder="예: 메인 계정 / 보조1"></div>
+      </div>
+      <div class="inline" style="margin-top:6px;">
+        <div>
+          <label for="webComposeWarmupStage">계정 숙성·워밍업 단계 (계정 정지 방지 보수 상한 자동 적용)</label>
+          <select id="webComposeWarmupStage">
+            <option value="NEW_WARMUP" selected>신규 / 워밍업 1~2주차 (개인 일 15통·90초 간격 / Workspace 일 40통·60초 간격)</option>
+            <option value="WARMING">안정화 3~4주차 (개인 일 30통·60초 간격 / Workspace 일 100통·45초 간격)</option>
+            <option value="ESTABLISHED">숙성 계정 (개인 일 80통·45초 간격 / Workspace 일 300통·30초 간격)</option>
+          </select>
+        </div>
+        <div style="display:flex;align-items:flex-end;">
+          <button type="button" class="primary" id="btnSaveWebComposeAccount">➕ 발신 계정 등록 / 갱신</button>
+        </div>
+      </div>
+      <div id="webComposeAccountsList" class="status-box status-idle" style="margin-top:6px;">등록된 웹 발송 계정이 없습니다. Chrome에 로그인된 본인 구글 계정을 1개 이상 등록하세요.</div>
+    </div>
+
+    <div style="margin:8px 0;padding:8px;border:1px solid #cbd5e1;border-radius:6px;background:#f8fafc;">
+      <b>2) 다계정 고정 배정 · 안전 분산 발송 실행 (1건씩 또는 계정별 1건씩 최대 3건)</b>
+      <div class="inline" style="margin-top:6px;">
+        <div>
+          <label for="webComposeBatchSize">1회 작성창 열기 수량 (동일 계정 중복 열기 자동 차단)</label>
+          <select id="webComposeBatchSize">
+            <option value="1" selected>1건씩 열기 (권장 · 최고 안전 · Ctrl+Enter 후 다음)</option>
+            <option value="2">최대 2건 (서로 다른 2개 계정에 1건씩)</option>
+            <option value="3">최대 3건 (서로 다른 3개 계정에 1건씩)</option>
+          </select>
+        </div>
+        <div style="display:flex;align-items:flex-end;">
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;"><input id="webComposeIncludeSignedUnsub" type="checkbox" checked> 서명된 수신거부 HTTPS 링크 자동 삽입 (미체크 시 회신 수신거부 문구)</label>
+        </div>
+      </div>
+      <div class="actions" style="margin-top:6px;">
+        <button type="button" id="btnPrepareWebComposeQueue">📋 다계정 안전 큐 배정 · 다일 일정 계산</button>
+        <button type="button" class="primary" id="btnOpenNextWebComposeBatch">✉️ 다음 Gmail 작성창 열기</button>
+        <button type="button" id="btnConfirmOpenedAndNextCompose">✅ 방금 연 메일 발송 완료 &amp; 다음 열기</button>
+        <button type="button" id="btnCopyRichHtmlForGmailCompose">📋 이미지·서식 본문 복사 (작성창 Ctrl+V용)</button>
+        <button type="button" id="btnReportWebComposeWarningPause">🛑 경고/반송 감지 → 전체 안전 일시중지</button>
+        <button type="button" id="btnResumeWebComposeQueue">▶️ 일시중지 해제</button>
+      </div>
+      <div id="webComposeQueueStatus" class="status-box status-idle" style="margin-top:6px;white-space:pre-wrap;">대기 중: 좌측/상단에서 수신자 CSV와 동의 체크를 완료한 뒤 [📋 다계정 안전 큐 배정 · 다일 일정 계산]을 누르세요.</div>
+      <div id="webComposeAwaitingList" style="margin-top:6px;display:flex;flex-direction:column;gap:4px;"></div>
+    </div>
+  </div>
+
+  <div id="gmailApiOAuthSubPanel" style="display:none;">
   <div class="note" style="margin:6px 0;">
     <b>중요 안내 (컴플라이언스 · Fail-Closed):</b>
     Gmail API <code>200 OK</code>는 <b>GMAIL_API_ACCEPTED</b>(Google API 접수)만 의미하며 <b>전달(DELIVERED)·수신함 도착(INBOX)·열람(OPENED)이나 계정 정지 면제를 보장하지 않습니다</b>.
@@ -488,6 +556,7 @@
   <div style="margin:8px 0;padding:8px;border:1px solid rgba(15,118,110,0.35);border-radius:6px;background:#f8fafc;">
     <div class="send-header"><b>5) 📊 Gmail 관측 대시보드 (True Dashboard · 하향 전용 스로틀 · 다일 일정)</b><span class="badge-test" id="gmailDashboardStateBadge">IDLE</span></div>
     <div id="gmailTrueDashboard" class="status-box status-idle" style="margin-top:6px;white-space:pre-wrap;">관측 대기 중: scheduled / attempted / GMAIL_API_ACCEPTED (≠ DELIVERED·INBOX) / verifiedDelivered(미제공) / bounced / suppressed / unknown / remaining / throttle / nextPermittedExecutionAt</div>
+  </div>
   </div>
 </div>
 </div>

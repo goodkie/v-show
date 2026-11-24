@@ -14,6 +14,7 @@ const { GmailSendBlocked, rawGmailMime, encodeQuotedPrintable, foldAsciiHeader }
 const { AdaptiveThrottleController, assessDeliverabilityHygiene, isValidPublicHttpsUnsubscribeBase } = require('../companion/gmail-safe-delivery-engine');
 const { optimizeAndScoreGmailMessage, optimizeAndScoreEmailMessage, buildGmailSpamSearchHelper, buildMultiAccountGmailSpamHelpers, buildGmailNativeComposeUrl, buildGmailNativeCleanHtml, buildLightweightNaturalHtml, stripHtmlToPlain, decodeHtmlEntities, softenSpamPhrasesInCopy, countEmojiPictographs, countAllCapsLines, transformPromoCopyToTextBasedEmail, stripHiddenPreheaderDivs, isOfficialGmailWebUrl } = require('../companion/gmail-deliverability-optimizer');
 const { EmailCampaignStore, sanitizeCampaignSnapshot } = require('../companion/email-campaign-store');
+const { GmailWebComposeEngine, buildOfficialWebComposeUrl, WARMUP_PRESETS } = require('../companion/gmail-web-compose-engine');
 const { injectUnsubscribeFooter, isPrimarilyEnglishContent } = require('../companion/email-unsubscribe-server');
 const { embedHtmlImagesAsCid } = require('../companion/gmail-inline-image-embedder');
 const { EmailProductionPipeline } = require('../companion/email-production-pipeline');
@@ -1831,6 +1832,118 @@ function makeRefreshVaultFetch(counterRef) {
       assert.ok(!htmlRc13.includes('동의원장') && !jsRc13.includes('동의원장'));
       checks += 4;
       console.log('PASS 16: RC13 Gmail domain/unsubscribe unification, automatic promo-to-text structure conversion & full campaign save/load store verified');
+    }
+
+    // ===== PASS 17: RC14 Multi-Account Gmail Native Web Compose Default Engine (Warmup Caps, Fixed Assignment, Zero Hopping, Pacing Cooldown, Cross-Provider Suppression, Official URL Only, Warning Hard-Pause) =====
+    {
+      const dirRc14 = path.join(tmpRoot, 'rc14_web_compose');
+      const pipeRc14 = new EmailProductionPipeline({ stateDir: dirRc14, trustedTestMode: true });
+      pipeRc14.saveUnsubscribePublicConfig({ publicBaseUrl: 'https://unsubscribe.acme.plus' });
+      fs.writeFileSync(path.join(dirRc14, '.unsubscribe_sync_token'), 'tok_rc14_sync_1234567890\n', { mode: 0o600 });
+      pipeRc14.outbox.suppress('suppressed_wc@example.test', 'UNSUBSCRIBED');
+
+      const vaultRc14 = new GmailAccountVault({ stateDir: dirRc14, trustedTestMode: true, cryptoBox: box });
+      let fakeNow = Date.parse('2026-11-24T10:00:00Z');
+      const runnerRc14 = new GmailCampaignRunner({ stateDir: dirRc14, pipeline: pipeRc14, vault: vaultRc14, trustedTestMode: true, nowFn: () => fakeNow, syncFetchImpl: okSyncFetch });
+      const wcEngine = new GmailWebComposeEngine({ stateDir: dirRc14, pipeline: pipeRc14, gmailRunner: runnerRc14, trustedTestMode: true, nowFn: () => fakeNow });
+
+      // (a) Register 2 owned accounts with Warmup anti-suspension presets (personal NEW_WARMUP + workspace WARMING)
+      const a1 = wcEngine.addOrUpdateAccount({ email: 'sender1@gmail.com', label: 'Acct1', warmupStage: 'NEW_WARMUP' });
+      const a2 = wcEngine.addOrUpdateAccount({ email: 'hello@acme.plus', label: 'Workspace1', warmupStage: 'WARMING' });
+      assert.equal(a1.ok, true);
+      assert.equal(a2.ok, true);
+      assert.equal(a2.accounts.length, 2);
+      assert.equal(a2.accounts[0].cap24h, WARMUP_PRESETS.gmail_personal.NEW_WARMUP.cap24h);
+      assert.equal(a2.accounts[0].minSpacingSec, WARMUP_PRESETS.gmail_personal.NEW_WARMUP.minSpacingSec);
+      assert.equal(a2.accounts[1].type, 'workspace_paid');
+      assert.equal(a2.accounts[1].cap24h, WARMUP_PRESETS.workspace_paid.WARMING.cap24h);
+
+      // Header injection rejected fail-closed
+      assert.equal(wcEngine.addOrUpdateAccount({ email: 'bad@gmail.com\r\nBcc:x@y.com' }).ok, false);
+
+      // (b) Prepare queue: suppresses cross-provider address & deterministically assigns remaining recipients across 2 owned accounts
+      const prep = wcEngine.prepareWebComposeQueue({
+        csvText: 'email,name\nsuppressed_wc@example.test,Sup\nr1@example.test,R1\nr2@example.test,R2\nr3@example.test,R3\nr4@example.test,R4',
+        campaignId: 'camp_wc_14',
+        consentAttested: true,
+        physicalAddress: '200 Native Way, Synthetic City, ZZ 00000'
+      });
+      assert.equal(prep.ok, true);
+      assert.equal(prep.status.queue.counts.SKIPPED_SUPPRESSED_CROSS_PROVIDER, 1);
+      assert.equal(prep.status.queue.counts.PENDING, 4);
+
+      // (c) Issue batch of 2 -> opens 1 per distinct owned account (strictly official mail.google.com/?view=cm&authuser=...) + auto-calms promo copy!
+      const b1 = await wcEngine.issueNextComposeBatch({
+        subject: '🎉 GRAND REOPENING HOLIDAY SPECIAL!!!',
+        html: '<p>🎉✨🎄🎁📸🔥 GRAND REOPENING HOLIDAY SPECIAL!<br>NEW LOCATION AND NEW LOOK!<br>20% OFF ALL PACKAGES!<br>NOW BOOKING!<br>RESERVE YOUR SESSION TODAY!</p>',
+        text: '🎉✨🎄🎁📸🔥 GRAND REOPENING HOLIDAY SPECIAL!\nNEW LOCATION AND NEW LOOK!\n20% OFF ALL PACKAGES!\nNOW BOOKING!\nRESERVE YOUR SESSION TODAY!',
+        maxBatch: 2,
+        autoCalmPromoToTextStyle: true,
+        syncFetchImpl: okSyncFetch
+      });
+      assert.equal(b1.ok, true);
+      assert.equal(b1.issued.length, 2, 'Should issue 1 compose tab per distinct owned account');
+      assert.notEqual(b1.issued[0].accountId, b1.issued[1].accountId, 'Must never issue 2 simultaneous tabs to the same account');
+      assert.equal(isOfficialGmailWebUrl(b1.issued[0].composeUrl), true);
+      assert.ok(b1.issued[0].composeUrl.includes('view=cm') && b1.issued[0].composeUrl.includes('authuser=sender1%40gmail.com'));
+      assert.ok(b1.issued[1].composeUrl.includes('authuser=hello%40acme.plus'));
+      assert.equal(b1.issued[0].autoCalmedPromo, true, 'Promo copy must be auto-calmed to conversational text before compose');
+      assert.ok(b1.issued[0].unsubscribeUrlUsed && b1.issued[0].unsubscribeUrlUsed.startsWith('https://unsubscribe.acme.plus/unsubscribe/'));
+
+      // Immediate back-to-back call MUST respect pacing cooldown (zero rapid-fire ban trigger!)
+      const tooFast = await wcEngine.issueNextComposeBatch({ subject: 'Hi', text: 'Clean hello body text for testing pacing guard.', maxBatch: 2, syncFetchImpl: okSyncFetch });
+      assert.equal(tooFast.ok, false);
+      assert.ok(tooFast.reason === 'ACCOUNT_1M_CAP_REACHED' || tooFast.reason === 'PACING_COOLDOWN_WAIT');
+
+      // Confirm sent + advance clock past 90s spacing -> next recipients open cleanly
+      const conf1 = wcEngine.markComposeItemResult({ entryId: b1.issued[0].entryId, result: 'OPERATOR_CONFIRMED_SENT' });
+      assert.equal(conf1.ok, true);
+      assert.equal(conf1.status.queue.counts.OPERATOR_CONFIRMED_SENT, 1);
+
+      // Account warning triggers 24h protective cooldown + PAUSES ENTIRE CAMPAIGN (zero account hopping!)
+      const warnRes = wcEngine.markComposeItemResult({ entryId: b1.issued[1].entryId, result: 'ACCOUNT_WARNING_PAUSE', warningNote: 'GMAIL_TEMP_LIMIT' });
+      assert.equal(warnRes.ok, true);
+      assert.equal(warnRes.pausedAll, true);
+      assert.equal(warnRes.status.queue.enforcementPaused, true);
+      fakeNow += 120 * 1000;
+      const blockedAfterWarn = await wcEngine.issueNextComposeBatch({ subject: 'Hi', text: 'Must remain paused', maxBatch: 1, syncFetchImpl: okSyncFetch });
+      assert.equal(blockedAfterWarn.ok, false);
+      assert.equal(blockedAfterWarn.reason, 'ACCOUNT_WARNING_PROTECTION_PAUSE_ALL');
+
+      // (d) Sidecar HTTP auth + Studio HTML/JS/manifest policy contracts (default GMAIL_WEB_COMPOSE_ASSISTED, ZERO mail.google.com manifest host permission!)
+      const sc14Port = 19400 + (process.pid % 2000);
+      const sc14Dir = path.join(tmpRoot, 'sidecar_rc14');
+      const sc14 = new EmailTestSidecar({ port: sc14Port, stateDir: sc14Dir, trustedTestMode: true, gmailCryptoBox: box });
+      await sc14.start();
+      try {
+        const tok14 = fs.readFileSync(path.join(sc14Dir, '.email_sidecar_token'), 'utf8').trim();
+        assert.equal((await fetch(`http://127.0.0.1:${sc14.port}/email/gmail/web-compose/status`)).status, 401);
+        const addR = await fetch(`http://127.0.0.1:${sc14.port}/email/gmail/web-compose/accounts/save`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${tok14}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: 'pool1@gmail.com', label: 'P1', warmupStage: 'NEW_WARMUP' })
+        });
+        assert.equal(addR.status, 200);
+        const stR = await (await fetch(`http://127.0.0.1:${sc14.port}/email/gmail/web-compose/status`, { headers: { Authorization: `Bearer ${tok14}` } })).json();
+        assert.equal(stR.ok, true);
+        assert.equal(stR.mode, 'GMAIL_WEB_COMPOSE_ASSISTED');
+        assert.equal(stR.accounts.length, 1);
+      } finally {
+        await sc14.stop();
+      }
+
+      const htmlRc14 = fs.readFileSync(path.join(__dirname, '..', 'extension', 'email-studio', 'index.html'), 'utf8');
+      const jsRc14 = fs.readFileSync(path.join(__dirname, '..', 'extension', 'email-studio', 'email-template-studio.js'), 'utf8');
+      const bgRc14 = fs.readFileSync(path.join(__dirname, '..', 'extension', 'background.js'), 'utf8');
+      const mfRc14 = fs.readFileSync(path.join(__dirname, '..', 'extension', 'manifest.json'), 'utf8');
+      assert.ok(htmlRc14.includes('id="gmailDispatchMode"') && htmlRc14.includes('value="GMAIL_WEB_COMPOSE_ASSISTED" selected') && htmlRc14.includes('id="gmailWebComposePanel"') && htmlRc14.includes('id="btnOpenNextWebComposeBatch"') && htmlRc14.includes('id="btnCopyRichHtmlForGmailCompose"'));
+      assert.ok(jsRc14.includes('syncGmailDispatchModeUI') && jsRc14.includes('GET_GMAIL_WEB_COMPOSE_STATUS') && jsRc14.includes('NEXT_GMAIL_WEB_COMPOSE_BATCH') && jsRc14.includes('btnCopyRichHtmlForGmailCompose'));
+      assert.ok(bgRc14.includes('GET_GMAIL_WEB_COMPOSE_STATUS') && bgRc14.includes('NEXT_GMAIL_WEB_COMPOSE_BATCH') && bgRc14.includes('MARK_GMAIL_WEB_COMPOSE_ITEM'));
+      assert.ok(!/mail\.google\.com/i.test(mfRc14), 'Manifest MUST still have zero mail.google.com host permission (no DOM scraping)');
+      const bannedTermRc14 = ['동의', '원장'].join('');
+      assert.ok(!htmlRc14.includes(bannedTermRc14) && !jsRc14.includes(bannedTermRc14));
+      checks += 4;
+      console.log('PASS 17: RC14 multi-account Gmail Native Web Compose default engine (warmup caps, fixed assignment, zero hopping, pacing guard, cross-provider suppression, official URL & zero DOM scraping) verified');
     }
 
     console.log(`XPIDER V7.1 Gmail Safe Delivery Engine suite: ${checks}/${checks} PASS; ZERO REAL SENDS`);

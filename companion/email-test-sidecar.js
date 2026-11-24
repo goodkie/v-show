@@ -21,6 +21,7 @@ const { injectUnsubscribeFooter } = require('./email-unsubscribe-server');
 const { validateAndFormatSenderFrom, sanitizeReplyTo } = require('./vivpr-sender-identity');
 const { GmailAccountVault } = require('./gmail-account-vault');
 const { GmailCampaignRunner } = require('./gmail-campaign-runner');
+const { GmailWebComposeEngine } = require('./gmail-web-compose-engine');
 const { optimizeAndScoreEmailMessage } = require('./gmail-deliverability-optimizer');
 const { EmailCampaignStore } = require('./email-campaign-store');
 
@@ -113,6 +114,13 @@ class EmailTestSidecar {
       trustedTestMode: this.trustedTestMode,
       fetchImpl: this.trustedTestMode ? options.gmailFetchImpl : null,
       syncFetchImpl: this.trustedTestMode ? options.gmailSyncFetchImpl : null
+    });
+    this.gmailWebCompose = new GmailWebComposeEngine({
+      stateDir: this.stateDir,
+      pipeline: this.pipeline,
+      gmailRunner: this.gmailRunner,
+      trustedTestMode: this.trustedTestMode,
+      nowFn: this.trustedTestMode ? options.gmailNowFn : null
     });
     this.campaignStore = new EmailCampaignStore({
       stateDir: this.stateDir,
@@ -1433,6 +1441,12 @@ class EmailTestSidecar {
           return;
         }
 
+        if (pathname === '/email/gmail/web-compose/status' && req.method === 'GET') {
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify(this.gmailWebCompose.getStatus()));
+          return;
+        }
+
         if (pathname.startsWith('/email/gmail/') && req.method === 'POST') {
           let raw = '';
           let tooLarge = false;
@@ -1522,6 +1536,48 @@ class EmailTestSidecar {
                 this._recordDiag('INFO', 'GMAIL_DOMAIN', 'CHECK_ALIGNMENT', { brandDomain: report.brandDomain, dmarc: report.dmarc?.status, unsubHealth: report.unsubscribeHealth?.status });
                 res.writeHead(200, { 'Content-Type': 'application/json' });
                 res.end(JSON.stringify({ ok: true, alignment: report }));
+                return;
+              }
+              if (pathname === '/email/gmail/web-compose/accounts/save') {
+                const out = this.gmailWebCompose.addOrUpdateAccount(payload);
+                this._recordDiag(out.ok ? 'INFO' : 'WARN', 'GMAIL_WEB_COMPOSE', 'ACCOUNT_SAVE', { ok: out.ok, count: out.accounts?.length || 0, reason: out.reason || null });
+                res.writeHead(out.statusCode || (out.ok ? 200 : 400), { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify(out));
+                return;
+              }
+              if (pathname === '/email/gmail/web-compose/accounts/delete') {
+                const out = this.gmailWebCompose.removeAccount(payload.accountId);
+                this._recordDiag(out.ok ? 'INFO' : 'WARN', 'GMAIL_WEB_COMPOSE', 'ACCOUNT_DELETE', { ok: out.ok, removed: out.removed });
+                res.writeHead(out.statusCode || (out.ok ? 200 : 400), { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify(out));
+                return;
+              }
+              if (pathname === '/email/gmail/web-compose/queue/prepare') {
+                const out = this.gmailWebCompose.prepareWebComposeQueue(payload);
+                this._recordDiag(out.ok ? 'INFO' : 'WARN', 'GMAIL_WEB_COMPOSE', 'QUEUE_PREPARE', { ok: out.ok, pending: out?.status?.queue?.counts?.PENDING || 0, reason: out.reason || null });
+                res.writeHead(out.statusCode || (out.ok ? 200 : 400), { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify(out));
+                return;
+              }
+              if (pathname === '/email/gmail/web-compose/queue/next') {
+                const out = await this.gmailWebCompose.issueNextComposeBatch(payload);
+                this._recordDiag(out.ok ? 'INFO' : 'WARN', 'GMAIL_WEB_COMPOSE', 'ISSUE_BATCH', { ok: out.ok, issued: out.issued?.length || 0, reason: out.reason || null });
+                res.writeHead(out.statusCode || (out.ok ? 200 : 409), { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify(out));
+                return;
+              }
+              if (pathname === '/email/gmail/web-compose/queue/mark') {
+                const out = this.gmailWebCompose.markComposeItemResult(payload);
+                this._recordDiag(out.ok ? 'INFO' : 'WARN', 'GMAIL_WEB_COMPOSE', 'MARK_ITEM', { ok: out.ok, result: payload.result || null });
+                res.writeHead(out.statusCode || (out.ok ? 200 : 400), { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify(out));
+                return;
+              }
+              if (pathname === '/email/gmail/web-compose/queue/pause') {
+                const out = this.gmailWebCompose.setPaused(payload);
+                this._recordDiag('INFO', 'GMAIL_WEB_COMPOSE', payload.paused === false ? 'RESUME' : 'PAUSE', { reason: payload.reason || null });
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify(out));
                 return;
               }
               if (pathname === '/email/gmail/queue/stop') {
