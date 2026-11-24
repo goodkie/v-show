@@ -37,7 +37,7 @@ const ONE_HOUR_MS = 60 * 60 * 1000;
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 const MAX_OWNED_WEB_ACCOUNTS = 25;
 const MAX_BATCH_OPEN_TABS = 3;
-const MAX_COMPOSE_BODY_CHARS = 1650; // Safe URL length margin for Chrome + mail.google.com/?view=cm
+const MAX_COMPOSE_BODY_CHARS = 1400; // Safe URL length margin for Chrome + mail.google.com/?view=cm (<2KB encoded)
 
 const WARMUP_PRESETS = {
   gmail_personal: {
@@ -712,9 +712,11 @@ class GmailWebComposeEngine {
       const nowIso = new Date(nowMs).toISOString();
       entry.status = 'COMPOSE_OPENED';
       entry.openedAt = nowIso;
+      entry.lastComposeUrl = compose.composeUrl;
       entry.updatedAt = nowIso;
       this.state.quotaEvents.push({
         tsMs: nowMs,
+        entryId: entry.id,
         accountId: acct.id,
         domain: acct.domain,
         campaignId: this.state.queue.campaignId,
@@ -804,6 +806,20 @@ class GmailWebComposeEngine {
       entry.status = 'SKIPPED_BY_OPERATOR';
       entry.reason = 'OPERATOR_SKIPPED';
       entry.updatedAt = nowIso;
+    } else if (cleanRes === 'REVERT_TO_PENDING') {
+      // Allow recovering an opened compose tab that failed to load (e.g. broken proxy/network) without losing recipient or wasting quota
+      entry.status = 'PENDING';
+      entry.reason = null;
+      entry.openedAt = null;
+      entry.lastComposeUrl = null;
+      entry.updatedAt = nowIso;
+      if (Array.isArray(this.state.quotaEvents)) {
+        const idx = this.state.quotaEvents.findIndex(ev =>
+          ev && ev.status === 'COMPOSE_OPENED' &&
+          (ev.entryId === entry.id || (ev.recipientHash === entry.recipientHash && ev.accountId === entry.assignedAccountId && ev.campaignId === this.state.queue.campaignId))
+        );
+        if (idx >= 0) this.state.quotaEvents.splice(idx, 1);
+      }
     } else {
       return { ok: false, statusCode: 400, reason: 'INVALID_RESULT_STATUS' };
     }
@@ -865,7 +881,8 @@ class GmailWebComposeEngine {
       toMasked: e.maskedEmail,
       fromAccountMasked: e.assignedAccountMasked,
       accountId: e.assignedAccountId,
-      openedAt: e.openedAt
+      openedAt: e.openedAt,
+      composeUrl: (e.lastComposeUrl && isOfficialGmailWebUrl(e.lastComposeUrl)) ? e.lastComposeUrl : null
     }));
 
     return {

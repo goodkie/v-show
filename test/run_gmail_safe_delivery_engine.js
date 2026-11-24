@@ -1900,6 +1900,13 @@ function makeRefreshVaultFetch(counterRef) {
       assert.equal(conf1.ok, true);
       assert.equal(conf1.status.queue.counts.OPERATOR_CONFIRMED_SENT, 1);
 
+      // Verify openedAwaitingConfirm preserves official composeUrl for reopen + REVERT_TO_PENDING recovers failed tab without wasting quota
+      assert.ok(b1.status.queue.openedAwaitingConfirm.some(i => i.entryId === b1.issued[1].entryId && isOfficialGmailWebUrl(i.composeUrl)));
+      const rev1 = wcEngine.markComposeItemResult({ entryId: b1.issued[1].entryId, result: 'REVERT_TO_PENDING' });
+      assert.equal(rev1.ok, true);
+      assert.equal(rev1.entry.status, 'PENDING');
+      assert.ok(!rev1.status.queue.openedAwaitingConfirm.some(i => i.entryId === b1.issued[1].entryId));
+
       // Account warning triggers 24h protective cooldown + PAUSES ENTIRE CAMPAIGN (zero account hopping!)
       const warnRes = wcEngine.markComposeItemResult({ entryId: b1.issued[1].entryId, result: 'ACCOUNT_WARNING_PAUSE', warningNote: 'GMAIL_TEMP_LIMIT' });
       assert.equal(warnRes.ok, true);
@@ -1942,11 +1949,12 @@ function makeRefreshVaultFetch(counterRef) {
       assert.ok(!/mail\.google\.com/i.test(mfRc14), 'Manifest MUST still have zero mail.google.com host permission (no DOM scraping)');
       const bannedTermRc14 = ['동의', '원장'].join('');
       assert.ok(!htmlRc14.includes(bannedTermRc14) && !jsRc14.includes(bannedTermRc14));
-      // RC15 UX & silent no-op regression guards
-      assert.ok(htmlRc14.includes('id="webComposeConsentCheck"') && htmlRc14.includes('id="webComposeQuickRecipient"') && htmlRc14.includes('id="webComposeRecipientSummary"'));
-      assert.ok(jsRc14.includes('webComposeAccountsInitialized') && jsRc14.includes('prepareWebComposeQueueAction') && jsRc14.includes('resolveWebComposeRecipientSource') && jsRc14.includes("'webComposeConsentCheck'"));
-      checks += 5;
-      console.log('PASS 17: RC14/RC15 multi-account Gmail Native Web Compose default engine (warmup caps, fixed assignment, zero hopping, pacing guard, auto-prepare 1-click flow, all-accounts init, inline consent/quick-recipient & zero DOM scraping) verified');
+      // RC15/RC16 UX, broken proxy detection/release & reopen/revert regression guards
+      assert.ok(htmlRc14.includes('id="webComposeConsentCheck"') && htmlRc14.includes('id="webComposeQuickRecipient"') && htmlRc14.includes('id="webComposeRecipientSummary"') && htmlRc14.includes('id="webComposeProxyWarning"') && htmlRc14.includes('id="btnReleaseChromeProxyForGmail"'));
+      assert.ok(jsRc14.includes('webComposeAccountsInitialized') && jsRc14.includes('prepareWebComposeQueueAction') && jsRc14.includes('resolveWebComposeRecipientSource') && jsRc14.includes("'webComposeConsentCheck'") && jsRc14.includes('refreshChromeProxyWarningForGmail') && jsRc14.includes('RELEASE_CHROME_PROXY_FOR_GMAIL_WEB') && jsRc14.includes('REVERT_TO_PENDING'));
+      assert.ok(bgRc14.includes('GET_CHROME_PROXY_STATUS') && bgRc14.includes('RELEASE_CHROME_PROXY_FOR_GMAIL_WEB') && bgRc14.includes('AUTOFORM_CAMPAIGN_RUNNING'));
+      checks += 6;
+      console.log('PASS 17: RC14/RC15/RC16 multi-account Gmail Native Web Compose default engine (warmup caps, fixed assignment, zero hopping, pacing guard, auto-prepare 1-click flow, broken-proxy detector/release, reopen/revert & zero DOM scraping) verified');
     }
 
     console.log(`XPIDER V7.1 Gmail Safe Delivery Engine suite: ${checks}/${checks} PASS; ZERO REAL SENDS`);

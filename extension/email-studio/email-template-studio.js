@@ -5478,6 +5478,53 @@ function createBuiltinRecipientManager() {
   if (el('webComposeQuickRecipient')) el('webComposeQuickRecipient').addEventListener('input', updateWebComposeRecipientSummaryUI);
   if (el('recipientCsv')) el('recipientCsv').addEventListener('input', updateWebComposeRecipientSummaryUI);
 
+  let lastChromeProxyStatus = null;
+
+  async function refreshChromeProxyWarningForGmail() {
+    const warnBox = el('webComposeProxyWarning');
+    const warnTxt = el('webComposeProxyWarningText');
+    try {
+      const r = await callBg({ action: 'GET_CHROME_PROXY_STATUS' }, { timeoutMs: 4000 });
+      lastChromeProxyStatus = r || null;
+      if (!warnBox || !warnTxt) return r;
+      if (r?.ok && r.proxyActive && (r.relayBroken || r.isLocalRelay)) {
+        warnBox.style.display = 'block';
+        warnBox.className = r.relayBroken ? 'status-box status-error' : 'status-box status-blocked';
+        warnTxt.textContent = r.relayBroken
+          ? `🚨 [차단 원인 감지] 현재 Chrome 브라우저가 XPIDER Privacy Relay(${r.proxyHost || '127.0.0.1:18988'})에 묶여 있으며 상위 프록시 오류(${r.relayReason || '502 Bad Gateway'}) 때문에 Gmail(mail.google.com)이 "사이트에 연결할 수 없음"으로 차단됩니다!\n• 아래 [🔓 브라우저 프록시 해제 (Gmail 직접 연결로 전환)] 버튼을 1회 클릭하시면 즉시 Gmail 작성창이 정상 열립니다.`
+          : `⚠️ 현재 Chrome 브라우저가 프록시(${r.proxyHost})를 경유 중입니다. Gmail 웹 발송은 일반 직접 연결이 계정 보안 경고 예방에 더 안전합니다. 필요 시 아래 버튼으로 해제하세요.`;
+      } else {
+        warnBox.style.display = 'none';
+      }
+      return r;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  if (el('btnRecheckChromeProxyForGmail')) {
+    el('btnRecheckChromeProxyForGmail').onclick = refreshChromeProxyWarningForGmail;
+  }
+  if (el('btnReleaseChromeProxyForGmail')) {
+    el('btnReleaseChromeProxyForGmail').onclick = async () => {
+      const qBox = el('webComposeQueueStatus');
+      try {
+        const r = await callBg({ action: 'RELEASE_CHROME_PROXY_FOR_GMAIL_WEB' }, { timeoutMs: 6000 });
+        if (!r?.ok) {
+          if (qBox) { qBox.className = 'status-box status-error'; qBox.textContent = `❌ 브라우저 프록시 해제 불가: ${r?.message || r?.reason || r?.error || '-'}`; }
+          return;
+        }
+        await refreshChromeProxyWarningForGmail();
+        if (qBox) {
+          qBox.className = 'status-box status-success';
+          qBox.textContent = '🔓 브라우저 프록시를 해제하고 일반 직접 연결(DIRECT)로 전환했습니다! 이제 [✉️ 2단계: Gmail 작성창 열기] 또는 아래 [🔁 다시 열기] 버튼을 눌러주세요.';
+        }
+      } catch (err) {
+        if (qBox) { qBox.className = 'status-box status-error'; qBox.textContent = `❌ 프록시 해제 오류: ${err?.message || String(err)}`; }
+      }
+    };
+  }
+
   function syncGmailDispatchModeUI() {
     const mode = el('gmailDispatchMode') ? el('gmailDispatchMode').value : 'GMAIL_WEB_COMPOSE_ASSISTED';
     const isWeb = mode !== 'GMAIL_API_OAUTH';
@@ -5485,6 +5532,7 @@ function createBuiltinRecipientManager() {
     if (el('gmailApiOAuthSubPanel')) el('gmailApiOAuthSubPanel').style.display = isWeb ? 'none' : '';
     if (isWeb) {
       updateWebComposeRecipientSummaryUI();
+      refreshChromeProxyWarningForGmail();
       refreshGmailWebComposeStatus();
     }
   }
@@ -5605,7 +5653,29 @@ function createBuiltinRecipientManager() {
         const lbl = document.createElement('span');
         lbl.textContent = `✉️ 작성창 열림: ${item.fromAccountMasked} → ${item.toMasked} (Gmail 탭에서 보내기 후 완료 클릭)`;
         const btns = document.createElement('div');
-        btns.style.cssText = 'display:flex;gap:4px;';
+        btns.style.cssText = 'display:flex;gap:4px;flex-wrap:wrap;';
+
+        if (item.composeUrl && isOfficialGmailTabUrl(item.composeUrl)) {
+          const reopenBtn = document.createElement('button');
+          reopenBtn.type = 'button';
+          reopenBtn.style.cssText = 'padding:2px 8px;font-size:11px;';
+          reopenBtn.textContent = '🔁 다시 열기';
+          reopenBtn.onclick = () => {
+            openExternalOfficialTab(item.composeUrl, { active: true });
+          };
+          btns.appendChild(reopenBtn);
+        }
+
+        const revertBtn = document.createElement('button');
+        revertBtn.type = 'button';
+        revertBtn.style.cssText = 'padding:2px 8px;font-size:11px;';
+        revertBtn.textContent = '↩️ 대기 복구';
+        revertBtn.onclick = async () => {
+          const { sidecarPort, sidecarToken } = getSidecarConfig();
+          await callBg({ action: 'MARK_GMAIL_WEB_COMPOSE_ITEM', sidecarPort, sidecarToken, payload: { entryId: item.entryId, result: 'REVERT_TO_PENDING' } });
+          refreshGmailWebComposeStatus();
+        };
+        btns.appendChild(revertBtn);
 
         const okBtn = document.createElement('button');
         okBtn.type = 'button';
@@ -5751,6 +5821,15 @@ function createBuiltinRecipientManager() {
   async function openNextWebComposeBatchAction() {
     const qBox = el('webComposeQueueStatus');
     try {
+      const px = await refreshChromeProxyWarningForGmail();
+      if (px?.ok && px.proxyActive && px.relayBroken) {
+        if (qBox) {
+          qBox.className = 'status-box status-error';
+          qBox.textContent = `🚨 현재 Chrome 프록시(${px.proxyHost || '127.0.0.1:18988'})가 오류(${px.relayReason || '502 Bad Gateway'}) 상태라 Gmail 페이지가 열리지 않습니다.\n• 바로 위 빨간 박스의 [🔓 브라우저 프록시 해제 (Gmail 직접 연결로 전환)] 버튼을 먼저 누른 뒤 다시 시도해 주세요.`;
+        }
+        if (el('btnReleaseChromeProxyForGmail')) el('btnReleaseChromeProxyForGmail').focus();
+        return;
+      }
       const qCounts = lastWebComposeStatus?.queue?.counts || {};
       const openedNow = lastWebComposeStatus?.queue?.openedAwaitingConfirm || [];
       // If queue is empty (not prepared yet), seamlessly auto-prepare FIRST so clicking the big blue button works in 1 click!

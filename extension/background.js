@@ -4362,6 +4362,85 @@ const _handleMainMessageInner = (request, sender, sendResponse) => {
         case 'SAVE_UNSUBSCRIBE_CONFIG':
         case 'GET_EMAIL_SIDECAR_LOGS':
         case 'GET_GMAIL_STATUS':
+        case 'GET_CHROME_PROXY_STATUS': {
+            (async () => {
+                try {
+                    const autoFormRunning = Boolean(typeof campaignState !== 'undefined' && campaignState && campaignState.isRunning);
+                    if (typeof chrome === 'undefined' || !chrome.proxy || !chrome.proxy.settings) {
+                        return sendResponse({ ok: true, controlledByExtension: false, proxyActive: false, relayBroken: false, autoFormRunning });
+                    }
+                    const details = await new Promise((resolve) => {
+                        chrome.proxy.settings.get({ incognito: false }, (d) => resolve(d || null));
+                    });
+                    const controlledByExtension = Boolean(details && details.levelOfControl === 'controlled_by_this_extension');
+                    const val = details?.value || {};
+                    const single = val?.rules?.singleProxy || val?.rules?.proxyForHttps || null;
+                    const proxyActive = controlledByExtension && val.mode === 'fixed_servers' && Boolean(single && single.host);
+                    const isLocalRelay = proxyActive && (single.host === '127.0.0.1' || single.host === 'localhost') && Number(single.port) === 18988;
+                    let relayHealth = null;
+                    let relayBroken = false;
+                    let relayReason = null;
+                    if (isLocalRelay) {
+                        try {
+                            const ctrl = new AbortController();
+                            const t = setTimeout(() => ctrl.abort(), 2000);
+                            try {
+                                const hr = await fetch('http://127.0.0.1:18989/health', { signal: ctrl.signal });
+                                relayHealth = await hr.json().catch(() => null);
+                                if (!hr.ok || !relayHealth || relayHealth.relayReady === false) {
+                                    relayBroken = true;
+                                    relayReason = relayHealth?.residentialProxy?.detail || relayHealth?.residentialProxy?.status || 'RELAY_NOT_READY';
+                                }
+                            } finally {
+                                clearTimeout(t);
+                            }
+                        } catch (e) {
+                            relayBroken = true;
+                            relayReason = e?.message || 'RELAY_UNREACHABLE';
+                        }
+                    }
+                    sendResponse({
+                        ok: true,
+                        controlledByExtension,
+                        proxyActive,
+                        isLocalRelay,
+                        proxyHost: single ? `${single.host}:${single.port}` : null,
+                        relayBroken,
+                        relayReason,
+                        autoFormRunning
+                    });
+                } catch (err) {
+                    sendResponse({ ok: false, error: err?.message || 'PROXY_STATUS_ERR' });
+                }
+            })();
+            return true;
+        }
+
+        case 'RELEASE_CHROME_PROXY_FOR_GMAIL_WEB': {
+            (async () => {
+                try {
+                    if (typeof campaignState !== 'undefined' && campaignState && campaignState.isRunning) {
+                        return sendResponse({
+                            ok: false,
+                            reason: 'AUTOFORM_CAMPAIGN_RUNNING',
+                            message: '웹 폼 자동발송 캠페인이 실행 중일 때는 브라우저 프록시를 해제할 수 없습니다.'
+                        });
+                    }
+                    const pg = (typeof PrivacyGateway !== 'undefined' && PrivacyGateway.getInstance) ? PrivacyGateway.getInstance() : null;
+                    if (pg && typeof pg.saveConfig === 'function') {
+                        await pg.saveConfig({ transportMode: 'DIRECT', keepPrivacyRelayEnforcedBetweenCampaigns: false });
+                    }
+                    if (typeof chrome !== 'undefined' && chrome.proxy && chrome.proxy.settings) {
+                        await new Promise((resolve) => chrome.proxy.settings.clear({ scope: 'regular' }, resolve));
+                    }
+                    sendResponse({ ok: true, cleared: true, mode: 'DIRECT' });
+                } catch (err) {
+                    sendResponse({ ok: false, error: err?.message || 'PROXY_RELEASE_ERR' });
+                }
+            })();
+            return true;
+        }
+
         case 'GET_GMAIL_DASHBOARD':
         case 'CHECK_GMAIL_HYGIENE':
         case 'OPTIMIZE_GMAIL_DELIVERABILITY':
