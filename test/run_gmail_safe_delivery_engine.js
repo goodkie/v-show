@@ -2073,6 +2073,7 @@ function makeRefreshVaultFetch(counterRef) {
       assert.ok(jsRc14.includes('data-warmup-select') && jsRc14.includes('워밍업 (일 15통)') && jsRc14.includes('안정화 (일 30통)') && jsRc14.includes('숙성 (일 80통)'), 'Per-account 1-click warmup stage dropdown must be present in Studio UI');
 
       // RC23: GitHub Official Auto-Updater (fail-closed SHA-256 & host allowlist) + Local-Only Personal Migration Seed (cross-PC DPAPI re-seal!)
+      const nodeCrypto = require('node:crypto');
       const { XpiderAppUpdater, isAllowedGithubHttpsUrl } = require('../companion/xpider-app-updater');
       const { packPersonalSeed, applyPersonalSeed } = require('../companion/xpider-personal-migration');
       assert.equal(isAllowedGithubHttpsUrl('https://api.github.com/repos/goodkie/v-show/releases'), true);
@@ -2086,7 +2087,7 @@ function makeRefreshVaultFetch(counterRef) {
       fs.mkdirSync(updAppRoot, { recursive: true });
       fs.writeFileSync(path.join(updAppRoot, 'RELEASE_PROVENANCE.json'), JSON.stringify({ packageVersion: '7.1.0', commitShort: '1111aaaa' }));
       const fakeExeBuf = Buffer.from('MZ_SYNTHETIC_XPIDER_EXE_RC23_TEST_PAYLOAD');
-      const fakeExeSha = crypto.createHash('sha256').update(fakeExeBuf).digest('hex');
+      const fakeExeSha = nodeCrypto.createHash('sha256').update(fakeExeBuf).digest('hex');
       const mockReleases = [{
         tag_name: 'v7.1.0-rc23-2222bbbb',
         name: 'XPIDER V7.1.0-rc23',
