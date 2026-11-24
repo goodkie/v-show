@@ -1885,13 +1885,17 @@ function makeRefreshVaultFetch(counterRef) {
       assert.equal(b1.issued.length, 2, 'Should issue 1 compose tab per distinct owned account');
       assert.notEqual(b1.issued[0].accountId, b1.issued[1].accountId, 'Must never issue 2 simultaneous tabs to the same account');
       assert.equal(isOfficialGmailWebUrl(b1.issued[0].composeUrl), true);
-      // RC18: default AUTO routes via official Google AccountChooser -> /mail/u/<email>/?view=cm (preventing Google's /mail/?authuser= strip fallback to u/0!)
-      assert.ok(b1.issued[0].composeUrl.startsWith('https://accounts.google.com/AccountChooser?') && b1.issued[0].composeUrl.includes('service=mail') && b1.issued[0].composeUrl.includes('Email=sender1%40gmail.com') && b1.issued[0].composeUrl.includes('view%3Dcm'));
-      assert.ok(b1.issued[1].composeUrl.startsWith('https://accounts.google.com/AccountChooser?') && b1.issued[1].composeUrl.includes('Email=hello%40acme.plus'));
-      // Verify explicit Chrome slot routing (/mail/u/6/) AND strict open-redirect fail-closed rejection on AccountChooser!
-      const { buildOfficialWebComposeUrl } = require('../companion/gmail-web-compose-engine');
+      // RC18/RC19: default AUTO routes via official Google AccountChooser -> clean /mail/?view=cm (NO invalid /mail/u/<email>/ path, strictly <= 1850 bytes to prevent HTTP 400!)
+      assert.ok(b1.issued[0].composeUrl.startsWith('https://accounts.google.com/AccountChooser?') && b1.issued[0].composeUrl.includes('service=mail') && b1.issued[0].composeUrl.includes('Email=sender1%40gmail.com') && b1.issued[0].composeUrl.includes('continue=https%3A%2F%2Fmail.google.com%2Fmail%2F%3Fview%3Dcm') && !b1.issued[0].composeUrl.includes('%2Fmail%2Fu%2F') && b1.issued[0].composeUrl.length <= 1850);
+      assert.ok(b1.issued[1].composeUrl.startsWith('https://accounts.google.com/AccountChooser?') && b1.issued[1].composeUrl.includes('Email=hello%40acme.plus') && b1.issued[1].composeUrl.length <= 1850);
+      // Verify explicit Chrome slot routing (/mail/u/6/ without conflicting authuser=), long-body <= 1850B cap, AND strict open-redirect fail-closed rejection!
+      const { buildOfficialWebComposeUrl, buildOfficialAccountCheckUrl } = require('../companion/gmail-web-compose-engine');
       const slotUrl = buildOfficialWebComposeUrl({ authUserEmail: 'sender1@gmail.com', to: 'r1@example.org', subject: 'Slot Test', body: 'Hello slot 6', chromeSlotIndex: 6 });
-      assert.ok(slotUrl.composeUrl.startsWith('https://mail.google.com/mail/u/6/?view=cm') && slotUrl.routingMode === 'EXPLICIT_SLOT_U_6');
+      assert.ok(slotUrl.composeUrl.startsWith('https://mail.google.com/mail/u/6/?view=cm') && !slotUrl.composeUrl.includes('authuser=') && slotUrl.routingMode === 'EXPLICIT_SLOT_U_6');
+      const longUrl = buildOfficialWebComposeUrl({ authUserEmail: 'sender1@gmail.com', to: 'r1@example.org', subject: 'Long Body Cap Check', body: 'Paragraph with punctuation, quotes & newlines!\n'.repeat(80) });
+      assert.ok(longUrl.composeUrl.length <= 1850 && longUrl.bodyTruncated === true, 'AccountChooser URL must stay strictly <= 1850 bytes to avoid Google HTTP 400');
+      assert.equal(buildOfficialAccountCheckUrl('sender1@gmail.com', 6), 'https://mail.google.com/mail/u/6/');
+      assert.ok(buildOfficialAccountCheckUrl('sender1@gmail.com', null).includes('continue=https%3A%2F%2Fmail.google.com%2Fmail%2F') && !buildOfficialAccountCheckUrl('sender1@gmail.com', null).includes('%2540'));
       assert.equal(isOfficialGmailWebUrl('https://accounts.google.com/AccountChooser?service=mail&Email=a@gmail.com&continue=https%3A%2F%2Fevil.example%2Fphish'), false, 'AccountChooser open-redirect to non-Gmail host MUST be rejected fail-closed');
       assert.equal(isOfficialGmailWebUrl('https://accounts.google.com/AccountChooser?service=drive&continue=https%3A%2F%2Fmail.google.com%2Fmail%2F'), false, 'AccountChooser non-mail service MUST be rejected fail-closed');
       assert.equal(b1.issued[0].autoCalmedPromo, true, 'Promo copy must be auto-calmed to conversational text before compose');

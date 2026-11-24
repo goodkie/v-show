@@ -37,7 +37,8 @@ const ONE_HOUR_MS = 60 * 60 * 1000;
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 const MAX_OWNED_WEB_ACCOUNTS = 25;
 const MAX_BATCH_OPEN_TABS = 3;
-const MAX_COMPOSE_BODY_CHARS = 1400; // Safe URL length margin for Chrome + mail.google.com/?view=cm (<2KB encoded)
+const MAX_COMPOSE_BODY_CHARS = 1400; // Raw body cap before URL length guard
+const MAX_SAFE_GOOGLE_URL_BYTES = 1850; // Strictly below Google AccountChooser / GFE 2048-byte URL ceiling (prevents HTTP 400)
 
 const WARMUP_PRESETS = {
   gmail_personal: {
@@ -135,13 +136,13 @@ function buildOfficialAccountCheckUrl(email = '', chromeSlotIndex = null) {
   if (!cleanFrom) return 'https://mail.google.com/mail/';
   const slot = parseChromeSlotIndex(chromeSlotIndex);
   if (slot !== null) {
-    return `https://mail.google.com/mail/u/${slot}/?authuser=${encodeURIComponent(cleanFrom)}`;
+    // Pure numeric slot URL without conflicting authuser= (avoids 400/404)
+    return `https://mail.google.com/mail/u/${slot}/`;
   }
-  const inner = `https://mail.google.com/mail/u/${encodeURIComponent(cleanFrom)}/?authuser=${encodeURIComponent(cleanFrom)}`;
   const ac = new URL('https://accounts.google.com/AccountChooser');
   ac.searchParams.set('service', 'mail');
   ac.searchParams.set('Email', cleanFrom);
-  ac.searchParams.set('continue', inner);
+  ac.searchParams.set('continue', 'https://mail.google.com/mail/');
   return ac.href;
 }
 
@@ -152,41 +153,47 @@ function buildOfficialWebComposeUrl({ authUserEmail = '', to = '', subject = '',
     throw new Error('INVALID_COMPOSE_EMAIL_ADDRESS');
   }
   const slot = parseChromeSlotIndex(chromeSlotIndex);
-  const bodyCap = slot !== null ? MAX_COMPOSE_BODY_CHARS : Math.min(MAX_COMPOSE_BODY_CHARS, 1150);
   const cleanSubj = decodeHtmlEntities(String(subject || '')).replace(/[\r\n\0]+/g, ' ').trim().slice(0, 160);
-  const cleanBody = decodeHtmlEntities(String(body || '')).replace(/\r\n/g, '\n').replace(/\0/g, '').trim().slice(0, bodyCap);
+  const rawBody = decodeHtmlEntities(String(body || '')).replace(/\r\n/g, '\n').replace(/\0/g, '').trim();
 
-  let href = '';
-  let routingMode = 'ACCOUNT_CHOOSER_AUTO';
-  if (slot !== null) {
-    // Explicit Chrome multi-login slot (/mail/u/N/) — zero hop, targets exact logged-in slot!
-    const u = new URL(`https://mail.google.com/mail/u/${slot}/`);
-    u.searchParams.set('view', 'cm');
-    u.searchParams.set('fs', '1');
-    u.searchParams.set('authuser', cleanFrom);
-    u.searchParams.set('to', cleanTo);
-    if (cleanSubj) u.searchParams.set('su', cleanSubj);
-    if (cleanBody) u.searchParams.set('body', cleanBody);
-    href = u.href;
-    routingMode = `EXPLICIT_SLOT_U_${slot}`;
-  } else {
-    // Default AUTO: Google strips ?authuser= on root /mail/?view=cm and falls back to u/0!
-    // Routing via official AccountChooser?service=mail&Email=<from>&continue=/mail/u/<from>/?view=cm
-    // deterministically switches to the exact assigned account (or prompts sign-in if not logged in, preventing wrong-account sends).
-    const inner = new URL(`https://mail.google.com/mail/u/${encodeURIComponent(cleanFrom)}/`);
+  const buildWithBody = (bodySlice) => {
+    if (slot !== null) {
+      // Explicit Chrome multi-login slot (/mail/u/N/) — NO conflicting authuser= parameter (prevents Google 400 mismatch!)
+      const u = new URL(`https://mail.google.com/mail/u/${slot}/`);
+      u.searchParams.set('view', 'cm');
+      u.searchParams.set('fs', '1');
+      u.searchParams.set('to', cleanTo);
+      if (cleanSubj) u.searchParams.set('su', cleanSubj);
+      if (bodySlice) u.searchParams.set('body', bodySlice);
+      return u.href;
+    }
+    // Default AUTO: Official Google AccountChooser with clean continue=https://mail.google.com/mail/?view=cm&fs=1...
+    // (NEVER put email address in /mail/u/<segment>/ path, which triggers Google 400/404 when logged in!)
+    const inner = new URL('https://mail.google.com/mail/');
     inner.searchParams.set('view', 'cm');
     inner.searchParams.set('fs', '1');
-    inner.searchParams.set('authuser', cleanFrom);
     inner.searchParams.set('to', cleanTo);
     if (cleanSubj) inner.searchParams.set('su', cleanSubj);
-    if (cleanBody) inner.searchParams.set('body', cleanBody);
+    if (bodySlice) inner.searchParams.set('body', bodySlice);
 
     const ac = new URL('https://accounts.google.com/AccountChooser');
     ac.searchParams.set('service', 'mail');
     ac.searchParams.set('Email', cleanFrom);
     ac.searchParams.set('continue', inner.href);
-    href = ac.href;
+    return ac.href;
+  };
+
+  // Enforce strict final encoded URL ceiling <= MAX_SAFE_GOOGLE_URL_BYTES (1850) so Google never returns HTTP 400!
+  let bodyLen = Math.min(rawBody.length, MAX_COMPOSE_BODY_CHARS);
+  let href = buildWithBody(rawBody.slice(0, bodyLen));
+  while (href.length > MAX_SAFE_GOOGLE_URL_BYTES && bodyLen > 0) {
+    const excess = href.length - MAX_SAFE_GOOGLE_URL_BYTES;
+    const step = Math.max(40, Math.ceil(excess * 0.55));
+    bodyLen = Math.max(0, bodyLen - step);
+    const trimmed = bodyLen > 0 ? rawBody.slice(0, bodyLen).replace(/\s+\S*$/, '').trim() : '';
+    href = buildWithBody(trimmed);
   }
+  const routingMode = slot !== null ? `EXPLICIT_SLOT_U_${slot}` : 'ACCOUNT_CHOOSER_AUTO';
   if (!isOfficialGmailWebUrl(href)) {
     throw new Error('NON_OFFICIAL_GMAIL_URL_BLOCKED');
   }
@@ -195,7 +202,7 @@ function buildOfficialWebComposeUrl({ authUserEmail = '', to = '', subject = '',
     routingMode,
     chromeSlotIndex: slot,
     urlLength: href.length,
-    bodyTruncated: String(body || '').trim().length > bodyCap
+    bodyTruncated: bodyLen < rawBody.length
   };
 }
 
