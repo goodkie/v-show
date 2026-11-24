@@ -6527,6 +6527,48 @@ function createBuiltinRecipientManager() {
           const rightCtrl = document.createElement('div');
           rightCtrl.style.cssText = 'display:flex;align-items:center;gap:4px;flex-wrap:wrap;';
 
+          const stageSel = document.createElement('select');
+          stageSel.style.cssText = 'width:auto;padding:2px 4px;font-size:11px;';
+          stageSel.setAttribute('data-warmup-select', '1');
+          stageSel.title = '계정 숙성·워밍업 단계 변경 (일일·시간당 안전 한도 즉시 반영)';
+          const isWs = a.type === 'workspace_paid';
+          const stageOpts = isWs
+            ? [
+                ['NEW_WARMUP', '워밍업 (일 40통)'],
+                ['WARMING', '안정화 (일 100통)'],
+                ['ESTABLISHED', '숙성 (일 300통)']
+              ]
+            : [
+                ['NEW_WARMUP', '워밍업 (일 15통)'],
+                ['WARMING', '안정화 (일 30통)'],
+                ['ESTABLISHED', '숙성 (일 80통)']
+              ];
+          for (const [sv, stxt] of stageOpts) {
+            const opt = document.createElement('option');
+            opt.value = sv;
+            opt.textContent = stxt;
+            stageSel.appendChild(opt);
+          }
+          stageSel.value = (a.warmupStage === 'WARMING' || a.warmupStage === 'ESTABLISHED') ? a.warmupStage : 'NEW_WARMUP';
+          stageSel.onchange = async () => {
+            const { sidecarPort, sidecarToken } = getSidecarConfig();
+            const nextStage = stageSel.value;
+            await callBg({
+              action: 'SAVE_GMAIL_WEB_COMPOSE_ACCOUNT',
+              sidecarPort,
+              sidecarToken,
+              payload: {
+                email: a.email,
+                label: a.label,
+                warmupStage: nextStage,
+                chromeSlotIndex: Number.isInteger(a.chromeSlotIndex) ? a.chromeSlotIndex : null,
+                active: a.active
+              }
+            });
+            refreshGmailWebComposeStatus();
+          };
+          rightCtrl.appendChild(stageSel);
+
           const slotSel = document.createElement('select');
           slotSel.style.cssText = 'width:auto;padding:2px 4px;font-size:11px;';
           slotSel.title = 'Chrome 멀티로그인 슬롯 번호 (비우면 Google AccountChooser 자동 전환)';

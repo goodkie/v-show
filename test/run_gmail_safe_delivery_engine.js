@@ -2057,8 +2057,23 @@ function makeRefreshVaultFetch(counterRef) {
         'All RC21 preview auto-switch, sanitization, and send-override hooks must be wired'
       );
 
-      checks += 14;
-      console.log('PASS 17: RC14-RC21 multi-account Gmail Native Web Compose, list delete, master history reset, live 1s countdown ticker, Gmail auto-text live preview & Text/HTML direct preview editors verified');
+      // RC22: Verify 1-click per-account warmup stage upgrade updates caps (15 -> 30 -> 80) while preserving chromeSlotIndex + UI dropdown contract
+      const upgWarm = wcEngine.addOrUpdateAccount({ email: 'acct1@gmail.com', warmupStage: 'WARMING', chromeSlotIndex: 2, active: true });
+      assert.equal(upgWarm.ok, true);
+      const acct1Warm = upgWarm.accounts.find(a => a.email === 'acct1@gmail.com');
+      assert.equal(acct1Warm.warmupStage, 'WARMING');
+      assert.equal(acct1Warm.cap24h, 30);
+      assert.equal(acct1Warm.chromeSlotIndex, 2);
+      const upgEst = wcEngine.addOrUpdateAccount({ email: 'acct1@gmail.com', warmupStage: 'ESTABLISHED', chromeSlotIndex: 2, active: true });
+      assert.equal(upgEst.ok, true);
+      const acct1Est = upgEst.accounts.find(a => a.email === 'acct1@gmail.com');
+      assert.equal(acct1Est.warmupStage, 'ESTABLISHED');
+      assert.equal(acct1Est.cap24h, 80);
+      assert.equal(acct1Est.chromeSlotIndex, 2);
+      assert.ok(jsRc14.includes('data-warmup-select') && jsRc14.includes('워밍업 (일 15통)') && jsRc14.includes('안정화 (일 30통)') && jsRc14.includes('숙성 (일 80통)'), 'Per-account 1-click warmup stage dropdown must be present in Studio UI');
+
+      checks += 16;
+      console.log('PASS 17: RC14-RC22 multi-account Gmail Native Web Compose, list delete, master history reset, live 1s countdown ticker, Gmail auto-text live preview, Text/HTML direct preview editors & per-account warmup dropdown verified');
     }
 
     console.log(`XPIDER V7.1 Gmail Safe Delivery Engine suite: ${checks}/${checks} PASS; ZERO REAL SENDS`);
