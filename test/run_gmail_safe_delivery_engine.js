@@ -2156,8 +2156,11 @@ function makeRefreshVaultFetch(counterRef) {
       fs.writeFileSync(path.join(pc1State, '.resend_api_key'), synthResend);
       fs.writeFileSync(path.join(pc1State, '.ai_copy_api_key'), synthGemini);
       fs.writeFileSync(path.join(pc1State, '.gmail_domain_config.json'), JSON.stringify({ brandDomain: 'brand.example', unsubscribeBaseUrl: 'https://unsubscribe.brand.example' }));
-      fs.writeFileSync(path.join(pc1State, '.gmail_oauth_client.dpapi.json'), JSON.stringify({ version: 1, clientIdEnc: pc1Box.encrypt('synth-client-id.apps.googleusercontent.com'), clientSecretEnc: pc1Box.encrypt('synth-client-sec-1234') }));
-      fs.writeFileSync(path.join(pc1State, '.gmail_accounts_vault.dpapi.json'), JSON.stringify({ version: 1, accounts: [{ id: 'g1', email: 'owner@example.test', refreshTokenEnc: pc1Box.encrypt(synthRefresh) }] }));
+      // Seed PC1 using the REAL GmailAccountVault class so schema parity (clientId, clientSecretRef, accounts[].tokenRef) is tested 100%!
+      const pc1VaultInst = new GmailAccountVault({ stateDir: pc1State, trustedTestMode: true, cryptoBox: pc1Box });
+      const saveCli = pc1VaultInst.saveOAuthClientConfig({ clientId: 'synth-client-id.apps.googleusercontent.com', clientSecret: 'synth-client-sec-1234', userConsentConfirmed: true });
+      assert.equal(saveCli.ok, true);
+      pc1VaultInst.upsertMockAccountForTest({ email: 'owner@example.test', refreshToken: synthRefresh, accessToken: 'synth-access-tok' });
 
       const packed = packPersonalSeed({ sourceStateDir: pc1State, outSeedPath: seedBin, cryptoBox: pc1Box });
       assert.equal(packed.ok, true);
@@ -2167,12 +2170,16 @@ function makeRefreshVaultFetch(counterRef) {
       assert.equal(fs.existsSync(seedBin), false, 'Temp seed file must be deleted after apply');
       assert.equal(fs.readFileSync(path.join(pc2State, '.resend_api_key'), 'utf8'), synthResend);
       assert.equal(fs.readFileSync(path.join(pc2State, '.ai_copy_api_key'), 'utf8'), synthGemini);
-      const pc2Client = JSON.parse(fs.readFileSync(path.join(pc2State, '.gmail_oauth_client.dpapi.json'), 'utf8'));
-      assert.ok(pc2Client.clientIdEnc.startsWith('testbox:pc2:'), 'OAuth client must be re-sealed under PC2 DPAPI');
-      assert.equal(pc2Box.decrypt(pc2Client.clientIdEnc), 'synth-client-id.apps.googleusercontent.com');
-      const pc2Vault = JSON.parse(fs.readFileSync(path.join(pc2State, '.gmail_accounts_vault.dpapi.json'), 'utf8'));
-      assert.ok(pc2Vault.accounts[0].refreshTokenEnc.startsWith('testbox:pc2:'), 'Refresh token must be re-sealed under PC2 DPAPI');
-      assert.equal(pc2Box.decrypt(pc2Vault.accounts[0].refreshTokenEnc), synthRefresh);
+
+      // Verify a REAL GmailAccountVault on PC2 (with PC2's different DPAPI key!) reads OAuth Client & Account tokens seamlessly!
+      const pc2VaultInst = new GmailAccountVault({ stateDir: pc2State, trustedTestMode: true, cryptoBox: pc2Box });
+      const pc2Client = pc2VaultInst._loadOAuthClientInternal();
+      assert.equal(pc2Client.clientId, 'synth-client-id.apps.googleusercontent.com');
+      assert.equal(pc2Client.clientSecret, 'synth-client-sec-1234');
+      const pc2RawVault = JSON.parse(fs.readFileSync(path.join(pc2State, '.gmail_accounts_vault.dpapi.json'), 'utf8'));
+      assert.ok(pc2RawVault.accounts[0].tokenRef.startsWith('testbox:pc2:'), 'Account tokenRef must be re-sealed under PC2 DPAPI');
+      const pc2DecryptedTok = JSON.parse(pc2VaultInst._decryptSecret(pc2RawVault.accounts[0].tokenRef));
+      assert.equal(pc2DecryptedTok.refresh_token, synthRefresh);
 
       assert.ok(htmlRc14.includes('id="btnCheckAppUpdate"') && htmlRc14.includes('id="btnInstallAppUpdate"') && htmlRc14.includes('id="appUpdateBar"'));
       assert.ok(jsRc14.includes('CHECK_APP_UPDATE') && jsRc14.includes('INSTALL_APP_UPDATE'));

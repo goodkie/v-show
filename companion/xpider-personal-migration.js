@@ -89,21 +89,20 @@ function packPersonalSeed({
     }
   }
 
-  // Unwrap DPAPI Gmail OAuth Client so it can be re-sealed with the destination PC's Windows DPAPI
+  // Unwrap DPAPI Gmail OAuth Client (.gmail_oauth_client.dpapi.json -> clientId + clientSecretRef)
   let gmailOAuthClient = null;
   const oauthClientPath = path.join(sourceStateDir, '.gmail_oauth_client.dpapi.json');
   if (fs.existsSync(oauthClientPath)) {
     try {
       const raw = JSON.parse(fs.readFileSync(oauthClientPath, 'utf8'));
-      const clientId = tryDecryptField(raw.clientIdEnc || raw.clientId, box);
-      const clientSecret = tryDecryptField(raw.clientSecretEnc || raw.clientSecret, box);
+      const clientId = tryDecryptField(raw.clientId || raw.clientIdEnc, box);
+      const clientSecret = tryDecryptField(raw.clientSecretRef || raw.clientSecretEnc || raw.clientSecret, box);
       if (clientId) {
         gmailOAuthClient = {
+          version: raw.version || 1,
           clientId,
           clientSecret,
-          redirectPortMin: raw.redirectPortMin,
-          redirectPortMax: raw.redirectPortMax,
-          savedAt: raw.savedAt || new Date().toISOString()
+          updatedAt: raw.updatedAt || raw.savedAt || new Date().toISOString()
         };
         includedNames.push('.gmail_oauth_client.dpapi.json(re-sealable)');
       }
@@ -112,7 +111,7 @@ function packPersonalSeed({
     }
   }
 
-  // Unwrap DPAPI Gmail Accounts Vault (refresh/access tokens) so they re-seal cleanly on the new PC
+  // Unwrap DPAPI Gmail Accounts Vault (.gmail_accounts_vault.dpapi.json -> accounts[].tokenRef)
   let gmailAccountsVault = null;
   const vaultPath = path.join(sourceStateDir, '.gmail_accounts_vault.dpapi.json');
   if (fs.existsSync(vaultPath)) {
@@ -121,6 +120,10 @@ function packPersonalSeed({
       const accounts = Array.isArray(raw.accounts) ? raw.accounts : [];
       const portableAccounts = accounts.map(acct => {
         const clone = { ...acct };
+        if (clone.tokenRef) {
+          clone._portableTokenJson = tryDecryptField(clone.tokenRef, box);
+          delete clone.tokenRef;
+        }
         if (clone.refreshTokenEnc) {
           clone._portableRefreshToken = tryDecryptField(clone.refreshTokenEnc, box);
           delete clone.refreshTokenEnc;
@@ -247,20 +250,20 @@ function applyPersonalSeed({
     applied.push(fname);
   }
 
-  // Re-seal Gmail OAuth Client using the destination PC's Windows DPAPI
+  // Re-seal Gmail OAuth Client matching exact GmailAccountVault schema (clientId + clientSecretRef)
   if (payload.gmailOAuthClient && payload.gmailOAuthClient.clientId) {
     const destPath = path.join(targetStateDir, '.gmail_oauth_client.dpapi.json');
     if (!overwriteExisting && fs.existsSync(destPath)) {
       skippedExisting.push('.gmail_oauth_client.dpapi.json');
     } else {
       const c = payload.gmailOAuthClient;
+      const secretRef = c.clientSecret ? box.encrypt(c.clientSecret) : null;
       const resealed = {
-        version: 1,
-        clientIdEnc: box.encrypt(c.clientId),
-        clientSecretEnc: c.clientSecret ? box.encrypt(c.clientSecret) : '',
-        redirectPortMin: c.redirectPortMin || 43100,
-        redirectPortMax: c.redirectPortMax || 43199,
-        savedAt: c.savedAt || new Date().toISOString(),
+        version: c.version || 1,
+        clientId: String(c.clientId),
+        hasClientSecret: Boolean(secretRef),
+        clientSecretRef: secretRef,
+        updatedAt: c.updatedAt || new Date().toISOString(),
         migratedAt: new Date().toISOString()
       };
       writeFileSafe(destPath, JSON.stringify(resealed, null, 2) + '\n', true);
@@ -268,7 +271,7 @@ function applyPersonalSeed({
     }
   }
 
-  // Re-seal Gmail Connected Accounts Vault using the destination PC's Windows DPAPI
+  // Re-seal Gmail Connected Accounts Vault matching exact GmailAccountVault schema (accounts[].tokenRef)
   if (payload.gmailAccountsVault && Array.isArray(payload.gmailAccountsVault.accounts) && payload.gmailAccountsVault.accounts.length > 0) {
     const destPath = path.join(targetStateDir, '.gmail_accounts_vault.dpapi.json');
     if (!overwriteExisting && fs.existsSync(destPath)) {
@@ -276,6 +279,10 @@ function applyPersonalSeed({
     } else {
       const resealedAccounts = payload.gmailAccountsVault.accounts.map(acct => {
         const out = { ...acct };
+        if (out._portableTokenJson) {
+          out.tokenRef = box.encrypt(out._portableTokenJson);
+          delete out._portableTokenJson;
+        }
         if (out._portableRefreshToken) {
           out.refreshTokenEnc = box.encrypt(out._portableRefreshToken);
           delete out._portableRefreshToken;
