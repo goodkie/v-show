@@ -2204,7 +2204,7 @@ function createBuiltinRecipientManager() {
       tdProv.textContent = r.provenance || '-';
 
       const tdAct = document.createElement('td');
-      tdAct.style.padding = '4px 6px';
+      tdAct.style.cssText = 'padding:4px 6px;white-space:nowrap;';
       if (activeTab !== 'ORIGINAL' && r.email && r.email.includes('@')) {
         for (const [ovKey, ovLabel] of [['RETAIN_SME', '유지'], ['EXCLUDE', '제외'], ['REVIEW', '검토']]) {
           const b = document.createElement('button');
@@ -2225,6 +2225,15 @@ function createBuiltinRecipientManager() {
           };
           tdAct.appendChild(b);
         }
+      }
+      if (r.email) {
+        const delRowBtn = document.createElement('button');
+        delRowBtn.type = 'button';
+        delRowBtn.textContent = '🗑️ 삭제';
+        delRowBtn.title = '이 수신자를 리스트에서 삭제';
+        delRowBtn.style.cssText = 'font-size:10px;padding:2px 5px;';
+        delRowBtn.onclick = () => deleteRecipientsFromWorkCenter(new Set([String(r.email).toLowerCase()]));
+        tdAct.appendChild(delRowBtn);
       } else {
         tdAct.textContent = '원본 보존';
       }
@@ -2232,6 +2241,89 @@ function createBuiltinRecipientManager() {
       tr.append(tdChk, tdEmail, tdNameDom, tdVal, tdCat, tdProv, tdAct);
       tbody.appendChild(tr);
     }
+  }
+
+  function deleteRecipientsFromWorkCenter(emailSetToDelete, { clearAll = false } = {}) {
+    try {
+      const RM = getActiveRM();
+      const normSet = new Set(Array.from(emailSetToDelete || []).map(x => String(x || '').trim().toLowerCase()).filter(Boolean));
+      if (!clearAll && normSet.size === 0) return;
+      const beforeCount = allValidRecipients.length || rawRows.length;
+      if (clearAll) {
+        rawRows = [];
+        allValidRecipients = [];
+        recipients = [];
+        selectedEmails.clear();
+        for (const k of Object.keys(manualOverrides)) delete manualOverrides[k];
+        originalRawCsv = '';
+        importedFiles = [];
+        importMeta = { validCount: 0, duplicateCount: 0, invalidCount: 0 };
+        queue = null;
+        if (el('recipientCsv')) el('recipientCsv').value = '';
+      } else {
+        rawRows = rawRows.filter(r => !normSet.has(String(r?.email || '').trim().toLowerCase()));
+        allValidRecipients = allValidRecipients.filter(r => !normSet.has(String(r?.email || '').trim().toLowerCase()));
+        recipients = recipients.filter(r => !normSet.has(String(r?.email || '').trim().toLowerCase()));
+        for (const em of normSet) {
+          selectedEmails.delete(em);
+          delete manualOverrides[em];
+        }
+        importMeta = {
+          ...(importMeta || {}),
+          validCount: allValidRecipients.length
+        };
+        const rebuiltCsv = (typeof RM.recipientsToCsv === 'function' && allValidRecipients.length > 0)
+          ? RM.recipientsToCsv(allValidRecipients)
+          : allValidRecipients.map(r => `${r.email},${r.name || ''}`).join('\n');
+        originalRawCsv = rebuiltCsv;
+        if (el('recipientCsv')) el('recipientCsv').value = rebuiltCsv;
+      }
+      if (typeof RM.filterAndCategorizeRecipients === 'function') {
+        renderSmeFilterSummary(RM);
+        recipients = (el('filterSmeOnly') && el('filterSmeOnly').checked)
+          ? (lastFilterResult?.retained || [])
+          : allValidRecipients.filter(item => item.validityStatus !== 'INVALID');
+      }
+      if (typeof recordActivity === 'function') {
+        recordActivity(clearAll ? 'RECIPIENT_LIST_CLEARED' : 'RECIPIENTS_DELETED', {
+          deleted: clearAll ? beforeCount : normSet.size,
+          remaining: allValidRecipients.length
+        });
+      }
+      persist();
+      renderWorkCenter();
+      if (typeof updateWebComposeRecipientSummaryUI === 'function') updateWebComposeRecipientSummaryUI();
+      if (typeof syncSidecarRecipients === 'function') {
+        syncSidecarRecipients().catch(() => {});
+      }
+      say('status-success', clearAll
+        ? `🧹 수신자 리스트 전체 비우기 완료 (이전 ${beforeCount}건 삭제됨).`
+        : `🗑️ 수신자 ${normSet.size}건 삭제 완료 (남은 유효 수신자 ${allValidRecipients.length}명).`);
+    } catch (err) {
+      say('status-error', `❌ 리스트 삭제 오류: ${err?.message || String(err)}`);
+    }
+  }
+
+  if (el('btnDeleteSelectedRecipients')) {
+    el('btnDeleteSelectedRecipients').onclick = () => {
+      if (selectedEmails.size === 0) {
+        say('status-blocked', '⚠️ 먼저 리스트 좌측 체크박스로 삭제할 수신자를 선택하세요.');
+        return;
+      }
+      if (typeof window.confirm === 'function' && !window.confirm(`선택한 수신자 ${selectedEmails.size}명을 리스트에서 삭제할까요?`)) return;
+      deleteRecipientsFromWorkCenter(new Set(selectedEmails));
+    };
+  }
+  if (el('btnClearAllRecipients')) {
+    el('btnClearAllRecipients').onclick = () => {
+      const cnt = Math.max(allValidRecipients.length, rawRows.length);
+      if (cnt === 0) {
+        say('status-blocked', '⚠️ 비울 수신자 데이터가 없습니다.');
+        return;
+      }
+      if (typeof window.confirm === 'function' && !window.confirm(`현재 수신자 리스트 ${cnt}건을 모두 비울까요?`)) return;
+      deleteRecipientsFromWorkCenter(new Set(), { clearAll: true });
+    };
   }
 
   function getFilterOptions() {
@@ -6132,48 +6224,64 @@ function createBuiltinRecipientManager() {
     }
   }
 
-  function renderWebComposeLiveMonitor(st) {
+  let lastMonitorAutoRefreshMs = 0;
+
+  function renderWebComposeAccountGauges(st) {
     if (!st || typeof st !== 'object') return;
     const accounts = Array.isArray(st.accounts) ? st.accounts : [];
+    const gauges = el('webComposeAccountGauges');
+    if (!gauges) return;
+    const nowMs = Date.now();
+    let expiredWaitDetected = false;
+    gauges.textContent = '';
+    for (const a of accounts) {
+      const pct = a.cap24h > 0 ? Math.min(100, Math.round((a.sent24h / a.cap24h) * 100)) : 0;
+      const waitMs = a.nextPermittedAt ? Math.max(0, Date.parse(a.nextPermittedAt) - nowMs) : 0;
+      const coolMs = a.cooldownUntilIso ? Math.max(0, Date.parse(a.cooldownUntilIso) - nowMs) : 0;
+      if ((!a.permittedNow && waitMs <= 0) || (a.cooldownUntilIso && coolMs <= 0)) {
+        expiredWaitDetected = true;
+      }
+      const waitTxt = (a.cooldownUntilIso && coolMs > 0)
+        ? `🛑 보호쿨다운 (${formatCountdownSec(coolMs / 1000)} 남음)`
+        : ((a.permittedNow || waitMs <= 0) ? '🟢 즉시 발송 가능' : `⏳ ${a.waitReason || '간격 대기'} (${formatCountdownSec(waitMs / 1000)} 후)`);
+      const card = document.createElement('div');
+      card.style.cssText = 'padding:5px 8px;border:1px solid #e2e8f0;border-radius:6px;background:#f8fafc;font-size:11px;';
+      const top = document.createElement('div');
+      top.style.cssText = 'display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px;';
+      const left = document.createElement('span');
+      left.textContent = `${a.label ? `[${a.label}] ` : ''}${a.maskedEmail} · 1분 ${a.sent1m}/${a.capPerMinute} · 1시간 ${a.sent1h}/${a.capPerHour} · 24h ${a.sent24h}/${a.cap24h} (${pct}%)`;
+      const right = document.createElement('span');
+      right.textContent = waitTxt;
+      top.appendChild(left);
+      top.appendChild(right);
+      const barWrap = document.createElement('div');
+      barWrap.style.cssText = 'height:5px;background:#e2e8f0;border-radius:4px;margin-top:4px;overflow:hidden;';
+      const bar = document.createElement('div');
+      bar.style.cssText = `height:100%;width:${pct}%;background:${pct >= 90 ? '#ef4444' : (pct >= 65 ? '#f59e0b' : '#16a34a')};`;
+      barWrap.appendChild(bar);
+      card.appendChild(top);
+      card.appendChild(barWrap);
+      gauges.appendChild(card);
+    }
+    // Auto re-fetch Sidecar status once cooldown reaches 0s so 1m/1h/24h counters flip immediately to ready!
+    if (expiredWaitDetected && (nowMs - lastMonitorAutoRefreshMs) >= 3000) {
+      lastMonitorAutoRefreshMs = nowMs;
+      refreshGmailWebComposeStatus();
+    }
+  }
+
+  function renderWebComposeLiveMonitor(st) {
+    if (!st || typeof st !== 'object') return;
     const q = st.queue || {};
     const c = q.counts || {};
     const entries = Array.isArray(q.entriesPreview) ? q.entriesPreview : [];
-    const nowMs = Date.now();
 
     const hdr = el('webComposeLiveMonitorHeader');
     if (hdr) {
       hdr.textContent = `전체 ${c.total || 0}건 · 완료 ${c.OPERATOR_CONFIRMED_SENT || 0} · 열림 ${c.COMPOSE_OPENED || 0} · 대기 ${c.PENDING || 0} · 오늘 잔여 ${q.totalRemainingToday || 0}/${q.totalDailyCapacity || 0}통`;
     }
 
-    const gauges = el('webComposeAccountGauges');
-    if (gauges) {
-      gauges.textContent = '';
-      for (const a of accounts) {
-        const pct = a.cap24h > 0 ? Math.min(100, Math.round((a.sent24h / a.cap24h) * 100)) : 0;
-        const waitMs = a.nextPermittedAt ? Math.max(0, Date.parse(a.nextPermittedAt) - nowMs) : 0;
-        const waitTxt = a.cooldownUntilIso
-          ? `🛑 보호쿨다운 (${formatCountdownSec((Date.parse(a.cooldownUntilIso) - nowMs) / 1000)} 남음)`
-          : (a.permittedNow || waitMs <= 1000 ? '🟢 즉시 발송 가능' : `⏳ ${a.waitReason || '간격 대기'} (${formatCountdownSec(waitMs / 1000)} 후)`);
-        const card = document.createElement('div');
-        card.style.cssText = 'padding:5px 8px;border:1px solid #e2e8f0;border-radius:6px;background:#f8fafc;font-size:11px;';
-        const top = document.createElement('div');
-        top.style.cssText = 'display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px;';
-        const left = document.createElement('span');
-        left.textContent = `${a.label ? `[${a.label}] ` : ''}${a.maskedEmail} · 1분 ${a.sent1m}/${a.capPerMinute} · 1시간 ${a.sent1h}/${a.capPerHour} · 24h ${a.sent24h}/${a.cap24h} (${pct}%)`;
-        const right = document.createElement('span');
-        right.textContent = waitTxt;
-        top.appendChild(left);
-        top.appendChild(right);
-        const barWrap = document.createElement('div');
-        barWrap.style.cssText = 'height:5px;background:#e2e8f0;border-radius:4px;margin-top:4px;overflow:hidden;';
-        const bar = document.createElement('div');
-        bar.style.cssText = `height:100%;width:${pct}%;background:${pct >= 90 ? '#ef4444' : (pct >= 65 ? '#f59e0b' : '#16a34a')};`;
-        barWrap.appendChild(bar);
-        card.appendChild(top);
-        card.appendChild(barWrap);
-        gauges.appendChild(card);
-      }
-    }
+    renderWebComposeAccountGauges(st);
 
     const tbody = el('webComposeLiveListBody');
     if (!tbody) return;
@@ -6264,12 +6372,23 @@ function createBuiltinRecipientManager() {
         actTd.appendChild(bRev);
         actTd.appendChild(bOk);
         actTd.appendChild(bSkip);
-      } else {
+      } else if (rowItem.reason) {
         const dash = document.createElement('span');
-        dash.style.color = '#94a3b8';
-        dash.textContent = rowItem.reason || '-';
+        dash.style.cssText = 'color:#94a3b8;font-size:10px;margin-right:4px;';
+        dash.textContent = rowItem.reason;
         actTd.appendChild(dash);
       }
+      const bDel = document.createElement('button');
+      bDel.type = 'button';
+      bDel.style.cssText = 'padding:1px 6px;font-size:11px;';
+      bDel.textContent = '🗑️';
+      bDel.title = '이 항목을 발송 큐 리스트에서 삭제';
+      bDel.onclick = async () => {
+        const { sidecarPort, sidecarToken } = getSidecarConfig();
+        await callBg({ action: 'REMOVE_GMAIL_WEB_COMPOSE_ITEM', sidecarPort, sidecarToken, payload: { entryId: rowItem.entryId } });
+        refreshGmailWebComposeStatus();
+      };
+      actTd.appendChild(bDel);
       tr.appendChild(actTd);
       tbody.appendChild(tr);
     }
@@ -6442,6 +6561,49 @@ function createBuiltinRecipientManager() {
   if (el('btnRefreshWebComposeMonitor')) {
     el('btnRefreshWebComposeMonitor').onclick = refreshGmailWebComposeStatus;
   }
+
+  if (el('btnResetWebComposeHistory')) {
+    el('btnResetWebComposeHistory').onclick = async () => {
+      const qBox = el('webComposeQueueStatus');
+      const clearQuota = Boolean(el('webComposeResetQuotaAlso') && el('webComposeResetQuotaAlso').checked);
+      const msg = clearQuota
+        ? '마스터 보내기 히스토리를 초기화할까요?\n• 캠페인 중복 발송 방지 기록(ALREADY_SENT) + 현재 큐 + 로컬 1분/1시간/24시간 테스트 카운터가 모두 초기화됩니다.\n• 등록된 구글 계정과 수신거부(Opt-Out) 차단 원장은 안전하게 보존됩니다.'
+        : '마스터 보내기 히스토리를 초기화할까요?\n• 캠페인 중복 발송 방지 기록(ALREADY_SENT)과 현재 큐가 초기화되어 리스트를 처음부터 다시 보낼 수 있습니다.\n• 등록된 구글 계정과 수신거부(Opt-Out) 차단 원장은 안전하게 보존됩니다.';
+      if (typeof window.confirm === 'function' && !window.confirm(msg)) return;
+      try {
+        if (webComposePacer.running) stopWebComposePacer('마스터 히스토리 리셋으로 페이싱 중지됨');
+        openedComposeTabMap.clear();
+        webComposePacer.sentSinceBreak = 0;
+        const { sidecarPort, sidecarToken } = getSidecarConfig();
+        const r = await callBg({
+          action: 'RESET_GMAIL_WEB_COMPOSE_HISTORY',
+          sidecarPort,
+          sidecarToken,
+          payload: { confirmReset: true, clearQuotaCounters: clearQuota, clearQueue: true }
+        });
+        if (!r?.ok || !r.data?.ok) {
+          if (qBox) { qBox.className = 'status-box status-error'; qBox.textContent = `❌ 마스터 히스토리 리셋 실패: ${r?.data?.message || r?.data?.reason || r?.error || '-'}`; }
+          return;
+        }
+        if (r.data.status) renderWebComposeStatus(r.data.status);
+        if (qBox) {
+          qBox.className = 'status-box status-success';
+          qBox.textContent = `🧹 ${r.data.message}\n이제 [📋 1단계: 다계정 안전 큐 배정] 또는 [✉️ 2단계: Gmail 작성창 열기]를 눌러 처음부터 다시 시작하세요.`;
+        }
+      } catch (err) {
+        if (qBox) { qBox.className = 'status-box status-error'; qBox.textContent = `❌ 마스터 히스토리 리셋 오류: ${err?.message || String(err)}`; }
+      }
+    };
+  }
+
+  // Always-on 1-second live cooldown countdown ticker (prevents frozen "(21초 후)" even when pacer is IDLE!)
+  setInterval(() => {
+    try {
+      const panel = el('gmailWebComposePanel');
+      if (!panel || panel.style.display === 'none' || !lastWebComposeStatus) return;
+      renderWebComposeAccountGauges(lastWebComposeStatus);
+    } catch (_) {}
+  }, 1000);
 
   // Zero-DOM-scraping tab close listener (numeric tabId only): when operator presses Ctrl+Enter -> Ctrl+W on Gmail tab
   if (typeof chrome !== 'undefined' && chrome.tabs && chrome.tabs.onRemoved && typeof chrome.tabs.onRemoved.addListener === 'function') {

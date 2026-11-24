@@ -937,6 +937,73 @@ class GmailWebComposeEngine {
     return { ok: true, statusCode: 200, status: this.getStatus() };
   }
 
+  removeQueueEntry({ entryId = '' } = {}) {
+    const cleanId = String(entryId || '').trim();
+    if (!cleanId) return { ok: false, statusCode: 400, reason: 'ENTRY_ID_REQUIRED', status: this.getStatus() };
+    const entries = Array.isArray(this.state.queue.entries) ? this.state.queue.entries : [];
+    const target = entries.find(e => e && e.id === cleanId);
+    if (!target) return { ok: false, statusCode: 404, reason: 'ENTRY_NOT_FOUND', status: this.getStatus() };
+    this.state.queue.entries = entries.filter(e => e && e.id !== cleanId);
+    // If removing an unconfirmed COMPOSE_OPENED item, free its unused quota event cleanly
+    if (target.status === 'COMPOSE_OPENED' && Array.isArray(this.state.quotaEvents)) {
+      const idx = this.state.quotaEvents.findIndex(ev =>
+        ev && ev.status === 'COMPOSE_OPENED' &&
+        (ev.entryId === target.id || (ev.recipientHash === target.recipientHash && ev.accountId === target.assignedAccountId && ev.campaignId === this.state.queue.campaignId))
+      );
+      if (idx >= 0) this.state.quotaEvents.splice(idx, 1);
+    }
+    this.state.queue.updatedAt = new Date(this.nowFn()).toISOString();
+    this._saveState();
+    this.pipeline._appendAudit({ type: 'GMAIL_WEB_COMPOSE_QUEUE_ENTRY_REMOVED', entryId: cleanId });
+    return { ok: true, statusCode: 200, removed: true, entryId: cleanId, status: this.getStatus() };
+  }
+
+  // Master Send History Reset: clears campaign dedup memory (sentHistoryKeys) & queue so operator can restart cleanly.
+  // COMPLIANCE INVARIANT: NEVER clears cross-provider Unsubscribe / Opt-Out Suppression Ledger or registered accounts!
+  resetMasterHistory({ confirmReset = false, clearQuotaCounters = false, clearQueue = true } = {}) {
+    if (confirmReset !== true) {
+      return { ok: false, statusCode: 400, reason: 'RESET_CONFIRMATION_REQUIRED', message: '마스터 보내기 히스토리 리셋 확인이 필요합니다.' };
+    }
+    const clearedSentKeys = Array.isArray(this.state.sentHistoryKeys) ? this.state.sentHistoryKeys.length : 0;
+    const clearedQueueEntries = (clearQueue !== false && Array.isArray(this.state.queue?.entries)) ? this.state.queue.entries.length : 0;
+    const clearedQuotaEvents = (clearQuotaCounters === true && Array.isArray(this.state.quotaEvents)) ? this.state.quotaEvents.length : 0;
+
+    this.state.sentHistoryKeys = [];
+    if (clearQueue !== false) {
+      this.state.queue = {
+        ...this._emptyState().queue,
+        campaignId: this.state.queue?.campaignId || 'default'
+      };
+    }
+    if (clearQuotaCounters === true) {
+      this.state.quotaEvents = [];
+      for (const a of (this.state.accounts || [])) {
+        if (!a) continue;
+        a.cooldownUntilMs = null;
+        a.warningReason = null;
+        a.warningCount = 0;
+      }
+    }
+    this._saveState();
+    this.pipeline._appendAudit({
+      type: 'GMAIL_WEB_COMPOSE_MASTER_HISTORY_RESET',
+      clearedSentKeys,
+      clearedQueueEntries,
+      clearedQuotaEvents,
+      suppressionsPreserved: true
+    });
+    return {
+      ok: true,
+      statusCode: 200,
+      clearedSentKeys,
+      clearedQueueEntries,
+      clearedQuotaEvents,
+      suppressionsPreserved: true,
+      message: `마스터 보내기 히스토리 초기화 완료 (중복 방지 기록 ${clearedSentKeys}건 · 큐 ${clearedQueueEntries}건${clearQuotaCounters ? ` · 로컬 카운터 ${clearedQuotaEvents}건` : ''} 삭제 · 등록 계정 및 수신거부 차단 원장은 안전하게 보존됨).`,
+      status: this.getStatus()
+    };
+  }
+
   getStatus() {
     const accounts = this.listAccountsWithUsage();
     const entries = Array.isArray(this.state.queue.entries) ? this.state.queue.entries : [];

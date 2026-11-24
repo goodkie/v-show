@@ -1580,6 +1580,20 @@ class EmailTestSidecar {
                 res.end(JSON.stringify(out));
                 return;
               }
+              if (pathname === '/email/gmail/web-compose/queue/remove') {
+                const out = this.gmailWebCompose.removeQueueEntry(payload);
+                this._recordDiag(out.ok ? 'INFO' : 'WARN', 'GMAIL_WEB_COMPOSE', 'QUEUE_ENTRY_REMOVE', { ok: out.ok, removed: Boolean(out.removed) });
+                res.writeHead(out.statusCode || (out.ok ? 200 : 400), { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify(out));
+                return;
+              }
+              if (pathname === '/email/gmail/web-compose/history/reset') {
+                const out = this.gmailWebCompose.resetMasterHistory(payload);
+                this._recordDiag(out.ok ? 'INFO' : 'WARN', 'GMAIL_WEB_COMPOSE', 'MASTER_HISTORY_RESET', { ok: out.ok, clearedSentKeys: out.clearedSentKeys || 0, clearedQuotaEvents: out.clearedQuotaEvents || 0 });
+                res.writeHead(out.statusCode || (out.ok ? 200 : 400), { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify(out));
+                return;
+              }
               if (pathname === '/email/gmail/queue/stop') {
                 const summary = this.gmailRunner.stopQueue(payload.reason || 'OWNER_STOPPED');
                 this._recordDiag('INFO', 'GMAIL_QUEUE', 'STOPPED', { counts: summary.counts });

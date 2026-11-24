@@ -271,6 +271,8 @@
   <button type="button" data-rtab="EXCLUDED" id="tabExcluded">제외 (<span id="cntExcluded">0</span>)</button>
   <button type="button" data-rtab="REVIEW" id="tabReview">확인 필요 (<span id="cntReview">0</span>)</button>
   <button type="button" id="btnExportActiveTabCsv">📥 현재 탭 CSV</button>
+  <button type="button" id="btnDeleteSelectedRecipients">🗑️ 선택 삭제</button>
+  <button type="button" id="btnClearAllRecipients">🧹 리스트 전체 비우기</button>
 </div>
 <div class="inline" style="margin:6px 0;">
   <div><input id="recipientTableSearch" placeholder="이메일 · 도메인 · 사유 검색..."></div>
@@ -495,12 +497,12 @@
       </div>
       <div class="inline" style="margin-top:6px;">
         <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:12px;">
-          <label style="display:flex;align-items:center;gap:5px;"><input id="webComposePacerWindowEnabled" type="checkbox" checked> 주간 발송 시간대만 진행</label>
+          <label style="display:inline-flex;align-items:center;gap:5px;white-space:nowrap;"><input id="webComposePacerWindowEnabled" type="checkbox" checked> 주간 발송 시간대만 진행</label>
           <input id="webComposePacerStartHour" type="number" min="0" max="23" value="9" style="width:54px;">시 ~
           <input id="webComposePacerEndHour" type="number" min="1" max="24" value="19" style="width:54px;">시
         </div>
         <div style="display:flex;align-items:center;">
-          <label style="display:flex;align-items:center;gap:6px;font-size:12px;"><input id="webComposePacerAutoOnTabClose" type="checkbox" checked> Gmail 탭 닫힘(<code>Ctrl+Enter</code>→<code>Ctrl+W</code>) 감지 시 완료 기록 후 다음 랜덤 대기 자동 시작</label>
+          <label style="display:flex;align-items:flex-start;gap:6px;font-size:12px;line-height:1.45;"><input id="webComposePacerAutoOnTabClose" type="checkbox" checked style="margin-top:3px;flex-shrink:0;"><span>Gmail 탭 닫힘(<code style="white-space:nowrap;">Ctrl+Enter</code>→<code style="white-space:nowrap;">Ctrl+W</code>) 감지 시 완료 기록 후 다음 랜덤 대기 자동 시작</span></label>
         </div>
       </div>
       <div class="actions" style="margin-top:6px;">
@@ -527,10 +529,15 @@
             <option value="SKIPPED">⏭️ 건너뜀 / 🚫 차단·기발송 제외</option>
           </select>
         </div>
-        <div style="display:flex;align-items:flex-end;">
+        <div style="display:flex;align-items:flex-end;gap:6px;flex-wrap:wrap;">
           <button type="button" id="btnRefreshWebComposeMonitor">🔄 실시간 상태 새로고침</button>
+          <button type="button" id="btnResetWebComposeHistory">🧹 마스터 보내기 히스토리 리셋 (중복 방지·큐 초기화)</button>
         </div>
       </div>
+      <label style="display:flex;align-items:center;gap:6px;margin-top:6px;font-size:11px;color:#475569;cursor:pointer;">
+        <input id="webComposeResetQuotaAlso" type="checkbox">
+        <span>마스터 리셋 시 로컬 1분/1시간/24시간 카운터·쿨다운도 함께 초기화 (테스트용 · 등록 계정과 <b>수신거부 차단 원장</b>은 법적 보호를 위해 절대 삭제되지 않습니다)</span>
+      </label>
       <div style="margin-top:6px;max-height:260px;overflow:auto;border:1px solid #e2e8f0;border-radius:6px;">
         <table style="width:100%;border-collapse:collapse;font-size:12px;">
           <thead>

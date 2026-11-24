@@ -1928,6 +1928,31 @@ function makeRefreshVaultFetch(counterRef) {
       assert.equal(blockedAfterWarn.ok, false);
       assert.equal(blockedAfterWarn.reason, 'ACCOUNT_WARNING_PROTECTION_PAUSE_ALL');
 
+      // RC20: Verify removeQueueEntry & resetMasterHistory (fail-closed confirmReset + preserves accounts & cross-provider suppressions!)
+      const beforeDelTotal = wcEngine.getStatus().queue.counts.total;
+      const rmRes = wcEngine.removeQueueEntry({ entryId: b1.issued[0].entryId });
+      assert.equal(rmRes.ok, true);
+      assert.equal(rmRes.removed, true);
+      assert.equal(rmRes.status.queue.counts.total, beforeDelTotal - 1);
+      const resetBlocked = wcEngine.resetMasterHistory({ confirmReset: false });
+      assert.equal(resetBlocked.ok, false);
+      assert.equal(resetBlocked.reason, 'RESET_CONFIRMATION_REQUIRED');
+      const resetOk = wcEngine.resetMasterHistory({ confirmReset: true, clearQuotaCounters: true, clearQueue: true });
+      assert.equal(resetOk.ok, true);
+      assert.equal(resetOk.suppressionsPreserved, true);
+      assert.equal(resetOk.status.accounts.length, 2, 'Master reset must preserve registered sender accounts');
+      assert.equal(resetOk.status.queue.counts.total, 0);
+      assert.equal(resetOk.status.accounts[0].sent24h, 0);
+      // Re-preparing same CSV after master reset MUST allow previously confirmed recipient again while STILL blocking cross-provider suppressed recipient!
+      const rePrepAfterReset = wcEngine.prepareWebComposeQueue({
+        csvText: 'email,name\nr1@example.test,R1\nsuppressed_wc@example.test,Sup',
+        campaignId: 'camp_wc_14',
+        consentAttested: true
+      });
+      assert.equal(rePrepAfterReset.ok, true);
+      assert.equal(rePrepAfterReset.status.queue.counts.PENDING, 1, 'Previously sent recipient becomes eligible again after master history reset');
+      assert.equal(rePrepAfterReset.status.queue.counts.SKIPPED_SUPPRESSED_CROSS_PROVIDER, 1, 'Unsubscribed / suppressed recipient MUST remain permanently blocked even after master reset');
+
       // (d) Sidecar HTTP auth + Studio HTML/JS/manifest policy contracts (default GMAIL_WEB_COMPOSE_ASSISTED, ZERO mail.google.com manifest host permission!)
       const sc14Port = 19400 + (process.pid % 2000);
       const sc14Dir = path.join(tmpRoot, 'sidecar_rc14');
@@ -1973,11 +1998,11 @@ function makeRefreshVaultFetch(counterRef) {
       assert.equal(isWithinSendingWindow(new Date('2026-11-23T14:00:00'), 9, 19), true);
       assert.equal(isWithinSendingWindow(new Date('2026-11-23T02:00:00'), 9, 19), false);
       assert.ok(Array.isArray(b1.status.queue.entriesPreview) && b1.status.queue.entriesPreview.length === b1.status.queue.counts.total && b1.status.queue.entriesPreview.length >= 4, 'getStatus must expose full entriesPreview for real-time list monitor');
-      assert.ok(htmlRc14.includes('id="webComposeConsentCheck"') && htmlRc14.includes('id="webComposeQuickRecipient"') && htmlRc14.includes('id="webComposeRecipientSummary"') && htmlRc14.includes('id="webComposeProxyWarning"') && htmlRc14.includes('id="btnReleaseChromeProxyForGmail"') && htmlRc14.includes('id="btnStartWebComposePacer"') && htmlRc14.includes('id="webComposeLiveListBody"') && htmlRc14.includes('id="webComposeAccountGauges"') && htmlRc14.includes('id="webComposeChromeSlot"'));
-      assert.ok(jsRc14.includes('webComposeAccountsInitialized') && jsRc14.includes('prepareWebComposeQueueAction') && jsRc14.includes('resolveWebComposeRecipientSource') && jsRc14.includes("'webComposeConsentCheck'") && jsRc14.includes('refreshChromeProxyWarningForGmail') && jsRc14.includes('RELEASE_CHROME_PROXY_FOR_GMAIL_WEB') && jsRc14.includes('REVERT_TO_PENDING') && jsRc14.includes('renderWebComposeLiveMonitor') && jsRc14.includes('webComposePacerTick') && jsRc14.includes('openedComposeTabMap') && jsRc14.includes('chromeSlotIndex') && jsRc14.includes('accounts.google.com'));
-      assert.ok(bgRc14.includes('GET_CHROME_PROXY_STATUS') && bgRc14.includes('RELEASE_CHROME_PROXY_FOR_GMAIL_WEB') && bgRc14.includes('AUTOFORM_CAMPAIGN_RUNNING'));
-      checks += 9;
-      console.log('PASS 17: RC14-RC18 multi-account Gmail Native Web Compose engine (AccountChooser + explicit /mail/u/N slot routing, open-redirect guard, warmup caps, fixed assignment, zero hopping, broken-proxy guard, live list monitor, randomized human pacer & zero DOM scraping) verified');
+      assert.ok(htmlRc14.includes('id="webComposeConsentCheck"') && htmlRc14.includes('id="webComposeQuickRecipient"') && htmlRc14.includes('id="webComposeRecipientSummary"') && htmlRc14.includes('id="webComposeProxyWarning"') && htmlRc14.includes('id="btnReleaseChromeProxyForGmail"') && htmlRc14.includes('id="btnStartWebComposePacer"') && htmlRc14.includes('id="webComposeLiveListBody"') && htmlRc14.includes('id="webComposeAccountGauges"') && htmlRc14.includes('id="webComposeChromeSlot"') && htmlRc14.includes('id="btnDeleteSelectedRecipients"') && htmlRc14.includes('id="btnClearAllRecipients"') && htmlRc14.includes('id="btnResetWebComposeHistory"'));
+      assert.ok(jsRc14.includes('webComposeAccountsInitialized') && jsRc14.includes('prepareWebComposeQueueAction') && jsRc14.includes('resolveWebComposeRecipientSource') && jsRc14.includes("'webComposeConsentCheck'") && jsRc14.includes('refreshChromeProxyWarningForGmail') && jsRc14.includes('RELEASE_CHROME_PROXY_FOR_GMAIL_WEB') && jsRc14.includes('REVERT_TO_PENDING') && jsRc14.includes('renderWebComposeLiveMonitor') && jsRc14.includes('renderWebComposeAccountGauges') && jsRc14.includes('webComposePacerTick') && jsRc14.includes('openedComposeTabMap') && jsRc14.includes('chromeSlotIndex') && jsRc14.includes('accounts.google.com') && jsRc14.includes('deleteRecipientsFromWorkCenter') && jsRc14.includes('RESET_GMAIL_WEB_COMPOSE_HISTORY') && jsRc14.includes('REMOVE_GMAIL_WEB_COMPOSE_ITEM'));
+      assert.ok(bgRc14.includes('GET_CHROME_PROXY_STATUS') && bgRc14.includes('RELEASE_CHROME_PROXY_FOR_GMAIL_WEB') && bgRc14.includes('AUTOFORM_CAMPAIGN_RUNNING') && bgRc14.includes('REMOVE_GMAIL_WEB_COMPOSE_ITEM') && bgRc14.includes('RESET_GMAIL_WEB_COMPOSE_HISTORY'));
+      checks += 11;
+      console.log('PASS 17: RC14-RC20 multi-account Gmail Native Web Compose engine (AccountChooser + explicit /mail/u/N slot, <=1850B guard, list delete, master history reset preserving suppressions, live 1s countdown ticker, randomized human pacer & zero DOM scraping) verified');
     }
 
     console.log(`XPIDER V7.1 Gmail Safe Delivery Engine suite: ${checks}/${checks} PASS; ZERO REAL SENDS`);
