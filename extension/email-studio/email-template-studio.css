@@ -47,4 +47,14 @@
 .blocked-img-chip{display:inline-block;padding:8px 12px;margin:6px 0;border:1px dashed #94a3b8;border-radius:6px;background:#f8fafc;color:#475569;font-size:12px}
 .preview-pane-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
 .preview-pane-actions button{padding:6px 10px;font-size:12px}
+.header-update-btn{background:#2563eb;color:#fff;border:1px solid #60a5fa;border-radius:20px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap}
+.header-update-btn:hover{background:#1d4ed8}
+.app-update-bar{max-width:1600px;margin:10px auto 0;padding:10px 20px}
+.app-update-card{background:#eff6ff;border:1px solid #93c5fd;border-radius:10px;padding:10px 14px;font-size:12px;color:#1e3a8a;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px}
+.app-update-card.ok{background:#ecfdf5;border-color:#86efac;color:#065f46}
+.app-update-card.err{background:#fef2f2;border-color:#fca5a5;color:#991b1b}
+.app-update-actions{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.app-update-actions button{padding:6px 11px;font-size:12px}
+.app-update-actions a{font-size:12px;font-weight:600;color:#1d4ed8;text-decoration:underline}
+
 

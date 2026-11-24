@@ -2,7 +2,17 @@
 <html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>XPIDER Email Template Studio</title>
 <link rel="stylesheet" href="email-template-studio.css"></head><body>
-<header class="header"><div><h1>XPIDER v7.0 · Email Template Studio</h1><div class="sub">vivpr.pro · 이미지 + HTML + 일반 텍스트 · 발송 전 품질 검토</div></div><div class="tag" id="modeTag"><span class="badge-test">🧪 TEST / REAL TEST 활성화</span> · <span class="badge-test" id="headerProdStateBadge">✅ 상용발송 잠금 해제 · 발송대상/자격 확인 필요</span></div></header>
+<header class="header"><div><h1>XPIDER v7.0 · Email Template Studio</h1><div class="sub">vivpr.pro · 이미지 + HTML + 일반 텍스트 · 발송 전 품질 검토</div></div><div class="tag" id="modeTag"><span class="badge-test">🧪 TEST / REAL TEST 활성화</span> · <span class="badge-test" id="headerProdStateBadge">✅ 상용발송 잠금 해제 · 발송대상/자격 확인 필요</span> · <button type="button" class="header-update-btn" id="btnCheckAppUpdate" title="GitHub 공식 릴리스에서 XPIDER 최신 버전 확인 및 안전 업데이트">🔄 최신 업데이트 확인</button></div></header>
+<div id="appUpdateBar" class="app-update-bar" style="display:none;" aria-live="polite">
+  <div id="appUpdateCard" class="app-update-card">
+    <div id="appUpdateStatusText" style="white-space:pre-wrap;flex:1;min-width:260px;">최신 업데이트 확인 대기 중...</div>
+    <div class="app-update-actions">
+      <button type="button" class="primary" id="btnInstallAppUpdate" style="display:none;">⬇️ 최신 버전 다운로드 후 설치</button>
+      <a id="appUpdateReleaseLink" href="https://github.com/goodkie/v-show/releases" target="_blank" rel="noopener noreferrer" style="display:none;">🔗 GitHub 릴리스 보기</a>
+      <button type="button" id="btnCloseAppUpdateBar">✖ 닫기</button>
+    </div>
+  </div>
+</div>
 <main class="wrap">
 <section class="panel" aria-label="템플릿 편집">
 <h2>이메일 작성</h2>

@@ -2072,8 +2072,113 @@ function makeRefreshVaultFetch(counterRef) {
       assert.equal(acct1Est.chromeSlotIndex, 2);
       assert.ok(jsRc14.includes('data-warmup-select') && jsRc14.includes('워밍업 (일 15통)') && jsRc14.includes('안정화 (일 30통)') && jsRc14.includes('숙성 (일 80통)'), 'Per-account 1-click warmup stage dropdown must be present in Studio UI');
 
-      checks += 16;
-      console.log('PASS 17: RC14-RC22 multi-account Gmail Native Web Compose, list delete, master history reset, live 1s countdown ticker, Gmail auto-text live preview, Text/HTML direct preview editors & per-account warmup dropdown verified');
+      // RC23: GitHub Official Auto-Updater (fail-closed SHA-256 & host allowlist) + Local-Only Personal Migration Seed (cross-PC DPAPI re-seal!)
+      const { XpiderAppUpdater, isAllowedGithubHttpsUrl } = require('../companion/xpider-app-updater');
+      const { packPersonalSeed, applyPersonalSeed } = require('../companion/xpider-personal-migration');
+      assert.equal(isAllowedGithubHttpsUrl('https://api.github.com/repos/goodkie/v-show/releases'), true);
+      assert.equal(isAllowedGithubHttpsUrl('https://github.com/goodkie/v-show/releases/download/v7.1.0-rc23-12345678/XPIDER_V7.1.0_SETUP_12345678.exe'), true);
+      assert.equal(isAllowedGithubHttpsUrl('https://objects.githubusercontent.com/some-asset'), true);
+      assert.equal(isAllowedGithubHttpsUrl('http://github.com/goodkie/v-show/releases'), false);
+      assert.equal(isAllowedGithubHttpsUrl('https://evil.example.test/XPIDER_V7.1.0_SETUP_12345678.exe'), false);
+
+      const updAppRoot = path.join(tmpRoot, 'upd_app');
+      const updStateDir = path.join(tmpRoot, 'upd_state');
+      fs.mkdirSync(updAppRoot, { recursive: true });
+      fs.writeFileSync(path.join(updAppRoot, 'RELEASE_PROVENANCE.json'), JSON.stringify({ packageVersion: '7.1.0', commitShort: '1111aaaa' }));
+      const fakeExeBuf = Buffer.from('MZ_SYNTHETIC_XPIDER_EXE_RC23_TEST_PAYLOAD');
+      const fakeExeSha = crypto.createHash('sha256').update(fakeExeBuf).digest('hex');
+      const mockReleases = [{
+        tag_name: 'v7.1.0-rc23-2222bbbb',
+        name: 'XPIDER V7.1.0-rc23',
+        draft: false,
+        prerelease: true,
+        published_at: '2026-11-24T08:00:00Z',
+        html_url: 'https://github.com/goodkie/v-show/releases/tag/v7.1.0-rc23-2222bbbb',
+        body: 'RC23 notes',
+        assets: [
+          { name: 'XPIDER_V7.1.0_SETUP_2222bbbb.exe', size: fakeExeBuf.length, browser_download_url: 'https://github.com/goodkie/v-show/releases/download/v7.1.0-rc23-2222bbbb/XPIDER_V7.1.0_SETUP_2222bbbb.exe' },
+          { name: 'XPIDER_V7.1.0_2222bbbb.sha256.txt', size: 100, browser_download_url: 'https://github.com/goodkie/v-show/releases/download/v7.1.0-rc23-2222bbbb/XPIDER_V7.1.0_2222bbbb.sha256.txt' }
+        ]
+      }];
+      let badHashMode = false;
+      const mockUpdFetch = async (u) => {
+        if (String(u).includes('/releases?')) {
+          return { ok: true, status: 200, headers: new Headers(), json: async () => mockReleases };
+        }
+        if (String(u).endsWith('.sha256.txt')) {
+          const h = badHashMode ? '0'.repeat(64) : fakeExeSha;
+          return { ok: true, status: 200, headers: new Headers(), text: async () => `${h}  XPIDER_V7.1.0_SETUP_2222bbbb.exe\n` };
+        }
+        if (String(u).endsWith('.exe')) {
+          return { ok: true, status: 200, headers: new Headers(), arrayBuffer: async () => fakeExeBuf.buffer.slice(fakeExeBuf.byteOffset, fakeExeBuf.byteOffset + fakeExeBuf.byteLength) };
+        }
+        return { ok: false, status: 404, headers: new Headers() };
+      };
+      let spawnedCmd = null;
+      const mockSpawn = (cmd, args) => { spawnedCmd = { cmd, args }; return { unref() {} }; };
+      const updater = new XpiderAppUpdater({ appRoot: updAppRoot, stateDir: updStateDir, trustedTestMode: true, fetchImpl: mockUpdFetch, spawnImpl: mockSpawn });
+      const chk = await updater.checkForUpdates();
+      assert.equal(chk.ok, true);
+      assert.equal(chk.updateAvailable, true);
+      assert.equal(chk.latest.tagName, 'v7.1.0-rc23-2222bbbb');
+      const noConfirm = await updater.downloadAndInstallUpdate({ confirmInstall: false });
+      assert.equal(noConfirm.ok, false);
+      assert.equal(noConfirm.reason, 'UPDATE_CONFIRMATION_REQUIRED');
+      badHashMode = true;
+      const badSha = await updater.downloadAndInstallUpdate({ confirmInstall: true, tagName: 'v7.1.0-rc23-2222bbbb' });
+      assert.equal(badSha.ok, false);
+      assert.equal(badSha.reason, 'UPDATE_SHA256_MISMATCH');
+      assert.equal(spawnedCmd, null, 'Mismatched SHA-256 must NEVER execute downloaded binary');
+      badHashMode = false;
+      const goodInst = await updater.downloadAndInstallUpdate({ confirmInstall: true, tagName: 'v7.1.0-rc23-2222bbbb' });
+      assert.equal(goodInst.ok, true);
+      assert.equal(goodInst.status, 'INSTALLER_LAUNCHED');
+      assert.equal(goodInst.verifiedSha256, fakeExeSha);
+      assert.ok(spawnedCmd && spawnedCmd.args.includes('--silent') && spawnedCmd.args.includes('--restart-sidecar'));
+
+      // Local-only personal migration seed: pack on PC1 (box1) -> apply on PC2 (box2) with cross-PC DPAPI re-seal!
+      const pc1State = path.join(tmpRoot, 'pc1_state');
+      const pc2State = path.join(tmpRoot, 'pc2_state');
+      const seedBin = path.join(tmpRoot, 'XPIDER_PERSONAL_SEED.bin');
+      fs.mkdirSync(pc1State, { recursive: true });
+      const pc1Box = {
+        encrypt: s => 'testbox:pc1:' + Buffer.from(s, 'utf8').toString('base64'),
+        decrypt: c => Buffer.from(String(c).replace(/^testbox:pc1:/, ''), 'base64').toString('utf8')
+      };
+      const pc2Box = {
+        encrypt: s => 'testbox:pc2:' + Buffer.from(s, 'utf8').toString('base64'),
+        decrypt: c => Buffer.from(String(c).replace(/^testbox:pc2:/, ''), 'base64').toString('utf8')
+      };
+      const synthResend = ['re', 'synth', 'key', '1234567890'].join('_');
+      const synthGemini = ['AI', 'zaSynthTestKey1234567890abcdef'].join('');
+      const synthRefresh = ['1', '//synth-refresh-token-abc'].join('');
+      fs.writeFileSync(path.join(pc1State, '.resend_api_key'), synthResend);
+      fs.writeFileSync(path.join(pc1State, '.ai_copy_api_key'), synthGemini);
+      fs.writeFileSync(path.join(pc1State, '.gmail_domain_config.json'), JSON.stringify({ brandDomain: 'brand.example', unsubscribeBaseUrl: 'https://unsubscribe.brand.example' }));
+      fs.writeFileSync(path.join(pc1State, '.gmail_oauth_client.dpapi.json'), JSON.stringify({ version: 1, clientIdEnc: pc1Box.encrypt('synth-client-id.apps.googleusercontent.com'), clientSecretEnc: pc1Box.encrypt('synth-client-sec-1234') }));
+      fs.writeFileSync(path.join(pc1State, '.gmail_accounts_vault.dpapi.json'), JSON.stringify({ version: 1, accounts: [{ id: 'g1', email: 'owner@example.test', refreshTokenEnc: pc1Box.encrypt(synthRefresh) }] }));
+
+      const packed = packPersonalSeed({ sourceStateDir: pc1State, outSeedPath: seedBin, cryptoBox: pc1Box });
+      assert.equal(packed.ok, true);
+      assert.ok(packed.includedCount >= 5);
+      const applied = applyPersonalSeed({ seedPath: seedBin, targetStateDir: pc2State, deleteSeedAfterApply: true, trustedTestMode: true, cryptoBox: pc2Box });
+      assert.equal(applied.ok, true);
+      assert.equal(fs.existsSync(seedBin), false, 'Temp seed file must be deleted after apply');
+      assert.equal(fs.readFileSync(path.join(pc2State, '.resend_api_key'), 'utf8'), synthResend);
+      assert.equal(fs.readFileSync(path.join(pc2State, '.ai_copy_api_key'), 'utf8'), synthGemini);
+      const pc2Client = JSON.parse(fs.readFileSync(path.join(pc2State, '.gmail_oauth_client.dpapi.json'), 'utf8'));
+      assert.ok(pc2Client.clientIdEnc.startsWith('testbox:pc2:'), 'OAuth client must be re-sealed under PC2 DPAPI');
+      assert.equal(pc2Box.decrypt(pc2Client.clientIdEnc), 'synth-client-id.apps.googleusercontent.com');
+      const pc2Vault = JSON.parse(fs.readFileSync(path.join(pc2State, '.gmail_accounts_vault.dpapi.json'), 'utf8'));
+      assert.ok(pc2Vault.accounts[0].refreshTokenEnc.startsWith('testbox:pc2:'), 'Refresh token must be re-sealed under PC2 DPAPI');
+      assert.equal(pc2Box.decrypt(pc2Vault.accounts[0].refreshTokenEnc), synthRefresh);
+
+      assert.ok(htmlRc14.includes('id="btnCheckAppUpdate"') && htmlRc14.includes('id="btnInstallAppUpdate"') && htmlRc14.includes('id="appUpdateBar"'));
+      assert.ok(jsRc14.includes('CHECK_APP_UPDATE') && jsRc14.includes('INSTALL_APP_UPDATE'));
+      assert.ok(bgRc14.includes('CHECK_APP_UPDATE') && bgRc14.includes('INSTALL_APP_UPDATE'));
+
+      checks += 21;
+      console.log('PASS 17: RC14-RC23 multi-account Gmail Native Web Compose, live preview editors, per-account warmup dropdown, GitHub SHA-256 auto-updater & cross-PC DPAPI local migration verified');
     }
 
     console.log(`XPIDER V7.1 Gmail Safe Delivery Engine suite: ${checks}/${checks} PASS; ZERO REAL SENDS`);

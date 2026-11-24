@@ -4467,7 +4467,9 @@ const _handleMainMessageInner = (request, sender, sendResponse) => {
         case 'MARK_GMAIL_WEB_COMPOSE_ITEM':
         case 'PAUSE_GMAIL_WEB_COMPOSE_QUEUE':
         case 'REMOVE_GMAIL_WEB_COMPOSE_ITEM':
-        case 'RESET_GMAIL_WEB_COMPOSE_HISTORY': {
+        case 'RESET_GMAIL_WEB_COMPOSE_HISTORY':
+        case 'CHECK_APP_UPDATE':
+        case 'INSTALL_APP_UPDATE': {
             (async () => {
                 const bgT0 = Date.now();
                 const reqPort = Number(request.sidecarPort);
@@ -4531,7 +4533,7 @@ const _handleMainMessageInner = (request, sender, sendResponse) => {
                         });
                     };
                     let token = explicitToken || await pairTok(false);
-                    const isPost = request.action === 'SYNC_EMAIL_PRODUCTION_RECIPIENTS' || request.action === 'RUN_EMAIL_PRODUCTION_QUEUE' || request.action === 'STOP_EMAIL_PRODUCTION_QUEUE' || request.action === 'SEND_REAL_TEST_EMAIL' || request.action === 'RECONCILE_CAMPAIGN_RESEND' || request.action === 'PREVIEW_SECOND_WAVE' || request.action === 'START_SECOND_WAVE' || request.action === 'SAVE_GEMINI_COPY_API_KEY' || request.action === 'TEST_GEMINI_COPY_CONNECTION' || request.action === 'REQUEST_EMAIL_COPY_SUGGESTION' || request.action === 'VERIFY_RECIPIENT_DOMAINS_DNS' || request.action === 'SAVE_IMAGE_HOST_CONFIG' || request.action === 'UPLOAD_EMAIL_IMAGE' || request.action === 'SAVE_UNSUBSCRIBE_CONFIG' || request.action === 'SAVE_GMAIL_OAUTH_CLIENT' || request.action === 'START_GMAIL_OAUTH' || request.action === 'UPDATE_GMAIL_ACCOUNT' || request.action === 'DISCONNECT_GMAIL_ACCOUNT' || request.action === 'SEND_GMAIL_SELF_TEST' || request.action === 'PREPARE_GMAIL_QUEUE' || request.action === 'RUN_GMAIL_PRODUCTION_QUEUE' || request.action === 'STOP_GMAIL_PRODUCTION_QUEUE' || request.action === 'CHECK_GMAIL_HYGIENE' || request.action === 'OPTIMIZE_GMAIL_DELIVERABILITY' || request.action === 'OPTIMIZE_EMAIL_DELIVERABILITY' || request.action === 'SAVE_GMAIL_DOMAIN_CONFIG' || request.action === 'CHECK_GMAIL_DOMAIN_ALIGNMENT' || request.action === 'SAVE_FULL_CAMPAIGN' || request.action === 'DELETE_SAVED_CAMPAIGN' || request.action === 'SAVE_GMAIL_WEB_COMPOSE_ACCOUNT' || request.action === 'DELETE_GMAIL_WEB_COMPOSE_ACCOUNT' || request.action === 'PREPARE_GMAIL_WEB_COMPOSE_QUEUE' || request.action === 'NEXT_GMAIL_WEB_COMPOSE_BATCH' || request.action === 'MARK_GMAIL_WEB_COMPOSE_ITEM' || request.action === 'PAUSE_GMAIL_WEB_COMPOSE_QUEUE' || request.action === 'REMOVE_GMAIL_WEB_COMPOSE_ITEM' || request.action === 'RESET_GMAIL_WEB_COMPOSE_HISTORY';
+                    const isPost = request.action === 'SYNC_EMAIL_PRODUCTION_RECIPIENTS' || request.action === 'RUN_EMAIL_PRODUCTION_QUEUE' || request.action === 'STOP_EMAIL_PRODUCTION_QUEUE' || request.action === 'SEND_REAL_TEST_EMAIL' || request.action === 'RECONCILE_CAMPAIGN_RESEND' || request.action === 'PREVIEW_SECOND_WAVE' || request.action === 'START_SECOND_WAVE' || request.action === 'SAVE_GEMINI_COPY_API_KEY' || request.action === 'TEST_GEMINI_COPY_CONNECTION' || request.action === 'REQUEST_EMAIL_COPY_SUGGESTION' || request.action === 'VERIFY_RECIPIENT_DOMAINS_DNS' || request.action === 'SAVE_IMAGE_HOST_CONFIG' || request.action === 'UPLOAD_EMAIL_IMAGE' || request.action === 'SAVE_UNSUBSCRIBE_CONFIG' || request.action === 'SAVE_GMAIL_OAUTH_CLIENT' || request.action === 'START_GMAIL_OAUTH' || request.action === 'UPDATE_GMAIL_ACCOUNT' || request.action === 'DISCONNECT_GMAIL_ACCOUNT' || request.action === 'SEND_GMAIL_SELF_TEST' || request.action === 'PREPARE_GMAIL_QUEUE' || request.action === 'RUN_GMAIL_PRODUCTION_QUEUE' || request.action === 'STOP_GMAIL_PRODUCTION_QUEUE' || request.action === 'CHECK_GMAIL_HYGIENE' || request.action === 'OPTIMIZE_GMAIL_DELIVERABILITY' || request.action === 'OPTIMIZE_EMAIL_DELIVERABILITY' || request.action === 'SAVE_GMAIL_DOMAIN_CONFIG' || request.action === 'CHECK_GMAIL_DOMAIN_ALIGNMENT' || request.action === 'SAVE_FULL_CAMPAIGN' || request.action === 'DELETE_SAVED_CAMPAIGN' || request.action === 'SAVE_GMAIL_WEB_COMPOSE_ACCOUNT' || request.action === 'DELETE_GMAIL_WEB_COMPOSE_ACCOUNT' || request.action === 'PREPARE_GMAIL_WEB_COMPOSE_QUEUE' || request.action === 'NEXT_GMAIL_WEB_COMPOSE_BATCH' || request.action === 'MARK_GMAIL_WEB_COMPOSE_ITEM' || request.action === 'PAUSE_GMAIL_WEB_COMPOSE_QUEUE' || request.action === 'REMOVE_GMAIL_WEB_COMPOSE_ITEM' || request.action === 'RESET_GMAIL_WEB_COMPOSE_HISTORY' || request.action === 'INSTALL_APP_UPDATE';
                     const cid = encodeURIComponent(String(request.campaignId || 'default'));
                     const cutoff = encodeURIComponent(String(request.cutoffHours ?? 24));
                     const logLimit = Math.max(10, Math.min(300, Number(request.limit || 150)));
@@ -4587,10 +4589,14 @@ const _handleMainMessageInner = (request, sender, sendResponse) => {
                         MARK_GMAIL_WEB_COMPOSE_ITEM: '/email/gmail/web-compose/queue/mark',
                         PAUSE_GMAIL_WEB_COMPOSE_QUEUE: '/email/gmail/web-compose/queue/pause',
                         REMOVE_GMAIL_WEB_COMPOSE_ITEM: '/email/gmail/web-compose/queue/remove',
-                        RESET_GMAIL_WEB_COMPOSE_HISTORY: '/email/gmail/web-compose/history/reset'
+                        RESET_GMAIL_WEB_COMPOSE_HISTORY: '/email/gmail/web-compose/history/reset',
+                        CHECK_APP_UPDATE: '/app/update/check',
+                        INSTALL_APP_UPDATE: '/app/update/install'
                     };
                     const url = `http://127.0.0.1:${ctrlPort}${routeMap[request.action]}`;
-                    const timeoutMs = request.action === 'RECONCILE_CAMPAIGN_RESEND'
+                    const timeoutMs = request.action === 'INSTALL_APP_UPDATE'
+                        ? 120000
+                        : (request.action === 'RECONCILE_CAMPAIGN_RESEND'
                         ? 90000
                         : (request.action === 'SYNC_EMAIL_PRODUCTION_RECIPIENTS'
                             ? 45000
@@ -4598,7 +4604,7 @@ const _handleMainMessageInner = (request, sender, sendResponse) => {
                                 ? 45000
                                 : ((request.action === 'SEND_REAL_TEST_EMAIL' || request.action === 'RUN_EMAIL_PRODUCTION_QUEUE' || request.action === 'SEND_GMAIL_SELF_TEST' || request.action === 'RUN_GMAIL_PRODUCTION_QUEUE')
                                     ? 35000
-                                    : ((request.action === 'VERIFY_RECIPIENT_DOMAINS_DNS' || request.action === 'START_SECOND_WAVE' || request.action === 'REQUEST_EMAIL_COPY_SUGGESTION' || request.action === 'UPLOAD_EMAIL_IMAGE') ? 25000 : 15000))));
+                                    : ((request.action === 'VERIFY_RECIPIENT_DOMAINS_DNS' || request.action === 'START_SECOND_WAVE' || request.action === 'REQUEST_EMAIL_COPY_SUGGESTION' || request.action === 'UPLOAD_EMAIL_IMAGE') ? 25000 : 15000)))));
                     const doFetch = async (tok) => {
                         const ctrl = new AbortController();
                         const timer = setTimeout(() => ctrl.abort(), timeoutMs);

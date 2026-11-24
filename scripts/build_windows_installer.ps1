@@ -116,6 +116,9 @@ Code Signing Status: UNSIGNED (no code-signing certificate bundled)
 
   # 6. Strict leak & path audit across all staged text files BEFORE zipping/compiling!
   Write-Output "[AUDIT] Scanning staged payload for hardcoded workspace paths and secrets..."
+  if (Test-Path (Join-Path $stageDir "XPIDER_PERSONAL_SEED.bin")) {
+    throw "PERSONAL_SEED_FORBIDDEN_IN_PUBLIC_BUILD"
+  }
   $scanFiles = Get-ChildItem $stageDir -Recurse -File | Where-Object { $_.Extension -in @(".js",".json",".html",".css",".bat",".txt",".md") -and $_.FullName -notmatch "node_modules" }
   foreach ($f in $scanFiles) {
     $txt = Get-Content $f.FullName -Raw -ErrorAction SilentlyContinue

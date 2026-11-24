@@ -24,6 +24,7 @@ const { GmailCampaignRunner } = require('./gmail-campaign-runner');
 const { GmailWebComposeEngine } = require('./gmail-web-compose-engine');
 const { optimizeAndScoreEmailMessage } = require('./gmail-deliverability-optimizer');
 const { EmailCampaignStore } = require('./email-campaign-store');
+const { XpiderAppUpdater } = require('./xpider-app-updater');
 
 const DEFAULT_SIDECAR_PORT = 18990;
 const SIDECAR_BUILD_ID = 'V7.0.0-OWNER-BETA-TEST-SEND-SIDECAR-20261116-LOCKED17';
@@ -55,7 +56,8 @@ class EmailTestSidecar {
     if (!this.trustedTestMode) {
       const forbiddenKeys = [
         'apiKeyOverride', 'transportImpl', 'token', 'stateDir', 'tokenFile', 'pidFile', 'ledgerFile', 'localKeyFile', 'fsImpl',
-        'gmailFetchImpl', 'gmailSyncFetchImpl', 'gmailCryptoBox', 'gmailNowFn', 'gmailDnsResolver'
+        'gmailFetchImpl', 'gmailSyncFetchImpl', 'gmailCryptoBox', 'gmailNowFn', 'gmailDnsResolver',
+        'updaterFetchImpl', 'updaterSpawnImpl'
       ];
       for (const k of forbiddenKeys) {
         if (options[k] !== undefined && options[k] !== null) {
@@ -125,6 +127,13 @@ class EmailTestSidecar {
     this.campaignStore = new EmailCampaignStore({
       stateDir: this.stateDir,
       trustedTestMode: this.trustedTestMode
+    });
+    this.appUpdater = new XpiderAppUpdater({
+      appRoot: path.resolve(__dirname, '..'),
+      stateDir: this.stateDir,
+      trustedTestMode: this.trustedTestMode,
+      fetchImpl: this.trustedTestMode ? options.updaterFetchImpl : null,
+      spawnImpl: this.trustedTestMode ? options.updaterSpawnImpl : null
     });
     this.diagLogs = [];
     this._diagSeq = 0;
@@ -1607,6 +1616,60 @@ class EmailTestSidecar {
               this._recordDiag('ERROR', 'GMAIL', 'EXCEPTION', { error: err?.code || err?.message || 'UNKNOWN' });
               res.writeHead(400, { 'Content-Type': 'application/json' });
               res.end(JSON.stringify({ ok: false, status: 'BLOCKED', reason: err?.code || 'GMAIL_EXCEPTION', error: err?.message || 'GMAIL_EXCEPTION' }));
+            }
+          });
+          return;
+        }
+
+        if (pathname === '/app/update/check' && req.method === 'GET') {
+          this.appUpdater.checkForUpdates({ includePrereleases: true }).then((out) => {
+            this._recordDiag(out.ok ? 'INFO' : 'WARN', 'APP_UPDATER', 'CHECK', {
+              ok: out.ok,
+              updateAvailable: Boolean(out.updateAvailable),
+              currentCommit: out.current?.commitShort || null,
+              latestTag: out.latest?.tagName || null,
+              reason: out.reason || null
+            });
+            res.writeHead(out.statusCode || (out.ok ? 200 : 502), { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify(out));
+          }).catch((err) => {
+            res.writeHead(502, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ ok: false, reason: 'UPDATE_CHECK_EXCEPTION', message: err?.message || 'UPDATE_CHECK_EXCEPTION' }));
+          });
+          return;
+        }
+
+        if (pathname === '/app/update/install' && req.method === 'POST') {
+          let raw = '';
+          let tooLarge = false;
+          req.on('data', chunk => {
+            raw += chunk;
+            if (raw.length > 16384) {
+              tooLarge = true;
+              req.destroy();
+            }
+          });
+          req.on('end', async () => {
+            if (tooLarge) return;
+            try {
+              const payload = raw ? JSON.parse(raw) : {};
+              const out = await this.appUpdater.downloadAndInstallUpdate({
+                confirmInstall: payload.confirmInstall === true,
+                tagName: typeof payload.tagName === 'string' ? payload.tagName : '',
+                launchSilent: payload.launchSilent !== false,
+                dryRun: Boolean(this.trustedTestMode && payload.dryRun === true)
+              });
+              this._recordDiag(out.ok ? 'INFO' : 'WARN', 'APP_UPDATER', 'INSTALL', {
+                ok: out.ok,
+                status: out.status || null,
+                tagName: out.tagName || null,
+                reason: out.reason || null
+              });
+              res.writeHead(out.statusCode || (out.ok ? 200 : 400), { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify(out));
+            } catch (err) {
+              res.writeHead(400, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ ok: false, reason: 'UPDATE_INSTALL_EXCEPTION', message: err?.message || 'UPDATE_INSTALL_EXCEPTION' }));
             }
           });
           return;

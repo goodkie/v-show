@@ -16,6 +16,7 @@ namespace XpiderSetup
         private const string APP_VERSION = "7.1.0";
         private const string EXTENSION_ID = "ldlijlaccfeelfdhgnjbibniocefckjj";
         private const string PAYLOAD_RESOURCE = "XPIDER_PAYLOAD.zip";
+        private const string PERSONAL_SEED_RESOURCE = "XPIDER_PERSONAL_SEED.bin";
         private const string UNINSTALL_REG_KEY = @"Software\Microsoft\Windows\CurrentVersion\Uninstall\XPIDER_AutoForm_Sender_Pro";
         private const string EMAIL_HOST_NAME = "com.xpider.email_sidecar";
         private const string RELAY_HOST_NAME = "com.xpider.privacy_relay";
@@ -30,6 +31,9 @@ namespace XpiderSetup
             bool skipShortcuts = false;
             bool skipBrowser = false;
             bool showInfo = false;
+            bool restartSidecar = false;
+            bool forceSeed = false;
+            int delayMs = 0;
             string installDir = Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                 "XPIDER", "App");
@@ -54,6 +58,16 @@ namespace XpiderSetup
                     skipShortcuts = true;
                 else if (a.Equals("--skip-browser", StringComparison.OrdinalIgnoreCase))
                     skipBrowser = true;
+                else if (a.Equals("--restart-sidecar", StringComparison.OrdinalIgnoreCase))
+                    restartSidecar = true;
+                else if (a.Equals("--force-seed", StringComparison.OrdinalIgnoreCase))
+                    forceSeed = true;
+                else if (a.Equals("--delay-ms", StringComparison.OrdinalIgnoreCase) && i + 1 < args.Length)
+                {
+                    int parsedDelay;
+                    if (int.TryParse(args[++i], out parsedDelay))
+                        delayMs = Math.Max(0, Math.Min(10000, parsedDelay));
+                }
                 else if (a.Equals("--info", StringComparison.OrdinalIgnoreCase) || a.Equals("--version", StringComparison.OrdinalIgnoreCase))
                     showInfo = true;
                 else if (a.Equals("--install-dir", StringComparison.OrdinalIgnoreCase) && i + 1 < args.Length)
@@ -62,15 +76,22 @@ namespace XpiderSetup
                     stateDir = Path.GetFullPath(args[++i]);
             }
 
+            bool hasPersonalSeed = HasEmbeddedPersonalSeed();
             if (showInfo)
             {
                 Console.WriteLine("APP=" + APP_NAME);
                 Console.WriteLine("VERSION=" + APP_VERSION);
                 Console.WriteLine("SIGNED=UNSIGNED");
                 Console.WriteLine("EXTENSION_ID=" + EXTENSION_ID);
+                Console.WriteLine("PERSONAL_SEED_BUNDLED=" + (hasPersonalSeed ? "TRUE_LOCAL_ONLY" : "FALSE_PUBLIC_CLEAN"));
                 Console.WriteLine("DEFAULT_INSTALL_DIR=" + installDir);
                 Console.WriteLine("DEFAULT_STATE_DIR=" + stateDir);
                 return 0;
+            }
+
+            if (delayMs > 0)
+            {
+                System.Threading.Thread.Sleep(delayMs);
             }
 
             if (silent)
@@ -83,7 +104,7 @@ namespace XpiderSetup
                     }
                     else
                     {
-                        RunInstall(installDir, stateDir, skipRegistry, skipShortcuts, skipBrowser, msg => Console.WriteLine(msg));
+                        RunInstall(installDir, stateDir, skipRegistry, skipShortcuts, skipBrowser, restartSidecar, forceSeed, msg => Console.WriteLine(msg));
                     }
                     return 0;
                 }
@@ -96,8 +117,20 @@ namespace XpiderSetup
 
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new SetupForm(installDir, stateDir, uninstall));
+            Application.Run(new SetupForm(installDir, stateDir, uninstall, hasPersonalSeed));
             return 0;
+        }
+
+        internal static bool HasEmbeddedPersonalSeed()
+        {
+            try
+            {
+                using (Stream s = Assembly.GetExecutingAssembly().GetManifestResourceStream(PERSONAL_SEED_RESOURCE))
+                {
+                    return s != null;
+                }
+            }
+            catch { return false; }
         }
 
         internal static void StopInstalledSidecar(string installDir, Action<string> log)
@@ -143,7 +176,7 @@ namespace XpiderSetup
             }
         }
 
-        internal static void RunInstall(string installDir, string stateDir, bool skipRegistry, bool skipShortcuts, bool skipBrowser, Action<string> log)
+        internal static void RunInstall(string installDir, string stateDir, bool skipRegistry, bool skipShortcuts, bool skipBrowser, bool restartSidecar, bool forceSeed, Action<string> log)
         {
             log("Installing " + APP_NAME + " v" + APP_VERSION + " (UNSIGNED user-scope package)...");
             log("Install directory: " + installDir);
@@ -202,6 +235,50 @@ namespace XpiderSetup
             string nodeExe = Path.Combine(installDir, "runtime", "node.exe");
             if (!File.Exists(nodeExe))
                 throw new FileNotFoundException("Bundled Node runtime missing after extraction: " + nodeExe);
+
+            // LOCAL-ONLY Personal Build hook: apply bundled settings & re-seal DPAPI OAuth vault for this PC
+            using (Stream seedStream = asm.GetManifestResourceStream(PERSONAL_SEED_RESOURCE))
+            {
+                if (seedStream != null)
+                {
+                    string migrationScript = Path.Combine(installDir, "companion", "xpider-personal-migration.js");
+                    if (File.Exists(migrationScript))
+                    {
+                        string tmpSeed = Path.Combine(Path.GetTempPath(), "xpider_seed_" + Guid.NewGuid().ToString("N") + ".bin");
+                        try
+                        {
+                            using (FileStream fsOut = File.Create(tmpSeed))
+                            {
+                                seedStream.CopyTo(fsOut);
+                            }
+                            string seedArgs = "\"" + migrationScript + "\" --apply-seed --seed \"" + tmpSeed + "\" --target-state-dir \"" + stateDir + "\" --delete-after" + (forceSeed ? " --overwrite" : "");
+                            ProcessStartInfo psi = new ProcessStartInfo
+                            {
+                                FileName = nodeExe,
+                                Arguments = seedArgs,
+                                UseShellExecute = false,
+                                RedirectStandardOutput = true,
+                                RedirectStandardError = true,
+                                CreateNoWindow = true
+                            };
+                            using (Process p = Process.Start(psi))
+                            {
+                                string stdOut = p.StandardOutput.ReadToEnd();
+                                string stdErr = p.StandardError.ReadToEnd();
+                                p.WaitForExit(30000);
+                                if (p.ExitCode != 0)
+                                    throw new InvalidOperationException("Personal settings seed failed (exit=" + p.ExitCode + "): " + stdErr.Trim());
+                                foreach (string line in stdOut.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries))
+                                    log("[PERSONAL_SEED] " + line);
+                            }
+                        }
+                        finally
+                        {
+                            try { if (File.Exists(tmpSeed)) File.Delete(tmpSeed); } catch { }
+                        }
+                    }
+                }
+            }
 
             // Write native host wrappers in stateDir\native_host pointing strictly to install-relative runtime\node.exe
             string nhDir = Path.Combine(stateDir, "native_host");
@@ -285,6 +362,31 @@ namespace XpiderSetup
             log("INSTALL_COMPLETE: " + installDir);
             log("EXTENSION_LOAD_DIR: " + Path.Combine(installDir, "extension"));
             log("NOTE: Per Chrome/Edge policy, Secure Preferences is NOT modified. Load the unpacked extension folder once in chrome://extensions or edge://extensions (pinned ID " + EXTENSION_ID + ").");
+
+            if (restartSidecar)
+            {
+                try
+                {
+                    string sidecarCli = Path.Combine(installDir, "companion", "email-test-sidecar-cli.js");
+                    if (File.Exists(sidecarCli))
+                    {
+                        ProcessStartInfo sPsi = new ProcessStartInfo
+                        {
+                            FileName = nodeExe,
+                            Arguments = "\"" + sidecarCli + "\"",
+                            WorkingDirectory = installDir,
+                            UseShellExecute = false,
+                            CreateNoWindow = true
+                        };
+                        Process.Start(sPsi);
+                        log("SIDECAR_RESTARTED: " + sidecarCli);
+                    }
+                }
+                catch (Exception scStartEx)
+                {
+                    log("Warning restarting Sidecar: " + scStartEx.Message);
+                }
+            }
 
             if (!skipBrowser)
             {
@@ -417,10 +519,10 @@ namespace XpiderSetup
             private readonly Button btnUninstall;
             private readonly string stateDir;
 
-            public SetupForm(string defaultInstallDir, string defaultStateDir, bool startUninstallMode)
+            public SetupForm(string defaultInstallDir, string defaultStateDir, bool startUninstallMode, bool hasPersonalSeed)
             {
                 this.stateDir = defaultStateDir;
-                this.Text = APP_NAME + " v" + APP_VERSION + " Setup (UNSIGNED)";
+                this.Text = APP_NAME + " v" + APP_VERSION + (hasPersonalSeed ? " Setup [PERSONAL LOCAL-ONLY · DO NOT UPLOAD]" : " Setup (UNSIGNED)");
                 this.Size = new Size(640, 480);
                 this.StartPosition = FormStartPosition.CenterScreen;
                 this.FormBorderStyle = FormBorderStyle.FixedDialog;
@@ -428,9 +530,11 @@ namespace XpiderSetup
 
                 Label lblHeader = new Label
                 {
-                    Text = APP_NAME + " v" + APP_VERSION + " — Windows 10/11 x64 사용자 설치 (UNSIGNED)\n" +
+                    Text = APP_NAME + " v" + APP_VERSION + (hasPersonalSeed ? " — 개인 전용 로컬 통합 설치기 (API 키·OAuth 포함 · GitHub 업로드 금지)\n" : " — Windows 10/11 x64 사용자 설치 (UNSIGNED)\n") +
                            "• Node.js 런타임 내장 (별도 Node 설치 불필요 · 관리자 권한 불필요)\n" +
-                           "• 기존 V7 데이터(%LOCALAPPDATA%\\XPIDER\\Sidecar) 보존 · 새 PC에서는 DPAPI 키/OAuth 재연결 필요\n" +
+                           (hasPersonalSeed
+                               ? "• 개인 API 키·이미지 호스팅·수신거부·Gmail OAuth(이 PC용 DPAPI 재암호화)·계정 목록을 자동 복원합니다\n"
+                               : "• 기존 V7 데이터(%LOCALAPPDATA%\\XPIDER\\Sidecar) 보존 · 새 PC에서는 DPAPI 키/OAuth 재연결 필요\n") +
                            "• 브라우저 정책 준수: Secure Preferences 미변경 · 확장 폴더 로드 시 고정 ID (" + EXTENSION_ID + ") 유지",
                     Location = new Point(16, 12),
                     Size = new Size(595, 76)
@@ -502,7 +606,7 @@ namespace XpiderSetup
                 btnUninstall.Enabled = false;
                 try
                 {
-                    RunInstall(txtInstallDir.Text.Trim(), stateDir, false, false, false, AppendLog);
+                    RunInstall(txtInstallDir.Text.Trim(), stateDir, false, false, false, true, false, AppendLog);
                     string extPath = Path.Combine(txtInstallDir.Text.Trim(), "extension");
                     try { Clipboard.SetText(extPath); } catch { }
                     MessageBox.Show(

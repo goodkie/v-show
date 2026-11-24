@@ -1342,7 +1342,9 @@ if (typeof window !== 'undefined') {
 
 function callBg(msg, opts = {}) {
   const action = String(msg?.action || 'UNKNOWN');
-  const defaultTimeoutMs = action === 'RECONCILE_CAMPAIGN_RESEND'
+  const defaultTimeoutMs = action === 'INSTALL_APP_UPDATE'
+    ? 130000
+    : (action === 'RECONCILE_CAMPAIGN_RESEND'
     ? 95000
     : (action === 'SYNC_EMAIL_PRODUCTION_RECIPIENTS'
       ? 50000
@@ -1350,7 +1352,7 @@ function callBg(msg, opts = {}) {
         ? 50000
         : ((action === 'SEND_REAL_TEST_EMAIL' || action === 'RUN_EMAIL_PRODUCTION_QUEUE' || action === 'SEND_GMAIL_SELF_TEST' || action === 'RUN_GMAIL_PRODUCTION_QUEUE')
           ? 45000
-          : ((action === 'VERIFY_RECIPIENT_DOMAINS_DNS' || action === 'START_SECOND_WAVE' || action === 'UPLOAD_EMAIL_IMAGE') ? 30000 : 20000))));
+          : ((action === 'VERIFY_RECIPIENT_DOMAINS_DNS' || action === 'START_SECOND_WAVE' || action === 'UPLOAD_EMAIL_IMAGE') ? 30000 : 20000)))));
   const timeoutMs = Number.isFinite(opts.timeoutMs) ? opts.timeoutMs : defaultTimeoutMs;
   const startedAt = Date.now();
   const isNoisyPoll = action === 'GET_CAMPAIGN_PROGRESS' || action === 'GET_EMAIL_SIDECAR_LOGS';
@@ -7465,6 +7467,121 @@ function createBuiltinRecipientManager() {
         await refreshGmailWebComposeStatus();
       }
     });
+  }
+
+  // ===== RC23: GitHub Official Release Auto-Updater Controller (Explicit Opt-In + SHA-256 Verified) =====
+  let lastCheckedUpdateInfo = null;
+
+  if (el('btnCloseAppUpdateBar')) {
+    el('btnCloseAppUpdateBar').onclick = () => {
+      if (el('appUpdateBar')) el('appUpdateBar').style.display = 'none';
+    };
+  }
+
+  if (el('btnCheckAppUpdate')) {
+    el('btnCheckAppUpdate').onclick = async () => {
+      const bar = el('appUpdateBar');
+      const card = el('appUpdateCard');
+      const txt = el('appUpdateStatusText');
+      const instBtn = el('btnInstallAppUpdate');
+      const relLink = el('appUpdateReleaseLink');
+      if (bar) bar.style.display = 'block';
+      if (card) card.className = 'app-update-card';
+      if (txt) txt.textContent = '⏳ GitHub 공식 릴리스(goodkie/v-show)에서 XPIDER 최신 버전을 확인하는 중...';
+      if (instBtn) instBtn.style.display = 'none';
+      if (relLink) relLink.style.display = 'none';
+
+      try {
+        const { sidecarPort, sidecarToken } = getSidecarConfig();
+        const r = await callBg({ action: 'CHECK_APP_UPDATE', sidecarPort, sidecarToken }, { timeoutMs: 20000 });
+        if (!r?.ok || !r.data?.ok) {
+          if (card) card.className = 'app-update-card err';
+          if (txt) txt.textContent = `❌ 업데이트 확인 실패: ${r?.data?.message || r?.data?.reason || r?.error || 'SIDECAR_OR_NETWORK_ERROR'}`;
+          return;
+        }
+        const d = r.data;
+        lastCheckedUpdateInfo = d;
+        const curLabel = d.current?.commitShort ? `v${d.current.packageVersion || '7.1.0'} (${d.current.commitShort})` : '알 수 없음';
+        const lat = d.latest || {};
+        const sizeMb = lat.setupAsset?.size ? `${(lat.setupAsset.size / (1024 * 1024)).toFixed(1)} MB` : '';
+        if (relLink && lat.htmlUrl && /^https:\/\/github\.com\/goodkie\/v-show\//i.test(lat.htmlUrl)) {
+          relLink.href = lat.htmlUrl;
+          relLink.style.display = 'inline';
+        }
+        if (d.alreadyUpToDate) {
+          if (card) card.className = 'app-update-card ok';
+          if (txt) {
+            txt.textContent = `✅ 현재 최신 버전이 설치되어 있습니다!\n• 설치 버전: ${curLabel} · GitHub 최신 릴리스: ${lat.tagName} (${lat.publishedAt ? lat.publishedAt.slice(0, 10) : '-'})`;
+          }
+          if (instBtn) {
+            instBtn.textContent = '🔁 최신 버전 다시 다운로드 · 재설치';
+            instBtn.style.display = 'inline-block';
+          }
+        } else {
+          if (card) card.className = 'app-update-card';
+          if (txt) {
+            txt.textContent = [
+              `🆕 새 버전이 발견되었습니다! (${curLabel} → ${lat.tagName})`,
+              `• 설치 파일: ${lat.setupAsset?.name || '-'} ${sizeMb ? `(${sizeMb})` : ''} · 배포일: ${lat.publishedAt ? lat.publishedAt.slice(0, 10) : '-'}`,
+              `• 안전 보장: SHA-256 체크섬 검증 통과 시에만 설치되며, 기존 API 키·Gmail OAuth·계정 목록·수신거부 원장은 100% 보존됩니다.`
+            ].join('\n');
+          }
+          if (instBtn) {
+            instBtn.textContent = `⬇️ ${lat.tagName} 다운로드 후 설치`;
+            instBtn.style.display = 'inline-block';
+          }
+        }
+      } catch (err) {
+        if (card) card.className = 'app-update-card err';
+        if (txt) txt.textContent = `❌ 업데이트 확인 예외: ${err?.message || String(err)}`;
+      }
+    };
+  }
+
+  if (el('btnInstallAppUpdate')) {
+    el('btnInstallAppUpdate').onclick = async () => {
+      const card = el('appUpdateCard');
+      const txt = el('appUpdateStatusText');
+      const instBtn = el('btnInstallAppUpdate');
+      const targetTag = lastCheckedUpdateInfo?.latest?.tagName || '';
+      const assetName = lastCheckedUpdateInfo?.latest?.setupAsset?.name || 'XPIDER_V7.1.0_SETUP.exe';
+      const confirmMsg = `GitHub 공식 릴리스(${targetTag || '최신'})의 ${assetName} 파일을 다운로드하고 SHA-256 검증 후 설치할까요?\n\n• 기존 개인 API 키·Gmail OAuth·계정 목록·수신거부 원장(%LOCALAPPDATA%\\XPIDER\\Sidecar)은 100% 유지됩니다.\n• 설치 완료 후 chrome://extensions에서 XPIDER 새로고침(🔄)을 한 번 눌러 주세요.`;
+      if (typeof window.confirm === 'function' && !window.confirm(confirmMsg)) return;
+
+      if (instBtn) instBtn.disabled = true;
+      if (card) card.className = 'app-update-card';
+      if (txt) txt.textContent = `⏳ GitHub에서 ${assetName} 다운로드 및 SHA-256 무결성 검증 중... (약 50MB · 잠시만 기다려 주세요)`;
+
+      try {
+        const { sidecarPort, sidecarToken } = getSidecarConfig();
+        const r = await callBg({
+          action: 'INSTALL_APP_UPDATE',
+          sidecarPort,
+          sidecarToken,
+          payload: { confirmInstall: true, tagName: targetTag, launchSilent: true }
+        }, { timeoutMs: 130000 });
+        if (!r?.ok || !r.data?.ok) {
+          if (card) card.className = 'app-update-card err';
+          if (txt) txt.textContent = `❌ 업데이트 다운로드/설치 실패: ${r?.data?.message || r?.data?.reason || r?.error || 'INSTALL_FAILED'}`;
+          return;
+        }
+        const d = r.data;
+        if (card) card.className = 'app-update-card ok';
+        if (txt) {
+          txt.textContent = [
+            `✅ ${d.message || '최신 버전 설치를 시작했습니다!'}`,
+            `• 검증된 SHA-256: ${String(d.verifiedSha256 || '').slice(0, 24)}...`,
+            `• 설치 폴더: ${d.installDir || '%LOCALAPPDATA%\\XPIDER\\App'} (확장 폴더: ${d.extensionDir || ''})`,
+            `• 다음 단계: 약 5초 후 Chrome의 chrome://extensions에서 XPIDER 확장을 새로고침(🔄)하거나 위 확장 폴더를 로드하세요.`
+          ].join('\n');
+        }
+      } catch (err) {
+        if (card) card.className = 'app-update-card err';
+        if (txt) txt.textContent = `❌ 업데이트 설치 오류: ${err?.message || String(err)}`;
+      } finally {
+        if (instBtn) instBtn.disabled = false;
+      }
+    };
   }
 
   restore();
