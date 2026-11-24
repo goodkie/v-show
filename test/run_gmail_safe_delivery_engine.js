@@ -1942,8 +1942,11 @@ function makeRefreshVaultFetch(counterRef) {
       assert.ok(!/mail\.google\.com/i.test(mfRc14), 'Manifest MUST still have zero mail.google.com host permission (no DOM scraping)');
       const bannedTermRc14 = ['동의', '원장'].join('');
       assert.ok(!htmlRc14.includes(bannedTermRc14) && !jsRc14.includes(bannedTermRc14));
-      checks += 4;
-      console.log('PASS 17: RC14 multi-account Gmail Native Web Compose default engine (warmup caps, fixed assignment, zero hopping, pacing guard, cross-provider suppression, official URL & zero DOM scraping) verified');
+      // RC15 UX & silent no-op regression guards
+      assert.ok(htmlRc14.includes('id="webComposeConsentCheck"') && htmlRc14.includes('id="webComposeQuickRecipient"') && htmlRc14.includes('id="webComposeRecipientSummary"'));
+      assert.ok(jsRc14.includes('webComposeAccountsInitialized') && jsRc14.includes('prepareWebComposeQueueAction') && jsRc14.includes('resolveWebComposeRecipientSource') && jsRc14.includes("'webComposeConsentCheck'"));
+      checks += 5;
+      console.log('PASS 17: RC14/RC15 multi-account Gmail Native Web Compose default engine (warmup caps, fixed assignment, zero hopping, pacing guard, auto-prepare 1-click flow, all-accounts init, inline consent/quick-recipient & zero DOM scraping) verified');
     }
 
     console.log(`XPIDER V7.1 Gmail Safe Delivery Engine suite: ${checks}/${checks} PASS; ZERO REAL SENDS`);

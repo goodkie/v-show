@@ -4073,12 +4073,16 @@ function createBuiltinRecipientManager() {
     }
   }
 
-  function openExternalOfficialTab(url) {
-    if (!isOfficialGmailTabUrl(url)) return;
+  function openExternalOfficialTab(url, opts = {}) {
+    if (!isOfficialGmailTabUrl(url)) return false;
     if (typeof chrome !== 'undefined' && chrome.tabs && typeof chrome.tabs.create === 'function') {
-      chrome.tabs.create({ url });
+      const createOpts = { url };
+      if (typeof opts.active === 'boolean') createOpts.active = opts.active;
+      chrome.tabs.create(createOpts);
+      return true;
     } else {
       window.open(url, '_blank', 'noopener');
+      return true;
     }
   }
 
@@ -5265,7 +5269,7 @@ function createBuiltinRecipientManager() {
     if (el('secondWaveCutoffHours') && rCfg.secondWaveCutoffHours !== undefined) el('secondWaveCutoffHours').value = String(rCfg.secondWaveCutoffHours);
 
     // Fail-closed safety invariant: ALWAYS reset live-send consent & explicit approval checkboxes on campaign load!
-    for (const approvalId of ['consentAttest', 'consentAttestProd', 'realTestConsentCheck', 'gmailSelfTestConsent', 'gmailHygieneConfirm', 'gmailProviderSwitchConfirm']) {
+    for (const approvalId of ['consentAttest', 'consentAttestProd', 'webComposeConsentCheck', 'realTestConsentCheck', 'gmailSelfTestConsent', 'gmailHygieneConfirm', 'gmailProviderSwitchConfirm']) {
       if (el(approvalId)) el(approvalId).checked = false;
     }
 
@@ -5274,6 +5278,7 @@ function createBuiltinRecipientManager() {
       syncProviderPanelVisibility(false);
     }
     updateActiveProviderNote();
+    if (typeof updateWebComposeRecipientSummaryUI === 'function') updateWebComposeRecipientSummaryUI();
     render();
     return true;
   }
@@ -5395,17 +5400,93 @@ function createBuiltinRecipientManager() {
     };
   }
 
-  // ===== RC14: Multi-Account Gmail Native Web Compose Safe Campaign Controller (Default Gmail Method) =====
+  // ===== RC14/RC15: Multi-Account Gmail Native Web Compose Safe Campaign Controller (Default Gmail Method) =====
   let webComposeAccountsCache = [];
   const selectedWebComposeAccountIds = new Set();
+  let webComposeAccountsInitialized = false;
   let lastWebComposeStatus = null;
+
+  function parseQuickRecipientsToCsv(rawText) {
+    const items = String(rawText || '')
+      .split(/[\r\n,;]+/)
+      .map(s => s.trim())
+      .filter(s => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(s));
+    if (items.length === 0) return { csv: '', count: 0 };
+    return {
+      csv: 'email,name\n' + items.map(e => `${e},`).join('\n'),
+      count: items.length
+    };
+  }
+
+  function resolveWebComposeRecipientSource() {
+    const base = buildSyncPayloadAndSig();
+    const csvRaw = String(base.payload?.csvText || '').trim();
+    const csvMatches = csvRaw.match(/[^\s@,;<>"]+@[^\s@,;<>"]+\.[^\s@,;<>"]{2,}/g) || [];
+    const quickRaw = el('webComposeQuickRecipient') ? el('webComposeQuickRecipient').value.trim() : '';
+    const quick = parseQuickRecipientsToCsv(quickRaw);
+    const consentOk = Boolean(
+      (el('webComposeConsentCheck') && el('webComposeConsentCheck').checked)
+      || (el('consentAttest') && el('consentAttest').checked)
+      || (el('consentAttestProd') && el('consentAttestProd').checked)
+    );
+    const useQuick = csvMatches.length === 0 && quick.count > 0;
+    const effectiveCsv = useQuick ? quick.csv : csvRaw;
+    const effectiveCount = useQuick ? quick.count : csvMatches.length;
+    return {
+      sidecarPort: base.sidecarPort,
+      sidecarToken: base.sidecarToken,
+      payload: {
+        ...base.payload,
+        csvText: effectiveCsv,
+        consentAttested: consentOk
+      },
+      csvCount: csvMatches.length,
+      quickCount: quick.count,
+      effectiveCount,
+      sourceLabel: useQuick ? `빠른 수신자 입력 ${quick.count}명` : (csvMatches.length > 0 ? `수신자 CSV ${csvMatches.length}명` : '미입력 (0명)'),
+      consentOk
+    };
+  }
+
+  function updateWebComposeRecipientSummaryUI() {
+    const box = el('webComposeRecipientSummary');
+    if (!box) return;
+    try {
+      const src = resolveWebComposeRecipientSource();
+      const acctCount = webComposeAccountsCache.filter(a => a.active && selectedWebComposeAccountIds.has(a.id)).length;
+      if (src.effectiveCount > 0) {
+        box.style.background = '#f0fdf4';
+        box.style.borderColor = '#86efac';
+        box.textContent = `✅ 발송 대상 준비됨: ${src.sourceLabel} · 선택 발신 계정 ${acctCount}/${webComposeAccountsCache.length}개 · 권한 체크: ${src.consentOk ? '✅ 완료' : '⚠️ 미체크 (아래 노란색 체크박스 체크 필요)'}`;
+      } else {
+        box.style.background = '#fff7ed';
+        box.style.borderColor = '#fdba74';
+        box.textContent = `⚠️ 발송할 수신자 0명: 상단 [수신자 목록 CSV]에 이메일을 입력하거나 바로 아래 [빠른 수신자 직접 입력] 칸에 테스트/발송할 이메일을 입력하세요. (선택 발신 계정 ${acctCount}/${webComposeAccountsCache.length}개)`;
+      }
+    } catch (_) {}
+  }
+
+  function syncWebComposeConsentPair(fromEl, toEl) {
+    if (!fromEl || !toEl) return;
+    fromEl.addEventListener('change', () => {
+      toEl.checked = fromEl.checked;
+      updateWebComposeRecipientSummaryUI();
+    });
+  }
+  syncWebComposeConsentPair(el('webComposeConsentCheck'), el('consentAttest'));
+  syncWebComposeConsentPair(el('consentAttest'), el('webComposeConsentCheck'));
+  if (el('webComposeQuickRecipient')) el('webComposeQuickRecipient').addEventListener('input', updateWebComposeRecipientSummaryUI);
+  if (el('recipientCsv')) el('recipientCsv').addEventListener('input', updateWebComposeRecipientSummaryUI);
 
   function syncGmailDispatchModeUI() {
     const mode = el('gmailDispatchMode') ? el('gmailDispatchMode').value : 'GMAIL_WEB_COMPOSE_ASSISTED';
     const isWeb = mode !== 'GMAIL_API_OAUTH';
     if (el('gmailWebComposePanel')) el('gmailWebComposePanel').style.display = isWeb ? '' : 'none';
     if (el('gmailApiOAuthSubPanel')) el('gmailApiOAuthSubPanel').style.display = isWeb ? 'none' : '';
-    if (isWeb) refreshGmailWebComposeStatus();
+    if (isWeb) {
+      updateWebComposeRecipientSummaryUI();
+      refreshGmailWebComposeStatus();
+    }
   }
   if (el('gmailDispatchMode')) {
     el('gmailDispatchMode').addEventListener('change', syncGmailDispatchModeUI);
@@ -5417,6 +5498,20 @@ function createBuiltinRecipientManager() {
     webComposeAccountsCache = Array.isArray(st.accounts) ? st.accounts : [];
     const q = st.queue || {};
     const c = q.counts || {};
+
+    // Fix multi-account initialization: on first load select ALL active accounts (not just account #1!)
+    if (!webComposeAccountsInitialized && webComposeAccountsCache.length > 0) {
+      for (const a of webComposeAccountsCache) {
+        if (a.active) selectedWebComposeAccountIds.add(a.id);
+      }
+      webComposeAccountsInitialized = true;
+    } else {
+      // Remove any deleted account IDs from selection set
+      const validIds = new Set(webComposeAccountsCache.map(a => a.id));
+      for (const id of Array.from(selectedWebComposeAccountIds)) {
+        if (!validIds.has(id)) selectedWebComposeAccountIds.delete(id);
+      }
+    }
 
     const poolBadge = el('webComposePoolBadge');
     if (poolBadge) {
@@ -5437,7 +5532,6 @@ function createBuiltinRecipientManager() {
       } else {
         acctBox.className = 'status-box status-success';
         for (const a of webComposeAccountsCache) {
-          if (selectedWebComposeAccountIds.size === 0 && a.active) selectedWebComposeAccountIds.add(a.id);
           const row = document.createElement('div');
           row.style.cssText = 'display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px;padding:5px 4px;border-bottom:1px solid #e2e8f0;font-size:12px;';
 
@@ -5449,6 +5543,7 @@ function createBuiltinRecipientManager() {
           cb.onchange = () => {
             if (cb.checked) selectedWebComposeAccountIds.add(a.id);
             else selectedWebComposeAccountIds.delete(a.id);
+            updateWebComposeRecipientSummaryUI();
           };
           const stageLabel = a.warmupStage === 'ESTABLISHED' ? '숙성' : (a.warmupStage === 'WARMING' ? '안정화' : '워밍업');
           const stateStr = a.cooldownUntilIso
@@ -5479,18 +5574,22 @@ function createBuiltinRecipientManager() {
 
     const qBox = el('webComposeQueueStatus');
     if (qBox) {
-      if ((c.total || 0) === 0) {
-        qBox.className = 'status-box status-idle';
-        qBox.textContent = `대기 중: 등록 계정 ${webComposeAccountsCache.length}개(일일 합산 안전 상한 ${q.totalDailyCapacity || 0}통) · CSV와 적법 발송 권한 체크 후 [📋 다계정 안전 큐 배정]을 누르세요.`;
-      } else {
-        qBox.className = q.enforcementPaused || q.paused
-          ? 'status-box status-blocked'
-          : ((c.OPERATOR_CONFIRMED_SENT || 0) > 0 ? 'status-box status-success' : 'status-box status-idle');
+      if (q.enforcementPaused || q.paused) {
+        qBox.className = 'status-box status-blocked';
         qBox.textContent = [
-          `📊 [웹 작성창 캠페인: ${q.campaignId || 'default'}] 상태: ${q.enforcementPaused ? '🛑 계정 보호 강제 일시중지' : (q.paused ? '⏸️ 일시중지' : (c.PENDING === 0 && c.COMPOSE_OPENED === 0 ? '✅ 완료' : '🟢 안전 진행 가능'))}`,
+          `🛑 [계정 보호 일시중지 활성] 사유: ${q.pauseReason || 'PAUSED_BY_OPERATOR'}`,
+          `• 경고 계정은 24시간 보호 쿨다운 + 일일 한도 50% 자동 감속이 적용되며, 타 계정으로 자동 우회하지 않습니다.`,
+          `• 원인 확인 후 [▶️ 일시중지 해제]를 눌러 재개하세요.`
+        ].join('\n');
+      } else if ((c.total || 0) === 0) {
+        qBox.className = 'status-box status-idle';
+        qBox.textContent = `대기 중: 등록 계정 ${webComposeAccountsCache.length}개(일일 합산 안전 상한 ${q.totalDailyCapacity || 0}통) · 수신자(위 CSV 또는 빠른 입력)와 [필수] 적법 발송 권한 체크 후 파란색 [✉️ 2단계: Gmail 작성창 열기]를 누르세요.`;
+      } else {
+        qBox.className = (c.OPERATOR_CONFIRMED_SENT || 0) > 0 ? 'status-box status-success' : 'status-box status-idle';
+        qBox.textContent = [
+          `📊 [웹 작성창 캠페인: ${q.campaignId || 'default'}] 상태: ${c.PENDING === 0 && c.COMPOSE_OPENED === 0 ? '✅ 완료' : '🟢 안전 진행 가능'}`,
           `• 총 ${c.total || 0}명 | 대기(PENDING): ${c.PENDING || 0} | 작성창 열림(확인대기): ${c.COMPOSE_OPENED || 0} | 발송완료(운영자확인): ${c.OPERATOR_CONFIRMED_SENT || 0} | 건너뜀: ${c.SKIPPED_BY_OPERATOR || 0}`,
           `• 교차차단 제외: ${c.SKIPPED_SUPPRESSED_CROSS_PROVIDER || 0} | 기발송 제외: ${c.ALREADY_SENT_IDEMPOTENT || 0} | 예상 분산 소요일: ${q.estimatedDays || 0}일 (오늘 잔여 ${q.totalRemainingToday || 0}/${q.totalDailyCapacity || 0}통)`,
-          ...(q.pauseReason ? [`• 🛑 중지 사유: ${q.pauseReason}`] : []),
           `• 고지: ${st.honestDisclaimer || ''}`
         ].join('\n');
       }
@@ -5535,6 +5634,7 @@ function createBuiltinRecipientManager() {
         awaitBox.appendChild(row);
       }
     }
+    updateWebComposeRecipientSummaryUI();
   }
 
   async function refreshGmailWebComposeStatus() {
@@ -5575,77 +5675,153 @@ function createBuiltinRecipientManager() {
       if (emailEl) emailEl.value = '';
       if (labelEl) labelEl.value = '';
       const added = (r.data.accounts || []).find(a => a.email === email.toLowerCase());
-      if (added) selectedWebComposeAccountIds.add(added.id);
+      if (added) {
+        selectedWebComposeAccountIds.add(added.id);
+        webComposeAccountsInitialized = true;
+      }
       refreshGmailWebComposeStatus();
     };
   }
 
-  if (el('btnPrepareWebComposeQueue')) {
-    el('btnPrepareWebComposeQueue').onclick = async () => {
-      const qBox = el('webComposeQueueStatus');
-      const { sidecarPort, sidecarToken, payload } = buildSyncPayloadAndSig();
+  async function prepareWebComposeQueueAction() {
+    const qBox = el('webComposeQueueStatus');
+    try {
+      const src = resolveWebComposeRecipientSource();
       const v = values();
-      if (qBox) { qBox.className = 'status-box status-loading'; qBox.textContent = '⏳ 교차 공급자 수신거부 제외, 동의 검증 및 다계정 고정 배정 계산 중...'; }
+      const selectedIds = Array.from(selectedWebComposeAccountIds);
+      if (webComposeAccountsCache.length === 0) {
+        if (qBox) { qBox.className = 'status-box status-blocked'; qBox.textContent = '⚠️ 등록된 발신 계정이 없습니다. 먼저 위 1)에서 본인 소유 Google 계정을 1개 이상 등록하세요.'; }
+        if (el('webComposeAccountEmail')) el('webComposeAccountEmail').focus();
+        return { ok: false, reason: 'NO_ACTIVE_WEB_COMPOSE_ACCOUNTS' };
+      }
+      if (selectedIds.length === 0) {
+        if (qBox) { qBox.className = 'status-box status-blocked'; qBox.textContent = '⚠️ 위 발신 계정 목록에서 사용할 계정을 1개 이상 체크하세요.'; }
+        return { ok: false, reason: 'NO_SELECTED_ACCOUNTS' };
+      }
+      if (src.effectiveCount === 0) {
+        if (qBox) {
+          qBox.className = 'status-box status-blocked';
+          qBox.textContent = '⚠️ 발송할 수신자 이메일이 없습니다!\n• 상단 [수신자 목록 CSV]에 수신자 목록을 붙여넣거나,\n• 바로 위 [빠른 수신자 직접 입력] 칸에 테스트/발송할 이메일(예: test@gmail.com)을 입력한 뒤 다시 눌러주세요.';
+        }
+        if (el('webComposeQuickRecipient')) el('webComposeQuickRecipient').focus();
+        return { ok: false, reason: 'NO_VALID_RECIPIENTS' };
+      }
+      if (!src.consentOk) {
+        if (qBox) {
+          qBox.className = 'status-box status-blocked';
+          qBox.textContent = '⚠️ 바로 위 노란색 박스 [[필수] 적법한 발송 권한 확인] 체크박스를 먼저 체크한 뒤 눌러주세요.';
+        }
+        if (el('webComposeConsentCheck')) el('webComposeConsentCheck').focus();
+        return { ok: false, reason: 'CONSENT_ATTESTATION_REQUIRED' };
+      }
+      if (qBox) { qBox.className = 'status-box status-loading'; qBox.textContent = `⏳ ${src.sourceLabel} 기준 교차 공급자 수신거부 제외, 동의 검증 및 다계정 고정 배정 계산 중...`; }
       const r = await callBg({
         action: 'PREPARE_GMAIL_WEB_COMPOSE_QUEUE',
-        sidecarPort,
-        sidecarToken,
+        sidecarPort: src.sidecarPort,
+        sidecarToken: src.sidecarToken,
         payload: {
-          ...payload,
-          selectedAccountIds: Array.from(selectedWebComposeAccountIds),
+          ...src.payload,
+          selectedAccountIds: selectedIds,
           physicalAddress: getEffectivePhysicalAddress(v),
           includeSignedUnsubscribeUrl: !el('webComposeIncludeSignedUnsub') || Boolean(el('webComposeIncludeSignedUnsub').checked)
         }
       });
       if (!r?.ok || !r.data?.ok) {
         if (qBox) { qBox.className = 'status-box status-error'; qBox.textContent = `❌ 다계정 큐 배정 실패: ${r?.data?.message || r?.data?.reason || r?.error || '-'}`; }
-        return;
+        return { ok: false, reason: r?.data?.reason || r?.error || 'PREPARE_FAILED' };
       }
       renderWebComposeStatus(r.data.status);
-    };
+      const pendingCnt = r.data.status?.queue?.counts?.PENDING || 0;
+      if (pendingCnt === 0 && qBox) {
+        qBox.className = 'status-box status-blocked';
+        qBox.textContent = `⚠️ 큐 배정 결과 발송 대기(PENDING) 대상이 0명입니다 (모두 수신거부 차단 목록 또는 동일 캠페인 기발송 제외됨).\n` + qBox.textContent;
+      }
+      return { ok: true, status: r.data.status, pendingCount: pendingCnt };
+    } catch (err) {
+      studioDebugLog('ERROR', 'WEB_COMPOSE', 'PREPARE_EXCEPTION', { message: err?.message || String(err) });
+      if (qBox) { qBox.className = 'status-box status-error'; qBox.textContent = `❌ 큐 배정 중 오류: ${err?.message || String(err)}`; }
+      return { ok: false, reason: 'PREPARE_EXCEPTION' };
+    }
+  }
+
+  if (el('btnPrepareWebComposeQueue')) {
+    el('btnPrepareWebComposeQueue').onclick = prepareWebComposeQueueAction;
   }
 
   async function openNextWebComposeBatchAction() {
     const qBox = el('webComposeQueueStatus');
-    const v = values();
-    const spamFlags = getGmailSpamOptFlags();
-    const batchSize = el('webComposeBatchSize') ? Number(el('webComposeBatchSize').value || 1) : 1;
-    const includeSignedUnsubscribeUrl = !el('webComposeIncludeSignedUnsub') || Boolean(el('webComposeIncludeSignedUnsub').checked);
-    const { sidecarPort, sidecarToken } = getSidecarConfig();
-    if (qBox) { qBox.className = 'status-box status-loading'; qBox.textContent = '⏳ 안전 한도·발송 간격·수신거부 대조 후 공식 Gmail 웹 작성창 준비 중...'; }
-    const r = await callBg({
-      action: 'NEXT_GMAIL_WEB_COMPOSE_BATCH',
-      sidecarPort,
-      sidecarToken,
-      payload: {
-        subject: (v.subject || '').trim(),
-        html: htmlFor(v),
-        text: textFor(v),
-        displayName: v.senderDisplayName || v.company || v.brand || '',
-        physicalAddress: getEffectivePhysicalAddress(v),
-        maxBatch: batchSize,
-        autoCalmPromoToTextStyle: spamFlags.autoCalmPromoToTextStyle !== false,
-        includeSignedUnsubscribeUrl
+    try {
+      const qCounts = lastWebComposeStatus?.queue?.counts || {};
+      const openedNow = lastWebComposeStatus?.queue?.openedAwaitingConfirm || [];
+      // If queue is empty (not prepared yet), seamlessly auto-prepare FIRST so clicking the big blue button works in 1 click!
+      if ((qCounts.total || 0) === 0 || ((qCounts.PENDING || 0) === 0 && openedNow.length === 0)) {
+        const src = resolveWebComposeRecipientSource();
+        if (src.effectiveCount > 0 || (qCounts.total || 0) === 0) {
+          const prep = await prepareWebComposeQueueAction();
+          if (!prep.ok || prep.pendingCount === 0) return;
+        }
       }
-    });
-    if (!r?.ok || !r.data?.ok) {
-      if (r?.data?.status) renderWebComposeStatus(r.data.status);
+
+      const v = values();
+      const subj = (v.subject || '').trim();
+      if (!subj) {
+        if (qBox) { qBox.className = 'status-box status-blocked'; qBox.textContent = '⚠️ 먼저 좌측 에디터에서 이메일 제목(Subject)을 입력해 주세요.'; }
+        if (el('subject')) el('subject').focus();
+        return;
+      }
+      const spamFlags = getGmailSpamOptFlags();
+      const batchSize = el('webComposeBatchSize') ? Number(el('webComposeBatchSize').value || 1) : 1;
+      const includeSignedUnsubscribeUrl = !el('webComposeIncludeSignedUnsub') || Boolean(el('webComposeIncludeSignedUnsub').checked);
+      const { sidecarPort, sidecarToken } = getSidecarConfig();
+      if (qBox) { qBox.className = 'status-box status-loading'; qBox.textContent = '⏳ 안전 한도·발송 간격·수신거부 대조 후 공식 Gmail 웹 작성창 준비 중...'; }
+      const r = await callBg({
+        action: 'NEXT_GMAIL_WEB_COMPOSE_BATCH',
+        sidecarPort,
+        sidecarToken,
+        payload: {
+          subject: subj,
+          html: htmlFor(v),
+          text: textFor(v),
+          displayName: v.senderDisplayName || v.company || v.brand || '',
+          physicalAddress: getEffectivePhysicalAddress(v),
+          maxBatch: batchSize,
+          autoCalmPromoToTextStyle: spamFlags.autoCalmPromoToTextStyle !== false,
+          includeSignedUnsubscribeUrl
+        }
+      });
+      if (!r?.ok || !r.data?.ok) {
+        if (r?.data?.status) renderWebComposeStatus(r.data.status);
+        if (qBox) {
+          qBox.className = 'status-box status-blocked';
+          qBox.textContent = `⏳ 안전 대기/차단: ${r?.data?.message || r?.data?.reason || r?.error || '-'}`;
+        }
+        return;
+      }
+      const items = Array.isArray(r.data.issued) ? r.data.issued : [];
+      let openedTabs = 0;
+      items.forEach((item, idx) => {
+        if (item && isOfficialGmailTabUrl(item.composeUrl)) {
+          if (openExternalOfficialTab(item.composeUrl, { active: idx === 0 })) openedTabs++;
+        }
+      });
+      if (r.data.status) renderWebComposeStatus(r.data.status);
       if (qBox) {
-        qBox.className = 'status-box status-blocked';
-        qBox.textContent = `⏳ 안전 대기/차단: ${r?.data?.message || r?.data?.reason || r?.error || '-'}`;
+        if (items.length > 0) {
+          const summary = items.map(i => `${i.fromAccountMasked} → ${i.toMasked}`).join(', ');
+          qBox.className = 'status-box status-success';
+          qBox.textContent = `✉️ 공식 Gmail 웹 작성창 ${openedTabs}건 열림 (${summary})\n• 열린 Gmail 탭에서 내용 확인 후 보내기(Ctrl+Enter)를 누르고, 여기로 돌아와 [✅ 3단계: 방금 연 메일 발송 완료 & 다음 열기]를 누르세요.\n` + qBox.textContent;
+        } else {
+          const awaiting = r.data.status?.queue?.openedAwaitingConfirm || [];
+          qBox.className = awaiting.length > 0 ? 'status-box status-blocked' : 'status-box status-success';
+          const note = awaiting.length > 0
+            ? `✉️ 이미 열린 Gmail 작성창 ${awaiting.length}건이 발송 확인 대기 중입니다. 열린 Gmail 탭에서 보내기(Ctrl+Enter) 후 [✅ 3단계: 방금 연 메일 발송 완료 & 다음 열기]를 누르세요.`
+            : `ℹ️ ${r.data.message || '대기 중인 수신자가 없습니다 (모든 항목 처리 완료 또는 큐 미배정).'}`;
+          qBox.textContent = note + '\n' + qBox.textContent;
+        }
       }
-      return;
-    }
-    const items = Array.isArray(r.data.issued) ? r.data.issued : [];
-    for (const item of items) {
-      if (item && isOfficialGmailTabUrl(item.composeUrl)) {
-        openExternalOfficialTab(item.composeUrl);
-      }
-    }
-    if (r.data.status) renderWebComposeStatus(r.data.status);
-    if (qBox && items.length > 0) {
-      const summary = items.map(i => `${i.fromAccountMasked} → ${i.toMasked}`).join(', ');
-      qBox.textContent = `✉️ 공식 Gmail 웹 작성창 ${items.length}건 열림 (${summary}) — 열린 탭에서 확인 후 보내기(Ctrl+Enter)를 누르고 [✅ 방금 연 메일 발송 완료 & 다음 열기]를 누르세요.\n` + qBox.textContent;
+    } catch (err) {
+      studioDebugLog('ERROR', 'WEB_COMPOSE', 'OPEN_BATCH_EXCEPTION', { message: err?.message || String(err) });
+      if (qBox) { qBox.className = 'status-box status-error'; qBox.textContent = `❌ Gmail 작성창 열기 오류: ${err?.message || String(err)}`; }
     }
   }
 
@@ -5655,12 +5831,25 @@ function createBuiltinRecipientManager() {
 
   if (el('btnConfirmOpenedAndNextCompose')) {
     el('btnConfirmOpenedAndNextCompose').onclick = async () => {
-      const opened = lastWebComposeStatus?.queue?.openedAwaitingConfirm || [];
-      const { sidecarPort, sidecarToken } = getSidecarConfig();
-      for (const item of opened) {
-        await callBg({ action: 'MARK_GMAIL_WEB_COMPOSE_ITEM', sidecarPort, sidecarToken, payload: { entryId: item.entryId, result: 'OPERATOR_CONFIRMED_SENT' } });
+      const qBox = el('webComposeQueueStatus');
+      try {
+        const opened = lastWebComposeStatus?.queue?.openedAwaitingConfirm || [];
+        const { sidecarPort, sidecarToken } = getSidecarConfig();
+        if (opened.length === 0) {
+          if (qBox) {
+            qBox.className = 'status-box status-blocked';
+            qBox.textContent = '⚠️ 먼저 [✉️ 2단계: Gmail 작성창 열기]로 작성창을 연 뒤, Gmail에서 보내기를 완료하고 이 버튼을 눌러주세요.';
+          }
+          return;
+        }
+        for (const item of opened) {
+          await callBg({ action: 'MARK_GMAIL_WEB_COMPOSE_ITEM', sidecarPort, sidecarToken, payload: { entryId: item.entryId, result: 'OPERATOR_CONFIRMED_SENT' } });
+        }
+        await refreshGmailWebComposeStatus();
+        await openNextWebComposeBatchAction();
+      } catch (err) {
+        if (qBox) { qBox.className = 'status-box status-error'; qBox.textContent = `❌ 발송 완료 기록 오류: ${err?.message || String(err)}`; }
       }
-      await openNextWebComposeBatchAction();
     };
   }
 
@@ -5696,35 +5885,46 @@ function createBuiltinRecipientManager() {
 
   if (el('btnReportWebComposeWarningPause')) {
     el('btnReportWebComposeWarningPause').onclick = async () => {
-      const opened = lastWebComposeStatus?.queue?.openedAwaitingConfirm || [];
-      const firstAcct = opened[0]?.accountId || Array.from(selectedWebComposeAccountIds)[0] || '';
-      const { sidecarPort, sidecarToken } = getSidecarConfig();
-      const r = await callBg({
-        action: 'MARK_GMAIL_WEB_COMPOSE_ITEM',
-        sidecarPort,
-        sidecarToken,
-        payload: {
-          entryId: opened[0]?.entryId || '',
-          accountId: firstAcct,
-          result: 'ACCOUNT_WARNING_PAUSE',
-          warningNote: 'OWNER_REPORTED_GMAIL_LIMIT_OR_WARNING'
-        }
-      });
-      if (r?.data?.status) renderWebComposeStatus(r.data.status);
+      const qBox = el('webComposeQueueStatus');
+      try {
+        const opened = lastWebComposeStatus?.queue?.openedAwaitingConfirm || [];
+        const firstAcct = opened[0]?.accountId || Array.from(selectedWebComposeAccountIds)[0] || webComposeAccountsCache[0]?.id || '';
+        const { sidecarPort, sidecarToken } = getSidecarConfig();
+        const r = await callBg({
+          action: 'MARK_GMAIL_WEB_COMPOSE_ITEM',
+          sidecarPort,
+          sidecarToken,
+          payload: {
+            entryId: opened[0]?.entryId || '',
+            accountId: firstAcct,
+            result: 'ACCOUNT_WARNING_PAUSE',
+            warningNote: 'OWNER_REPORTED_GMAIL_LIMIT_OR_WARNING'
+          }
+        });
+        if (r?.data?.status) renderWebComposeStatus(r.data.status);
+        else if (qBox) { qBox.className = 'status-box status-blocked'; qBox.textContent = `🛑 일시중지 요청 결과: ${r?.data?.message || r?.error || '완료'}`; }
+      } catch (err) {
+        if (qBox) { qBox.className = 'status-box status-error'; qBox.textContent = `❌ 일시중지 처리 오류: ${err?.message || String(err)}`; }
+      }
     };
   }
 
   if (el('btnResumeWebComposeQueue')) {
     el('btnResumeWebComposeQueue').onclick = async () => {
-      if (typeof window.confirm === 'function' && !window.confirm('계정 보호 일시중지를 해제할까요? (경고가 발생했던 계정은 24시간 보호 쿨다운 및 50% 감속이 유지됩니다.)')) return;
-      const { sidecarPort, sidecarToken } = getSidecarConfig();
-      const r = await callBg({
-        action: 'PAUSE_GMAIL_WEB_COMPOSE_QUEUE',
-        sidecarPort,
-        sidecarToken,
-        payload: { paused: false, clearEnforcement: true }
-      });
-      if (r?.data?.status) renderWebComposeStatus(r.data.status);
+      const qBox = el('webComposeQueueStatus');
+      try {
+        if (typeof window.confirm === 'function' && !window.confirm('계정 보호 일시중지를 해제할까요? (경고가 발생했던 계정은 24시간 보호 쿨다운 및 50% 감속이 유지됩니다.)')) return;
+        const { sidecarPort, sidecarToken } = getSidecarConfig();
+        const r = await callBg({
+          action: 'PAUSE_GMAIL_WEB_COMPOSE_QUEUE',
+          sidecarPort,
+          sidecarToken,
+          payload: { paused: false, clearEnforcement: true }
+        });
+        if (r?.data?.status) renderWebComposeStatus(r.data.status);
+      } catch (err) {
+        if (qBox) { qBox.className = 'status-box status-error'; qBox.textContent = `❌ 일시중지 해제 오류: ${err?.message || String(err)}`; }
+      }
     };
   }
 

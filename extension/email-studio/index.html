@@ -418,6 +418,15 @@
 
     <div style="margin:8px 0;padding:8px;border:1px solid #cbd5e1;border-radius:6px;background:#f8fafc;">
       <b>2) 다계정 고정 배정 · 안전 분산 발송 실행 (1건씩 또는 계정별 1건씩 최대 3건)</b>
+      <div id="webComposeRecipientSummary" class="note" style="margin-top:6px;padding:6px 8px;border-radius:6px;background:#eff6ff;border:1px solid #bfdbfe;">수신자 현황 확인 중...</div>
+      <div style="margin-top:6px;">
+        <label for="webComposeQuickRecipient">빠른 수신자 직접 입력 (선택 · 위 CSV가 비어 있을 때 여기에 이메일 입력 가능 · 쉼표/줄바꿈 구분)</label>
+        <input id="webComposeQuickRecipient" type="text" maxlength="1000" placeholder="예: test1@gmail.com, test2@gmail.com (위 수신자 CSV가 있으면 CSV가 우선 사용됩니다)">
+      </div>
+      <label style="display:flex;align-items:center;gap:6px;margin-top:6px;padding:6px 8px;border-radius:6px;background:#fefce8;border:1px solid #fde047;font-size:12px;cursor:pointer;">
+        <input id="webComposeConsentCheck" type="checkbox">
+        <b>[필수] 위 수신자(CSV 또는 빠른 입력)에 대해 적법한 발송 권한(명시적 동의/기존 고객 관계 등)을 확인했습니다.</b>
+      </label>
       <div class="inline" style="margin-top:6px;">
         <div>
           <label for="webComposeBatchSize">1회 작성창 열기 수량 (동일 계정 중복 열기 자동 차단)</label>
@@ -432,14 +441,14 @@
         </div>
       </div>
       <div class="actions" style="margin-top:6px;">
-        <button type="button" id="btnPrepareWebComposeQueue">📋 다계정 안전 큐 배정 · 다일 일정 계산</button>
-        <button type="button" class="primary" id="btnOpenNextWebComposeBatch">✉️ 다음 Gmail 작성창 열기</button>
-        <button type="button" id="btnConfirmOpenedAndNextCompose">✅ 방금 연 메일 발송 완료 &amp; 다음 열기</button>
+        <button type="button" id="btnPrepareWebComposeQueue">📋 1단계: 다계정 안전 큐 배정 · 다일 일정 계산</button>
+        <button type="button" class="primary" id="btnOpenNextWebComposeBatch">✉️ 2단계: Gmail 작성창 열기 (미배정 시 자동 배정 후 열기)</button>
+        <button type="button" id="btnConfirmOpenedAndNextCompose">✅ 3단계: 방금 연 메일 발송 완료 &amp; 다음 열기</button>
         <button type="button" id="btnCopyRichHtmlForGmailCompose">📋 이미지·서식 본문 복사 (작성창 Ctrl+V용)</button>
         <button type="button" id="btnReportWebComposeWarningPause">🛑 경고/반송 감지 → 전체 안전 일시중지</button>
         <button type="button" id="btnResumeWebComposeQueue">▶️ 일시중지 해제</button>
       </div>
-      <div id="webComposeQueueStatus" class="status-box status-idle" style="margin-top:6px;white-space:pre-wrap;">대기 중: 좌측/상단에서 수신자 CSV와 동의 체크를 완료한 뒤 [📋 다계정 안전 큐 배정 · 다일 일정 계산]을 누르세요.</div>
+      <div id="webComposeQueueStatus" class="status-box status-idle" style="margin-top:6px;white-space:pre-wrap;">대기 중: 수신자(위 CSV 또는 빠른 수신자 입력)와 [필수] 적법 발송 권한 체크 후 파란색 [✉️ 2단계: Gmail 작성창 열기]를 누르세요.</div>
       <div id="webComposeAwaitingList" style="margin-top:6px;display:flex;flex-direction:column;gap:4px;"></div>
     </div>
   </div>
