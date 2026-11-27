@@ -1,6 +1,7 @@
 ﻿param(
   [string]$OutDir = "",
   [string]$SourceStateDir = "",
+  [string]$SourcePrivacyDir = "",
   [string]$NodeExePath = ""
 )
 $ErrorActionPreference = "Stop"
@@ -22,6 +23,9 @@ if (-not $OutDir) {
 }
 if (-not $SourceStateDir) {
   $SourceStateDir = Join-Path $env:LOCALAPPDATA "XPIDER\Sidecar"
+}
+if (-not $SourcePrivacyDir) {
+  $SourcePrivacyDir = Join-Path $env:LOCALAPPDATA "XPIDER_Privacy_Relay"
 }
 if (-not (Test-Path $SourceStateDir)) {
   throw "SOURCE_STATE_DIR_NOT_FOUND: $SourceStateDir"
@@ -73,9 +77,18 @@ try {
     throw "PINNED_EXTENSION_KEY_INVALID"
   }
 
-  # 4. Pack Owner's local settings + keys + unwrapped DPAPI Gmail OAuth vault into portable seed
-  Write-Output "[PRIVATE-LOCAL-BUILD] Packing local Sidecar settings & re-sealable DPAPI vault from $SourceStateDir..."
-  & (Join-Path $rtDir "node.exe") (Join-Path $stageDir "companion\xpider-personal-migration.js") --pack-seed --source-state-dir $SourceStateDir --out $seedTmp
+  # 4. Pack Owner's local settings + keys + unwrapped DPAPI Gmail OAuth & Privacy Relay vaults into portable seed
+  Write-Output "[PRIVATE-LOCAL-BUILD] Packing local Sidecar + Privacy Relay settings & re-sealable DPAPI vaults from $SourceStateDir & $SourcePrivacyDir..."
+  $packArgs = @(
+    (Join-Path $stageDir "companion\xpider-personal-migration.js"),
+    "--pack-seed",
+    "--source-state-dir", $SourceStateDir,
+    "--out", $seedTmp
+  )
+  if ($SourcePrivacyDir -and (Test-Path $SourcePrivacyDir)) {
+    $packArgs += @("--source-privacy-dir", $SourcePrivacyDir)
+  }
+  & (Join-Path $rtDir "node.exe") @packArgs
   if ($LASTEXITCODE -ne 0) { throw "PACK_PERSONAL_SEED_FAILED (exit=$LASTEXITCODE)" }
 
   # 5. Write standard install-relative helpers + provenance
@@ -142,7 +155,7 @@ try {
   Copy-Item -Path $seedTmp -Destination (Join-Path $stageDir "XPIDER_PERSONAL_SEED.bin") -Force
   Set-Content -Path (Join-Path $stageDir "APPLY_PERSONAL_SETTINGS.bat") -Encoding ASCII -Value @"
 @echo off
-"%~dp0runtime\node.exe" "%~dp0companion\xpider-personal-migration.js" --apply-seed --seed "%~dp0XPIDER_PERSONAL_SEED.bin" --target-state-dir "%LOCALAPPDATA%\XPIDER\Sidecar" --overwrite
+"%~dp0runtime\node.exe" "%~dp0companion\xpider-personal-migration.js" --apply-seed --seed "%~dp0XPIDER_PERSONAL_SEED.bin" --target-state-dir "%LOCALAPPDATA%\XPIDER\Sidecar" --target-privacy-dir "%LOCALAPPDATA%\XPIDER_Privacy_Relay" --target-companion-dir "%~dp0companion" --overwrite
 pause
 "@
   $portableZip = Join-Path $OutDir "XPIDER_V7.1.0_PERSONAL_PORTABLE_LOCAL_ONLY_${gitShort}.zip"
@@ -162,6 +175,7 @@ pause
 - Gmail 브랜드 도메인 설정
 - Gmail OAuth Client + 연결 계정 리프레시 토큰 (새 PC 설치 시 새 PC의 Windows DPAPI로 자동 재암호화!)
 - Gmail 웹 작성창 등록 계정 목록 (슬롯·워밍업 단계 포함) & 저장된 캠페인
+- Privacy Relay 노드 설정(egress_pool_config.json) + 보호 릴레이 인증 비밀번호(.local_credentials.json, 새 PC DPAPI 자동 재암호화!)
 
 [새 Windows PC 사용 방법]
 1. XPIDER_V7.1.0_PERSONAL_LOCAL_ONLY_${gitShort}.exe 를 USB 또는 개인 비공개 드라이브로 복사해 실행하세요.

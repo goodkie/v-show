@@ -251,7 +251,12 @@ namespace XpiderSetup
                             {
                                 seedStream.CopyTo(fsOut);
                             }
-                            string seedArgs = "\"" + migrationScript + "\" --apply-seed --seed \"" + tmpSeed + "\" --target-state-dir \"" + stateDir + "\" --delete-after" + (forceSeed ? " --overwrite" : "");
+                            string localAppRoot = Environment.GetEnvironmentVariable("LOCALAPPDATA");
+                            if (string.IsNullOrWhiteSpace(localAppRoot))
+                                localAppRoot = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+                            string privacyDir = Path.Combine(localAppRoot, "XPIDER_Privacy_Relay");
+                            string companionDir = Path.Combine(installDir, "companion");
+                            string seedArgs = "\"" + migrationScript + "\" --apply-seed --seed \"" + tmpSeed + "\" --target-state-dir \"" + stateDir + "\" --target-privacy-dir \"" + privacyDir + "\" --target-companion-dir \"" + companionDir + "\" --delete-after" + (forceSeed ? " --overwrite" : "");
                             ProcessStartInfo psi = new ProcessStartInfo
                             {
                                 FileName = nodeExe,

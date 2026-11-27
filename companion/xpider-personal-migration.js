@@ -67,6 +67,7 @@ function tryDecryptField(val, cryptoBox) {
 
 function packPersonalSeed({
   sourceStateDir,
+  sourcePrivacyDir = null,
   outSeedPath,
   cryptoBox = null,
   includeWebComposeState = true
@@ -147,13 +148,78 @@ function packPersonalSeed({
     }
   }
 
+  // Unwrap Privacy Relay config & DPAPI node credentials (%LOCALAPPDATA%\XPIDER_Privacy_Relay)
+  let privacyRelay = null;
+  if (sourcePrivacyDir && fs.existsSync(sourcePrivacyDir)) {
+    const pr = {
+      egressPoolConfig: null,
+      privateEgressTransaction: null,
+      nodeCredentials: {}
+    };
+    let prHasAny = false;
+    const poolPath = path.join(sourcePrivacyDir, 'egress_pool_config.json');
+    if (fs.existsSync(poolPath)) {
+      const content = fs.readFileSync(poolPath, 'utf8');
+      if (content && content.trim()) {
+        pr.egressPoolConfig = content;
+        prHasAny = true;
+        includedNames.push('XPIDER_Privacy_Relay/egress_pool_config.json');
+      }
+    }
+    const txPath = path.join(sourcePrivacyDir, '.private_egress_transaction.json');
+    if (fs.existsSync(txPath)) {
+      const content = fs.readFileSync(txPath, 'utf8');
+      if (content && content.trim()) {
+        pr.privateEgressTransaction = content;
+        prHasAny = true;
+        includedNames.push('XPIDER_Privacy_Relay/.private_egress_transaction.json');
+      }
+    }
+    const credsPath = path.join(sourcePrivacyDir, '.local_credentials.json');
+    if (fs.existsSync(credsPath)) {
+      try {
+        const rawCreds = JSON.parse(fs.readFileSync(credsPath, 'utf8'));
+        const collected = {};
+        if (rawCreds && typeof rawCreds === 'object') {
+          for (const [k, v] of Object.entries(rawCreds)) {
+            if (k === 'nodes') continue;
+            const ref = (typeof v === 'string') ? v : (v && typeof v === 'object' ? v.credentialRef : '');
+            if (ref) collected[k] = ref;
+          }
+          if (rawCreds.nodes && typeof rawCreds.nodes === 'object') {
+            for (const [k, v] of Object.entries(rawCreds.nodes)) {
+              const ref = (typeof v === 'string') ? v : (v && typeof v === 'object' ? v.credentialRef : '');
+              if (ref && !collected[k]) collected[k] = ref;
+            }
+          }
+        }
+        let unwrappedCount = 0;
+        for (const [nodeId, cipherRef] of Object.entries(collected)) {
+          const plain = tryDecryptField(cipherRef, box);
+          if (plain) {
+            pr.nodeCredentials[nodeId] = plain;
+            unwrappedCount++;
+          }
+        }
+        if (unwrappedCount > 0) {
+          prHasAny = true;
+          includedNames.push(`XPIDER_Privacy_Relay/.local_credentials.json(${unwrappedCount} nodes, re-sealable)`);
+        }
+      } catch (err) {
+        throw new Error(`FAILED_TO_UNWRAP_PRIVACY_RELAY_DPAPI: ${err.message}`);
+      }
+    }
+    if (prHasAny) privacyRelay = pr;
+  }
+
   const payload = {
     schemaVersion: SEED_SCHEMA_VERSION,
     warning: 'LOCAL_PRIVATE_ONLY — CONTAINS OWNER CREDENTIALS — DO NOT COMMIT OR UPLOAD TO GITHUB',
     packedAtUtc: new Date().toISOString(),
     files,
     gmailOAuthClient,
-    gmailAccountsVault
+    gmailAccountsVault,
+    privacyRelay
   };
 
   const jsonBuf = Buffer.from(JSON.stringify(payload), 'utf8');
@@ -193,6 +259,8 @@ function packPersonalSeed({
 function applyPersonalSeed({
   seedPath,
   targetStateDir,
+  targetPrivacyDir = null,
+  targetCompanionDir = null,
   overwriteExisting = false,
   deleteSeedAfterApply = false,
   trustedTestMode = false,
@@ -303,6 +371,76 @@ function applyPersonalSeed({
     }
   }
 
+  // Re-seal & restore Privacy Relay pool config, transaction metadata & node credentials (.local_credentials.json)
+  if (payload.privacyRelay && typeof payload.privacyRelay === 'object') {
+    const pr = payload.privacyRelay;
+    const prTargets = [];
+    if (targetPrivacyDir) prTargets.push({ label: 'XPIDER_Privacy_Relay', dir: targetPrivacyDir });
+    if (targetCompanionDir) prTargets.push({ label: 'App/companion', dir: targetCompanionDir });
+
+    const shouldRestorePoolFile = (destPath) => {
+      if (overwriteExisting || !fs.existsSync(destPath)) return true;
+      try {
+        const parsed = JSON.parse(fs.readFileSync(destPath, 'utf8'));
+        return !parsed || !Array.isArray(parsed.nodes) || parsed.nodes.length === 0;
+      } catch (_) {
+        return true;
+      }
+    };
+
+    const nodeCredEntries = pr.nodeCredentials && typeof pr.nodeCredentials === 'object'
+      ? Object.entries(pr.nodeCredentials).filter(([k, v]) => k && typeof v === 'string' && v.length > 0)
+      : [];
+    const resealedCredsMap = {};
+    for (const [nodeId, plain] of nodeCredEntries) {
+      resealedCredsMap[nodeId] = box.encrypt(plain);
+    }
+
+    for (const tgt of prTargets) {
+      fs.mkdirSync(tgt.dir, { recursive: true });
+      if (typeof pr.egressPoolConfig === 'string' && pr.egressPoolConfig.trim()) {
+        const destPool = path.join(tgt.dir, 'egress_pool_config.json');
+        if (shouldRestorePoolFile(destPool)) {
+          writeFileSafe(destPool, pr.egressPoolConfig, false);
+          applied.push(`${tgt.label}/egress_pool_config.json`);
+        } else {
+          skippedExisting.push(`${tgt.label}/egress_pool_config.json`);
+        }
+      }
+      if (typeof pr.privateEgressTransaction === 'string' && pr.privateEgressTransaction.trim()) {
+        const destTx = path.join(tgt.dir, '.private_egress_transaction.json');
+        if (overwriteExisting || !fs.existsSync(destTx)) {
+          writeFileSafe(destTx, pr.privateEgressTransaction, false);
+          applied.push(`${tgt.label}/.private_egress_transaction.json`);
+        } else {
+          skippedExisting.push(`${tgt.label}/.private_egress_transaction.json`);
+        }
+      }
+      if (Object.keys(resealedCredsMap).length > 0) {
+        const destCreds = path.join(tgt.dir, '.local_credentials.json');
+        let merged = {};
+        if (!overwriteExisting && fs.existsSync(destCreds)) {
+          try { merged = JSON.parse(fs.readFileSync(destCreds, 'utf8')) || {}; } catch (_) { merged = {}; }
+        }
+        if (!merged.nodes || typeof merged.nodes !== 'object') merged.nodes = {};
+        let updatedCount = 0;
+        for (const [nodeId, cipherRef] of Object.entries(resealedCredsMap)) {
+          if (overwriteExisting || !merged[nodeId] || !merged.nodes[nodeId]) {
+            merged[nodeId] = cipherRef;
+            merged.nodes[nodeId] = { credentialRef: cipherRef };
+            updatedCount++;
+          }
+        }
+        if (updatedCount > 0 || overwriteExisting || !fs.existsSync(destCreds)) {
+          writeFileSafe(destCreds, JSON.stringify(merged, null, 2) + '\n', true);
+          applied.push(`${tgt.label}/.local_credentials.json(${updatedCount} nodes resealed)`);
+        } else {
+          skippedExisting.push(`${tgt.label}/.local_credentials.json`);
+        }
+      }
+    }
+  }
+
   if (deleteSeedAfterApply) {
     try { fs.unlinkSync(seedPath); } catch (_) {}
   }
@@ -326,9 +464,10 @@ if (require.main === module) {
   try {
     if (args.includes('--pack-seed')) {
       const srcDir = getArg('--source-state-dir') || path.join(process.env.LOCALAPPDATA || '', 'XPIDER', 'Sidecar');
+      const srcPrivacyDir = getArg('--source-privacy-dir') || (process.env.LOCALAPPDATA ? path.join(process.env.LOCALAPPDATA, 'XPIDER_Privacy_Relay') : null);
       const outPath = getArg('--out');
       if (!outPath) throw new Error('MISSING_--out');
-      const res = packPersonalSeed({ sourceStateDir: srcDir, outSeedPath: outPath });
+      const res = packPersonalSeed({ sourceStateDir: srcDir, sourcePrivacyDir: srcPrivacyDir, outSeedPath: outPath });
       console.log(`PERSONAL_SEED_PACKED count=${res.includedCount} sha256=${res.sha256}`);
       console.log(`ITEMS=${res.includedNames.join(', ')}`);
       process.exit(0);
@@ -336,11 +475,15 @@ if (require.main === module) {
     if (args.includes('--apply-seed')) {
       const seedPath = getArg('--seed');
       const targetDir = getArg('--target-state-dir') || path.join(process.env.LOCALAPPDATA || '', 'XPIDER', 'Sidecar');
+      const targetPrivacyDir = getArg('--target-privacy-dir') || (process.env.LOCALAPPDATA ? path.join(process.env.LOCALAPPDATA, 'XPIDER_Privacy_Relay') : null);
+      const targetCompanionDir = getArg('--target-companion-dir') || null;
       const overwrite = args.includes('--overwrite');
       const delAfter = args.includes('--delete-after');
       const res = applyPersonalSeed({
         seedPath,
         targetStateDir: targetDir,
+        targetPrivacyDir,
+        targetCompanionDir,
         overwriteExisting: overwrite,
         deleteSeedAfterApply: delAfter
       });

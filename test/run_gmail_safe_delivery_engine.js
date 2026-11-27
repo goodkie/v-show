@@ -2137,11 +2137,18 @@ function makeRefreshVaultFetch(counterRef) {
       assert.equal(goodInst.verifiedSha256, fakeExeSha);
       assert.ok(spawnedCmd && spawnedCmd.args.includes('--silent') && spawnedCmd.args.includes('--restart-sidecar'));
 
-      // Local-only personal migration seed: pack on PC1 (box1) -> apply on PC2 (box2) with cross-PC DPAPI re-seal!
+      // Local-only personal migration seed: pack on PC1 (box1) -> apply on PC2 (box2) with cross-PC DPAPI re-seal (Sidecar + Privacy Relay)!
       const pc1State = path.join(tmpRoot, 'pc1_state');
       const pc2State = path.join(tmpRoot, 'pc2_state');
+      const pc1Privacy = path.join(tmpRoot, 'pc1_privacy');
+      const pc2Privacy = path.join(tmpRoot, 'pc2_privacy');
+      const pc2Companion = path.join(tmpRoot, 'pc2_companion');
       const seedBin = path.join(tmpRoot, 'XPIDER_PERSONAL_SEED.bin');
       fs.mkdirSync(pc1State, { recursive: true });
+      fs.mkdirSync(pc1Privacy, { recursive: true });
+      fs.mkdirSync(pc2Privacy, { recursive: true });
+      // Pre-seed PC2 with a broken empty 0-node egress_pool_config.json to verify auto-heal on apply!
+      fs.writeFileSync(path.join(pc2Privacy, 'egress_pool_config.json'), JSON.stringify({ version: '1.0.3', selectedEgressId: null, nodes: [] }));
       const pc1Box = {
         encrypt: s => 'testbox:pc1:' + Buffer.from(s, 'utf8').toString('base64'),
         decrypt: c => Buffer.from(String(c).replace(/^testbox:pc1:/, ''), 'base64').toString('utf8')
@@ -2153,23 +2160,41 @@ function makeRefreshVaultFetch(counterRef) {
       const synthResend = ['re', 'synth', 'key', '1234567890'].join('_');
       const synthGemini = ['AI', 'zaSynthTestKey1234567890abcdef'].join('');
       const synthRefresh = ['1', '//synth-refresh-token-abc'].join('');
+      const synthRelayPass = ['synth', 'relay', 'node', 'secret', '98765'].join('-');
       fs.writeFileSync(path.join(pc1State, '.resend_api_key'), synthResend);
       fs.writeFileSync(path.join(pc1State, '.ai_copy_api_key'), synthGemini);
       fs.writeFileSync(path.join(pc1State, '.gmail_domain_config.json'), JSON.stringify({ brandDomain: 'brand.example', unsubscribeBaseUrl: 'https://unsubscribe.brand.example' }));
+      fs.writeFileSync(path.join(pc1Privacy, 'egress_pool_config.json'), JSON.stringify({ version: '1.0.3', selectedEgressId: 'synth-node-1', nodes: [{ id: 'synth-node-1', host: '203.0.113.10', port: 8443 }] }));
+      fs.writeFileSync(path.join(pc1Privacy, '.private_egress_transaction.json'), JSON.stringify({ status: 'ACTIVE', dropletId: 999001 }));
+      const pc1RelayCipher = pc1Box.encrypt(synthRelayPass);
+      fs.writeFileSync(path.join(pc1Privacy, '.local_credentials.json'), JSON.stringify({ nodes: { 'synth-node-1': { credentialRef: pc1RelayCipher } }, 'synth-node-1': pc1RelayCipher }));
       // Seed PC1 using the REAL GmailAccountVault class so schema parity (clientId, clientSecretRef, accounts[].tokenRef) is tested 100%!
       const pc1VaultInst = new GmailAccountVault({ stateDir: pc1State, trustedTestMode: true, cryptoBox: pc1Box });
       const saveCli = pc1VaultInst.saveOAuthClientConfig({ clientId: 'synth-client-id.apps.googleusercontent.com', clientSecret: 'synth-client-sec-1234', userConsentConfirmed: true });
       assert.equal(saveCli.ok, true);
       pc1VaultInst.upsertMockAccountForTest({ email: 'owner@example.test', refreshToken: synthRefresh, accessToken: 'synth-access-tok' });
 
-      const packed = packPersonalSeed({ sourceStateDir: pc1State, outSeedPath: seedBin, cryptoBox: pc1Box });
+      const packed = packPersonalSeed({ sourceStateDir: pc1State, sourcePrivacyDir: pc1Privacy, outSeedPath: seedBin, cryptoBox: pc1Box });
       assert.equal(packed.ok, true);
-      assert.ok(packed.includedCount >= 5);
-      const applied = applyPersonalSeed({ seedPath: seedBin, targetStateDir: pc2State, deleteSeedAfterApply: true, trustedTestMode: true, cryptoBox: pc2Box });
+      assert.ok(packed.includedCount >= 8);
+      const applied = applyPersonalSeed({ seedPath: seedBin, targetStateDir: pc2State, targetPrivacyDir: pc2Privacy, targetCompanionDir: pc2Companion, deleteSeedAfterApply: true, trustedTestMode: true, cryptoBox: pc2Box });
       assert.equal(applied.ok, true);
       assert.equal(fs.existsSync(seedBin), false, 'Temp seed file must be deleted after apply');
       assert.equal(fs.readFileSync(path.join(pc2State, '.resend_api_key'), 'utf8'), synthResend);
       assert.equal(fs.readFileSync(path.join(pc2State, '.ai_copy_api_key'), 'utf8'), synthGemini);
+
+      // Verify Privacy Relay pool auto-healed from 0 nodes -> 1 node AND .local_credentials.json re-sealed under PC2 DPAPI!
+      const pc2Pool = JSON.parse(fs.readFileSync(path.join(pc2Privacy, 'egress_pool_config.json'), 'utf8'));
+      assert.equal(pc2Pool.nodes.length, 1);
+      assert.equal(pc2Pool.selectedEgressId, 'synth-node-1');
+      const pc2CompPool = JSON.parse(fs.readFileSync(path.join(pc2Companion, 'egress_pool_config.json'), 'utf8'));
+      assert.equal(pc2CompPool.nodes.length, 1);
+      const pc2RelayCreds = JSON.parse(fs.readFileSync(path.join(pc2Privacy, '.local_credentials.json'), 'utf8'));
+      assert.ok(pc2RelayCreds['synth-node-1'].startsWith('testbox:pc2:'), 'Privacy Relay node cred must be re-sealed under PC2 DPAPI');
+      assert.equal(pc2Box.decrypt(pc2RelayCreds['synth-node-1']), synthRelayPass);
+      assert.equal(pc2Box.decrypt(pc2RelayCreds.nodes['synth-node-1'].credentialRef), synthRelayPass);
+      const pc2CompCreds = JSON.parse(fs.readFileSync(path.join(pc2Companion, '.local_credentials.json'), 'utf8'));
+      assert.equal(pc2Box.decrypt(pc2CompCreds['synth-node-1']), synthRelayPass);
 
       // Verify a REAL GmailAccountVault on PC2 (with PC2's different DPAPI key!) reads OAuth Client & Account tokens seamlessly!
       const pc2VaultInst = new GmailAccountVault({ stateDir: pc2State, trustedTestMode: true, cryptoBox: pc2Box });
@@ -2185,8 +2210,8 @@ function makeRefreshVaultFetch(counterRef) {
       assert.ok(jsRc14.includes('CHECK_APP_UPDATE') && jsRc14.includes('INSTALL_APP_UPDATE'));
       assert.ok(bgRc14.includes('CHECK_APP_UPDATE') && bgRc14.includes('INSTALL_APP_UPDATE'));
 
-      checks += 21;
-      console.log('PASS 17: RC14-RC23 multi-account Gmail Native Web Compose, live preview editors, per-account warmup dropdown, GitHub SHA-256 auto-updater & cross-PC DPAPI local migration verified');
+      checks += 27;
+      console.log('PASS 17: RC14-RC25 multi-account Gmail Native Web Compose, live preview editors, per-account warmup dropdown, GitHub SHA-256 auto-updater & cross-PC DPAPI local migration (Sidecar + Privacy Relay) verified');
     }
 
     console.log(`XPIDER V7.1 Gmail Safe Delivery Engine suite: ${checks}/${checks} PASS; ZERO REAL SENDS`);
