@@ -36,7 +36,11 @@ function htmlFor(v,preview=false){
  const blobAttr=(preview && localPic && previewFileUrl) ? ' data-local-blob="'+esc(previewFileUrl)+'"' : '';
  let img='';
  if(pic){
-  img='<img src="'+esc(pic)+'"'+blobAttr+' alt="'+esc(v.alt)+'" width="560" style="display:block;max-width:100%;width:100%;height:auto;border-radius:8px;margin:0 0 24px">';
+  const imgTag='<img src="'+esc(pic)+'"'+blobAttr+' alt="'+esc(v.alt)+'" width="560" style="display:block;max-width:100%;width:100%;height:auto;border-radius:8px;border:0;margin:0 0 24px">';
+  const ctaLinkUrl=url(v.link);
+  img=ctaLinkUrl
+   ? '<a href="'+esc(ctaLinkUrl)+'" target="_blank" rel="noopener noreferrer" style="display:block;text-decoration:none;border:0;">'+imgTag+'</a>'
+   : imgTag;
  }else if(preview && v.image){
   const msg=httpsPic
    ? '🔒 외부 HTTPS 이미지 미리보기 차단됨 (개인정보 보호 기본값 · 위 "외부 HTTPS 이미지 미리보기 로딩 허용" 체크 시 표시)'
@@ -225,6 +229,7 @@ function render(){
     : `<span style="color:#b91c1c;">⚠️ ${esc(fp.from)}</span>`;
   }
   if(el('preview'))el('preview').srcdoc=htmlFor(v,true);
+  if(typeof syncLivePreviewEditorsFromSource==='function')syncLivePreviewEditorsFromSource(v);
   updateImageDiagnostics(v);
   const checks=audit(v);const list=el('checkList');
   if(list){
@@ -468,10 +473,760 @@ if (el('sidecarPort')) {
 }
 setTimeout(() => { try { refreshImageHostStatus(); refreshUnsubscribeStatus(); } catch (_) {} }, 50);
 if(el('exportHtml'))el('exportHtml').onclick=()=>{const v=values();if(previewFileUrl&&!url(v.image))alert('로컬 이미지는 이메일에 포함되지 않습니다. 공개 HTTPS 이미지 URL을 먼저 입력하세요.');download('xpider-vivpr-template.html','text/html;charset=utf-8',htmlFor(v))};
-if(el('exportText'))el('exportText').onclick=()=>download('xpider-vivpr-template.txt','text/plain;charset=utf-8',textFor(values()));
+if(el('exportText'))el('exportText').onclick=()=>{const v=values();const prov=el('emailProviderSelect')?el('emailProviderSelect').value:'RESEND';download('xpider-vivpr-template.txt','text/plain;charset=utf-8',getEffectiveTextForProvider(v,prov));};
 if(el('exportJson'))el('exportJson').onclick=()=>download('xpider-vivpr-template.json','application/json',JSON.stringify({version:1,template:values(),note:'No secrets, recipient list or API keys'},null,2));
-if(el('desktop'))el('desktop').onclick=()=>{if(el('preview'))el('preview').style.width='100%'};
-if(el('mobile'))el('mobile').onclick=()=>{if(el('preview'))el('preview').style.width='min(360px,100%)'};
+if(el('desktop'))el('desktop').onclick=()=>{if(el('preview'))el('preview').style.width='100%';if(el('htmlPreviewEditPane'))el('htmlPreviewEditPane').style.width='100%';if(el('gmailTextPreviewPane'))el('gmailTextPreviewPane').style.width='100%';};
+if(el('mobile'))el('mobile').onclick=()=>{if(el('preview'))el('preview').style.width='min(360px,100%)';if(el('htmlPreviewEditPane'))el('htmlPreviewEditPane').style.width='min(360px,100%)';if(el('gmailTextPreviewPane'))el('gmailTextPreviewPane').style.width='min(360px,100%)';};
+
+// ===== RC21: Gmail Auto-Text Live Preview & Direct Preview Editing (Text + HTML Visual/Source) =====
+const previewEditorState = {
+  activeMode: 'HTML', // 'HTML' | 'HTML_EDIT' | 'GMAIL_TEXT'
+  htmlEditSubMode: 'VISUAL', // 'VISUAL' | 'SOURCE'
+  gmailTextCustomEdited: false,
+  customTextSubject: '',
+  customTextBody: '',
+  lastAutoTextSubject: '',
+  lastAutoTextBody: '',
+  lastAutoCalmedTriggered: false,
+  lastAutoCalmedSummary: '',
+  leftChangedWhileTextEdited: false,
+  htmlPreviewCustomEdited: false,
+  suppressEditorResync: false
+};
+
+function decodeHtmlEntitiesClient(str) {
+  return String(str || '')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&#x([0-9a-f]+);/gi, (_, hex) => {
+      const cp = parseInt(hex, 16);
+      return Number.isFinite(cp) && cp > 0 && cp <= 0x10ffff ? String.fromCodePoint(cp) : '';
+    })
+    .replace(/&#(\d+);/g, (_, dec) => {
+      const cp = parseInt(dec, 10);
+      return Number.isFinite(cp) && cp > 0 && cp <= 0x10ffff ? String.fromCodePoint(cp) : '';
+    })
+    .replace(/&apos;/gi, "'")
+    .replace(/&quot;/gi, '"')
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .replace(/&mdash;/gi, '—')
+    .replace(/&ndash;/gi, '–')
+    .replace(/&rsquo;/gi, '’')
+    .replace(/&lsquo;/gi, '‘')
+    .replace(/&rdquo;/gi, '”')
+    .replace(/&ldquo;/gi, '“')
+    .replace(/&amp;/gi, '&');
+}
+
+function stripHtmlToPlainClient(html) {
+  let s = String(html || '')
+    .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+    .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+    .replace(/<div\b[^>]*style\s*=\s*["'][^"']*display\s*:\s*none[^"']*["'][^>]*>[\s\S]*?<\/div>/gi, '');
+  s = s.replace(/<a\b[^>]*href=["'](https?:\/\/[^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi, (_, href, inner) => {
+    const label = decodeHtmlEntitiesClient(String(inner || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim());
+    const cleanHref = String(href || '').trim();
+    if (!label || label.toLowerCase() === cleanHref.toLowerCase()) return cleanHref;
+    return `${label} (${cleanHref})`;
+  });
+  s = s.replace(/<img\b[^>]*>/gi, '');
+  s = s
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/(p|h[1-6])>/gi, '\n\n')
+    .replace(/<\/(div|li|tr)>/gi, '\n')
+    .replace(/<[^>]+>/g, ' ');
+  return decodeHtmlEntitiesClient(s)
+    .replace(/[ \t]+\n/g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
+function countEmojiPictographsClient(str) {
+  try {
+    const m = String(str || '').match(/\p{Extended_Pictographic}/gu);
+    return m ? m.length : 0;
+  } catch (_) {
+    return 0;
+  }
+}
+
+function stripEmojiPictographsClient(str) {
+  try {
+    return String(str || '').replace(/\p{Extended_Pictographic}(?:\uFE0E|\uFE0F)?(?:\u200D\p{Extended_Pictographic}(?:\uFE0E|\uFE0F)?)*/gu, '');
+  } catch (_) {
+    return String(str || '');
+  }
+}
+
+function countAllCapsLinesClient(str) {
+  const lines = String(str || '').replace(/\r\n/g, '\n').split('\n');
+  let count = 0;
+  for (const rawLine of lines) {
+    const line = rawLine.trim();
+    if (!line || /https?:\/\//i.test(line)) continue;
+    const asciiLetters = line.replace(/[^A-Za-z]/g, '');
+    const upperLetters = line.replace(/[^A-Z]/g, '');
+    if (asciiLetters.length >= 10 && (upperLetters.length / asciiLetters.length) >= 0.8) count++;
+  }
+  return count;
+}
+
+function cleanSubjectHygieneClient(subject) {
+  let s = String(subject || '').replace(/[\r\n\0]+/g, ' ').trim();
+  if (!s) return s;
+  s = s.replace(/!{2,}/g, '!').replace(/\?{2,}/g, '?').replace(/\${2,}/g, '$').replace(/\s{2,}/g, ' ').trim();
+  const asciiLetters = s.replace(/[^A-Za-z]/g, '');
+  const upperLetters = s.replace(/[^A-Z]/g, '');
+  if (asciiLetters.length >= 12 && (upperLetters.length / asciiLetters.length) >= 0.85) {
+    s = s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
+  }
+  return s;
+}
+
+function softenSpamPhrasesClient(str, isSubject = false) {
+  let s = decodeHtmlEntitiesClient(String(str || ''));
+  if (isSubject) s = s.replace(/^(?:\s*(?:re|fwd|fw|회신|전달)\s*:\s*)+/i, '');
+  s = s.replace(/\r\n/g, '\n').split('\n').map(line => {
+    if (!line.trim() || /https?:\/\//i.test(line)) return line;
+    const asciiLetters = line.replace(/[^A-Za-z]/g, '');
+    const upperLetters = line.replace(/[^A-Z]/g, '');
+    if (asciiLetters.length >= 10 && (upperLetters.length / asciiLetters.length) >= 0.8) {
+      return line.toLowerCase().replace(/[a-z]/, ch => ch.toUpperCase());
+    }
+    return line;
+  }).join('\n');
+  if (countEmojiPictographsClient(s) >= 5) {
+    let kept = 0;
+    try {
+      s = s.replace(/\p{Extended_Pictographic}(?:\uFE0E|\uFE0F)?(?:\u200D\p{Extended_Pictographic}(?:\uFE0E|\uFE0F)?)*/gu, m => {
+        kept++;
+        return kept <= 1 ? m : '';
+      });
+    } catch (_) {}
+  }
+  if ((s.match(/!/g) || []).length >= 6) {
+    let exSeen = 0;
+    s = s.replace(/!/g, () => {
+      exSeen++;
+      return exSeen <= 2 ? '!' : '.';
+    });
+  }
+  return s
+    .replace(/!{2,}/g, '.')
+    .replace(/\?{2,}/g, '?')
+    .replace(/\${2,}/g, '$')
+    .replace(/100%\s*(보장|확정)/gi, '안내')
+    .replace(/무조건\s*무료/gi, '무료 안내')
+    .replace(/무료\s*증정/gi, '혜택 안내')
+    .replace(/긴급\s*클릭/gi, '내용 확인')
+    .replace(/지금\s*당장/gi, '편하신 시간에')
+    .replace(/초특가|한정\s*특가/gi, '프로모션 안내')
+    .replace(/당첨\s*(안내|보장)/gi, '이벤트 안내')
+    .replace(/최저가\s*보장/gi, '가격 안내')
+    .replace(/(수익|확정)\s*(보장|수익)/gi, '서비스 안내')
+    .replace(/선착순\s*마감/gi, '일정 안내')
+    .replace(/\bfree\s+money\b/gi, 'special offer')
+    .replace(/\bguaranteed\s+(income|profit)\b/gi, 'service update')
+    .replace(/\bact\s+now\b/gi, 'learn more')
+    .replace(/\bclick\s+here\s+now\b/gi, 'view details')
+    .replace(/\b100%\s+free\b/gi, 'complimentary')
+    .replace(/\bclaim\s+your\s+prize\b/gi, 'view event details')
+    .replace(/\burgent\s+response\b/gi, 'follow-up')
+    .replace(/\bgrand\s+reopening\s+holiday\s+special\b/gi, 'New location holiday update')
+    .replace(/\bgrand\s+reopening\b/gi, 'New location opening')
+    .replace(/\bholiday\s+special\b/gi, 'Holiday update')
+    .replace(/\blimited[- ]time\s+offer\b/gi, 'seasonal note')
+    .replace(/\bflash\s+sale\b/gi, 'seasonal update')
+    .replace(/\bnow\s+booking\b/gi, 'Booking open')
+    .replace(/\bbook\s+now\b/gi, 'Book online')
+    .replace(/\breserve\s+([^\n.!?]{1,40})\s+today\b/gi, 'Reserve $1')
+    .replace(/\b(\d{1,2})%\s*off\b/gi, '$1% savings')
+    .replace(/안\s+녕하세요/g, '안녕하세요')
+    .replace(/되요/g, '돼요')
+    .replace(/할께요/g, '할게요')
+    .replace(/뵙겠읍니다/g, '뵙겠습니다')
+    .replace(/[ \t]{2,}/g, ' ')
+    .replace(/[ \t]+\n/g, '\n')
+    .trim();
+}
+
+function buildCleanNaturalHtmlFromPlainText(plainText) {
+  const lines = decodeHtmlEntitiesClient(String(plainText || '')).replace(/\r\n/g, '\n').split('\n');
+  const paras = [];
+  let buf = [];
+  for (const line of lines) {
+    if (!line.trim()) {
+      if (buf.length) { paras.push(buf.join('<br>')); buf = []; }
+    } else {
+      const linked = esc(line.trim()).replace(
+        /(https?:\/\/[^\s<>"')\]}]+?)([.,;:!?)\]}]*)(?=\s|$|<|&gt;|&quot;)/gi,
+        (_, rawUrl, trailing) => `<a href="${rawUrl}" style="color:#1a73e8;text-decoration:underline;">${rawUrl}</a>${trailing}`
+      );
+      buf.push(linked);
+    }
+  }
+  if (buf.length) paras.push(buf.join('<br>'));
+  const inner = paras.map(p => `<p style="margin:0 0 12px 0;">${p}</p>`).join('\n');
+  return `<div dir="ltr" style="font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.6;color:#222222;">\n${inner}\n</div>`;
+}
+
+function computeGmailAutoTextDraft(v) {
+  const autoCalmEnabled = !el('spamOptAutoCalmPromo') || Boolean(el('spamOptAutoCalmPromo').checked);
+  const rawSubject = String(v.subject || '').trim();
+  const rawBaseText = importedHtmlLayout
+    ? stripHtmlToPlainClient(importedHtmlLayout)
+    : textFor(v);
+  const cleanedSourceText = String(rawBaseText || '')
+    .replace(/^구독\s*취소\s*:.*preview-sample-only[^\n]*$/gim, '')
+    .replace(/https?:\/\/[^\s"'<>]+\/unsubscribe\/preview-sample-only[^\n]*/gi, '')
+    .replace(/^\[[^\]]*https?:\/\/[^\]]+\]\s*$/gim, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+
+  const combo = `${rawSubject}\n${cleanedSourceText}`;
+  const emojis = countEmojiPictographsClient(combo);
+  const capsLines = countAllCapsLinesClient(cleanedSourceText);
+  const hasPct = /\b\d{1,2}%\s*off\b/i.test(combo);
+  const matches = combo.match(/\b(grand\s+reopening|holiday\s+special|now\s+booking|book\s+now|limited[- ]time\s+offer|reserve\b[^.\n]{0,40}\btoday|don['’]t\s+miss\s+out|special\s+offer|flash\s+sale)\b/gi) || [];
+  const excls = (combo.match(/!/g) || []).length;
+  const densityHit = matches.length >= 2 || (hasPct && matches.length >= 1) || excls >= 6;
+  const shouldCalm = autoCalmEnabled && (emojis >= 5 || capsLines >= 3 || densityHit);
+
+  if (shouldCalm) {
+    const softenedSubj = stripEmojiPictographsClient(softenSpamPhrasesClient(rawSubject, true)).replace(/\s{2,}/g, ' ').trim();
+    const outSubject = cleanSubjectHygieneClient(softenedSubj || rawSubject);
+    let calmedText = softenSpamPhrasesClient(cleanedSourceText, false);
+    if (countEmojiPictographsClient(calmedText) > 0) {
+      calmedText = stripEmojiPictographsClient(calmedText)
+        .replace(/[ \t]{2,}/g, ' ')
+        .replace(/^[ \t]+/gm, '')
+        .replace(/\n{3,}/g, '\n\n')
+        .trim();
+    }
+    return {
+      subject: outSubject,
+      text: calmedText,
+      autoCalmedTriggered: true,
+      summary: `강한 프로모션 패턴 감지(이모지 ${emojis}개 · 대문자 줄 ${capsLines}줄 · 느낌표 ${excls}개) → 차분한 텍스트 기반 이메일로 자동 변환됨`
+    };
+  }
+  return {
+    subject: cleanSubjectHygieneClient(rawSubject),
+    text: cleanedSourceText,
+    autoCalmedTriggered: false,
+    summary: autoCalmEnabled
+      ? 'Gmail 텍스트 기반 캠페인 구조로 정리됨 (강한 프로모션 패턴 미감지 — 원문 톤 유지)'
+      : '자동 프로모션 완화 옵션 해제됨 — 기본 텍스트 기반 캠페인 표시'
+  };
+}
+
+function sanitizeVisualCssStyle(styleStr) {
+  const s = String(styleStr || '');
+  if (!s || /expression\s*\(|javascript\s*:|vbscript\s*:|url\s*\(\s*['"]?\s*(?:javascript|data\s*:\s*text\/html)/i.test(s)) return '';
+  return s.replace(/position\s*:\s*fixed/gi, 'position:relative').slice(0, 600);
+}
+
+function sanitizeHtmlForVisualEditor(rawHtml, allowRemoteImages) {
+  const storeApi = typeof window !== 'undefined' ? window.XpiderStudioStorage : null;
+  let base = String(rawHtml || '');
+  if (storeApi && typeof storeApi.sanitizeImportedHtmlFragment === 'function') {
+    base = storeApi.sanitizeImportedHtmlFragment(base).sanitizedHtml;
+  }
+  const bodyMatch = base.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+  const inner = bodyMatch ? bodyMatch[1] : base;
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(`<div>${inner}</div>`, 'text/html');
+  const root = doc.body.firstElementChild || doc.body;
+  const ALLOWED_TAGS = new Set(['DIV', 'P', 'BR', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'SPAN', 'B', 'STRONG', 'I', 'EM', 'U', 'S', 'A', 'IMG', 'UL', 'OL', 'LI', 'HR', 'BLOCKQUOTE', 'TABLE', 'TBODY', 'THEAD', 'TFOOT', 'TR', 'TD', 'TH']);
+
+  const cleanNode = (node) => {
+    if (!node) return null;
+    if (node.nodeType === 3) return document.createTextNode(node.nodeValue || '');
+    if (node.nodeType !== 1) return null;
+    const tag = node.tagName.toUpperCase();
+    if (tag === 'SCRIPT' || tag === 'STYLE' || tag === 'IFRAME' || tag === 'OBJECT' || tag === 'EMBED' || tag === 'FORM' || tag === 'SVG' || tag === 'MATH' || tag === 'META' || tag === 'LINK') {
+      return null;
+    }
+    const rawStyle = node.getAttribute('style') || '';
+    if (tag === 'DIV' && /display\s*:\s*none/i.test(rawStyle) && /font-size\s*:\s*1px/i.test(rawStyle)) {
+      return null;
+    }
+    if (!ALLOWED_TAGS.has(tag)) {
+      const frag = document.createDocumentFragment();
+      for (const ch of Array.from(node.childNodes)) {
+        const cleaned = cleanNode(ch);
+        if (cleaned) frag.appendChild(cleaned);
+      }
+      return frag;
+    }
+    if (tag === 'IMG') {
+      const src = (node.getAttribute('src') || node.getAttribute('data-xpider-blocked-src') || '').trim();
+      const alt = (node.getAttribute('alt') || '').trim();
+      const isLocal = /^data:image\/(png|jpeg|jpg|webp|gif);/i.test(src) || /^blob:/i.test(src);
+      const isHttps = /^https:\/\//i.test(src);
+      if (!isLocal && !isHttps) return null;
+      if (isHttps && !allowRemoteImages) {
+        const chip = document.createElement('span');
+        chip.className = 'blocked-img-chip';
+        chip.setAttribute('contenteditable', 'false');
+        chip.setAttribute('data-xpider-blocked-img', '1');
+        chip.setAttribute('data-xpider-blocked-src', src);
+        chip.setAttribute('data-xpider-blocked-alt', alt);
+        if (node.getAttribute('width')) chip.setAttribute('data-xpider-blocked-width', node.getAttribute('width'));
+        if (rawStyle) chip.setAttribute('data-xpider-blocked-style', sanitizeVisualCssStyle(rawStyle));
+        chip.textContent = `🖼️ [외부 이미지 보존됨${alt ? `: ${alt}` : ''}] (편집 저장 시 원래 HTTPS URL 유지)`;
+        return chip;
+      }
+      const imgEl = document.createElement('img');
+      imgEl.setAttribute('src', src);
+      if (alt) imgEl.setAttribute('alt', alt);
+      if (node.getAttribute('width')) imgEl.setAttribute('width', String(node.getAttribute('width')).replace(/[^0-9%px]/g, ''));
+      const safeSt = sanitizeVisualCssStyle(rawStyle) || 'display:block;max-width:100%;height:auto;border-radius:8px;margin:0 0 18px;';
+      imgEl.setAttribute('style', safeSt);
+      return imgEl;
+    }
+
+    const outEl = document.createElement(tag.toLowerCase());
+    const safeStyle = sanitizeVisualCssStyle(rawStyle);
+    if (safeStyle) outEl.setAttribute('style', safeStyle);
+    if (tag === 'A') {
+      const href = (node.getAttribute('href') || '').trim();
+      if (/^https:\/\//i.test(href) || /^mailto:/i.test(href)) {
+        outEl.setAttribute('href', href);
+        outEl.setAttribute('target', '_blank');
+        outEl.setAttribute('rel', 'noopener noreferrer');
+      } else {
+        outEl.setAttribute('href', '#');
+      }
+    } else if (tag === 'TABLE' || tag === 'TD' || tag === 'TH') {
+      for (const attr of ['role', 'width', 'align', 'cellpadding', 'cellspacing']) {
+        const av = node.getAttribute(attr);
+        if (av && /^[A-Za-z0-9%._-]+$/.test(av)) outEl.setAttribute(attr, av);
+      }
+    }
+    for (const ch of Array.from(node.childNodes)) {
+      const cleaned = cleanNode(ch);
+      if (cleaned) outEl.appendChild(cleaned);
+    }
+    return outEl;
+  };
+
+  const frag = document.createDocumentFragment();
+  for (const ch of Array.from(root.childNodes)) {
+    const cleaned = cleanNode(ch);
+    if (cleaned) frag.appendChild(cleaned);
+  }
+  return frag;
+}
+
+function serializeVisualEditorHtml(container) {
+  if (!container) return '';
+  const clone = container.cloneNode(true);
+  const blockedChips = clone.querySelectorAll('[data-xpider-blocked-img="1"]');
+  for (const chip of Array.from(blockedChips)) {
+    const origSrc = chip.getAttribute('data-xpider-blocked-src') || '';
+    if (/^https:\/\//i.test(origSrc)) {
+      const img = document.createElement('img');
+      img.setAttribute('src', origSrc);
+      const alt = chip.getAttribute('data-xpider-blocked-alt') || '';
+      if (alt) img.setAttribute('alt', alt);
+      const w = chip.getAttribute('data-xpider-blocked-width') || '560';
+      if (w) img.setAttribute('width', w);
+      img.setAttribute('style', chip.getAttribute('data-xpider-blocked-style') || 'display:block;max-width:100%;width:100%;height:auto;border-radius:8px;border:0;margin:0 0 24px');
+      chip.replaceWith(img);
+    } else {
+      chip.remove();
+    }
+  }
+  const storeApi = typeof window !== 'undefined' ? window.XpiderStudioStorage : null;
+  const rawOut = clone.innerHTML.trim();
+  return storeApi && typeof storeApi.sanitizeImportedHtmlFragment === 'function'
+    ? storeApi.sanitizeImportedHtmlFragment(rawOut).sanitizedHtml
+    : rawOut;
+}
+
+function updatePreviewEditActiveStrip() {
+  const strip = el('previewEditActiveStrip');
+  if (!strip) return;
+  const parts = [];
+  if (previewEditorState.gmailTextCustomEdited) {
+    parts.push('📝 Gmail 텍스트 직접 편집 적용 중');
+  }
+  if (previewEditorState.htmlPreviewCustomEdited && importedHtmlLayout) {
+    parts.push('✏️ HTML 미리보기 직접 편집 적용 중');
+  }
+  if (parts.length === 0) {
+    strip.className = 'preview-edit-strip';
+    strip.textContent = '';
+    return;
+  }
+  strip.className = 'preview-edit-strip visible';
+  strip.textContent = `✅ ${parts.join(' · ')} — 발송 시 미리보기에서 수정한 내용이 반영됩니다.`;
+}
+
+function updateGmailTextPreviewMeta() {
+  const subjEl = el('gmailTextPreviewSubject');
+  const bodyEl = el('gmailTextPreviewBody');
+  const badge = el('gmailTextPreviewBadge');
+  const meta = el('gmailTextLengthMeta');
+  const note = el('gmailTextConversionNote');
+  const footerBox = el('gmailTextComplianceFooterPreview');
+  const subj = subjEl ? subjEl.value : '';
+  const body = bodyEl ? bodyEl.value : '';
+  const encodedApprox = encodeURIComponent(subj).length + encodeURIComponent(body).length;
+  const fitFlag = encodedApprox <= 1550 ? '웹 작성창 URL 한도 여유 ✅' : '본문 길이 큼 (URL 자동 요약 시 [📋 본문 복사]로 Ctrl+V 가능)';
+  if (meta) meta.textContent = `제목 ${subj.length}자 · 본문 ${body.length}자 · ${fitFlag}`;
+  if (badge) {
+    badge.className = previewEditorState.gmailTextCustomEdited ? 'preview-badge-edited' : 'preview-badge-auto';
+    badge.textContent = previewEditorState.gmailTextCustomEdited
+      ? '✏️ 사용자 직접 편집 적용 중'
+      : (previewEditorState.lastAutoCalmedTriggered ? '✨ Gmail 프로모션 → 텍스트형 자동 변환됨' : '📝 Gmail 텍스트 기반 캠페인');
+  }
+  if (note) {
+    if (previewEditorState.gmailTextCustomEdited) {
+      note.textContent = previewEditorState.leftChangedWhileTextEdited
+        ? '✏️ 직접 편집한 Gmail 제목·본문이 잠금 보호되고 있습니다 (좌측 에디터가 변경되었지만 직접 수정본을 덮어쓰지 않았습니다 · 다시 자동 변환하려면 [🔄 자동 변환 원본으로 복원] 클릭).'
+        : '✏️ 직접 편집 적용 중: Gmail 웹 작성창 열기 및 Gmail API 발송 시 아래 수정된 제목과 본문이 그대로 발송됩니다.';
+    } else {
+      note.textContent = `✨ ${previewEditorState.lastAutoCalmedSummary || 'Gmail 발송용 텍스트 기반 캠페인이 실시간 표시됩니다.'} — 아래 입력창에서 바로 문구를 수정할 수 있습니다.`;
+    }
+  }
+  if (footerBox) {
+    const v = values();
+    const gAddr = (el('gmailPhysicalAddress') && el('gmailPhysicalAddress').value.trim()) || v.address || '';
+    const useSigned = !el('webComposeIncludeSignedUnsub') || Boolean(el('webComposeIncludeSignedUnsub').checked);
+    const unsubHost = (el('gmailCustomUnsubBaseInput') && el('gmailCustomUnsubBaseInput').value.trim()) || autoUnsubBaseUrl || 'https://unsubscribe.vivpr.pro';
+    const lines = ['📌 발송 시 자동 부착되는 법적 푸터 (수정 불가):'];
+    lines.push(gAddr ? `• 발신자 물리적 주소: ${gAddr}` : '• 발신자 물리적 주소: (미입력 — 좌측 사업자 주소 또는 Gmail 물리적 주소 입력 권장)');
+    lines.push(useSigned ? `• 수신거부: ${unsubHost.replace(/\/+$/, '')}/unsubscribe/{수신자별_서명토큰}` : '• 수신거부: 회신("수신거부" / "unsubscribe") 안내 문구 자동 부착');
+    footerBox.textContent = lines.join('\n');
+  }
+  updatePreviewEditActiveStrip();
+}
+
+function refreshGmailTextPreviewFromSource(v, sidecarOpt = null) {
+  const autoDraft = computeGmailAutoTextDraft(v || values());
+  let nextSubj = autoDraft.subject;
+  let nextText = autoDraft.text;
+  let calmed = autoDraft.autoCalmedTriggered;
+  let summary = autoDraft.summary;
+
+  if (sidecarOpt && sidecarOpt.provider === 'GMAIL' && sidecarOpt.optimized) {
+    const autoCalmFx = (sidecarOpt.autoFixesApplied || []).find(f => f.code === 'AUTO_CALMED_PROMO_TO_TEXT_STRUCTURE');
+    if (autoCalmFx) {
+      if (sidecarOpt.optimized.subject) nextSubj = String(sidecarOpt.optimized.subject).trim();
+      if (sidecarOpt.optimized.text) {
+        nextText = String(sidecarOpt.optimized.text)
+          .replace(/^구독\s*취소\s*:.*preview-sample-only[^\n]*$/gim, '')
+          .replace(/https?:\/\/[^\s"'<>]+\/unsubscribe\/preview-sample-only[^\n]*/gi, '')
+          .trim();
+      }
+      calmed = true;
+      summary = autoCalmFx.detail || summary;
+    }
+  }
+
+  const autoChanged = nextSubj !== previewEditorState.lastAutoTextSubject || nextText !== previewEditorState.lastAutoTextBody;
+  previewEditorState.lastAutoTextSubject = nextSubj;
+  previewEditorState.lastAutoTextBody = nextText;
+  previewEditorState.lastAutoCalmedTriggered = calmed;
+  previewEditorState.lastAutoCalmedSummary = summary;
+
+  if (!previewEditorState.gmailTextCustomEdited) {
+    if (el('gmailTextPreviewSubject') && el('gmailTextPreviewSubject').value !== nextSubj) {
+      el('gmailTextPreviewSubject').value = nextSubj;
+    }
+    if (el('gmailTextPreviewBody') && el('gmailTextPreviewBody').value !== nextText) {
+      el('gmailTextPreviewBody').value = nextText;
+    }
+    previewEditorState.leftChangedWhileTextEdited = false;
+  } else if (autoChanged) {
+    previewEditorState.leftChangedWhileTextEdited = true;
+  }
+  updateGmailTextPreviewMeta();
+}
+
+function syncHtmlEditorFromSource(v) {
+  const visEl = el('htmlPreviewVisualEditor');
+  const srcEl = el('htmlPreviewSourceEditor');
+  const allowRemote = Boolean(el('loadRemoteImages') && el('loadRemoteImages').checked);
+  const fullHtml = htmlFor(v || values(), true);
+  if (visEl) {
+    visEl.replaceChildren(sanitizeHtmlForVisualEditor(fullHtml, allowRemote));
+  }
+  if (srcEl) {
+    const bodyMatch = htmlFor(v || values(), false).match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+    const bodyInner = bodyMatch ? bodyMatch[1].replace(/<div\b[^>]*style\s*=\s*["'][^"']*display\s*:\s*none[^"']*["'][^>]*>[\s\S]*?<\/div>/gi, '').trim() : htmlFor(v || values(), false);
+    srcEl.value = importedHtmlLayout || bodyInner;
+  }
+  const badge = el('htmlPreviewEditBadge');
+  if (badge) {
+    badge.className = previewEditorState.htmlPreviewCustomEdited && importedHtmlLayout ? 'preview-badge-edited' : 'preview-badge-auto';
+    badge.textContent = previewEditorState.htmlPreviewCustomEdited && importedHtmlLayout
+      ? '✏️ HTML 직접 편집 적용 중'
+      : '🎨 HTML 직접 편집 (클릭해 수정)';
+  }
+  updatePreviewEditActiveStrip();
+}
+
+function syncLivePreviewEditorsFromSource(v) {
+  if (previewEditorState.suppressEditorResync) return;
+  refreshGmailTextPreviewFromSource(v);
+  if (previewEditorState.activeMode === 'HTML_EDIT') {
+    syncHtmlEditorFromSource(v);
+  } else {
+    updatePreviewEditActiveStrip();
+  }
+}
+
+function setHtmlEditSubMode(subMode) {
+  const next = subMode === 'SOURCE' ? 'SOURCE' : 'VISUAL';
+  previewEditorState.htmlEditSubMode = next;
+  const isSrc = next === 'SOURCE';
+  if (el('htmlPreviewVisualEditor')) el('htmlPreviewVisualEditor').style.display = isSrc ? 'none' : 'block';
+  if (el('htmlVisualToolbar')) el('htmlVisualToolbar').style.display = isSrc ? 'none' : 'flex';
+  if (el('htmlPreviewSourceEditor')) el('htmlPreviewSourceEditor').style.display = isSrc ? 'block' : 'none';
+  if (el('btnHtmlEditVisual')) el('btnHtmlEditVisual').className = isSrc ? 'preview-tab-btn' : 'preview-tab-btn active';
+  if (el('btnHtmlEditSource')) el('btnHtmlEditSource').className = isSrc ? 'preview-tab-btn active' : 'preview-tab-btn';
+  syncHtmlEditorFromSource(values());
+}
+
+function setPreviewMode(mode) {
+  const norm = (mode === 'HTML_EDIT' || mode === 'GMAIL_TEXT') ? mode : 'HTML';
+  previewEditorState.activeMode = norm;
+  const map = {
+    HTML: el('btnPreviewModeHtml'),
+    HTML_EDIT: el('btnPreviewModeHtmlEdit'),
+    GMAIL_TEXT: el('btnPreviewModeGmailText')
+  };
+  for (const [k, btn] of Object.entries(map)) {
+    if (btn) btn.className = k === norm ? 'preview-tab-btn active' : 'preview-tab-btn';
+  }
+  if (el('preview')) el('preview').style.display = norm === 'HTML' ? 'block' : 'none';
+  if (el('htmlPreviewEditPane')) el('htmlPreviewEditPane').style.display = norm === 'HTML_EDIT' ? 'block' : 'none';
+  if (el('gmailTextPreviewPane')) el('gmailTextPreviewPane').style.display = norm === 'GMAIL_TEXT' ? 'block' : 'none';
+
+  const v = values();
+  if (norm === 'HTML_EDIT') {
+    syncHtmlEditorFromSource(v);
+  } else if (norm === 'GMAIL_TEXT') {
+    refreshGmailTextPreviewFromSource(v);
+  }
+  updatePreviewEditActiveStrip();
+}
+
+function getEffectiveSubjectForProvider(v, provider = 'RESEND') {
+  const isGmail = String(provider || '').toUpperCase() === 'GMAIL';
+  if (isGmail && previewEditorState.gmailTextCustomEdited && previewEditorState.customTextSubject.trim()) {
+    return previewEditorState.customTextSubject.trim();
+  }
+  return String((v || values()).subject || '').trim();
+}
+
+function getEffectiveTextForProvider(v, provider = 'RESEND') {
+  const isGmail = String(provider || '').toUpperCase() === 'GMAIL';
+  if (isGmail && previewEditorState.gmailTextCustomEdited) {
+    return previewEditorState.customTextBody;
+  }
+  if (isGmail && previewEditorState.lastAutoTextBody && (!el('spamOptAutoCalmPromo') || el('spamOptAutoCalmPromo').checked)) {
+    return previewEditorState.lastAutoTextBody;
+  }
+  return textFor(v || values());
+}
+
+function getEffectiveHtmlForProvider(v, provider = 'RESEND') {
+  const isGmail = String(provider || '').toUpperCase() === 'GMAIL';
+  if (isGmail && previewEditorState.gmailTextCustomEdited && previewEditorState.customTextBody.trim()) {
+    return buildCleanNaturalHtmlFromPlainText(previewEditorState.customTextBody);
+  }
+  return htmlFor(v || values());
+}
+
+function applyHtmlPreviewDirectEdit(sanitizedHtmlFrag, sourceTag) {
+  importedHtmlLayout = sanitizedHtmlFrag;
+  previewEditorState.htmlPreviewCustomEdited = true;
+  studioDirty = true;
+  updateHtmlLayoutBanner();
+  const v = values();
+  previewEditorState.suppressEditorResync = true;
+  try {
+    if (el('preview')) el('preview').srcdoc = htmlFor(v, true);
+    refreshGmailTextPreviewFromSource(v);
+    if (sourceTag === 'VISUAL' && el('htmlPreviewSourceEditor')) {
+      el('htmlPreviewSourceEditor').value = importedHtmlLayout;
+    } else if (sourceTag === 'SOURCE' && el('htmlPreviewVisualEditor')) {
+      const allowRemote = Boolean(el('loadRemoteImages') && el('loadRemoteImages').checked);
+      el('htmlPreviewVisualEditor').replaceChildren(sanitizeHtmlForVisualEditor(htmlFor(v, true), allowRemote));
+    }
+    const badge = el('htmlPreviewEditBadge');
+    if (badge) {
+      badge.className = 'preview-badge-edited';
+      badge.textContent = '✏️ HTML 직접 편집 적용 중';
+    }
+    const meta = el('htmlPreviewEditMeta');
+    if (meta) meta.textContent = `✅ HTML 직접 수정 반영됨 (${importedHtmlLayout.length}자 · 발송 및 미리보기에 즉시 적용)`;
+    updatePreviewEditActiveStrip();
+  } finally {
+    previewEditorState.suppressEditorResync = false;
+  }
+}
+
+if (el('btnPreviewModeHtml')) el('btnPreviewModeHtml').onclick = () => setPreviewMode('HTML');
+if (el('btnPreviewModeHtmlEdit')) el('btnPreviewModeHtmlEdit').onclick = () => setPreviewMode('HTML_EDIT');
+if (el('btnPreviewModeGmailText')) el('btnPreviewModeGmailText').onclick = () => setPreviewMode('GMAIL_TEXT');
+if (el('btnSwitchToHtmlFromText')) el('btnSwitchToHtmlFromText').onclick = () => setPreviewMode('HTML');
+if (el('btnHtmlEditVisual')) el('btnHtmlEditVisual').onclick = () => setHtmlEditSubMode('VISUAL');
+if (el('btnHtmlEditSource')) el('btnHtmlEditSource').onclick = () => setHtmlEditSubMode('SOURCE');
+if (el('btnSyncHtmlEditToPreview')) el('btnSyncHtmlEditToPreview').onclick = () => setPreviewMode('HTML');
+
+if (el('htmlVisualToolbar')) {
+  el('htmlVisualToolbar').addEventListener('click', (ev) => {
+    const btn = ev.target && ev.target.closest ? ev.target.closest('button[data-html-cmd]') : null;
+    if (!btn) return;
+    const cmd = btn.getAttribute('data-html-cmd');
+    const visEl = el('htmlPreviewVisualEditor');
+    if (!cmd || !visEl) return;
+    visEl.focus();
+    try {
+      if (typeof document.execCommand === 'function') document.execCommand(cmd, false, null);
+    } catch (_) {}
+    applyHtmlPreviewDirectEdit(serializeVisualEditorHtml(visEl), 'VISUAL');
+  });
+}
+
+if (el('btnHtmlInsertLink')) {
+  el('btnHtmlInsertLink').onclick = () => {
+    const visEl = el('htmlPreviewVisualEditor');
+    if (!visEl) return;
+    const hrefRaw = typeof window.prompt === 'function' ? window.prompt('삽입할 HTTPS 링크 주소를 입력하세요 (https://...)', 'https://') : '';
+    const safeHref = url(String(hrefRaw || '').trim());
+    if (!safeHref) {
+      if (el('htmlPreviewEditMeta')) el('htmlPreviewEditMeta').textContent = '⚠️ https:// 로 시작하는 유효한 링크만 삽입할 수 있습니다.';
+      return;
+    }
+    visEl.focus();
+    try {
+      if (typeof document.execCommand === 'function') document.execCommand('createLink', false, safeHref);
+    } catch (_) {}
+    applyHtmlPreviewDirectEdit(serializeVisualEditorHtml(visEl), 'VISUAL');
+  };
+}
+
+let htmlVisualEditTimer = null;
+if (el('htmlPreviewVisualEditor')) {
+  el('htmlPreviewVisualEditor').addEventListener('input', () => {
+    if (htmlVisualEditTimer) clearTimeout(htmlVisualEditTimer);
+    htmlVisualEditTimer = setTimeout(() => {
+      const visEl = el('htmlPreviewVisualEditor');
+      if (!visEl) return;
+      applyHtmlPreviewDirectEdit(serializeVisualEditorHtml(visEl), 'VISUAL');
+    }, 120);
+  });
+}
+
+let htmlSourceEditTimer = null;
+if (el('htmlPreviewSourceEditor')) {
+  el('htmlPreviewSourceEditor').addEventListener('input', () => {
+    if (htmlSourceEditTimer) clearTimeout(htmlSourceEditTimer);
+    htmlSourceEditTimer = setTimeout(() => {
+      const srcEl = el('htmlPreviewSourceEditor');
+      if (!srcEl) return;
+      const storeApi = typeof window !== 'undefined' ? window.XpiderStudioStorage : null;
+      const cleaned = storeApi && typeof storeApi.sanitizeImportedHtmlFragment === 'function'
+        ? storeApi.sanitizeImportedHtmlFragment(srcEl.value).sanitizedHtml
+        : srcEl.value;
+      applyHtmlPreviewDirectEdit(cleaned, 'SOURCE');
+    }, 180);
+  });
+}
+
+if (el('btnResetHtmlPreviewEdit')) {
+  el('btnResetHtmlPreviewEdit').onclick = () => {
+    importedHtmlLayout = '';
+    previewEditorState.htmlPreviewCustomEdited = false;
+    updateHtmlLayoutBanner();
+    render();
+    if (el('htmlPreviewEditMeta')) el('htmlPreviewEditMeta').textContent = '🔄 좌측 기본 에디터 HTML 구조로 복원되었습니다.';
+  };
+}
+
+if (el('btnSyncHtmlEditTextToLeft')) {
+  el('btnSyncHtmlEditTextToLeft').onclick = () => {
+    const plain = stripHtmlToPlainClient(importedHtmlLayout || htmlFor(values(), false))
+      .replace(/^구독\s*취소\s*:.*$/gim, '')
+      .trim();
+    if (plain && el('body')) {
+      el('body').value = plain;
+      studioDirty = true;
+      render();
+      if (el('htmlPreviewEditMeta')) el('htmlPreviewEditMeta').textContent = '⬅️ HTML 미리보기에서 추출한 텍스트를 좌측 본문 입력창에 반영했습니다.';
+    }
+  };
+}
+
+if (el('gmailTextPreviewSubject')) {
+  el('gmailTextPreviewSubject').addEventListener('input', () => {
+    previewEditorState.gmailTextCustomEdited = true;
+    previewEditorState.customTextSubject = el('gmailTextPreviewSubject').value;
+    if (!previewEditorState.customTextBody && el('gmailTextPreviewBody')) {
+      previewEditorState.customTextBody = el('gmailTextPreviewBody').value;
+    }
+    previewEditorState.leftChangedWhileTextEdited = false;
+    studioDirty = true;
+    updateGmailTextPreviewMeta();
+  });
+}
+
+if (el('gmailTextPreviewBody')) {
+  el('gmailTextPreviewBody').addEventListener('input', () => {
+    previewEditorState.gmailTextCustomEdited = true;
+    previewEditorState.customTextBody = el('gmailTextPreviewBody').value;
+    if (!previewEditorState.customTextSubject && el('gmailTextPreviewSubject')) {
+      previewEditorState.customTextSubject = el('gmailTextPreviewSubject').value;
+    }
+    previewEditorState.leftChangedWhileTextEdited = false;
+    studioDirty = true;
+    updateGmailTextPreviewMeta();
+  });
+}
+
+if (el('btnResetGmailTextPreview')) {
+  el('btnResetGmailTextPreview').onclick = () => {
+    previewEditorState.gmailTextCustomEdited = false;
+    previewEditorState.customTextSubject = '';
+    previewEditorState.customTextBody = '';
+    previewEditorState.leftChangedWhileTextEdited = false;
+    refreshGmailTextPreviewFromSource(values());
+  };
+}
+
+if (el('btnSyncGmailTextToLeftEditor')) {
+  el('btnSyncGmailTextToLeftEditor').onclick = () => {
+    const s = el('gmailTextPreviewSubject') ? el('gmailTextPreviewSubject').value.trim() : '';
+    const b = el('gmailTextPreviewBody') ? el('gmailTextPreviewBody').value.trim() : '';
+    if (s && el('subject')) el('subject').value = s;
+    if (b && el('body')) el('body').value = b;
+    studioDirty = true;
+    render();
+    if (el('gmailTextConversionNote')) {
+      el('gmailTextConversionNote').textContent = '⬅️ 현재 Gmail 텍스트 미리보기의 제목과 본문을 좌측 기본 에디터에 반영했습니다.';
+    }
+  };
+}
+
+if (el('btnCopyGmailTextPreview')) {
+  el('btnCopyGmailTextPreview').onclick = async () => {
+    const b = el('gmailTextPreviewBody') ? el('gmailTextPreviewBody').value : '';
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) await navigator.clipboard.writeText(b);
+      if (el('btnCopyGmailTextPreview')) {
+        el('btnCopyGmailTextPreview').textContent = '✅ 복사됨';
+        setTimeout(() => { if (el('btnCopyGmailTextPreview')) el('btnCopyGmailTextPreview').textContent = '📋 텍스트 본문 복사'; }, 1500);
+      }
+    } catch (_) {}
+  };
+}
+
 render();
 
 // === Real-Time Detailed Debug Logger (Copy / Save for Debugging, Auto-Redacted) ===
@@ -587,13 +1342,17 @@ if (typeof window !== 'undefined') {
 
 function callBg(msg, opts = {}) {
   const action = String(msg?.action || 'UNKNOWN');
-  const defaultTimeoutMs = action === 'RECONCILE_CAMPAIGN_RESEND'
+  const defaultTimeoutMs = action === 'INSTALL_APP_UPDATE'
+    ? 130000
+    : (action === 'RECONCILE_CAMPAIGN_RESEND'
     ? 95000
     : (action === 'SYNC_EMAIL_PRODUCTION_RECIPIENTS'
       ? 50000
-      : ((action === 'SEND_REAL_TEST_EMAIL' || action === 'RUN_EMAIL_PRODUCTION_QUEUE')
-        ? 45000
-        : ((action === 'VERIFY_RECIPIENT_DOMAINS_DNS' || action === 'START_SECOND_WAVE' || action === 'UPLOAD_EMAIL_IMAGE') ? 30000 : 20000)));
+      : (action === 'PREPARE_GMAIL_QUEUE'
+        ? 50000
+        : ((action === 'SEND_REAL_TEST_EMAIL' || action === 'RUN_EMAIL_PRODUCTION_QUEUE' || action === 'SEND_GMAIL_SELF_TEST' || action === 'RUN_GMAIL_PRODUCTION_QUEUE')
+          ? 45000
+          : ((action === 'VERIFY_RECIPIENT_DOMAINS_DNS' || action === 'START_SECOND_WAVE' || action === 'UPLOAD_EMAIL_IMAGE') ? 30000 : 20000)))));
   const timeoutMs = Number.isFinite(opts.timeoutMs) ? opts.timeoutMs : defaultTimeoutMs;
   const startedAt = Date.now();
   const isNoisyPoll = action === 'GET_CAMPAIGN_PROGRESS' || action === 'GET_EMAIL_SIDECAR_LOGS';
@@ -952,6 +1711,13 @@ function applyStudioFieldValues(d) {
     el('senderDisplayName').value = (biz && biz.toLowerCase() !== 'vivpr.pro') ? biz : '';
   }
   importedHtmlLayout = typeof d.importedHtml === 'string' ? d.importedHtml : '';
+  if (typeof previewEditorState === 'object') {
+    previewEditorState.htmlPreviewCustomEdited = Boolean(importedHtmlLayout);
+    previewEditorState.gmailTextCustomEdited = false;
+    previewEditorState.customTextSubject = '';
+    previewEditorState.customTextBody = '';
+    previewEditorState.leftChangedWhileTextEdited = false;
+  }
   updateHtmlLayoutBanner();
   studioDirty = false;
   render();
@@ -1167,6 +1933,7 @@ if (el('btnImportHtml') && el('importHtmlFile')) {
 if (el('btnClearImportedHtml')) {
   el('btnClearImportedHtml').onclick = () => {
     importedHtmlLayout = '';
+    if (typeof previewEditorState === 'object') previewEditorState.htmlPreviewCustomEdited = false;
     updateHtmlLayoutBanner();
     render();
     setDraftStatus('status-idle', '📝 일반 텍스트 에디터 모드로 전환되었습니다.');
@@ -1224,12 +1991,19 @@ setTimeout(() => {
       if (r && r.ok && r.data) {
         const qs = r.data.queueSummary || {};
         const qReady = Number(qs.counts?.PENDING || 0);
+        const qAccepted = Number(qs.counts?.ACCEPTED || 0);
         const consented = Number(qs.consentedRecordsOnDisk || 0);
         const hBadge = el('headerProdStateBadge');
         if (hBadge) {
-          hBadge.textContent = (qReady > 0 && r.data.deliverabilityGate?.action !== 'BLOCK')
-            ? `✅ 상용발송 잠금 해제 · 발송 가능 ${qReady}건`
-            : `✅ 상용발송 잠금 해제 · 발송대상/자격 확인 필요 (발송 가능 ${qReady}건 / 권한기록 ${consented}건)`;
+          if (qReady > 0 && r.data.deliverabilityGate?.action !== 'BLOCK') {
+            hBadge.textContent = `✅ 상용발송 잠금 해제 · 발송 가능 ${qReady}건`;
+          } else if (qAccepted > 0 && qReady === 0) {
+            if (!String(hBadge.textContent || '').includes('상용발송 완료')) {
+              hBadge.textContent = `✅ 상용발송 완료 · 접수 ${qAccepted}건`;
+            }
+          } else {
+            hBadge.textContent = `✅ 상용발송 잠금 해제 · 발송대상/자격 확인 필요 (발송 가능 ${qReady}건 / 권한기록 ${consented}건)`;
+          }
         }
         const qBadge = el('prodQueueBadge');
         if (qBadge) {
@@ -1241,6 +2015,100 @@ setTimeout(() => {
     }).catch(() => {});
   } catch (_) {}
 }, 60);
+
+let xpiderOpenSemiAutoProposal = null;
+let xpiderRefreshAntiSpamChecklist = null;
+let xpiderOpenGmailSpamHelper = null;
+const LAST_SELF_TEST_META_KEY = 'xpider_last_self_test_meta_v1';
+let lastSentSelfTestMeta = null;
+
+function saveLastSentSelfTestMeta(meta) {
+  if (!meta || typeof meta !== 'object') return;
+  lastSentSelfTestMeta = {
+    provider: meta.provider === 'RESEND' ? 'RESEND' : 'GMAIL',
+    recipient: String(meta.recipient || '').trim().slice(0, 254),
+    subject: String(meta.subject || '').trim().slice(0, 160),
+    fromDomain: String(meta.fromDomain || '').trim().slice(0, 120),
+    providerMessageId: String(meta.providerMessageId || '').trim().slice(0, 128),
+    sentAt: meta.sentAt || new Date().toISOString()
+  };
+  try {
+    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+      chrome.storage.local.set({ [LAST_SELF_TEST_META_KEY]: lastSentSelfTestMeta });
+    } else if (typeof localStorage !== 'undefined') {
+      localStorage.setItem(LAST_SELF_TEST_META_KEY, JSON.stringify(lastSentSelfTestMeta));
+    }
+  } catch (_) {}
+}
+
+function loadLastSentSelfTestMeta() {
+  try {
+    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+      chrome.storage.local.get([LAST_SELF_TEST_META_KEY], (res) => {
+        if (res && res[LAST_SELF_TEST_META_KEY] && typeof res[LAST_SELF_TEST_META_KEY] === 'object') {
+          lastSentSelfTestMeta = res[LAST_SELF_TEST_META_KEY];
+        }
+      });
+    } else if (typeof localStorage !== 'undefined') {
+      const raw = localStorage.getItem(LAST_SELF_TEST_META_KEY);
+      if (raw) lastSentSelfTestMeta = JSON.parse(raw) || null;
+    }
+  } catch (_) {}
+}
+loadLastSentSelfTestMeta();
+
+function getUnifiedSpamOptFlags(provider = 'GMAIL') {
+  const isResend = String(provider || 'GMAIL').toUpperCase() === 'RESEND';
+  const applyGmail = el('spamOptApplyGmail')
+    ? Boolean(el('spamOptApplyGmail').checked)
+    : (!el('gmailAutoSpamOpt') || Boolean(el('gmailAutoSpamOpt').checked));
+  const applyResend = el('spamOptApplyResend')
+    ? Boolean(el('spamOptApplyResend').checked)
+    : true;
+  // RC10: Preserve genuine brand names, authorized Reply-To & existing HTML templates by default (opt-in only!)
+  const ownerApprovedBrand = el('spamOptOwnerApprovedBrand')
+    ? Boolean(el('spamOptOwnerApprovedBrand').checked)
+    : true;
+  const alignReplyTo = el('spamOptAutoAlignReplyTo')
+    ? Boolean(el('spamOptAutoAlignReplyTo').checked)
+    : Boolean(el('gmailAutoAlignReplyTo') && el('gmailAutoAlignReplyTo').checked);
+  const lightGmail = el('spamOptLightweightGmail')
+    ? Boolean(el('spamOptLightweightGmail').checked)
+    : Boolean(el('gmailLightweightHtml') && el('gmailLightweightHtml').checked);
+  const lightResend = el('spamOptLightweightResend')
+    ? Boolean(el('spamOptLightweightResend').checked)
+    : false;
+  const blockHigh = el('spamOptBlockHighRisk')
+    ? Boolean(el('spamOptBlockHighRisk').checked)
+    : Boolean(el('gmailBlockHighRiskSpam') && el('gmailBlockHighRiskSpam').checked);
+  const embedInlineImages = el('spamOptEmbedInlineCid')
+    ? Boolean(el('spamOptEmbedInlineCid').checked)
+    : (!el('gmailEmbedInlineCid') || Boolean(el('gmailEmbedInlineCid').checked));
+  const autoCalmPromoToTextStyle = el('spamOptAutoCalmPromo')
+    ? Boolean(el('spamOptAutoCalmPromo').checked)
+    : (!el('gmailAutoCalmPromo') || Boolean(el('gmailAutoCalmPromo').checked));
+  const rawMimeMode = el('emailMimeContentMode') ? String(el('emailMimeContentMode').value || '').toUpperCase() : 'GMAIL_NATIVE_HTML';
+  const mimeContentMode = rawMimeMode === 'PLAIN_TEXT_ONLY'
+    ? 'PLAIN_TEXT_ONLY'
+    : (rawMimeMode === 'GMAIL_NATIVE_HTML' ? 'GMAIL_NATIVE_HTML' : 'MULTIPART_HTML');
+  return {
+    autoSpamPrevention: isResend ? applyResend : applyGmail,
+    ownerApprovedBrand,
+    authorizedReplyTo: ownerApprovedBrand && !alignReplyTo,
+    autoAlignReplyTo: alignReplyTo,
+    preferLightweightHtml: isResend ? lightResend : lightGmail,
+    embedInlineImages: isResend ? false : embedInlineImages,
+    autoCalmPromoToTextStyle: isResend ? false : autoCalmPromoToTextStyle,
+    mimeContentMode,
+    blockHighRiskSpam: blockHigh
+  };
+}
+
+function getEffectivePhysicalAddress(v) {
+  const gAddr = el('gmailPhysicalAddress') ? String(el('gmailPhysicalAddress').value || '').trim() : '';
+  const rAddr = (v && typeof v.address === 'string' ? v.address.trim() : '') || (el('address') ? String(el('address').value || '').trim() : '');
+  return rAddr || gAddr;
+}
 
 if (el('btnRealTestSend')) {
   el('btnRealTestSend').onclick = async () => {
@@ -1268,6 +2136,7 @@ if (el('btnRealTestSend')) {
     if (box) { box.className = 'status-box status-loading'; box.textContent = `⏳ 실제 Resend API(vivpr.pro)로 테스트 메일 1통 발송 중... (${rec} / From: ${fp.from})`; }
     try {
       const { sidecarPort, sidecarToken } = getSidecarConfig();
+      const resendSpamFlags = getUnifiedSpamOptFlags('RESEND');
       const r = await callBg({
         action: 'SEND_REAL_TEST_EMAIL',
         sidecarPort,
@@ -1276,13 +2145,17 @@ if (el('btnRealTestSend')) {
           recipient: rec,
           ownerTestConsentConfirmed: true,
           subject,
+          preheader: v.preheader || '',
+          link: v.link || '',
           senderDisplayName: v.senderDisplayName || '',
           senderName: v.company,
           company: v.company || '',
           brand: v.brand || '',
           replyTo: v.reply || '',
+          physicalAddress: getEffectivePhysicalAddress(v),
           html: htmlFor(v),
           text: textFor(v),
+          ...resendSpamFlags,
           idempotencyKey
         }
       }, { timeoutMs: 45000 });
@@ -1300,16 +2173,26 @@ if (el('btnRealTestSend')) {
           debugTrace: r?.debugTrace || null
         });
         if (box) {
-          box.className = 'status-box status-error';
+          box.className = reason === 'HIGH_SPAM_RISK_BLOCKED' ? 'status-box status-blocked' : 'status-box status-error';
           box.textContent = [
             `❌ 실제 테스트 발송 실패 (HTTP ${r?.httpStatus || '-'} · ${elapsedTxt}): ${reason}${detailTxt}`,
             ...(timingTxt ? [`•${timingTxt}`] : []),
-            `• 조치: 하단 [🛠️ 실시간 상세 디버그 로그]에서 [📋 디버그 로그 복사]를 눌러 원인을 확인하거나 전달해 주세요.`
+            ...(reason === 'HIGH_SPAM_RISK_BLOCKED'
+              ? ['• 조치: 좌측 [🛡️ 통합 스팸방지 자동·반자동 적용 & 체크리스트]에서 고위험 원인을 교정한 뒤 다시 발송하세요.']
+              : ['• 조치: 하단 [🛠️ 실시간 상세 디버그 로그]에서 [📋 디버그 로그 복사]를 눌러 원인을 확인하거나 전달해 주세요.'])
           ].join('\n');
         }
         return;
       }
       lastRealTestMsgId = r.data.providerMessageId;
+      saveLastSentSelfTestMeta({
+        provider: 'RESEND',
+        recipient: rec,
+        subject,
+        fromDomain: 'vivpr.pro',
+        providerMessageId: r.data.providerMessageId,
+        sentAt: new Date().toISOString()
+      });
       studioDebugLog('INFO', 'SEND', 'REAL_TEST_ACCEPTED', {
         providerMessageId: r.data.providerMessageId,
         fromHeader: r.data.fromHeader || fp.from,
@@ -1319,9 +2202,12 @@ if (el('btnRealTestSend')) {
       if (box) {
         box.className = 'status-box status-success';
         const totalMs = r.data.stepTimings?.totalMs ?? r.clientElapsedMs;
+        const opt = r.data.spamOptimization;
+        const optLine = opt ? `• 자동 스팸 방지(Resend): ${opt.grade} (${opt.riskScore}/100 · 자동 보정 ${opt.autoFixesApplied?.length || 0}건 적용)` : null;
         box.textContent = [
           `✅ 실제 테스트 발송 접수됨 (상태: ${r.data.deliveryState || 'ACCEPTED'}${totalMs ? ` · ${totalMs}ms` : ''})`,
           `• 발신자(From): ${r.data.fromHeader || fp.from}${r.data.replyTo ? ` | Reply-To: ${r.data.replyTo}` : ''}`,
+          ...(optLine ? [optLine] : []),
           `• Provider Message ID: ${r.data.providerMessageId}`,
           `• 수신자: ${r.data.maskedRecipient} | Idempotency-Key: ${r.data.idempotencyKey}`,
           `• 안내: ${r.data.note}`
@@ -1550,29 +2436,72 @@ function createBuiltinRecipientManager() {
   function cleanLocalText(str, isSubject) {
     let s = String(str || '');
     if (isSubject) s = s.replace(/^(?:\s*(?:re|fwd|fw|회신|전달)\s*:\s*)+/i, '');
-    return s
+    s = s
       .replace(/!{2,}/g, '.')
       .replace(/\?{2,}/g, '?')
+      .replace(/\${2,}/g, '$')
       .replace(/100%\s*(보장|확정)/gi, '안내')
       .replace(/무조건\s*무료/gi, '무료 안내')
-      .replace(/확정\s*수익/gi, '서비스 안내')
-      .replace(/당첨\s*보장/gi, '이벤트 안내')
-      .replace(/guaranteed\s*profit/gi, 'service update')
+      .replace(/무료\s*증정/gi, '혜택 안내')
+      .replace(/긴급\s*클릭/gi, '내용 확인')
+      .replace(/지금\s*당장/gi, '편하신 시간에')
+      .replace(/초특가|한정\s*특가/gi, '프로모션 안내')
+      .replace(/당첨\s*(안내|보장)/gi, '이벤트 안내')
+      .replace(/최저가\s*보장/gi, '가격 안내')
+      .replace(/(수익|확정)\s*(보장|수익)/gi, '서비스 안내')
+      .replace(/선착순\s*마감/gi, '일정 안내')
+      .replace(/\bfree\s+money\b/gi, 'special offer')
+      .replace(/\bguaranteed\s+(income|profit)\b/gi, 'service update')
+      .replace(/\bact\s+now\b/gi, 'learn more')
+      .replace(/\bclick\s+here\s+now\b/gi, 'view details')
+      .replace(/\b100%\s+free\b/gi, 'complimentary')
+      .replace(/\bclaim\s+your\s+prize\b/gi, 'view event details')
+      .replace(/\burgent\s+response\b/gi, 'follow-up')
       .replace(/안\s+녕하세요/g, '안녕하세요')
       .replace(/되요/g, '돼요')
       .replace(/할께요/g, '할게요')
       .replace(/뵙겠읍니다/g, '뵙겠습니다')
       .replace(/[ \t]{2,}/g, ' ')
       .trim();
+    if (isSubject) {
+      const ascii = s.replace(/[^A-Za-z]/g, '');
+      const upper = s.replace(/[^A-Z]/g, '');
+      if (ascii.length >= 12 && (upper.length / ascii.length) >= 0.85) {
+        s = s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
+      }
+    }
+    return s;
   }
 
-  function computeLocalProposal(v) {
+  function computeLocalProposal(v, { includeNaturalDraftFallback = false } = {}) {
     const proposed = {
       subject: cleanLocalText(v.subject, true),
       preheader: cleanLocalText(v.preheader, false),
       heading: cleanLocalText(v.heading, false),
       body: String(v.body || '').split(/\n/).map(l => cleanLocalText(l, false)).join('\n').replace(/\n{3,}/g, '\n\n').trim()
     };
+    if (includeNaturalDraftFallback) {
+      const brandLabel = String(v.senderDisplayName || v.company || '').replace(/\.[a-z]{2,}$/i, '').trim();
+      const subjLow = proposed.subject.toLowerCase();
+      if (!proposed.subject || subjLow === 'vivpr.pro 서비스 안내' || subjLow === '[xpider gmail self-test]') {
+        proposed.subject = brandLabel && brandLabel.toLowerCase() !== 'vivpr'
+          ? `[${brandLabel}] 주요 일정 및 이용 안내드립니다`
+          : '요청하신 주요 일정 및 서비스 이용 안내드립니다';
+      }
+      if (!proposed.preheader) {
+        proposed.preheader = '요청하신 안내 내용과 문의 방법을 정리해 전달드립니다.';
+      }
+      const isDefaultSampleBody = /요청하신 서비스에 대한 안내입니다\.\s*자세한 내용은 아래 링크에서 확인하실 수 있습니다\./.test(proposed.body);
+      if (proposed.body.length < 45 || isDefaultSampleBody) {
+        proposed.body = [
+          '안녕하세요. 요청하신 서비스 일정과 주요 안내 사항을 정리해 보내드립니다.',
+          '',
+          '세부 내용 확인이나 추가 상담이 필요하시면 이 메일에 편하게 회신해 주시면 담당자가 신속히 안내해 드리겠습니다.',
+          '',
+          '항상 관심 가져 주셔서 감사합니다.'
+        ].join('\n');
+      }
+    }
     const diffs = [];
     for (const [field, label] of [['subject', '제목'], ['preheader', '미리보기 문구'], ['heading', '본문 제목'], ['body', '본문']]) {
       if (String(v[field] || '') !== proposed[field]) {
@@ -1581,6 +2510,21 @@ function createBuiltinRecipientManager() {
     }
     return { originalDraft: { subject: v.subject, preheader: v.preheader, heading: v.heading, body: v.body }, proposedDraft: proposed, diffs };
   }
+
+  xpiderOpenSemiAutoProposal = (mode = 'COPY') => {
+    const v = values();
+    const isNat = mode === 'NATURAL_DRAFT' || mode === 'COMBINED';
+    const prop = computeLocalProposal(v, { includeNaturalDraftFallback: isNat });
+    const label = mode === 'NATURAL_DRAFT'
+      ? '반자동 자연스러운 초안 교정 제안'
+      : (mode === 'COMBINED' ? '반자동 스팸 문구·초안 통합 교정 제안' : '규칙 기반 스팸 문구 교정 제안');
+    showProposalDiff(label, prop);
+    if (diffPanel() && diffPanel().style.display !== 'none' && typeof diffPanel().scrollIntoView === 'function') {
+      diffPanel().scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    } else if (qaBox() && typeof qaBox().scrollIntoView === 'function') {
+      qaBox().scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  };
 
   function showProposalDiff(modeLabel, proposal) {
     pendingProposal = proposal.proposedDraft;
@@ -1745,9 +2689,10 @@ function createBuiltinRecipientManager() {
       pendingProposal = null;
       if (diffPanel()) diffPanel().style.display = 'none';
       render();
+      if (typeof xpiderRefreshAntiSpamChecklist === 'function') xpiderRefreshAntiSpamChecklist();
       if (qaBox()) {
         qaBox().className = 'status-box status-success';
-        qaBox().textContent = '✅ 교정 제안이 편집창에 반영되었습니다. 발송 전 미리보기와 내용을 다시 확인하세요.';
+        qaBox().textContent = '✅ 교정 제안이 편집창에 반영되었습니다. 발송 전 미리보기와 체크리스트 상태를 확인하세요.';
       }
     };
   }
@@ -2020,7 +2965,7 @@ function createBuiltinRecipientManager() {
       tdProv.textContent = r.provenance || '-';
 
       const tdAct = document.createElement('td');
-      tdAct.style.padding = '4px 6px';
+      tdAct.style.cssText = 'padding:4px 6px;white-space:nowrap;';
       if (activeTab !== 'ORIGINAL' && r.email && r.email.includes('@')) {
         for (const [ovKey, ovLabel] of [['RETAIN_SME', '유지'], ['EXCLUDE', '제외'], ['REVIEW', '검토']]) {
           const b = document.createElement('button');
@@ -2041,6 +2986,15 @@ function createBuiltinRecipientManager() {
           };
           tdAct.appendChild(b);
         }
+      }
+      if (r.email) {
+        const delRowBtn = document.createElement('button');
+        delRowBtn.type = 'button';
+        delRowBtn.textContent = '🗑️ 삭제';
+        delRowBtn.title = '이 수신자를 리스트에서 삭제';
+        delRowBtn.style.cssText = 'font-size:10px;padding:2px 5px;';
+        delRowBtn.onclick = () => deleteRecipientsFromWorkCenter(new Set([String(r.email).toLowerCase()]));
+        tdAct.appendChild(delRowBtn);
       } else {
         tdAct.textContent = '원본 보존';
       }
@@ -2048,6 +3002,89 @@ function createBuiltinRecipientManager() {
       tr.append(tdChk, tdEmail, tdNameDom, tdVal, tdCat, tdProv, tdAct);
       tbody.appendChild(tr);
     }
+  }
+
+  function deleteRecipientsFromWorkCenter(emailSetToDelete, { clearAll = false } = {}) {
+    try {
+      const RM = getActiveRM();
+      const normSet = new Set(Array.from(emailSetToDelete || []).map(x => String(x || '').trim().toLowerCase()).filter(Boolean));
+      if (!clearAll && normSet.size === 0) return;
+      const beforeCount = allValidRecipients.length || rawRows.length;
+      if (clearAll) {
+        rawRows = [];
+        allValidRecipients = [];
+        recipients = [];
+        selectedEmails.clear();
+        for (const k of Object.keys(manualOverrides)) delete manualOverrides[k];
+        originalRawCsv = '';
+        importedFiles = [];
+        importMeta = { validCount: 0, duplicateCount: 0, invalidCount: 0 };
+        queue = null;
+        if (el('recipientCsv')) el('recipientCsv').value = '';
+      } else {
+        rawRows = rawRows.filter(r => !normSet.has(String(r?.email || '').trim().toLowerCase()));
+        allValidRecipients = allValidRecipients.filter(r => !normSet.has(String(r?.email || '').trim().toLowerCase()));
+        recipients = recipients.filter(r => !normSet.has(String(r?.email || '').trim().toLowerCase()));
+        for (const em of normSet) {
+          selectedEmails.delete(em);
+          delete manualOverrides[em];
+        }
+        importMeta = {
+          ...(importMeta || {}),
+          validCount: allValidRecipients.length
+        };
+        const rebuiltCsv = (typeof RM.recipientsToCsv === 'function' && allValidRecipients.length > 0)
+          ? RM.recipientsToCsv(allValidRecipients)
+          : allValidRecipients.map(r => `${r.email},${r.name || ''}`).join('\n');
+        originalRawCsv = rebuiltCsv;
+        if (el('recipientCsv')) el('recipientCsv').value = rebuiltCsv;
+      }
+      if (typeof RM.filterAndCategorizeRecipients === 'function') {
+        renderSmeFilterSummary(RM);
+        recipients = (el('filterSmeOnly') && el('filterSmeOnly').checked)
+          ? (lastFilterResult?.retained || [])
+          : allValidRecipients.filter(item => item.validityStatus !== 'INVALID');
+      }
+      if (typeof recordActivity === 'function') {
+        recordActivity(clearAll ? 'RECIPIENT_LIST_CLEARED' : 'RECIPIENTS_DELETED', {
+          deleted: clearAll ? beforeCount : normSet.size,
+          remaining: allValidRecipients.length
+        });
+      }
+      persist();
+      renderWorkCenter();
+      if (typeof updateWebComposeRecipientSummaryUI === 'function') updateWebComposeRecipientSummaryUI();
+      if (typeof syncSidecarRecipients === 'function') {
+        syncSidecarRecipients().catch(() => {});
+      }
+      say('status-success', clearAll
+        ? `🧹 수신자 리스트 전체 비우기 완료 (이전 ${beforeCount}건 삭제됨).`
+        : `🗑️ 수신자 ${normSet.size}건 삭제 완료 (남은 유효 수신자 ${allValidRecipients.length}명).`);
+    } catch (err) {
+      say('status-error', `❌ 리스트 삭제 오류: ${err?.message || String(err)}`);
+    }
+  }
+
+  if (el('btnDeleteSelectedRecipients')) {
+    el('btnDeleteSelectedRecipients').onclick = () => {
+      if (selectedEmails.size === 0) {
+        say('status-blocked', '⚠️ 먼저 리스트 좌측 체크박스로 삭제할 수신자를 선택하세요.');
+        return;
+      }
+      if (typeof window.confirm === 'function' && !window.confirm(`선택한 수신자 ${selectedEmails.size}명을 리스트에서 삭제할까요?`)) return;
+      deleteRecipientsFromWorkCenter(new Set(selectedEmails));
+    };
+  }
+  if (el('btnClearAllRecipients')) {
+    el('btnClearAllRecipients').onclick = () => {
+      const cnt = Math.max(allValidRecipients.length, rawRows.length);
+      if (cnt === 0) {
+        say('status-blocked', '⚠️ 비울 수신자 데이터가 없습니다.');
+        return;
+      }
+      if (typeof window.confirm === 'function' && !window.confirm(`현재 수신자 리스트 ${cnt}건을 모두 비울까요?`)) return;
+      deleteRecipientsFromWorkCenter(new Set(), { clearAll: true });
+    };
   }
 
   function getFilterOptions() {
@@ -3075,6 +4112,7 @@ function createBuiltinRecipientManager() {
         ].join('\n');
       };
 
+      const resendSpamFlags = getUnifiedSpamOptFlags('RESEND');
       const r = await callBg({
         action: 'RUN_EMAIL_PRODUCTION_QUEUE',
         sidecarPort,
@@ -3088,8 +4126,10 @@ function createBuiltinRecipientManager() {
           company: v.company || '',
           brand: v.brand || '',
           replyTo: v.reply || '',
+          physicalAddress: getEffectivePhysicalAddress(v),
           html: htmlFor(v),
-          text: textFor(v)
+          text: textFor(v),
+          ...resendSpamFlags
         }
       });
       if (!r || !r.data) {
@@ -3291,6 +4331,7 @@ function createBuiltinRecipientManager() {
       if (typeof window.confirm === 'function') {
         if (!window.confirm(`미오픈 적격 수신자 ${p.eligibleCount}명에게 2차 발송(${p.waveCampaignId})을 시작할까요?\n(반송·스팸신고·수신거부 대상은 이미 제외되었습니다.)`)) return;
       }
+      const resendSpamFlags = getUnifiedSpamOptFlags('RESEND');
       const r = await callBg({
         action: 'START_SECOND_WAVE',
         sidecarPort,
@@ -3305,8 +4346,10 @@ function createBuiltinRecipientManager() {
           company: v.company || '',
           brand: v.brand || '',
           replyTo: v.reply || '',
+          physicalAddress: getEffectivePhysicalAddress(v),
           html: htmlFor(v),
           text: textFor(v),
+          ...resendSpamFlags,
           messageKind: messageKind(),
           ownerConfirmed: true
         }
@@ -3397,5 +4440,3154 @@ function createBuiltinRecipientManager() {
       } catch (err) { say('status-error', `❌ ${err.message}`); }
     };
   }
+  // ===== XPIDER V7.1 Provider Selector (Resend | Gmail API OAuth PKCE) & Safe Delivery Engine UI =====
+  let gmailAccountsCache = [];
+  const selectedGmailAccountIds = new Set();
+  let lastSelectedProvider = 'RESEND';
+  let operatorConfirmedProviderSwitch = false;
+
+  function syncProviderPanelVisibility(fromUserChange = false) {
+    const sel = el('emailProviderSelect');
+    const prov = sel ? sel.value : 'RESEND';
+    if (fromUserChange && prov !== lastSelectedProvider) {
+      const msg = prov === 'GMAIL'
+        ? '발송 공급자를 Resend에서 Gmail API로 전환하시겠습니까?\n(자동 폴백 없이 별도 큐·롤링 한도·하향 전용 스로틀로 운영됩니다.)'
+        : '발송 공급자를 Gmail API에서 Resend로 전환하시겠습니까?\n(Gmail 큐는 자동 전환되지 않으며 별도 관리됩니다.)';
+      const ok = typeof window !== 'undefined' && typeof window.confirm === 'function' ? window.confirm(msg) : true;
+      if (!ok) {
+        if (sel) sel.value = lastSelectedProvider;
+        return;
+      }
+      operatorConfirmedProviderSwitch = true;
+      if (el('gmailProviderSwitchConfirm')) el('gmailProviderSwitchConfirm').checked = true;
+      studioDebugLog('INFO', 'PROVIDER', 'EXPLICIT_SWITCH_CONFIRMED', { from: lastSelectedProvider, to: prov });
+    }
+    lastSelectedProvider = prov;
+    if (el('resendProviderPanel')) el('resendProviderPanel').style.display = prov === 'GMAIL' ? 'none' : '';
+    if (el('gmailProviderPanel')) el('gmailProviderPanel').style.display = prov === 'GMAIL' ? '' : 'none';
+    if (prov === 'GMAIL') {
+      refreshGmailStatus();
+      if (typeof syncGmailDispatchModeUI === 'function') syncGmailDispatchModeUI();
+      // RC21: Automatically switch live preview to Gmail auto-converted text-based campaign editor!
+      if (typeof setPreviewMode === 'function') setPreviewMode('GMAIL_TEXT');
+    } else {
+      if (typeof setPreviewMode === 'function') setPreviewMode('HTML');
+    }
+    if (fromUserChange && typeof xpiderRefreshAntiSpamChecklist === 'function') xpiderRefreshAntiSpamChecklist();
+  }
+  if (el('emailProviderSelect')) {
+    el('emailProviderSelect').addEventListener('change', () => syncProviderPanelVisibility(true));
+  }
+
+  function renderGmailTrueDashboard(dash) {
+    const box = el('gmailTrueDashboard');
+    const badge = el('gmailDashboardStateBadge');
+    if (!box || !dash) return;
+    const m = dash.metrics || {};
+    const th = dash.throttle || {};
+    const plan = dash.schedulePlan || null;
+    if (badge) badge.textContent = dash.state || 'IDLE';
+    const isWarn = dash.state === 'PAUSED_ENFORCEMENT' || dash.state === 'HALTED_RECONCILE_REQUIRED' || dash.state === 'SCHEDULED_WAIT';
+    box.className = isWarn ? 'status-box status-blocked' : (m.gmailApiAccepted > 0 ? 'status-box status-success' : 'status-box status-idle');
+    const lines = [
+      `📊 상태: ${dash.state || 'IDLE'} | 모드: ${dash.sendingMode || '-'} | 스케줄: ${dash.scheduleMode || 'DISTRIBUTED_MULTI_DAY'}`,
+      `• 예정(scheduled): ${m.scheduled || 0} | 시도(attempted): ${m.attempted || 0} | API접수(GMAIL_API_ACCEPTED): ${m.gmailApiAccepted || 0} | 잔여(remaining): ${m.remaining || 0}`,
+      `• 전달확인(DELIVERY_UNKNOWN): 미제공(Gmail API 미지원) | 기본받은편지함(PRIMARY_UNKNOWN): 미검증(추론 금지) | 반송(bounced): ${m.bounced || 0} (교차 과거반송 ${m.historicalCrossProviderBounced || 0}) | 수신거부/차단(suppressed): ${m.suppressed || 0} (전역 ${m.globalCrossProviderSuppressed || 0}) | 미확정(unknown): ${m.unknown || 0}`,
+      `• 지표 구분: GMAIL_API_ACCEPTED ≠ 전달/수신함/Primary · 소유자 관측(OWNER_OBSERVED_INBOX_PROMOTIONS / SPAM)은 타 수신자 보장이 아님`,
+      `• 하향 전용 스로틀(downwardOnly=${th.downwardOnly !== false ? 'true' : 'false'}): 단계=${th.levelName || 'NORMAL'} (속도배율 ${th.rateMultiplier ?? 1}x · 권장지연 ${th.recommendedMinDelayMs ?? 1500}ms${th.lastReason ? ' · 사유: ' + th.lastReason : ''})`,
+      `• 다음 허용 실행 시각(nextPermittedExecutionAt): ${dash.nextPermittedExecutionAt || (dash.state === 'PAUSED_ENFORCEMENT' ? '없음 (정책/인증 중단 — 수동 조치 필요)' : '-')}`
+    ];
+    if (dash.waitReason) lines.push(`• ⏳ 예약 대기 사유(SCHEDULED_WAIT): ${dash.waitReason}`);
+    if (dash.enforcementStopReason) lines.push(`• 🛑 정책/인증 강제 중지(PAUSED_ENFORCEMENT): ${dash.enforcementStopReason}`);
+    if (plan && Array.isArray(plan.daySchedule) && plan.daySchedule.length > 0) {
+      const daySummary = plan.daySchedule.slice(0, 7).map(d => `Day${d.dayIndex}:${d.plannedTotal}건`).join(' → ');
+      lines.push(`• 🗓️ 다일 분산 계획 (예상 ${plan.estimatedDays}일${plan.requiresMultiDay ? ' · 다일 분산' : ''}): ${daySummary}${plan.daySchedule.length > 7 ? ' ...' : ''}`);
+    }
+    lines.push(`• ⚠️ 고지: ${dash.honestDeliveryDisclaimer || 'GMAIL_API_ACCEPTED != DELIVERED / INBOX / OPENED'}`);
+    box.textContent = lines.join('\n');
+  }
+
+  function renderGmailDeliverabilityHygiene(report) {
+    const box = el('gmailDeliverabilityHygieneBox');
+    if (!box || !report) return;
+    box.className = !report.ok ? 'status-box status-error' : (report.warnings && report.warnings.length ? 'status-box status-blocked' : 'status-box status-success');
+    const lines = [
+      `🛡️ 발신 위생 점검 결과: ${report.status || '-'} (차단 ${report.blockers?.length || 0}건 · 주의 ${report.warnings?.length || 0}건 · 교차차단 ${report.mergedSuppressedCount || 0}건)`,
+      `• RFC 8058 원클릭 수신거부: ${report.unsubscribeCheck?.rfc8058OneClick ? '✅ 활성 (' + report.unsubscribeCheck.host + ')' : '❌ 미구성'} | 물리적 주소: ${report.physicalAddressPresent ? '✅ 기재됨' : '⚠️ 미기재'} | Reply-To: ${report.replyToCheck?.configured ? (report.replyToCheck.valid ? (report.replyToCheck.aligned ? '✅ 정렬됨' : '⚠️ 도메인 불일치') : '❌ 잘못된 형식/인젝션') : '미사용'}`
+    ];
+    for (const dc of (report.domainChecks || [])) {
+      lines.push(`• 도메인 [${dc.domain} / ${dc.domainType}]: SPF=${dc.spf?.status || '-'} | DKIM=${dc.dkim?.status || '-'} | DMARC=${dc.dmarc?.status || '-'}`);
+    }
+    for (const b of (report.blockers || [])) lines.push(`  ❌ [차단] ${b.code}: ${b.message}`);
+    for (const w of (report.warnings || [])) lines.push(`  ⚠️ [주의] ${w.code}: ${w.message}`);
+    lines.push(`• 고지: ${report.honestDisclosure || ''}`);
+    box.textContent = lines.join('\n');
+  }
+
+  function renderGmailAccountsList(accounts) {
+    const container = el('gmailAccountsList');
+    const selTest = el('gmailSelfTestAccountSelect');
+    if (!container) return;
+    container.textContent = '';
+    if (selTest) {
+      const prevVal = selTest.value;
+      selTest.textContent = '';
+      const defOpt = document.createElement('option');
+      defOpt.value = '';
+      defOpt.textContent = accounts.length ? '연결된 Gmail 계정 선택' : '연결된 계정 없음';
+      selTest.appendChild(defOpt);
+      for (const a of accounts) {
+        if (!a.connected) continue;
+        const opt = document.createElement('option');
+        opt.value = a.id;
+        opt.textContent = `${a.maskedEmail} (${a.sent24h}/${a.cap24h} · ${a.status})`;
+        selTest.appendChild(opt);
+      }
+      if (prevVal) selTest.value = prevVal;
+    }
+
+    if (!Array.isArray(accounts) || accounts.length === 0) {
+      container.className = 'status-box status-idle';
+      container.textContent = '연결된 Gmail 계정이 없습니다. 위 [🔗 Gmail 계정 연결 (OAuth PKCE)]로 소유자 승인 계정을 연결하세요.';
+      return;
+    }
+    container.className = 'status-box status-success';
+    for (const a of accounts) {
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;padding:6px 4px;border-bottom:1px solid #e2e8f0;font-size:12px;';
+
+      const left = document.createElement('label');
+      left.style.cssText = 'display:flex;align-items:center;gap:6px;cursor:pointer;';
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.checked = selectedGmailAccountIds.has(a.id);
+      cb.disabled = !a.connected || a.disabled || a.providerBlocked;
+      cb.onchange = () => {
+        if (cb.checked) selectedGmailAccountIds.add(a.id);
+        else selectedGmailAccountIds.delete(a.id);
+      };
+      const infoSpan = document.createElement('span');
+      const statusTag = a.status === 'CONNECTED' ? '✅ CONNECTED' : `⚠️ ${a.status}`;
+      infoSpan.textContent = `${a.maskedEmail} [${a.type === 'workspace_paid' ? 'Workspace' : 'Personal'}] · ${statusTag} · 1분 ${a.sent1m || 0}/${a.capPerMinute || 2} · 1시간 ${a.sent1h || 0}/${a.capPerHour || 15} · 24h ${a.sent24h}/${a.cap24h} (도메인 ${a.domainSent24h}/${a.domainCap24h})`;
+      left.appendChild(cb);
+      left.appendChild(infoSpan);
+
+      const right = document.createElement('div');
+      right.style.cssText = 'display:flex;align-items:center;gap:4px;flex-wrap:wrap;';
+      const cap1mInput = document.createElement('input');
+      cap1mInput.type = 'number';
+      cap1mInput.min = '1';
+      cap1mInput.max = a.type === 'workspace_paid' ? '10' : '5';
+      cap1mInput.value = String(a.capPerMinute || 2);
+      cap1mInput.style.cssText = 'width:46px;padding:2px 4px;font-size:11px;';
+      cap1mInput.title = '분당 상한 (1분)';
+
+      const cap1hInput = document.createElement('input');
+      cap1hInput.type = 'number';
+      cap1hInput.min = '1';
+      cap1hInput.max = a.type === 'workspace_paid' ? '150' : '60';
+      cap1hInput.value = String(a.capPerHour || 15);
+      cap1hInput.style.cssText = 'width:52px;padding:2px 4px;font-size:11px;';
+      cap1hInput.title = '시간당 상한 (1시간)';
+
+      const capInput = document.createElement('input');
+      capInput.type = 'number';
+      capInput.min = '1';
+      capInput.max = String((a.publishedCeiling24h || 500) - 1);
+      capInput.value = String(a.cap24h || 50);
+      capInput.style.cssText = 'width:62px;padding:2px 4px;font-size:11px;';
+      capInput.title = `일일 보수적 상한 (공식 한도 ${a.publishedCeiling24h} 미만)`;
+
+      const btnSaveCap = document.createElement('button');
+      btnSaveCap.type = 'button';
+      btnSaveCap.textContent = '분/시/일 저장';
+      btnSaveCap.onclick = async () => {
+        const { sidecarPort, sidecarToken } = getSidecarConfig();
+        const r = await callBg({
+          action: 'UPDATE_GMAIL_ACCOUNT',
+          sidecarPort,
+          sidecarToken,
+          payload: {
+            accountId: a.id,
+            cap24h: Number(capInput.value),
+            capPerHour: Number(cap1hInput.value),
+            capPerMinute: Number(cap1mInput.value)
+          }
+        });
+        if (!r?.ok && el('gmailOAuthStatus')) {
+          el('gmailOAuthStatus').className = 'status-box status-error';
+          el('gmailOAuthStatus').textContent = `❌ 상한 저장 실패: ${r?.data?.message || r?.data?.reason || r?.error || '-'}`;
+        }
+        refreshGmailStatus();
+      };
+
+      const btnDisc = document.createElement('button');
+      btnDisc.type = 'button';
+      btnDisc.textContent = '연결 해제';
+      btnDisc.onclick = async () => {
+        const { sidecarPort, sidecarToken } = getSidecarConfig();
+        selectedGmailAccountIds.delete(a.id);
+        await callBg({ action: 'DISCONNECT_GMAIL_ACCOUNT', sidecarPort, sidecarToken, payload: { accountId: a.id } });
+        refreshGmailStatus();
+      };
+
+      right.appendChild(cap1mInput);
+      right.appendChild(cap1hInput);
+      right.appendChild(capInput);
+      right.appendChild(btnSaveCap);
+      right.appendChild(btnDisc);
+      row.appendChild(left);
+      row.appendChild(right);
+      container.appendChild(row);
+    }
+  }
+
+  async function refreshGmailStatus() {
+    const { sidecarPort, sidecarToken } = getSidecarConfig();
+    const r = await callBg({ action: 'GET_GMAIL_STATUS', sidecarPort, sidecarToken });
+    const badge = el('gmailProviderStatusBadge');
+    const oauthBox = el('gmailOAuthStatus');
+    const hygBox = el('gmailHygieneBanner');
+    const qBox = el('gmailQueueStatus');
+    if (!r || !r.ok || !r.data) {
+      if (badge) badge.textContent = 'Sidecar 미연결';
+      if (oauthBox) { oauthBox.className = 'status-box status-error'; oauthBox.textContent = `❌ Gmail 상태 조회 실패: ${r?.error || 'SIDECAR_OFFLINE'}`; }
+      return;
+    }
+    const d = r.data;
+    gmailAccountsCache = Array.isArray(d.accounts) ? d.accounts : [];
+    const connectedCount = gmailAccountsCache.filter(a => a.connected && !a.disabled && !a.providerBlocked).length;
+    if (badge) {
+      badge.textContent = connectedCount > 0 ? `✅ Gmail 연결 ${connectedCount}개` : (d.oauthClient?.configured ? 'OAuth Client 등록됨 · 계정 연결 필요' : 'OAuth Client 미등록');
+    }
+    if (oauthBox) {
+      oauthBox.className = d.oauthClient?.configured ? 'status-box status-success' : 'status-box status-blocked';
+      oauthBox.textContent = d.oauthClient?.configured
+        ? `🔐 Google OAuth Client 등록됨 (${d.oauthClient.clientIdPreview}) · 연결 계정 ${connectedCount}/${gmailAccountsCache.length}개 · 최소 권한: gmail.send (DPAPI 암호화 저장)`
+        : '⚠️ Google Cloud OAuth 2.0 Desktop Client ID를 먼저 등록하세요 (브라우저 저장소 미저장 · 로컬 DPAPI 저장).';
+    }
+    if (hygBox && d.hygiene) {
+      const h = d.hygiene;
+      hygBox.className = h.elevatedBounceWarning ? 'status-box status-blocked' : 'status-box status-success';
+      hygBox.textContent = [
+        `🛡️ [교차 공급자 차단 원장] 통합 차단 해시 ${h.mergedHashSuppressedCount || 0}건 (로컬 아웃박스 ${h.outboxSuppressedCount || 0}건 · 과거 반송 ${h.historicalBounced || 0}건 · 반송률 ${h.historicalBounceRatePct || 0}%)`,
+        `• ${h.hygieneGuidance || ''}`
+      ].join('\n');
+    }
+    renderGmailAccountsList(gmailAccountsCache);
+    if (d.domainConfig && typeof renderGmailDomainConfig === 'function') {
+      renderGmailDomainConfig(d.domainConfig);
+    }
+    if (d.dashboard) {
+      renderGmailTrueDashboard(d.dashboard);
+      if (d.dashboard.deliverabilityHygiene) renderGmailDeliverabilityHygiene(d.dashboard.deliverabilityHygiene);
+    }
+    if (qBox && d.queueSummary) {
+      const qs = d.queueSummary;
+      const c = qs.counts || {};
+      if ((c.total || 0) > 0) {
+        qBox.className = qs.stopReason ? 'status-box status-blocked' : (c.GMAIL_API_ACCEPTED > 0 ? 'status-box status-success' : 'status-box status-idle');
+        qBox.textContent = [
+          `📌 Gmail 캠페인: ${qs.campaignId} | 모드: ${qs.sendingMode} | 스케줄: ${qs.scheduleMode || 'DISTRIBUTED_MULTI_DAY'} | 상태: ${qs.queueRunning ? 'SENDING' : (qs.enforcementPaused ? 'PAUSED_ENFORCEMENT' : (qs.scheduledWait ? 'SCHEDULED_WAIT' : (qs.stopped ? 'PAUSED/STOPPED' : (qs.finishedAt ? 'FINISHED' : 'READY'))))}`,
+          `• 총 ${c.total || 0}건 | 대기(PENDING): ${c.PENDING || 0} | API접수(GMAIL_API_ACCEPTED): ${c.GMAIL_API_ACCEPTED || 0} | 기발송 제외: ${c.ALREADY_SENT_IDEMPOTENT || 0}`,
+          `• 교차차단 제외: ${c.SKIPPED_SUPPRESSED_CROSS_PROVIDER || 0} | 미동의 제외: ${c.SKIPPED_NO_CONSENT || 0} | 미확정 보류(HALTED): ${c.HALTED_RECONCILE_REQUIRED || 0}`,
+          ...(qs.nextPermittedExecutionAt ? [`• ⏳ 다음 허용 실행 시각: ${qs.nextPermittedExecutionAt}`] : []),
+          ...(qs.stopReason ? [`• 🛑 중지/대기 사유 (타 계정 우회 금지): ${qs.stopReason}`] : []),
+          `• 안내: ${qs.deliveryNote || ''}`
+        ].join('\n');
+      }
+    }
+  }
+
+  if (el('btnRefreshGmailStatus')) el('btnRefreshGmailStatus').onclick = refreshGmailStatus;
+  if (el('btnGmailHygieneCheck')) {
+    el('btnGmailHygieneCheck').onclick = async () => {
+      const box = el('gmailDeliverabilityHygieneBox');
+      if (box) { box.className = 'status-box status-loading'; box.textContent = '⏳ 도메인 SPF/DMARC/DKIM, Reply-To 정렬, RFC 8058 수신거부 및 교차 차단 위생 점검 중...'; }
+      const { sidecarPort, sidecarToken } = getSidecarConfig();
+      const r = await callBg({
+        action: 'CHECK_GMAIL_HYGIENE',
+        sidecarPort,
+        sidecarToken,
+        payload: {
+          selectedAccountIds: Array.from(selectedGmailAccountIds),
+          replyTo: el('gmailReplyTo') ? el('gmailReplyTo').value.trim() : '',
+          physicalAddress: el('gmailPhysicalAddress') ? el('gmailPhysicalAddress').value.trim() : ''
+        }
+      });
+      if (r?.ok && r.data?.hygiene) {
+        renderGmailDeliverabilityHygiene(r.data.hygiene);
+        if (r.data.dashboard) renderGmailTrueDashboard(r.data.dashboard);
+      } else if (box) {
+        box.className = 'status-box status-error';
+        box.textContent = `❌ 발신 위생 점검 실패: ${r?.error || r?.data?.reason || 'SIDECAR_ERROR'}`;
+      }
+    };
+  }
+  function getGmailSpamOptFlags() {
+    return getUnifiedSpamOptFlags('GMAIL');
+  }
+
+  // ===== Unified Anti-Spam Auto/Semi-Auto Checklist Controller (Gmail + Resend) =====
+  const MANUAL_CHECKS_STORAGE_KEY = 'xpider_anti_spam_manual_checks_v1';
+  let manualChecklistState = {};
+  let lastUnifiedOptimization = null;
+
+  function loadManualChecklistState() {
+    try {
+      if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+        chrome.storage.local.get([MANUAL_CHECKS_STORAGE_KEY], (res) => {
+          if (res && res[MANUAL_CHECKS_STORAGE_KEY] && typeof res[MANUAL_CHECKS_STORAGE_KEY] === 'object') {
+            manualChecklistState = { ...res[MANUAL_CHECKS_STORAGE_KEY] };
+            if (lastUnifiedOptimization) renderUnifiedAntiSpamChecklist(lastUnifiedOptimization);
+          }
+        });
+      } else if (typeof localStorage !== 'undefined') {
+        const raw = localStorage.getItem(MANUAL_CHECKS_STORAGE_KEY);
+        if (raw) manualChecklistState = JSON.parse(raw) || {};
+      }
+    } catch (_) {}
+  }
+
+  function saveManualChecklistState() {
+    try {
+      if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+        chrome.storage.local.set({ [MANUAL_CHECKS_STORAGE_KEY]: manualChecklistState });
+      } else if (typeof localStorage !== 'undefined') {
+        localStorage.setItem(MANUAL_CHECKS_STORAGE_KEY, JSON.stringify(manualChecklistState));
+      }
+    } catch (_) {}
+  }
+
+  function bindTwoWayCheckboxSync(idA, idB) {
+    const a = el(idA);
+    const b = el(idB);
+    if (!a || !b) return;
+    a.addEventListener('change', () => { b.checked = a.checked; updateActiveProviderNote(); });
+    b.addEventListener('change', () => { a.checked = b.checked; updateActiveProviderNote(); });
+  }
+  bindTwoWayCheckboxSync('spamOptApplyGmail', 'gmailAutoSpamOpt');
+  bindTwoWayCheckboxSync('spamOptEmbedInlineCid', 'gmailEmbedInlineCid');
+  bindTwoWayCheckboxSync('spamOptAutoCalmPromo', 'gmailAutoCalmPromo');
+  for (const calmId of ['spamOptAutoCalmPromo', 'gmailAutoCalmPromo', 'webComposeIncludeSignedUnsub']) {
+    if (el(calmId)) el(calmId).addEventListener('change', () => { if (typeof refreshGmailTextPreviewFromSource === 'function') refreshGmailTextPreviewFromSource(values()); });
+  }
+  for (const addrId of ['gmailPhysicalAddress', 'gmailCustomUnsubBaseInput']) {
+    if (el(addrId)) el(addrId).addEventListener('input', () => { if (typeof updateGmailTextPreviewMeta === 'function') updateGmailTextPreviewMeta(); });
+  }
+  bindTwoWayCheckboxSync('spamOptAutoAlignReplyTo', 'gmailAutoAlignReplyTo');
+  bindTwoWayCheckboxSync('spamOptLightweightGmail', 'gmailLightweightHtml');
+  bindTwoWayCheckboxSync('spamOptBlockHighRisk', 'gmailBlockHighRiskSpam');
+
+  function updateActiveProviderNote() {
+    const noteEl = el('spamChecklistActiveProviderNote');
+    if (!noteEl) return;
+    const gOn = !el('spamOptApplyGmail') || el('spamOptApplyGmail').checked;
+    const rOn = !el('spamOptApplyResend') || el('spamOptApplyResend').checked;
+    noteEl.textContent = `적용 대상: Gmail ${gOn ? '✅ 자동적용' : '⏸️ 해제'} · Resend ${rOn ? '✅ 자동적용' : '⏸️ 해제'} (RFC 8058 원클릭 수신거부·물리적 주소 항상 유지)`;
+  }
+  if (el('spamOptApplyResend')) el('spamOptApplyResend').addEventListener('change', updateActiveProviderNote);
+  updateActiveProviderNote();
+  loadManualChecklistState();
+
+  function resolveChecklistTargetProvider() {
+    const mode = el('spamChecklistProvider') ? el('spamChecklistProvider').value : 'AUTO';
+    if (mode === 'GMAIL' || mode === 'RESEND') return mode;
+    const activeProv = el('emailProviderSelect') ? el('emailProviderSelect').value : 'RESEND';
+    return activeProv === 'GMAIL' ? 'GMAIL' : 'RESEND';
+  }
+
+  function buildOfflineFallbackOptimization(provider, v) {
+    const isGmail = provider === 'GMAIL';
+    const subj = String(v.subject || '').trim();
+    const bodyTxt = String(v.body || '').trim();
+    const addr = getEffectivePhysicalAddress(v);
+    const rt = isGmail
+      ? (el('gmailReplyTo') ? el('gmailReplyTo').value.trim() : '')
+      : String(v.reply || '').trim();
+    const hasShortener = /https?:\/\/(?:www\.)?(?:bit\.ly|tinyurl\.com|t\.co|me2\.do|han\.gl)\//i.test(`${v.link || ''}\n${bodyTxt}`);
+    const hasSpamPhrase = /(100%\s*(?:보장|확정)|무료\s*증정|긴급\s*클릭|지금\s*당장|초특가|한정\s*특가|free\s+money|act\s+now|100%\s+free)/i.test(`${subj}\n${bodyTxt}`);
+    const checklist = [
+      { id: 'DISPLAY_NAME_ALIGNMENT', mode: 'AUTO', status: isGmail && /\.[a-z]{2,}$/i.test(v.senderDisplayName || v.company || '') ? 'AUTO_FIXED' : 'PASS', title: '발신자 표시 이름 도메인 정합성', detail: isGmail ? '개인 Gmail 발송 시 타 도메인 표시 이름을 자동 보정합니다.' : 'Resend 발송 표시 이름 정합성을 점검합니다.' },
+      { id: 'REPLY_TO_ALIGNMENT', mode: 'AUTO', status: rt ? 'AUTO_FIXED' : 'PASS', title: 'Reply-To 발신 도메인 정렬', detail: rt ? `Reply-To(${rt}) 도메인 불일치 시 발송 전 자동 정렬합니다.` : '외부 도메인 Reply-To 불일치가 없습니다.' },
+      { id: 'SPAM_PHRASE_COPY_CLEANUP', mode: 'SEMI_AUTO', status: hasSpamPhrase ? 'ACTION_REQUIRED' : 'PASS', title: '스팸 유도 문구 · 거짓 Re:/Fwd: 문구 교정', detail: hasSpamPhrase ? '고위험 스팸 유도 문구가 감지되었습니다.' : '고위험 스팸 유도 문구가 감지되지 않았습니다.', semiAutoAction: 'OPEN_COPY_DIFF' },
+      { id: 'BODY_AND_PREHEADER_NATURALNESS', mode: 'SEMI_AUTO', status: bodyTxt.length < 45 ? 'ACTION_REQUIRED' : 'PASS', title: '자연스러운 본문 길이(45자+) · 기본 샘플 교체 · 미리보기 문구', detail: `현재 본문 ${bodyTxt.length}자`, semiAutoAction: 'OPEN_NATURAL_DRAFT_DIFF' },
+      { id: 'LINK_HYGIENE_AND_SHORTENER', mode: 'SEMI_AUTO', status: hasShortener ? 'ACTION_REQUIRED' : 'PASS', title: '링크 위생 (단축 URL 금지 · HTTPS 전용)', detail: hasShortener ? '단축 URL이 감지되었습니다.' : '단축 URL 없음.', semiAutoAction: 'CLEAN_DEFAULT_LINK_OR_FOCUS' },
+      { id: 'PHYSICAL_ADDRESS_FOOTER', mode: 'SEMI_AUTO', status: addr.length >= 6 ? 'PASS' : 'ACTION_REQUIRED', title: '법적 물리적 사업장 주소 기재', detail: addr.length >= 6 ? '물리적 주소 입력됨.' : '물리적 주소가 비어 있습니다.', semiAutoAction: 'SYNC_OR_FOCUS_ADDRESS' },
+      { id: 'PROVIDER_AUTH_AND_HYGIENE', mode: 'SEMI_AUTO', status: 'WARN', title: isGmail ? 'Gmail 발신 위생 · SPF/DMARC 점검' : 'Resend(vivpr.pro) DNS · 수신거부 점검', detail: '공급자 사전 점검을 실행해 최신 상태를 확인하세요.', semiAutoAction: 'RUN_PROVIDER_HYGIENE' },
+      { id: 'MANUAL_NOT_SPAM_TRAIN', mode: 'MANUAL_GUIDE', status: 'MANUAL_PENDING', title: '[반자동 안내] 스팸함에 들어간 직전 테스트 메일 바로 열기 → [스팸 아님(Not spam)] 1회 클릭', detail: '공식 Gmail 스팸함 검색 결과로 바로 이동해 본인이 직접 [스팸 아님]을 1회 클릭할 수 있습니다 (자동 클릭 봇 미사용 · 최소 권한 gmail.send 유지).', semiAutoAction: 'OPEN_GMAIL_SPAM_NOT_SPAM_HELPER' },
+      { id: 'MANUAL_WORKSPACE_OR_RESEND', mode: 'MANUAL_GUIDE', status: 'MANUAL_PENDING', title: '[수동] 대량/공지 발송 시 Google Workspace 맞춤 도메인 또는 인증된 Resend(vivpr.pro) 우선 사용', detail: '개인 @gmail.com은 소량·사전 승인 수신자 전용으로 운영하세요.' },
+      { id: 'MANUAL_UNSUB_ROUNDTRIP', mode: 'MANUAL_GUIDE', status: 'MANUAL_PENDING', title: '[수동] 수신거부 링크 1회 클릭 → 동일 주소 재발송 차단 확인', detail: '교차 차단 원장 정상 동작을 확인합니다.' },
+      { id: 'MANUAL_ROTATE_EXPOSED_CREDS', mode: 'MANUAL_GUIDE', status: 'MANUAL_PENDING', title: '[수동] 외부·스크린샷에 노출된 API 키 / OAuth 시크릿 교체 확인', detail: '노출 이력이 있는 자격증명은 콘솔에서 재발급하세요.' }
+    ];
+    const score = (hasShortener ? 30 : 0) + (hasSpamPhrase ? 15 : 0) + (bodyTxt.length < 45 ? 15 : 0) + (addr.length < 6 ? 10 : 0) + (isGmail ? 15 : 0);
+    const grade = score >= 55 ? 'HIGH_RISK' : (score >= 25 ? 'MEDIUM_RISK' : 'LOW_RISK');
+    return {
+      ok: true,
+      provider,
+      riskScore: Math.min(100, score),
+      grade,
+      autoOptimizeApplied: true,
+      autoFixesApplied: [],
+      signals: [],
+      recommendations: ['Sidecar 오프라인 상태 — 로컬 규칙 기준으로 점검했습니다.'],
+      checklist,
+      honestDisclaimer: '자동·반자동 스팸 방지 최적화는 정당한 위생 기능이며, 100% 기본 받은편지함 배치나 계정 정지 면제를 보장하지 않습니다.'
+    };
+  }
+
+  function semiAutoButtonLabel(actionId) {
+    switch (actionId) {
+      case 'OPEN_COPY_DIFF': return '🛠️ 문구 교정 제안 보기';
+      case 'OPEN_NATURAL_DRAFT_DIFF': return '✏️ 자연스러운 초안 제안';
+      case 'CLEAN_DEFAULT_LINK_OR_FOCUS': return '🔗 기본 링크 정리/이동';
+      case 'SYNC_OR_FOCUS_ADDRESS': return '📍 주소 동기화/입력 이동';
+      case 'RUN_PROVIDER_HYGIENE': return '🛡️ 공급자 DNS·위생 점검';
+      case 'APPLY_AUTO_FIXES': return '⚡ 자동 보정 적용';
+      case 'OPEN_GMAIL_SPAM_NOT_SPAM_HELPER': return '📬 스팸함에서 바로 열기';
+      default: return '🛠️ 조치 실행';
+    }
+  }
+
+  let lastSpamHelperPayload = null;
+  const SPAM_REVIEW_ACCOUNTS_STORAGE_KEY = 'xpider_spam_review_accounts_v1';
+  const MAX_SPAM_REVIEW_ACCOUNTS = 20;
+  const MAX_BATCH_SPAM_TABS = 10;
+  let spamReviewAccounts = [];
+
+  function saveSpamReviewAccounts() {
+    try {
+      if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+        chrome.storage.local.set({ [SPAM_REVIEW_ACCOUNTS_STORAGE_KEY]: spamReviewAccounts });
+      } else if (typeof localStorage !== 'undefined') {
+        localStorage.setItem(SPAM_REVIEW_ACCOUNTS_STORAGE_KEY, JSON.stringify(spamReviewAccounts));
+      }
+    } catch (_) {}
+  }
+
+  function loadSpamReviewAccounts() {
+    const applyLoaded = (arr) => {
+      if (!Array.isArray(arr)) return;
+      spamReviewAccounts = arr
+        .filter(a => a && typeof a.email === 'string' && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(a.email.trim()))
+        .slice(0, MAX_SPAM_REVIEW_ACCOUNTS)
+        .map(a => ({
+          email: a.email.trim().toLowerCase(),
+          label: String(a.label || '').trim().slice(0, 40),
+          selected: a.selected !== false,
+          addedAt: a.addedAt || new Date().toISOString()
+        }));
+      renderSpamReviewAccountsList();
+    };
+    try {
+      if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+        chrome.storage.local.get([SPAM_REVIEW_ACCOUNTS_STORAGE_KEY], (res) => {
+          applyLoaded(res && res[SPAM_REVIEW_ACCOUNTS_STORAGE_KEY]);
+        });
+      } else if (typeof localStorage !== 'undefined') {
+        const raw = localStorage.getItem(SPAM_REVIEW_ACCOUNTS_STORAGE_KEY);
+        if (raw) applyLoaded(JSON.parse(raw));
+      }
+    } catch (_) {}
+    renderSpamReviewAccountsList();
+  }
+
+  function buildStudioGmailSpamHelper(preferredProvider = null, recipientOverride = '') {
+    const prov = preferredProvider || (lastSentSelfTestMeta && lastSentSelfTestMeta.provider) || resolveChecklistTargetProvider();
+    const isResend = String(prov || 'GMAIL').toUpperCase() === 'RESEND';
+    const v = values();
+    const inputRec = isResend
+      ? (el('realTestRecipient') ? el('realTestRecipient').value.trim() : '')
+      : (el('gmailSelfTestRecipient') ? el('gmailSelfTestRecipient').value.trim() : '');
+    const fallbackRec = (el('gmailSelfTestRecipient') ? el('gmailSelfTestRecipient').value.trim() : '')
+      || (el('realTestRecipient') ? el('realTestRecipient').value.trim() : '')
+      || (spamReviewAccounts.find(a => a.selected)?.email || spamReviewAccounts[0]?.email || '');
+    const metaMatches = lastSentSelfTestMeta && (!preferredProvider || lastSentSelfTestMeta.provider === prov);
+    const recipient = String(recipientOverride || '').trim() || (metaMatches && lastSentSelfTestMeta.recipient) || inputRec || fallbackRec || '';
+    const subjectRaw = (metaMatches && lastSentSelfTestMeta.subject) || (v.subject || '').trim() || '';
+    const cleanSubject = subjectRaw.replace(/[\r\n\0"]+/g, ' ').replace(/\s{2,}/g, ' ').trim().slice(0, 80);
+
+    const terms = ['in:spam'];
+    if (isResend) terms.push('from:vivpr.pro');
+    if (cleanSubject) terms.push(`subject:"${cleanSubject}"`);
+    const query = terms.join(' ');
+    const validRec = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipient) ? recipient : '';
+    const basePath = validRec
+      ? `https://mail.google.com/mail/?authuser=${encodeURIComponent(validRec)}`
+      : 'https://mail.google.com/mail/u/0/';
+    return {
+      provider: isResend ? 'RESEND' : 'GMAIL',
+      recipient: validRec,
+      subject: cleanSubject,
+      query,
+      searchUrl: `${basePath}#search/${encodeURIComponent(query)}`,
+      spamFolderUrl: `${basePath}#spam`,
+      sentAt: metaMatches ? lastSentSelfTestMeta.sentAt : null,
+      providerMessageId: metaMatches ? lastSentSelfTestMeta.providerMessageId : null
+    };
+  }
+
+  function isOfficialGmailTabUrl(rawUrl) {
+    try {
+      const u = new URL(String(rawUrl || ''));
+      if (u.protocol !== 'https:' || u.username || u.password) return false;
+      if (u.hostname === 'mail.google.com' && u.pathname.startsWith('/mail/')) return true;
+      if (u.hostname === 'accounts.google.com' && u.pathname === '/AccountChooser') {
+        const svc = u.searchParams.get('service');
+        const cont = u.searchParams.get('continue');
+        if (svc !== 'mail' || !cont) return false;
+        const cu = new URL(cont);
+        return cu.protocol === 'https:' && cu.hostname === 'mail.google.com' && cu.pathname.startsWith('/mail/') && !cu.username && !cu.password;
+      }
+      return false;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function openExternalOfficialTab(url, opts = {}) {
+    if (!isOfficialGmailTabUrl(url)) return false;
+    if (typeof chrome !== 'undefined' && chrome.tabs && typeof chrome.tabs.create === 'function') {
+      const createOpts = { url };
+      if (typeof opts.active === 'boolean') createOpts.active = opts.active;
+      chrome.tabs.create(createOpts, (tab) => {
+        if (typeof opts.onCreated === 'function' && tab) {
+          try { opts.onCreated(tab); } catch (_) {}
+        }
+      });
+      return true;
+    } else {
+      window.open(url, '_blank', 'noopener');
+      return true;
+    }
+  }
+
+  function openLastTestEmailInGmailSpam(preferredProvider = null, { bareSpamOnly = false, recipientOverride = '' } = {}) {
+    const info = buildStudioGmailSpamHelper(preferredProvider, recipientOverride);
+    lastSpamHelperPayload = info;
+    const targetUrl = bareSpamOnly ? info.spamFolderUrl : info.searchUrl;
+    openExternalOfficialTab(targetUrl);
+
+    const guideBox = el('gmailSpamHelperGuide');
+    const guideText = el('gmailSpamHelperText');
+    if (guideBox && guideText) {
+      guideBox.style.display = 'block';
+      guideBox.className = 'status-box status-success';
+      guideText.textContent = [
+        `📬 [공식 Gmail 스팸함 열기 완료 — ${info.provider}${info.recipient ? ` · 수신함 ${info.recipient}` : ''}]`,
+        `• 자동 적용된 스팸 검색어: ${info.query}`,
+        `1) 열린 Gmail 스팸함${bareSpamOnly ? '' : ' 검색 결과'}에서 방금 보낸 테스트 메일을 클릭해 엽니다.`,
+        `2) 상단의 [스팸 아님 보고 / Not spam] 버튼을 본인이 직접 1회 클릭합니다 (선택: 받은편지함에서 1회 회신).`,
+        `3) 완료 후 아래 [✅ [스팸 아님] 클릭 완료 표시] 버튼을 누르면 체크리스트에 저장됩니다.`,
+        `• 정책 안내: Google 정책 준수 및 최소 권한(gmail.send) 유지를 위해 XPIDER는 Gmail 받은편지함 DOM을 자동 조작하거나 gmail.modify 권한을 요구하지 않습니다.`
+      ].join('\n');
+      if (typeof guideBox.scrollIntoView === 'function') {
+        guideBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }
+    studioDebugLog('INFO', 'DELIVERABILITY', 'OPEN_GMAIL_SPAM_HELPER', { provider: info.provider, hasRecipient: Boolean(info.recipient), bareSpamOnly: Boolean(bareSpamOnly) });
+  }
+
+  function parseAndAddSpamReviewAccounts(rawInput, labelText = '') {
+    const guideText = el('gmailSpamHelperText');
+    const ownConfirm = el('spamReviewOwnMailboxConfirm');
+    if (ownConfirm && !ownConfirm.checked) {
+      if (guideText) {
+        guideText.textContent = '⚠️ [OWNER_TEST_MAILBOX_ATTESTATION_REQUIRED] 먼저 "본인 소유의 로컬 테스트 Gmail 수신함임을 확인합니다" 체크박스를 선택하세요 (운영 수신자 CSV는 등록할 수 없습니다).';
+      }
+      return { added: 0, skipped: 0, total: spamReviewAccounts.length, blocked: 'ATTESTATION_REQUIRED' };
+    }
+    const tokens = String(rawInput || '')
+      .split(/[\s,;]+/)
+      .map(t => t.replace(/[\r\n\0]+/g, '').trim().toLowerCase())
+      .filter(Boolean);
+    if (tokens.length > 10) {
+      if (guideText) {
+        guideText.textContent = '⚠️ [PRODUCTION_CSV_NOT_ALLOWED_IN_TEST_MAILBOXES] 한 번에 10개를 초과하는 대량 목록은 등록할 수 없습니다. 본인 소유의 소수 테스트 수신함만 등록하세요.';
+      }
+      return { added: 0, skipped: tokens.length, total: spamReviewAccounts.length, blocked: 'BULK_CSV_REJECTED' };
+    }
+    const cleanLabel = String(labelText || '').replace(/[\r\n\0]+/g, ' ').trim().slice(0, 40);
+    let added = 0;
+    let skipped = 0;
+    const existing = new Set(spamReviewAccounts.map(a => a.email));
+
+    for (const email of tokens) {
+      if (spamReviewAccounts.length >= MAX_SPAM_REVIEW_ACCOUNTS) {
+        skipped++;
+        continue;
+      }
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.includes('*') || existing.has(email)) {
+        skipped++;
+        continue;
+      }
+      existing.add(email);
+      spamReviewAccounts.push({
+        email,
+        label: tokens.length === 1 ? cleanLabel : '',
+        selected: true,
+        addedAt: new Date().toISOString()
+      });
+      added++;
+    }
+    if (added > 0) saveSpamReviewAccounts();
+    renderSpamReviewAccountsList();
+    if (guideText) {
+      guideText.textContent = added > 0
+        ? `✅ 로컬 테스트 Gmail 수신함 ${added}개가 등록되었습니다 (총 ${spamReviewAccounts.length}개${skipped ? ` · 중복/무효/상한 제외 ${skipped}건` : ''}). 각 행의 [📂 스팸함 열기] 또는 [🔍 선택 계정 일괄 열기]를 사용하세요.`
+        : `⚠️ 새로 등록할 유효한 이메일 주소가 없습니다 (형식 오류·중복 또는 최대 ${MAX_SPAM_REVIEW_ACCOUNTS}개 상한).`;
+    }
+    return { added, skipped, total: spamReviewAccounts.length };
+  }
+
+  function openMultiAccountSpamTabs({ bareSpamOnly = false, preferredProvider = null } = {}) {
+    const targets = spamReviewAccounts.filter(a => a.selected).slice(0, MAX_BATCH_SPAM_TABS);
+    const guideText = el('gmailSpamHelperText');
+    if (targets.length === 0) {
+      if (guideText) {
+        guideText.textContent = '⚠️ 먼저 본인 소유의 테스트 Gmail 계정을 1개 이상 등록하고 체크박스를 선택하세요.';
+      }
+      return;
+    }
+    if (targets.length > 1) {
+      if (typeof window === 'undefined' || typeof window.confirm !== 'function') {
+        if (guideText) guideText.textContent = '⚠️ 복수 탭 일괄 열기는 브라우저 확인 팝업이 필요합니다.';
+        return;
+      }
+      const ok = window.confirm(`선택한 ${targets.length}개의 공식 Gmail 스팸함 탭(mail.google.com)을 한 번에 열까요?\n(1회 최대 ${MAX_BATCH_SPAM_TABS}개 · 자동 클릭 없이 열린 각 탭에서 본인이 직접 [스팸 아님]을 확인합니다.)`);
+      if (!ok) return;
+    }
+    let lastInfo = null;
+    for (const acct of targets) {
+      const info = buildStudioGmailSpamHelper(preferredProvider, acct.email);
+      lastInfo = info;
+      openExternalOfficialTab(bareSpamOnly ? info.spamFolderUrl : info.searchUrl);
+    }
+    if (lastInfo) lastSpamHelperPayload = lastInfo;
+    if (guideText) {
+      guideText.textContent = [
+        `📬 [공식 Gmail 스팸함 ${targets.length}개 탭 열기 완료 (${bareSpamOnly ? '스팸함 폴더 전체' : '직전 테스트 메일 검색'})]`,
+        `• 각 탭에서 테스트 메일을 열어 본인이 직접 [스팸 아님(Not spam)]을 클릭한 뒤 [✅ [스팸 아님] 클릭 완료 표시]를 눌러 주세요.`
+      ].join('\n');
+    }
+    studioDebugLog('INFO', 'DELIVERABILITY', 'OPEN_MULTI_GMAIL_SPAM_TABS', { count: targets.length, bareSpamOnly: Boolean(bareSpamOnly) });
+  }
+
+  function renderSpamReviewAccountsList() {
+    const container = el('spamReviewAccountsList');
+    const badge = el('spamReviewAccountsCountBadge');
+    if (badge) {
+      const selCount = spamReviewAccounts.filter(a => a.selected).length;
+      badge.textContent = `등록 계정: ${spamReviewAccounts.length}개 (선택 ${selCount}개)`;
+    }
+    if (!container) return;
+    container.textContent = '';
+
+    if (spamReviewAccounts.length === 0) {
+      const emptyNote = document.createElement('div');
+      emptyNote.className = 'note';
+      emptyNote.textContent = '등록된 테스트 Gmail 계정이 없습니다. 위 입력란에 본인 Gmail 주소를 1개 또는 여러 개(쉼표 구분) 입력하고 [➕ Gmail 계정 등록]을 누르세요.';
+      container.appendChild(emptyNote);
+      return;
+    }
+
+    for (const acct of spamReviewAccounts) {
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px;padding:5px 8px;border:1px solid #cbd5e1;border-radius:6px;background:#fff;font-size:12px;';
+
+      const left = document.createElement('label');
+      left.style.cssText = 'display:flex;align-items:center;gap:6px;cursor:pointer;flex:1;min-width:180px;';
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.checked = acct.selected !== false;
+      cb.onchange = () => {
+        acct.selected = cb.checked;
+        saveSpamReviewAccounts();
+        renderSpamReviewAccountsList();
+      };
+      const nameSpan = document.createElement('span');
+      nameSpan.textContent = acct.label ? `[${acct.label}] ${acct.email}` : acct.email;
+      left.appendChild(cb);
+      left.appendChild(nameSpan);
+
+      const right = document.createElement('div');
+      right.style.cssText = 'display:flex;gap:4px;flex-wrap:wrap;';
+
+      const searchBtn = document.createElement('button');
+      searchBtn.type = 'button';
+      searchBtn.style.cssText = 'padding:3px 7px;font-size:11px;';
+      searchBtn.textContent = '🔍 직전 메일 검색';
+      searchBtn.onclick = () => { openLastTestEmailInGmailSpam(null, { bareSpamOnly: false, recipientOverride: acct.email }); };
+
+      const spamBtn = document.createElement('button');
+      spamBtn.type = 'button';
+      spamBtn.style.cssText = 'padding:3px 7px;font-size:11px;';
+      spamBtn.textContent = '📂 스팸함 열기';
+      spamBtn.onclick = () => { openLastTestEmailInGmailSpam(null, { bareSpamOnly: true, recipientOverride: acct.email }); };
+
+      const delBtn = document.createElement('button');
+      delBtn.type = 'button';
+      delBtn.style.cssText = 'padding:3px 6px;font-size:11px;';
+      delBtn.title = '목록에서 제거';
+      delBtn.textContent = '🗑️';
+      delBtn.onclick = () => {
+        spamReviewAccounts = spamReviewAccounts.filter(a => a.email !== acct.email);
+        saveSpamReviewAccounts();
+        renderSpamReviewAccountsList();
+      };
+
+      right.appendChild(searchBtn);
+      right.appendChild(spamBtn);
+      right.appendChild(delBtn);
+
+      row.appendChild(left);
+      row.appendChild(right);
+      container.appendChild(row);
+    }
+  }
+
+  loadSpamReviewAccounts();
+  xpiderOpenGmailSpamHelper = openLastTestEmailInGmailSpam;
+
+  async function handleSemiAutoChecklistAction(actionId, provider) {
+    if (actionId === 'OPEN_GMAIL_SPAM_NOT_SPAM_HELPER') {
+      openLastTestEmailInGmailSpam(provider);
+      return;
+    }
+    if (actionId === 'OPEN_COPY_DIFF') {
+      if (typeof xpiderOpenSemiAutoProposal === 'function') xpiderOpenSemiAutoProposal('COPY');
+      return;
+    }
+    if (actionId === 'OPEN_NATURAL_DRAFT_DIFF') {
+      if (typeof xpiderOpenSemiAutoProposal === 'function') xpiderOpenSemiAutoProposal('NATURAL_DRAFT');
+      return;
+    }
+    if (actionId === 'APPLY_AUTO_FIXES') {
+      await applyAutoAntiSpamFixesToEditor();
+      return;
+    }
+    if (actionId === 'CLEAN_DEFAULT_LINK_OR_FOCUS') {
+      const linkEl = el('link');
+      if (provider === 'GMAIL' && linkEl && /^https?:\/\/(?:www\.)?vivpr\.pro\/?$/i.test(String(linkEl.value || '').trim())) {
+        linkEl.value = '';
+        render();
+        await runAntiSpamChecklist();
+        if (el('antiSpamChecklistSummary')) {
+          el('antiSpamChecklistSummary').textContent = '✅ 개인 Gmail 발송과 충돌하던 기본 샘플 링크(https://vivpr.pro)를 비웠습니다.\n' + el('antiSpamChecklistSummary').textContent;
+        }
+        return;
+      }
+      if (linkEl) {
+        linkEl.focus();
+        if (typeof linkEl.scrollIntoView === 'function') linkEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      return;
+    }
+    if (actionId === 'SYNC_OR_FOCUS_ADDRESS') {
+      const rAddrEl = el('address');
+      const gAddrEl = el('gmailPhysicalAddress');
+      const rVal = rAddrEl ? String(rAddrEl.value || '').trim() : '';
+      const gVal = gAddrEl ? String(gAddrEl.value || '').trim() : '';
+      if (rVal && gAddrEl && !gVal) {
+        gAddrEl.value = rVal;
+        await runAntiSpamChecklist();
+        return;
+      }
+      if (gVal && rAddrEl && !rVal) {
+        rAddrEl.value = gVal;
+        render();
+        await runAntiSpamChecklist();
+        return;
+      }
+      const target = provider === 'GMAIL' && gAddrEl && el('gmailProviderPanel')?.style.display !== 'none' ? gAddrEl : (rAddrEl || gAddrEl);
+      if (target) {
+        target.focus();
+        if (typeof target.scrollIntoView === 'function') target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      return;
+    }
+    if (actionId === 'RUN_PROVIDER_HYGIENE') {
+      if (provider === 'GMAIL' && el('btnGmailHygieneCheck')) {
+        el('btnGmailHygieneCheck').click();
+        if (el('gmailDeliverabilityHygieneBox') && typeof el('gmailDeliverabilityHygieneBox').scrollIntoView === 'function') {
+          el('gmailDeliverabilityHygieneBox').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      } else if (el('btnCheckProdPreflight')) {
+        el('btnCheckProdPreflight').click();
+        if (el('prodPreflightStatus') && typeof el('prodPreflightStatus').scrollIntoView === 'function') {
+          el('prodPreflightStatus').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }
+    }
+  }
+
+  async function applyAutoAntiSpamFixesToEditor() {
+    const provider = resolveChecklistTargetProvider();
+    const opt = await runAntiSpamChecklist();
+    if (!opt) return;
+    const appliedNotes = [];
+    const subjEl = el('subject');
+    if (subjEl && opt.optimized?.subject && subjEl.value.trim() !== opt.optimized.subject) {
+      subjEl.value = opt.optimized.subject;
+      appliedNotes.push(`제목 정리 → "${opt.optimized.subject}"`);
+    }
+    const bodyEl = el('body');
+    if (
+      bodyEl &&
+      opt.optimized?.text &&
+      (opt.autoFixesApplied || []).some(f => f.code === 'AUTO_CALMED_PROMO_TO_TEXT_STRUCTURE') &&
+      bodyEl.value.trim() !== opt.optimized.text.trim()
+    ) {
+      bodyEl.value = opt.optimized.text.trim();
+      appliedNotes.push('강한 프로모션 본문을 차분한 텍스트형 구조로 반영');
+    }
+    const dispEl = el('senderDisplayName');
+    const compEl = el('company');
+    const curDisp = (dispEl && dispEl.value.trim()) || (compEl && compEl.value.trim()) || '';
+    if (opt.optimized?.displayName && curDisp && curDisp !== opt.optimized.displayName && (opt.autoFixesApplied || []).some(f => f.code === 'AUTO_FIX_DISPLAY_NAME_DOMAIN_MISMATCH')) {
+      if (dispEl) {
+        dispEl.value = opt.optimized.displayName;
+        appliedNotes.push(`표시 이름 안전 보정 → "${opt.optimized.displayName}"`);
+      }
+    }
+    const imgEl = el('image');
+    if (imgEl && /^https?:\/\/(?:www\.)?vivpr\.pro\/images\/news\.jpg$/i.test(String(imgEl.value || '').trim())) {
+      imgEl.value = '';
+      appliedNotes.push('존재하지 않는 기본 샘플 이미지 URL 제거');
+    }
+    const rAddrEl = el('address');
+    const gAddrEl = el('gmailPhysicalAddress');
+    if (rAddrEl && gAddrEl) {
+      const rv = rAddrEl.value.trim();
+      const gv = gAddrEl.value.trim();
+      if (rv && !gv) { gAddrEl.value = rv; appliedNotes.push('Resend 사업장 주소를 Gmail 물리적 주소로 동기화'); }
+      else if (gv && !rv) { rAddrEl.value = gv; appliedNotes.push('Gmail 물리적 주소를 Resend 사업장 주소로 동기화'); }
+    }
+    render();
+    const afterOpt = await runAntiSpamChecklist();
+    const sumBox = el('antiSpamChecklistSummary');
+    if (sumBox) {
+      const header = appliedNotes.length
+        ? `⚡ [자동 항목 편집창 반영 완료 — ${appliedNotes.length}건]: ${appliedNotes.join(' · ')}`
+        : 'ℹ️ 편집창에서 즉시 변경할 자동 항목이 없습니다 (Reply-To 정렬·경량 HTML·RFC 2047·Date 헤더는 발송 시점에 자동 적용됩니다).';
+      sumBox.textContent = `${header}\n${sumBox.textContent}`;
+    }
+    return afterOpt;
+  }
+
+  function renderUnifiedAntiSpamChecklist(opt) {
+    if (!opt) return;
+    lastUnifiedOptimization = opt;
+    const provider = opt.provider || resolveChecklistTargetProvider();
+    if (provider === 'GMAIL' && typeof refreshGmailTextPreviewFromSource === 'function') {
+      refreshGmailTextPreviewFromSource(values(), opt);
+    }
+    const badge = el('spamChecklistScoreBadge');
+    const sumBox = el('antiSpamChecklistSummary');
+    const listEl = el('antiSpamChecklistList');
+    const items = Array.isArray(opt.checklist) ? opt.checklist : [];
+
+    const gradeEmoji = opt.grade === 'HIGH_RISK' ? '🔴' : (opt.grade === 'MEDIUM_RISK' ? '🟡' : '🟢');
+    if (badge) {
+      badge.textContent = `${gradeEmoji} ${provider} · ${opt.grade} (${opt.riskScore}/100)`;
+    }
+
+    const autoItems = items.filter(i => i.mode === 'AUTO');
+    const semiItems = items.filter(i => i.mode === 'SEMI_AUTO');
+    const manualItems = items.filter(i => i.mode === 'MANUAL_GUIDE');
+    const autoDone = autoItems.filter(i => i.status === 'PASS' || i.status === 'AUTO_FIXED').length;
+    const autoFixedCnt = autoItems.filter(i => i.status === 'AUTO_FIXED').length;
+    const semiNeedCnt = semiItems.filter(i => i.status === 'ACTION_REQUIRED' || i.status === 'WARN').length;
+    const manualDoneCnt = manualItems.filter(i => Boolean(manualChecklistState[i.id])).length;
+
+    if (sumBox) {
+      sumBox.className = opt.grade === 'HIGH_RISK' ? 'status-box status-error' : (opt.grade === 'MEDIUM_RISK' || semiNeedCnt > 0 ? 'status-box status-blocked' : 'status-box status-success');
+      const lines = [
+        `${gradeEmoji} [${provider} 기준 통합 스팸 위험도 진단] 등급: ${opt.grade} (점수 ${opt.riskScore}/100)`,
+        `• 자동(AUTO): ${autoDone}/${autoItems.length} 준비됨 (발송 시 자동보정 ${autoFixedCnt}건) | 반자동(SEMI-AUTO): ${semiNeedCnt === 0 ? '모두 양호' : `조치 권장 ${semiNeedCnt}건`} | 수동 체크: ${manualDoneCnt}/${manualItems.length} 완료`
+      ];
+      if (Array.isArray(opt.recommendations) && opt.recommendations.length > 0) {
+        lines.push(`• 핵심 권장: ${opt.recommendations[0]}`);
+      }
+      lines.push(`• 고지: ${opt.honestDisclaimer || ''}`);
+      sumBox.textContent = lines.join('\n');
+    }
+
+    if (!listEl) return;
+    listEl.textContent = '';
+
+    for (const item of items) {
+      const row = document.createElement('div');
+      const isManual = item.mode === 'MANUAL_GUIDE';
+      const isManualChecked = isManual && Boolean(manualChecklistState[item.id]);
+      const isGood = item.status === 'PASS' || item.status === 'AUTO_FIXED' || isManualChecked;
+      const borderCol = isGood ? '#86efac' : (item.status === 'ACTION_REQUIRED' ? '#fca5a5' : '#fde68a');
+      const bgCol = isGood ? '#f0fdf4' : (item.status === 'ACTION_REQUIRED' ? '#fef2f2' : '#fffbeb');
+      row.style.cssText = `display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:8px;padding:6px 8px;border:1px solid ${borderCol};border-radius:6px;background:${bgCol};font-size:12px;`;
+
+      const left = document.createElement('div');
+      left.style.cssText = 'flex:1;min-width:220px;';
+
+      const modeTag = item.mode === 'AUTO' ? '[자동]' : (item.mode === 'SEMI_AUTO' ? '[반자동]' : '[수동]');
+      const statusIcon = isManual
+        ? (isManualChecked ? '✅ 완료' : '☐ 확인 대기')
+        : (item.status === 'PASS' ? '✅ 통과' : (item.status === 'AUTO_FIXED' ? '⚡ 발송시 자동보정' : (item.status === 'ACTION_REQUIRED' ? '🛠️ 조치 필요' : '⚠️ 권장')));
+
+      if (isManual) {
+        const lbl = document.createElement('label');
+        lbl.style.cssText = 'display:flex;align-items:flex-start;gap:6px;cursor:pointer;font-weight:600;';
+        const cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.checked = isManualChecked;
+        cb.onchange = () => {
+          manualChecklistState[item.id] = cb.checked;
+          saveManualChecklistState();
+          renderUnifiedAntiSpamChecklist(opt);
+        };
+        const titleSpan = document.createElement('span');
+        titleSpan.textContent = `${modeTag} ${item.title} — ${statusIcon}`;
+        lbl.appendChild(cb);
+        lbl.appendChild(titleSpan);
+        left.appendChild(lbl);
+      } else {
+        const titleDiv = document.createElement('div');
+        titleDiv.style.fontWeight = '600';
+        titleDiv.textContent = `${modeTag} ${item.title} — ${statusIcon}`;
+        left.appendChild(titleDiv);
+      }
+
+      const detailDiv = document.createElement('div');
+      detailDiv.style.cssText = 'color:#334155;margin-top:2px;font-size:11px;';
+      detailDiv.textContent = item.detail || '';
+      left.appendChild(detailDiv);
+      row.appendChild(left);
+
+      if (item.mode === 'SEMI_AUTO' && item.semiAutoAction && (item.status === 'ACTION_REQUIRED' || item.status === 'WARN')) {
+        const actBtn = document.createElement('button');
+        actBtn.type = 'button';
+        actBtn.style.cssText = 'padding:4px 8px;font-size:11px;white-space:nowrap;';
+        actBtn.textContent = semiAutoButtonLabel(item.semiAutoAction);
+        actBtn.onclick = () => { handleSemiAutoChecklistAction(item.semiAutoAction, provider); };
+        row.appendChild(actBtn);
+      } else if (item.mode === 'AUTO' && item.status === 'ACTION_REQUIRED' && item.semiAutoAction) {
+        const fixBtn = document.createElement('button');
+        fixBtn.type = 'button';
+        fixBtn.style.cssText = 'padding:4px 8px;font-size:11px;white-space:nowrap;';
+        fixBtn.textContent = semiAutoButtonLabel(item.semiAutoAction);
+        fixBtn.onclick = () => { handleSemiAutoChecklistAction(item.semiAutoAction, provider); };
+        row.appendChild(fixBtn);
+      } else if (item.mode === 'MANUAL_GUIDE' && item.semiAutoAction === 'OPEN_GMAIL_SPAM_NOT_SPAM_HELPER') {
+        const btnWrap = document.createElement('div');
+        btnWrap.style.cssText = 'display:flex;gap:4px;flex-wrap:wrap;';
+        const openBtn = document.createElement('button');
+        openBtn.type = 'button';
+        openBtn.style.cssText = 'padding:4px 8px;font-size:11px;white-space:nowrap;';
+        openBtn.textContent = '📬 스팸함에서 바로 열기';
+        openBtn.onclick = () => { openLastTestEmailInGmailSpam(provider); };
+        const copyBtn = document.createElement('button');
+        copyBtn.type = 'button';
+        copyBtn.style.cssText = 'padding:4px 8px;font-size:11px;white-space:nowrap;';
+        copyBtn.textContent = '📋 검색어 복사';
+        copyBtn.onclick = async () => {
+          const info = buildStudioGmailSpamHelper(provider);
+          try {
+            if (navigator.clipboard && navigator.clipboard.writeText) await navigator.clipboard.writeText(info.query);
+          } catch (_) {}
+          copyBtn.textContent = '✅ 복사됨';
+          setTimeout(() => { copyBtn.textContent = '📋 검색어 복사'; }, 1500);
+        };
+        btnWrap.appendChild(openBtn);
+        btnWrap.appendChild(copyBtn);
+        row.appendChild(btnWrap);
+      }
+
+      listEl.appendChild(row);
+    }
+  }
+
+  async function runAntiSpamChecklist() {
+    const provider = resolveChecklistTargetProvider();
+    const sumBox = el('antiSpamChecklistSummary');
+    if (sumBox) {
+      sumBox.className = 'status-box status-loading';
+      sumBox.textContent = `⏳ [${provider} 기준] 자동·반자동 스팸 위험도 및 체크리스트 전체 진단 중...`;
+    }
+    const v = values();
+    const flags = getUnifiedSpamOptFlags(provider);
+    const { sidecarPort, sidecarToken } = getSidecarConfig();
+    const selSelf = el('gmailSelfTestAccountSelect') ? el('gmailSelfTestAccountSelect').value : '';
+    const replyToVal = provider === 'GMAIL'
+      ? (el('gmailReplyTo') ? el('gmailReplyTo').value.trim() : '')
+      : String(v.reply || '').trim();
+    const r = await callBg({
+      action: 'OPTIMIZE_EMAIL_DELIVERABILITY',
+      sidecarPort,
+      sidecarToken,
+      payload: {
+        provider,
+        accountId: provider === 'GMAIL' ? (selSelf || null) : null,
+        selectedAccountIds: provider === 'GMAIL' ? Array.from(selectedGmailAccountIds) : [],
+        displayName: v.senderDisplayName || v.company || v.brand || '',
+        replyTo: replyToVal,
+        subject: (v.subject || '').trim(),
+        preheader: v.preheader || '',
+        html: htmlFor(v),
+        text: textFor(v),
+        link: v.link || '',
+        physicalAddress: getEffectivePhysicalAddress(v),
+        autoOptimize: flags.autoSpamPrevention,
+        autoAlignReplyTo: flags.autoAlignReplyTo,
+        ownerApprovedBrand: flags.ownerApprovedBrand,
+        authorizedReplyTo: flags.authorizedReplyTo,
+        preferLightweightHtml: flags.preferLightweightHtml,
+        embedInlineImages: flags.embedInlineImages,
+        autoCalmPromoToTextStyle: flags.autoCalmPromoToTextStyle,
+        mimeContentMode: flags.mimeContentMode
+      }
+    });
+    const opt = (r?.ok && r.data?.optimization)
+      ? r.data.optimization
+      : buildOfflineFallbackOptimization(provider, v);
+    renderUnifiedAntiSpamChecklist(opt);
+    if (provider === 'GMAIL') renderGmailSpamOptimization(opt);
+    return opt;
+  }
+
+  xpiderRefreshAntiSpamChecklist = runAntiSpamChecklist;
+
+  if (el('btnRunAntiSpamChecklist')) {
+    el('btnRunAntiSpamChecklist').onclick = () => { runAntiSpamChecklist(); };
+  }
+  if (el('btnApplyAutoAntiSpamFixes')) {
+    el('btnApplyAutoAntiSpamFixes').onclick = () => { applyAutoAntiSpamFixesToEditor(); };
+  }
+  if (el('btnSemiAutoCopyAndDraftFix')) {
+    el('btnSemiAutoCopyAndDraftFix').onclick = () => {
+      if (typeof xpiderOpenSemiAutoProposal === 'function') xpiderOpenSemiAutoProposal('COMBINED');
+    };
+  }
+  if (el('spamChecklistProvider')) {
+    el('spamChecklistProvider').addEventListener('change', () => { runAntiSpamChecklist(); });
+  }
+  if (el('btnOpenGmailSpamHelper')) {
+    el('btnOpenGmailSpamHelper').onclick = () => { openLastTestEmailInGmailSpam(); };
+  }
+  if (el('btnAddSpamReviewAccount')) {
+    el('btnAddSpamReviewAccount').onclick = () => {
+      const inp = el('spamReviewAccountInput');
+      const lbl = el('spamReviewAccountLabel');
+      const res = parseAndAddSpamReviewAccounts(inp ? inp.value : '', lbl ? lbl.value : '');
+      if (res.added > 0) {
+        if (inp) inp.value = '';
+        if (lbl) lbl.value = '';
+      }
+    };
+  }
+  if (el('btnSyncTestRecipientToReviewList')) {
+    el('btnSyncTestRecipientToReviewList').onclick = () => {
+      const candidates = [
+        el('gmailSelfTestRecipient') ? el('gmailSelfTestRecipient').value.trim() : '',
+        el('realTestRecipient') ? el('realTestRecipient').value.trim() : '',
+        lastSentSelfTestMeta?.recipient || ''
+      ].filter(Boolean);
+      parseAndAddSpamReviewAccounts(candidates.join(', '));
+    };
+  }
+  if (el('btnOpenSelectedSpamSearch')) {
+    el('btnOpenSelectedSpamSearch').onclick = () => { openMultiAccountSpamTabs({ bareSpamOnly: false }); };
+  }
+  if (el('btnOpenSelectedSpamFolders')) {
+    el('btnOpenSelectedSpamFolders').onclick = () => { openMultiAccountSpamTabs({ bareSpamOnly: true }); };
+  }
+  if (el('btnOpenRealTestInSpam')) {
+    el('btnOpenRealTestInSpam').onclick = () => { openLastTestEmailInGmailSpam('RESEND'); };
+  }
+  if (el('btnOpenGmailSelfTestInSpam')) {
+    el('btnOpenGmailSelfTestInSpam').onclick = () => { openLastTestEmailInGmailSpam('GMAIL'); };
+  }
+  if (el('btnOpenGmailNativeCompose')) {
+    el('btnOpenGmailNativeCompose').onclick = () => {
+      const v = values();
+      const to = el('gmailSelfTestRecipient') ? el('gmailSelfTestRecipient').value.trim() : '';
+      const subj = getEffectiveSubjectForProvider(v, 'GMAIL');
+      const bodyTxt = getEffectiveTextForProvider(v, 'GMAIL').replace(/https?:\/\/[^\s"'<>]+\/unsubscribe\/preview-sample-only[^\n]*/gi, '').trim().slice(0, 1500);
+      const u = new URL('https://mail.google.com/mail/');
+      u.searchParams.set('view', 'cm');
+      u.searchParams.set('fs', '1');
+      if (to && /^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/.test(to)) u.searchParams.set('to', to);
+      if (subj) u.searchParams.set('su', subj.slice(0, 160));
+      if (bodyTxt) u.searchParams.set('body', bodyTxt);
+      const targetUrl = u.href;
+      if (!isOfficialGmailTabUrl(targetUrl)) return;
+      if (typeof chrome !== 'undefined' && chrome.tabs && typeof chrome.tabs.create === 'function') {
+        chrome.tabs.create({ url: targetUrl });
+      } else {
+        window.open(targetUrl, '_blank', 'noopener,noreferrer');
+      }
+      const box = el('gmailSelfTestStatus');
+      if (box) {
+        box.className = 'status-box status-idle';
+        box.textContent = '✉️ Google 공식 Gmail 웹 작성창을 열었습니다. 본인이 직접 검토·발송할 수 있습니다 (DOM 스크래핑·자동 클릭 봇 미사용).';
+      }
+    };
+  }
+  if (el('btnCopySpamQuery')) {
+    el('btnCopySpamQuery').onclick = async () => {
+      const info = lastSpamHelperPayload || buildStudioGmailSpamHelper();
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) await navigator.clipboard.writeText(info.query);
+      } catch (_) {}
+      const btn = el('btnCopySpamQuery');
+      if (btn) {
+        btn.textContent = '✅ 검색어 복사 완료';
+        setTimeout(() => { btn.textContent = '📋 스팸 검색어 복사'; }, 1500);
+      }
+    };
+  }
+  if (el('btnOpenBareSpamFolder')) {
+    el('btnOpenBareSpamFolder').onclick = () => {
+      openLastTestEmailInGmailSpam(lastSpamHelperPayload?.provider || null, { bareSpamOnly: true });
+    };
+  }
+  if (el('btnMarkNotSpamDone')) {
+    el('btnMarkNotSpamDone').onclick = () => {
+      manualChecklistState.MANUAL_NOT_SPAM_TRAIN = true;
+      saveManualChecklistState();
+      if (lastUnifiedOptimization) renderUnifiedAntiSpamChecklist(lastUnifiedOptimization);
+      const guideText = el('gmailSpamHelperText');
+      if (guideText) {
+        guideText.textContent = '✅ [스팸 아님(Not spam)] 처리 완료로 체크리스트에 저장되었습니다. 이제 자동 스팸 방지 최적화로 1통 재테스트해 보세요.';
+      }
+    };
+  }
+
+  function renderGmailSpamOptimization(opt) {
+    const box = el('gmailSpamOptStatus');
+    if (!box || !opt) return;
+    box.className = opt.grade === 'HIGH_RISK' ? 'status-box status-error' : (opt.grade === 'MEDIUM_RISK' ? 'status-box status-blocked' : 'status-box status-success');
+    const lines = [
+      `🧪 자동 스팸 위험도 진단: ${opt.grade} (위험 점수 ${opt.riskScore}/100 · 자동 보정 ${opt.autoFixesApplied?.length || 0}건 적용됨)`
+    ];
+    for (const fx of (opt.autoFixesApplied || [])) {
+      lines.push(`  ✅ [자동 보정] ${fx.detail}`);
+    }
+    for (const sg of (opt.signals || [])) {
+      lines.push(`  ⚠️ [${sg.severity} +${sg.points}] ${sg.message}`);
+    }
+    for (const rec of (opt.recommendations || [])) {
+      lines.push(`  💡 [권장] ${rec}`);
+    }
+    lines.push(`• 고지: ${opt.honestDisclaimer || ''}`);
+    box.textContent = lines.join('\n');
+  }
+  if (el('btnGmailSpamOptimizePreview')) {
+    el('btnGmailSpamOptimizePreview').onclick = async () => {
+      const box = el('gmailSpamOptStatus');
+      if (box) { box.className = 'status-box status-loading'; box.textContent = '⏳ 자동 스팸 위험도 진단 및 보정 미리보기 계산 중...'; }
+      const v = values();
+      const flags = getGmailSpamOptFlags();
+      const { sidecarPort, sidecarToken } = getSidecarConfig();
+      const selSelf = el('gmailSelfTestAccountSelect') ? el('gmailSelfTestAccountSelect').value : '';
+      const r = await callBg({
+        action: 'OPTIMIZE_GMAIL_DELIVERABILITY',
+        sidecarPort,
+        sidecarToken,
+        payload: {
+          accountId: selSelf || null,
+          selectedAccountIds: Array.from(selectedGmailAccountIds),
+          displayName: v.senderDisplayName || v.company || v.brand || '',
+          replyTo: el('gmailReplyTo') ? el('gmailReplyTo').value.trim() : '',
+          subject: (v.subject || '').trim() || '[XPIDER Gmail Self-Test]',
+          preheader: v.preheader || '',
+          html: htmlFor(v),
+          text: textFor(v),
+          link: v.link || '',
+          physicalAddress: getEffectivePhysicalAddress(v),
+          autoOptimize: flags.autoSpamPrevention,
+          autoAlignReplyTo: flags.autoAlignReplyTo,
+          ownerApprovedBrand: flags.ownerApprovedBrand,
+          authorizedReplyTo: flags.authorizedReplyTo,
+          preferLightweightHtml: flags.preferLightweightHtml,
+          embedInlineImages: flags.embedInlineImages,
+          autoCalmPromoToTextStyle: flags.autoCalmPromoToTextStyle,
+          mimeContentMode: flags.mimeContentMode
+        }
+      });
+      if (r?.ok && r.data?.optimization) {
+        renderGmailSpamOptimization(r.data.optimization);
+        renderUnifiedAntiSpamChecklist(r.data.optimization);
+      } else if (box) {
+        box.className = 'status-box status-error';
+        box.textContent = `❌ 스팸 위험도 진단 실패: ${r?.error || r?.data?.reason || 'SIDECAR_ERROR'}`;
+      }
+    };
+  }
+  if (el('btnSaveGmailOAuthClient')) {
+    el('btnSaveGmailOAuthClient').onclick = async () => {
+      const cidEl = el('gmailOAuthClientId');
+      const secEl = el('gmailOAuthClientSecret');
+      const consent = Boolean(el('gmailOAuthConsentCheck') && el('gmailOAuthConsentCheck').checked);
+      const { sidecarPort, sidecarToken } = getSidecarConfig();
+      const r = await callBg({
+        action: 'SAVE_GMAIL_OAUTH_CLIENT',
+        sidecarPort,
+        sidecarToken,
+        payload: {
+          clientId: cidEl ? cidEl.value.trim() : '',
+          clientSecret: secEl ? secEl.value.trim() : '',
+          userConsentConfirmed: consent
+        }
+      });
+      if (cidEl) cidEl.value = '';
+      if (secEl) secEl.value = '';
+      if (el('gmailOAuthStatus')) {
+        el('gmailOAuthStatus').className = r?.ok ? 'status-box status-success' : 'status-box status-error';
+        el('gmailOAuthStatus').textContent = r?.ok
+          ? `✅ Google OAuth Client가 로컬 DPAPI 보안 저장소에 저장되었습니다 (${r.data?.clientIdPreview || ''}). 이제 [🔗 Gmail 계정 연결]을 클릭하세요.`
+          : `❌ OAuth Client 저장 실패: ${r?.data?.message || r?.data?.reason || r?.error || '-'}`;
+      }
+      refreshGmailStatus();
+    };
+  }
+  if (el('btnConnectGmailAccount')) {
+    el('btnConnectGmailAccount').onclick = async () => {
+      const { sidecarPort, sidecarToken } = getSidecarConfig();
+      const r = await callBg({ action: 'START_GMAIL_OAUTH', sidecarPort, sidecarToken, payload: {} });
+      if (!r?.ok || !r.data?.authUrl) {
+        if (el('gmailOAuthStatus')) {
+          el('gmailOAuthStatus').className = 'status-box status-error';
+          el('gmailOAuthStatus').textContent = `❌ Gmail OAuth 시작 실패: ${r?.data?.message || r?.data?.reason || r?.error || '-'}`;
+        }
+        return;
+      }
+      if (el('gmailOAuthStatus')) {
+        el('gmailOAuthStatus').className = 'status-box status-loading';
+        el('gmailOAuthStatus').textContent = '🌐 Google 공식 OAuth 동의 창을 열었습니다. 승인 완료 후 [🔄 Gmail 계정 · 할당량 새로고침]을 누르세요.';
+      }
+      if (typeof chrome !== 'undefined' && chrome.tabs && typeof chrome.tabs.create === 'function') {
+        chrome.tabs.create({ url: r.data.authUrl });
+      } else {
+        window.open(r.data.authUrl, '_blank', 'noopener');
+      }
+    };
+  }
+  if (el('btnGmailSelfTestSend')) {
+    el('btnGmailSelfTestSend').onclick = async () => {
+      const box = el('gmailSelfTestStatus');
+      const accountId = el('gmailSelfTestAccountSelect') ? el('gmailSelfTestAccountSelect').value : '';
+      const to = el('gmailSelfTestRecipient') ? el('gmailSelfTestRecipient').value.trim() : '';
+      const consentOk = Boolean(el('gmailSelfTestConsent') && el('gmailSelfTestConsent').checked);
+      if (!accountId) { if (box) { box.className = 'status-box status-blocked'; box.textContent = '⚠️ 먼저 연결된 Gmail 계정을 선택하세요.'; } return; }
+      if (!to || !consentOk) { if (box) { box.className = 'status-box status-blocked'; box.textContent = '⚠️ 승인된 본인 테스트 수신자 주소와 동의 체크박스를 확인하세요.'; } return; }
+      const v = values();
+      const spamFlags = getGmailSpamOptFlags();
+      const gmailSubj = getEffectiveSubjectForProvider(v, 'GMAIL') || '[XPIDER Gmail Self-Test]';
+      const gmailHtml = getEffectiveHtmlForProvider(v, 'GMAIL');
+      const gmailText = getEffectiveTextForProvider(v, 'GMAIL');
+      const customTextEdited = Boolean(previewEditorState.gmailTextCustomEdited);
+      if (box) { box.className = 'status-box status-loading'; box.textContent = '⏳ Gmail API 1통 셀프 테스트 발송 중 (자동 스팸 방지 최적화 + RFC 8058 수신거부 동기화 포함)...'; }
+      const { sidecarPort, sidecarToken } = getSidecarConfig();
+      const r = await callBg({
+        action: 'SEND_GMAIL_SELF_TEST',
+        sidecarPort,
+        sidecarToken,
+        payload: {
+          accountId,
+          to,
+          replyTo: el('gmailReplyTo') ? el('gmailReplyTo').value.trim() : '',
+          displayName: v.senderDisplayName || v.company || v.brand || '',
+          subject: gmailSubj,
+          html: gmailHtml,
+          text: gmailText,
+          physicalAddress: getEffectivePhysicalAddress(v),
+          ...spamFlags,
+          autoCalmPromoToTextStyle: customTextEdited ? false : spamFlags.autoCalmPromoToTextStyle,
+          recipientConsentConfirmed: true
+        }
+      });
+      if (r?.data?.spamOptimization) {
+        renderGmailSpamOptimization(r.data.spamOptimization);
+      }
+      if (box) {
+        if (r?.ok && r.data?.ok) {
+          saveLastSentSelfTestMeta({
+            provider: 'GMAIL',
+            recipient: to,
+            subject: (v.subject || '').trim() || '[XPIDER Gmail Self-Test]',
+            fromDomain: 'gmail.com',
+            providerMessageId: r.data.providerMessageId,
+            sentAt: new Date().toISOString()
+          });
+          const opt = r.data.spamOptimization;
+          const mh = r.data.mimeHygiene;
+          const optLine = opt ? `\n• 자동 스팸 방지: ${opt.grade} (${opt.riskScore}/100 · 자동 보정 ${opt.autoFixesApplied?.length || 0}건 적용)` : '';
+          const mhLine = mh ? `\n• 네이티브 MIME: ${r.data.mimeContentMode || 'GMAIL_NATIVE_HTML'} · ${mh.transferEncoding || 'quoted-printable'} · 인라인 이미지(CID) ${mh.inlineImagesEmbedded || 0}건 내장${(mh.replacedImageHosts && mh.replacedImageHosts.length) ? ` (외부 호스트 제거: ${mh.replacedImageHosts.join(', ')})` : ''}` : '';
+          const unsubLine = r.data.unsubscribeBaseUsed
+            ? `\n• 수신거부 호스트: ${r.data.unsubscribeBaseUsed}${r.data.unsubscribeDomainFallback ? ` (⚠️ 요청 호스트 ${r.data.unsubscribeDomainFallback.requestedBase} DNS 전파 대기 중 → 안전 폴백 적용)` : ''}`
+            : '';
+          box.className = 'status-box status-success';
+          box.textContent = `✅ GMAIL_API_ACCEPTED (id=${r.data.providerMessageId}) | 발신: ${r.data.maskedFrom} → 수신: ${r.data.maskedTo}${optLine}${mhLine}${unsubLine}\n• delivery=${r.data.delivery || 'UNKNOWN'} | inbox=${r.data.inbox || 'UNKNOWN'} | primary=${r.data.primary || 'UNKNOWN'} (${r.data.note || ''})\n• 스팸함에 들어갔다면 위 [📬 스팸함에서 직전 테스트 메일 열기 (스팸 아님 안내)] 버튼으로 바로 열어 [스팸 아님]을 클릭하세요.`;
+        } else {
+          box.className = 'status-box status-error';
+          box.textContent = `❌ Gmail 셀프 테스트 차단/실패: ${r?.data?.reason || r?.error || '-'}`;
+        }
+      }
+      refreshGmailStatus();
+    };
+  }
+  if (el('btnGmailPrepareQueue')) {
+    el('btnGmailPrepareQueue').onclick = async () => {
+      const box = el('gmailQueueStatus');
+      const mode = el('gmailSendingMode') ? el('gmailSendingMode').value : 'SINGLE_ACCOUNT';
+      const scheduleMode = el('gmailScheduleMode') ? el('gmailScheduleMode').value : 'DISTRIBUTED_MULTI_DAY';
+      const ids = Array.from(selectedGmailAccountIds);
+      if (mode === 'SINGLE_ACCOUNT' && ids.length !== 1) {
+        if (box) { box.className = 'status-box status-blocked'; box.textContent = '⚠️ SINGLE_ACCOUNT 모드에서는 정확히 1개의 Gmail 계정을 체크하세요.'; }
+        return;
+      }
+      if (mode === 'APPROVED_ACCOUNT_POOL' && ids.length < 2) {
+        if (box) { box.className = 'status-box status-blocked'; box.textContent = '⚠️ APPROVED_ACCOUNT_POOL 모드에서는 2개 이상의 Gmail 계정을 체크하세요.'; }
+        return;
+      }
+      const providerSwitchConfirmed = Boolean(operatorConfirmedProviderSwitch || (el('gmailProviderSwitchConfirm') && el('gmailProviderSwitchConfirm').checked));
+      const { sidecarPort, sidecarToken, payload } = buildSyncPayloadAndSig();
+      if (box) { box.className = 'status-box status-loading'; box.textContent = '⏳ 교차 공급자 차단 필터링, 고정 계정 배정 및 다일 일정 계산 중 (발송 없음)...'; }
+      const r = await callBg({
+        action: 'PREPARE_GMAIL_QUEUE',
+        sidecarPort,
+        sidecarToken,
+        payload: {
+          ...payload,
+          sendingMode: mode,
+          scheduleMode,
+          selectedAccountIds: ids,
+          replyTo: el('gmailReplyTo') ? el('gmailReplyTo').value.trim() : '',
+          physicalAddress: el('gmailPhysicalAddress') ? el('gmailPhysicalAddress').value.trim() : '',
+          providerSwitchConfirmed
+        }
+      });
+      if (!r?.ok || !r.data?.ok) {
+        if (box) { box.className = 'status-box status-error'; box.textContent = `❌ Gmail 큐 사전 배정 실패: ${r?.data?.message || r?.data?.reason || r?.error || '-'}`; }
+        return;
+      }
+      refreshGmailStatus();
+    };
+  }
+  if (el('btnGmailProdSend')) {
+    el('btnGmailProdSend').onclick = async () => {
+      const box = el('gmailQueueStatus');
+      const v = values();
+      const subjectVal = getEffectiveSubjectForProvider(v, 'GMAIL');
+      if (!subjectVal) { if (box) { box.className = 'status-box status-blocked'; box.textContent = '⚠️ 이메일 제목을 입력하세요.'; } return; }
+      const hygieneConfirmed = Boolean(el('gmailHygieneConfirm') && el('gmailHygieneConfirm').checked);
+      const providerSwitchConfirmed = Boolean(operatorConfirmedProviderSwitch || (el('gmailProviderSwitchConfirm') && el('gmailProviderSwitchConfirm').checked));
+      const scheduleMode = el('gmailScheduleMode') ? el('gmailScheduleMode').value : 'DISTRIBUTED_MULTI_DAY';
+      const spamFlags = getGmailSpamOptFlags();
+      const customTextEdited = Boolean(previewEditorState.gmailTextCustomEdited);
+      const { sidecarPort, sidecarToken } = getSidecarConfig();
+      if (box) { box.className = 'status-box status-loading'; box.textContent = '⏳ Gmail 캠페인 백그라운드 발송 시작 요청 중 (자동 스팸 방지 + 한도 예약 대기)...'; }
+      const r = await callBg({
+        action: 'RUN_GMAIL_PRODUCTION_QUEUE',
+        sidecarPort,
+        sidecarToken,
+        payload: {
+          background: true,
+          subject: subjectVal,
+          displayName: v.senderDisplayName || v.company || v.brand || '',
+          html: getEffectiveHtmlForProvider(v, 'GMAIL'),
+          text: getEffectiveTextForProvider(v, 'GMAIL'),
+          replyTo: el('gmailReplyTo') ? el('gmailReplyTo').value.trim() : '',
+          physicalAddress: getEffectivePhysicalAddress(v),
+          scheduleMode,
+          ...spamFlags,
+          autoCalmPromoToTextStyle: customTextEdited ? false : spamFlags.autoCalmPromoToTextStyle,
+          hygieneConfirmed,
+          providerSwitchConfirmed
+        }
+      });
+      if (!r?.ok) {
+        if (box) { box.className = 'status-box status-blocked'; box.textContent = `🛑 Gmail 발송 차단/일시 중지: ${r?.data?.koreanReason || r?.data?.reason || r?.error || '-'}`; }
+      }
+      refreshGmailStatus();
+    };
+  }
+  if (el('btnGmailProdStop')) {
+    el('btnGmailProdStop').onclick = async () => {
+      const { sidecarPort, sidecarToken } = getSidecarConfig();
+      await callBg({ action: 'STOP_GMAIL_PRODUCTION_QUEUE', sidecarPort, sidecarToken, payload: { reason: 'OWNER_STOPPED' } });
+      refreshGmailStatus();
+    };
+  }
+
+  // ===== RC13: Gmail Domain Unification & Custom Unsubscribe Host Controller =====
+  let lastGmailDomainConfig = null;
+  function renderGmailDomainConfig(cfg) {
+    if (!cfg || typeof cfg !== 'object') return;
+    lastGmailDomainConfig = cfg;
+    if (el('gmailBrandDomainInput') && !el('gmailBrandDomainInput').value.trim() && cfg.brandDomain) {
+      el('gmailBrandDomainInput').value = cfg.brandDomain;
+    }
+    if (el('gmailCustomUnsubBaseInput') && !el('gmailCustomUnsubBaseInput').value.trim() && cfg.unsubscribeBaseUrl) {
+      el('gmailCustomUnsubBaseInput').value = cfg.unsubscribeBaseUrl;
+    }
+    if (el('gmailUnifiedDisplayNameInput') && !el('gmailUnifiedDisplayNameInput').value.trim() && cfg.defaultDisplayName) {
+      el('gmailUnifiedDisplayNameInput').value = cfg.defaultDisplayName;
+    }
+    if (el('gmailUnsubFallbackCheck')) {
+      el('gmailUnsubFallbackCheck').checked = cfg.fallbackToDefaultIfDnsPending !== false;
+    }
+    const box = el('gmailDomainConfigStatus');
+    if (box && cfg.configured) {
+      box.className = 'status-box status-success';
+      box.textContent = [
+        `🌐 Gmail 도메인 통일 설정 적용됨`,
+        `• 브랜드 도메인: ${cfg.brandDomain || '(미지정)'} | 수신거부 URL: ${cfg.unsubscribeBaseUrl || '(기본 호스트 사용)'}`,
+        `• 권장 표시 이름: ${cfg.defaultDisplayName || '(미지정)'} | DNS 대기 시 안전 폴백: ${cfg.fallbackToDefaultIfDnsPending !== false ? '활성' : '비활성(엄격 차단)'}`
+      ].join('\n');
+    }
+  }
+
+  if (el('btnSaveGmailDomainConfig')) {
+    el('btnSaveGmailDomainConfig').onclick = async () => {
+      const box = el('gmailDomainConfigStatus');
+      const brandDomain = el('gmailBrandDomainInput') ? el('gmailBrandDomainInput').value.trim() : '';
+      let unsubscribeBaseUrl = el('gmailCustomUnsubBaseInput') ? el('gmailCustomUnsubBaseInput').value.trim() : '';
+      if (!unsubscribeBaseUrl && brandDomain) {
+        unsubscribeBaseUrl = `https://unsubscribe.${brandDomain.replace(/^https?:\/\//i, '').replace(/\/.*$/, '')}`;
+        if (el('gmailCustomUnsubBaseInput')) el('gmailCustomUnsubBaseInput').value = unsubscribeBaseUrl;
+      }
+      const defaultDisplayName = el('gmailUnifiedDisplayNameInput') ? el('gmailUnifiedDisplayNameInput').value.trim() : '';
+      const fallbackToDefaultIfDnsPending = !el('gmailUnsubFallbackCheck') || Boolean(el('gmailUnsubFallbackCheck').checked);
+      if (box) { box.className = 'status-box status-loading'; box.textContent = '⏳ Gmail 도메인 · 수신거부 설정 저장 중...'; }
+      const { sidecarPort, sidecarToken } = getSidecarConfig();
+      const r = await callBg({
+        action: 'SAVE_GMAIL_DOMAIN_CONFIG',
+        sidecarPort,
+        sidecarToken,
+        payload: {
+          brandDomain,
+          unsubscribeBaseUrl,
+          defaultDisplayName,
+          defaultWebsiteUrl: brandDomain ? `https://${brandDomain.replace(/^https?:\/\//i, '').replace(/\/.*$/, '')}` : '',
+          fallbackToDefaultIfDnsPending,
+          autoDeriveUnsubscribeHost: true
+        }
+      });
+      if (!r?.ok || !r.data?.ok) {
+        if (box) {
+          box.className = 'status-box status-error';
+          box.textContent = `❌ 도메인 설정 저장 실패: ${r?.data?.message || r?.data?.reason || r?.error || '-'}`;
+        }
+        return;
+      }
+      renderGmailDomainConfig(r.data.config);
+      if (defaultDisplayName && el('senderDisplayName')) {
+        el('senderDisplayName').value = defaultDisplayName;
+      }
+      if (brandDomain && el('brand') && /^vivpr\.pro$/i.test(el('brand').value.trim())) {
+        el('brand').value = defaultDisplayName || brandDomain;
+      }
+      if (brandDomain && el('link') && /^https?:\/\/(?:www\.)?vivpr\.pro\/?$/i.test(el('link').value.trim())) {
+        el('link').value = `https://${brandDomain.replace(/^https?:\/\//i, '').replace(/\/.*$/, '')}`;
+      }
+      render();
+      if (typeof xpiderRefreshAntiSpamChecklist === 'function') xpiderRefreshAntiSpamChecklist();
+    };
+  }
+
+  if (el('btnCheckGmailDomainAlignment')) {
+    el('btnCheckGmailDomainAlignment').onclick = async () => {
+      const box = el('gmailDomainConfigStatus');
+      const brandDomain = el('gmailBrandDomainInput') ? el('gmailBrandDomainInput').value.trim() : '';
+      const unsubscribeBaseUrl = el('gmailCustomUnsubBaseInput') ? el('gmailCustomUnsubBaseInput').value.trim() : '';
+      if (box) { box.className = 'status-box status-loading'; box.textContent = '⏳ 브랜드 SPF/DMARC/DKIM 및 커스텀 수신거부 DNS/HTTPS 실시간 점검 중...'; }
+      const { sidecarPort, sidecarToken } = getSidecarConfig();
+      const r = await callBg({
+        action: 'CHECK_GMAIL_DOMAIN_ALIGNMENT',
+        sidecarPort,
+        sidecarToken,
+        payload: { brandDomain, unsubscribeBaseUrl }
+      });
+      if (!r?.ok || !r.data?.alignment) {
+        if (box) { box.className = 'status-box status-error'; box.textContent = `❌ 도메인 정렬 점검 실패: ${r?.data?.reason || r?.error || '-'}`; }
+        return;
+      }
+      const a = r.data.alignment;
+      const allReady = a.dmarc?.status !== 'MISSING' && a.unsubscribeHealth?.reachable === true;
+      if (box) {
+        box.className = allReady ? 'status-box status-success' : 'status-box status-blocked';
+        const lines = [
+          `🔍 [도메인 정렬 실시간 점검] 대상: ${a.brandDomain || '(미지정)'} | 수신거부: ${a.unsubscribeBaseUrl || '(기본)'}`,
+          `• SPF: ${a.spf?.status || '-'}${a.spf?.record ? ` (${a.spf.record})` : ''}`,
+          `• DMARC: ${a.dmarc?.status || '-'}${a.dmarc?.record ? ` (${a.dmarc.record})` : ' (레코드 없음 — DNS TXT 추가 필요)'}`,
+          `• DKIM(google): ${a.dkimGoogle?.status || '-'}`,
+          `• 수신거부 DNS(CNAME): ${a.unsubscribeDns?.status || '-'}${a.unsubscribeDns?.cname?.length ? ` → ${a.unsubscribeDns.cname.join(', ')}` : ''}`,
+          `• 수신거부 HTTPS(/health): ${a.unsubscribeHealth?.status || '-'}${a.unsubscribeHealth?.reachable ? ` ✅ 즉시 사용 가능 (차단원장 ${a.unsubscribeHealth.suppressionCount ?? '-'}건)` : ' ⏳ DNS/TLS 전파 대기 중'}`
+        ];
+        if (Array.isArray(a.recommendedRecords) && a.recommendedRecords.length > 0) {
+          lines.push('• 권장 DNS 추가 레코드:');
+          for (const rec of a.recommendedRecords) {
+            lines.push(`  - [${rec.type}] ${rec.host} → ${rec.value}`);
+          }
+        }
+        box.textContent = lines.join('\n');
+      }
+    };
+  }
+
+  // ===== RC13: Full Campaign Save / Load / Delete / JSON Export-Import Controller =====
+  const FULL_CAMPAIGNS_STORAGE_KEY = 'xpider_full_campaigns_v1';
+  let savedFullCampaigns = [];
+
+  function saveFullCampaignsLocalMirror(list) {
+    try {
+      const cleanList = Array.isArray(list) ? list.slice(0, 100) : [];
+      if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+        chrome.storage.local.set({ [FULL_CAMPAIGNS_STORAGE_KEY]: cleanList });
+      } else if (typeof localStorage !== 'undefined') {
+        localStorage.setItem(FULL_CAMPAIGNS_STORAGE_KEY, JSON.stringify(cleanList));
+      }
+    } catch (_) {}
+  }
+
+  function loadFullCampaignsLocalMirror() {
+    return new Promise((resolve) => {
+      try {
+        if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+          chrome.storage.local.get([FULL_CAMPAIGNS_STORAGE_KEY], (res) => {
+            resolve(Array.isArray(res && res[FULL_CAMPAIGNS_STORAGE_KEY]) ? res[FULL_CAMPAIGNS_STORAGE_KEY] : []);
+          });
+          return;
+        }
+        if (typeof localStorage !== 'undefined') {
+          const raw = localStorage.getItem(FULL_CAMPAIGNS_STORAGE_KEY);
+          const parsed = raw ? JSON.parse(raw) : [];
+          resolve(Array.isArray(parsed) ? parsed : []);
+          return;
+        }
+      } catch (_) {}
+      resolve([]);
+    });
+  }
+
+  function renderFullCampaignSelect(selectedId = '') {
+    const sel = el('fullCampaignSelect');
+    const badge = el('fullCampaignCountBadge');
+    if (badge) badge.textContent = `저장된 캠페인: ${savedFullCampaigns.length}개`;
+    if (!sel) return;
+    const prev = selectedId || sel.value;
+    sel.textContent = '';
+    if (savedFullCampaigns.length === 0) {
+      const opt = document.createElement('option');
+      opt.value = '';
+      opt.textContent = '(저장된 전체 캠페인 없음)';
+      sel.appendChild(opt);
+      return;
+    }
+    for (const c of savedFullCampaigns) {
+      const opt = document.createElement('option');
+      opt.value = c.id;
+      const dt = c.updatedAt ? String(c.updatedAt).slice(0, 16).replace('T', ' ') : '';
+      opt.textContent = `[${c.provider || 'RESEND'}] ${c.name || c.id}${dt ? ` (${dt})` : ''}`;
+      sel.appendChild(opt);
+    }
+    if (prev && savedFullCampaigns.some(c => c.id === prev)) {
+      sel.value = prev;
+    }
+  }
+
+  function collectFullCampaignSnapshot(nameOverride = '', existingId = '') {
+    const v = values();
+    const selProv = el('emailProviderSelect') ? el('emailProviderSelect').value : 'RESEND';
+    const rawName = String(nameOverride || (el('fullCampaignNameInput') ? el('fullCampaignNameInput').value.trim() : '') || v.subject || 'Untitled Campaign').trim();
+    const safeId = existingId || (`camp_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`);
+    return {
+      schemaVersion: 'xpider-full-campaign-v1',
+      id: safeId,
+      name: rawName.slice(0, 100),
+      provider: selProv === 'GMAIL' ? 'GMAIL' : 'RESEND',
+      campaignId: el('prodCampaignIdInput') ? el('prodCampaignIdInput').value.trim() || 'default' : 'default',
+      updatedAt: new Date().toISOString(),
+      template: {
+        ...v,
+        importedHtmlLayout: importedHtmlLayout || '',
+        loadRemoteImages: Boolean(el('loadRemoteImages') && el('loadRemoteImages').checked),
+        previewEdits: {
+          gmailTextCustomEdited: Boolean(previewEditorState.gmailTextCustomEdited),
+          customTextSubject: previewEditorState.gmailTextCustomEdited ? previewEditorState.customTextSubject : '',
+          customTextBody: previewEditorState.gmailTextCustomEdited ? previewEditorState.customTextBody : '',
+          htmlPreviewCustomEdited: Boolean(previewEditorState.htmlPreviewCustomEdited && importedHtmlLayout)
+        }
+      },
+      recipients: {
+        recipientCsv: el('recipientCsv') ? el('recipientCsv').value : '',
+        optOutList: el('optOutList') ? el('optOutList').value : '',
+        lawfulBasis: el('lawfulBasisSelect') ? el('lawfulBasisSelect').value : 'EXPLICIT_OPT_IN',
+        jurisdiction: el('jurisdictionSelect') ? el('jurisdictionSelect').value : 'GLOBAL',
+        authSource: el('authSourceInput') ? el('authSourceInput').value : 'owner_csv_consent_attestation',
+        smeFilter: {
+          filterSmeOnly: Boolean(el('filterSmeOnly') && el('filterSmeOnly').checked),
+          filterExcludePersonal: Boolean(el('filterExcludePersonal') && el('filterExcludePersonal').checked),
+          filterExcludeGov: Boolean(el('filterExcludeGov') && el('filterExcludeGov').checked),
+          filterExcludeEcommerce: Boolean(el('filterExcludeEcommerce') && el('filterExcludeEcommerce').checked),
+          filterExcludePortal: Boolean(el('filterExcludePortal') && el('filterExcludePortal').checked),
+          filterExcludeLarge: Boolean(el('filterExcludeLarge') && el('filterExcludeLarge').checked),
+          filterIncludeReview: Boolean(el('filterIncludeReview') && el('filterIncludeReview').checked),
+          customSmeDomains: el('customSmeDomains') ? el('customSmeDomains').value : '',
+          customExcludeDomains: el('customExcludeDomains') ? el('customExcludeDomains').value : ''
+        }
+      },
+      abTest: {
+        enabled: Boolean(el('abEnabled') && el('abEnabled').checked),
+        campaignId: el('abCampaignId') ? el('abCampaignId').value : 'camp_sme_ab_v1',
+        splitRatio: el('abSplitRatio') ? Number(el('abSplitRatio').value || 50) : 50,
+        subjectB: el('abSubjectB') ? el('abSubjectB').value : '',
+        preheaderB: el('abPreheaderB') ? el('abPreheaderB').value : '',
+        bodyB: el('abBodyB') ? el('abBodyB').value : ''
+      },
+      deliverability: {
+        spamChecklistProvider: el('spamChecklistProvider') ? el('spamChecklistProvider').value : 'AUTO',
+        spamOptApplyGmail: Boolean(!el('spamOptApplyGmail') || el('spamOptApplyGmail').checked),
+        spamOptApplyResend: Boolean(!el('spamOptApplyResend') || el('spamOptApplyResend').checked),
+        spamOptEmbedInlineCid: Boolean(!el('spamOptEmbedInlineCid') || el('spamOptEmbedInlineCid').checked),
+        spamOptAutoCalmPromo: Boolean(!el('spamOptAutoCalmPromo') || el('spamOptAutoCalmPromo').checked),
+        spamOptOwnerApprovedBrand: Boolean(!el('spamOptOwnerApprovedBrand') || el('spamOptOwnerApprovedBrand').checked),
+        spamOptAutoAlignReplyTo: Boolean(el('spamOptAutoAlignReplyTo') && el('spamOptAutoAlignReplyTo').checked),
+        spamOptLightweightGmail: Boolean(el('spamOptLightweightGmail') && el('spamOptLightweightGmail').checked),
+        spamOptLightweightResend: Boolean(el('spamOptLightweightResend') && el('spamOptLightweightResend').checked),
+        spamOptBlockHighRisk: Boolean(!el('spamOptBlockHighRisk') || el('spamOptBlockHighRisk').checked),
+        emailMimeContentMode: el('emailMimeContentMode') ? el('emailMimeContentMode').value : 'GMAIL_NATIVE_HTML'
+      },
+      gmail: {
+        dispatchMode: el('gmailDispatchMode') ? el('gmailDispatchMode').value : 'GMAIL_WEB_COMPOSE_ASSISTED',
+        webComposeBatchSize: el('webComposeBatchSize') ? Number(el('webComposeBatchSize').value || 1) : 1,
+        webComposeIncludeSignedUnsub: !el('webComposeIncludeSignedUnsub') || Boolean(el('webComposeIncludeSignedUnsub').checked),
+        webComposePacer: {
+          minSec: el('webComposePacerMinSec') ? Number(el('webComposePacerMinSec').value || 60) : 60,
+          maxSec: el('webComposePacerMaxSec') ? Number(el('webComposePacerMaxSec').value || 180) : 180,
+          breakEvery: el('webComposePacerBreakEvery') ? Number(el('webComposePacerBreakEvery').value || 6) : 6,
+          breakMin: el('webComposePacerBreakMin') ? Number(el('webComposePacerBreakMin').value || 6) : 6,
+          windowEnabled: !el('webComposePacerWindowEnabled') || Boolean(el('webComposePacerWindowEnabled').checked),
+          startHour: el('webComposePacerStartHour') ? Number(el('webComposePacerStartHour').value || 9) : 9,
+          endHour: el('webComposePacerEndHour') ? Number(el('webComposePacerEndHour').value || 19) : 19,
+          autoOnTabClose: !el('webComposePacerAutoOnTabClose') || Boolean(el('webComposePacerAutoOnTabClose').checked)
+        },
+        sendingMode: el('gmailSendingMode') ? el('gmailSendingMode').value : 'SINGLE_ACCOUNT',
+        scheduleMode: el('gmailScheduleMode') ? el('gmailScheduleMode').value : 'DISTRIBUTED_MULTI_DAY',
+        replyTo: el('gmailReplyTo') ? el('gmailReplyTo').value : '',
+        physicalAddress: el('gmailPhysicalAddress') ? el('gmailPhysicalAddress').value : '',
+        selfTestRecipient: el('gmailSelfTestRecipient') ? el('gmailSelfTestRecipient').value : '',
+        selectedAccountIds: Array.from(selectedGmailAccountIds),
+        domainConfig: {
+          brandDomain: el('gmailBrandDomainInput') ? el('gmailBrandDomainInput').value.trim() : '',
+          unsubscribeBaseUrl: el('gmailCustomUnsubBaseInput') ? el('gmailCustomUnsubBaseInput').value.trim() : '',
+          defaultDisplayName: el('gmailUnifiedDisplayNameInput') ? el('gmailUnifiedDisplayNameInput').value.trim() : '',
+          fallbackToDefaultIfDnsPending: !el('gmailUnsubFallbackCheck') || Boolean(el('gmailUnsubFallbackCheck').checked)
+        }
+      },
+      resend: {
+        realTestRecipient: el('realTestRecipient') ? el('realTestRecipient').value : '',
+        testRecipient: el('testRecipient') ? el('testRecipient').value : 'delivered@resend.dev',
+        secondWaveCutoffHours: el('secondWaveCutoffHours') ? Number(el('secondWaveCutoffHours').value || 24) : 24
+      }
+    };
+  }
+
+  function applyFullCampaignSnapshot(snap) {
+    if (!snap || typeof snap !== 'object') return false;
+    const t = snap.template || {};
+    for (const id of ids) {
+      if (el(id) && typeof t[id] === 'string') el(id).value = t[id];
+    }
+    importedHtmlLayout = typeof t.importedHtmlLayout === 'string' ? t.importedHtmlLayout : '';
+    if (el('htmlLayoutBanner')) el('htmlLayoutBanner').style.display = importedHtmlLayout ? '' : 'none';
+    if (el('loadRemoteImages')) el('loadRemoteImages').checked = Boolean(t.loadRemoteImages);
+    const pe = t.previewEdits && typeof t.previewEdits === 'object' ? t.previewEdits : null;
+    previewEditorState.htmlPreviewCustomEdited = Boolean(pe ? pe.htmlPreviewCustomEdited && importedHtmlLayout : importedHtmlLayout);
+    previewEditorState.gmailTextCustomEdited = Boolean(pe && pe.gmailTextCustomEdited);
+    previewEditorState.customTextSubject = (pe && pe.gmailTextCustomEdited && typeof pe.customTextSubject === 'string') ? pe.customTextSubject : '';
+    previewEditorState.customTextBody = (pe && pe.gmailTextCustomEdited && typeof pe.customTextBody === 'string') ? pe.customTextBody : '';
+    previewEditorState.leftChangedWhileTextEdited = false;
+    if (previewEditorState.gmailTextCustomEdited) {
+      if (el('gmailTextPreviewSubject')) el('gmailTextPreviewSubject').value = previewEditorState.customTextSubject;
+      if (el('gmailTextPreviewBody')) el('gmailTextPreviewBody').value = previewEditorState.customTextBody;
+    }
+
+    const rec = snap.recipients || {};
+    if (el('recipientCsv') && typeof rec.recipientCsv === 'string') el('recipientCsv').value = rec.recipientCsv;
+    if (el('optOutList') && typeof rec.optOutList === 'string') el('optOutList').value = rec.optOutList;
+    if (el('lawfulBasisSelect') && rec.lawfulBasis) el('lawfulBasisSelect').value = rec.lawfulBasis;
+    if (el('jurisdictionSelect') && rec.jurisdiction) el('jurisdictionSelect').value = rec.jurisdiction;
+    if (el('authSourceInput') && typeof rec.authSource === 'string') el('authSourceInput').value = rec.authSource;
+    const sf = rec.smeFilter || {};
+    for (const cid of ['filterSmeOnly', 'filterExcludePersonal', 'filterExcludeGov', 'filterExcludeEcommerce', 'filterExcludePortal', 'filterExcludeLarge', 'filterIncludeReview']) {
+      if (el(cid) && typeof sf[cid] === 'boolean') el(cid).checked = sf[cid];
+    }
+    if (el('customSmeDomains') && typeof sf.customSmeDomains === 'string') el('customSmeDomains').value = sf.customSmeDomains;
+    if (el('customExcludeDomains') && typeof sf.customExcludeDomains === 'string') el('customExcludeDomains').value = sf.customExcludeDomains;
+
+    const ab = snap.abTest || {};
+    if (el('abEnabled')) el('abEnabled').checked = Boolean(ab.enabled);
+    if (el('abCampaignId') && typeof ab.campaignId === 'string') el('abCampaignId').value = ab.campaignId;
+    if (el('abSplitRatio') && ab.splitRatio !== undefined) el('abSplitRatio').value = String(ab.splitRatio);
+    if (el('abSubjectB') && typeof ab.subjectB === 'string') el('abSubjectB').value = ab.subjectB;
+    if (el('abPreheaderB') && typeof ab.preheaderB === 'string') el('abPreheaderB').value = ab.preheaderB;
+    if (el('abBodyB') && typeof ab.bodyB === 'string') el('abBodyB').value = ab.bodyB;
+
+    const d = snap.deliverability || {};
+    if (el('spamChecklistProvider') && d.spamChecklistProvider) el('spamChecklistProvider').value = d.spamChecklistProvider;
+    const setPair = (idA, idB, valBool) => {
+      if (typeof valBool !== 'boolean') return;
+      if (el(idA)) el(idA).checked = valBool;
+      if (el(idB)) el(idB).checked = valBool;
+    };
+    setPair('spamOptApplyGmail', 'gmailAutoSpamOpt', d.spamOptApplyGmail);
+    if (el('spamOptApplyResend') && typeof d.spamOptApplyResend === 'boolean') el('spamOptApplyResend').checked = d.spamOptApplyResend;
+    setPair('spamOptEmbedInlineCid', 'gmailEmbedInlineCid', d.spamOptEmbedInlineCid);
+    setPair('spamOptAutoCalmPromo', 'gmailAutoCalmPromo', d.spamOptAutoCalmPromo);
+    if (el('spamOptOwnerApprovedBrand') && typeof d.spamOptOwnerApprovedBrand === 'boolean') el('spamOptOwnerApprovedBrand').checked = d.spamOptOwnerApprovedBrand;
+    setPair('spamOptAutoAlignReplyTo', 'gmailAutoAlignReplyTo', d.spamOptAutoAlignReplyTo);
+    setPair('spamOptLightweightGmail', 'gmailLightweightHtml', d.spamOptLightweightGmail);
+    if (el('spamOptLightweightResend') && typeof d.spamOptLightweightResend === 'boolean') el('spamOptLightweightResend').checked = d.spamOptLightweightResend;
+    setPair('spamOptBlockHighRisk', 'gmailBlockHighRiskSpam', d.spamOptBlockHighRisk);
+    if (el('emailMimeContentMode') && d.emailMimeContentMode) el('emailMimeContentMode').value = d.emailMimeContentMode;
+
+    if (el('prodCampaignIdInput') && snap.campaignId) el('prodCampaignIdInput').value = snap.campaignId;
+    if (el('fullCampaignNameInput') && snap.name) el('fullCampaignNameInput').value = snap.name;
+
+    const g = snap.gmail || {};
+    if (el('gmailDispatchMode') && g.dispatchMode) el('gmailDispatchMode').value = g.dispatchMode;
+    if (el('webComposeBatchSize') && g.webComposeBatchSize) el('webComposeBatchSize').value = String(g.webComposeBatchSize);
+    if (el('webComposeIncludeSignedUnsub') && typeof g.webComposeIncludeSignedUnsub === 'boolean') el('webComposeIncludeSignedUnsub').checked = g.webComposeIncludeSignedUnsub;
+    if (g.webComposePacer && typeof g.webComposePacer === 'object') {
+      const p = g.webComposePacer;
+      if (el('webComposePacerMinSec') && p.minSec) el('webComposePacerMinSec').value = String(p.minSec);
+      if (el('webComposePacerMaxSec') && p.maxSec) el('webComposePacerMaxSec').value = String(p.maxSec);
+      if (el('webComposePacerBreakEvery') && p.breakEvery) el('webComposePacerBreakEvery').value = String(p.breakEvery);
+      if (el('webComposePacerBreakMin') && p.breakMin) el('webComposePacerBreakMin').value = String(p.breakMin);
+      if (el('webComposePacerWindowEnabled') && typeof p.windowEnabled === 'boolean') el('webComposePacerWindowEnabled').checked = p.windowEnabled;
+      if (el('webComposePacerStartHour') && p.startHour !== undefined) el('webComposePacerStartHour').value = String(p.startHour);
+      if (el('webComposePacerEndHour') && p.endHour !== undefined) el('webComposePacerEndHour').value = String(p.endHour);
+      if (el('webComposePacerAutoOnTabClose') && typeof p.autoOnTabClose === 'boolean') el('webComposePacerAutoOnTabClose').checked = p.autoOnTabClose;
+    }
+    if (el('gmailSendingMode') && g.sendingMode) el('gmailSendingMode').value = g.sendingMode;
+    if (el('gmailScheduleMode') && g.scheduleMode) el('gmailScheduleMode').value = g.scheduleMode;
+    if (el('gmailReplyTo') && typeof g.replyTo === 'string') el('gmailReplyTo').value = g.replyTo;
+    if (el('gmailPhysicalAddress') && typeof g.physicalAddress === 'string') el('gmailPhysicalAddress').value = g.physicalAddress;
+    if (el('gmailSelfTestRecipient') && typeof g.selfTestRecipient === 'string') el('gmailSelfTestRecipient').value = g.selfTestRecipient;
+    if (Array.isArray(g.selectedAccountIds)) {
+      selectedGmailAccountIds.clear();
+      for (const aid of g.selectedAccountIds) selectedGmailAccountIds.add(String(aid));
+    }
+    if (g.domainConfig && typeof g.domainConfig === 'object') {
+      if (el('gmailBrandDomainInput') && typeof g.domainConfig.brandDomain === 'string') el('gmailBrandDomainInput').value = g.domainConfig.brandDomain;
+      if (el('gmailCustomUnsubBaseInput') && typeof g.domainConfig.unsubscribeBaseUrl === 'string') el('gmailCustomUnsubBaseInput').value = g.domainConfig.unsubscribeBaseUrl;
+      if (el('gmailUnifiedDisplayNameInput') && typeof g.domainConfig.defaultDisplayName === 'string') el('gmailUnifiedDisplayNameInput').value = g.domainConfig.defaultDisplayName;
+      if (el('gmailUnsubFallbackCheck') && typeof g.domainConfig.fallbackToDefaultIfDnsPending === 'boolean') el('gmailUnsubFallbackCheck').checked = g.domainConfig.fallbackToDefaultIfDnsPending;
+    }
+
+    const rCfg = snap.resend || {};
+    if (el('realTestRecipient') && typeof rCfg.realTestRecipient === 'string') el('realTestRecipient').value = rCfg.realTestRecipient;
+    if (el('testRecipient') && rCfg.testRecipient) el('testRecipient').value = rCfg.testRecipient;
+    if (el('secondWaveCutoffHours') && rCfg.secondWaveCutoffHours !== undefined) el('secondWaveCutoffHours').value = String(rCfg.secondWaveCutoffHours);
+
+    // Fail-closed safety invariant: ALWAYS reset live-send consent & explicit approval checkboxes on campaign load!
+    for (const approvalId of ['consentAttest', 'consentAttestProd', 'webComposeConsentCheck', 'realTestConsentCheck', 'gmailSelfTestConsent', 'gmailHygieneConfirm', 'gmailProviderSwitchConfirm']) {
+      if (el(approvalId)) el(approvalId).checked = false;
+    }
+
+    if (el('emailProviderSelect') && (snap.provider === 'GMAIL' || snap.provider === 'RESEND')) {
+      el('emailProviderSelect').value = snap.provider;
+      syncProviderPanelVisibility(false);
+    }
+    updateActiveProviderNote();
+    if (typeof updateWebComposeRecipientSummaryUI === 'function') updateWebComposeRecipientSummaryUI();
+    render();
+    return true;
+  }
+
+  async function loadSavedFullCampaigns() {
+    const localList = await loadFullCampaignsLocalMirror();
+    savedFullCampaigns = localList;
+    renderFullCampaignSelect();
+    try {
+      if (typeof chrome !== 'undefined' && chrome.runtime && typeof chrome.runtime.sendMessage === 'function') {
+        const { sidecarPort, sidecarToken } = getSidecarConfig();
+        const r = await callBg({ action: 'LIST_SAVED_CAMPAIGNS', sidecarPort, sidecarToken }, { timeoutMs: 4000 });
+        if (r?.ok && Array.isArray(r.data?.campaigns)) {
+          const byId = new Map();
+          for (const c of r.data.campaigns) if (c && c.id) byId.set(c.id, c);
+          for (const c of localList) if (c && c.id && !byId.has(c.id)) byId.set(c.id, c);
+          savedFullCampaigns = Array.from(byId.values()).sort((a, b) => String(b.updatedAt || '').localeCompare(String(a.updatedAt || '')));
+          saveFullCampaignsLocalMirror(savedFullCampaigns);
+          renderFullCampaignSelect();
+        }
+      }
+    } catch (_) {}
+  }
+
+  if (el('btnSaveFullCampaign')) {
+    el('btnSaveFullCampaign').onclick = async () => {
+      const statusEl = el('fullCampaignStatus');
+      const nameInput = el('fullCampaignNameInput') ? el('fullCampaignNameInput').value.trim() : '';
+      const existingMatch = nameInput ? savedFullCampaigns.find(c => String(c.name || '').trim().toLowerCase() === nameInput.toLowerCase()) : null;
+      const snap = collectFullCampaignSnapshot(nameInput, existingMatch ? existingMatch.id : '');
+      const { sidecarPort, sidecarToken } = getSidecarConfig();
+      let persistedTarget = '로컬 브라우저 저장소';
+      try {
+        const r = await callBg({ action: 'SAVE_FULL_CAMPAIGN', sidecarPort, sidecarToken, payload: snap });
+        if (r?.ok && r.data?.ok && Array.isArray(r.data.campaigns)) {
+          savedFullCampaigns = r.data.campaigns;
+          persistedTarget = 'Sidecar NTFS 보안 파일 + 브라우저 백업';
+        } else {
+          savedFullCampaigns = [snap, ...savedFullCampaigns.filter(c => c.id !== snap.id)].slice(0, 100);
+        }
+      } catch (_) {
+        savedFullCampaigns = [snap, ...savedFullCampaigns.filter(c => c.id !== snap.id)].slice(0, 100);
+      }
+      saveFullCampaignsLocalMirror(savedFullCampaigns);
+      renderFullCampaignSelect(snap.id);
+      if (statusEl) {
+        const csvLines = snap.recipients.recipientCsv ? snap.recipients.recipientCsv.split(/\r?\n/).filter(l => l.trim()).length : 0;
+        statusEl.textContent = `✅ 캠페인 "${snap.name}" 저장 완료 (${persistedTarget} · 공급자: ${snap.provider} · CSV ${csvLines}줄 · 모든 설정 포함).`;
+      }
+    };
+  }
+
+  if (el('btnLoadFullCampaign')) {
+    el('btnLoadFullCampaign').onclick = () => {
+      const statusEl = el('fullCampaignStatus');
+      const selId = el('fullCampaignSelect') ? el('fullCampaignSelect').value : '';
+      const found = savedFullCampaigns.find(c => c.id === selId);
+      if (!found) {
+        if (statusEl) statusEl.textContent = '⚠️ 먼저 불러올 저장된 캠페인을 선택하세요.';
+        return;
+      }
+      applyFullCampaignSnapshot(found);
+      if (statusEl) {
+        statusEl.textContent = `📥 캠페인 "${found.name}" 불러오기 완료 (공급자: ${found.provider} · 발송 전 최종 동의 체크박스는 안전을 위해 해제됨 — 확인 후 발송하세요).`;
+      }
+    };
+  }
+
+  if (el('btnDeleteFullCampaign')) {
+    el('btnDeleteFullCampaign').onclick = async () => {
+      const statusEl = el('fullCampaignStatus');
+      const selId = el('fullCampaignSelect') ? el('fullCampaignSelect').value : '';
+      const found = savedFullCampaigns.find(c => c.id === selId);
+      if (!found) {
+        if (statusEl) statusEl.textContent = '⚠️ 삭제할 캠페인을 먼저 선택하세요.';
+        return;
+      }
+      if (typeof window.confirm === 'function' && !window.confirm(`저장된 캠페인 "${found.name}"을(를) 삭제할까요?`)) return;
+      const { sidecarPort, sidecarToken } = getSidecarConfig();
+      try {
+        await callBg({ action: 'DELETE_SAVED_CAMPAIGN', sidecarPort, sidecarToken, payload: { id: selId } });
+      } catch (_) {}
+      savedFullCampaigns = savedFullCampaigns.filter(c => c.id !== selId);
+      saveFullCampaignsLocalMirror(savedFullCampaigns);
+      renderFullCampaignSelect();
+      if (statusEl) statusEl.textContent = `🗑️ 캠페인 "${found.name}"이(가) 삭제되었습니다.`;
+    };
+  }
+
+  if (el('btnExportFullCampaignJson')) {
+    el('btnExportFullCampaignJson').onclick = () => {
+      const snap = collectFullCampaignSnapshot();
+      const safeFile = String(snap.name || 'xpider-campaign').replace(/[^A-Za-z0-9가-힣._-]+/g, '_').slice(0, 48) || 'xpider-campaign';
+      download(`xpider-campaign-${safeFile}.json`, 'application/json;charset=utf-8', JSON.stringify(snap, null, 2));
+      if (el('fullCampaignStatus')) {
+        el('fullCampaignStatus').textContent = `📤 전체 캠페인 JSON 파일 저장됨 (xpider-campaign-${safeFile}.json · 시크릿/토큰 제외됨).`;
+      }
+    };
+  }
+
+  if (el('btnImportFullCampaignJson') && el('importFullCampaignFile')) {
+    el('btnImportFullCampaignJson').onclick = () => { el('importFullCampaignFile').click(); };
+    el('importFullCampaignFile').onchange = async () => {
+      const f = el('importFullCampaignFile').files && el('importFullCampaignFile').files[0];
+      el('importFullCampaignFile').value = '';
+      if (!f) return;
+      const statusEl = el('fullCampaignStatus');
+      try {
+        const txt = await f.text();
+        const parsed = JSON.parse(txt);
+        if (!parsed || typeof parsed !== 'object' || !parsed.template) {
+          throw new Error('유효한 XPIDER 전체 캠페인 JSON 파일이 아닙니다.');
+        }
+        applyFullCampaignSnapshot(parsed);
+        if (statusEl) statusEl.textContent = `📂 캠페인 파일("${f.name}") 불러오기 완료 — [💾 현재 캠페인 통째로 저장]으로 보관 목록에도 저장할 수 있습니다.`;
+      } catch (err) {
+        if (statusEl) statusEl.textContent = `❌ 캠페인 JSON 불러오기 실패: ${err?.message || 'PARSE_ERROR'}`;
+      }
+    };
+  }
+
+  // ===== RC14/RC15: Multi-Account Gmail Native Web Compose Safe Campaign Controller (Default Gmail Method) =====
+  let webComposeAccountsCache = [];
+  const selectedWebComposeAccountIds = new Set();
+  let webComposeAccountsInitialized = false;
+  let lastWebComposeStatus = null;
+
+  function parseQuickRecipientsToCsv(rawText) {
+    const items = String(rawText || '')
+      .split(/[\r\n,;]+/)
+      .map(s => s.trim())
+      .filter(s => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(s));
+    if (items.length === 0) return { csv: '', count: 0 };
+    return {
+      csv: 'email,name\n' + items.map(e => `${e},`).join('\n'),
+      count: items.length
+    };
+  }
+
+  function resolveWebComposeRecipientSource() {
+    const base = buildSyncPayloadAndSig();
+    const csvRaw = String(base.payload?.csvText || '').trim();
+    const csvMatches = csvRaw.match(/[^\s@,;<>"]+@[^\s@,;<>"]+\.[^\s@,;<>"]{2,}/g) || [];
+    const quickRaw = el('webComposeQuickRecipient') ? el('webComposeQuickRecipient').value.trim() : '';
+    const quick = parseQuickRecipientsToCsv(quickRaw);
+    const consentOk = Boolean(
+      (el('webComposeConsentCheck') && el('webComposeConsentCheck').checked)
+      || (el('consentAttest') && el('consentAttest').checked)
+      || (el('consentAttestProd') && el('consentAttestProd').checked)
+    );
+    const useQuick = csvMatches.length === 0 && quick.count > 0;
+    const effectiveCsv = useQuick ? quick.csv : csvRaw;
+    const effectiveCount = useQuick ? quick.count : csvMatches.length;
+    return {
+      sidecarPort: base.sidecarPort,
+      sidecarToken: base.sidecarToken,
+      payload: {
+        ...base.payload,
+        csvText: effectiveCsv,
+        consentAttested: consentOk
+      },
+      csvCount: csvMatches.length,
+      quickCount: quick.count,
+      effectiveCount,
+      sourceLabel: useQuick ? `빠른 수신자 입력 ${quick.count}명` : (csvMatches.length > 0 ? `수신자 CSV ${csvMatches.length}명` : '미입력 (0명)'),
+      consentOk
+    };
+  }
+
+  function updateWebComposeRecipientSummaryUI() {
+    const box = el('webComposeRecipientSummary');
+    if (!box) return;
+    try {
+      const src = resolveWebComposeRecipientSource();
+      const acctCount = webComposeAccountsCache.filter(a => a.active && selectedWebComposeAccountIds.has(a.id)).length;
+      if (src.effectiveCount > 0) {
+        box.style.background = '#f0fdf4';
+        box.style.borderColor = '#86efac';
+        box.textContent = `✅ 발송 대상 준비됨: ${src.sourceLabel} · 선택 발신 계정 ${acctCount}/${webComposeAccountsCache.length}개 · 권한 체크: ${src.consentOk ? '✅ 완료' : '⚠️ 미체크 (아래 노란색 체크박스 체크 필요)'}`;
+      } else {
+        box.style.background = '#fff7ed';
+        box.style.borderColor = '#fdba74';
+        box.textContent = `⚠️ 발송할 수신자 0명: 상단 [수신자 목록 CSV]에 이메일을 입력하거나 바로 아래 [빠른 수신자 직접 입력] 칸에 테스트/발송할 이메일을 입력하세요. (선택 발신 계정 ${acctCount}/${webComposeAccountsCache.length}개)`;
+      }
+    } catch (_) {}
+  }
+
+  function syncWebComposeConsentPair(fromEl, toEl) {
+    if (!fromEl || !toEl) return;
+    fromEl.addEventListener('change', () => {
+      toEl.checked = fromEl.checked;
+      updateWebComposeRecipientSummaryUI();
+    });
+  }
+  syncWebComposeConsentPair(el('webComposeConsentCheck'), el('consentAttest'));
+  syncWebComposeConsentPair(el('consentAttest'), el('webComposeConsentCheck'));
+  if (el('webComposeQuickRecipient')) el('webComposeQuickRecipient').addEventListener('input', updateWebComposeRecipientSummaryUI);
+  if (el('recipientCsv')) el('recipientCsv').addEventListener('input', updateWebComposeRecipientSummaryUI);
+
+  let lastChromeProxyStatus = null;
+
+  async function refreshChromeProxyWarningForGmail() {
+    const warnBox = el('webComposeProxyWarning');
+    const warnTxt = el('webComposeProxyWarningText');
+    try {
+      const r = await callBg({ action: 'GET_CHROME_PROXY_STATUS' }, { timeoutMs: 4000 });
+      lastChromeProxyStatus = r || null;
+      if (!warnBox || !warnTxt) return r;
+      if (r?.ok && r.proxyActive && (r.relayBroken || r.isLocalRelay)) {
+        warnBox.style.display = 'block';
+        warnBox.className = r.relayBroken ? 'status-box status-error' : 'status-box status-blocked';
+        warnTxt.textContent = r.relayBroken
+          ? `🚨 [차단 원인 감지] 현재 Chrome 브라우저가 XPIDER Privacy Relay(${r.proxyHost || '127.0.0.1:18988'})에 묶여 있으며 상위 프록시 오류(${r.relayReason || '502 Bad Gateway'}) 때문에 Gmail(mail.google.com)이 "사이트에 연결할 수 없음"으로 차단됩니다!\n• 아래 [🔓 브라우저 프록시 해제 (Gmail 직접 연결로 전환)] 버튼을 1회 클릭하시면 즉시 Gmail 작성창이 정상 열립니다.`
+          : `⚠️ 현재 Chrome 브라우저가 프록시(${r.proxyHost})를 경유 중입니다. Gmail 웹 발송은 일반 직접 연결이 계정 보안 경고 예방에 더 안전합니다. 필요 시 아래 버튼으로 해제하세요.`;
+      } else {
+        warnBox.style.display = 'none';
+      }
+      return r;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  if (el('btnRecheckChromeProxyForGmail')) {
+    el('btnRecheckChromeProxyForGmail').onclick = refreshChromeProxyWarningForGmail;
+  }
+  if (el('btnReleaseChromeProxyForGmail')) {
+    el('btnReleaseChromeProxyForGmail').onclick = async () => {
+      const qBox = el('webComposeQueueStatus');
+      try {
+        const r = await callBg({ action: 'RELEASE_CHROME_PROXY_FOR_GMAIL_WEB' }, { timeoutMs: 6000 });
+        if (!r?.ok) {
+          if (qBox) { qBox.className = 'status-box status-error'; qBox.textContent = `❌ 브라우저 프록시 해제 불가: ${r?.message || r?.reason || r?.error || '-'}`; }
+          return;
+        }
+        await refreshChromeProxyWarningForGmail();
+        if (qBox) {
+          qBox.className = 'status-box status-success';
+          qBox.textContent = '🔓 브라우저 프록시를 해제하고 일반 직접 연결(DIRECT)로 전환했습니다! 이제 [✉️ 2단계: Gmail 작성창 열기] 또는 아래 [🔁 다시 열기] 버튼을 눌러주세요.';
+        }
+      } catch (err) {
+        if (qBox) { qBox.className = 'status-box status-error'; qBox.textContent = `❌ 프록시 해제 오류: ${err?.message || String(err)}`; }
+      }
+    };
+  }
+
+  function syncGmailDispatchModeUI() {
+    const mode = el('gmailDispatchMode') ? el('gmailDispatchMode').value : 'GMAIL_WEB_COMPOSE_ASSISTED';
+    const isWeb = mode !== 'GMAIL_API_OAUTH';
+    if (el('gmailWebComposePanel')) el('gmailWebComposePanel').style.display = isWeb ? '' : 'none';
+    if (el('gmailApiOAuthSubPanel')) el('gmailApiOAuthSubPanel').style.display = isWeb ? 'none' : '';
+    if (isWeb) {
+      updateWebComposeRecipientSummaryUI();
+      refreshChromeProxyWarningForGmail();
+      refreshGmailWebComposeStatus();
+    }
+  }
+  if (el('gmailDispatchMode')) {
+    el('gmailDispatchMode').addEventListener('change', syncGmailDispatchModeUI);
+  }
+
+  function renderWebComposeStatus(st) {
+    if (!st || typeof st !== 'object') return;
+    lastWebComposeStatus = st;
+    webComposeAccountsCache = Array.isArray(st.accounts) ? st.accounts : [];
+    const q = st.queue || {};
+    const c = q.counts || {};
+
+    // Fix multi-account initialization: on first load select ALL active accounts (not just account #1!)
+    if (!webComposeAccountsInitialized && webComposeAccountsCache.length > 0) {
+      for (const a of webComposeAccountsCache) {
+        if (a.active) selectedWebComposeAccountIds.add(a.id);
+      }
+      webComposeAccountsInitialized = true;
+    } else {
+      // Remove any deleted account IDs from selection set
+      const validIds = new Set(webComposeAccountsCache.map(a => a.id));
+      for (const id of Array.from(selectedWebComposeAccountIds)) {
+        if (!validIds.has(id)) selectedWebComposeAccountIds.delete(id);
+      }
+    }
+
+    const poolBadge = el('webComposePoolBadge');
+    if (poolBadge) {
+      poolBadge.textContent = `등록 계정: ${webComposeAccountsCache.length}개 · 오늘 잔여 ${q.totalRemainingToday || 0}/${q.totalDailyCapacity || 0}통`;
+    }
+    if (el('gmailDispatchMode')?.value !== 'GMAIL_API_OAUTH' && el('gmailProviderStatusBadge')) {
+      el('gmailProviderStatusBadge').textContent = webComposeAccountsCache.length > 0
+        ? `✉️ 웹 작성창 ${webComposeAccountsCache.length}개 계정 · 잔여 ${q.totalRemainingToday || 0}통`
+        : '✉️ 웹 작성창 (계정 등록 필요)';
+    }
+
+    const acctBox = el('webComposeAccountsList');
+    if (acctBox) {
+      acctBox.textContent = '';
+      if (webComposeAccountsCache.length === 0) {
+        acctBox.className = 'status-box status-idle';
+        acctBox.textContent = '등록된 웹 발송 계정이 없습니다. Chrome에 로그인된 본인 구글 계정을 1개 이상 등록하세요.';
+      } else {
+        acctBox.className = 'status-box status-success';
+        for (const a of webComposeAccountsCache) {
+          const row = document.createElement('div');
+          row.style.cssText = 'display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px;padding:5px 4px;border-bottom:1px solid #e2e8f0;font-size:12px;';
+
+          const left = document.createElement('label');
+          left.style.cssText = 'display:flex;align-items:center;gap:6px;cursor:pointer;flex:1;min-width:220px;';
+          const cb = document.createElement('input');
+          cb.type = 'checkbox';
+          cb.checked = selectedWebComposeAccountIds.has(a.id);
+          cb.onchange = () => {
+            if (cb.checked) selectedWebComposeAccountIds.add(a.id);
+            else selectedWebComposeAccountIds.delete(a.id);
+            updateWebComposeRecipientSummaryUI();
+          };
+          const stageLabel = a.warmupStage === 'ESTABLISHED' ? '숙성' : (a.warmupStage === 'WARMING' ? '안정화' : '워밍업');
+          const slotTag = Number.isInteger(a.chromeSlotIndex) ? `u/${a.chromeSlotIndex}` : '자동전환';
+          const stateStr = a.cooldownUntilIso
+            ? `🛑 보호쿨다운(~${a.cooldownUntilIso.slice(11, 16)}Z)`
+            : (a.permittedNow ? '✅ 준비됨' : `⏳ ${a.waitReason || '대기'}`);
+          const info = document.createElement('span');
+          info.textContent = `${a.label ? `[${a.label}] ` : ''}${a.email} (${a.type === 'workspace_paid' ? 'Workspace' : '개인'}·${stageLabel}·${slotTag}) · 1분 ${a.sent1m}/${a.capPerMinute} · 1시간 ${a.sent1h}/${a.capPerHour} · 24h ${a.sent24h}/${a.cap24h} · 간격 ${a.minSpacingSec}초 · ${stateStr}`;
+          left.appendChild(cb);
+          left.appendChild(info);
+
+          const rightCtrl = document.createElement('div');
+          rightCtrl.style.cssText = 'display:flex;align-items:center;gap:4px;flex-wrap:wrap;';
+
+          const stageSel = document.createElement('select');
+          stageSel.style.cssText = 'width:auto;padding:2px 4px;font-size:11px;';
+          stageSel.setAttribute('data-warmup-select', '1');
+          stageSel.title = '계정 숙성·워밍업 단계 변경 (일일·시간당 안전 한도 즉시 반영)';
+          const isWs = a.type === 'workspace_paid';
+          const stageOpts = isWs
+            ? [
+                ['NEW_WARMUP', '워밍업 (일 40통)'],
+                ['WARMING', '안정화 (일 100통)'],
+                ['ESTABLISHED', '숙성 (일 300통)']
+              ]
+            : [
+                ['NEW_WARMUP', '워밍업 (일 15통)'],
+                ['WARMING', '안정화 (일 30통)'],
+                ['ESTABLISHED', '숙성 (일 80통)']
+              ];
+          for (const [sv, stxt] of stageOpts) {
+            const opt = document.createElement('option');
+            opt.value = sv;
+            opt.textContent = stxt;
+            stageSel.appendChild(opt);
+          }
+          stageSel.value = (a.warmupStage === 'WARMING' || a.warmupStage === 'ESTABLISHED') ? a.warmupStage : 'NEW_WARMUP';
+          stageSel.onchange = async () => {
+            const { sidecarPort, sidecarToken } = getSidecarConfig();
+            const nextStage = stageSel.value;
+            await callBg({
+              action: 'SAVE_GMAIL_WEB_COMPOSE_ACCOUNT',
+              sidecarPort,
+              sidecarToken,
+              payload: {
+                email: a.email,
+                label: a.label,
+                warmupStage: nextStage,
+                chromeSlotIndex: Number.isInteger(a.chromeSlotIndex) ? a.chromeSlotIndex : null,
+                active: a.active
+              }
+            });
+            refreshGmailWebComposeStatus();
+          };
+          rightCtrl.appendChild(stageSel);
+
+          const slotSel = document.createElement('select');
+          slotSel.style.cssText = 'width:auto;padding:2px 4px;font-size:11px;';
+          slotSel.title = 'Chrome 멀티로그인 슬롯 번호 (비우면 Google AccountChooser 자동 전환)';
+          const autoOpt = document.createElement('option');
+          autoOpt.value = '';
+          autoOpt.textContent = '자동전환';
+          slotSel.appendChild(autoOpt);
+          for (let si = 0; si <= 10; si++) {
+            const opt = document.createElement('option');
+            opt.value = String(si);
+            opt.textContent = `u/${si}`;
+            slotSel.appendChild(opt);
+          }
+          slotSel.value = Number.isInteger(a.chromeSlotIndex) ? String(a.chromeSlotIndex) : '';
+          slotSel.onchange = async () => {
+            const { sidecarPort, sidecarToken } = getSidecarConfig();
+            const nextSlot = slotSel.value === '' ? null : Number(slotSel.value);
+            await callBg({
+              action: 'SAVE_GMAIL_WEB_COMPOSE_ACCOUNT',
+              sidecarPort,
+              sidecarToken,
+              payload: { email: a.email, label: a.label, warmupStage: a.warmupStage, chromeSlotIndex: nextSlot, active: a.active }
+            });
+            refreshGmailWebComposeStatus();
+          };
+          rightCtrl.appendChild(slotSel);
+
+          if (a.accountCheckUrl && isOfficialGmailTabUrl(a.accountCheckUrl)) {
+            const chkBtn = document.createElement('button');
+            chkBtn.type = 'button';
+            chkBtn.style.cssText = 'padding:2px 7px;font-size:11px;';
+            chkBtn.textContent = '🔍 계정 확인';
+            chkBtn.title = '이 계정이 현재 Chrome 프로필에 로그인되어 있는지 열고 /mail/u/N/ 슬롯 번호 확인';
+            chkBtn.onclick = () => openExternalOfficialTab(a.accountCheckUrl, { active: true });
+            rightCtrl.appendChild(chkBtn);
+          }
+
+          const delBtn = document.createElement('button');
+          delBtn.type = 'button';
+          delBtn.style.cssText = 'padding:2px 7px;font-size:11px;';
+          delBtn.textContent = '🗑️ 삭제';
+          delBtn.onclick = async () => {
+            const { sidecarPort, sidecarToken } = getSidecarConfig();
+            selectedWebComposeAccountIds.delete(a.id);
+            await callBg({ action: 'DELETE_GMAIL_WEB_COMPOSE_ACCOUNT', sidecarPort, sidecarToken, payload: { accountId: a.id } });
+            refreshGmailWebComposeStatus();
+          };
+          rightCtrl.appendChild(delBtn);
+
+          row.appendChild(left);
+          row.appendChild(rightCtrl);
+          acctBox.appendChild(row);
+        }
+      }
+    }
+
+    const qBox = el('webComposeQueueStatus');
+    if (qBox) {
+      if (q.enforcementPaused || q.paused) {
+        qBox.className = 'status-box status-blocked';
+        qBox.textContent = [
+          `🛑 [계정 보호 일시중지 활성] 사유: ${q.pauseReason || 'PAUSED_BY_OPERATOR'}`,
+          `• 경고 계정은 24시간 보호 쿨다운 + 일일 한도 50% 자동 감속이 적용되며, 타 계정으로 자동 우회하지 않습니다.`,
+          `• 원인 확인 후 [▶️ 일시중지 해제]를 눌러 재개하세요.`
+        ].join('\n');
+      } else if ((c.total || 0) === 0) {
+        qBox.className = 'status-box status-idle';
+        qBox.textContent = `대기 중: 등록 계정 ${webComposeAccountsCache.length}개(일일 합산 안전 상한 ${q.totalDailyCapacity || 0}통) · 수신자(위 CSV 또는 빠른 입력)와 [필수] 적법 발송 권한 체크 후 파란색 [✉️ 2단계: Gmail 작성창 열기]를 누르세요.`;
+      } else {
+        qBox.className = (c.OPERATOR_CONFIRMED_SENT || 0) > 0 ? 'status-box status-success' : 'status-box status-idle';
+        qBox.textContent = [
+          `📊 [웹 작성창 캠페인: ${q.campaignId || 'default'}] 상태: ${c.PENDING === 0 && c.COMPOSE_OPENED === 0 ? '✅ 완료' : '🟢 안전 진행 가능'}`,
+          `• 총 ${c.total || 0}명 | 대기(PENDING): ${c.PENDING || 0} | 작성창 열림(확인대기): ${c.COMPOSE_OPENED || 0} | 발송완료(운영자확인): ${c.OPERATOR_CONFIRMED_SENT || 0} | 건너뜀: ${c.SKIPPED_BY_OPERATOR || 0}`,
+          `• 교차차단 제외: ${c.SKIPPED_SUPPRESSED_CROSS_PROVIDER || 0} | 기발송 제외: ${c.ALREADY_SENT_IDEMPOTENT || 0} | 예상 분산 소요일: ${q.estimatedDays || 0}일 (오늘 잔여 ${q.totalRemainingToday || 0}/${q.totalDailyCapacity || 0}통)`,
+          `• 고지: ${st.honestDisclaimer || ''}`
+        ].join('\n');
+      }
+    }
+
+    const awaitBox = el('webComposeAwaitingList');
+    if (awaitBox) {
+      awaitBox.textContent = '';
+      const opened = Array.isArray(q.openedAwaitingConfirm) ? q.openedAwaitingConfirm : [];
+      for (const item of opened) {
+        const row = document.createElement('div');
+        row.style.cssText = 'display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px;padding:5px 8px;border:1px solid #93c5fd;border-radius:6px;background:#eff6ff;font-size:12px;';
+        const lbl = document.createElement('span');
+        lbl.textContent = `✉️ 작성창 열림: ${item.fromAccountMasked} → ${item.toMasked} (Gmail 탭에서 보내기 후 완료 클릭)`;
+        const btns = document.createElement('div');
+        btns.style.cssText = 'display:flex;gap:4px;flex-wrap:wrap;';
+
+        if (item.composeUrl && isOfficialGmailTabUrl(item.composeUrl)) {
+          const reopenBtn = document.createElement('button');
+          reopenBtn.type = 'button';
+          reopenBtn.style.cssText = 'padding:2px 8px;font-size:11px;';
+          reopenBtn.textContent = '🔁 다시 열기';
+          reopenBtn.onclick = () => {
+            openExternalOfficialTab(item.composeUrl, { active: true });
+          };
+          btns.appendChild(reopenBtn);
+        }
+
+        const revertBtn = document.createElement('button');
+        revertBtn.type = 'button';
+        revertBtn.style.cssText = 'padding:2px 8px;font-size:11px;';
+        revertBtn.textContent = '↩️ 대기 복구';
+        revertBtn.onclick = async () => {
+          const { sidecarPort, sidecarToken } = getSidecarConfig();
+          await callBg({ action: 'MARK_GMAIL_WEB_COMPOSE_ITEM', sidecarPort, sidecarToken, payload: { entryId: item.entryId, result: 'REVERT_TO_PENDING' } });
+          refreshGmailWebComposeStatus();
+        };
+        btns.appendChild(revertBtn);
+
+        const okBtn = document.createElement('button');
+        okBtn.type = 'button';
+        okBtn.style.cssText = 'padding:2px 8px;font-size:11px;';
+        okBtn.textContent = '✅ 발송 완료';
+        okBtn.onclick = async () => {
+          const { sidecarPort, sidecarToken } = getSidecarConfig();
+          await callBg({ action: 'MARK_GMAIL_WEB_COMPOSE_ITEM', sidecarPort, sidecarToken, payload: { entryId: item.entryId, result: 'OPERATOR_CONFIRMED_SENT' } });
+          refreshGmailWebComposeStatus();
+        };
+
+        const skipBtn = document.createElement('button');
+        skipBtn.type = 'button';
+        skipBtn.style.cssText = 'padding:2px 8px;font-size:11px;';
+        skipBtn.textContent = '⏭️ 건너뛰기';
+        skipBtn.onclick = async () => {
+          const { sidecarPort, sidecarToken } = getSidecarConfig();
+          await callBg({ action: 'MARK_GMAIL_WEB_COMPOSE_ITEM', sidecarPort, sidecarToken, payload: { entryId: item.entryId, result: 'SKIPPED_BY_OPERATOR' } });
+          refreshGmailWebComposeStatus();
+        };
+
+        btns.appendChild(okBtn);
+        btns.appendChild(skipBtn);
+        row.appendChild(lbl);
+        row.appendChild(btns);
+        awaitBox.appendChild(row);
+      }
+    }
+    updateWebComposeRecipientSummaryUI();
+    if (typeof renderWebComposeLiveMonitor === 'function') renderWebComposeLiveMonitor(st);
+  }
+
+  async function refreshGmailWebComposeStatus() {
+    try {
+      const { sidecarPort, sidecarToken } = getSidecarConfig();
+      const r = await callBg({ action: 'GET_GMAIL_WEB_COMPOSE_STATUS', sidecarPort, sidecarToken }, { timeoutMs: 6000 });
+      if (r?.ok && r.data?.ok) renderWebComposeStatus(r.data);
+    } catch (_) {}
+  }
+
+  if (el('btnSaveWebComposeAccount')) {
+    el('btnSaveWebComposeAccount').onclick = async () => {
+      const emailEl = el('webComposeAccountEmail');
+      const labelEl = el('webComposeAccountLabel');
+      const stageEl = el('webComposeWarmupStage');
+      const slotEl = el('webComposeChromeSlot');
+      const email = emailEl ? emailEl.value.trim() : '';
+      const qBox = el('webComposeQueueStatus');
+      if (!email) {
+        if (qBox) { qBox.className = 'status-box status-blocked'; qBox.textContent = '⚠️ 등록할 본인 소유 Gmail/Workspace 이메일을 입력하세요.'; }
+        return;
+      }
+      const { sidecarPort, sidecarToken } = getSidecarConfig();
+      const rawSlot = slotEl ? slotEl.value : '';
+      const r = await callBg({
+        action: 'SAVE_GMAIL_WEB_COMPOSE_ACCOUNT',
+        sidecarPort,
+        sidecarToken,
+        payload: {
+          email,
+          label: labelEl ? labelEl.value.trim() : '',
+          warmupStage: stageEl ? stageEl.value : 'NEW_WARMUP',
+          chromeSlotIndex: rawSlot === '' ? null : Number(rawSlot),
+          active: true
+        }
+      });
+      if (!r?.ok || !r.data?.ok) {
+        if (qBox) { qBox.className = 'status-box status-error'; qBox.textContent = `❌ 계정 등록 실패: ${r?.data?.message || r?.data?.reason || r?.error || '-'}`; }
+        return;
+      }
+      if (emailEl) emailEl.value = '';
+      if (labelEl) labelEl.value = '';
+      const added = (r.data.accounts || []).find(a => a.email === email.toLowerCase());
+      if (added) {
+        selectedWebComposeAccountIds.add(added.id);
+        webComposeAccountsInitialized = true;
+      }
+      refreshGmailWebComposeStatus();
+    };
+  }
+
+  async function prepareWebComposeQueueAction() {
+    const qBox = el('webComposeQueueStatus');
+    try {
+      const src = resolveWebComposeRecipientSource();
+      const v = values();
+      const selectedIds = Array.from(selectedWebComposeAccountIds);
+      if (webComposeAccountsCache.length === 0) {
+        if (qBox) { qBox.className = 'status-box status-blocked'; qBox.textContent = '⚠️ 등록된 발신 계정이 없습니다. 먼저 위 1)에서 본인 소유 Google 계정을 1개 이상 등록하세요.'; }
+        if (el('webComposeAccountEmail')) el('webComposeAccountEmail').focus();
+        return { ok: false, reason: 'NO_ACTIVE_WEB_COMPOSE_ACCOUNTS' };
+      }
+      if (selectedIds.length === 0) {
+        if (qBox) { qBox.className = 'status-box status-blocked'; qBox.textContent = '⚠️ 위 발신 계정 목록에서 사용할 계정을 1개 이상 체크하세요.'; }
+        return { ok: false, reason: 'NO_SELECTED_ACCOUNTS' };
+      }
+      if (src.effectiveCount === 0) {
+        if (qBox) {
+          qBox.className = 'status-box status-blocked';
+          qBox.textContent = '⚠️ 발송할 수신자 이메일이 없습니다!\n• 상단 [수신자 목록 CSV]에 수신자 목록을 붙여넣거나,\n• 바로 위 [빠른 수신자 직접 입력] 칸에 테스트/발송할 이메일(예: test@gmail.com)을 입력한 뒤 다시 눌러주세요.';
+        }
+        if (el('webComposeQuickRecipient')) el('webComposeQuickRecipient').focus();
+        return { ok: false, reason: 'NO_VALID_RECIPIENTS' };
+      }
+      if (!src.consentOk) {
+        if (qBox) {
+          qBox.className = 'status-box status-blocked';
+          qBox.textContent = '⚠️ 바로 위 노란색 박스 [[필수] 적법한 발송 권한 확인] 체크박스를 먼저 체크한 뒤 눌러주세요.';
+        }
+        if (el('webComposeConsentCheck')) el('webComposeConsentCheck').focus();
+        return { ok: false, reason: 'CONSENT_ATTESTATION_REQUIRED' };
+      }
+      if (qBox) { qBox.className = 'status-box status-loading'; qBox.textContent = `⏳ ${src.sourceLabel} 기준 교차 공급자 수신거부 제외, 동의 검증 및 다계정 고정 배정 계산 중...`; }
+      const r = await callBg({
+        action: 'PREPARE_GMAIL_WEB_COMPOSE_QUEUE',
+        sidecarPort: src.sidecarPort,
+        sidecarToken: src.sidecarToken,
+        payload: {
+          ...src.payload,
+          selectedAccountIds: selectedIds,
+          physicalAddress: getEffectivePhysicalAddress(v),
+          includeSignedUnsubscribeUrl: !el('webComposeIncludeSignedUnsub') || Boolean(el('webComposeIncludeSignedUnsub').checked)
+        }
+      });
+      if (!r?.ok || !r.data?.ok) {
+        if (qBox) { qBox.className = 'status-box status-error'; qBox.textContent = `❌ 다계정 큐 배정 실패: ${r?.data?.message || r?.data?.reason || r?.error || '-'}`; }
+        return { ok: false, reason: r?.data?.reason || r?.error || 'PREPARE_FAILED' };
+      }
+      renderWebComposeStatus(r.data.status);
+      const pendingCnt = r.data.status?.queue?.counts?.PENDING || 0;
+      if (pendingCnt === 0 && qBox) {
+        qBox.className = 'status-box status-blocked';
+        qBox.textContent = `⚠️ 큐 배정 결과 발송 대기(PENDING) 대상이 0명입니다 (모두 수신거부 차단 목록 또는 동일 캠페인 기발송 제외됨).\n` + qBox.textContent;
+      }
+      return { ok: true, status: r.data.status, pendingCount: pendingCnt };
+    } catch (err) {
+      studioDebugLog('ERROR', 'WEB_COMPOSE', 'PREPARE_EXCEPTION', { message: err?.message || String(err) });
+      if (qBox) { qBox.className = 'status-box status-error'; qBox.textContent = `❌ 큐 배정 중 오류: ${err?.message || String(err)}`; }
+      return { ok: false, reason: 'PREPARE_EXCEPTION' };
+    }
+  }
+
+  if (el('btnPrepareWebComposeQueue')) {
+    el('btnPrepareWebComposeQueue').onclick = prepareWebComposeQueueAction;
+  }
+
+  async function openNextWebComposeBatchAction(opts = {}) {
+    const qBox = el('webComposeQueueStatus');
+    try {
+      const px = await refreshChromeProxyWarningForGmail();
+      if (px?.ok && px.proxyActive && px.relayBroken) {
+        if (qBox) {
+          qBox.className = 'status-box status-error';
+          qBox.textContent = `🚨 현재 Chrome 프록시(${px.proxyHost || '127.0.0.1:18988'})가 오류(${px.relayReason || '502 Bad Gateway'}) 상태라 Gmail 페이지가 열리지 않습니다.\n• 바로 위 빨간 박스의 [🔓 브라우저 프록시 해제 (Gmail 직접 연결로 전환)] 버튼을 먼저 누른 뒤 다시 시도해 주세요.`;
+        }
+        if (el('btnReleaseChromeProxyForGmail')) el('btnReleaseChromeProxyForGmail').focus();
+        return { ok: false, reason: 'PROXY_BROKEN' };
+      }
+      const qCounts = lastWebComposeStatus?.queue?.counts || {};
+      const openedNow = lastWebComposeStatus?.queue?.openedAwaitingConfirm || [];
+      // If queue is empty (not prepared yet), seamlessly auto-prepare FIRST so clicking the big blue button works in 1 click!
+      if ((qCounts.total || 0) === 0 || ((qCounts.PENDING || 0) === 0 && openedNow.length === 0)) {
+        const src = resolveWebComposeRecipientSource();
+        if (src.effectiveCount > 0 || (qCounts.total || 0) === 0) {
+          const prep = await prepareWebComposeQueueAction();
+          if (!prep.ok || prep.pendingCount === 0) return { ok: false, reason: prep.reason || 'NO_PENDING' };
+        }
+      }
+
+      const v = values();
+      const customTextEdited = Boolean(previewEditorState.gmailTextCustomEdited);
+      const subj = getEffectiveSubjectForProvider(v, 'GMAIL');
+      if (!subj) {
+        if (qBox) { qBox.className = 'status-box status-blocked'; qBox.textContent = '⚠️ 먼저 좌측 에디터 또는 Gmail 텍스트 미리보기에서 이메일 제목(Subject)을 입력해 주세요.'; }
+        if (el('subject')) el('subject').focus();
+        return { ok: false, reason: 'SUBJECT_REQUIRED' };
+      }
+      const spamFlags = getGmailSpamOptFlags();
+      const batchSize = opts.forceBatchSize ? Number(opts.forceBatchSize) : (el('webComposeBatchSize') ? Number(el('webComposeBatchSize').value || 1) : 1);
+      const includeSignedUnsubscribeUrl = !el('webComposeIncludeSignedUnsub') || Boolean(el('webComposeIncludeSignedUnsub').checked);
+      const { sidecarPort, sidecarToken } = getSidecarConfig();
+      if (qBox) { qBox.className = 'status-box status-loading'; qBox.textContent = '⏳ 안전 한도·발송 간격·수신거부 대조 후 공식 Gmail 웹 작성창 준비 중...'; }
+      const r = await callBg({
+        action: 'NEXT_GMAIL_WEB_COMPOSE_BATCH',
+        sidecarPort,
+        sidecarToken,
+        payload: {
+          subject: subj,
+          html: getEffectiveHtmlForProvider(v, 'GMAIL'),
+          text: getEffectiveTextForProvider(v, 'GMAIL'),
+          displayName: v.senderDisplayName || v.company || v.brand || '',
+          physicalAddress: getEffectivePhysicalAddress(v),
+          maxBatch: batchSize,
+          autoCalmPromoToTextStyle: customTextEdited ? false : (spamFlags.autoCalmPromoToTextStyle !== false),
+          customEditedPlainText: customTextEdited,
+          includeSignedUnsubscribeUrl
+        }
+      });
+      if (!r?.ok || !r.data?.ok) {
+        if (r?.data?.status) renderWebComposeStatus(r.data.status);
+        if (qBox) {
+          qBox.className = 'status-box status-blocked';
+          qBox.textContent = `⏳ 안전 대기/차단: ${r?.data?.message || r?.data?.reason || r?.error || '-'}`;
+        }
+        return { ok: false, reason: r?.data?.reason || r?.error || 'WAIT_OR_BLOCKED', nextPermittedExecutionAt: r?.data?.nextPermittedExecutionAt || null };
+      }
+      const items = Array.isArray(r.data.issued) ? r.data.issued : [];
+      let openedTabs = 0;
+      items.forEach((item, idx) => {
+        if (item && isOfficialGmailTabUrl(item.composeUrl)) {
+          if (openExternalOfficialTab(item.composeUrl, {
+            active: idx === 0,
+            onCreated: (tab) => {
+              if (tab && typeof tab.id === 'number') openedComposeTabMap.set(tab.id, item.entryId);
+            }
+          })) openedTabs++;
+        }
+      });
+      if (r.data.status) renderWebComposeStatus(r.data.status);
+      if (qBox) {
+        if (items.length > 0) {
+          const summary = items.map(i => `${i.fromAccountMasked} → ${i.toMasked}`).join(', ');
+          qBox.className = 'status-box status-success';
+          qBox.textContent = `✉️ 공식 Gmail 웹 작성창 ${openedTabs}건 열림 (${summary})\n• 열린 Gmail 탭에서 내용 확인 후 보내기(Ctrl+Enter)를 누르고, 탭을 닫거나(Ctrl+W) 여기로 돌아와 [✅ 3단계: 방금 연 메일 발송 완료 & 다음 열기]를 누르세요.\n` + qBox.textContent;
+        } else {
+          const awaiting = r.data.status?.queue?.openedAwaitingConfirm || [];
+          qBox.className = awaiting.length > 0 ? 'status-box status-blocked' : 'status-box status-success';
+          const note = awaiting.length > 0
+            ? `✉️ 이미 열린 Gmail 작성창 ${awaiting.length}건이 발송 확인 대기 중입니다. 열린 Gmail 탭에서 보내기(Ctrl+Enter) 후 탭을 닫거나 [✅ 3단계: 방금 연 메일 발송 완료 & 다음 열기]를 누르세요.`
+            : `ℹ️ ${r.data.message || '대기 중인 수신자가 없습니다 (모든 항목 처리 완료 또는 큐 미배정).'}`;
+          qBox.textContent = note + '\n' + qBox.textContent;
+        }
+      }
+      return { ok: true, issued: items, done: Boolean(r.data.done), status: r.data.status };
+    } catch (err) {
+      studioDebugLog('ERROR', 'WEB_COMPOSE', 'OPEN_BATCH_EXCEPTION', { message: err?.message || String(err) });
+      if (qBox) { qBox.className = 'status-box status-error'; qBox.textContent = `❌ Gmail 작성창 열기 오류: ${err?.message || String(err)}`; }
+      return { ok: false, reason: 'OPEN_BATCH_EXCEPTION' };
+    }
+  }
+
+  if (el('btnOpenNextWebComposeBatch')) {
+    el('btnOpenNextWebComposeBatch').onclick = openNextWebComposeBatchAction;
+  }
+
+  if (el('btnConfirmOpenedAndNextCompose')) {
+    el('btnConfirmOpenedAndNextCompose').onclick = async () => {
+      const qBox = el('webComposeQueueStatus');
+      try {
+        const opened = lastWebComposeStatus?.queue?.openedAwaitingConfirm || [];
+        const { sidecarPort, sidecarToken } = getSidecarConfig();
+        if (opened.length === 0) {
+          if (qBox) {
+            qBox.className = 'status-box status-blocked';
+            qBox.textContent = '⚠️ 먼저 [✉️ 2단계: Gmail 작성창 열기]로 작성창을 연 뒤, Gmail에서 보내기를 완료하고 이 버튼을 눌러주세요.';
+          }
+          return;
+        }
+        for (const item of opened) {
+          await callBg({ action: 'MARK_GMAIL_WEB_COMPOSE_ITEM', sidecarPort, sidecarToken, payload: { entryId: item.entryId, result: 'OPERATOR_CONFIRMED_SENT' } });
+        }
+        await refreshGmailWebComposeStatus();
+        await openNextWebComposeBatchAction();
+      } catch (err) {
+        if (qBox) { qBox.className = 'status-box status-error'; qBox.textContent = `❌ 발송 완료 기록 오류: ${err?.message || String(err)}`; }
+      }
+    };
+  }
+
+  if (el('btnCopyRichHtmlForGmailCompose')) {
+    el('btnCopyRichHtmlForGmailCompose').onclick = async () => {
+      const v = values();
+      const htmlStr = getEffectiveHtmlForProvider(v, 'GMAIL');
+      const plainStr = getEffectiveTextForProvider(v, 'GMAIL');
+      const qBox = el('webComposeQueueStatus');
+      try {
+        if (navigator.clipboard && typeof navigator.clipboard.write === 'function' && typeof ClipboardItem === 'function') {
+          await navigator.clipboard.write([
+            new ClipboardItem({
+              'text/html': new Blob([htmlStr], { type: 'text/html' }),
+              'text/plain': new Blob([plainStr], { type: 'text/plain' })
+            })
+          ]);
+        } else if (navigator.clipboard && navigator.clipboard.writeText) {
+          await navigator.clipboard.writeText(plainStr);
+        }
+        if (qBox) {
+          qBox.className = 'status-box status-success';
+          qBox.textContent = '📋 이미지·서식이 포함된 본문을 클립보드에 복사했습니다. 열린 Gmail 작성창 본문에 붙여넣기(Ctrl+V)하시면 Google이 이미지를 네이티브로 첨부합니다.';
+        }
+      } catch (err) {
+        if (qBox) {
+          qBox.className = 'status-box status-blocked';
+          qBox.textContent = `⚠️ 클립보드 복사 실패: ${err?.message || 'CLIPBOARD_ERROR'}`;
+        }
+      }
+    };
+  }
+
+  if (el('btnReportWebComposeWarningPause')) {
+    el('btnReportWebComposeWarningPause').onclick = async () => {
+      stopWebComposePacer('계정 경고 감지로 자동 페이싱 즉시 중지됨');
+      const qBox = el('webComposeQueueStatus');
+      try {
+        const opened = lastWebComposeStatus?.queue?.openedAwaitingConfirm || [];
+        const firstAcct = opened[0]?.accountId || Array.from(selectedWebComposeAccountIds)[0] || webComposeAccountsCache[0]?.id || '';
+        const { sidecarPort, sidecarToken } = getSidecarConfig();
+        const r = await callBg({
+          action: 'MARK_GMAIL_WEB_COMPOSE_ITEM',
+          sidecarPort,
+          sidecarToken,
+          payload: {
+            entryId: opened[0]?.entryId || '',
+            accountId: firstAcct,
+            result: 'ACCOUNT_WARNING_PAUSE',
+            warningNote: 'OWNER_REPORTED_GMAIL_LIMIT_OR_WARNING'
+          }
+        });
+        if (r?.data?.status) renderWebComposeStatus(r.data.status);
+        else if (qBox) { qBox.className = 'status-box status-blocked'; qBox.textContent = `🛑 일시중지 요청 결과: ${r?.data?.message || r?.error || '완료'}`; }
+      } catch (err) {
+        if (qBox) { qBox.className = 'status-box status-error'; qBox.textContent = `❌ 일시중지 처리 오류: ${err?.message || String(err)}`; }
+      }
+    };
+  }
+
+  if (el('btnResumeWebComposeQueue')) {
+    el('btnResumeWebComposeQueue').onclick = async () => {
+      const qBox = el('webComposeQueueStatus');
+      try {
+        if (typeof window.confirm === 'function' && !window.confirm('계정 보호 일시중지를 해제할까요? (경고가 발생했던 계정은 24시간 보호 쿨다운 및 50% 감속이 유지됩니다.)')) return;
+        const { sidecarPort, sidecarToken } = getSidecarConfig();
+        const r = await callBg({
+          action: 'PAUSE_GMAIL_WEB_COMPOSE_QUEUE',
+          sidecarPort,
+          sidecarToken,
+          payload: { paused: false, clearEnforcement: true }
+        });
+        if (r?.data?.status) renderWebComposeStatus(r.data.status);
+      } catch (err) {
+        if (qBox) { qBox.className = 'status-box status-error'; qBox.textContent = `❌ 일시중지 해제 오류: ${err?.message || String(err)}`; }
+      }
+    };
+  }
+
+  // ===== RC17: Live Full-List Monitor & Human-Pattern Randomized Interval Pacer (Zero DOM Scraping / Human Ctrl+Enter) =====
+  const openedComposeTabMap = new Map(); // numeric tabId -> entryId (uses chrome.tabs.onRemoved only; zero mail.google.com permission)
+  const webComposePacer = {
+    running: false,
+    inFlight: false,
+    timerId: null,
+    nextOpenAtMs: 0,
+    sentSinceBreak: 0,
+    isRestBreak: false,
+    lastDelaySec: 0,
+    phase: 'IDLE',
+    lastNote: ''
+  };
+
+  function formatCountdownSec(totalSec) {
+    const s = Math.max(0, Math.ceil(Number(totalSec) || 0));
+    const h = Math.floor(s / 3600);
+    const m = Math.floor((s % 3600) / 60);
+    const r = s % 60;
+    if (h > 0) return `${h}시간 ${m}분 ${r}초`;
+    if (m > 0) return `${m}분 ${r}초`;
+    return `${r}초`;
+  }
+
+  function formatStatusBadgeText(status) {
+    switch (status) {
+      case 'PENDING': return '⏳ 대기';
+      case 'COMPOSE_OPENED': return '✉️ 작성창 열림';
+      case 'OPERATOR_CONFIRMED_SENT': return '✅ 발송 완료';
+      case 'SKIPPED_BY_OPERATOR': return '⏭️ 건너뜀';
+      case 'SKIPPED_SUPPRESSED_CROSS_PROVIDER': return '🚫 수신거부 제외';
+      case 'ALREADY_SENT_IDEMPOTENT': return '♻️ 기발송 제외';
+      case 'SKIPPED_NO_CONSENT': return '⚠️ 미동의 제외';
+      default: return status || '-';
+    }
+  }
+
+  let lastMonitorAutoRefreshMs = 0;
+
+  function renderWebComposeAccountGauges(st) {
+    if (!st || typeof st !== 'object') return;
+    const accounts = Array.isArray(st.accounts) ? st.accounts : [];
+    const gauges = el('webComposeAccountGauges');
+    if (!gauges) return;
+    const nowMs = Date.now();
+    let expiredWaitDetected = false;
+    gauges.textContent = '';
+    for (const a of accounts) {
+      const pct = a.cap24h > 0 ? Math.min(100, Math.round((a.sent24h / a.cap24h) * 100)) : 0;
+      const waitMs = a.nextPermittedAt ? Math.max(0, Date.parse(a.nextPermittedAt) - nowMs) : 0;
+      const coolMs = a.cooldownUntilIso ? Math.max(0, Date.parse(a.cooldownUntilIso) - nowMs) : 0;
+      if ((!a.permittedNow && waitMs <= 0) || (a.cooldownUntilIso && coolMs <= 0)) {
+        expiredWaitDetected = true;
+      }
+      const waitTxt = (a.cooldownUntilIso && coolMs > 0)
+        ? `🛑 보호쿨다운 (${formatCountdownSec(coolMs / 1000)} 남음)`
+        : ((a.permittedNow || waitMs <= 0) ? '🟢 즉시 발송 가능' : `⏳ ${a.waitReason || '간격 대기'} (${formatCountdownSec(waitMs / 1000)} 후)`);
+      const card = document.createElement('div');
+      card.style.cssText = 'padding:5px 8px;border:1px solid #e2e8f0;border-radius:6px;background:#f8fafc;font-size:11px;';
+      const top = document.createElement('div');
+      top.style.cssText = 'display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px;';
+      const left = document.createElement('span');
+      left.textContent = `${a.label ? `[${a.label}] ` : ''}${a.maskedEmail} · 1분 ${a.sent1m}/${a.capPerMinute} · 1시간 ${a.sent1h}/${a.capPerHour} · 24h ${a.sent24h}/${a.cap24h} (${pct}%)`;
+      const right = document.createElement('span');
+      right.textContent = waitTxt;
+      top.appendChild(left);
+      top.appendChild(right);
+      const barWrap = document.createElement('div');
+      barWrap.style.cssText = 'height:5px;background:#e2e8f0;border-radius:4px;margin-top:4px;overflow:hidden;';
+      const bar = document.createElement('div');
+      bar.style.cssText = `height:100%;width:${pct}%;background:${pct >= 90 ? '#ef4444' : (pct >= 65 ? '#f59e0b' : '#16a34a')};`;
+      barWrap.appendChild(bar);
+      card.appendChild(top);
+      card.appendChild(barWrap);
+      gauges.appendChild(card);
+    }
+    // Auto re-fetch Sidecar status once cooldown reaches 0s so 1m/1h/24h counters flip immediately to ready!
+    if (expiredWaitDetected && (nowMs - lastMonitorAutoRefreshMs) >= 3000) {
+      lastMonitorAutoRefreshMs = nowMs;
+      refreshGmailWebComposeStatus();
+    }
+  }
+
+  function renderWebComposeLiveMonitor(st) {
+    if (!st || typeof st !== 'object') return;
+    const q = st.queue || {};
+    const c = q.counts || {};
+    const entries = Array.isArray(q.entriesPreview) ? q.entriesPreview : [];
+
+    const hdr = el('webComposeLiveMonitorHeader');
+    if (hdr) {
+      hdr.textContent = `전체 ${c.total || 0}건 · 완료 ${c.OPERATOR_CONFIRMED_SENT || 0} · 열림 ${c.COMPOSE_OPENED || 0} · 대기 ${c.PENDING || 0} · 오늘 잔여 ${q.totalRemainingToday || 0}/${q.totalDailyCapacity || 0}통`;
+    }
+
+    renderWebComposeAccountGauges(st);
+
+    const tbody = el('webComposeLiveListBody');
+    if (!tbody) return;
+    tbody.textContent = '';
+    const filter = el('webComposeListFilter') ? el('webComposeListFilter').value : 'ALL';
+    const filtered = entries.filter(e => {
+      if (filter === 'ALL') return true;
+      if (filter === 'SKIPPED') return e.status !== 'PENDING' && e.status !== 'COMPOSE_OPENED' && e.status !== 'OPERATOR_CONFIRMED_SENT';
+      return e.status === filter;
+    });
+
+    if (filtered.length === 0) {
+      const tr = document.createElement('tr');
+      const td = document.createElement('td');
+      td.colSpan = 6;
+      td.style.cssText = 'padding:8px;color:#64748b;text-align:center;';
+      td.textContent = entries.length === 0 ? '큐를 배정하면 전체 수신자별 발송 상태가 실시간으로 표시됩니다.' : '선택한 필터에 해당하는 수신자가 없습니다.';
+      tr.appendChild(td);
+      tbody.appendChild(tr);
+      return;
+    }
+
+    for (const rowItem of filtered) {
+      const tr = document.createElement('tr');
+      tr.style.cssText = rowItem.status === 'OPERATOR_CONFIRMED_SENT'
+        ? 'background:#f0fdf4;'
+        : (rowItem.status === 'COMPOSE_OPENED' ? 'background:#eff6ff;' : '');
+
+      const mkTd = (txt) => {
+        const td = document.createElement('td');
+        td.style.cssText = 'padding:4px 6px;border-bottom:1px solid #f1f5f9;white-space:nowrap;';
+        td.textContent = txt;
+        return td;
+      };
+      const tsRaw = rowItem.confirmedAt || rowItem.openedAt || rowItem.updatedAt || '';
+      const tsShort = tsRaw ? tsRaw.slice(11, 19) : '-';
+
+      tr.appendChild(mkTd(String(rowItem.index)));
+      tr.appendChild(mkTd(rowItem.toMasked || '-'));
+      tr.appendChild(mkTd(rowItem.fromAccountMasked || '-'));
+      tr.appendChild(mkTd(formatStatusBadgeText(rowItem.status)));
+      tr.appendChild(mkTd(tsShort));
+
+      const actTd = document.createElement('td');
+      actTd.style.cssText = 'padding:4px 6px;border-bottom:1px solid #f1f5f9;display:flex;gap:3px;flex-wrap:wrap;';
+      if (rowItem.status === 'COMPOSE_OPENED') {
+        if (rowItem.composeUrl && isOfficialGmailTabUrl(rowItem.composeUrl)) {
+          const bRe = document.createElement('button');
+          bRe.type = 'button';
+          bRe.style.cssText = 'padding:1px 6px;font-size:11px;';
+          bRe.textContent = '🔁';
+          bRe.title = '작성창 다시 열기';
+          bRe.onclick = () => openExternalOfficialTab(rowItem.composeUrl, { active: true });
+          actTd.appendChild(bRe);
+        }
+        const bRev = document.createElement('button');
+        bRev.type = 'button';
+        bRev.style.cssText = 'padding:1px 6px;font-size:11px;';
+        bRev.textContent = '↩️';
+        bRev.title = '대기 복구';
+        bRev.onclick = async () => {
+          const { sidecarPort, sidecarToken } = getSidecarConfig();
+          await callBg({ action: 'MARK_GMAIL_WEB_COMPOSE_ITEM', sidecarPort, sidecarToken, payload: { entryId: rowItem.entryId, result: 'REVERT_TO_PENDING' } });
+          refreshGmailWebComposeStatus();
+        };
+        const bOk = document.createElement('button');
+        bOk.type = 'button';
+        bOk.style.cssText = 'padding:1px 6px;font-size:11px;';
+        bOk.textContent = '✅';
+        bOk.title = '발송 완료 기록';
+        bOk.onclick = async () => {
+          const { sidecarPort, sidecarToken } = getSidecarConfig();
+          await callBg({ action: 'MARK_GMAIL_WEB_COMPOSE_ITEM', sidecarPort, sidecarToken, payload: { entryId: rowItem.entryId, result: 'OPERATOR_CONFIRMED_SENT' } });
+          webComposePacer.sentSinceBreak++;
+          if (webComposePacer.running) scheduleNextHumanPacerDelay();
+          refreshGmailWebComposeStatus();
+        };
+        const bSkip = document.createElement('button');
+        bSkip.type = 'button';
+        bSkip.style.cssText = 'padding:1px 6px;font-size:11px;';
+        bSkip.textContent = '⏭️';
+        bSkip.title = '건너뛰기';
+        bSkip.onclick = async () => {
+          const { sidecarPort, sidecarToken } = getSidecarConfig();
+          await callBg({ action: 'MARK_GMAIL_WEB_COMPOSE_ITEM', sidecarPort, sidecarToken, payload: { entryId: rowItem.entryId, result: 'SKIPPED_BY_OPERATOR' } });
+          refreshGmailWebComposeStatus();
+        };
+        actTd.appendChild(bRev);
+        actTd.appendChild(bOk);
+        actTd.appendChild(bSkip);
+      } else if (rowItem.reason) {
+        const dash = document.createElement('span');
+        dash.style.cssText = 'color:#94a3b8;font-size:10px;margin-right:4px;';
+        dash.textContent = rowItem.reason;
+        actTd.appendChild(dash);
+      }
+      const bDel = document.createElement('button');
+      bDel.type = 'button';
+      bDel.style.cssText = 'padding:1px 6px;font-size:11px;';
+      bDel.textContent = '🗑️';
+      bDel.title = '이 항목을 발송 큐 리스트에서 삭제';
+      bDel.onclick = async () => {
+        const { sidecarPort, sidecarToken } = getSidecarConfig();
+        await callBg({ action: 'REMOVE_GMAIL_WEB_COMPOSE_ITEM', sidecarPort, sidecarToken, payload: { entryId: rowItem.entryId } });
+        refreshGmailWebComposeStatus();
+      };
+      actTd.appendChild(bDel);
+      tr.appendChild(actTd);
+      tbody.appendChild(tr);
+    }
+  }
+
+  function getPacerConfig() {
+    const minSec = Math.max(30, Math.min(600, Number(el('webComposePacerMinSec')?.value || 60)));
+    const maxSec = Math.max(minSec + 5, Math.min(900, Number(el('webComposePacerMaxSec')?.value || 180)));
+    const breakEvery = Math.max(3, Math.min(30, Number(el('webComposePacerBreakEvery')?.value || 6)));
+    const breakMin = Math.max(2, Math.min(45, Number(el('webComposePacerBreakMin')?.value || 6)));
+    const windowEnabled = !el('webComposePacerWindowEnabled') || Boolean(el('webComposePacerWindowEnabled').checked);
+    const startHour = Math.max(0, Math.min(23, Number(el('webComposePacerStartHour')?.value ?? 9)));
+    const endHour = Math.max(1, Math.min(24, Number(el('webComposePacerEndHour')?.value ?? 19)));
+    const autoOnTabClose = !el('webComposePacerAutoOnTabClose') || Boolean(el('webComposePacerAutoOnTabClose').checked);
+    return { minSec, maxSec, breakEvery, breakMin, windowEnabled, startHour, endHour, autoOnTabClose };
+  }
+
+  function isWithinPacerDayWindow(cfg, nowDate = new Date()) {
+    if (!cfg.windowEnabled) return true;
+    const h = nowDate.getHours();
+    if (cfg.startHour < cfg.endHour) return h >= cfg.startHour && h < cfg.endHour;
+    return h >= cfg.startHour || h < cfg.endHour;
+  }
+
+  function scheduleNextHumanPacerDelay() {
+    const cfg = getPacerConfig();
+    const u = (Math.random() + Math.random()) / 2; // Human-like triangular distribution
+    let delaySec = Math.round(cfg.minSec + u * (cfg.maxSec - cfg.minSec));
+    let isBreak = false;
+    if (webComposePacer.sentSinceBreak > 0 && webComposePacer.sentSinceBreak % cfg.breakEvery === 0) {
+      delaySec = Math.round((cfg.breakMin * 60) * (0.8 + u * 0.5));
+      isBreak = true;
+    }
+    webComposePacer.isRestBreak = isBreak;
+    webComposePacer.lastDelaySec = delaySec;
+    webComposePacer.nextOpenAtMs = Date.now() + delaySec * 1000;
+    webComposePacer.phase = isBreak ? 'NATURAL_REST_BREAK' : 'RANDOM_INTERVAL_COUNTDOWN';
+    renderWebComposePacerStatus();
+  }
+
+  function renderWebComposePacerStatus() {
+    const box = el('webComposePacerStatus');
+    if (!box) return;
+    const cfg = getPacerConfig();
+    const q = lastWebComposeStatus?.queue || {};
+    const c = q.counts || {};
+    if (!webComposePacer.running) {
+      box.className = 'status-box status-idle';
+      box.textContent = webComposePacer.lastNote
+        ? `⏸️ 페이싱 중지됨: ${webComposePacer.lastNote}`
+        : `페이싱 대기 중: [▶️ 랜덤 인터벌 자동 페이싱 시작]을 누르면 ${cfg.minSec}~${cfg.maxSec}초 랜덤 간격 · ${cfg.breakEvery}통마다 약 ${cfg.breakMin}분 휴식 · 일일 워밍업 한도에 맞춰 1건씩 Gmail 작성창을 열어드립니다.`;
+      return;
+    }
+    const remSec = Math.max(0, Math.ceil((webComposePacer.nextOpenAtMs - Date.now()) / 1000));
+    const header = `🟢 [사람 패턴 자동 페이싱 가동 중] 완료 ${c.OPERATOR_CONFIRMED_SENT || 0}/${c.total || 0} · 대기 ${c.PENDING || 0} · 오늘 잔여 ${q.totalRemainingToday || 0}/${q.totalDailyCapacity || 0}통`;
+    if (webComposePacer.phase === 'WAITING_OPERATOR_SEND') {
+      box.className = 'status-box status-success';
+      box.textContent = `${header}\n• ✉️ 열린 Gmail 작성창에서 내용 검토 후 [Ctrl+Enter(보내기) → Ctrl+W(탭 닫기)] 또는 아래 [✅ 발송 완료]를 누르시면 다음 랜덤 인터벌 대기가 자동 시작됩니다. (봇 자동 클릭 미사용 · 계정 안전 보호)`;
+    } else if (webComposePacer.phase === 'OUTSIDE_DAYTIME_WINDOW') {
+      box.className = 'status-box status-blocked';
+      box.textContent = `${header}\n• 🌙 발송 허용 시간대(${cfg.startHour}시~${cfg.endHour}시) 외 자동 대기 중입니다. 허용 시간대가 되면 자동으로 재개됩니다.`;
+    } else if (webComposePacer.phase === 'DAILY_CAP_WAIT') {
+      box.className = 'status-box status-blocked';
+      box.textContent = `${header}\n• 🛡️ 계정 워밍업 일일/시간당/간격 안전 상한 보호 대기 중 — 다음 허용 시각까지 ${formatCountdownSec(remSec)} 남음 (자동 대기 · 타 계정 우회 금지)`;
+    } else if (webComposePacer.phase === 'NATURAL_REST_BREAK') {
+      box.className = 'status-box status-blocked';
+      box.textContent = `${header}\n• ☕ 사람 패턴 자연 휴식 브레이크 중 (${cfg.breakEvery}통 주기) — 다음 Gmail 작성창까지 ${formatCountdownSec(remSec)} 남음`;
+    } else {
+      box.className = 'status-box status-loading';
+      box.textContent = `${header}\n• ⏱️ 랜덤 인터벌 카운트다운 중 (${cfg.minSec}~${cfg.maxSec}초 범위 중 ${webComposePacer.lastDelaySec}초 선택) — 다음 Gmail 작성창까지 ${formatCountdownSec(remSec)} 남음`;
+    }
+  }
+
+  function stopWebComposePacer(reasonNote = '') {
+    webComposePacer.running = false;
+    webComposePacer.phase = 'IDLE';
+    webComposePacer.lastNote = reasonNote || '사용자가 일시중지했습니다.';
+    if (webComposePacer.timerId) {
+      clearInterval(webComposePacer.timerId);
+      webComposePacer.timerId = null;
+    }
+    renderWebComposePacerStatus();
+  }
+
+  async function webComposePacerTick() {
+    if (!webComposePacer.running) return;
+    if (lastWebComposeStatus) renderWebComposeLiveMonitor(lastWebComposeStatus);
+    if (webComposePacer.inFlight) { renderWebComposePacerStatus(); return; }
+
+    const q = lastWebComposeStatus?.queue || {};
+    const c = q.counts || {};
+    if (q.enforcementPaused || q.paused) {
+      stopWebComposePacer(q.pauseReason || '계정 보호 일시중지 활성');
+      return;
+    }
+    const cfg = getPacerConfig();
+    if (!isWithinPacerDayWindow(cfg, new Date())) {
+      webComposePacer.phase = 'OUTSIDE_DAYTIME_WINDOW';
+      renderWebComposePacerStatus();
+      return;
+    }
+    if ((q.openedAwaitingConfirm || []).length > 0) {
+      webComposePacer.phase = 'WAITING_OPERATOR_SEND';
+      renderWebComposePacerStatus();
+      return;
+    }
+    if ((c.total || 0) > 0 && (c.PENDING || 0) === 0) {
+      stopWebComposePacer('✅ 전체 대기 수신자 발송 완료!');
+      return;
+    }
+    if (Date.now() < webComposePacer.nextOpenAtMs) {
+      renderWebComposePacerStatus();
+      return;
+    }
+
+    webComposePacer.inFlight = true;
+    try {
+      const res = await openNextWebComposeBatchAction({ forceBatchSize: 1, fromPacer: true });
+      if (!webComposePacer.running) return;
+      if (res?.ok && Array.isArray(res.issued) && res.issued.length > 0) {
+        webComposePacer.phase = 'WAITING_OPERATOR_SEND';
+      } else if (res?.done) {
+        stopWebComposePacer('✅ 전체 대기 수신자 발송 완료!');
+      } else if (res?.nextPermittedExecutionAt) {
+        const jitterMs = (5 + Math.floor(Math.random() * 15)) * 1000;
+        webComposePacer.nextOpenAtMs = Math.max(Date.now() + 10000, Date.parse(res.nextPermittedExecutionAt) + jitterMs);
+        webComposePacer.phase = 'DAILY_CAP_WAIT';
+      } else if (res?.reason === 'PROXY_BROKEN' || res?.reason === 'CONSENT_ATTESTATION_REQUIRED' || res?.reason === 'NO_VALID_RECIPIENTS' || res?.reason === 'SUBJECT_REQUIRED') {
+        stopWebComposePacer(`사전 확인 필요 (${res.reason})`);
+      } else {
+        // Fallback retry wait (30s)
+        webComposePacer.nextOpenAtMs = Date.now() + 30000;
+        webComposePacer.phase = 'DAILY_CAP_WAIT';
+      }
+      renderWebComposePacerStatus();
+    } finally {
+      webComposePacer.inFlight = false;
+    }
+  }
+
+  if (el('btnStartWebComposePacer')) {
+    el('btnStartWebComposePacer').onclick = async () => {
+      const qCounts = lastWebComposeStatus?.queue?.counts || {};
+      if ((qCounts.total || 0) === 0) {
+        const prep = await prepareWebComposeQueueAction();
+        if (!prep.ok || prep.pendingCount === 0) return;
+      }
+      const v = values();
+      if (!(v.subject || '').trim()) {
+        if (el('webComposePacerStatus')) { el('webComposePacerStatus').className = 'status-box status-blocked'; el('webComposePacerStatus').textContent = '⚠️ 먼저 좌측 에디터에 이메일 제목을 입력하세요.'; }
+        return;
+      }
+      webComposePacer.running = true;
+      webComposePacer.lastNote = '';
+      webComposePacer.nextOpenAtMs = Date.now();
+      webComposePacer.phase = 'RANDOM_INTERVAL_COUNTDOWN';
+      if (webComposePacer.timerId) clearInterval(webComposePacer.timerId);
+      webComposePacer.timerId = setInterval(webComposePacerTick, 1000);
+      renderWebComposePacerStatus();
+      await webComposePacerTick();
+    };
+  }
+
+  if (el('btnStopWebComposePacer')) {
+    el('btnStopWebComposePacer').onclick = () => stopWebComposePacer('운영자가 일시중지했습니다.');
+  }
+  if (el('webComposeListFilter')) {
+    el('webComposeListFilter').addEventListener('change', () => { if (lastWebComposeStatus) renderWebComposeLiveMonitor(lastWebComposeStatus); });
+  }
+  if (el('btnRefreshWebComposeMonitor')) {
+    el('btnRefreshWebComposeMonitor').onclick = refreshGmailWebComposeStatus;
+  }
+
+  if (el('btnResetWebComposeHistory')) {
+    el('btnResetWebComposeHistory').onclick = async () => {
+      const qBox = el('webComposeQueueStatus');
+      const clearQuota = Boolean(el('webComposeResetQuotaAlso') && el('webComposeResetQuotaAlso').checked);
+      const msg = clearQuota
+        ? '마스터 보내기 히스토리를 초기화할까요?\n• 캠페인 중복 발송 방지 기록(ALREADY_SENT) + 현재 큐 + 로컬 1분/1시간/24시간 테스트 카운터가 모두 초기화됩니다.\n• 등록된 구글 계정과 수신거부(Opt-Out) 차단 원장은 안전하게 보존됩니다.'
+        : '마스터 보내기 히스토리를 초기화할까요?\n• 캠페인 중복 발송 방지 기록(ALREADY_SENT)과 현재 큐가 초기화되어 리스트를 처음부터 다시 보낼 수 있습니다.\n• 등록된 구글 계정과 수신거부(Opt-Out) 차단 원장은 안전하게 보존됩니다.';
+      if (typeof window.confirm === 'function' && !window.confirm(msg)) return;
+      try {
+        if (webComposePacer.running) stopWebComposePacer('마스터 히스토리 리셋으로 페이싱 중지됨');
+        openedComposeTabMap.clear();
+        webComposePacer.sentSinceBreak = 0;
+        const { sidecarPort, sidecarToken } = getSidecarConfig();
+        const r = await callBg({
+          action: 'RESET_GMAIL_WEB_COMPOSE_HISTORY',
+          sidecarPort,
+          sidecarToken,
+          payload: { confirmReset: true, clearQuotaCounters: clearQuota, clearQueue: true }
+        });
+        if (!r?.ok || !r.data?.ok) {
+          if (qBox) { qBox.className = 'status-box status-error'; qBox.textContent = `❌ 마스터 히스토리 리셋 실패: ${r?.data?.message || r?.data?.reason || r?.error || '-'}`; }
+          return;
+        }
+        if (r.data.status) renderWebComposeStatus(r.data.status);
+        if (qBox) {
+          qBox.className = 'status-box status-success';
+          qBox.textContent = `🧹 ${r.data.message}\n이제 [📋 1단계: 다계정 안전 큐 배정] 또는 [✉️ 2단계: Gmail 작성창 열기]를 눌러 처음부터 다시 시작하세요.`;
+        }
+      } catch (err) {
+        if (qBox) { qBox.className = 'status-box status-error'; qBox.textContent = `❌ 마스터 히스토리 리셋 오류: ${err?.message || String(err)}`; }
+      }
+    };
+  }
+
+  // Always-on 1-second live cooldown countdown ticker (prevents frozen "(21초 후)" even when pacer is IDLE!)
+  setInterval(() => {
+    try {
+      const panel = el('gmailWebComposePanel');
+      if (!panel || panel.style.display === 'none' || !lastWebComposeStatus) return;
+      renderWebComposeAccountGauges(lastWebComposeStatus);
+    } catch (_) {}
+  }, 1000);
+
+  // Zero-DOM-scraping tab close listener (numeric tabId only): when operator presses Ctrl+Enter -> Ctrl+W on Gmail tab
+  if (typeof chrome !== 'undefined' && chrome.tabs && chrome.tabs.onRemoved && typeof chrome.tabs.onRemoved.addListener === 'function') {
+    chrome.tabs.onRemoved.addListener(async (closedTabId) => {
+      if (!openedComposeTabMap.has(closedTabId)) return;
+      const entryId = openedComposeTabMap.get(closedTabId);
+      openedComposeTabMap.delete(closedTabId);
+      const cfg = getPacerConfig();
+      if (cfg.autoOnTabClose && entryId) {
+        try {
+          const { sidecarPort, sidecarToken } = getSidecarConfig();
+          await callBg({ action: 'MARK_GMAIL_WEB_COMPOSE_ITEM', sidecarPort, sidecarToken, payload: { entryId, result: 'OPERATOR_CONFIRMED_SENT' } });
+          webComposePacer.sentSinceBreak++;
+          await refreshGmailWebComposeStatus();
+          if (webComposePacer.running) {
+            scheduleNextHumanPacerDelay();
+          }
+        } catch (_) {}
+      } else {
+        await refreshGmailWebComposeStatus();
+      }
+    });
+  }
+
+  // ===== RC23: GitHub Official Release Auto-Updater Controller (Explicit Opt-In + SHA-256 Verified) =====
+  let lastCheckedUpdateInfo = null;
+
+  if (el('btnCloseAppUpdateBar')) {
+    el('btnCloseAppUpdateBar').onclick = () => {
+      if (el('appUpdateBar')) el('appUpdateBar').style.display = 'none';
+    };
+  }
+
+  if (el('btnCheckAppUpdate')) {
+    el('btnCheckAppUpdate').onclick = async () => {
+      const bar = el('appUpdateBar');
+      const card = el('appUpdateCard');
+      const txt = el('appUpdateStatusText');
+      const instBtn = el('btnInstallAppUpdate');
+      const relLink = el('appUpdateReleaseLink');
+      if (bar) bar.style.display = 'block';
+      if (card) card.className = 'app-update-card';
+      if (txt) txt.textContent = '⏳ GitHub 공식 릴리스(goodkie/v-show)에서 XPIDER 최신 버전을 확인하는 중...';
+      if (instBtn) instBtn.style.display = 'none';
+      if (relLink) relLink.style.display = 'none';
+
+      try {
+        const { sidecarPort, sidecarToken } = getSidecarConfig();
+        const r = await callBg({ action: 'CHECK_APP_UPDATE', sidecarPort, sidecarToken }, { timeoutMs: 20000 });
+        if (!r?.ok || !r.data?.ok) {
+          if (card) card.className = 'app-update-card err';
+          if (txt) txt.textContent = `❌ 업데이트 확인 실패: ${r?.data?.message || r?.data?.reason || r?.error || 'SIDECAR_OR_NETWORK_ERROR'}`;
+          return;
+        }
+        const d = r.data;
+        lastCheckedUpdateInfo = d;
+        const curLabel = d.current?.commitShort ? `v${d.current.packageVersion || '7.1.0'} (${d.current.commitShort})` : '알 수 없음';
+        const lat = d.latest || {};
+        const sizeMb = lat.setupAsset?.size ? `${(lat.setupAsset.size / (1024 * 1024)).toFixed(1)} MB` : '';
+        if (relLink && lat.htmlUrl && /^https:\/\/github\.com\/goodkie\/v-show\//i.test(lat.htmlUrl)) {
+          relLink.href = lat.htmlUrl;
+          relLink.style.display = 'inline';
+        }
+        if (d.alreadyUpToDate) {
+          if (card) card.className = 'app-update-card ok';
+          if (txt) {
+            txt.textContent = `✅ 현재 최신 버전이 설치되어 있습니다!\n• 설치 버전: ${curLabel} · GitHub 최신 릴리스: ${lat.tagName} (${lat.publishedAt ? lat.publishedAt.slice(0, 10) : '-'})`;
+          }
+          if (instBtn) {
+            instBtn.textContent = '🔁 최신 버전 다시 다운로드 · 재설치';
+            instBtn.style.display = 'inline-block';
+          }
+        } else {
+          if (card) card.className = 'app-update-card';
+          if (txt) {
+            txt.textContent = [
+              `🆕 새 버전이 발견되었습니다! (${curLabel} → ${lat.tagName})`,
+              `• 설치 파일: ${lat.setupAsset?.name || '-'} ${sizeMb ? `(${sizeMb})` : ''} · 배포일: ${lat.publishedAt ? lat.publishedAt.slice(0, 10) : '-'}`,
+              `• 안전 보장: SHA-256 체크섬 검증 통과 시에만 설치되며, 기존 API 키·Gmail OAuth·계정 목록·수신거부 원장은 100% 보존됩니다.`
+            ].join('\n');
+          }
+          if (instBtn) {
+            instBtn.textContent = `⬇️ ${lat.tagName} 다운로드 후 설치`;
+            instBtn.style.display = 'inline-block';
+          }
+        }
+      } catch (err) {
+        if (card) card.className = 'app-update-card err';
+        if (txt) txt.textContent = `❌ 업데이트 확인 예외: ${err?.message || String(err)}`;
+      }
+    };
+  }
+
+  if (el('btnInstallAppUpdate')) {
+    el('btnInstallAppUpdate').onclick = async () => {
+      const card = el('appUpdateCard');
+      const txt = el('appUpdateStatusText');
+      const instBtn = el('btnInstallAppUpdate');
+      const targetTag = lastCheckedUpdateInfo?.latest?.tagName || '';
+      const assetName = lastCheckedUpdateInfo?.latest?.setupAsset?.name || 'XPIDER_V7.1.0_SETUP.exe';
+      const confirmMsg = `GitHub 공식 릴리스(${targetTag || '최신'})의 ${assetName} 파일을 다운로드하고 SHA-256 검증 후 설치할까요?\n\n• 기존 개인 API 키·Gmail OAuth·계정 목록·수신거부 원장(%LOCALAPPDATA%\\XPIDER\\Sidecar)은 100% 유지됩니다.\n• 설치 완료 후 chrome://extensions에서 XPIDER 새로고침(🔄)을 한 번 눌러 주세요.`;
+      if (typeof window.confirm === 'function' && !window.confirm(confirmMsg)) return;
+
+      if (instBtn) instBtn.disabled = true;
+      if (card) card.className = 'app-update-card';
+      if (txt) txt.textContent = `⏳ GitHub에서 ${assetName} 다운로드 및 SHA-256 무결성 검증 중... (약 50MB · 잠시만 기다려 주세요)`;
+
+      try {
+        const { sidecarPort, sidecarToken } = getSidecarConfig();
+        const r = await callBg({
+          action: 'INSTALL_APP_UPDATE',
+          sidecarPort,
+          sidecarToken,
+          payload: { confirmInstall: true, tagName: targetTag, launchSilent: true }
+        }, { timeoutMs: 130000 });
+        if (!r?.ok || !r.data?.ok) {
+          if (card) card.className = 'app-update-card err';
+          if (txt) txt.textContent = `❌ 업데이트 다운로드/설치 실패: ${r?.data?.message || r?.data?.reason || r?.error || 'INSTALL_FAILED'}`;
+          return;
+        }
+        const d = r.data;
+        if (card) card.className = 'app-update-card ok';
+        if (txt) {
+          txt.textContent = [
+            `✅ ${d.message || '최신 버전 설치를 시작했습니다!'}`,
+            `• 검증된 SHA-256: ${String(d.verifiedSha256 || '').slice(0, 24)}...`,
+            `• 설치 폴더: ${d.installDir || '%LOCALAPPDATA%\\XPIDER\\App'} (확장 폴더: ${d.extensionDir || ''})`,
+            `• 다음 단계: 약 5초 후 Chrome의 chrome://extensions에서 XPIDER 확장을 새로고침(🔄)하거나 위 확장 폴더를 로드하세요.`
+          ].join('\n');
+        }
+      } catch (err) {
+        if (card) card.className = 'app-update-card err';
+        if (txt) txt.textContent = `❌ 업데이트 설치 오류: ${err?.message || String(err)}`;
+      } finally {
+        if (instBtn) instBtn.disabled = false;
+      }
+    };
+  }
+
   restore();
+  syncGmailDispatchModeUI();
+  loadSavedFullCampaigns();
+  try {
+    renderUnifiedAntiSpamChecklist(buildOfflineFallbackOptimization(resolveChecklistTargetProvider(), values()));
+  } catch (_) {}
 })();

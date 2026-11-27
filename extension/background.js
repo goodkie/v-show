@@ -4360,7 +4360,116 @@ const _handleMainMessageInner = (request, sender, sendResponse) => {
         case 'UPLOAD_EMAIL_IMAGE':
         case 'GET_UNSUBSCRIBE_STATUS':
         case 'SAVE_UNSUBSCRIBE_CONFIG':
-        case 'GET_EMAIL_SIDECAR_LOGS': {
+        case 'GET_EMAIL_SIDECAR_LOGS':
+        case 'GET_GMAIL_STATUS':
+        case 'GET_CHROME_PROXY_STATUS': {
+            (async () => {
+                try {
+                    const autoFormRunning = Boolean(typeof campaignState !== 'undefined' && campaignState && campaignState.isRunning);
+                    if (typeof chrome === 'undefined' || !chrome.proxy || !chrome.proxy.settings) {
+                        return sendResponse({ ok: true, controlledByExtension: false, proxyActive: false, relayBroken: false, autoFormRunning });
+                    }
+                    const details = await new Promise((resolve) => {
+                        chrome.proxy.settings.get({ incognito: false }, (d) => resolve(d || null));
+                    });
+                    const controlledByExtension = Boolean(details && details.levelOfControl === 'controlled_by_this_extension');
+                    const val = details?.value || {};
+                    const single = val?.rules?.singleProxy || val?.rules?.proxyForHttps || null;
+                    const proxyActive = controlledByExtension && val.mode === 'fixed_servers' && Boolean(single && single.host);
+                    const isLocalRelay = proxyActive && (single.host === '127.0.0.1' || single.host === 'localhost') && Number(single.port) === 18988;
+                    let relayHealth = null;
+                    let relayBroken = false;
+                    let relayReason = null;
+                    if (isLocalRelay) {
+                        try {
+                            const ctrl = new AbortController();
+                            const t = setTimeout(() => ctrl.abort(), 2000);
+                            try {
+                                const hr = await fetch('http://127.0.0.1:18989/health', { signal: ctrl.signal });
+                                relayHealth = await hr.json().catch(() => null);
+                                if (!hr.ok || !relayHealth || relayHealth.relayReady === false) {
+                                    relayBroken = true;
+                                    relayReason = relayHealth?.residentialProxy?.detail || relayHealth?.residentialProxy?.status || 'RELAY_NOT_READY';
+                                }
+                            } finally {
+                                clearTimeout(t);
+                            }
+                        } catch (e) {
+                            relayBroken = true;
+                            relayReason = e?.message || 'RELAY_UNREACHABLE';
+                        }
+                    }
+                    sendResponse({
+                        ok: true,
+                        controlledByExtension,
+                        proxyActive,
+                        isLocalRelay,
+                        proxyHost: single ? `${single.host}:${single.port}` : null,
+                        relayBroken,
+                        relayReason,
+                        autoFormRunning
+                    });
+                } catch (err) {
+                    sendResponse({ ok: false, error: err?.message || 'PROXY_STATUS_ERR' });
+                }
+            })();
+            return true;
+        }
+
+        case 'RELEASE_CHROME_PROXY_FOR_GMAIL_WEB': {
+            (async () => {
+                try {
+                    if (typeof campaignState !== 'undefined' && campaignState && campaignState.isRunning) {
+                        return sendResponse({
+                            ok: false,
+                            reason: 'AUTOFORM_CAMPAIGN_RUNNING',
+                            message: '웹 폼 자동발송 캠페인이 실행 중일 때는 브라우저 프록시를 해제할 수 없습니다.'
+                        });
+                    }
+                    const pg = (typeof PrivacyGateway !== 'undefined' && PrivacyGateway.getInstance) ? PrivacyGateway.getInstance() : null;
+                    if (pg && typeof pg.saveConfig === 'function') {
+                        await pg.saveConfig({ transportMode: 'DIRECT', keepPrivacyRelayEnforcedBetweenCampaigns: false });
+                    }
+                    if (typeof chrome !== 'undefined' && chrome.proxy && chrome.proxy.settings) {
+                        await new Promise((resolve) => chrome.proxy.settings.clear({ scope: 'regular' }, resolve));
+                    }
+                    sendResponse({ ok: true, cleared: true, mode: 'DIRECT' });
+                } catch (err) {
+                    sendResponse({ ok: false, error: err?.message || 'PROXY_RELEASE_ERR' });
+                }
+            })();
+            return true;
+        }
+
+        case 'GET_GMAIL_DASHBOARD':
+        case 'CHECK_GMAIL_HYGIENE':
+        case 'OPTIMIZE_GMAIL_DELIVERABILITY':
+        case 'OPTIMIZE_EMAIL_DELIVERABILITY':
+        case 'SAVE_GMAIL_OAUTH_CLIENT':
+        case 'START_GMAIL_OAUTH':
+        case 'UPDATE_GMAIL_ACCOUNT':
+        case 'DISCONNECT_GMAIL_ACCOUNT':
+        case 'SEND_GMAIL_SELF_TEST':
+        case 'PREPARE_GMAIL_QUEUE':
+        case 'RUN_GMAIL_PRODUCTION_QUEUE':
+        case 'STOP_GMAIL_PRODUCTION_QUEUE':
+        case 'GET_GMAIL_DOMAIN_CONFIG':
+        case 'SAVE_GMAIL_DOMAIN_CONFIG':
+        case 'CHECK_GMAIL_DOMAIN_ALIGNMENT':
+        case 'LIST_SAVED_CAMPAIGNS':
+        case 'SAVE_FULL_CAMPAIGN':
+        case 'DELETE_SAVED_CAMPAIGN':
+        case 'GET_GMAIL_WEB_COMPOSE_STATUS':
+        case 'SAVE_GMAIL_WEB_COMPOSE_ACCOUNT':
+        case 'DELETE_GMAIL_WEB_COMPOSE_ACCOUNT':
+        case 'PREPARE_GMAIL_WEB_COMPOSE_QUEUE':
+        case 'NEXT_GMAIL_WEB_COMPOSE_BATCH':
+        case 'MARK_GMAIL_WEB_COMPOSE_ITEM':
+        case 'PAUSE_GMAIL_WEB_COMPOSE_QUEUE':
+        case 'REMOVE_GMAIL_WEB_COMPOSE_ITEM':
+        case 'RESET_GMAIL_WEB_COMPOSE_HISTORY':
+        case 'CHECK_APP_UPDATE':
+        case 'INSTALL_APP_UPDATE': {
             (async () => {
                 const bgT0 = Date.now();
                 const reqPort = Number(request.sidecarPort);
@@ -4424,7 +4533,7 @@ const _handleMainMessageInner = (request, sender, sendResponse) => {
                         });
                     };
                     let token = explicitToken || await pairTok(false);
-                    const isPost = request.action === 'SYNC_EMAIL_PRODUCTION_RECIPIENTS' || request.action === 'RUN_EMAIL_PRODUCTION_QUEUE' || request.action === 'STOP_EMAIL_PRODUCTION_QUEUE' || request.action === 'SEND_REAL_TEST_EMAIL' || request.action === 'RECONCILE_CAMPAIGN_RESEND' || request.action === 'PREVIEW_SECOND_WAVE' || request.action === 'START_SECOND_WAVE' || request.action === 'SAVE_GEMINI_COPY_API_KEY' || request.action === 'TEST_GEMINI_COPY_CONNECTION' || request.action === 'REQUEST_EMAIL_COPY_SUGGESTION' || request.action === 'VERIFY_RECIPIENT_DOMAINS_DNS' || request.action === 'SAVE_IMAGE_HOST_CONFIG' || request.action === 'UPLOAD_EMAIL_IMAGE' || request.action === 'SAVE_UNSUBSCRIBE_CONFIG';
+                    const isPost = request.action === 'SYNC_EMAIL_PRODUCTION_RECIPIENTS' || request.action === 'RUN_EMAIL_PRODUCTION_QUEUE' || request.action === 'STOP_EMAIL_PRODUCTION_QUEUE' || request.action === 'SEND_REAL_TEST_EMAIL' || request.action === 'RECONCILE_CAMPAIGN_RESEND' || request.action === 'PREVIEW_SECOND_WAVE' || request.action === 'START_SECOND_WAVE' || request.action === 'SAVE_GEMINI_COPY_API_KEY' || request.action === 'TEST_GEMINI_COPY_CONNECTION' || request.action === 'REQUEST_EMAIL_COPY_SUGGESTION' || request.action === 'VERIFY_RECIPIENT_DOMAINS_DNS' || request.action === 'SAVE_IMAGE_HOST_CONFIG' || request.action === 'UPLOAD_EMAIL_IMAGE' || request.action === 'SAVE_UNSUBSCRIBE_CONFIG' || request.action === 'SAVE_GMAIL_OAUTH_CLIENT' || request.action === 'START_GMAIL_OAUTH' || request.action === 'UPDATE_GMAIL_ACCOUNT' || request.action === 'DISCONNECT_GMAIL_ACCOUNT' || request.action === 'SEND_GMAIL_SELF_TEST' || request.action === 'PREPARE_GMAIL_QUEUE' || request.action === 'RUN_GMAIL_PRODUCTION_QUEUE' || request.action === 'STOP_GMAIL_PRODUCTION_QUEUE' || request.action === 'CHECK_GMAIL_HYGIENE' || request.action === 'OPTIMIZE_GMAIL_DELIVERABILITY' || request.action === 'OPTIMIZE_EMAIL_DELIVERABILITY' || request.action === 'SAVE_GMAIL_DOMAIN_CONFIG' || request.action === 'CHECK_GMAIL_DOMAIN_ALIGNMENT' || request.action === 'SAVE_FULL_CAMPAIGN' || request.action === 'DELETE_SAVED_CAMPAIGN' || request.action === 'SAVE_GMAIL_WEB_COMPOSE_ACCOUNT' || request.action === 'DELETE_GMAIL_WEB_COMPOSE_ACCOUNT' || request.action === 'PREPARE_GMAIL_WEB_COMPOSE_QUEUE' || request.action === 'NEXT_GMAIL_WEB_COMPOSE_BATCH' || request.action === 'MARK_GMAIL_WEB_COMPOSE_ITEM' || request.action === 'PAUSE_GMAIL_WEB_COMPOSE_QUEUE' || request.action === 'REMOVE_GMAIL_WEB_COMPOSE_ITEM' || request.action === 'RESET_GMAIL_WEB_COMPOSE_HISTORY' || request.action === 'INSTALL_APP_UPDATE';
                     const cid = encodeURIComponent(String(request.campaignId || 'default'));
                     const cutoff = encodeURIComponent(String(request.cutoffHours ?? 24));
                     const logLimit = Math.max(10, Math.min(300, Number(request.limit || 150)));
@@ -4452,16 +4561,50 @@ const _handleMainMessageInner = (request, sender, sendResponse) => {
                         UPLOAD_EMAIL_IMAGE: '/email/images/upload',
                         GET_UNSUBSCRIBE_STATUS: '/email/unsubscribe/status',
                         SAVE_UNSUBSCRIBE_CONFIG: '/email/unsubscribe/config',
-                        GET_EMAIL_SIDECAR_LOGS: `/email/diagnostics/logs?limit=${logLimit}`
+                        GET_EMAIL_SIDECAR_LOGS: `/email/diagnostics/logs?limit=${logLimit}`,
+                        GET_GMAIL_STATUS: '/email/gmail/status',
+                        GET_GMAIL_DASHBOARD: '/email/gmail/dashboard',
+                        CHECK_GMAIL_HYGIENE: '/email/gmail/hygiene/check',
+                        OPTIMIZE_GMAIL_DELIVERABILITY: '/email/gmail/deliverability/optimize',
+                        OPTIMIZE_EMAIL_DELIVERABILITY: '/email/deliverability/optimize',
+                        SAVE_GMAIL_OAUTH_CLIENT: '/email/gmail/oauth/client-config',
+                        START_GMAIL_OAUTH: '/email/gmail/oauth/start',
+                        UPDATE_GMAIL_ACCOUNT: '/email/gmail/accounts/update',
+                        DISCONNECT_GMAIL_ACCOUNT: '/email/gmail/accounts/disconnect',
+                        SEND_GMAIL_SELF_TEST: '/email/gmail/self-test-send',
+                        PREPARE_GMAIL_QUEUE: '/email/gmail/queue/prepare',
+                        RUN_GMAIL_PRODUCTION_QUEUE: '/email/gmail/queue/run',
+                        STOP_GMAIL_PRODUCTION_QUEUE: '/email/gmail/queue/stop',
+                        GET_GMAIL_DOMAIN_CONFIG: '/email/gmail/domain-config',
+                        SAVE_GMAIL_DOMAIN_CONFIG: '/email/gmail/domain-config',
+                        CHECK_GMAIL_DOMAIN_ALIGNMENT: '/email/gmail/domain-config/check',
+                        LIST_SAVED_CAMPAIGNS: '/email/campaigns/saved',
+                        SAVE_FULL_CAMPAIGN: '/email/campaigns/saved/save',
+                        DELETE_SAVED_CAMPAIGN: '/email/campaigns/saved/delete',
+                        GET_GMAIL_WEB_COMPOSE_STATUS: '/email/gmail/web-compose/status',
+                        SAVE_GMAIL_WEB_COMPOSE_ACCOUNT: '/email/gmail/web-compose/accounts/save',
+                        DELETE_GMAIL_WEB_COMPOSE_ACCOUNT: '/email/gmail/web-compose/accounts/delete',
+                        PREPARE_GMAIL_WEB_COMPOSE_QUEUE: '/email/gmail/web-compose/queue/prepare',
+                        NEXT_GMAIL_WEB_COMPOSE_BATCH: '/email/gmail/web-compose/queue/next',
+                        MARK_GMAIL_WEB_COMPOSE_ITEM: '/email/gmail/web-compose/queue/mark',
+                        PAUSE_GMAIL_WEB_COMPOSE_QUEUE: '/email/gmail/web-compose/queue/pause',
+                        REMOVE_GMAIL_WEB_COMPOSE_ITEM: '/email/gmail/web-compose/queue/remove',
+                        RESET_GMAIL_WEB_COMPOSE_HISTORY: '/email/gmail/web-compose/history/reset',
+                        CHECK_APP_UPDATE: '/app/update/check',
+                        INSTALL_APP_UPDATE: '/app/update/install'
                     };
                     const url = `http://127.0.0.1:${ctrlPort}${routeMap[request.action]}`;
-                    const timeoutMs = request.action === 'RECONCILE_CAMPAIGN_RESEND'
+                    const timeoutMs = request.action === 'INSTALL_APP_UPDATE'
+                        ? 120000
+                        : (request.action === 'RECONCILE_CAMPAIGN_RESEND'
                         ? 90000
                         : (request.action === 'SYNC_EMAIL_PRODUCTION_RECIPIENTS'
                             ? 45000
-                            : ((request.action === 'SEND_REAL_TEST_EMAIL' || request.action === 'RUN_EMAIL_PRODUCTION_QUEUE')
-                                ? 35000
-                                : ((request.action === 'VERIFY_RECIPIENT_DOMAINS_DNS' || request.action === 'START_SECOND_WAVE' || request.action === 'REQUEST_EMAIL_COPY_SUGGESTION' || request.action === 'UPLOAD_EMAIL_IMAGE') ? 25000 : 15000)));
+                            : (request.action === 'PREPARE_GMAIL_QUEUE'
+                                ? 45000
+                                : ((request.action === 'SEND_REAL_TEST_EMAIL' || request.action === 'RUN_EMAIL_PRODUCTION_QUEUE' || request.action === 'SEND_GMAIL_SELF_TEST' || request.action === 'RUN_GMAIL_PRODUCTION_QUEUE')
+                                    ? 35000
+                                    : ((request.action === 'VERIFY_RECIPIENT_DOMAINS_DNS' || request.action === 'START_SECOND_WAVE' || request.action === 'REQUEST_EMAIL_COPY_SUGGESTION' || request.action === 'UPLOAD_EMAIL_IMAGE') ? 25000 : 15000)))));
                     const doFetch = async (tok) => {
                         const ctrl = new AbortController();
                         const timer = setTimeout(() => ctrl.abort(), timeoutMs);

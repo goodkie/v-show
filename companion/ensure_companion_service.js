@@ -151,8 +151,11 @@ async function requestShutdown(token) {
 }
 
 function launchCompanionProcess() {
-  const bundledNode = path.join(ROOT_DIR, 'runtime', 'node', 'node.exe');
-  const nodeBinary = fs.existsSync(bundledNode) ? bundledNode : process.execPath;
+  const bundledNodePrimary = path.join(ROOT_DIR, 'runtime', 'node.exe');
+  const bundledNodeLegacy = path.join(ROOT_DIR, 'runtime', 'node', 'node.exe');
+  const nodeBinary = fs.existsSync(bundledNodePrimary)
+    ? bundledNodePrimary
+    : (fs.existsSync(bundledNodeLegacy) ? bundledNodeLegacy : process.execPath);
 
   const child = spawn(nodeBinary, [RELAY_SCRIPT], {
     cwd: ROOT_DIR,

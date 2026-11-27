@@ -11,7 +11,18 @@ const http = require('node:http');
 const { spawn, spawnSync } = require('node:child_process');
 const { getSidecarPaths } = require('./sidecar-paths');
 const { verifyWindowsDacl } = require('./email-test-sidecar-set-key');
-const { SIDECAR_BUILD_ID } = require('./email-test-sidecar');
+const { SIDECAR_BUILD_ID, SIDECAR_API_CAPABILITIES } = require('./email-test-sidecar');
+
+function hasRequiredCapabilities(json) {
+  const caps = Array.isArray(json && json.apiCapabilities) ? json.apiCapabilities : [];
+  return SIDECAR_API_CAPABILITIES.every(c => caps.includes(c));
+}
+
+function resolveWindowsPowerShellExe() {
+  const sysRoot = process.env.SystemRoot || 'C:\\Windows';
+  const full = path.join(sysRoot, 'System32', 'WindowsPowerShell', 'v1.0', 'powershell.exe');
+  return fs.existsSync(full) ? full : 'powershell.exe';
+}
 
 function launchDetachedSidecarProcess(nodeExe, sidecarScript, port) {
   const safePort = Number.isInteger(port) && port >= 1024 && port <= 65535 ? port : 18990;
@@ -28,7 +39,7 @@ function launchDetachedSidecarProcess(nodeExe, sidecarScript, port) {
         `$res = Invoke-CimMethod -ClassName Win32_Process -MethodName Create -Arguments @{ CommandLine = '${psEsc(cmdLine)}'; ProcessStartupInformation = $startup }`,
         'Write-Output ("WMI_RC=" + $res.ReturnValue + ";PID=" + $res.ProcessId)'
       ].join('; ');
-      const ps = spawnSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-WindowStyle', 'Hidden', '-Command', psScript], {
+      const ps = spawnSync(resolveWindowsPowerShellExe(), ['-NoProfile', '-NonInteractive', '-WindowStyle', 'Hidden', '-Command', psScript], {
         timeout: 4500,
         windowsHide: true,
         encoding: 'utf8'
@@ -74,7 +85,7 @@ async function ensureLocalSidecarRunning(msg = {}, options = {}) {
   const rawPort = Number(msg.port);
   const port = (Number.isInteger(rawPort) && rawPort >= 1024 && rawPort <= 65535) ? rawPort : 18990;
   const h = await probeLocalHealth(port);
-  if (h.alive && h.json && h.json.service === 'XPIDER Email Test Sidecar' && h.json.companionBuildId === SIDECAR_BUILD_ID) {
+  if (h.alive && h.json && h.json.service === 'XPIDER Email Test Sidecar' && h.json.companionBuildId === SIDECAR_BUILD_ID && hasRequiredCapabilities(h.json)) {
     return { ensured: true, alreadyRunning: true, pid: h.json.pid || null, companionBuildId: h.json.companionBuildId };
   }
   if (h.alive && h.json && h.json.service === 'XPIDER Email Test Sidecar' && Number.isInteger(Number(h.json.pid))) {
@@ -91,7 +102,7 @@ async function ensureLocalSidecarRunning(msg = {}, options = {}) {
   for (let i = 0; i < 40; i++) {
     await new Promise(r => setTimeout(r, 150));
     const check = await probeLocalHealth(port);
-    if (check.alive && check.json && check.json.companionBuildId === SIDECAR_BUILD_ID) {
+    if (check.alive && check.json && check.json.companionBuildId === SIDECAR_BUILD_ID && hasRequiredCapabilities(check.json)) {
       return {
         ensured: true,
         autoStarted: true,

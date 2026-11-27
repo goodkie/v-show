@@ -20,5 +20,10 @@ companion/.firewall_guardian.json
 backups/
 dist/staging_candidate_v7/
 dist/clean_room_unpacked_v7/
+dist_v71/
 scratch/
+LOCAL_PRIVATE_ONLY/
+*PERSONAL_LOCAL_ONLY*
+*XPIDER_PERSONAL_SEED*
+
 

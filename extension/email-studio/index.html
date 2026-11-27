@@ -2,7 +2,17 @@
 <html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>XPIDER Email Template Studio</title>
 <link rel="stylesheet" href="email-template-studio.css"></head><body>
-<header class="header"><div><h1>XPIDER v7.0 · Email Template Studio</h1><div class="sub">vivpr.pro · 이미지 + HTML + 일반 텍스트 · 발송 전 품질 검토</div></div><div class="tag" id="modeTag"><span class="badge-test">🧪 TEST / REAL TEST 활성화</span> · <span class="badge-test" id="headerProdStateBadge">✅ 상용발송 잠금 해제 · 발송대상/자격 확인 필요</span></div></header>
+<header class="header"><div><h1>XPIDER v7.0 · Email Template Studio</h1><div class="sub">vivpr.pro · 이미지 + HTML + 일반 텍스트 · 발송 전 품질 검토</div></div><div class="tag" id="modeTag"><span class="badge-test">🧪 TEST / REAL TEST 활성화</span> · <span class="badge-test" id="headerProdStateBadge">✅ 상용발송 잠금 해제 · 발송대상/자격 확인 필요</span> · <button type="button" class="header-update-btn" id="btnCheckAppUpdate" title="GitHub 공식 릴리스에서 XPIDER 최신 버전 확인 및 안전 업데이트">🔄 최신 업데이트 확인</button></div></header>
+<div id="appUpdateBar" class="app-update-bar" style="display:none;" aria-live="polite">
+  <div id="appUpdateCard" class="app-update-card">
+    <div id="appUpdateStatusText" style="white-space:pre-wrap;flex:1;min-width:260px;">최신 업데이트 확인 대기 중...</div>
+    <div class="app-update-actions">
+      <button type="button" class="primary" id="btnInstallAppUpdate" style="display:none;">⬇️ 최신 버전 다운로드 후 설치</button>
+      <a id="appUpdateReleaseLink" href="https://github.com/goodkie/v-show/releases" target="_blank" rel="noopener noreferrer" style="display:none;">🔗 GitHub 릴리스 보기</a>
+      <button type="button" id="btnCloseAppUpdateBar">✖ 닫기</button>
+    </div>
+  </div>
+</div>
 <main class="wrap">
 <section class="panel" aria-label="템플릿 편집">
 <h2>이메일 작성</h2>
@@ -111,6 +121,26 @@
   </div>
   <div id="draftStatus" class="note" aria-live="polite" style="margin-top:6px;">초안·템플릿 저장소는 chrome.storage.local(읽기 재검증 포함)을 사용하며 비밀키·수신자 목록은 저장하지 않습니다.</div>
 </div>
+<div class="send-control-card" id="fullCampaignManagerBox" style="margin-top:8px;padding:10px;border:1px solid rgba(37,99,235,0.4);background:rgba(239,246,255,0.55);">
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;flex-wrap:wrap;">
+    <b>📦 전체 캠페인 저장 · 불러오기 (Full Campaign Save / Load)</b>
+    <span class="badge-test" id="fullCampaignCountBadge">저장된 캠페인: 0개</span>
+  </div>
+  <div class="note" style="margin:4px 0 6px;">제목·본문·이미지·링크·수신자 CSV·SME 필터·A/B안·스팸방지 옵션·Gmail/Resend 공급자 설정을 <b>통째로</b> 로컬 Sidecar NTFS 보안 저장소(+브라우저 백업)에 저장했다가 1클릭으로 복원합니다 (API 키·OAuth 토큰·발송 동의 체크는 보안상 제외됨).</div>
+  <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;">
+    <select id="fullCampaignSelect" style="flex:1;min-width:170px;padding:5px;font-size:12px;"><option value="">(저장된 전체 캠페인 없음)</option></select>
+    <input id="fullCampaignNameInput" maxlength="100" placeholder="캠페인 이름 입력 (예: 홀리데이 오픈 안내)" style="flex:1;min-width:150px;padding:5px;font-size:12px;">
+  </div>
+  <div class="actions" style="margin-top:6px;">
+    <button type="button" class="primary" id="btnSaveFullCampaign">💾 현재 캠페인 통째로 저장</button>
+    <button type="button" id="btnLoadFullCampaign">📥 선택한 캠페인 불러오기</button>
+    <button type="button" id="btnDeleteFullCampaign">🗑️ 삭제</button>
+    <button type="button" id="btnExportFullCampaignJson">📤 캠페인 파일(.json) 저장</button>
+    <button type="button" id="btnImportFullCampaignJson">📂 캠페인 파일(.json) 불러오기</button>
+  </div>
+  <input type="file" id="importFullCampaignFile" accept=".json,application/json" style="display:none">
+  <div id="fullCampaignStatus" class="note" aria-live="polite" style="margin-top:6px;">대기 중: 캠페인 이름을 입력하고 [💾 현재 캠페인 통째로 저장]을 누르면 모든 작성·수신자·발송 설정이 저장됩니다.</div>
+</div>
 <div class="note">이미지 파일은 PC 내 미리보기만 지원합니다. 실제 발송용 HTML에는 공개 HTTPS 이미지 URL을 입력해야 합니다. 이메일 본문의 링크만으로 RFC 8058 원클릭 구독 취소 헤더가 생성되는 것은 아닙니다. 해당 헤더와 작동하는 POST 엔드포인트는 발송 서비스에서 별도 검증해야 합니다.</div>
 <div class="checks"><b>발송 전 콘텐츠 검사 (규칙 기반 스팸·맞춤법·규정 점검)</b><ul id="checkList" aria-live="polite"></ul><small>주의 사항은 휴리스틱(규칙 기반) 점검이며 Gmail/Resend 스팸 점수 또는 실제 받은편지함 도착(Deliverability) 보장이 아닙니다.</small></div>
 <div class="send-control-card" id="contentQaCard" aria-label="콘텐츠 품질 및 문구 교정 제안" style="margin-top:10px;">
@@ -133,11 +163,135 @@
 <div id="copyDiffContent" style="white-space:pre-wrap;font-size:12px;"></div>
 <div class="actions" style="margin-top:8px;"><button type="button" class="primary" id="btnApproveCopySuggestion">✅ 제안 수락 (편집창에 반영)</button><button type="button" id="btnRejectCopySuggestion">❌ 제안 거절 (원문 유지)</button></div>
 </div>
+<div id="antiSpamChecklistSection" style="margin-top:12px;padding:10px;border:1px solid rgba(22,163,74,0.4);border-radius:8px;background:rgba(240,253,244,0.55);">
+  <div class="send-header">
+    <h4 style="margin:0;">🛡️ 통합 스팸방지 자동·반자동 적용 &amp; 체크리스트 (Gmail · Resend 공용)</h4>
+    <span class="badge-test" id="spamChecklistScoreBadge">스팸 위험도: 미진단</span>
+  </div>
+  <div class="note" style="margin:6px 0;">
+    <b>발송 시 자동 적용(AUTO)</b> + <b>1클릭 반자동 교정(SEMI-AUTO)</b> + <b>운영자 수동 체크리스트(MANUAL)</b>를 Gmail과 Resend 발송 모두에 일관 적용합니다.
+    (정당한 발신 위생 최적화이며, 100% 기본 받은편지함 배치나 계정 정지 면제를 보장하지 않습니다.)
+  </div>
+  <div class="inline" style="margin:6px 0;">
+    <div>
+      <label for="spamChecklistProvider">체크리스트 진단 기준 공급자</label>
+      <select id="spamChecklistProvider">
+        <option value="AUTO">현재 선택된 발송 공급자 자동 기준</option>
+        <option value="GMAIL">Gmail API 기준 (개인 @gmail.com / Workspace)</option>
+        <option value="RESEND">Resend 기준 (인증 도메인 vivpr.pro)</option>
+      </select>
+    </div>
+    <div style="display:flex;flex-direction:column;justify-content:flex-end;">
+      <div class="note" id="spamChecklistActiveProviderNote" style="margin:0;">적용 대상: Gmail ✅ · Resend ✅ (RFC 8058 원클릭 수신거부·물리적 주소 항상 유지)</div>
+    </div>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:4px;margin:6px 0;padding:6px 8px;border:1px solid #cbd5e1;border-radius:6px;background:#fff;font-size:12px;">
+    <label style="display:flex;align-items:center;gap:6px;"><input id="spamOptApplyGmail" type="checkbox" checked> <b>Gmail 발송 시 자동 위생 점검 적용</b> (기본 잔여 표시이름 정리 · 깨진 샘플 이미지/위험 태그 제거 · 제목 위생 · 표준 RFC 2047/2045 MIME · 고위험 차단)</label>
+    <label style="display:flex;align-items:center;gap:6px;"><input id="spamOptApplyResend" type="checkbox" checked> <b>Resend 발송 시 자동 위생 점검 적용</b> (위험 태그/깨진 샘플 이미지 제거 · 제목 위생 · 텍스트/HTML 1:1 동기화 · 물리적 주소 보강)</label>
+    <label style="display:flex;align-items:center;gap:6px;"><input id="spamOptEmbedInlineCid" type="checkbox" checked> <b>Gmail 네이티브 인라인 이미지(CID) 자동 내장</b> (<code>raw.githubusercontent.com</code> 등 외부 이미지 호스트 노출을 제거하고 <code>multipart/related</code>로 내장 · 이미지 클릭 링크 100% 유지)</label>
+    <label style="display:flex;align-items:center;gap:6px;"><input id="spamOptAutoCalmPromo" type="checkbox" checked> <b>Gmail 강한 프로모션 본문 패턴 자동 텍스트형 이메일 변환</b> (이모지 5개+ · 영문 ALL-CAPS 3줄+ · 할인/느낌표 밀집 감지 시 차분한 텍스트 기반 이메일 구조로 자동 전환)</label>
+    <label style="display:flex;align-items:center;gap:6px;"><input id="spamOptOwnerApprovedBrand" type="checkbox" checked> <b>입력한 발신자 상호명 및 Reply-To는 소유자가 승인한 정상 브랜드/회신 채널임</b> (무단 자동 변경·삭제 금지)</label>
+    <label style="display:flex;align-items:center;gap:6px;"><input id="spamOptAutoAlignReplyTo" type="checkbox"> [선택] 발신 도메인과 다른 외부 <code>Reply-To</code> 자동 생략 (기본 해제 — 의도된 회신 채널 보존)</label>
+    <label style="display:flex;align-items:center;gap:6px;"><input id="spamOptLightweightGmail" type="checkbox"> [선택] 개인 <code>@gmail.com</code> 발송 시 경량 자연형 HTML로 변환 (기본 해제 — 기존 HTML 템플릿·이미지·링크 보존)</label>
+    <label style="display:flex;align-items:center;gap:6px;"><input id="spamOptLightweightResend" type="checkbox"> [선택] Resend 발송 시에도 경량 자연형 HTML 사용 (체크 해제 시 뉴스레터 HTML 디자인 유지)</label>
+    <label style="display:flex;align-items:center;gap:6px;"><input id="spamOptBlockHighRisk" type="checkbox" checked> 스팸 위험도 <b>HIGH_RISK (55점 이상)</b> 판정 시 Gmail · Resend 발송 전 자동 차단</label>
+    <div style="margin-top:4px;">
+      <label for="emailMimeContentMode"><b>Gmail 발송 MIME 콘텐츠 형식 (명시적 선택 · Primary 강제 비보장)</b></label>
+      <select id="emailMimeContentMode">
+        <option value="GMAIL_NATIVE_HTML" selected>Gmail 네이티브 클린 HTML + 인라인 이미지(CID) (권장 · 숨김 1px/뉴스레터 테이블 제거 · quoted-printable · 이미지·링크 100% 보존)</option>
+        <option value="MULTIPART_HTML">표준 HTML + 일반 텍스트 (원본 뉴스레터 테이블 유지 · quoted-printable · 인라인 CID)</option>
+        <option value="PLAIN_TEXT_ONLY">순수 텍스트 전용 (text/plain · quoted-printable · RFC 8058 수신거부/물리적 주소 유지)</option>
+      </select>
+    </div>
+  </div>
+  <div class="actions" style="margin-top:6px;">
+    <button type="button" class="primary" id="btnRunAntiSpamChecklist">🔍 통합 스팸 위험도 · 체크리스트 진단</button>
+    <button type="button" id="btnApplyAutoAntiSpamFixes">⚡ 자동 항목 일괄 적용 (편집창 반영)</button>
+    <button type="button" id="btnSemiAutoCopyAndDraftFix">🛠️ 반자동 스팸 문구·초안 교정 제안</button>
+    <button type="button" id="btnOpenGmailSpamHelper">📬 스팸함에서 직전 테스트 메일 열기 (스팸 아님 안내)</button>
+  </div>
+  <div id="gmailSpamHelperGuide" class="status-box status-idle" style="margin-top:8px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;margin-bottom:4px;">
+      <b>📬 복수 Gmail 계정 스팸함 빠른 열기 · [스팸 아님(Not spam)] 도우미</b>
+      <span class="badge-test" id="spamReviewAccountsCountBadge">등록 계정: 0개</span>
+    </div>
+    <div id="gmailSpamHelperText" style="white-space:pre-wrap;font-size:12px;">본인이 사용하는 여러 Gmail/Workspace 계정을 등록해 두면 계정별 스팸함(?authuser=계정#spam) 또는 직전 테스트 메일 검색을 1클릭으로 바로 열 수 있습니다 (최소 권한 gmail.send 유지 · 자동 클릭 봇 미사용).</div>
+    <div class="inline" style="margin-top:6px;">
+      <div><label for="spamReviewAccountInput">Gmail / Workspace 테스트 계정 추가 (쉼표·줄바꿈 입력 · 로컬 테스트함 전용, 최대 20개)</label><input id="spamReviewAccountInput" placeholder="예: test1@gmail.com, test2@gmail.com"></div>
+      <div><label for="spamReviewAccountLabel">별칭 (선택 · 단일 추가 시)</label><input id="spamReviewAccountLabel" maxlength="40" placeholder="예: 메인 수신함 / 보조1"></div>
+    </div>
+    <label style="display:flex;align-items:center;gap:6px;margin:6px 0;font-size:12px;"><input id="spamReviewOwnMailboxConfirm" type="checkbox"> 등록하는 주소는 운영 수신자 CSV가 아닌 <b>본인 소유의 로컬 테스트 Gmail 수신함</b>임을 확인합니다.</label>
+    <div class="actions" style="margin-top:6px;">
+      <button type="button" class="primary" id="btnAddSpamReviewAccount">➕ Gmail 계정 등록</button>
+      <button type="button" id="btnSyncTestRecipientToReviewList">📥 현재 테스트 수신자 자동 추가</button>
+      <button type="button" id="btnOpenSelectedSpamSearch">🔍 선택 계정 직전 메일 검색 일괄 열기</button>
+      <button type="button" id="btnOpenSelectedSpamFolders">📂 선택 계정 스팸함 일괄 열기</button>
+    </div>
+    <div id="spamReviewAccountsList" style="margin-top:6px;display:flex;flex-direction:column;gap:4px;"></div>
+    <div class="actions" style="margin-top:6px;">
+      <button type="button" id="btnCopySpamQuery">📋 스팸 검색어 복사</button>
+      <button type="button" id="btnOpenBareSpamFolder">📂 기본 스팸함 바로 열기</button>
+      <button type="button" class="primary" id="btnMarkNotSpamDone">✅ [스팸 아님] 클릭 완료 표시</button>
+    </div>
+  </div>
+  <div id="antiSpamChecklistSummary" class="status-box status-idle" aria-live="polite" style="margin-top:6px;white-space:pre-wrap;">대기 중: [🔍 통합 스팸 위험도 · 체크리스트 진단]을 누르면 자동(AUTO) / 반자동(SEMI-AUTO) / 수동(MANUAL) 항목별 상태와 1클릭 조치 버튼이 표시됩니다.</div>
+  <div id="antiSpamChecklistList" style="margin-top:6px;display:flex;flex-direction:column;gap:4px;"></div>
+</div>
 </div>
 </section>
 <section class="panel" aria-label="템플릿 미리보기">
-<div class="preview-head"><h2>실시간 미리보기</h2><div class="inline"><button type="button" id="desktop">데스크톱</button><button type="button" id="mobile">모바일</button></div></div>
+<div class="preview-head"><h2>실시간 미리보기 · 직접 편집</h2><div class="inline"><button type="button" id="desktop">데스크톱</button><button type="button" id="mobile">모바일</button></div></div>
+<div class="preview-tabs" role="tablist" aria-label="미리보기 모드 선택">
+  <button type="button" class="preview-tab-btn active" id="btnPreviewModeHtml" data-preview-mode="HTML">👁️ HTML 미리보기</button>
+  <button type="button" class="preview-tab-btn" id="btnPreviewModeHtmlEdit" data-preview-mode="HTML_EDIT">✏️ HTML 직접 편집</button>
+  <button type="button" class="preview-tab-btn" id="btnPreviewModeGmailText" data-preview-mode="GMAIL_TEXT">📝 Gmail 텍스트 미리보기·편집</button>
+</div>
+<div id="previewEditActiveStrip" class="preview-edit-strip" aria-live="polite"></div>
 <iframe id="preview" title="이메일 내용 미리보기" sandbox=""></iframe>
+<div id="htmlPreviewEditPane" class="preview-editor-pane" style="display:none;">
+  <div class="preview-editor-bar">
+    <span id="htmlPreviewEditBadge" class="preview-badge-auto">🎨 HTML 직접 편집</span>
+    <div style="display:flex;gap:5px;flex-wrap:wrap;">
+      <button type="button" class="preview-tab-btn active" id="btnHtmlEditVisual">🎨 시각적 편집</button>
+      <button type="button" class="preview-tab-btn" id="btnHtmlEditSource">&lt;/&gt; HTML 소스</button>
+      <button type="button" class="preview-tab-btn" id="btnResetHtmlPreviewEdit">🔄 기본 에디터 HTML 복원</button>
+    </div>
+  </div>
+  <div id="htmlVisualToolbar" class="preview-toolbar" aria-label="HTML 서식 도구모음">
+    <button type="button" data-html-cmd="bold" title="굵게"><b>B</b></button>
+    <button type="button" data-html-cmd="italic" title="기울임"><i>I</i></button>
+    <button type="button" data-html-cmd="underline" title="밑줄"><u>U</u></button>
+    <button type="button" data-html-cmd="insertUnorderedList" title="글머리 기호">• 목록</button>
+    <button type="button" id="btnHtmlInsertLink" title="HTTPS 링크 삽입">🔗 링크</button>
+    <button type="button" data-html-cmd="removeFormat" title="선택 서식 지우기">🧹 서식 지우기</button>
+    <span class="preview-meta-text" id="htmlPreviewEditMeta">미리보기 본문을 클릭해 직접 수정하면 HTML 발송·미리보기에 즉시 반영됩니다.</span>
+  </div>
+  <div id="htmlPreviewVisualEditor" class="html-visual-canvas" contenteditable="true" spellcheck="true" aria-label="HTML 미리보기 직접 편집 영역"></div>
+  <textarea id="htmlPreviewSourceEditor" class="html-source-textarea" style="display:none;" aria-label="HTML 소스 직접 편집"></textarea>
+  <div class="preview-pane-actions">
+    <button type="button" class="primary" id="btnSyncHtmlEditToPreview">👁️ 수정된 HTML 미리보기 확인</button>
+    <button type="button" id="btnSyncHtmlEditTextToLeft">⬅️ 추출 텍스트를 좌측 본문에 반영</button>
+  </div>
+  <div class="note" style="margin-top:6px;">보안 보호: 스크립트(<code>&lt;script&gt;</code>)·이벤트 핸들러·위험 태그는 자동 차단됩니다. 외부 HTTPS 이미지 미리보기 허용이 꺼져 있으면 편집 중에도 외부 이미지 요청이 차단됩니다.</div>
+</div>
+<div id="gmailTextPreviewPane" class="preview-editor-pane" style="display:none;">
+  <div class="preview-editor-bar">
+    <span id="gmailTextPreviewBadge" class="preview-badge-auto">✨ Gmail 자동 텍스트 변환</span>
+    <span id="gmailTextLengthMeta" class="preview-meta-text">제목 0자 · 본문 0자</span>
+  </div>
+  <div id="gmailTextConversionNote" class="note" style="margin:0 0 8px;">Gmail 발송 공급자를 선택하면 프로모션 패턴이 차분한 텍스트 기반 이메일로 자동 변환되어 여기 표시됩니다. 아래 제목·본문을 직접 수정하면 Gmail 발송 시 수정된 내용이 그대로 사용됩니다.</div>
+  <label for="gmailTextPreviewSubject" style="margin-top:4px;">Gmail 발송 제목 (직접 편집 가능)</label>
+  <input id="gmailTextPreviewSubject" class="gmail-text-subject-input" maxlength="160" placeholder="Gmail 발송 제목">
+  <label for="gmailTextPreviewBody" style="margin-top:4px;">Gmail 텍스트 기반 캠페인 본문 (직접 편집 가능)</label>
+  <textarea id="gmailTextPreviewBody" class="gmail-text-body-textarea" rows="16" placeholder="Gmail 텍스트 기반 캠페인 본문"></textarea>
+  <div id="gmailTextComplianceFooterPreview" class="gmail-text-footer-box">📌 발송 시 자동 부착 푸터(수정 불가 · 법규 준수): 발신자 물리적 주소 및 수신자별 고유 HTTPS 수신거부 링크(또는 회신 수신거부 안내)가 발송 시점에 하단에 자동 추가됩니다.</div>
+  <div class="preview-pane-actions">
+    <button type="button" id="btnResetGmailTextPreview">🔄 자동 변환 원본으로 복원</button>
+    <button type="button" id="btnSyncGmailTextToLeftEditor">⬅️ 좌측 기본 에디터에 반영</button>
+    <button type="button" id="btnCopyGmailTextPreview">📋 텍스트 본문 복사</button>
+    <button type="button" id="btnSwitchToHtmlFromText">👁️ HTML 미리보기 보기</button>
+  </div>
+</div>
 <div class="note" id="summary">이 템플릿은 미리보기용입니다. 실제 메일 발송은 진행하지 않습니다.</div>
 
 <div class="send-control-card" id="recipientCard" aria-label="수신자 관리 및 발송 검토">
@@ -177,6 +331,8 @@
   <button type="button" data-rtab="EXCLUDED" id="tabExcluded">제외 (<span id="cntExcluded">0</span>)</button>
   <button type="button" data-rtab="REVIEW" id="tabReview">확인 필요 (<span id="cntReview">0</span>)</button>
   <button type="button" id="btnExportActiveTabCsv">📥 현재 탭 CSV</button>
+  <button type="button" id="btnDeleteSelectedRecipients">🗑️ 선택 삭제</button>
+  <button type="button" id="btnClearAllRecipients">🧹 리스트 전체 비우기</button>
 </div>
 <div class="inline" style="margin:6px 0;">
   <div><input id="recipientTableSearch" placeholder="이메일 · 도메인 · 사유 검색..."></div>
@@ -258,19 +414,325 @@
 <p class="desc">위 시뮬레이터와 별개로, <b>실제 수신함</b>으로 테스트 메일 1통을 발송합니다 (동의 원장 기록 · HTTPS 수신거부 헤더 · Idempotency-Key 적용).</p>
 <div class="form-row"><label for="realTestRecipient">승인된 테스트 수신자 이메일 (1개)</label><input id="realTestRecipient" type="email" placeholder="예: studioberryinfo@gmail.com"></div>
 <label style="display:flex;align-items:center;gap:6px;margin:6px 0;font-size:12px;"><input id="realTestConsentCheck" type="checkbox"> 이 수신자는 본인이 관리하거나 테스트 메일 1통 수신을 명시적으로 승인한 주소임을 확인합니다.</label>
-<div class="actions"><button type="button" class="primary" id="btnRealTestSend">🚀 실제 테스트 이메일 보내기</button><button type="button" id="btnCheckRealTestStatus">🔄 최근 발송 상태 조회 (ACCEPTED vs DELIVERED)</button></div>
+<div class="actions"><button type="button" class="primary" id="btnRealTestSend">🚀 실제 테스트 이메일 보내기</button><button type="button" id="btnCheckRealTestStatus">🔄 최근 발송 상태 조회 (ACCEPTED vs DELIVERED)</button><button type="button" id="btnOpenRealTestInSpam">📬 스팸함에서 테스트 메일 열기 (스팸 아님 안내)</button></div>
 <div id="realTestStatus" class="status-box status-idle" aria-live="polite">대기 중: 승인된 테스트 이메일 주소를 입력하고 동의 체크 후 '실제 테스트 이메일 보내기'를 누르세요.</div>
 </div>
 <div class="prod-send-box">
-<div class="prod-header"><h4>🚀 상용(운영) 발송 (Production Send)</h4><div style="display:flex;gap:6px;flex-wrap:wrap;"><span class="badge-test" id="prodGateBadge">✅ PRODUCTION UNLOCKED</span><span class="badge-test" id="prodQueueBadge">⏸️ QUEUE NOT READY — 0 DOCUMENTED OPT-IN RECIPIENTS</span></div></div>
-<p class="desc">vivpr.pro 도메인(SPF/DKIM/DMARC), HTTPS 원클릭 수신 거부(unsubscribe.vivpr.pro), HMAC 검증 및 Webhook이 활성화되어 있습니다. <b>수집/스크래핑된 CSV는 수신 동의로 간주되지 않으며</b>, 적법 발송 권한이 확인된 수신자에게만 발송됩니다 (Resend 계정 플랜의 일일/초당 발송 한도는 공급자 정책에 따라 자동 준수됨).</p>
-<div class="inline" style="align-items:end;margin:6px 0;">
+<div class="prod-header"><h4>🚀 상용(운영) 발송 (Production Send · Resend / Gmail)</h4><div style="display:flex;gap:6px;flex-wrap:wrap;"><span class="badge-test" id="prodGateBadge">✅ PRODUCTION UNLOCKED</span><span class="badge-test" id="prodQueueBadge">⏸️ QUEUE NOT READY — 0 DOCUMENTED OPT-IN RECIPIENTS</span></div></div>
+<div class="inline" style="align-items:end;margin:6px 0;padding:8px;background:rgba(15,23,42,0.04);border-radius:6px;">
+  <div>
+    <label for="emailProviderSelect"><b>발송 공급자 선택 (Email Delivery Provider)</b></label>
+    <select id="emailProviderSelect">
+      <option value="RESEND">Resend (vivpr.pro · 기존 운영 발송 유지)</option>
+      <option value="GMAIL">Gmail API (소유자 승인 OAuth PKCE · 단일/복수 계정)</option>
+    </select>
+  </div>
   <div><label for="prodCampaignIdInput">운영 캠페인 ID (기본 <code>default</code>=중복 발송 방지 · 새 메일 발송 시 ID 변경)</label><input id="prodCampaignIdInput" value="default" maxlength="64" placeholder="default 또는 camp_20261120_01"></div>
   <div class="actions"><button type="button" id="btnNewProdCampaignId" title="과거 발송 이력과 분리된 새 캠페인 ID를 생성합니다">🆕 새 캠페인 ID 생성</button></div>
 </div>
+<div id="resendProviderPanel">
+<p class="desc">vivpr.pro 도메인(SPF/DKIM/DMARC), HTTPS 원클릭 수신 거부(unsubscribe.vivpr.pro), HMAC 검증 및 Webhook이 활성화되어 있습니다. <b>수집/스크래핑된 CSV는 수신 동의로 간주되지 않으며</b>, 적법 발송 권한이 확인된 수신자에게만 발송됩니다 (Resend 계정 플랜의 일일/초당 발송 한도는 공급자 정책에 따라 자동 준수됨).</p>
 <label style="display:flex;align-items:center;gap:6px;margin:6px 0;font-size:12px;background:rgba(37,99,235,0.08);padding:6px 8px;border-radius:6px;"><input id="consentAttestProd" type="checkbox"> <b>이 수신리스트에 대한 적법한 발송 권한을 확인했습니다</b> (상단 수신자 목록 체크박스와 자동 동기화 · 수집/스크래핑/구매 목록은 체크해도 자동 제외)</label>
 <div class="actions"><button type="button" class="primary" id="btnProdSend" title="적법 발송 권한 확인 및 사전 점검 통과 후 즉시 발송">🚀 대량발송 시작</button><button type="button" id="btnProdStop">⏹️ 운영 큐 중지</button><button type="button" id="btnCheckProdPreflight">🔍 운영 DNS · 동의확인 · 수신거부 · 웹훅 점검</button></div>
 <div id="prodPreflightStatus" class="status-box status-idle" aria-live="polite">PRODUCTION UNLOCKED · QUEUE NOT READY — 0 DOCUMENTED OPT-IN RECIPIENTS: 수신자 CSV 입력 후 법적 수신 동의 확인 체크박스를 선택하고 "가져오기 · 중복 제거"를 누르면 큐가 준비됩니다.</div>
+</div>
+
+<div id="gmailProviderPanel" style="display:none;margin-top:8px;padding:10px;border:1px solid rgba(37,99,235,0.35);border-radius:8px;background:rgba(248,250,252,0.9);">
+  <div class="send-header"><h4>📧 Gmail 발송 센터 (기본: 웹 작성창 다계정 직접 발송 · 선택: OAuth API)</h4><span class="badge-test" id="gmailProviderStatusBadge">웹 작성창 기본 활성</span></div>
+  <div style="margin:6px 0;padding:8px;border:1px solid rgba(22,163,74,0.45);border-radius:6px;background:rgba(240,253,244,0.75);">
+    <label for="gmailDispatchMode"><b>Gmail 발송 수단 선택 (Dispatch Method · 기본값: 웹 작성창 다계정 직접 발송)</b></label>
+    <select id="gmailDispatchMode">
+      <option value="GMAIL_WEB_COMPOSE_ASSISTED" selected>✉️ Gmail 웹 작성창 다계정 직접 발송 (기본 · 권장 · 인박스 검증됨 · OAuth 미검증 스팸 회피 · 다계정 안전 분산)</option>
+      <option value="GMAIL_API_OAUTH">⚙️ Gmail API OAuth 자동 발송 (Google Workspace 맞춤 도메인 / 검증된 OAuth 앱용)</option>
+    </select>
+    <div class="note" style="margin-top:4px;">
+      <b>정책 준수 · 계정 보호 원칙:</b> 웹 작성창 모드는 Google 공식 <code>mail.google.com/mail/?view=cm&amp;authuser=계정</code> 창만 열며 DOM 스크래핑·자동 클릭 봇을 사용하지 않습니다.
+      수신자별 고정 계정 배정(한도 우회 전환 금지), 워밍업 단계별 보수적 1분/1시간/24시간 상한, 발송 간격 쿨다운, 교차 차단 원장으로 계정 정지 위험을 낮춥니다 (100% 인박스·정지 면제 보장 아님).
+    </div>
+  </div>
+
+  <div id="gmailWebComposePanel" style="margin:8px 0;padding:10px;border:1px solid rgba(22,163,74,0.45);border-radius:8px;background:#fff;">
+    <div class="send-header">
+      <b>✉️ [기본] Gmail 웹 작성창 다계정 안전 캠페인 발송기</b>
+      <span class="badge-test" id="webComposePoolBadge">등록 계정: 0개</span>
+    </div>
+    <div id="webComposeProxyWarning" class="status-box status-error" style="display:none;margin:8px 0;white-space:pre-wrap;">
+      <div id="webComposeProxyWarningText"></div>
+      <div class="actions" style="margin-top:6px;">
+        <button type="button" class="primary" id="btnReleaseChromeProxyForGmail">🔓 브라우저 프록시 해제 (Gmail 직접 연결로 전환)</button>
+        <button type="button" id="btnRecheckChromeProxyForGmail">🔄 프록시 상태 다시 확인</button>
+      </div>
+    </div>
+    <div style="margin:8px 0;padding:8px;border:1px solid #cbd5e1;border-radius:6px;background:#f8fafc;">
+      <b>1) 본인 소유 구글 발신 계정 다중 등록 (Chrome에 로그인된 Gmail / Workspace 계정 · 워밍업 보호)</b>
+      <div class="inline" style="margin-top:6px;">
+        <div><label for="webComposeAccountEmail">본인 소유 Gmail / Workspace 이메일</label><input id="webComposeAccountEmail" type="email" maxlength="254" placeholder="예: sender1@gmail.com 또는 info@brand.example"></div>
+        <div><label for="webComposeAccountLabel">별칭 (선택)</label><input id="webComposeAccountLabel" maxlength="40" placeholder="예: 메인 계정 / 보조1"></div>
+        <div>
+          <label for="webComposeChromeSlot">Chrome 멀티로그인 슬롯 (선택 · 비우면 자동 전환)</label>
+          <select id="webComposeChromeSlot">
+            <option value="" selected>자동 계정 전환 (Google AccountChooser 권장)</option>
+            <option value="0">슬롯 u/0 (1번째 로그인 계정)</option>
+            <option value="1">슬롯 u/1 (2번째 로그인 계정)</option>
+            <option value="2">슬롯 u/2 (3번째 로그인 계정)</option>
+            <option value="3">슬롯 u/3 (4번째 로그인 계정)</option>
+            <option value="4">슬롯 u/4 (5번째 로그인 계정)</option>
+            <option value="5">슬롯 u/5 (6번째 로그인 계정)</option>
+            <option value="6">슬롯 u/6 (7번째 로그인 계정)</option>
+            <option value="7">슬롯 u/7 (8번째 로그인 계정)</option>
+            <option value="8">슬롯 u/8 (9번째 로그인 계정)</option>
+            <option value="9">슬롯 u/9 (10번째 로그인 계정)</option>
+          </select>
+        </div>
+      </div>
+      <div class="note" style="margin-top:4px;">
+        <b>다계정 정확 전환 안내:</b> 등록한 발신 계정들은 같은 Chrome 프로필의 Google [계정 추가]로 모두 로그인되어 있어야 합니다.
+        기본값(자동 계정 전환)은 Google 공식 <code>AccountChooser</code>로 배정 계정을 정확히 지정하며, 미로그인 계정은 잘못된 기본 계정으로 폴백하지 않고 로그인 화면을 띄웁니다. 각 계정 옆 <b>[🔍 계정 확인]</b>으로 바로 확인하세요.
+      </div>
+      <div class="inline" style="margin-top:6px;">
+        <div>
+          <label for="webComposeWarmupStage">계정 숙성·워밍업 단계 (계정 정지 방지 보수 상한 자동 적용)</label>
+          <select id="webComposeWarmupStage">
+            <option value="NEW_WARMUP" selected>신규 / 워밍업 1~2주차 (개인 일 15통·90초 간격 / Workspace 일 40통·60초 간격)</option>
+            <option value="WARMING">안정화 3~4주차 (개인 일 30통·60초 간격 / Workspace 일 100통·45초 간격)</option>
+            <option value="ESTABLISHED">숙성 계정 (개인 일 80통·45초 간격 / Workspace 일 300통·30초 간격)</option>
+          </select>
+        </div>
+        <div style="display:flex;align-items:flex-end;">
+          <button type="button" class="primary" id="btnSaveWebComposeAccount">➕ 발신 계정 등록 / 갱신</button>
+        </div>
+      </div>
+      <div id="webComposeAccountsList" class="status-box status-idle" style="margin-top:6px;">등록된 웹 발송 계정이 없습니다. Chrome에 로그인된 본인 구글 계정을 1개 이상 등록하세요.</div>
+    </div>
+
+    <div style="margin:8px 0;padding:8px;border:1px solid #cbd5e1;border-radius:6px;background:#f8fafc;">
+      <b>2) 다계정 고정 배정 · 안전 분산 발송 실행 (1건씩 또는 계정별 1건씩 최대 3건)</b>
+      <div id="webComposeRecipientSummary" class="note" style="margin-top:6px;padding:6px 8px;border-radius:6px;background:#eff6ff;border:1px solid #bfdbfe;">수신자 현황 확인 중...</div>
+      <div style="margin-top:6px;">
+        <label for="webComposeQuickRecipient">빠른 수신자 직접 입력 (선택 · 위 CSV가 비어 있을 때 여기에 이메일 입력 가능 · 쉼표/줄바꿈 구분)</label>
+        <input id="webComposeQuickRecipient" type="text" maxlength="1000" placeholder="예: test1@gmail.com, test2@gmail.com (위 수신자 CSV가 있으면 CSV가 우선 사용됩니다)">
+      </div>
+      <label style="display:flex;align-items:center;gap:6px;margin-top:6px;padding:6px 8px;border-radius:6px;background:#fefce8;border:1px solid #fde047;font-size:12px;cursor:pointer;">
+        <input id="webComposeConsentCheck" type="checkbox">
+        <b>[필수] 위 수신자(CSV 또는 빠른 입력)에 대해 적법한 발송 권한(명시적 동의/기존 고객 관계 등)을 확인했습니다.</b>
+      </label>
+      <div class="inline" style="margin-top:6px;">
+        <div>
+          <label for="webComposeBatchSize">1회 작성창 열기 수량 (동일 계정 중복 열기 자동 차단)</label>
+          <select id="webComposeBatchSize">
+            <option value="1" selected>1건씩 열기 (권장 · 최고 안전 · Ctrl+Enter 후 다음)</option>
+            <option value="2">최대 2건 (서로 다른 2개 계정에 1건씩)</option>
+            <option value="3">최대 3건 (서로 다른 3개 계정에 1건씩)</option>
+          </select>
+        </div>
+        <div style="display:flex;align-items:flex-end;">
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;"><input id="webComposeIncludeSignedUnsub" type="checkbox" checked> 서명된 수신거부 HTTPS 링크 자동 삽입 (미체크 시 회신 수신거부 문구)</label>
+        </div>
+      </div>
+      <div class="actions" style="margin-top:6px;">
+        <button type="button" id="btnPrepareWebComposeQueue">📋 1단계: 다계정 안전 큐 배정 · 다일 일정 계산</button>
+        <button type="button" class="primary" id="btnOpenNextWebComposeBatch">✉️ 2단계: Gmail 작성창 열기 (미배정 시 자동 배정 후 열기)</button>
+        <button type="button" id="btnConfirmOpenedAndNextCompose">✅ 3단계: 방금 연 메일 발송 완료 &amp; 다음 열기</button>
+        <button type="button" id="btnCopyRichHtmlForGmailCompose">📋 이미지·서식 본문 복사 (작성창 Ctrl+V용)</button>
+        <button type="button" id="btnReportWebComposeWarningPause">🛑 경고/반송 감지 → 전체 안전 일시중지</button>
+        <button type="button" id="btnResumeWebComposeQueue">▶️ 일시중지 해제</button>
+      </div>
+      <div id="webComposeQueueStatus" class="status-box status-idle" style="margin-top:6px;white-space:pre-wrap;">대기 중: 수신자(위 CSV 또는 빠른 수신자 입력)와 [필수] 적법 발송 권한 체크 후 파란색 [✉️ 2단계: Gmail 작성창 열기]를 누르세요.</div>
+      <div id="webComposeAwaitingList" style="margin-top:6px;display:flex;flex-direction:column;gap:4px;"></div>
+    </div>
+
+    <div style="margin:8px 0;padding:8px;border:1px solid rgba(15,118,110,0.4);border-radius:6px;background:#f0fdfa;">
+      <b>3) ⏱️ 사람 패턴 랜덤 인터벌 · 자동 휴식 · 일일 한도 페이싱 스케줄러 (계정 정지 방지)</b>
+      <div class="note" style="margin-top:4px;">
+        <b>계정 보호 정책:</b> Gmail 웹 내부 <code>Send</code> 버튼 자동 클릭(DOM 주입)은 Google BotGuard(<code>isTrusted=false</code>) 탐지로 계정 일괄 정지 위험이 커 <b>의도적으로 배제</b>했습니다.
+        대신 XPIDER가 <b>랜덤 간격 · 자연 휴식 · 주간 시간대 · 계정별 1분/1시간/24시간 워밍업 상한</b>을 자동 관리해 작성창을 열어드리며, 대표님은 열린 Gmail 탭에서 <b><code>Ctrl+Enter</code>(발송) → <code>Ctrl+W</code>(닫기)</b>만 누르시면 다음 랜덤 타이머가 자동 진행됩니다.
+      </div>
+      <div class="inline" style="margin-top:6px;">
+        <div><label for="webComposePacerMinSec">최소 랜덤 간격 (초 · 30초 이상)</label><input id="webComposePacerMinSec" type="number" min="30" max="600" value="60"></div>
+        <div><label for="webComposePacerMaxSec">최대 랜덤 간격 (초)</label><input id="webComposePacerMaxSec" type="number" min="45" max="900" value="180"></div>
+      </div>
+      <div class="inline" style="margin-top:6px;">
+        <div><label for="webComposePacerBreakEvery">자연 휴식 주기 (N통마다 휴식)</label><input id="webComposePacerBreakEvery" type="number" min="3" max="30" value="6"></div>
+        <div><label for="webComposePacerBreakMin">휴식 시간 (분 · ±25% 랜덤)</label><input id="webComposePacerBreakMin" type="number" min="2" max="45" value="6"></div>
+      </div>
+      <div class="inline" style="margin-top:6px;">
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:12px;">
+          <label style="display:inline-flex;align-items:center;gap:5px;white-space:nowrap;"><input id="webComposePacerWindowEnabled" type="checkbox" checked> 주간 발송 시간대만 진행</label>
+          <input id="webComposePacerStartHour" type="number" min="0" max="23" value="9" style="width:54px;">시 ~
+          <input id="webComposePacerEndHour" type="number" min="1" max="24" value="19" style="width:54px;">시
+        </div>
+        <div style="display:flex;align-items:center;">
+          <label style="display:flex;align-items:flex-start;gap:6px;font-size:12px;line-height:1.45;"><input id="webComposePacerAutoOnTabClose" type="checkbox" checked style="margin-top:3px;flex-shrink:0;"><span>Gmail 탭 닫힘(<code style="white-space:nowrap;">Ctrl+Enter</code>→<code style="white-space:nowrap;">Ctrl+W</code>) 감지 시 완료 기록 후 다음 랜덤 대기 자동 시작</span></label>
+        </div>
+      </div>
+      <div class="actions" style="margin-top:6px;">
+        <button type="button" class="primary" id="btnStartWebComposePacer">▶️ 랜덤 인터벌 자동 페이싱 시작</button>
+        <button type="button" id="btnStopWebComposePacer">⏸️ 자동 페이싱 일시중지</button>
+      </div>
+      <div id="webComposePacerStatus" class="status-box status-idle" style="margin-top:6px;white-space:pre-wrap;">페이싱 대기 중: [▶️ 랜덤 인터벌 자동 페이싱 시작]을 누르면 사람 패턴 랜덤 간격·일일 한도에 맞춰 1건씩 Gmail 작성창을 자동으로 열어드립니다.</div>
+    </div>
+
+    <div style="margin:8px 0;padding:8px;border:1px solid #cbd5e1;border-radius:6px;background:#fff;">
+      <div class="send-header">
+        <b>4) 📊 실시간 전체 리스트 발송 상태 · 계정별 일일 한도 모니터</b>
+        <span class="badge-test" id="webComposeLiveMonitorHeader">전체 0건</span>
+      </div>
+      <div id="webComposeAccountGauges" style="margin-top:6px;display:flex;flex-direction:column;gap:4px;"></div>
+      <div class="inline" style="margin-top:6px;">
+        <div>
+          <label for="webComposeListFilter">리스트 상태 필터</label>
+          <select id="webComposeListFilter">
+            <option value="ALL" selected>전체 보기</option>
+            <option value="PENDING">⏳ 발송 대기 (PENDING)</option>
+            <option value="COMPOSE_OPENED">✉️ 작성창 열림 (확인 대기)</option>
+            <option value="OPERATOR_CONFIRMED_SENT">✅ 발송 완료 (운영자 확인)</option>
+            <option value="SKIPPED">⏭️ 건너뜀 / 🚫 차단·기발송 제외</option>
+          </select>
+        </div>
+        <div style="display:flex;align-items:flex-end;gap:6px;flex-wrap:wrap;">
+          <button type="button" id="btnRefreshWebComposeMonitor">🔄 실시간 상태 새로고침</button>
+          <button type="button" id="btnResetWebComposeHistory">🧹 마스터 보내기 히스토리 리셋 (중복 방지·큐 초기화)</button>
+        </div>
+      </div>
+      <label style="display:flex;align-items:center;gap:6px;margin-top:6px;font-size:11px;color:#475569;cursor:pointer;">
+        <input id="webComposeResetQuotaAlso" type="checkbox">
+        <span>마스터 리셋 시 로컬 1분/1시간/24시간 카운터·쿨다운도 함께 초기화 (테스트용 · 등록 계정과 <b>수신거부 차단 원장</b>은 법적 보호를 위해 절대 삭제되지 않습니다)</span>
+      </label>
+      <div style="margin-top:6px;max-height:260px;overflow:auto;border:1px solid #e2e8f0;border-radius:6px;">
+        <table style="width:100%;border-collapse:collapse;font-size:12px;">
+          <thead>
+            <tr style="background:#f1f5f9;text-align:left;position:sticky;top:0;">
+              <th style="padding:5px 6px;border-bottom:1px solid #cbd5e1;">#</th>
+              <th style="padding:5px 6px;border-bottom:1px solid #cbd5e1;">수신자</th>
+              <th style="padding:5px 6px;border-bottom:1px solid #cbd5e1;">배정 발신 계정</th>
+              <th style="padding:5px 6px;border-bottom:1px solid #cbd5e1;">상태</th>
+              <th style="padding:5px 6px;border-bottom:1px solid #cbd5e1;">시각</th>
+              <th style="padding:5px 6px;border-bottom:1px solid #cbd5e1;">조작</th>
+            </tr>
+          </thead>
+          <tbody id="webComposeLiveListBody">
+            <tr><td colspan="6" style="padding:8px;color:#64748b;text-align:center;">큐를 배정하면 전체 수신자별 발송 상태가 실시간으로 표시됩니다.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div id="gmailApiOAuthSubPanel" style="display:none;">
+  <div class="note" style="margin:6px 0;">
+    <b>중요 안내 (컴플라이언스 · Fail-Closed):</b>
+    Gmail API <code>200 OK</code>는 <b>GMAIL_API_ACCEPTED</b>(Google API 접수)만 의미하며 <b>전달(DELIVERED)·수신함 도착(INBOX)·열람(OPENED)이나 계정 정지 면제를 보장하지 않습니다</b>.
+    한도(개인 &lt;500/일, Workspace &lt;2000/일보다 엄격한 보수적 상한)·도메인 합산 24시간 상한·<code>403/429/401</code> 발생 시 <b>타 계정으로 자동 우회하지 않고 전체 캠페인이 즉시 일시 중지</b>됩니다.
+    토큰은 브라우저 저장소에 저장되지 않고 로컬 Windows DPAPI 보안 저장소에만 암호화 보관됩니다.
+  </div>
+  <div id="gmailHygieneBanner" class="status-box status-blocked" style="margin:6px 0;">⏳ 교차 공급자(Resend + Gmail + unsubscribe.vivpr.pro) 차단 목록 및 과거 반송 위생 상태 확인 중...</div>
+
+  <div style="margin:8px 0;padding:8px;border:1px solid #cbd5e1;border-radius:6px;background:#fff;">
+    <b>1) Google Cloud OAuth 2.0 Desktop Client 설정 (로컬 DPAPI 저장 · 최소 권한 <code>gmail.send</code>)</b>
+    <div class="inline" style="margin-top:6px;">
+      <div><label for="gmailOAuthClientId">Google OAuth Client ID</label><input id="gmailOAuthClientId" type="password" autocomplete="off" placeholder="...apps.googleusercontent.com"></div>
+      <div><label for="gmailOAuthClientSecret">Client Secret (선택 · Desktop 앱인 경우)</label><input id="gmailOAuthClientSecret" type="password" autocomplete="off" placeholder="선택 입력 (저장 즉시 초기화)"></div>
+    </div>
+    <label style="display:flex;align-items:center;gap:6px;margin:6px 0;font-size:12px;"><input id="gmailOAuthConsentCheck" type="checkbox"> OAuth 클라이언트 설정과 Refresh 토큰을 브라우저 저장소가 아닌 로컬 Windows DPAPI 보안 저장소(%LOCALAPPDATA%\XPIDER\Sidecar)에만 저장함에 동의합니다.</label>
+    <div class="actions">
+      <button type="button" id="btnSaveGmailOAuthClient">🔐 OAuth Client 로컬 저장</button>
+      <button type="button" class="primary" id="btnConnectGmailAccount">🔗 Gmail 계정 연결 (OAuth PKCE)</button>
+      <button type="button" id="btnRefreshGmailStatus">🔄 Gmail 계정 · 할당량 새로고침</button>
+    </div>
+    <div id="gmailOAuthStatus" class="status-box status-idle" style="margin-top:6px;">OAuth 상태 확인 중...</div>
+  </div>
+
+  <div style="margin:8px 0;padding:8px;border:1px solid #cbd5e1;border-radius:6px;background:#fff;">
+    <b>2) 연결된 Gmail 계정 목록 (마스킹 표시 · 토큰 비노출 · 롤링 24시간 상한)</b>
+    <div id="gmailAccountsList" class="status-box status-idle" style="margin-top:6px;">연결된 Gmail 계정이 없습니다. 위 [🔗 Gmail 계정 연결]로 소유자 승인 계정을 연결하세요.</div>
+    <div class="inline" style="margin-top:8px;">
+      <div>
+        <label for="gmailSendingMode">캠페인 계정 배정 모드</label>
+        <select id="gmailSendingMode">
+          <option value="SINGLE_ACCOUNT">단일 계정 (SINGLE_ACCOUNT — 선택 1개 계정)</option>
+          <option value="APPROVED_ACCOUNT_POOL">사전 승인 복수 계정 고정 배분 (APPROVED_ACCOUNT_POOL — 2개 이상 · 한도 우회 금지)</option>
+        </select>
+      </div>
+      <div>
+        <label for="gmailScheduleMode">분산 발송 스케줄 모드</label>
+        <select id="gmailScheduleMode">
+          <option value="DISTRIBUTED_MULTI_DAY">다일 안전 분산 예약 (DISTRIBUTED_MULTI_DAY · 1분/1시간/24시간 한도 준수)</option>
+          <option value="IMMEDIATE_STOP_ON_CAP">한도 도달 시 즉시 중지 (IMMEDIATE_STOP_ON_CAP)</option>
+        </select>
+      </div>
+    </div>
+    <div class="inline" style="margin-top:6px;">
+      <div><label for="gmailReplyTo">Reply-To 주소 (선택 · 발신 도메인 정렬 권장)</label><input id="gmailReplyTo" type="email" maxlength="254" placeholder="예: reply@your-workspace-domain.com"></div>
+      <div><label for="gmailPhysicalAddress">법적 물리적 주소 (푸터 필수 기재)</label><input id="gmailPhysicalAddress" maxlength="200" placeholder="예: 123 Main St, Suite 100, Seoul / Los Angeles"></div>
+    </div>
+    <div class="actions" style="margin-top:6px;">
+      <button type="button" id="btnGmailHygieneCheck">🛡️ 발신 위생 · SPF/DMARC · Reply-To · 수신거부 점검</button>
+    </div>
+    <div id="gmailDeliverabilityHygieneBox" class="status-box status-idle" style="margin-top:6px;white-space:pre-wrap;">발신 위생 미점검: [🛡️ 발신 위생 · SPF/DMARC · Reply-To · 수신거부 점검]을 눌러 도메인 인증 및 헤더 정렬을 확인하세요 (수신함 배치/정지 면제는 보장하지 않음).</div>
+
+    <div style="margin-top:8px;padding:8px;border:1px solid rgba(22,163,74,0.35);border-radius:6px;background:rgba(240,253,244,0.65);">
+      <b>✨ 자동 스팸 방지 · 발신 품질 보호 (Auto Anti-Spam Optimizer · 기본 활성)</b>
+      <label style="display:flex;align-items:center;gap:6px;margin:4px 0;font-size:12px;"><input id="gmailAutoSpamOpt" type="checkbox" checked> <b>자동 위생 최적화 활성화</b> (네이티브 클린 HTML · quoted-printable · 기본 잔여 표시이름 정리 · 깨진 샘플 이미지/위험 태그 제거 · 제목 위생)</label>
+      <label style="display:flex;align-items:center;gap:6px;margin:4px 0;font-size:12px;"><input id="gmailEmbedInlineCid" type="checkbox" checked> <b>Gmail 네이티브 인라인 이미지(CID) 자동 내장</b> (<code>raw.githubusercontent.com</code> 등 외부 이미지 호스트 대신 본문 내장 · 클릭 링크 유지)</label>
+      <label style="display:flex;align-items:center;gap:6px;margin:4px 0;font-size:12px;"><input id="gmailAutoCalmPromo" type="checkbox" checked> <b>강한 프로모션 본문 패턴 자동 텍스트형 이메일 변환</b> (이모지 과다·ALL-CAPS·할인/느낌표 밀집 시 차분한 텍스트형 <code>&lt;div dir="ltr"&gt;</code> 구조로 자동 전환)</label>
+      <label style="display:flex;align-items:center;gap:6px;margin:4px 0;font-size:12px;"><input id="gmailAutoAlignReplyTo" type="checkbox"> [선택] 발신 도메인과 다른 외부 <code>Reply-To</code> 자동 생략 (기본 해제 — 승인된 회신 채널 보존)</label>
+      <label style="display:flex;align-items:center;gap:6px;margin:4px 0;font-size:12px;"><input id="gmailLightweightHtml" type="checkbox"> [선택] 개인 <code>@gmail.com</code> 발송 시 경량 자연형 HTML로 변환 (기본 해제 — 기존 HTML 템플릿·이미지·링크 보존)</label>
+      <label style="display:flex;align-items:center;gap:6px;margin:4px 0;font-size:12px;"><input id="gmailBlockHighRiskSpam" type="checkbox" checked> 스팸 위험도 <b>HIGH_RISK (55점 이상)</b> 판정 시 발송 전 자동 차단</label>
+      <div class="actions" style="margin-top:6px;">
+        <button type="button" id="btnGmailSpamOptimizePreview">🧪 자동 스팸 위험도 진단 · 최적화 미리보기 (발송 없음)</button>
+      </div>
+      <div id="gmailSpamOptStatus" class="status-box status-idle" style="margin-top:6px;white-space:pre-wrap;">대기 중: [🧪 자동 스팸 위험도 진단 · 최적화 미리보기]를 누르면 발송 전 스팸 위험 점수와 자동 보정 내역을 확인할 수 있습니다 (100% 받은편지함 배치는 보장하지 않음).</div>
+    </div>
+    <div id="gmailDomainUnifyBox" style="margin-top:8px;padding:8px;border:1px solid rgba(37,99,235,0.35);border-radius:6px;background:rgba(239,246,255,0.55);">
+      <b>🌐 Gmail 발신 도메인 · 수신거부 도메인 통일 설정 (브랜드 도메인 정렬)</b>
+      <div class="note" style="margin:4px 0;">Gmail 발송 시 수신거부 호스트(<code>List-Unsubscribe</code>)와 표시 이름·링크를 본인 브랜드 도메인으로 통일합니다. (실제 <code>From:</code> 주소까지 통일하려면 해당 도메인의 Google Workspace 계정 연결과 DNS SPF/DMARC·CNAME 설정이 필요합니다.)</div>
+      <div class="inline" style="margin-top:6px;">
+        <div><label for="gmailBrandDomainInput">통일 브랜드 도메인</label><input id="gmailBrandDomainInput" maxlength="120" placeholder="예: brand.example"></div>
+        <div><label for="gmailCustomUnsubBaseInput">Gmail 전용 수신거부 HTTPS 기본 URL</label><input id="gmailCustomUnsubBaseInput" type="url" maxlength="200" placeholder="예: https://unsubscribe.brand.example"></div>
+      </div>
+      <div class="inline" style="margin-top:6px;">
+        <div><label for="gmailUnifiedDisplayNameInput">권장 표시 이름 (도메인 TLD 없이 자연스럽게)</label><input id="gmailUnifiedDisplayNameInput" maxlength="78" placeholder="예: Brand Name"></div>
+        <div style="display:flex;align-items:flex-end;">
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;"><input id="gmailUnsubFallbackCheck" type="checkbox" checked> DNS 전파 대기 중일 때만 기본 수신거부 호스트로 안전 폴백</label>
+        </div>
+      </div>
+      <div class="actions" style="margin-top:6px;">
+        <button type="button" class="primary" id="btnSaveGmailDomainConfig">💾 Gmail 도메인 · 수신거부 설정 저장</button>
+        <button type="button" id="btnCheckGmailDomainAlignment">🔍 브랜드 SPF/DMARC · 수신거부 DNS/HTTPS 점검</button>
+      </div>
+      <div id="gmailDomainConfigStatus" class="status-box status-idle" style="margin-top:6px;white-space:pre-wrap;">대기 중: 브랜드 도메인과 수신거부 URL을 입력하고 저장/점검을 누르세요.</div>
+    </div>
+  </div>
+
+  <div style="margin:8px 0;padding:8px;border:1px solid rgba(37,99,235,0.35);border-radius:6px;background:#fff;">
+    <b>3) 승인된 단일 Gmail 계정 1통 셀프 테스트 (RFC 8058 원클릭 수신거부 포함)</b>
+    <div class="inline" style="margin-top:6px;">
+      <div><label for="gmailSelfTestAccountSelect">테스트 발송 Gmail 계정</label><select id="gmailSelfTestAccountSelect"><option value="">연결된 계정 선택</option></select></div>
+      <div><label for="gmailSelfTestRecipient">승인된 본인 테스트 수신자 (1개)</label><input id="gmailSelfTestRecipient" type="email" placeholder="예: owner-test@example.com"></div>
+    </div>
+    <label style="display:flex;align-items:center;gap:6px;margin:6px 0;font-size:12px;"><input id="gmailSelfTestConsent" type="checkbox"> 이 수신자는 본인이 관리하거나 Gmail 1통 셀프 테스트 수신을 명시적으로 승인한 주소임을 확인합니다.</label>
+    <div class="actions"><button type="button" class="primary" id="btnGmailSelfTestSend">📨 Gmail 1통 셀프 테스트 발송</button><button type="button" id="btnOpenGmailNativeCompose">✉️ Gmail 웹 작성창에서 직접 보내기 (1:1 네이티브)</button><button type="button" id="btnOpenGmailSelfTestInSpam">📬 스팸함에서 직전 테스트 메일 열기 (스팸 아님 안내)</button></div>
+    <div id="gmailSelfTestStatus" class="status-box status-idle" style="margin-top:6px;">대기 중: Gmail 계정 연결 후 본인 테스트 주소를 입력해 1통 검증하세요.</div>
+  </div>
+
+  <div style="margin:8px 0;padding:8px;border:1px solid #cbd5e1;border-radius:6px;background:#fff;">
+    <b>4) Gmail 캠페인 큐 사전 배정 · 실행 (교차 공급자 수신거부/반송 자동 제외 · 하향 전용 스로틀)</b>
+    <label style="display:flex;align-items:center;gap:6px;margin:6px 0;font-size:12px;"><input id="gmailHygieneConfirm" type="checkbox"> 과거 반송/수신거부 제외 및 수신자 리스트 위생 검토를 완료했으며, 기존 Resend 3,919 이력 목록을 자동 안전 목록으로 사용하지 않음을 확인합니다.</label>
+    <label style="display:flex;align-items:center;gap:6px;margin:6px 0;font-size:12px;"><input id="gmailProviderSwitchConfirm" type="checkbox"> Resend와 Gmail은 별도 공급자이며 자동 폴백 없이 명시적 운영자 확인으로만 전환됨을 확인합니다.</label>
+    <div class="actions">
+      <button type="button" id="btnGmailPrepareQueue">📋 Gmail 큐 사전 배정 · 다일 일정 계산 (발송 없음)</button>
+      <button type="button" class="primary" id="btnGmailProdSend">🚀 Gmail 캠페인 발송 시작</button>
+      <button type="button" id="btnGmailProdStop">⏹️ Gmail 큐 즉시 중지</button>
+    </div>
+    <div id="gmailQueueStatus" class="status-box status-idle" style="margin-top:6px;white-space:pre-wrap;">대기 중: 계정을 체크하고 [📋 Gmail 큐 사전 배정 · 다일 일정 계산]을 눌러 교차 공급자 차단 및 다일 배분 일정을 먼저 확인하세요.</div>
+  </div>
+
+  <div style="margin:8px 0;padding:8px;border:1px solid rgba(15,118,110,0.35);border-radius:6px;background:#f8fafc;">
+    <div class="send-header"><b>5) 📊 Gmail 관측 대시보드 (True Dashboard · 하향 전용 스로틀 · 다일 일정)</b><span class="badge-test" id="gmailDashboardStateBadge">IDLE</span></div>
+    <div id="gmailTrueDashboard" class="status-box status-idle" style="margin-top:6px;white-space:pre-wrap;">관측 대기 중: scheduled / attempted / GMAIL_API_ACCEPTED (≠ DELIVERED·INBOX) / verifiedDelivered(미제공) / bounced / suppressed / unknown / remaining / throttle / nextPermittedExecutionAt</div>
+  </div>
+  </div>
+</div>
 </div>
 <div class="send-control-card" id="campaignMonitorCard" style="margin-top:10px;">
   <div class="send-header"><h4>📊 실시간 Resend 캠페인 모니터 · 오픈/미오픈 · 2차 발송 · 마스터 목록</h4><span class="badge-test" id="monitorSyncBadge">동기화 대기</span></div>

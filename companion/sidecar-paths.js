@@ -1,7 +1,14 @@
 'use strict';
+const fs = require('node:fs');
 const path = require('node:path');
 const os = require('node:os');
 const { execFileSync } = require('node:child_process');
+
+function resolveWindowsPowerShell() {
+  const sysRoot = process.env.SystemRoot || 'C:\\Windows';
+  const full = path.join(sysRoot, 'System32', 'WindowsPowerShell', 'v1.0', 'powershell.exe');
+  return fs.existsSync(full) ? full : 'powershell.exe';
+}
 
 function assertSafeStateLocation(stateDir, options = {}) {
   const resolved = path.resolve(stateDir);
@@ -20,8 +27,9 @@ function assertSafeStateLocation(stateDir, options = {}) {
     }
     const driveLetter = driveMatch[1].toUpperCase();
     const execSyncFn = options.execSyncFn || execFileSync;
+    const psBin = execSyncFn === execFileSync ? resolveWindowsPowerShell() : 'powershell';
     try {
-      const fmt = String(execSyncFn('powershell', [
+      const fmt = String(execSyncFn(psBin, [
         '-NoProfile', '-Command', `[System.IO.DriveInfo]::new('${driveLetter}').DriveFormat`
       ], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] })).trim().toUpperCase();
       if (fmt && fmt !== 'NTFS') {

@@ -1,0 +1,321 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>XPIDER AutoForm Sender Pro V7.1.0 — 설치방법 및 총사용법 완벽 가이드</title>
+<style>
+:root{color-scheme:light;--bg:#f4f6fb;--card:#ffffff;--ink:#0f172a;--muted:#475569;--line:#dbe3ef;--accent:#1d4ed8;--accent-soft:#eff6ff;--ok:#065f46;--ok-bg:#ecfdf5;--warn:#92400e;--warn-bg:#fffbeb;--danger:#991b1b;--danger-bg:#fef2f2}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Malgun Gothic","Apple SD Gothic Neo","Segoe UI",system-ui,sans-serif;line-height:1.7;font-size:15px}
+.hero{background:linear-gradient(135deg,#0f172a 0%,#1e3a8a 100%);color:#fff;padding:34px 24px 28px}
+.hero-in{max-width:1020px;margin:auto}
+.hero h1{margin:0 0 8px;font-size:26px;letter-spacing:-.3px}
+.hero p{margin:0;color:#cbd5e1;font-size:14px}
+.pill-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.pill{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.24);padding:4px 11px;border-radius:999px;font-size:12px;font-weight:600}
+.wrap{max-width:1020px;margin:22px auto 60px;padding:0 18px}
+.toc{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 22px;margin-bottom:20px;box-shadow:0 2px 10px rgba(15,23,42,.04)}
+.toc h2{margin:0 0 10px;font-size:16px;color:var(--accent)}
+.toc ol{margin:0;padding-left:20px;columns:2;column-gap:28px;font-size:13.5px}
+.toc li{margin:4px 0}
+.toc a{color:var(--ink);text-decoration:none;font-weight:600}
+.toc a:hover{color:var(--accent);text-decoration:underline}
+section{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:24px 26px;margin-bottom:18px;box-shadow:0 2px 10px rgba(15,23,42,.04)}
+h2{margin:0 0 14px;font-size:20px;color:#0f172a;border-bottom:2px solid #e2e8f0;padding-bottom:8px}
+h3{margin:20px 0 8px;font-size:16px;color:var(--accent)}
+ul,ol{margin:8px 0 12px;padding-left:22px}
+li{margin:5px 0}
+code{background:#f1f5f9;border:1px solid #e2e8f0;padding:1px 6px;border-radius:5px;font-family:Consolas,"Courier New",monospace;font-size:13px;color:#0f172a}
+table{width:100%;border-collapse:collapse;margin:12px 0;font-size:13.5px}
+th,td{border:1px solid var(--line);padding:9px 11px;text-align:left;vertical-align:top}
+th{background:#f8fafc;font-weight:700;color:#1e293b}
+.box{border-radius:10px;padding:13px 16px;margin:12px 0;font-size:13.5px;border:1px solid transparent}
+.box-info{background:var(--accent-soft);border-color:#bfdbfe;color:#1e3a8a}
+.box-ok{background:var(--ok-bg);border-color:#a7f3d0;color:var(--ok)}
+.box-warn{background:var(--warn-bg);border-color:#fde68a;color:var(--warn)}
+.box-danger{background:var(--danger-bg);border-color:#fecaca;color:var(--danger)}
+.step-num{display:inline-block;background:var(--accent);color:#fff;width:22px;height:22px;line-height:22px;text-align:center;border-radius:50%;font-size:12px;font-weight:700;margin-right:6px}
+.kbd{display:inline-block;background:#0f172a;color:#fff;padding:1px 7px;border-radius:5px;font-family:Consolas,monospace;font-size:12px;font-weight:700}
+footer{text-align:center;color:var(--muted);font-size:12.5px;margin-top:26px}
+@media(max-width:740px){.toc ol{columns:1}section{padding:18px 16px}}
+@media print{body{background:#fff}.hero{background:#1e3a8a;-webkit-print-color-adjust:exact;print-color-adjust:exact}section,.toc{box-shadow:none;break-inside:avoid}}
+</style>
+</head>
+<body>
+<header class="hero">
+  <div class="hero-in">
+    <h1>XPIDER AutoForm Sender Pro V7.1.0 — 설치방법 및 총사용법 완벽 가이드</h1>
+    <p>Windows 10/11 x64 · Chrome / Edge MV3 · 휴대용 Node.js 내장 (별도 Node.js · 외부 서버 설치 불필요)</p>
+    <div class="pill-row">
+      <span class="pill">버전: V7.1.0</span>
+      <span class="pill">고정 확장 ID: ldlijlaccfeelfdhgnjbibniocefckjj</span>
+      <span class="pill">로컬 Email Sidecar: 127.0.0.1:18990</span>
+      <span class="pill">서명 상태: UNSIGNED (사용자 영역 설치)</span>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <nav class="toc" aria-label="목차">
+    <h2>목차 (클릭하면 해당 섹션으로 이동합니다)</h2>
+    <ol>
+      <li><a href="#s1">통합 압축파일 구성 및 공개 vs 개인 로컬 버전 차이</a></li>
+      <li><a href="#s2">최신 버전 설치 방법 (새 PC · 포터블 · 업그레이드)</a></li>
+      <li><a href="#s3">총사용법 Part 1 — AutoForm 자동 폼 전송</a></li>
+      <li><a href="#s4">총사용법 Part 2 — Email Studio 작성 · 미리보기 · 직접 편집</a></li>
+      <li><a href="#s5">총사용법 Part 3 — 수신자 작업 센터 · DNS · SME 필터 · A/B</a></li>
+      <li><a href="#s6">총사용법 Part 4 — [기본] Gmail 웹 작성창 다계정 안전 발송</a></li>
+      <li><a href="#s7">총사용법 Part 5 — Gmail API OAuth &amp; Resend 상용·2차 발송</a></li>
+      <li><a href="#s8">앱 내 1클릭 GitHub 최신 업데이트 &amp; 안전한 제거</a></li>
+      <li><a href="#s9">자주 묻는 문제 해결 (트러블슈팅 FAQ)</a></li>
+      <li><a href="#s10">컴플라이언스 · 계정 보호 및 정직한 고지</a></li>
+    </ol>
+  </nav>
+
+  <section id="s1">
+    <h2>1. 통합 압축파일 구성 및 공개 vs 개인 로컬 버전 차이</h2>
+    <p>XPIDER V7.1.0은 보안 사고(공개 GitHub API 키 유출)를 원천 차단하기 위해 <b>공개 배포용 클린 통합 압축파일</b>과 <b>본인 전용 로컬 통합 압축파일</b>을 완전히 분리해 제공합니다.</p>
+    <table>
+      <thead>
+        <tr><th>구분</th><th>공개 GitHub 클린 통합 압축파일<br><code>ALL_IN_ONE_BUNDLE</code></th><th>본인 전용 로컬 통합 압축파일<br><code>PERSONAL_ALL_IN_ONE_LOCAL_ONLY</code></th></tr>
+      </thead>
+      <tbody>
+        <tr><td><b>포함 파일</b></td><td>클린 설치 EXE + 클린 포터블 ZIP + SHA-256 검증파일 + 설치·총사용법 가이드(HTML/MD)</td><td>개인 설정·키 내장 설치 EXE + 개인 포터블 ZIP + 설치·총사용법 가이드(HTML/MD) + 보안 주의서</td></tr>
+        <tr><td><b>API 키·OAuth 포함</b></td><td>❌ 완전 미포함 (<code>ZERO SECRETS</code>)</td><td>✅ <b>12개 개인 설정·API 키·재암호화 가능 DPAPI OAuth 포함</b></td></tr>
+        <tr><td><b>GitHub 업로드</b></td><td>✅ 공식 GitHub Releases 공개 배포</td><td>⛔ <b>절대 업로드 금지</b> (본인 PC · USB · 비공개 드라이브 전용)</td></tr>
+        <tr><td><b>추천 용도</b></td><td>공개 다운로드 · 기존 PC의 앱 내 GitHub 자동 업데이트</td><td><b>새 Windows PC에 내 모든 키·설정을 1번에 이전 설치</b></td></tr>
+      </tbody>
+    </table>
+
+    <h3>설치 후 Windows 폴더 구조</h3>
+    <ul>
+      <li><b>프로그램 폴더</b> <code>%LOCALAPPDATA%\XPIDER\App\</code> <i>(업데이트 시 최신 코드로 교체됨)</i>
+        <ul>
+          <li><code>extension\</code> : Chrome / Edge에 로드하는 MV3 확장 폴더 (고정 ID <code>ldlijlaccfeelfdhgnjbibniocefckjj</code>)</li>
+          <li><code>runtime\node.exe</code> : 휴대용 Node.js 런타임 내장 (별도 Node.js 설치 불필요)</li>
+          <li><code>companion\</code> : 로컬 Email Sidecar(<code>127.0.0.1:18990</code>) 및 Native Messaging Host 모듈</li>
+          <li><code>START_EMAIL_TEST_SIDECAR.bat</code> / <code>STOP_EMAIL_TEST_SIDECAR.bat</code> / <code>CHECK_EMAIL_TEST_SIDECAR.bat</code> : Sidecar 수동 제어 배치</li>
+          <li><code>UNINSTALL_XPIDER.bat</code> / <code>XPIDER_UNINSTALL.exe</code> : 데이터 보존형 제거 도구</li>
+        </ul>
+      </li>
+      <li><b>영구 사용자 데이터 폴더</b> <code>%LOCALAPPDATA%\XPIDER\Sidecar\</code> <i>(업데이트·기본 제거 시 100% 보존됨)</i>
+        <ul>
+          <li>Resend·Gemini API 키, 이미지 호스팅 설정, 수신거부 설정 및 교차 차단 원장, Windows DPAPI 암호화 Gmail OAuth 볼트, Gmail 웹 작성창 등록 계정 목록, 저장된 캠페인, 발송 이력 원장</li>
+        </ul>
+      </li>
+    </ul>
+  </section>
+
+  <section id="s2">
+    <h2>2. 최신 버전 설치 방법 (상황별 완벽 안내)</h2>
+    <div class="box box-warn">
+      <b>중요 안내:</b> <code>extension\</code> 폴더만 복사해 Chrome에 로드하면 이메일 발송·Sidecar 기능이 작동하지 않습니다. 반드시 아래 통합 설치기(<code>.exe</code>)를 1회 실행해 내장 Node 런타임과 Native Messaging Host를 등록해 주세요.
+    </div>
+
+    <h3>방법 A. 새 Windows PC 처음 설치 — 본인 전용 로컬 설치기 (권장 · 모든 키·OAuth 자동 복원)</h3>
+    <ol>
+      <li><span class="step-num">1</span><code>XPIDER_V7.1.0_PERSONAL_ALL_IN_ONE_LOCAL_ONLY_&lt;해시&gt;.zip</code> 압축을 풉니다.</li>
+      <li><span class="step-num">2</span><code>XPIDER_V7.1.0_PERSONAL_LOCAL_ONLY_&lt;해시&gt;.exe</code> 를 실행합니다. (Windows SmartScreen 창이 뜨면 <b>추가 정보 → 실행</b> 클릭)</li>
+      <li><span class="step-num">3</span>창 제목의 <code>[PERSONAL LOCAL-ONLY]</code> 표시를 확인하고 <b>설치 / 업그레이드 (Install / Upgrade)</b> 버튼을 클릭합니다.</li>
+      <li><span class="step-num">4</span>설치가 끝나면 아래 항목이 자동으로 완료됩니다:
+        <ul>
+          <li>앱 + 내장 <code>node.exe</code> 설치 및 Chrome/Edge Native Messaging Host 자동 등록</li>
+          <li><b>12개 개인 설정·API 키·이미지 호스팅·수신거부 원장·Gmail 웹 작성창 계정 자동 복원</b></li>
+          <li><b>Gmail OAuth Client 및 연결 계정 Refresh 토큰을 새 PC의 Windows DPAPI로 자동 재암호화</b></li>
+          <li>로컬 Email Sidecar(<code>18990</code>) 자동 기동 및 확장 폴더 경로 클립보드 복사</li>
+        </ul>
+      </li>
+      <li><span class="step-num">5</span>Chrome(또는 Edge) 주소창에 <code>chrome://extensions</code> 입력 → 우측 상단 <b>개발자 모드 ON</b></li>
+      <li><span class="step-num">6</span>좌측 상단 <b>압축해제된 확장 프로그램을 로드합니다</b> 클릭 → <code>%LOCALAPPDATA%\XPIDER\App\extension</code> 선택 (고정 ID <code>ldlijlaccfeelfdhgnjbibniocefckjj</code> 확인)</li>
+      <li><span class="step-num">7</span>Gmail 웹 작성창 발송을 사용할 Google 계정들을 같은 Chrome 프로필의 Google <b>[계정 추가]</b>로 로그인합니다.</li>
+    </ol>
+
+    <h3>방법 B. 새 Windows PC 처음 설치 — 공개 GitHub 클린 설치기 (키 미포함)</h3>
+    <ol>
+      <li><code>XPIDER_V7.1.0_ALL_IN_ONE_BUNDLE_&lt;해시&gt;.zip</code> 압축을 풀고 <code>XPIDER_V7.1.0_SETUP_&lt;해시&gt;.exe</code> 실행</li>
+      <li><code>chrome://extensions</code> (개발자 모드 ON) → <code>%LOCALAPPDATA%\XPIDER\App\extension</code> 로드</li>
+      <li>Email Studio에서 필요한 API 키(Resend / Gemini / 이미지 호스팅 / Gmail OAuth)와 발신 Gmail 계정을 1회 입력</li>
+    </ol>
+
+    <h3>방법 C. 포터블 ZIP(<code>PORTABLE</code>) 수동 사용</h3>
+    <ol>
+      <li>원하는 폴더에 포터블 ZIP 압축 해제</li>
+      <li><i>(개인 로컬 포터블 ZIP을 새 PC에 옮긴 경우)</i> 폴더 안의 <code>APPLY_PERSONAL_SETTINGS.bat</code> 를 1회 실행해 개인 설정·DPAPI 복원</li>
+      <li><code>START_EMAIL_TEST_SIDECAR.bat</code> 실행 → <code>chrome://extensions</code>에서 압축 해제 폴더의 <code>extension</code> 로드</li>
+    </ol>
+
+    <h3>방법 D. 기존 PC에서 최신 버전으로 업그레이드</h3>
+    <div class="box box-ok">
+      <b>가장 편한 방법 (1클릭 자동 업데이트):</b> Email Studio 상단 파란색 <b>🔄 최신 업데이트 확인</b> → <b>⬇️ 최신 버전 다운로드 후 설치</b> 클릭 → 완료 후 <code>chrome://extensions</code>에서 XPIDER <b>새로고침(🔄)</b> 클릭! 기존 키·OAuth·계정·수신거부 원장이 100% 그대로 유지됩니다.
+    </div>
+  </section>
+
+  <section id="s3">
+    <h2>3. 총사용법 Part 1 — AutoForm 자동 폼 전송 (Side Panel)</h2>
+    <p>Chrome 우측 상단 XPIDER 아이콘을 클릭하면 사이드 패널(<code>popup.html</code>)이 열립니다.</p>
+    <ol>
+      <li><b>기본 입력 정보 입력</b>: 회사명, 담당자명, 이메일, 전화번호, 웹사이트, 문의 메시지를 입력합니다.</li>
+      <li><b>대상 URL 목록 입력</b>: 한 줄에 한 개씩 URL을 입력하거나 CSV/텍스트 파일을 불러옵니다.</li>
+      <li><b>실행 모드 선택</b>:
+        <ul>
+          <li><b>AUTO (자동)</b>: 문의 폼 탐지 → 자동 입력 → 제출 및 완료 검증까지 연속 실행</li>
+          <li><b>SEMI_AUTO (반자동)</b>: 필수 입력 누락·캡차·확인 필요 시 일시 정지해 운영자가 확인 후 수동 완료 처리</li>
+          <li><b>메시지 칸 없는 폼 포함(Opt-In)</b>: 기본 꺼짐. 체크 시 단순 문의/구독형 적격 폼도 포함 (로그인·검색·결제·비동의 폼은 항상 제외)</li>
+        </ul>
+      </li>
+      <li><b>일시중지 · 재개 · 복원</b>: 작업 중 일시중지/중지 후 브라우저를 재시작해도 체크포인트와 발송 이력 원장이 유지됩니다.</li>
+      <li><b>Email Studio 열기</b>: 사이드 패널 상단의 <b>Email Studio</b> 버튼을 클릭하면 이메일 발송 전용 스튜디오가 새 탭으로 열립니다.</li>
+    </ol>
+  </section>
+
+  <section id="s4">
+    <h2>4. 총사용법 Part 2 — Email Template Studio 작성 · 실시간 미리보기 · 직접 편집</h2>
+    <h3>4-1. 좌측 이메일 편집기 &amp; 캠페인 관리</h3>
+    <ul>
+      <li><b>메시지 종류</b>: <code>업무/서비스 안내</code> 또는 <code>마케팅/뉴스레터(수신 동의 필수)</code> 선택</li>
+      <li><b>제목 · 미리보기 문구 · 발신 브랜드 · From 표시 이름 · 본문</b> 입력 (빈 줄로 문단 구분, <code>{{name}}</code> 이름 치환 지원)</li>
+      <li><b>이미지 업로드 및 자동 삽입</b>: PC 이미지(PNG/JPG/WebP/GIF, 3MB 이하) 선택 → 공개 업로드 동의 체크 → <b>🖼️ 이미지 업로드 및 자동 삽입</b> 클릭 시 공개 HTTPS URL이 자동 입력·검증됩니다.</li>
+      <li><b>RFC 8058 원클릭 수신거부 자동 관리</b>: 공개 HTTPS 수신거부 기본 URL이 설정되어 있으면 실제 발송 시 수신자별 고유 서명 토큰 링크와 <code>List-Unsubscribe-Post</code> 헤더가 자동 부착됩니다.</li>
+      <li><b>📦 전체 캠페인 저장 · 불러오기</b>: 제목·본문·이미지·수신자 CSV·SME 필터·A/B안·스팸방지 옵션·Gmail/Resend 설정·미리보기 직접 편집 내용을 통째로 로컬 Sidecar NTFS 보안 파일에 저장/복원하거나 JSON 파일로 내보낼 수 있습니다.</li>
+    </ul>
+
+    <h3>4-2. 우측 실시간 미리보기 · 직접 편집 (3개 탭)</h3>
+    <table>
+      <thead><tr><th>미리보기 탭</th><th>주요 기능</th></tr></thead>
+      <tbody>
+        <tr><td><b>👁️ HTML 미리보기</b></td><td>완전 격리된 <code>sandbox=""</code> iframe 미리보기 · 데스크톱/모바일 폭 전환 · 외부 이미지 자동 요청 기본 차단(프라이버시 보호)</td></tr>
+        <tr><td><b>✏️ HTML 직접 편집</b></td><td><b>🎨 시각적 편집</b>(미리보기 본문 클릭 후 직접 수정 + 굵게/기울임/밑줄/목록/HTTPS 링크/서식 지우기 도구모음) 및 <b>&lt;/&gt; HTML 소스</b> 직접 편집 지원 · 위험 스크립트 자동 차단 · <b>🔄 기본 에디터 HTML 복원</b></td></tr>
+        <tr><td><b>📝 Gmail 텍스트 미리보기·편집</b></td><td><b>Gmail 공급자 선택 시 자동 전환!</b> 강한 프로모션 패턴(이모지 과다·ALL-CAPS·할인 밀집)을 차분한 텍스트형 이메일로 자동 변환해 실시간 표시 · 제목/본문 직접 수정 시 <b>✏️ 사용자 직접 편집 적용 중</b> 잠금 보호되어 수정본 그대로 발송 · <b>🔄 자동 변환 원본으로 복원</b> 및 <b>⬅️ 좌측 기본 에디터에 반영</b> 지원</td></tr>
+      </tbody>
+    </table>
+
+    <h3>4-3. 콘텐츠 품질(Gemini AI) &amp; 🛡️ 통합 스팸방지 체크리스트</h3>
+    <ul>
+      <li><b>규칙 기반 / Google Gemini AI 교정 제안</b>: 원문을 덮어쓰지 않고 수정 제안 비교(Diff)를 보여준 뒤 수락/거절합니다 (수신자 목록은 외부 AI로 절대 전송되지 않음).</li>
+      <li><b>🔍 통합 스팸 위험도 · 체크리스트 진단</b>: Gmail/Resend 공용 0~100점 위험도와 자동(AUTO)·반자동(SEMI-AUTO)·수동(MANUAL) 항목별 1클릭 조치를 제공합니다.</li>
+      <li><b>📬 복수 Gmail 계정 스팸함 빠른 열기</b>: 본인 테스트 수신함을 등록해 스팸함에 들어간 테스트 메일을 1클릭으로 열고 <b>[스팸 아님]</b>을 직접 누를 수 있습니다.</li>
+    </ul>
+  </section>
+
+  <section id="s5">
+    <h2>5. 총사용법 Part 3 — 수신자 작업 센터 · DNS 검사 · SME 필터 · A/B 테스트</h2>
+    <ol>
+      <li><b>CSV 가져오기 (자동 누적 &amp; 중복 제거)</b>: <code>email,name</code> 형식 CSV 붙여넣기 또는 여러 파일 선택 → <b>➕ 가져오기 · 보관 리스트 누적</b> 클릭.</li>
+      <li><b>DNS(MX/A) 유효성 검사 (Opt-In)</b>: 동의 체크 후 <b>🔍 유효성 검사 (DNS MX/A)</b> 클릭.</li>
+      <li><b>🏢 중소기업(SME) 대상 필터</b>: 개인/정부/쇼핑몰/포털/대기업 제외 및 수동 포함·제외 도메인 지정 후 <b>🎯 대상 필터 적용</b> 클릭.</li>
+      <li><b>목록 관리 및 삭제</b>: <code>원본 / 유효 / 유지 / 제외 / 확인 필요</code> 탭 전환, 검색, 개별 행 <b>🗑️ 삭제</b>, 체크박스 다중 <b>🗑️ 선택 삭제</b>, <b>🧹 리스트 전체 비우기</b> 지원.</li>
+      <li><b>적법 발송 권한 &amp; A/B 드라이런</b>: 적법 발송 권한 체크 후 발송 없이 드라이런 및 A/B 분할(결정론적 해시 · 중복 0건) 시뮬레이션이 가능합니다.</li>
+    </ol>
+  </section>
+
+  <section id="s6">
+    <h2>6. 총사용법 Part 4 — [기본·권장] Gmail 웹 작성창 다계정 안전 대량발신</h2>
+    <div class="box box-info">
+      <b>기본 발송 수단으로 격상된 이유:</b> Google 공식 웹 작성창(<code>mail.google.com</code>)을 통해 운영자가 직접 검토 후 <span class="kbd">Ctrl+Enter</span>로 발송하므로 미검증 OAuth API 스팸 시그니처와 자동 클릭 봇(BotGuard) 탐지 위험을 크게 줄입니다.
+    </div>
+
+    <h3>1단계: 본인 소유 구글 발신 계정 다중 등록 · 워밍업 단계 · Chrome 슬롯</h3>
+    <ol>
+      <li>발신에 쓸 Google 계정들을 <b>같은 Chrome 프로필</b>의 Google [계정 추가]로 모두 로그인해 둡니다.</li>
+      <li><b>1) 본인 소유 구글 발신 계정 다중 등록</b>에서 이메일·별칭·Chrome 슬롯(<code>자동전환</code> 권장 또는 <code>u/0</code>~<code>u/9</code>)·워밍업 단계를 입력하고 <b>➕ 발신 계정 등록 / 갱신</b>을 누릅니다.</li>
+      <li>등록된 각 계정 행 우측에서 <b>1클릭으로 즉시 조절</b>할 수 있습니다:
+        <ul>
+          <li><b>워밍업 단계 드롭다운</b> (즉시 한도 반영 · 점진적 증량 권장):
+            <table>
+              <thead><tr><th>숙성·워밍업 단계</th><th>개인 <code>@gmail.com</code> (1계정)</th><th>Google Workspace (1계정)</th></tr></thead>
+              <tbody>
+                <tr><td><b>워밍업</b> <i>(기본 · 신규 1~2주)</i></td><td>일 <b>15통</b> (1시간 5통 · 90초 간격)</td><td>일 <b>40통</b> (1시간 12통 · 60초 간격)</td></tr>
+                <tr><td><b>안정화</b> <i>(3~4주차)</i></td><td>일 <b>30통</b> (1시간 10통 · 60초 간격)</td><td>일 <b>100통</b> (1시간 25통 · 45초 간격)</td></tr>
+                <tr><td><b>숙성</b> <i>(오래된 정상 계정)</i></td><td>일 <b>80통</b> (1시간 20통 · 45초 간격)</td><td>일 <b>300통</b> (1시간 50통 · 30초 간격)</td></tr>
+              </tbody>
+            </table>
+          </li>
+          <li><b>슬롯 드롭다운 (<code>자동전환</code> / <code>u/0</code>..<code>u/10</code>)</b> 및 <b>🔍 계정 확인</b> 버튼으로 Chrome 멀티로그인 상태를 바로 확인합니다.</li>
+        </ul>
+      </li>
+    </ol>
+
+    <h3>2단계: 다계정 고정 배정 · Gmail 작성창 열기</h3>
+    <ol>
+      <li>상단 수신자 CSV 또는 <b>빠른 수신자 직접 입력</b> 칸에 수신자 이메일을 입력하고 노란색 <b>[필수] 적법 발송 권한 확인</b>을 체크합니다.</li>
+      <li><b>📋 1단계: 다계정 안전 큐 배정</b>으로 교차 수신거부 제외·고정 계정 배정·예상 소요일을 확인하거나, 바로 파란색 <b>✉️ 2단계: Gmail 작성창 열기</b>를 누릅니다.</li>
+      <li>열린 Gmail 탭에서 내용 확인 후 <span class="kbd">Ctrl+Enter</span>(발송) → <span class="kbd">Ctrl+W</span>(탭 닫기)를 누릅니다. (이미지·서식 본문이 필요하면 <b>📋 이미지·서식 본문 복사</b> 후 작성창에 <span class="kbd">Ctrl+V</span>)</li>
+      <li>경고·제한 메시지가 보이면 즉시 <b>🛑 경고/반송 감지 → 전체 안전 일시중지</b>를 누릅니다 (경고 계정 24시간 보호 쿨다운 + 50% 감속, 타 계정 우회 금지).</li>
+    </ol>
+
+    <h3>3단계: ⏱️ 사람 패턴 랜덤 인터벌 자동 페이싱 스케줄러</h3>
+    <ul>
+      <li><b>랜덤 간격(삼각 분포)</b>: 최소~최대 초(예: <code>60~180초</code>, 최소 30초 하한 강제) 사이에서 매번 사람형 랜덤 간격을 계산합니다.</li>
+      <li><b>자연 휴식 주기</b>: 설정한 통수(예: <code>6통</code>)마다 <code>6분(±25% 랜덤)</code> 자동 휴식을 넣습니다.</li>
+      <li><b>주간 발송 시간대만 진행 (<code>9시 ~ 19시</code>)</b>: 기본 체크됨. <b>야간·새벽에 바로 테스트/발송하려면 이 체크를 잠시 해제하세요!</b></li>
+      <li><b>탭 닫힘 자동 감지</b>: <b>▶️ 랜덤 인터벌 자동 페이싱 시작</b>을 누른 뒤 열린 Gmail 탭에서 <span class="kbd">Ctrl+Enter</span> → <span class="kbd">Ctrl+W</span>만 누르면 완료 기록 후 자동으로 다음 랜덤 타이머가 시작됩니다.</li>
+    </ul>
+
+    <h3>4단계: 📊 실시간 전체 리스트 모니터 · 삭제 · 마스터 보내기 히스토리 리셋</h3>
+    <ul>
+      <li><b>계정별 1분/1시간/24h 게이지</b>: 쿨다운 중일 때 <b>1초마다 실시간 카운트다운</b> 후 만료 시 자동으로 <code>🟢 즉시 발송 가능</code>으로 복구됩니다.</li>
+      <li><b>행별 제어</b>: <code>🔁 다시 열기</code> · <code>↩️ 대기 복구</code> · <code>✅ 완료</code> · <code>⏭️ 건너뛰기</code> · <code>🗑️ 삭제</code> 지원.</li>
+      <li><b>🧹 마스터 보내기 히스토리 리셋</b>: 이전 발송 기록(<code>ALREADY_SENT_IN_CAMPAIGN</code>)으로 막힌 목록을 처음부터 다시 테스트/발송할 때 사용합니다. 선택 체크 시 로컬 테스트 카운터도 함께 0으로 초기화되며, <b>등록 계정과 교차 수신거부(Opt-Out) 차단 원장은 영구 보호</b>됩니다.</li>
+    </ul>
+  </section>
+
+  <section id="s7">
+    <h2>7. 총사용법 Part 5 — Gmail API OAuth 자동 발송 &amp; Resend 상용·2차 발송</h2>
+    <h3>7-1. Gmail API OAuth 자동 발송 (Google Workspace 맞춤 도메인 권장)</h3>
+    <ul>
+      <li><code>Gmail 발송 수단 선택</code> → <b>⚙️ Gmail API OAuth 자동 발송</b> 선택.</li>
+      <li>Google Cloud Desktop OAuth Client ID/Secret을 Windows DPAPI에 저장 후 <b>🔗 Gmail 계정 연결 (OAuth PKCE)</b> (최소 권한 <code>gmail.send</code>).</li>
+      <li><b>🌐 브랜드 도메인 · 수신거부 도메인 통일 설정</b> 저장 및 DNS(SPF/DMARC/CNAME) 점검 → 1통 셀프 테스트 → 다일 안전 분산 발송.</li>
+    </ul>
+    <h3>7-2. Resend 발송 (인증 도메인 · 시뮬레이터 · 2차 미오픈 발송)</h3>
+    <ul>
+      <li><code>발송 공급자 선택</code> → <b>Resend</b> 선택 → <b>🔗 원클릭 자동 페어링</b> 및 <code>Resend API 키</code> NTFS 보안 저장.</li>
+      <li><b>🧪 시뮬레이터 테스트</b>(<code>delivered/bounced/complained@resend.dev</code>) → <b>📨 실제 테스트 1통</b> → <b>🚀 대량발송 시작</b>.</li>
+      <li><b>실시간 진행률 모니터 &amp; 2차 미오픈 발송</b>: <code>🔎 Resend 이력 대조</code>로 전달/오픈/반송을 동기화한 뒤, 지정 시간 경과 후 <b>🚀 2차 발송 — 미오픈 대상만</b>으로 반송·신고·수신거부 제외 후속 발송 실행.</li>
+    </ul>
+  </section>
+
+  <section id="s8">
+    <h2>8. 앱 내 1클릭 GitHub 최신 업데이트 &amp; 안전한 제거</h2>
+    <h3>🔄 앱 내 1클릭 GitHub 자동 업데이트</h3>
+    <ol>
+      <li>Email Studio 맨 위 헤더 우측의 파란색 <b>🔄 최신 업데이트 확인</b> 버튼을 클릭합니다.</li>
+      <li>GitHub 공식 릴리스(<code>goodkie/v-show</code>)에 새 버전이 있으면 <b>⬇️ 최신 버전 다운로드 후 설치</b> 버튼이 나타납니다.</li>
+      <li>클릭 시 공식 HTTPS 자산만 다운로드하고 <code>.sha256.txt</code>와 <b>SHA-256 해시를 검증</b>(불일치 시 자동 삭제·차단)한 뒤 <code>%LOCALAPPDATA%\XPIDER\Sidecar</code>의 모든 키·OAuth·계정·원장을 100% 보존한 채 업그레이드하고 Sidecar를 자동 재시작합니다.</li>
+      <li>설치 완료 안내 후 Chrome <code>chrome://extensions</code>에서 XPIDER <b>새로고침(🔄)</b>을 클릭하면 새 버전이 적용됩니다.</li>
+    </ol>
+    <h3>🗑️ 안전한 제거</h3>
+    <p><code>%LOCALAPPDATA%\XPIDER\App\UNINSTALL_XPIDER.bat</code> 를 실행하면 기본적으로 사용자 데이터(<code>%LOCALAPPDATA%\XPIDER\Sidecar</code>)를 보존한 채 앱과 레지스트리만 깔끔히 제거합니다.</p>
+  </section>
+
+  <section id="s9">
+    <h2>9. 자주 묻는 문제 해결 (트러블슈팅 FAQ)</h2>
+    <table>
+      <thead><tr><th>증상</th><th>원인</th><th>해결 방법</th></tr></thead>
+      <tbody>
+        <tr><td>Gmail 작성창이 <b>사이트에 연결할 수 없음 (502)</b> 표시</td><td>Chrome 프록시가 이전 Privacy Relay(<code>127.0.0.1:18988</code>)에 묶여 있음</td><td>Gmail 패널 상단 빨간 경고창의 <b>🔓 브라우저 프록시 해제 (Gmail 직접 연결로 전환)</b> 클릭</td></tr>
+        <tr><td>지정 계정 대신 <b>첫 기본 계정(<code>u/0</code>)</b>으로만 열림</td><td>해당 계정이 같은 Chrome 프로필에 미로그인이거나 슬롯 미지정</td><td>같은 Chrome 프로필에서 Google [계정 추가] 로그인 → <b>🔍 계정 확인</b> → 필요 시 <code>u/0</code>..<code>u/9</code> 슬롯 지정</td></tr>
+        <tr><td>목록 전체가 <b>♻️ 기발송 제외 (ALREADY_SENT)</b></td><td>같은 캠페인 ID의 이전 발송 기록이 중복 방지 중</td><td><code>4) 실시간 모니터</code> 상단 <b>🧹 마스터 보내기 히스토리 리셋</b> 클릭 (등록 계정·수신거부 원장은 영구 보존)</td></tr>
+        <tr><td><b>▶️ 랜덤 인터벌 자동 페이싱</b>이 대기만 함</td><td><code>주간 발송 시간대(9~19시)</code> 외 시간대이거나 쿨다운 중</td><td>야간 테스트 시 <b>주간 발송 시간대만 진행</b> 체크 해제</td></tr>
+        <tr><td><b>오늘 잔여 34/45통</b> 등 일일 상한이 적음</td><td>기본 <code>워밍업(일 15통)</code> 단계로 등록됨</td><td>각 계정 행 드롭다운에서 <b>안정화(일 30통)</b> 또는 <b>숙성(일 80통)</b> 선택 (점진적 증량 권장)</td></tr>
+        <tr><td><b>Sidecar 미연결 (18990)</b></td><td>로컬 Sidecar 프로세스 종료됨</td><td><code>%LOCALAPPDATA%\XPIDER\App\START_EMAIL_TEST_SIDECAR.bat</code> 실행 후 <b>🔗 원클릭 자동 페어링</b> 클릭</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section id="s10">
+    <h2>10. 컴플라이언스 · 계정 보호 및 정직한 고지</h2>
+    <div class="box box-danger">
+      <b>개인 로컬 통합 패키지 보안 엄수:</b> <code>LOCAL_PRIVATE_ONLY</code> 폴더 안의 <code>PERSONAL_LOCAL_ONLY</code> 설치기/압축파일에는 본인의 실제 API 키와 OAuth 설정이 들어 있습니다. <b>절대로 GitHub, 공개 클라우드, 외부 메신저에 업로드하지 마시고 본인 소유 PC 간 이동에만 사용하세요.</b>
+    </div>
+    <ul>
+      <li><b>수신 동의 및 수신거부 준수</b>: 무단 수집/스크래핑 목록 발송은 금지되며, 수신거부 차단 원장은 모든 공급자(Resend · Gmail 웹 작성창 · Gmail API)에 교차 적용되고 마스터 리셋 시에도 절대 삭제되지 않습니다.</li>
+      <li><b>정직한 도달률 고지</b>: 본 도구의 스팸 방지 위생 기능과 Gmail 웹 작성창·랜덤 페이싱은 스팸 분류와 계정 정지 위험을 낮추는 데 도움을 주지만, <b>100% 기본 받은편지함(Primary) 배치나 계정 정지 면제를 보장하지 않습니다.</b></li>
+    </ul>
+  </section>
+
+  <footer>XPIDER AutoForm Sender Pro V7.1.0 · 공식 가이드 문서 (오프라인 열람 가능 · 스크립트 없음)</footer>
+</main>
+</body>
+</html>

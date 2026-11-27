@@ -278,6 +278,13 @@ function escHtmlAttr(s) {
   return String(s || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
+function isPrimarilyEnglishContent(text = '', html = '') {
+  const sample = `${String(text || '')}\n${String(html || '').replace(/<[^>]+>/g, ' ')}`;
+  const hasHangul = /[가-힣]/.test(sample);
+  const latinLetters = (sample.match(/[A-Za-z]/g) || []).length;
+  return !hasHangul && latinLetters >= 20;
+}
+
 function injectUnsubscribeFooter({ html = '', text = '', unsubscribeUrl }) {
   const safeUrl = String(unsubscribeUrl || '').trim();
   if (!safeUrl || safeUrl.includes('preview-sample-only')) throw Error('UNSUBSCRIBE_URL_REQUIRED');
@@ -285,14 +292,19 @@ function injectUnsubscribeFooter({ html = '', text = '', unsubscribeUrl }) {
   const previewRe = /https?:\/\/[^\s"'<>]+\/unsubscribe\/preview-sample-only/g;
   let outHtml = String(html || '');
   let outText = String(text || '');
+  const useEnglish = isPrimarilyEnglishContent(outText, outHtml);
 
   if (outHtml) {
     if (previewRe.test(outHtml)) {
       outHtml = outHtml.replace(previewRe, escaped);
     } else if (!outHtml.includes(safeUrl) && !outHtml.includes(escaped)) {
-      const footer = `<p style="margin-top:16px;font-size:12px;color:#475569">더 이상 안내를 받지 않으시려면 <a href="${escaped}" style="color:#475569">구독 취소(수신 거부)</a>를 눌러주세요.</p>`;
+      const footer = useEnglish
+        ? `<p style="margin-top:16px;font-size:12px;color:#475569">If you no longer wish to receive these emails, you may <a href="${escaped}" style="color:#475569">unsubscribe here</a>.</p>`
+        : `<p style="margin-top:16px;font-size:12px;color:#475569">더 이상 안내를 받지 않으시려면 <a href="${escaped}" style="color:#475569">구독 취소(수신 거부)</a>를 눌러주세요.</p>`;
       if (/<\/body>/i.test(outHtml)) {
         outHtml = outHtml.replace(/<\/body>/i, footer + '</body>');
+      } else if (/<\/div>\s*$/i.test(outHtml) && /^<div\s+dir="ltr"/i.test(outHtml.trim())) {
+        outHtml = outHtml.replace(/<\/div>\s*$/i, footer + '</div>');
       } else {
         outHtml += footer;
       }
@@ -302,10 +314,14 @@ function injectUnsubscribeFooter({ html = '', text = '', unsubscribeUrl }) {
     if (previewRe.test(outText)) {
       outText = outText.replace(previewRe, safeUrl);
     } else if (!outText.includes(safeUrl)) {
-      outText += `\n\n구독 취소(수신 거부): ${safeUrl}`;
+      outText += useEnglish
+        ? `\n\nUnsubscribe: ${safeUrl}`
+        : `\n\n구독 취소(수신 거부): ${safeUrl}`;
     }
   } else {
-    outText = `구독 취소(수신 거부): ${safeUrl}`;
+    outText = useEnglish
+      ? `Unsubscribe: ${safeUrl}`
+      : `구독 취소(수신 거부): ${safeUrl}`;
   }
   if (outHtml.includes('preview-sample-only') || outText.includes('preview-sample-only')) {
     throw Error('PREVIEW_PLACEHOLDER_FORBIDDEN_IN_SENT_MIME');
@@ -319,5 +335,6 @@ module.exports = {
   createUnsubscribeProcessor,
   startLocalUnsubscribeServer,
   injectUnsubscribeFooter,
+  isPrimarilyEnglishContent,
   PRODUCTION_UNSUBSCRIBE_ENDPOINT_STATUS
 };

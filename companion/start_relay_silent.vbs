@@ -3,9 +3,12 @@ Set fso = CreateObject("Scripting.FileSystemObject")
 scriptDir = fso.GetParentFolderName(WScript.ScriptFullName)
 rootDir = fso.GetParentFolderName(scriptDir)
 WshShell.CurrentDirectory = rootDir
-bundledNode = fso.GetAbsolutePathName(fso.BuildPath(rootDir, "runtime\node\node.exe"))
-If fso.FileExists(bundledNode) Then
-    nodeBin = bundledNode
+bundledNodePrimary = fso.GetAbsolutePathName(fso.BuildPath(rootDir, "runtime\node.exe"))
+bundledNodeLegacy = fso.GetAbsolutePathName(fso.BuildPath(rootDir, "runtime\node\node.exe"))
+If fso.FileExists(bundledNodePrimary) Then
+    nodeBin = bundledNodePrimary
+ElseIf fso.FileExists(bundledNodeLegacy) Then
+    nodeBin = bundledNodeLegacy
 Else
     nodeBin = "node"
 End If
