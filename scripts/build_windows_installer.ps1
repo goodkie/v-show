@@ -114,6 +114,14 @@ Code Signing Status: UNSIGNED (no code-signing certificate bundled)
 "@
   [System.IO.File]::WriteAllText((Join-Path $stageDir "README_INSTALL_WINDOWS.txt"), $readme, (New-Object System.Text.UTF8Encoding $false))
 
+  # 5b. Bundle comprehensive Korean Installation & Complete User Manual (.html + .md) at package root (fail-closed)
+  $guideMd = Join-Path $repoRoot "docs\XPIDER_V7.1.0_설치방법_및_총사용법_가이드.md"
+  $guideHtml = Join-Path $repoRoot "docs\XPIDER_V7.1.0_설치방법_및_총사용법_가이드.html"
+  foreach ($gf in @($guideMd, $guideHtml)) {
+    if (-not (Test-Path $gf)) { throw "Required user guide missing: $gf" }
+    Copy-Item -Path $gf -Destination (Join-Path $stageDir (Split-Path -Leaf $gf)) -Force
+  }
+
   # 6. Strict leak & path audit across all staged text files BEFORE zipping/compiling!
   Write-Output "[AUDIT] Scanning staged payload for hardcoded workspace paths and secrets..."
   if (Test-Path (Join-Path $stageDir "XPIDER_PERSONAL_SEED.bin")) {
@@ -161,7 +169,35 @@ Code Signing Status: UNSIGNED (no code-signing certificate bundled)
 $exeSha  XPIDER_V7.1.0_SETUP_${gitShort}.exe
 $zipSha  XPIDER_V7.1.0_PORTABLE_${gitShort}.zip
 "@
-  [System.IO.File]::WriteAllText((Join-Path $OutDir "XPIDER_V7.1.0_${gitShort}.sha256.txt"), $shaTxt, (New-Object System.Text.UTF8Encoding $false))
+  $shaFile = Join-Path $OutDir "XPIDER_V7.1.0_${gitShort}.sha256.txt"
+  [System.IO.File]::WriteAllText($shaFile, $shaTxt, (New-Object System.Text.UTF8Encoding $false))
+
+  # 9. Build Public Clean All-in-One Bundle ZIP (Setup EXE + Portable ZIP + SHA256 + Full Korean Guides .html/.md)
+  $bundleStage = Join-Path $env:TEMP ("xpider_v71_allinone_" + $gitShort + "_" + [guid]::NewGuid().ToString("N").Substring(0,8))
+  New-Item -ItemType Directory -Path $bundleStage -Force | Out-Null
+  try {
+    Copy-Item -Path $setupExe -Destination (Join-Path $bundleStage (Split-Path -Leaf $setupExe)) -Force
+    Copy-Item -Path $portableZip -Destination (Join-Path $bundleStage (Split-Path -Leaf $portableZip)) -Force
+    Copy-Item -Path $shaFile -Destination (Join-Path $bundleStage (Split-Path -Leaf $shaFile)) -Force
+    Copy-Item -Path (Join-Path $stageDir "README_INSTALL_WINDOWS.txt") -Destination (Join-Path $bundleStage "README_INSTALL_WINDOWS.txt") -Force
+    foreach ($gf in @($guideMd, $guideHtml)) {
+      if (Test-Path $gf) { Copy-Item -Path $gf -Destination (Join-Path $bundleStage (Split-Path -Leaf $gf)) -Force }
+    }
+    $allInOneZip = Join-Path $OutDir "XPIDER_V7.1.0_ALL_IN_ONE_BUNDLE_${gitShort}.zip"
+    if (Test-Path $allInOneZip) { Remove-Item $allInOneZip -Force }
+    [System.IO.Compression.ZipFile]::CreateFromDirectory($bundleStage, $allInOneZip, [System.IO.Compression.CompressionLevel]::Optimal, $false)
+  } finally {
+    if (Test-Path $bundleStage) { Remove-Item -Recurse -Force $bundleStage -ErrorAction SilentlyContinue }
+  }
+  $aioInfo = Get-Item $allInOneZip
+  $aioSha = (Get-FileHash $allInOneZip -Algorithm SHA256).Hash.ToLowerInvariant()
+  # Update outer SHA256 manifest to cover Setup EXE, Portable ZIP, and All-in-One Bundle ZIP
+  $shaTxtAll = @"
+$exeSha  XPIDER_V7.1.0_SETUP_${gitShort}.exe
+$zipSha  XPIDER_V7.1.0_PORTABLE_${gitShort}.zip
+$aioSha  XPIDER_V7.1.0_ALL_IN_ONE_BUNDLE_${gitShort}.zip
+"@
+  [System.IO.File]::WriteAllText($shaFile, $shaTxtAll, (New-Object System.Text.UTF8Encoding $false))
 
   Write-Output "SETUP_EXE=$setupExe"
   Write-Output "SETUP_EXE_BYTES=$($exeInfo.Length)"
@@ -169,6 +205,9 @@ $zipSha  XPIDER_V7.1.0_PORTABLE_${gitShort}.zip
   Write-Output "PORTABLE_ZIP=$portableZip"
   Write-Output "PORTABLE_ZIP_BYTES=$($zipInfo.Length)"
   Write-Output "PORTABLE_ZIP_SHA256=$zipSha"
+  Write-Output "ALL_IN_ONE_ZIP=$allInOneZip"
+  Write-Output "ALL_IN_ONE_ZIP_BYTES=$($aioInfo.Length)"
+  Write-Output "ALL_IN_ONE_ZIP_SHA256=$aioSha"
   Write-Output "SIGNING_STATUS=UNSIGNED"
   Write-Output "BUNDLED_NODE_VERSION=$nodeVer"
 } finally {

@@ -111,6 +111,14 @@ try {
   } | ConvertTo-Json -Depth 4
   [System.IO.File]::WriteAllText((Join-Path $stageDir "RELEASE_PROVENANCE.json"), $prov + "`n", (New-Object System.Text.UTF8Encoding $false))
 
+  # 5b. Bundle comprehensive Korean Installation & Complete User Manual (.html + .md) inside Local-Only package too (fail-closed)
+  $guideMd = Join-Path $repoRoot "docs\XPIDER_V7.1.0_설치방법_및_총사용법_가이드.md"
+  $guideHtml = Join-Path $repoRoot "docs\XPIDER_V7.1.0_설치방법_및_총사용법_가이드.html"
+  foreach ($gf in @($guideMd, $guideHtml)) {
+    if (-not (Test-Path $gf)) { throw "Required user guide missing: $gf" }
+    Copy-Item -Path $gf -Destination (Join-Path $stageDir (Split-Path -Leaf $gf)) -Force
+  }
+
   # 6. Create clean app payload ZIP (seed is embedded as a separate Win32/.NET resource in the EXE so app dir stays clean!)
   Add-Type -AssemblyName System.IO.Compression.FileSystem
   $payloadZip = Join-Path $env:TEMP ("xpider_private_payload_" + [guid]::NewGuid().ToString("N").Substring(0,8) + ".zip")
@@ -162,18 +170,41 @@ pause
 4. 이후 새 버전이 나오면 앱 상단의 [🔄 최신 업데이트 확인] -> [⬇️ 최신 버전 다운로드 후 설치]를 누르세요.
    (GitHub 공개 최신 앱을 받아도 기존 개인 키·설정은 100% 그대로 유지됩니다!)
 "@
-  [System.IO.File]::WriteAllText((Join-Path $OutDir "DO_NOT_UPLOAD_TO_GITHUB.txt"), $warnTxt, (New-Object System.Text.UTF8Encoding $false))
+  $warnFile = Join-Path $OutDir "DO_NOT_UPLOAD_TO_GITHUB.txt"
+  [System.IO.File]::WriteAllText($warnFile, $warnTxt, (New-Object System.Text.UTF8Encoding $false))
+
+  # 10. Build Local-Only Personal All-in-One Bundle ZIP (Personal EXE + Personal Portable ZIP + Full Korean Guides + Security Warning)
+  $privAioStage = Join-Path $env:TEMP ("xpider_priv_allinone_" + $gitShort + "_" + [guid]::NewGuid().ToString("N").Substring(0,8))
+  New-Item -ItemType Directory -Path $privAioStage -Force | Out-Null
+  try {
+    Copy-Item -Path $setupExe -Destination (Join-Path $privAioStage (Split-Path -Leaf $setupExe)) -Force
+    Copy-Item -Path $portableZip -Destination (Join-Path $privAioStage (Split-Path -Leaf $portableZip)) -Force
+    Copy-Item -Path $warnFile -Destination (Join-Path $privAioStage "DO_NOT_UPLOAD_TO_GITHUB.txt") -Force
+    foreach ($gf in @($guideMd, $guideHtml)) {
+      if (Test-Path $gf) { Copy-Item -Path $gf -Destination (Join-Path $privAioStage (Split-Path -Leaf $gf)) -Force }
+    }
+    $privAllInOneZip = Join-Path $OutDir "XPIDER_V7.1.0_PERSONAL_ALL_IN_ONE_LOCAL_ONLY_${gitShort}.zip"
+    if (Test-Path $privAllInOneZip) { Remove-Item $privAllInOneZip -Force }
+    [System.IO.Compression.ZipFile]::CreateFromDirectory($privAioStage, $privAllInOneZip, [System.IO.Compression.CompressionLevel]::Optimal, $false)
+  } finally {
+    if (Test-Path $privAioStage) { Remove-Item -Recurse -Force $privAioStage -ErrorAction SilentlyContinue }
+  }
 
   $exeInfo = Get-Item $setupExe
   $exeSha = (Get-FileHash $setupExe -Algorithm SHA256).Hash.ToLowerInvariant()
   $zipInfo = Get-Item $portableZip
   $zipSha = (Get-FileHash $portableZip -Algorithm SHA256).Hash.ToLowerInvariant()
+  $pAioInfo = Get-Item $privAllInOneZip
+  $pAioSha = (Get-FileHash $privAllInOneZip -Algorithm SHA256).Hash.ToLowerInvariant()
   Write-Output "PERSONAL_LOCAL_EXE=$setupExe"
   Write-Output "PERSONAL_LOCAL_EXE_BYTES=$($exeInfo.Length)"
   Write-Output "PERSONAL_LOCAL_EXE_SHA256=$exeSha"
   Write-Output "PERSONAL_LOCAL_ZIP=$portableZip"
   Write-Output "PERSONAL_LOCAL_ZIP_BYTES=$($zipInfo.Length)"
   Write-Output "PERSONAL_LOCAL_ZIP_SHA256=$zipSha"
+  Write-Output "PERSONAL_ALL_IN_ONE_ZIP=$privAllInOneZip"
+  Write-Output "PERSONAL_ALL_IN_ONE_ZIP_BYTES=$($pAioInfo.Length)"
+  Write-Output "PERSONAL_ALL_IN_ONE_ZIP_SHA256=$pAioSha"
 } finally {
   if (Test-Path $stageDir) { Remove-Item -Recurse -Force $stageDir -ErrorAction SilentlyContinue }
   if (Test-Path $seedTmp) { Remove-Item -Force $seedTmp -ErrorAction SilentlyContinue }
